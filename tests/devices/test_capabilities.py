@@ -14,6 +14,7 @@
 """
 This module contains unit tests for device capabilities and the TOML module
 """
+import re
 
 # pylint: disable=protected-access,trailing-whitespace
 
@@ -32,6 +33,8 @@ from pennylane.devices.capabilities import (
     _get_operations,
     _get_options,
     load_toml_file,
+    _get_toml_section,
+    InvalidCapabilitiesError,
 )
 
 
@@ -247,7 +250,7 @@ class TestTOML:
         ],
         indirect=True,
     )
-    def test_options_parsing(self, request):
+    def test_get_options(self, request):
         """Tests parsing options."""
 
         document = load_toml_file(request.node.toml_file)
@@ -255,3 +258,213 @@ class TestTOML:
         assert len(options) == 2
         assert options.get("option_key") == "option_value"
         assert options.get("option_boolean") is True
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            [pennylane.operators.gates]
+            
+            PauliX = {}
+            PauliY = {}
+            PauliZ = {}
+            """
+        ],
+        indirect=True,
+    )
+    def test_get_toml_section(self, request):
+        """Tests getting a section from the TOML document."""
+
+        document = load_toml_file(request.node.toml_file)
+        section = _get_toml_section(document, "operators.gates", "pennylane")
+        assert len(section) == 3
+        assert "PauliX" in section
+        assert "PauliY" in section
+        assert "PauliZ" in section
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            [operators.gates]
+        
+            PauliX = {}
+            PauliY = {}
+            PauliZ = {}
+            """
+        ],
+        indirect=True,
+    )
+    def test_get_empty_document_section(self, request):
+        """Tests loading a section that does not exist."""
+
+        document = load_toml_file(request.node.toml_file)
+        section = _get_toml_section(document, "operators.observables")
+        assert section == {}
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            [operators.gates]
+            
+            PauliX = { invalid_attribute = ["invalid_attribute"] }
+            
+            [measurement_processes]
+            
+            CountsMP = { invalid_attribute = ["invalid_attribute"] }
+            """
+        ],
+        indirect=True,
+    )
+    def test_invalid_attributes(self, request):
+        """Tests loading TOML files with invalid attributes."""
+
+        document = load_toml_file(request.node.toml_file)
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match=re.escape("Operator 'PauliX' has unknown attributes: ['invalid_attribute']"),
+        ):
+            _get_operations(document)
+
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match=re.escape("Measurement 'CountsMP' has unknown attributes: ['invalid_attribute']"),
+        ):
+            _get_measurement_processes(document)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            [operators.gates]
+        
+            PauliX = { properties = ["invalid_property"] }
+            PauliY = {}
+            PauliZ = {}
+            """
+        ],
+        indirect=True,
+    )
+    def test_invalid_properties(self, request):
+        """Tests loading TOML files with invalid operator properties."""
+
+        document = load_toml_file(request.node.toml_file)
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match=re.escape("Operator 'PauliX' has unknown properties: ['invalid_property']"),
+        ):
+            _get_operations(document)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            [operators.observables]
+            
+            Hamiltonian = { conditions = ["invalid_condition"] }
+            
+            [measurement_processes]
+            
+            CountsMP = { conditions = ["invalid_condition"] }
+            """
+        ],
+        indirect=True,
+    )
+    def test_unknown_conditions(self, request):
+        """Tests loading TOML files with unknown conditions."""
+
+        document = load_toml_file(request.node.toml_file)
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match=re.escape("Operator 'Hamiltonian' has unknown conditions: ['invalid_condition']"),
+        ):
+            _get_observables(document)
+
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match=re.escape("Measurement 'CountsMP' has unknown conditions: ['invalid_condition']"),
+        ):
+            _get_measurement_processes(document)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            [operators.observables]
+            
+            PauliZ = { conditions = ["terms-commute"] }
+            
+            [measurement_processes]
+            
+            CountsMP = { conditions = ["finiteshots", "analytic"] }
+            """
+        ],
+        indirect=True,
+    )
+    def test_invalid_conditions(self, request):
+        """Tests loading TOML files with invalid conditions."""
+
+        document = load_toml_file(request.node.toml_file)
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match="'terms-commute' is only applicable to Prod, SProd, Sum, and LinearCombination.",
+        ):
+            _get_observables(document)
+
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match="Conditions cannot contain both 'analytic' and 'finiteshots'",
+        ):
+            _get_measurement_processes(document)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            [compilation]
+            
+            unknown_flag = true
+            """
+        ],
+        indirect=True,
+    )
+    def test_unknown_compilation_flag(self, request):
+        """Tests loading TOML files with unknown compilation flags."""
+
+        document = load_toml_file(request.node.toml_file)
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match="The compilation section has unknown options: ",
+        ):
+            _get_compilation_flags(document)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            [compilation]
+            
+            overlapping_observables = false
+            non_commuting_observables = true
+            """
+        ],
+        indirect=True,
+    )
+    def test_invalid_combination_of_flags(self, request):
+        """Tests loading TOML files with invalid combination of compilation flags."""
+
+        document = load_toml_file(request.node.toml_file)
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match="When overlapping_observables is False, non_commuting_observables cannot be True.",
+        ):
+            _get_compilation_flags(document)

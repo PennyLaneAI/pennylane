@@ -20,8 +20,6 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
 
-import pennylane as qml
-
 if sys.version_info >= (3, 11):
     import tomllib as toml
 else:
@@ -171,8 +169,12 @@ def _validate_conditions(conditions: list[ExecutionCondition], target=None) -> N
             "Conditions cannot contain both 'analytic' and 'finiteshots'"
         )
 
-    if conditions == ExecutionCondition.TERMS_MUST_COMMUTE and not isinstance(
-        target, (qml.ops.Prod, qml.ops.Sum, qml.ops.SProd)
+    if ExecutionCondition.TERMS_MUST_COMMUTE in conditions and target not in (
+        "Prod",
+        "SProd",
+        "Sum",
+        "LinearCombination",
+        "Hamiltonian",
     ):
         raise InvalidCapabilitiesError(
             "'terms-commute' is only applicable to Prod, SProd, Sum, and LinearCombination."
@@ -235,7 +237,12 @@ def _get_measurement_processes(
             raise InvalidCapabilitiesError(
                 f"Measurement '{mp}' has unknown attributes: {list(unknowns)}"
             )
-        conditions = [ExecutionCondition(c) for c in attributes.get("conditions", [])]
+        condition_strs = attributes.get("conditions", [])
+        if unknowns := set(condition_strs) - VALID_CONDITION_STRINGS:
+            raise InvalidCapabilitiesError(
+                f"Measurement '{mp}' has unknown conditions: {list(unknowns)}"
+            )
+        conditions = [ExecutionCondition(c) for c in condition_strs]
         _validate_conditions(conditions)
         measurement_processes[mp] = conditions
     return measurement_processes
