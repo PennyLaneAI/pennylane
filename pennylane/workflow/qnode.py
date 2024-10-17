@@ -114,24 +114,25 @@ def _to_qfunc_output_type(
     _, qfunc_output_structure = qml.pytrees.flatten(
         qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
     )
-    num_of_measurements = len(re.findall(r"Leaf", qfunc_output_structure.__str__()))
+    num_of_measurements = len(re.findall(r"Leaf", str(qfunc_output_structure)))
 
     _, results_structure = qml.pytrees.flatten(results)
-    num_of_results = len(re.findall(r"Leaf", results_structure.__str__()))
+    num_of_results = len(re.findall(r"Leaf", str(results_structure)))
 
     # Special case of single Measurement in a list
     if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
         results = [results]
 
-    if num_of_measurements != num_of_results:
-        return results
-
     if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
         return results
 
-    if qfunc_output_structure.is_leaf:
-        # FIXME: Work around for Autograd and TF backprop
-        return type(qfunc_output)(results)
+    if num_of_measurements != num_of_results or (
+        qfunc_output_structure.is_leaf != results_structure.is_leaf
+    ):
+        if qfunc_output_structure.is_leaf:
+            # FIXME: Work around for Autograd and TF backprop
+            return type(qfunc_output)(results)
+        return results
 
     return qml.pytrees.unflatten(results, qfunc_output_structure)
 
