@@ -41,9 +41,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* The device test suite now checks for mid circuit measurement support.
-  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
-
 * RTD support for `qml.labs` added to API.
   [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
 
