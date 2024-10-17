@@ -259,7 +259,8 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     if fontsize is not None:
         drawer.fontsize = fontsize
 
-    drawer.label(list(wire_map), text_options=label_options)
+    if label_options != "off":
+        drawer.label(list(wire_map), text_options=label_options)
 
     _add_classical_wires(drawer, cwire_layers, cwire_wires)
 
@@ -273,6 +274,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     measured_bits = _get_measured_bits(tape.measurements, bit_map, drawer.n_wires)
     if measured_bits:
         drawer.measure(n_layers, measured_bits)
+
+    if label_options == "off":
+        drawer.crop_wire_labels()
 
     return drawer.fig, drawer.ax
 
