@@ -126,13 +126,22 @@ def _to_qfunc_output_type(
     if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
         return results
 
+    print(isinstance(qfunc_output, list), len(qfunc_output))
+    print(qfunc_output, results)
+    print(qfunc_output_structure, results_structure)
+    print(num_of_measurements, num_of_results)
+    print(qfunc_output_structure.is_leaf, results_structure.is_leaf)
+
     if num_of_measurements != num_of_results or (
         qfunc_output_structure.is_leaf != results_structure.is_leaf
     ):
-        if qfunc_output_structure.is_leaf:
+        if isinstance(qfunc_output, (tuple)):
             # FIXME: Work around for Autograd and TF backprop
-            return type(qfunc_output)(results)
-        return results
+            return results
+        return type(qfunc_output)(results)
+
+    if isinstance(qfunc_output, qml.typing.TensorLike):
+        return type(qfunc_output)(results)
 
     return qml.pytrees.unflatten(results, qfunc_output_structure)
 
