@@ -9,8 +9,7 @@ jobs:
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
       default_runner: ubuntu-latest
-      force_large_runner: ${{ inputs.use_large_runner }}
-
+      force_large_runner: true
   tests:
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
