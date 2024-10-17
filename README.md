@@ -34,7 +34,7 @@
 </p>
 
 <p align="center">
-  <strong>Train a quantum computer the same way as a neural network.</strong>
+  The definitive open-source Python framework for quantum programming. Built by researchers, for research.
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png#gh-light-mode-only" width="700px">
     <!--
     Use a relative import for the dark mode image. When loading on PyPI, this
@@ -102,14 +102,21 @@ Take a deeper dive into quantum computing by exploring cutting-edge algorithms u
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
 
-## Videos
+## Research Applications
 
-Seeing is believing! Check out [our videos](https://pennylane.ai/qml/videos.html) to learn about
-PennyLane, quantum computing concepts, and more. 
+PennyLane is at the forefront of research in quantum computing, quantum machine learning, and quantum chemistry. Discover how researchers are using PennyLane.
 
-<a href="https://pennylane.ai/qml/videos.html">
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/videos.png" width="900px">
-</a>
+- **Quantum Computing**
+  - *Example Paper*: [lorem ipsum - Quantum Neural Networks using PennyLane](https://arxiv.org/abs/2006.02994)
+  - *Collaborative Research*: Research with [ABC Institute] on optimizing neural network architectures with quantum circuits.
+
+- **Quantum Machine Learning**
+  - *Case Study*: [lorem ipsum - Quantum simulations of molecules using PennyLane](https://arxiv.org/abs/1904.03206)
+
+- **Quantum Chemistry**
+  - *Example Paper*: [lorem ipsum - Using VQE for optimization on quantum devices](https://arxiv.org/abs/XXXXXX)
+
+Impactful research drives PennyLane. Submit your feature ideas to tailor our roadmap to your research needs[LINK TO RESEARCH PAGE - UNRELEASED]
 
 ## Contributing to PennyLane
 
