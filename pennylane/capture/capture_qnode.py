@@ -107,6 +107,7 @@ class BatchingManager:
         return cls._BATCHING_SET
 
 
+# pylint: disable=too-many-arguments
 def _qnode_batching_rule(
     batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
 ):
