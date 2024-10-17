@@ -34,6 +34,11 @@ except ImportError:
     has_jax = False
 
 
+def _is_non_scalar_tensor(arg):
+    """Helper function to check if an argument is a non-scalar tensor-like object."""
+    return isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number) and arg.shape != ()
+
+
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
     if jax.config.jax_enable_x64:  # pylint: disable=no-member
         dtype_map = {
@@ -101,35 +106,24 @@ def _qnode_batching_rule(
 
     for i, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
 
-        # TODO: clean up this logic
+        if not _is_non_scalar_tensor(arg):
+            continue
+
         if i < n_consts:
-            if isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number) and arg.size > 1:
-                raise ValueError("Batched constant cannot currently be captured with jax.vmap.")
-        else:
-            if (
-                isinstance(arg, TensorLike)
-                and not isinstance(arg, numbers.Number)
-                and arg.size > 1
-                and batch_dim is None
-            ):
-                warnings.warn(
-                    f"Argument at index {i} has more than 1 element but is not batched. "
-                    "This may lead to unintended behavior or wrong results if the argument is provided "
-                    "using parameter broadcasting to a quantum operation that supports batching.",
-                    UserWarning,
-                )
-            if (
-                isinstance(arg, TensorLike)
-                and not isinstance(arg, numbers.Number)
-                and arg.size == 0
-            ):
-                raise ValueError("Empty tensors are not supported with jax.vmap.")
+            raise ValueError("Batched constant cannot currently be captured with jax.vmap.")
 
-    input_shapes = []
+        if arg.size > 1 and batch_dim is None:
+            warnings.warn(
+                f"Argument at index {i} has more than 1 element but is not batched. "
+                "This may lead to unintended behavior or wrong results if the argument is provided "
+                "using parameter broadcasting to a quantum operation that supports batching.",
+                UserWarning,
+            )
 
-    for arg in args:
-        if isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number):
-            input_shapes.append(arg.shape)
+        if arg.size == 0:
+            raise ValueError("Empty tensors are not supported with jax.vmap.")
+
+    input_shapes = [arg.shape for arg in args if _is_non_scalar_tensor(arg)]
 
     batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
