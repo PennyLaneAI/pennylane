@@ -7,26 +7,25 @@ on:
       - synchronize
       - ready_for_review
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   black-pylint:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
       - name: Install dependencies
         run: pip install black pylint==2.7.4 isort==5.13.2
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Run Black
         run: |

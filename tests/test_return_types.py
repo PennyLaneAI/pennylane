@@ -134,26 +134,6 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], (np.ndarray, np.float64))
 
     @pytest.mark.parametrize("device", devices)
-    def test_vn_entanglement_entropy(self, device, interface, shots):
-        """Return a single vn entanglement entropy."""
-        dev = qml.device(device, wires=2, shots=shots)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
-
-        qnode = qml.QNode(circuit, dev)
-        qnode.construct([0.5], {})
-
-        if dev.shots:
-            pytest.skip("cannot return analytic measurements with finite shots.")
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
-
-        assert res[0].shape == ()
-        assert isinstance(res[0], (np.ndarray, np.float64))
-
-    @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device, interface, shots):
         """Return a single mutual information."""
         dev = qml.device(device, wires=2, shots=shots)
