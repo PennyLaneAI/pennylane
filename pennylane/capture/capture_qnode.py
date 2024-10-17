@@ -15,9 +15,11 @@
 This submodule defines a capture compatible call to QNodes.
 """
 import warnings
+import numbers
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
+from pennylane.typing import TensorLike
 
 import pennylane as qml
 
@@ -98,19 +100,37 @@ def _qnode_batching_rule(
     args = batched_args[n_consts:]
 
     for i, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
+
+        # TODO: clean up this logic
         if i < n_consts:
-            if isinstance(arg, jax.numpy.ndarray) and arg.size > 1:
+            if isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number) and arg.size > 1:
                 raise ValueError("Batched constant cannot currently be captured with jax.vmap.")
         else:
-            if isinstance(arg, jax.numpy.ndarray) and arg.size > 1 and batch_dim is None:
+            if (
+                isinstance(arg, TensorLike)
+                and not isinstance(arg, numbers.Number)
+                and arg.size > 1
+                and batch_dim is None
+            ):
                 warnings.warn(
                     f"Argument at index {i} has more than 1 element but is not batched. "
                     "This may lead to unintended behavior or wrong results if the argument is provided "
                     "using parameter broadcasting to a quantum operation that supports batching.",
                     UserWarning,
                 )
+            if (
+                isinstance(arg, TensorLike)
+                and not isinstance(arg, numbers.Number)
+                and arg.size == 0
+            ):
+                raise ValueError("Empty tensors are not supported with jax.vmap.")
 
-    input_shapes = [arg.shape for arg in args]
+    input_shapes = []
+
+    for arg in args:
+        if isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number):
+            input_shapes.append(arg.shape)
+
     batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
     BatchingManager.enable_batching(batch_shape)

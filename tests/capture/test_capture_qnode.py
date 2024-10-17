@@ -366,23 +366,22 @@ class TestQNodeVmapIntegration:
 
     @pytest.mark.parametrize("x64_mode", (True, False))
     @pytest.mark.parametrize(
-        "input",
+        "input, expected_shape",
         [
-            jax.numpy.array([0.1]),
-            jax.numpy.array([0.1, 0.2]),
-            jax.numpy.array([0.1, 0.2, 0.3]),
+            (jax.numpy.array([0.1]), (1,)),
+            (jax.numpy.array([0.1, 0.2]), (2,)),
+            (jax.numpy.array([0.1, 0.2, 0.3]), (3,)),
         ],
     )
-    def test_qnode_vmap(self, input, x64_mode):
+    def test_qnode_vmap(self, input, expected_shape, x64_mode):
         """Test that JAX can vmap over the QNode primitive via a registered batching rule."""
-        dev = qml.device("default.qubit", wires=1)
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
 
         fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
 
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
@@ -394,7 +393,44 @@ class TestQNodeVmapIntegration:
         assert qml.math.allclose(res, jax.numpy.cos(input))
 
         assert len(eqn0.outvars) == 1
-        assert eqn0.outvars[0].aval == jax.core.ShapedArray(res[0].shape, fdtype)
+        assert eqn0.outvars[0].aval == jax.core.ShapedArray(expected_shape, fdtype)
+
+        jax.config.update("jax_enable_x64", initial_mode)
+
+    @pytest.mark.parametrize("x64_mode", (True, False))
+    def test_vmap_mixed_arguments(self, x64_mode):
+        """Test vmap with a mix of batched and non-batched arguments."""
+
+        initial_mode = jax.config.jax_enable_x64
+        jax.config.update("jax_enable_x64", x64_mode)
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(arr1, scalar1, arr2, scalar2):
+            qml.RX(arr1, 0)
+            qml.RY(scalar1, 0)
+            qml.RY(arr2, 1)
+            qml.RZ(scalar2, 1)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        arr1 = jax.numpy.array([0.1, 0.2, 0.3])
+        arr2 = jax.numpy.array([0.2, 0.4, 0.6])
+        scalar1 = 1.0
+        scalar2 = 2.0
+
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None, 0, None)))(
+            arr1, scalar1, arr2, scalar2
+        )
+
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arr1, scalar1, arr2, scalar2)
+        assert qml.math.allclose(res, circuit(arr1, scalar1, arr2, scalar2))
+
+        assert len(jaxpr.out_avals) == 2
+        assert jaxpr.out_avals[0] == jax.core.ShapedArray(
+            (3,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        )
+        assert jaxpr.out_avals[1] == jax.core.ShapedArray(
+            (3,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        )
 
         jax.config.update("jax_enable_x64", initial_mode)
 
@@ -421,13 +457,13 @@ class TestQNodeVmapIntegration:
         assert qml.math.allclose(res3_vmap, jax.numpy.array([1.0, 1.0]))
 
         assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-            res1_vmap.shape, jax.numpy.int64 if x64_mode else jax.numpy.int32
+            (2, 5, 4), jax.numpy.int64 if x64_mode else jax.numpy.int32
         )
         assert jaxpr.out_avals[1] == jax.core.ShapedArray(
-            res2_vmap.shape, jax.numpy.float64 if x64_mode else jax.numpy.float32
+            (2, 8), jax.numpy.float64 if x64_mode else jax.numpy.float32
         )
         assert jaxpr.out_avals[2] == jax.core.ShapedArray(
-            res3_vmap.shape, jax.numpy.float64 if x64_mode else jax.numpy.float32
+            (2,), jax.numpy.float64 if x64_mode else jax.numpy.float32
         )
 
         jax.config.update("jax_enable_x64", initial_mode)
@@ -463,7 +499,7 @@ class TestQNodeVmapIntegration:
 
         assert len(eqn0.outvars) == 1
         assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-            res[0].shape, jax.numpy.float64 if x64_mode else jax.numpy.float32
+            (3, 4), jax.numpy.float64 if x64_mode else jax.numpy.float32
         )
 
         jax.config.update("jax_enable_x64", initial_mode)
@@ -499,6 +535,17 @@ class TestQNodeVmapIntegration:
                 jax.numpy.array([1.0, 2.0, 3.0]), 5.0
             )
 
+    def test_vmap_error_empty_array(self):
+        """Test that an error is raised when passing an empty array to vmap."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(ValueError):
+            jax.make_jaxpr(jax.vmap(circuit))(jax.numpy.array([]))
+
     def test_warning_bypass_vmap(self):
         """Test that a warning is raised when bypassing vmap."""
         dev = qml.device("default.qubit", wires=4)
@@ -511,10 +558,9 @@ class TestQNodeVmapIntegration:
 
         param_array = jax.numpy.array([1.0, 1.2, 1.3])
         param_array_2 = jax.numpy.array([2.0, 2.1, 2.2])
-        vmap_circuit = jax.vmap(circuit, in_axes=(0, None))
 
         with pytest.warns(UserWarning, match="Argument at index 1 has more"):
-            jax.make_jaxpr(vmap_circuit)(param_array, param_array_2)
+            jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(param_array, param_array_2)
 
     def test_qnode_pytree_input_vmap(self):
         """Test that we can capture and execute a qnode with a pytree input and vmap."""
@@ -531,7 +577,8 @@ class TestQNodeVmapIntegration:
         assert qml.math.allclose(res, jax.numpy.cos(x["val"]))
 
         assert len(jaxpr.eqns[0].invars) == 2
-        assert jaxpr.eqns[0].outvars[0].aval.shape == res[0].shape
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
 
     def test_qnode_pytree_output_vmap(self):
         """Test that we can capture and execute a qnode with a pytree output and vmap."""
