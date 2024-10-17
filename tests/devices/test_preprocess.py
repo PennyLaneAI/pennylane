@@ -65,8 +65,8 @@ class InfiniteOp(qml.operation.Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
-def test_my_feature_is_deprecated():
-    """Test that my_feature is deprecated."""
+def test_max_expansion_is_deprecated():
+    """Test that max_expansion argument is deprecated."""
     with pytest.warns(
         qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
     ):
