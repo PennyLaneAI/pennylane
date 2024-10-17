@@ -270,6 +270,19 @@ def test_kahypar_warning_not_raised(recwarn):
         assert len(recwarn) == 0
 
 
+def test_passing_shots_None():
+    """Test that passing shots=None on initialization works without error."""
+    dev = qml.device("default.tensor", shots=None)
+    assert dev.shots == qml.measurements.Shots(None)
+
+
+def test_passing_finite_shots_error():
+    """Test that an error is raised if finite shots are passed on initialization."""
+
+    with pytest.raises(qml.DeviceError, match=r"only supports analytic simulations"):
+        qml.device("default.tensor", shots=10)
+
+
 @pytest.mark.parametrize("method", ["mps", "tn"])
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
@@ -509,3 +522,45 @@ def test_wire_order_dense_vector(method, num_orbitals):
     state = circuit()
     assert isinstance(state, TensorLike)
     assert len(state) == 2 ** (2 * num_orbitals + 1)
+
+
+class TestMCMs:
+    """Test that default.tensor can handle mid circuit measurements."""
+
+    @pytest.mark.parametrize("mcm_method", ("one-shot", "tree-traversal"))
+    def test_error_on_unsupported_mcm_method(self, mcm_method):
+        """Test that an error is raised on unsupported mcm methods."""
+
+        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method)
+        config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
+        with pytest.raises(
+            qml.DeviceError, match=r"only supports the deferred measurement principle."
+        ):
+            qml.device("default.tensor").preprocess(config)
+
+    def test_simple_mcm_present(self):
+        """Test that the device can execute a circuit with a mid circuit measurement."""
+
+        dev = qml.device("default.tensor")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.measure(0)
+            return qml.expval(qml.Z(0))
+
+        res = circuit()
+        assert qml.math.allclose(res, 1)
+
+    def test_mcm_conditional(self):
+        """Test that the device execute a circuit with an MCM and a conditional."""
+
+        dev = qml.device("default.tensor")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            m0 = qml.measure(0)
+            qml.cond(~m0, qml.RX)(x, 0)
+            return qml.expval(qml.Z(0))
+
+        res = circuit(0.5)
+        assert qml.math.allclose(res, np.cos(0.5))

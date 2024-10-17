@@ -277,6 +277,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
+  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
+
 * Fixes `qml.math.expand_matrix` for qutrit and arbitrary qudit operators.
   [(#6398)](https://github.com/PennyLaneAI/pennylane/pull/6398/)
 
