@@ -29,7 +29,6 @@ from pennylane.devices.capabilities import (
     ExecutionCondition,
     InvalidCapabilitiesError,
     OperatorProperties,
-    ProgramFeatures,
     _get_compilation_options,
     _get_measurement_processes,
     _get_observables,
@@ -600,8 +599,8 @@ class TestDeviceCapabilities:
         document = load_toml_file(request.node.toml_file)
         capabilities = parse_toml_document(document)
         update_device_capabilities(capabilities, document, "pennylane")
-        shots_capabilities = capabilities.filter(ProgramFeatures(finite_shots=True))
-        analytic_capabilities = capabilities.filter(ProgramFeatures(finite_shots=False))
+        shots_capabilities = capabilities.filter(finite_shots=True)
+        analytic_capabilities = capabilities.filter(finite_shots=False)
 
         assert shots_capabilities.measurement_processes == {
             "ExpectationMP": [],

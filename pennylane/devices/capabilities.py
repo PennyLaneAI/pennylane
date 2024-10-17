@@ -72,17 +72,6 @@ class OperatorProperties:
 
 
 @dataclass
-class ProgramFeatures:
-    """Program features, obtained from the user.
-
-    This is used to filter the device capabilities based on their conditions. Currently, the
-    only supported filter is whether the execution mode is finite shots.
-    """
-
-    finite_shots: bool
-
-
-@dataclass
 class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     """Capabilities of a quantum device.
 
@@ -118,12 +107,12 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         """Post-processing to ensure that the conditions are valid."""
         self.supported_mcm_methods = self.supported_mcm_methods or []
 
-    def filter(self, program_features: ProgramFeatures) -> "DeviceCapabilities":
+    def filter(self, finite_shots: bool) -> "DeviceCapabilities":
         """Returns the device capabilities conditioned on the given program features."""
 
         return (
             self._exclude_entries_with_condition(ExecutionCondition.ANALYTIC_MODE_ONLY)
-            if program_features.finite_shots
+            if finite_shots
             else self._exclude_entries_with_condition(ExecutionCondition.FINITE_SHOTS_ONLY)
         )
 
