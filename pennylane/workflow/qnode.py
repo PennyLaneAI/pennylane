@@ -19,7 +19,6 @@ import copy
 import functools
 import inspect
 import logging
-import re
 import warnings
 from collections.abc import Callable
 from typing import Any, Literal, Optional, Union, get_args
@@ -111,13 +110,13 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    _, qfunc_output_structure = qml.pytrees.flatten(
+    qfunc_output_leaves, qfunc_output_structure = qml.pytrees.flatten(
         qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
     )
-    num_of_measurements = len(re.findall(r"Leaf", str(qfunc_output_structure)))
+    num_of_measurements = len(qfunc_output_leaves)
 
-    _, results_structure = qml.pytrees.flatten(results)
-    num_of_results = len(re.findall(r"Leaf", str(results_structure)))
+    results_leaves, results_structure = qml.pytrees.flatten(results)
+    num_of_results = len(results_leaves)
 
     # Special case of single Measurement in a list
     if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
