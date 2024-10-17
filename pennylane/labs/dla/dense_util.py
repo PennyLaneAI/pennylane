@@ -278,3 +278,17 @@ def project(ops, basis):
         return res
 
     return NotImplemented
+
+
+def apply_basis_change(change_op, targets):
+    """Helper function for recursive Cartan decompositions"""
+    if single_target := np.ndim(targets) == 2:
+        targets = [targets]
+    if isinstance(targets, list):
+        targets = np.array(targets)
+    # Compute x V^\dagger for all x in ``targets``. ``moveaxis`` brings the batch axis to the front
+    out = np.moveaxis(np.tensordot(change_op, targets, axes=[[1], [1]]), 1, 0)
+    out = np.tensordot(out, change_op.conj().T, axes=[[2], [0]])
+    if single_target:
+        return out[0]
+    return out
