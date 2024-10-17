@@ -276,3 +276,88 @@ class TestApplyGroverOperator:
         result_autograd = apply_operation(op, state_autograd)
 
         assert np.allclose(result_numpy, result_autograd)
+
+
+class TestApplyMultiControlledX:
+    """Test that MultiControlledX is applied correctly to mixed states."""
+
+    @pytest.mark.parametrize(
+        "num_wires, expected_method",
+        [
+            (3, "tensordot"),
+            (7, "tensordot"),
+            (8, "tensordot"),
+            (9, "custom"),
+            # (13, "custom"),
+        ],
+    )
+    def test_dispatch_method(self, num_wires, expected_method, mocker):
+        """Test that the correct dispatch method is used based on the number of wires."""
+        state = get_random_mixed_state(num_wires)
+
+        op = qml.MultiControlledX(wires=range(num_wires))
+
+        spy_einsum = mocker.spy(qml.math, "einsum")
+        spy_tensordot = mocker.spy(qml.math, "moveaxis")
+
+        apply_operation(op, state)
+
+        if expected_method == "einsum":
+            assert spy_einsum.called
+        elif expected_method == "tensordot":
+            assert not spy_einsum.called
+            assert spy_tensordot.called
+        else:  # custom method
+            assert not spy_einsum.called
+
+    @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
+    def test_correctness(self, num_wires):
+        """Test that the MultiControlledX is applied correctly for various wire numbers."""
+        state = get_random_mixed_state(num_wires)
+
+        op = qml.MultiControlledX(wires=range(num_wires))
+        op_mat = op.matrix()
+        flat_shape = op_mat.shape
+
+        result = apply_operation(op, state)
+
+        state_flat = state.reshape(flat_shape)
+        expected = op_mat @ state_flat @ op_mat.conj().T
+
+        assert np.allclose(result.reshape(flat_shape), expected)
+
+    @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
+    def test_batched_state(self, num_wires):
+        """Test that the MultiControlledX works correctly with batched states."""
+        batch_size = 3
+        state = np.array([get_random_mixed_state(num_wires) for _ in range(batch_size)])
+
+        op = qml.MultiControlledX(wires=range(num_wires))
+        op_mat = op.matrix()
+        # Make new shape, considering the batch dimension as the first
+        flat_shape = (batch_size,) + op_mat.shape
+
+        result = apply_operation(op, state, is_state_batched=True)
+
+        state_flat = state.reshape(flat_shape)
+        expected = np.array([op.matrix() @ s @ op.matrix().conj().T for s in state_flat])
+
+        assert np.allclose(result.reshape(flat_shape), expected)
+
+    def test_interface_compatibility(self):
+        """Test that the MultiControlledX works with different interfaces."""
+        num_wires = 5
+        state = get_random_mixed_state(num_wires)
+
+        op = qml.MultiControlledX(wires=range(num_wires))
+
+        # Test with numpy interface
+        result_numpy = apply_operation(op, state)
+
+        # Test with autograd interface
+        import autograd.numpy as anp
+
+        state_autograd = anp.array(state)
+        result_autograd = apply_operation(op, state_autograd)
+
+        assert np.allclose(result_numpy, result_autograd)
