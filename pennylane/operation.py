@@ -2626,6 +2626,86 @@ class Tensor(Observable):
 
 
 # =============================================================================
+# Base Resource class
+# =============================================================================
+
+
+class ResourcesOperation(Operation):
+    r"""Base class that represents quantum gates or channels applied to quantum
+    states and stores the resource requirements of the quantum gate.
+
+    .. note::
+        Child classes must implement the :func:`~.ResourcesOperation.resources` method which computes
+        the resource requirements of the operation.
+    """
+
+    @abc.abstractmethod
+    def resources(self, gate_set=None, **kwargs):
+        r"""Compute the resources required for this operation.
+
+        Returns:
+            ~.Resources: The resources required by this operation.
+
+        **Examples**
+
+        >>> class CustomOp(ResourcesOperation):
+        ...     num_wires = 2
+        ...     def resources(self):
+        ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
+        ...
+        >>> op = CustomOp(wires=[0, 1])
+        >>> print(op.resources())
+        wires: 2
+        gates: 3
+        depth: 2
+        shots: Shots(total=None)
+        gate_types:
+        {}
+        gate_sizes:
+        {}
+        """
+
+
+class QFuncResourceOperator(ResourcesOperation):
+
+    def __init__(self, qfunc, *args, wires, resource_fn=None, name=None, **kwargs):
+        self.qfunc = qfunc
+        self.resource_fn = resource_fn
+        self._hyperparameters = kwargs
+        super().__init__(*args, wires=wires)
+
+        if name:
+            self._name = name
+
+    def decomposition(self) -> list[Operator]:
+        with qml.queuing.AnnotatedQueue() as q:
+            self.qfunc(*self.data, self.wires, **self.hyperparameters)
+        return q.queue
+
+    def resources(self, gate_set=None, **kwargs):
+        if self.resource_fn:
+            return self.resource_fn(
+                *self.data,
+                self.wires,
+                **self.hyperparameters,
+                gate_set=gate_set,
+                **kwargs,
+            )
+
+        return qml.resource.resources_from_sequence_ops(
+            self.decomposition(), gate_set=gate_set, **kwargs
+        )
+
+
+def resource_node(qfunc, resource_fn=None, name=None):
+    @functools.wraps(qfunc)
+    def wrapper(*args, **kwargs):
+        return QFuncResourceOperator(qfunc, *args, resource_fn=resource_fn, name=name, **kwargs)
+
+    return wrapper
+
+
+# =============================================================================
 # CV Operations and observables
 # =============================================================================
 
