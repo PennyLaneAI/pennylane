@@ -240,6 +240,20 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     return all([check_kk, check_km, check_mm])
 
 
+def apply_basis_change(change_op, targets):
+    """Helper function for recursive Cartan decompositions"""
+    if single_target := np.ndim(targets) == 2:
+        targets = [targets]
+    if isinstance(targets, list):
+        targets = np.array(targets)
+    # Compute x V^\dagger for all x in ``targets``. ``moveaxis`` brings the batch axis to the front
+    out = np.moveaxis(np.tensordot(change_op, targets, axes=[[1], [1]]), 1, 0)
+    out = np.tensordot(out, change_op.conj().T, axes=[[2], [0]])
+    if single_target:
+        return out[0]
+    return out
+
+
 def project(ops, basis):
     """Project a batch of ops onto a given basis"""
     if isinstance(basis, PauliVSpace):
@@ -261,7 +275,7 @@ def project(ops, basis):
 
             res.append(rep)
 
-        return res
+        return np.array(res)
 
     # dense branch
     if all(isinstance(op, TensorLike) for op in ops) and all(
@@ -278,17 +292,3 @@ def project(ops, basis):
         return res
 
     return NotImplemented
-
-
-def apply_basis_change(change_op, targets):
-    """Helper function for recursive Cartan decompositions"""
-    if single_target := np.ndim(targets) == 2:
-        targets = [targets]
-    if isinstance(targets, list):
-        targets = np.array(targets)
-    # Compute x V^\dagger for all x in ``targets``. ``moveaxis`` brings the batch axis to the front
-    out = np.moveaxis(np.tensordot(change_op, targets, axes=[[1], [1]]), 1, 0)
-    out = np.tensordot(out, change_op.conj().T, axes=[[2], [0]])
-    if single_target:
-        return out[0]
-    return out
