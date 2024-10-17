@@ -32,7 +32,7 @@ except ImportError:
     has_jax = False
 
 
-def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
+def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
     if jax.config.jax_enable_x64:  # pylint: disable=no-member
         dtype_map = {
             float: jax.numpy.float64,
@@ -53,34 +53,7 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
     for s in shots:
         for m in measurements:
             shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
-
-    return shapes
-
-
-def _get_shapes_for_batched_output(mps, batch_shape, shots=None, num_device_wires=0):
-    if jax.config.jax_enable_x64:  # pylint: disable=no-member
-        dtype_map = {
-            float: jax.numpy.float64,
-            int: jax.numpy.int64,
-            complex: jax.numpy.complex128,
-        }
-    else:
-        dtype_map = {
-            float: jax.numpy.float32,
-            int: jax.numpy.int32,
-            complex: jax.numpy.complex64,
-        }
-
-    shapes = []
-    if not shots:
-        shots = [None]
-
-    for s in shots:
-        for m in mps:
-            shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            batched_shape = batch_shape + shape
-            shapes.append(jax.core.ShapedArray(batched_shape, dtype_map.get(dtype, dtype)))
+            shapes.append(jax.core.ShapedArray(batch_shape + shape, dtype_map.get(dtype, dtype)))
 
     return shapes
 
@@ -88,23 +61,23 @@ def _get_shapes_for_batched_output(mps, batch_shape, shots=None, num_device_wire
 class BatchingManager:
     """A class to manage the batching state of the QNode."""
 
-    # indicates that the (lazy) batch size has not yet been accessed/computed
-    _BATCHING_SET = False
+    # indicates that the (lazy) batch shape has not yet been accessed/computed
+    _BATCH_SHAPE = ()
 
     @classmethod
-    def enable_batching(cls):
+    def enable_batching(cls, batch_shape):
         """Enable batching for the QNode."""
-        cls._BATCHING_SET = True
+        cls._BATCH_SHAPE = batch_shape
 
     @classmethod
     def disable_batching(cls):
         """Disable batching for the QNode."""
-        cls._BATCHING_SET = False
+        cls._BATCH_SHAPE = ()
 
     @classmethod
-    def batching_enabled(cls):
-        """Return ``True`` if batching is enabled, ``False`` otherwise."""
-        return cls._BATCHING_SET
+    def get_batch_shape(cls):
+        """Return the batch shape of the QNode."""
+        return cls._BATCH_SHAPE
 
 
 # pylint: disable=too-many-arguments
@@ -137,7 +110,10 @@ def _qnode_batching_rule(
                     UserWarning,
                 )
 
-    BatchingManager.enable_batching()
+    input_shapes = [arg.shape for arg in args]
+    batch_shape = jax.lax.broadcast_shapes(*input_shapes)
+
+    BatchingManager.enable_batching(batch_shape)
 
     def qfunc(*inner_args):
         return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
@@ -174,25 +150,14 @@ def _get_qnode_prim():
     @qnode_prim.def_abstract_eval
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
 
-        batching_enabled = BatchingManager.batching_enabled()
+        batch_shape = BatchingManager.get_batch_shape()
 
         mps = qfunc_jaxpr.outvars
 
-        if batching_enabled:
+        shape = _get_shapes_for(
+            *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
+        )
 
-            batched_args = args[n_consts:]
-            input_shapes = [arg.shape for arg in batched_args]
-
-            # TODO: is this the correct way to get the batch shape?
-            batch_shape = jax.lax.broadcast_shapes(*input_shapes)
-
-            final_shapes = _get_shapes_for_batched_output(
-                mps, batch_shape, shots=shots, num_device_wires=len(device.wires)
-            )
-
-            return final_shapes
-
-        shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
         return shape
 
     def make_zero(tan, arg):
