@@ -129,7 +129,8 @@ def _fac2(n):
 
 def _generate_params(params, args):
     """Generate basis set parameters. The default values are used for the non-differentiable
-    parameters and the user-defined values are used for the differentiable ones.
+    parameters and the user-defined values are used for the differentiable ones. Generate params
+    returns params in order: [alpha, coeff, coord]
 
     Args:
         params (list(array[float])): default values of the basis set parameters
@@ -335,7 +336,6 @@ def overlap_integral(basis_a, basis_b, normalize=True):
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
 
-        # Generate params returns params in order: [alpha, coeff, coord]
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 

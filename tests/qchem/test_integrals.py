@@ -892,7 +892,7 @@ def generate_symbols_alpha_coeff():
 @pytest.mark.jax
 class TestJax:
     def test_generate_params_jax(self):
-        """Test that test_generate_params_jax returns correct basis set parameters."""
+        """Test that _generate_params returns correct basis set parameters for JAX."""
         alpha = qml.math.array([3.42525091, 0.62391373, 0.1688554], like="jax")
         coeff = qml.math.array([0.15432897, 0.53532814, 0.44463454], like="jax")
         r = qml.math.array([0.0, 0.0, 0.0], like="jax")
