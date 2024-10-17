@@ -165,11 +165,16 @@ class TestBarrier:
         op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
         assert op.simplify() is op
 
-    def test_qml_matrix_fails(self):
+    def test_qml_matrix_gives_identity(self):
+        """Test that qml.matrix(op) gives an identity."""
+        op = qml.Barrier(0)
+        assert np.allclose(qml.matrix(op), np.eye(2))
+        op = qml.Barrier()
+        assert np.allclose(qml.matrix(op, wire_order=[0, 3]), np.eye(4))
+
+    def test_op_matrix_fails(self):
         """Test that qml.matrix(op) and op.matrix() both fail."""
         op = qml.Barrier(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            qml.matrix(op)
         with pytest.raises(qml.operation.MatrixUndefinedError):
             op.matrix()
 
@@ -203,11 +208,14 @@ class TestWireCut:
         ):
             qml.WireCut(wires=[])
 
-    def test_qml_matrix_fails(self):
+    def test_qml_matrix_gives_identity(self):
+        """Test that qml.matrix(op) gives an identity."""
+        op = qml.WireCut(0)
+        assert np.allclose(qml.matrix(op), np.eye(2))
+
+    def test_op_matrix_fails(self):
         """Test that qml.matrix(op) and op.matrix() both fail."""
         op = qml.WireCut(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            qml.matrix(op)
         with pytest.raises(qml.operation.MatrixUndefinedError):
             op.matrix()
 

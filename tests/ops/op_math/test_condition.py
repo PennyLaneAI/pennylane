@@ -493,7 +493,7 @@ class TestMethods:
         adj_op = op.adjoint()
 
         assert isinstance(adj_op, Conditional)
-        assert adj_op.meas_val == op.meas_val
+        assert adj_op.meas_val is op.meas_val
         assert adj_op.base == base.adjoint()
 
 
