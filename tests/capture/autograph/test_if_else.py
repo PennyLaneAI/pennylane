@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""PyTests for the AutoGraph source-to-source transformation feature."""
+"""PyTests for the AutoGraph source-to-source transformation feature for
+converting if/else statements to qml.cond."""
 
 # pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 

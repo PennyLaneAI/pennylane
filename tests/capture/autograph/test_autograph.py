@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""PyTests for the AutoGraph source-to-source transformation feature."""
+"""PyTests for the integration between AutoGraph and PennyLane for the
+source-to-source transformation feature."""
 
 import numpy as np
 import pytest
+from malt.core import converter
 
 import pennylane as qml
 from pennylane import grad, jacobian, measure
@@ -27,7 +29,13 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.autograph.ag_primitives import AutoGraphError
-from pennylane.capture.autograph.transformer import TRANSFORMER, autograph_source, run_autograph
+from pennylane.capture.autograph.transformer import (
+    TOPLEVEL_OPTIONS,
+    TRANSFORMER,
+    PennyLaneTransformer,
+    autograph_source,
+    run_autograph,
+)
 
 check_cache = TRANSFORMER.has_cache
 
@@ -39,6 +47,67 @@ def enable_disable_plxpr():
     qml.capture.enable()
     yield
     qml.capture.disable()
+
+
+class TestPennyLaneTransformer:
+    """Tests for the PennyLane child class of the diastatic-malt PytoPy transformer"""
+
+    def test_transform_on_function(self):
+        """Test the transform method on a function works as expected"""
+
+        transformer = PennyLaneTransformer()
+        user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
+
+        def fn(x):
+            return 2 * x
+
+        new_fn, _, _ = transformer.transform(fn, user_context)
+
+        assert fn(1.23) == new_fn(1.23)
+        assert "inner_factory.<locals>.ag__fn" in str(new_fn)
+
+    def test_transform_on_lambda(self):
+        """Test the transform method on a lambda function works as expected"""
+
+        transformer = PennyLaneTransformer()
+        user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
+
+        new_fn, _, _ = transformer.transform(lambda x: 2 * x, user_context)
+
+        assert new_fn(1.23) == 2.46
+        assert "inner_factory.<locals>.<lambda>" in str(new_fn)
+
+    def test_transform_on_qnode(self):
+        """Test the transform method on a QNode updates the qnode.func"""
+
+        transformer = PennyLaneTransformer()
+        user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circ(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        new_circ, _, _ = transformer.transform(circ, user_context)
+
+        assert circ(1.23) == new_circ(1.23)
+        assert "inner_factory.<locals>.ag__circ" in str(new_circ.func)
+
+    def test_get_extra_locals(self):
+        """Test that the extra_locals for autograph are updated to replace the relevant
+        functions with our custom ag_primtives"""
+
+        transformer = PennyLaneTransformer()
+
+        assert transformer._extra_locals is None  # pylint:disable = protected-access
+
+        locals = transformer.get_extra_locals()
+        ag_fn_dict = locals["ag__"].__dict__
+
+        assert ag_fn_dict["if_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
+        assert (
+            ag_fn_dict["converted_call"].__module__ == "pennylane.capture.autograph.ag_primitives"
+        )
 
 
 class TestIntegration:

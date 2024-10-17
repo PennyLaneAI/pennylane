@@ -122,8 +122,11 @@ class Patcher:
 
 
 def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
-    """We want AutoGraph to use its standard behaviour (ag_converted_call) with
-    a few exceptions:
+    """A wrapper for the autograph ``converted_call`` function, imported here as
+    ``ag_converted_call``. It returns the result of executing a possibly-converted
+     function ``fn`` with the specified ``args`` and ``kwargs``.
+
+     We want AutoGraph to use its standard behaviour with a few exceptions:
 
        1. We want to use our own instance of the AST transformer when
            recursively transforming functions
