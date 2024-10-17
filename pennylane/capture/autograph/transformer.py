@@ -42,7 +42,7 @@ class PennyLaneTransformer(PyToPy):
         self._extra_locals = None
 
     def transform(self, obj, user_context):
-        """Launch the transformation process. Typically this only works on function objects.
+        """Launch the transformation process. Typically, this only works on function objects.
         Here we also allow QNodes to be transformed."""
 
         # By default, AutoGraph will only convert function or method objects, not arbitrary classes
