@@ -21,7 +21,7 @@ from enum import Enum
 from itertools import repeat
 
 if sys.version_info >= (3, 11):
-    import tomllib as toml
+    import tomllib as toml  # pragma: no cover
 else:
     import tomli as toml
 
