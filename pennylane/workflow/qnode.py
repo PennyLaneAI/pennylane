@@ -126,12 +126,6 @@ def _to_qfunc_output_type(
     if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
         return results
 
-    print(isinstance(qfunc_output, list), len(qfunc_output))
-    print(qfunc_output, results)
-    print(qfunc_output_structure, results_structure)
-    print(num_of_measurements, num_of_results)
-    print(qfunc_output_structure.is_leaf, results_structure.is_leaf)
-
     if num_of_measurements != num_of_results or (
         qfunc_output_structure.is_leaf != results_structure.is_leaf
     ):
