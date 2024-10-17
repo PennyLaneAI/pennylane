@@ -202,14 +202,20 @@ def compile(
                 return True
             return obj.name in basis_set and (not getattr(obj, "only_visual", False))
 
-        [expanded_tape], _ = qml.devices.preprocess.decompose(
-            tape,
-            stopping_condition=stop_at,
-            max_expansion=expand_depth,
-            name="compile",
-            error=qml.operation.DecompositionUndefinedError,
-            skip_initial_state_prep=False,
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                message=r"The max_expansion argument is deprecated",
+                category=qml.PennyLaneDeprecationWarning,
+            )
+            [expanded_tape], _ = qml.devices.preprocess.decompose(
+                tape,
+                stopping_condition=stop_at,
+                max_expansion=expand_depth,
+                name="compile",
+                error=qml.operation.DecompositionUndefinedError,
+                skip_initial_state_prep=False,
+            )
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
