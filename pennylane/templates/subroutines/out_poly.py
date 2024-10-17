@@ -24,7 +24,7 @@ from pennylane.operation import Operation
 def _get_polynomial(f, mod, *variable_sizes):
     """Calculate the polynomial binary representation of a given function using the `Möbius inversion formula <https://en.wikipedia.org/wiki/Möbius_inversion_formula#On_posets>`_ .
 
-    Args:
+    Args: 
         f (callable):  the function from which the polynomial is extracted
         mod (int): the modulus to use for the result
         variable_sizes (Sequence[int]):  a list storing the number of bits used to represent each of the variables of the function
