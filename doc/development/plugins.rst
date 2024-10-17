@@ -167,7 +167,7 @@ inside ``execute`` instead of in ``preprocess``.
 
 The :meth:`~.devices.Device.execute` can assume that device preprocessing has been run on the input
 tapes, and has no obligation to re-validate the input or provide sensible error messages. In the below example,
-we see `default.qubit` erroring out when unsupported operations and unsupported measurements are 
+we see ``default.qubit`` erroring out when unsupported operations and unsupported measurements are 
 
 >>> op = qml.Permute([2,1,0], wires=(0,1,2))
 >>> tape = qml.tape.QuantumScript([op], [qml.probs(wires=(0,1))])
@@ -180,28 +180,20 @@ AttributeError: 'DensityMatrixMP' object has no attribute 'process_samples'
 Devices may define their own transforms following the description in the ``transforms`` module,
 or can include in-built transforms such as:
 
-.. currentmodule:: pennylane.devices.preprocess
-.. toctree::
-
-    decompose
-    validate_observables
-    validate_measurements
-    validate_device_wires
-    validate_multiprocessing_workers
-    validate_adjoint_trainable_params
-    no_sampling
-
-
-.. currentmodule:: pennylane
-.. toctree::
-
-    ~pennylane.defer_measurements
-    ~pennylane.dynamic_one_shot
-    ~transforms.broadcast_expand
-    ~transforms.split_non_commuting
-    ~transforms.transpile
-    ~transforms.diagonalize_measurements
-    ~transforms.split_to_single_terms
+* :function:`pennylane.defer_measurements`
+* :function:`pennylane.dynamic_one_shot`
+* :function:`pennylane.transforms.broadcast_expand`
+* :function:`pennylane.transforms.split_non_commuting`
+* :function:`pennylane.transforms.transpile`
+* :function:`pennylane.transforms.diagonalize_measurements`
+* :function:`pennylane.transforms.split_to_single_terms`
+* :function:`pennylane.devices.preprocess.decompose`
+* :function:`pennylane.devices.preprocess.validate_observables`
+* :function:`pennylane.devices.preprocess.validate_measurements`
+* :function:`pennylane.devices.preprocess.validate_device_wires`
+* :function:`pennylane.devices.preprocess.validate_multiprocessing_workers`
+* :function:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
+* :function:`pennylane.devices.preprocess.no_sampling`
 
 
 Wires
