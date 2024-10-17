@@ -18,9 +18,12 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane import Y
+from pennylane import QubitUnitary, Y
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
+
+from .dense_util import apply_basis_change, check_cartan_decomp
+from .involutions import AI, AII, AIII, BDI, CI, CII, DIII, int_log2
 
 
 def cartan_decomposition(g, involution):
@@ -163,3 +166,67 @@ def _concurrence_involution_operation(op: Operator):
 @_concurrence_involution.register(np.ndarray)
 def _concurrence_involution_matrix(op: np.ndarray):
     return np.allclose(op, -op.T)
+
+
+IDENTITY = object()
+
+
+def pauli_y_eigenbasis(wire, num_wires):
+    V = np.array([[1, 1], [1j, -1j]]) / np.sqrt(2)
+    return QubitUnitary(V, wire).matrix(wire_order=range(num_wires))
+
+
+_basis_change_constructors = {
+    ("AI", "DIII"): IDENTITY,
+    ("AII", "CI"): IDENTITY,
+    ("DIII", "AI"): pauli_y_eigenbasis,
+    ("CI", "AII"): pauli_y_eigenbasis,
+}
+
+
+def recursive_cartan_decomposition(g, chain, validate=True, verbose=True):
+    """Apply a recursive Cartan decomposition specified by a chain of decomposition types.
+    The decompositions will use canonical involutions and hardcoded basis transformations
+    between them in order to obtain a valid recursion."""
+
+    # Prerun the validation by obtaining the required basis changes and raising an error if
+    # an invalid pair is found.
+    basis_changes = []
+    names = [getattr(phi, "func", phi).__name__ for phi in chain]
+
+    # Assume some standard behaviour regarding the wires on which we need to perform basis changes
+    wire = 0
+    num_wires = int_log2(np.shape(g)[-1])
+    for i, name in enumerate(names[:-1]):
+        invol_pair = (name, names[i + 1])
+        if invol_pair not in _basis_change_constructors:
+            raise ValueError(
+                f"The specified chain contains the pair {'-->'.join(invol_pair)}, "
+                "which is not a valid pair."
+            )
+        bc_constructor = _basis_change_constructors[invol_pair]
+        if bc_constructor is IDENTITY:
+            bc = bc_constructor
+        else:
+            bc = bc_constructor(wire, num_wires)
+            # Next assumption: The wire is only incremented if a basis change is applied.
+            wire += 1
+        basis_changes.append(bc)
+
+    basis_changes.append(IDENTITY)  # Do not perform any basis change after last involution.
+
+    decompositions = {}
+    for i, (phi, bc) in enumerate(zip(chain, basis_changes)):
+        k, m = cartan_decomposition(g, phi)
+        if validate:
+            check_cartan_decomp(k, m, verbose=verbose)
+        name = getattr(phi, "func", phi).__name__
+        if verbose:
+            print(f"Iteration {i}: {len(g):<4} --{name:-<4}--> {len(k)}, {len(m)}")
+        if bc is not IDENTITY:
+            k = apply_basis_change(bc, k)
+            m = apply_basis_change(bc, m)
+        decompositions[i] = (k, m)
+        g = k
+
+    return decompositions
