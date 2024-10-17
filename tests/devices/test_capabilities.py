@@ -21,7 +21,6 @@ import re
 from os import path
 from tempfile import TemporaryDirectory
 from textwrap import dedent
-from webbrowser import Opera
 
 import pytest
 
