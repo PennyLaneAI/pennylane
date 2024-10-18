@@ -158,7 +158,7 @@ class FermiWord(dict):
             return self_fs + FermiSentence({other: 1.0})
 
         if is_jax_or_numpy:
-            if is_jax_or_numpy and qml.math.size(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -193,7 +193,7 @@ class FermiWord(dict):
             return self_fs + other_fs
 
         if is_jax_or_numpy:
-            if is_jax_or_numpy and qml.math.size(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -208,7 +208,7 @@ class FermiWord(dict):
             isinstance(other, (Number, ndarray)) or qml.math.get_interface(other) == "jax"
         )
         if is_jax_or_numpy:
-            if is_jax_or_numpy and qml.math.size(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -256,7 +256,7 @@ class FermiWord(dict):
             isinstance(other, (Number, ndarray)) or qml.math.get_interface(other) == "jax"
         )
         if is_jax_or_numpy:
-            if is_jax_or_numpy and qml.math.size(other) > 1:
+            if isinstance(other, ndarray)and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -277,7 +277,7 @@ class FermiWord(dict):
             isinstance(other, (Number, ndarray)) or qml.math.get_interface(other) == "jax"
         )
         if is_jax_or_numpy:
-            if is_jax_or_numpy and qml.math.size(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -566,7 +566,7 @@ class FermiSentence(dict):
         )
 
         if is_jax_or_numpy:
-            if is_jax_or_numpy and qml.math.size(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -600,7 +600,7 @@ class FermiSentence(dict):
             return product
 
         if is_jax_or_numpy:
-            if is_jax_or_numpy and qml.math.size(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
@@ -622,7 +622,7 @@ class FermiSentence(dict):
             isinstance(other, (Number, ndarray)) or qml.math.get_interface(other) == "jax"
         )
         if is_jax_or_numpy:
-            if is_jax_or_numpy and qml.math.size(other) > 1:
+            if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Fermi operations can only accept an array of length 1, "
                     f"but received {other} of length {len(other)}"
