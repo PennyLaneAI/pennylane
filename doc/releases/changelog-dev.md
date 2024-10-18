@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added support to handle any PyTree of measurements in a circuit. 
+  [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
+
 * Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
   - This function takes probability distributions as input and returns sampled outcomes.
   - Simplifies the sampling process by separating it from other operations in the measurement chain.
