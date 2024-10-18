@@ -252,6 +252,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated links to PennyLane.ai in the documentation to use the latest URL format, which excludes the `.html` prefix.
+  [(#6412)](https://github.com/PennyLaneAI/pennylane/pull/6412)
+
 * Update `qml.Qubitization` documentation based on new decomposition.
   [(#6276)](https://github.com/PennyLaneAI/pennylane/pull/6276)
 
@@ -363,4 +366,5 @@ Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Ashish Kanwar Singh,
 David Wierichs,
