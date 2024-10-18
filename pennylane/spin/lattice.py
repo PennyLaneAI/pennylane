@@ -67,11 +67,10 @@ class Lattice:
 
     **Example**
 
-    >>> n_cells = [2,2]
+    >>> n_cells = [2, 2]
     >>> vectors = [[0, 1], [1, 0]]
     >>> boundary_condition = [True, False]
-    >>> lattice = qml.spin.Lattice(n_cells, vectors,
-    >>>           boundary_condition=boundary_condition)
+    >>> lattice = qml.spin.Lattice(n_cells, vectors, boundary_condition=boundary_condition)
     >>> lattice.edges
     [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
 
@@ -358,21 +357,30 @@ class Lattice:
             self.edges.append(new_edge)
 
 
-def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates the lattice object for a given shape and n_cells.
+def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a Lattice object for a given lattice shape and number of cells.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``, ``'rectangle'``,
-              ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, ``'fcc'``,
-               or ``'diamond'``.
+            ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, ``'fcc'``,
+            or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes.
-                               Default is ``False`` indicating open boundary condition.
+            Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-                               Default is 1, indicating nearest neighbour.
+            Default is 1, indicating nearest neighbour.
 
     Returns:
         lattice object.
+
+    **Example**
+
+    >>> shape = 'square'
+    >>> n_cells = [2, 2]
+    >>> boundary_condition = [True, False]
+    >>> lattice = qml.spin.generate_lattice(shape, n_cells, boundary_condition)
+    >>> lattice.edges
+    [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
     """
 
     lattice_shape = lattice.strip().lower()
