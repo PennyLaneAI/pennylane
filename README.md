@@ -57,7 +57,11 @@
 - <strong>*Quantum datasets*</strong>. Access high-quality, pre-simulated datasets to decrease time-to-research and accelerate algorithm development. [Browse the datasets](https://pennylane.ai/datasets/) or contribute your own data.
 
 
-- <strong>*Compilation and performance*</strong>. Capture hybrid quantum-classical workflows with just-in-time compilation, scaling from CPU to GPU. Decompose circuits into hardware-compatible gates and access high-performance simulators with fast quantum circuit differentiation. Easily install via pip, Conda, Spack, or Docker. See [Catalyst](https://github.com/pennylaneai/catalyst) for more details.
+- <strong>*Compilation and performance*</strong>. Experimental support for just-in-time
+  compilation. Compile your entire hybrid workflow, with support for 
+  advanced features such as adaptive circuits, real-time measurement 
+  feedback, and unbounded loops. See
+  [Catalyst](https://github.com/pennylaneai/catalyst) for more details.
 
 Visit the [PennyLane features page](https://pennylane.ai/features/) for more details.
 
