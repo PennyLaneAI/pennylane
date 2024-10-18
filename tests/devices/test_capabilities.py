@@ -39,7 +39,6 @@ from pennylane.devices.capabilities import (
     parse_toml_document,
     update_device_capabilities,
 )
-from pennylane.devices.reference_qubit import operations
 
 
 @pytest.fixture(scope="function")
