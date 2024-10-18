@@ -18,9 +18,9 @@ from typing import List
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
-from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
-from pennylane.typing import TensorLike
+from pennylane.pauli import PauliSentence, PauliWord
 
 
 def _make_phase_mat(n):
@@ -222,12 +222,29 @@ def check_commutation(ops1, ops2, vspace):
 def check_all_commuting(ops: List[PauliSentence]):
     """Helper function to check if all operators in a set of operators commute"""
     res = []
-    for oi, oj in combinations(ops, 2):
-        com = oj.commutator(oi)
-        com.simplify()
-        res.append(len(com) == 0)
+    if all(isinstance(op, PauliSentence) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj.commutator(oi)
+            com.simplify()
+            res.append(len(com) == 0)
 
-    return all(res)
+        return all(res)
+
+    if all(isinstance(op, Operator) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = qml.simplify(qml.commutator(oj, oi))
+            res.append(qml.equal(com, 0 * qml.Identity()))
+
+        return all(res)
+
+    if all(isinstance(op, PauliSentence) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj @ oi - oi @ oj
+            res.append(np.allclose(com, np.zeros_like(com)))
+
+        return all(res)
+
+    return NotImplemented
 
 
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
@@ -263,42 +280,3 @@ def apply_basis_change(change_op, targets):
     if single_target:
         return out[0]
     return out
-
-
-def project(ops, basis):
-    """Project a batch of ops onto a given basis"""
-    if isinstance(basis, PauliVSpace):
-        basis = basis.basis
-
-    # PauliSentence branch
-    if all(isinstance(op, PauliSentence) for op in ops) and all(
-        isinstance(op, PauliSentence) for op in basis
-    ):
-        res = []
-        for op in ops:
-            rep = np.zeros((len(basis),), dtype=complex)
-            for i, basis_i in enumerate(basis):
-                # v = ∑ (v · e_j / ||e_j||^2) * e_j
-                value = (basis_i @ op).trace()
-                value = value / (basis_i @ basis_i).trace()
-
-                rep[i] = value
-
-            res.append(rep)
-
-        return np.array(res)
-
-    # dense branch
-    if all(isinstance(op, TensorLike) for op in ops) and all(
-        isinstance(op, TensorLike) for op in basis
-    ):
-        basis = np.array(basis)
-        # if len(ops.shape) == 2:
-        #     ops = np.array([ops])
-        ops = np.array(ops)
-
-        res = np.einsum("bij,cji->bc", ops, basis)
-
-        return res
-
-    return NotImplemented

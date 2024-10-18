@@ -80,7 +80,6 @@ from .dense_util import (
     check_cartan_decomp,
     check_commutation,
     check_all_commuting,
-    project,
     apply_basis_change,
 )
 
@@ -95,3 +94,5 @@ from .involutions import (
     DIII,
     ClassB,
 )
+
+from .cartan_subalgebra import cartan_subalgebra, adjvec_to_op, op_to_adjvec
