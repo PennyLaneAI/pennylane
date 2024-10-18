@@ -140,7 +140,7 @@ def scf(mol, n_steps=50, tol=1e-8):
                 h_core = core_matrix(basis_functions, charges, r)(*args)
         else:
             # NOTE: In JAX, args is ordered r, coeff, alpha.
-            # But for core_matrix, we pass args_ which is r, r, coeff, alpha.
+            # NOTE: core_matrix expects args_ to be r, r, coeff, alpha.
             if (
                 len(args) > 0
                 and qml.math.get_interface(r) == "jax"
