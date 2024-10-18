@@ -58,18 +58,14 @@ class TestNewDeviceIntegration:
 
     def test_get_gradient_fn_custom_device(self):
         """Test get_gradient_fn is parameter for best for null device."""
-        gradient_fn, kwargs, new_dev = qml.workflow.get_gradient_fn(self.dev, "best")
+        gradient_fn = qml.workflow.get_gradient_fn(self.dev, "best")
         assert gradient_fn is qml.gradients.param_shift
-        assert not kwargs
-        assert new_dev is self.dev
 
     def test_get_gradient_fn_default_qubit(self):
         """Tests the get_gradient_fn is backprop for best for default qubit2."""
         dev = qml.devices.DefaultQubit()
-        gradient_fn, kwargs, new_dev = qml.workflow.get_gradient_fn(dev, "best")
+        gradient_fn = qml.workflow.get_gradient_fn(dev, "best")
         assert gradient_fn == "backprop"
-        assert not kwargs
-        assert new_dev is dev
 
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
@@ -89,16 +85,12 @@ class TestNewDeviceIntegration:
         """Test that a custom device and designate that it supports backprop derivatives."""
 
         dev = BackpropDevice()
-        gradient_fn, kwargs, new_dev = qml.workflow.get_gradient_fn(dev, diff_method="backprop")
+        gradient_fn = qml.workflow.get_gradient_fn(dev, diff_method="backprop")
         assert gradient_fn == "backprop"
-        assert not kwargs
-        assert new_dev is dev
 
     def test_custom_device_with_device_derivative(self):
         """Test that a custom device can specify that it supports device derivatives."""
 
         dev = DerivativeDevice()
-        gradient_fn, kwargs, new_dev = qml.workflow.get_gradient_fn(dev, "device")
+        gradient_fn = qml.workflow.get_gradient_fn(dev, "device")
         assert gradient_fn == "device"
-        assert not kwargs
-        assert new_dev is dev

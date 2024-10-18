@@ -59,13 +59,13 @@ def get_gradient_fn(
     """
 
     if diff_method is None:
-        return None, {}, device
+        return None
 
     config = _make_execution_config(None, diff_method)
 
     if device.supports_derivatives(config, circuit=tape):
         new_config = device.preprocess(config)[1]
-        return new_config.gradient_method, {}, device
+        return new_config.gradient_method
 
     if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
         raise qml.QuantumFunctionError(
@@ -80,17 +80,17 @@ def get_gradient_fn(
 
     if diff_method == "parameter-shift":
         if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):
-            return qml.gradients.param_shift_cv, {"dev": device}, device
-        return qml.gradients.param_shift, {}, device
+            return qml.gradients.param_shift_cv
+        return qml.gradients.param_shift
 
     if diff_method == "finite-diff":
-        return qml.gradients.finite_diff, {}, device
+        return qml.gradients.finite_diff
 
     if diff_method == "spsa":
-        return qml.gradients.spsa_grad, {}, device
+        return qml.gradients.spsa_grad
 
     if diff_method == "hadamard":
-        return qml.gradients.hadamard_grad, {}, device
+        return qml.gradients.hadamard_grad
 
     if isinstance(diff_method, str):
         raise qml.QuantumFunctionError(
@@ -99,7 +99,7 @@ def get_gradient_fn(
         )
 
     if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
-        return diff_method, {}, device
+        return diff_method
 
     raise qml.QuantumFunctionError(
         f"Differentiation method {diff_method} must be a gradient transform or a string."

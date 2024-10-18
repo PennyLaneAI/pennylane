@@ -43,38 +43,35 @@ def get_best_diff_method(qnode):
         return_as_str (bool): return the 'best' differentiation method in human-readable format.
 
     Returns:
-        tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
-        ``gradient_kwargs``, and the device to use when calling the execute function.
+        str or .TransformDispatcher (a.k.a the ``gradient_fn``)
     """
 
-    @wraps(qnode)
-    def wrapper(*args, return_as_str=False):
-        device = qnode.device
-        tape = qnode.qtape
+    def handle_return(transform, return_as_str):
+        """Helper function to manage the return type"""
+        if return_as_str:
+            if transform is qml.gradients.finite_diff:
+                return "finite-diff"
+            if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
+                return "parameter-shift"
+        return transform
 
-        if not isinstance(device, qml.devices.Device):
-            device = qml.devices.LegacyDeviceFacade(device)
+    @wraps(qnode)
+    def wrapper(*args, return_as_str=False, **kwargs):
+        device = qnode.device
+        (tape,), _ = qml.workflow.construct_batch(qnode)(*args, **kwargs)
 
         config = _make_execution_config(None, "best")
 
         if device.supports_derivatives(config, circuit=tape):
             new_config = device.preprocess(config)[1]
             transform = new_config.gradient_method
-            gradient_kwargs = {}
-        elif tape and any(isinstance(o, qml.operation.CV) for o in tape):
+            return handle_return(transform, return_as_str)
+
+        if tape and any(isinstance(o, qml.operation.CV) for o in tape):
             transform = qml.gradients.param_shift_cv
-            gradient_kwargs = {"dev": device}
-        else:
-            transform = qml.gradients.param_shift
-            gradient_kwargs = {}
+            return handle_return(transform, return_as_str)
 
-        if return_as_str:
-            if transform is qml.gradients.finite_diff:
-                return "finite-diff"
-            if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
-                return "parameter-shift"
-            return transform
-
-        return transform, gradient_kwargs, device
+        transform = qml.gradients.param_shift
+        return handle_return(transform, return_as_str)
 
     return wrapper

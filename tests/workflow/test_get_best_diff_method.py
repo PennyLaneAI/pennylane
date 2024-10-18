@@ -14,7 +14,6 @@
 """Unit tests for the `qml.workflow.get_best_diff_method`"""
 
 import pytest
-from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 
@@ -62,10 +61,10 @@ class TestValidation:
         qn_none = qml.QNode(dummyfunc, dev, None)
 
         res = qml.workflow.get_best_diff_method(qn_jax)()
-        assert res == ("device", {}, dev)
+        assert res == "device"
 
         res = qml.workflow.get_best_diff_method(qn_none)()
-        assert res == ("device", {}, dev)
+        assert res == "device"
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
@@ -78,7 +77,7 @@ class TestValidation:
 
         # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
         res = qml.workflow.get_best_diff_method(qn)()
-        assert res == ("backprop", {}, dev)
+        assert res == "backprop"
 
     # pylint: disable=protected-access
     def test_best_method_is_param_shift(self):
@@ -91,16 +90,13 @@ class TestValidation:
         qn = qml.QNode(dummyfunc, dev)
 
         res = qml.workflow.get_best_diff_method(qn)()
-        assert res == (qml.gradients.param_shift, {}, dev)
+        assert res == qml.gradients.param_shift
 
         # no interface - fall back on parameter-shift
-        dev2 = qml.device("default.qubit", wires=1)
-        tape = qml.tape.QuantumScript([], [], shots=50)
-
+        dev2 = qml.device("default.qubit", wires=1, shots=50)
         qn = qml.QNode(dummyfunc, dev2)
-        qn._tape = tape
         res2 = qml.workflow.get_best_diff_method(qn)()
-        assert res2 == (qml.gradients.param_shift, {}, dev2)
+        assert res2 == qml.gradients.param_shift
 
     # pylint: disable=protected-access
     def test_best_method_str_is_device(self, monkeypatch):
@@ -132,16 +128,6 @@ class TestValidation:
         qn = qml.QNode(dummyfunc, dev, interface=None)
         res = qml.workflow.get_best_diff_method(qn)(return_as_str=True)
         assert res == "backprop"
-
-    def test_best_method_str_wraps_legacy_device_correctly(self, mocker):
-        dev_legacy = DefaultQubitLegacy(wires=2)
-
-        spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
-
-        qn = qml.QNode(dummyfunc, dev_legacy, interface=None)
-        _ = qml.workflow.get_best_diff_method(qn)(return_as_str=True)
-
-        spy.assert_called_once()
 
     # pylint: disable=protected-access
     def test_best_method_str_is_param_shift(self):
