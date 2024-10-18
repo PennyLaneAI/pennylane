@@ -288,6 +288,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
+  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
+
 * The `validate_device_wires` transform now raises an error if abstract wires are provided.
   [(#6405)](https://github.com/PennyLaneAI/pennylane/pull/6405)
 
