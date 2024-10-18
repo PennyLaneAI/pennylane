@@ -1,0 +1,74 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Contains a function to extract a single tape from a QNode
+
+"""
+
+import pennylane as qml
+
+
+def construct_tape(qnode, level="user"):
+    """Constructs the tape for a designated stage in the transform program.
+
+    Args:
+        qnode (QNode): the qnode we want to get the tapes and post-processing for.
+        level (None, str, int, slice): And indication of what transforms to use from the full program.
+
+            * ``None``: use the full transform program.
+            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
+            * ``int``: How many transforms to include, starting from the front of the program.
+            * ``slice``: a slice to select out components of the transform program.
+
+    Returns:
+        tape (QuantumScript): a quantum circuit.
+
+    Raises:
+        ValueError: ``level`` argument corresponds to more than one tape.
+
+    **Example**
+
+    .. code-block:: python
+
+        @qml.qnode(qml.device("default.qubit", shots=10))
+        def circuit(x):
+            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
+            qml.RX(x, wires=0)
+            qml.RX(-x, wires=0)
+            qml.SWAP((0,1))
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.X(0) + qml.Y(0))
+
+    >>> tape = qml.workflow.construct_tape(circuit)(0.5)
+    >>> tape.circuit
+    [RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
+    RX(0.5, wires=[0]),
+    RX(-0.5, wires=[0]),
+    SWAP(wires=[0, 1]),
+    X(0),
+    X(0),
+    expval(X(0) + Y(0))]
+
+    """
+
+    def wrapper(*args, **kwargs):
+
+        batch, _ = qml.workflow.construct_batch(qnode, level)(*args, **kwargs)
+
+        if len(batch) > 1:
+            raise ValueError("Level requested corresponds to more than one tape.")
+
+        return batch[0]
+
+    return wrapper

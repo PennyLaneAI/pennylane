@@ -24,6 +24,7 @@ Execution functions and utilities
 
     ~execute
     ~workflow.set_shots
+    ~workflow.construct_tape
     ~workflow.construct_batch
     ~workflow.get_transform_program
 
@@ -56,6 +57,7 @@ Jacobian Product Calculation
 
 """
 from .construct_batch import construct_batch, get_transform_program
+from .construct_tape import construct_tape
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, execute
 from .qnode import QNode, qnode
 from .set_shots import set_shots
