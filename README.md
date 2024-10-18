@@ -47,7 +47,7 @@
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
 
-- <strong>*Program quantum computers*</strong>. Build quantum circuits with a wide range of state preparations, gates, and measurements. Run on [high-performance simulators](https://pennylane.ai/performance/) or various hardware devices, with advanced features like mid-circuit measurements and error mitigation.
+- <strong>*Program quantum computers*</strong>. Build quantum circuits with a wide range of state preparations, gates, and measurements. Run on [high-performance simulators](https://pennylane.ai/performance/) or [various hardware devices](https://pennylane.ai/plugins/), with advanced features like mid-circuit measurements and error mitigation.
 
 - <strong>*Machine learning with quantum hardware and simulators*</strong>. Integrate with **PyTorch**, **TensorFlow**, **JAX**, **Keras**, or **NumPy** to define and train hybrid models using quantum-aware optimizers and hardware-compatible gradients for advanced research tasks. [Quantum machine learning quickstart](https://docs.pennylane.ai/en/stable/introduction/interfaces.html).
 
