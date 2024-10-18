@@ -137,6 +137,13 @@ def _map_indices_apply_channel(**kwargs):
     )
 
 
+def _get_num_wires(state, is_state_batched):
+    """
+    For density matrix, we need to infer the number of wires from the state.
+    """
+    return (math.ndim(state) - is_state_batched) // 2
+
+
 def apply_operation_einsum(
     op: qml.operation.Operator,
     state,
@@ -213,8 +220,7 @@ def apply_operation_tensordot(
     channel_wires = op.wires
     num_ch_wires = len(channel_wires)
 
-    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
-
+    num_wires = _get_num_wires(state, is_state_batched)
     #! Note that here we do not take into consideration the len of kraus list
     kraus_shape = [QUDIT_DIM] * num_ch_wires * 2
     # This could be pulled into separate function if tensordot is added
