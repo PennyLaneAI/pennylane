@@ -75,6 +75,9 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* All PL templates are now unit tested to ensure JIT compatibility.
+  [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
+
 * `qml.QutritBasisStatePreparation` is now JIT compatible.
   [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
 
@@ -202,6 +205,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
+  `qml.transforms.decompositions.clifford_t_decomposition` respectively have been deprecated.
+  [(#6404)](https://github.com/PennyLaneAI/pennylane/pull/6404)
+
 * Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
   Note that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to
@@ -248,6 +255,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated links to PennyLane.ai in the documentation to use the latest URL format, which excludes the `.html` prefix.
+  [(#6412)](https://github.com/PennyLaneAI/pennylane/pull/6412)
+
 * Update `qml.Qubitization` documentation based on new decomposition.
   [(#6276)](https://github.com/PennyLaneAI/pennylane/pull/6276)
 
@@ -275,6 +285,9 @@
 
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
   [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
+
+* The `validate_device_wires` transform now raises an error if abstract wires are provided.
+  [(#6405)](https://github.com/PennyLaneAI/pennylane/pull/6405)
 
 * Fixes `qml.math.expand_matrix` for qutrit and arbitrary qudit operators.
   [(#6398)](https://github.com/PennyLaneAI/pennylane/pull/6398/)
@@ -359,4 +372,5 @@ Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Ashish Kanwar Singh,
 David Wierichs,
