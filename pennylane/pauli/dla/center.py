@@ -23,7 +23,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pauli.dla import structure_constants
 
 
-def _intersect_bases(basis_0, basis_1):
+def _intersect_bases(basis_0, basis_1, rcond=None):
     r"""Compute the intersection of two vector spaces that are given by a basis each.
     This is done by constructing a matrix [basis_0 | -basis_1] and computing its null space
     in form of vectors (u, v)^T, which is equivalent to solving the equation
@@ -34,7 +34,7 @@ def _intersect_bases(basis_0, basis_1):
     Also see https://math.stackexchange.com/questions/25371/how-to-find-a-basis-for-the-intersection-of-two-vector-spaces-in-mathbbrn
     """
     # Compute (orthonormal) basis for the null space of the augmented matrix [basis_0, -basis_1]
-    augmented_basis = null_space(np.hstack([basis_0, -basis_1]))
+    augmented_basis = null_space(np.hstack([basis_0, -basis_1]), rcond=rcond)
     # Compute basis_0 @ u for each vector u from the basis (u, v)^T in the augmented basis
     intersection_basis = basis_0 @ augmented_basis[: basis_0.shape[1]]
     # Normalize the output for cleaner results, because the augmented kernel was normalized

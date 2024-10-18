@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-from itertools import product
+from itertools import combinations, product
 from typing import List
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.pauli import PauliSentence, PauliWord
 
@@ -218,6 +219,34 @@ def check_commutation(ops1, ops2, vspace):
     return all(assert_vals)
 
 
+def check_all_commuting(ops: List[PauliSentence]):
+    """Helper function to check if all operators in a set of operators commute"""
+    res = []
+    if all(isinstance(op, PauliSentence) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj.commutator(oi)
+            com.simplify()
+            res.append(len(com) == 0)
+
+        return all(res)
+
+    if all(isinstance(op, Operator) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = qml.simplify(qml.commutator(oj, oi))
+            res.append(qml.equal(com, 0 * qml.Identity()))
+
+        return all(res)
+
+    if all(isinstance(op, PauliSentence) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj @ oi - oi @ oj
+            res.append(np.allclose(com, np.zeros_like(com)))
+
+        return all(res)
+
+    return NotImplemented
+
+
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
     """Helper function to check the validity of a Cartan decomposition by checking its commutation relations"""
     if any(isinstance(op, np.ndarray) for op in k):
@@ -240,7 +269,8 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
 
 
 def apply_basis_change(change_op, targets):
-    if single_target := (np.ndim(targets) == 2):
+    """Helper function for recursive Cartan decompositions"""
+    if single_target := np.ndim(targets) == 2:
         targets = [targets]
     if isinstance(targets, list):
         targets = np.array(targets)

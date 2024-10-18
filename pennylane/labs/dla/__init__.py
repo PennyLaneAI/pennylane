@@ -38,6 +38,8 @@ Utility functions
     ~pauli_coefficients
     ~check_cartan_decomp
     ~check_commutation
+    ~check_all_commuting
+    ~project
     ~apply_basis_change
 
 Involutions
@@ -71,11 +73,26 @@ from .cartan import (
     concurrence_involution,
     recursive_cartan_decomposition,
 )
+
 from .dense_util import (
     pauli_decompose,
     pauli_coefficients,
     check_cartan_decomp,
     check_commutation,
+    check_all_commuting,
     apply_basis_change,
 )
-from .involutions import khaneja_glaser_involution, AI, AII, AIII, BDI, CI, CII, DIII, ClassB
+
+from .involutions import (
+    khaneja_glaser_involution,
+    AI,
+    AII,
+    AIII,
+    BDI,
+    CI,
+    CII,
+    DIII,
+    ClassB,
+)
+
+from .cartan_subalgebra import cartan_subalgebra, adjvec_to_op, op_to_adjvec
