@@ -584,7 +584,7 @@ class QNode:
 
         # validation check.  Will raise error if bad diff_method
         if diff_method is not None:
-            qml.workflow.get_gradient_fn(self.device, self.diff_method)
+            QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
 
     @property
     def gradient_fn(self):
@@ -616,7 +616,7 @@ class QNode:
         else:
             tape = self.tape
 
-        return qml.workflow.get_gradient_fn(self.device, self.diff_method, tape=tape)[0]
+        return QNode.get_gradient_fn(self.device, self.interface, self.diff_method, tape=tape)[0]
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
@@ -681,12 +681,7 @@ class QNode:
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         tape: Optional["qml.tape.QuantumTape"] = None,
     ):
-        """
-        .. warning::
-
-            This method is deprecated in v0.39 and will be removed in v0.40.
-
-        Determine the best differentiation method, interface, and device
+        """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
 
         Args:
@@ -702,13 +697,6 @@ class QNode:
             tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
-
-        warnings.warn(
-            "QNode.get_gradient_fn is deprecated and will be removed in v0.40. "
-            "Instead, please use the qml.workflow.get_gradient_fn function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
         if diff_method is None:
             return None, {}, device
 
@@ -724,9 +712,7 @@ class QNode:
             )
 
         if diff_method == "best":
-            qn = qml.QNode(lambda: None, device=device, interface=interface, diff_method=None)
-            qn._tape = tape
-            return qml.workflow.get_best_diff_method(qn)()
+            return QNode.get_best_method(device, interface, tape=tape)
 
         if diff_method == "parameter-shift":
             if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):
@@ -766,12 +752,7 @@ class QNode:
         dict[str, Any],
         SupportedDeviceAPIs,
     ]:
-        """
-        .. warning::
-
-            This method is deprecated in v0.39 and will be removed in v0.40.
-
-        Returns the 'best' differentiation method
+        """Returns the 'best' differentiation method
         for a particular device and interface combination.
 
         This method attempts to determine support for differentiation
@@ -795,13 +776,6 @@ class QNode:
             tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
-
-        warnings.warn(
-            "QNode.get_best_method is deprecated and will be removed in v0.40. "
-            "Instead, use the qml.workflow.get_best_diff_method function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
@@ -819,12 +793,7 @@ class QNode:
     @staticmethod
     @debug_logger
     def best_method_str(device: SupportedDeviceAPIs, interface: SupportedInterfaceUserInput) -> str:
-        """
-        .. warning::
-
-            This property is deprecated in v0.39 and will be removed in v0.40.
-
-        Similar to :meth:`~.get_best_method`, except return the
+        """Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
 
         This method attempts to determine support for differentiation
@@ -849,18 +818,10 @@ class QNode:
         Returns:
             str: The gradient function to use in human-readable format.
         """
-
-        warnings.warn(
-            "QNode.best_method_str is deprecated and will be removed in v0.40. "
-            "Instead, use the qml.workflow.get_best_diff_method function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
-        qn = qml.QNode(lambda: None, device=device, interface=interface, diff_method=None)
-        transform = qml.workflow.get_best_diff_method(qn)()[0]
+        transform = QNode.get_best_method(device, interface)[0]
 
         if transform is qml.gradients.finite_diff:
             return "finite-diff"
@@ -920,8 +881,8 @@ class QNode:
         ):
             gradient_fn = qml.gradients.param_shift
         else:
-            gradient_fn = qml.workflow.get_gradient_fn(
-                self.device, self.diff_method, tape=self.tape
+            gradient_fn = QNode.get_gradient_fn(
+                self.device, self.interface, self.diff_method, tape=self.tape
             )[0]
         execute_kwargs = copy.copy(self.execute_kwargs)
 

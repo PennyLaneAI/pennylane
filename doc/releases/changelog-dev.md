@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added functions `get_best_diff_method` and `get_gradient_fn` to `qml.workflow`.
+  [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
+
 * Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
   - This function takes probability distributions as input and returns sampled outcomes.
   - Simplifies the sampling process by separating it from other operations in the measurement chain.
@@ -204,10 +207,6 @@
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
 <h3>Deprecations 👋</h3>
-
-* The ``QNode.get_best_method``, ``QNode.best_method_str`` and ``QNode.get_gradient_fn`` methods have been deprecated. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` and ``qml.workflow.get_gradient_fn`` functions.
-  [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
 
 * The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
   `qml.transforms.decompositions.clifford_t_decomposition` respectively have been deprecated.

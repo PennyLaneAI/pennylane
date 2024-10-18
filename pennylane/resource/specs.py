@@ -214,8 +214,9 @@ def specs(
                 else qnode.diff_method
             )
 
-            gradient_fn = qml.workflow.get_gradient_fn(
+            gradient_fn = qml.QNode.get_gradient_fn(
                 qnode.device,
+                qnode.interface,
                 qnode.diff_method,
                 tape=tape,
             )[0]

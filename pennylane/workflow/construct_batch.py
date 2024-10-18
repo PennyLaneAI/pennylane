@@ -181,7 +181,7 @@ def get_transform_program(
 
     """
     if gradient_fn == "unset":
-        gradient_fn = qml.workflow.get_gradient_fn(qnode.device, qnode.diff_method)[0]
+        gradient_fn = QNode.get_gradient_fn(qnode.device, qnode.interface, qnode.diff_method)[0]
 
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
@@ -359,8 +359,8 @@ def construct_batch(
             params = initial_tape.get_parameters(trainable_only=False)
             initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        gradient_fn = qml.workflow.get_gradient_fn(
-            qnode.device, qnode.diff_method, tape=initial_tape
+        gradient_fn = QNode.get_gradient_fn(
+            qnode.device, qnode.interface, qnode.diff_method, tape=initial_tape
         )[0]
         program = get_transform_program(qnode, level=level, gradient_fn=gradient_fn)
 
