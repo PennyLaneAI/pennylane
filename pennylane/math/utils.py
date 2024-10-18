@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions"""
+import numbers
 import warnings
 
 # pylint: disable=wrong-import-order
@@ -21,6 +22,8 @@ import numpy as _np
 # pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
+
+from pennylane.typing import TensorLike
 
 from . import single_dispatch  # pylint:disable=unused-import
 
@@ -466,6 +469,9 @@ def requires_grad(tensor, interface=None):
         interface (str): The name of the interface. Will be determined automatically
             if not provided.
 
+    Returns:
+        bool: whether the tensor is trainable or not.
+
     **Example**
 
     Calling this function on a PennyLane NumPy array:
@@ -539,6 +545,9 @@ def in_backprop(tensor, interface=None):
         interface (str): The name of the interface. Will be determined automatically
             if not provided.
 
+    Returns:
+        bool: whether the tensor is in a backpropagation environment or not.
+
     **Example**
 
     >>> x = tf.Variable([0.6, 0.1])
@@ -570,3 +579,30 @@ def in_backprop(tensor, interface=None):
         return False
 
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
+
+
+def is_non_scalar_tensor(arg) -> bool:
+    """Helper function to check if an argument is a non-scalar tensor-like object.
+
+    Args:
+        arg (tensor_like): input tensor
+
+    Returns:
+        bool: whether the tensor is non-scalar or not
+
+    **Example**
+
+    >>> x = np.array([1, 2])
+    >>> is_non_scalar_tensor(x)
+    True
+
+    >>> x = jax.numpy.array(1)
+    >>> is_non_scalar_tensor(x)
+    False
+
+    >>> x = 1
+    >>> is_non_scalar_tensor(x)
+    False
+    """
+
+    return isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number) and arg.shape != ()

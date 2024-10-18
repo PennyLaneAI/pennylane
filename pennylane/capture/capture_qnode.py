@@ -14,14 +14,13 @@
 """
 This submodule defines a capture compatible call to QNodes.
 """
-import numbers
 import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
 
 import pennylane as qml
-from pennylane.typing import TensorLike
+from pennylane.math.utils import is_non_scalar_tensor
 
 from .flatfn import FlatFn
 
@@ -32,11 +31,6 @@ try:
 
 except ImportError:
     has_jax = False
-
-
-def _is_non_scalar_tensor(arg):
-    """Helper function to check if an argument is a non-scalar tensor-like object."""
-    return isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number) and arg.shape != ()
 
 
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
@@ -107,7 +101,7 @@ def _qnode_batching_rule(
 
     for i, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
 
-        if not _is_non_scalar_tensor(arg):
+        if not is_non_scalar_tensor(arg):
             continue
 
         if i < n_consts:
@@ -124,7 +118,7 @@ def _qnode_batching_rule(
                 UserWarning,
             )
 
-    input_shapes = [arg.shape for arg in args if _is_non_scalar_tensor(arg)]
+    input_shapes = [arg.shape for arg in args if is_non_scalar_tensor(arg)]
     batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
     BatchingManager.enable_batching(batch_shape)

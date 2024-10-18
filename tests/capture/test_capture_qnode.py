@@ -580,6 +580,24 @@ class TestQNodeVmapIntegration:
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
 
+    def test_qnode_deep_pytree_input_vmap(self):
+        """Test vmap over qnodes with deep pytree inputs."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x["data"]["val"], wires=x["data"]["wires"])
+            return qml.expval(qml.Z(wires=x["data"]["wires"]))
+
+        x = {"data": {"val": jax.numpy.array([0.1, 0.2]), "wires": 0}}
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=({"data": {"val": 0, "wires": None}},)))(x)
+
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["data"]["val"], x["data"]["wires"])
+        assert qml.math.allclose(res, jax.numpy.cos(x["data"]["val"]))
+
+        assert len(jaxpr.eqns[0].invars) == 2
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
+
     def test_qnode_pytree_output_vmap(self):
         """Test that we can capture and execute a qnode with a pytree output and vmap."""
 
