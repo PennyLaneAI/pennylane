@@ -460,8 +460,8 @@ def tape_text(
     if show_wire_labels:
         wire_totals = [f"{wire}: " for wire in wire_map]
     else:
-        wire_totals = ["" for _ in wire_map]
-    bit_totals = ["" for _ in range(n_bits)]
+        wire_totals = [""] * n_wires
+    bit_totals = [""] * n_bits
     line_length = max(len(s) for s in wire_totals)
 
     wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
