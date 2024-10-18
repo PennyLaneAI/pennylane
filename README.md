@@ -34,7 +34,7 @@
 </p>
 
 <p align="center">
-  <strong>Train a quantum computer the same way as a neural network.</strong>
+  The definitive open-source Python framework for quantum programming. Built by researchers, for research.
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png#gh-light-mode-only" width="700px">
     <!--
     Use a relative import for the dark mode image. When loading on PyPI, this
@@ -47,23 +47,17 @@
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
 
-- *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **JAX**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
+- <strong>*Program quantum computers*</strong>. Build quantum circuits with a wide range of state preparations, gates, and measurements. Run on [high-performance simulators](https://pennylane.ai/performance/) or various hardware devices, with advanced features like mid-circuit measurements and error mitigation.
 
-- *Just in time compilation*. Experimental support for just-in-time
-  compilation. Compile your entire hybrid workflow, with support for 
-  advanced features such as adaptive circuits, real-time measurement 
-  feedback, and unbounded loops. See
-  [Catalyst](https://github.com/pennylaneai/catalyst) for more details.
+- <strong>*Integrate with machine learning*</strong>. Integrate with **PyTorch**, **TensorFlow**, **JAX**, **Keras**, or **NumPy** to define and train hybrid models using quantum-aware optimizers and hardware-compatible gradients for advanced research tasks. [Quantum machine learning quickstart](https://docs.pennylane.ai/en/stable/introduction/interfaces.html).
 
-- *Device-independent*. Run the same quantum circuit on different quantum backends. Install
-  [plugins](https://pennylane.ai/plugins.html) to access even more devices, including **Strawberry
-  Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
+- <strong>*Master quantum algorithms*</strong>. From NISQ applications like VQE to fault-tolerant quantum computing, unlock algorithms for research and application. Analyze performance, visualize circuits, and access tools for [quantum chemistry](https://docs.pennylane.ai/en/stable/introduction/chemistry.html) and QAOA. Scale up with circuit cutting and explore pulse-level and qutrit representations.
 
-- *Follow the gradient*. Hardware-friendly **automatic differentiation** of quantum circuits.
+- <strong>*Quantum datasets*</strong>. Access high-quality, pre-simulated datasets to decrease time-to-research and accelerate algorithm development. Easily [browse the datasets](https://pennylane.ai/datasets/) or contribute your own data.
 
-- *Batteries included*. Built-in tools for **quantum machine learning**, **optimization**, and
-  **quantum chemistry**. Rapidly prototype using built-in quantum simulators with
-  backpropagation support.
+- <strong>*Compilation and performance*</strong>. Capture hybrid quantum-classical workflows with just-in-time compilation, scaling from CPU to GPU. Decompose circuits into hardware-compatible gates and access high-performance simulators with fast quantum circuit differentiation. Easily install via pip, Conda, Spack, or Docker. See [Catalyst](https://github.com/pennylaneai/catalyst) for more details.
+
+Visit the [PennyLane features page](https://pennylane.ai/features/) for more details.
 
 ## Installation
 
@@ -82,16 +76,21 @@ here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.
 
 ## Getting started
 
-For an introduction to quantum machine learning, guides and resources are available on
-PennyLane's [quantum machine learning hub](https://pennylane.ai/qml/):
+Get up and running quickly with PennyLane by following our [quickstart guide](https://docs.pennylane.ai/en/stable/introduction/pennylane.html), designed to introduce key features and help you start building quantum circuits right away.
+
+Whether you're exploring quantum machine learning (QML), quantum computing, or quantum chemistry, PennyLane offers a wide range of tools and resources to support your research:
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
 
-* [What is quantum machine learning?](https://pennylane.ai/qml/whatisqml.html)
-* [QML tutorials and demos](https://pennylane.ai/qml/demonstrations.html)
+### Key Resources:
+
+* [Learn quantum programming](https://pennylane.ai/qml/)
+* [PennyLane Codebook](https://pennylane.ai/codebook/)
+* [Coding challenges](https://pennylane.ai/challenges/)
+* [Demos](https://pennylane.ai/qml/demonstrations.html)
 * [Frequently asked questions](https://pennylane.ai/faq.html)
-* [Key concepts of QML](https://pennylane.ai/qml/glossary.html)
-* [QML videos](https://pennylane.ai/qml/videos.html)
+* [Key concepts](https://pennylane.ai/qml/glossary.html)
+* [Videos](https://pennylane.ai/qml/videos.html)
 
 You can also check out our [documentation](https://pennylane.readthedocs.io) for [quickstart
 guides](https://pennylane.readthedocs.io/en/stable/introduction/pennylane.html) to using PennyLane,
@@ -99,29 +98,33 @@ and detailed developer guides on [how to write your
 own](https://pennylane.readthedocs.io/en/stable/development/plugins.html) PennyLane-compatible
 quantum device.
 
-## Tutorials and demonstrations
+## Demos
 
-Take a deeper dive into quantum machine learning by exploring cutting-edge algorithms on our [demonstrations
-page](https://pennylane.ai/qml/demonstrations.html).
+Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations.html).
 
 <a href="https://pennylane.ai/qml/demonstrations.html">
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
 </a>
 
-All demonstrations are fully executable, and can be downloaded as Jupyter notebooks and Python
-scripts.
-
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
 
-## Videos
+## Research Applications
 
-Seeing is believing! Check out [our videos](https://pennylane.ai/qml/videos.html) to learn about
-PennyLane, quantum computing concepts, and more. 
+PennyLane is at the forefront of research in quantum computing, quantum machine learning, and quantum chemistry. Discover how researchers are using PennyLane.
 
-<a href="https://pennylane.ai/qml/videos.html">
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/videos.png" width="900px">
-</a>
+- **Quantum Computing**
+  - *Example Paper*: [Variational quantum algorithm for molecular geometry optimization
+](https://arxiv.org/abs/2106.13840)
+  - *Collaborative Research*: Research with [lorem ipsum] on optimizing...
+
+- **Quantum Machine Learning**
+  - *Case Study*: [Classical surrogates for quantum learning models](https://arxiv.org/abs/2206.11740)
+
+- **Quantum Chemistry**
+  - *Example Paper*: [Accelerating Quantum Computations of Chemistry Through Regularized Compressed Double Factorization](https://quantum-journal.org/papers/q-2024-06-13-1371/)
+
+Impactful research drives PennyLane. Submit your feature ideas to tailor our roadmap to your research needs[LINK TO RESEARCH PAGE - UNRELEASED]
 
 ## Contributing to PennyLane
 
