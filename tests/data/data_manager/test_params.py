@@ -106,12 +106,12 @@ def test_format_params():
     """Test that format_params calls format_param_args with each parameter."""
     assert format_params(
         layout=[1, 4], bondlength=["0.5", "0.6"], z="full", y=ParamArg.DEFAULT
-    ) == {
-        "bondlength": ["0.5", "0.6"],
-        "layout": ["1x4"],
-        "y": ParamArg.DEFAULT,
-        "z": ParamArg.FULL,
-    }
+    ) == [
+        {"name": "layout", "values": ["1x4"]},
+        {"name": "bondlength", "values": ["0.5", "0.6"]},
+        {"name": "z", "values": ParamArg.FULL},
+        {"name": "y", "values": ParamArg.DEFAULT},
+    ]
 
 
 class TestDescription:
