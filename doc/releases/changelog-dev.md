@@ -160,6 +160,9 @@
   when called, will return a PLxPR representation of the input function.
   [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
+* FermiWords and FermiSentences are now compatible with JAX arrays.
+  [(#6324)](https://github.com/PennyLaneAI/pennylane/pull/6324)
+
 <h3>Breaking changes 💔</h3>
 
 * `AllWires` validation in `QNode.construct` has been removed. 
