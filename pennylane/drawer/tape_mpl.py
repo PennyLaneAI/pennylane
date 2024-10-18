@@ -219,6 +219,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     """Private function wrapped with styling."""
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
+    show_wire_labels = kwargs.get("show_wire_labels", True)
     active_wire_notches = kwargs.get("active_wire_notches", True)
     fontsize = kwargs.get("fontsize", None)
 
@@ -259,7 +260,10 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     if fontsize is not None:
         drawer.fontsize = fontsize
 
-    drawer.label(list(wire_map), text_options=label_options)
+    if show_wire_labels:
+        drawer.label(list(wire_map), text_options=label_options)
+    else:
+        drawer.crop_wire_labels()
 
     _add_classical_wires(drawer, cwire_layers, cwire_wires)
 
@@ -301,6 +305,7 @@ def tape_mpl(
             Default is ``14``.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
+        show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         fig (None or matplotlib Figure): Matplotlib figure to plot onto. If None, then create a new figure.
