@@ -26,6 +26,8 @@ Execution functions and utilities
     ~workflow.set_shots
     ~workflow.construct_batch
     ~workflow.get_transform_program
+    ~workflow.get_best_diff_method
+    ~workflow.get_gradient_fn
 
 Supported interfaces
 ~~~~~~~~~~~~~~~~~~~~
@@ -55,6 +57,8 @@ Jacobian Product Calculation
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 
 """
+from .get_best_diff_method import get_best_diff_method
+from .get_gradient_fn import get_gradient_fn
 from .construct_batch import construct_batch, get_transform_program
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, execute
 from .qnode import QNode, qnode
