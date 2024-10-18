@@ -42,8 +42,7 @@ def get_gradient_fn(
     diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
     tape: Optional["qml.tape.QuantumTape"] = None,
 ):
-    """Determine the best differentiation method, interface, and device
-    for a requested device and diff method.
+    """Determine the best differentiation method for a requested device and diff method.
 
     Args:
         device (.device.Device): PennyLane device
