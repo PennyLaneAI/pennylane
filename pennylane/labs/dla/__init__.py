@@ -38,11 +38,9 @@ Utility functions
     ~pauli_coefficients
     ~check_cartan_decomp
     ~check_commutation
-<<<<<<< HEAD
+    ~check_all_commuting
     ~project
-=======
     ~apply_basis_change
->>>>>>> ae03cd5cc2ea18d5022ce51e5403b68fbd49c4e1
 
 Involutions
 ~~~~~~~~~~~
@@ -81,6 +79,7 @@ from .dense_util import (
     pauli_coefficients,
     check_cartan_decomp,
     check_commutation,
+    check_all_commuting,
     project,
     apply_basis_change,
 )

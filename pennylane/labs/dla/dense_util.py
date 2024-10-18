@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-from itertools import product
+from itertools import combinations, product
 from typing import List
 
 import numpy as np
@@ -219,6 +219,17 @@ def check_commutation(ops1, ops2, vspace):
     return all(assert_vals)
 
 
+def check_all_commuting(ops: List[PauliSentence]):
+    """Helper function to check if all operators in a set of operators commute"""
+    res = []
+    for oi, oj in combinations(ops, 2):
+        com = oj.commutator(oi)
+        com.simplify()
+        res.append(len(com) == 0)
+
+    return all(res)
+
+
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
     """Helper function to check the validity of a Cartan decomposition by checking its commutation relations"""
     if any(isinstance(op, np.ndarray) for op in k):
@@ -282,10 +293,9 @@ def project(ops, basis):
         isinstance(op, TensorLike) for op in basis
     ):
         basis = np.array(basis)
-        if len(ops.shape) == 2:
-            ops = np.array([ops])
-        else:
-            ops = np.array(ops)
+        # if len(ops.shape) == 2:
+        #     ops = np.array([ops])
+        ops = np.array(ops)
 
         res = np.einsum("bij,cji->bc", ops, basis)
 
