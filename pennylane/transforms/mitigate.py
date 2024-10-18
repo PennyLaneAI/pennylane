@@ -441,7 +441,7 @@ def mitigate_with_zne(
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 

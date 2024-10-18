@@ -568,7 +568,7 @@ class TestSimplify:
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
-    def test_simplify_with_adjoint_not_defined(self):
+    def test_simplify_with_pow_not_defined(self):
         """Test the simplify method with an operator that has not defined the op.pow method."""
         op = Pow(qml.U2(1, 1, 0), z=3)
         simplified_op = op.simplify()
