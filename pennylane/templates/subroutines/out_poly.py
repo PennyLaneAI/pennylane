@@ -36,8 +36,8 @@ def _get_polynomial(f, mod, *variable_sizes):
         is expanded as `4 * x1 * y0 + 8 * x0 * y0`. Therefore, the expected output is:
 
         ```
+        # (x0, x1, y0) -> coefficient
         {
-        #   (x0,x1,y0)
             (0, 1, 1): 4,
             (1, 0, 1): 3,  # 8 mod 5 = 3
         }
@@ -83,10 +83,10 @@ def _get_polynomial(f, mod, *variable_sizes):
 
     # Adjust the algorithm result to the dictionary output format
     coeffs_dict = {}
-    for s in range(num_combinations):
-        if f_values[s] != 0:
+    for s, f_value in enumerate(f_values):
+        if f_value != 0:
             bin_tuple = tuple(all_binary_list[s])
-            coeffs_dict[bin_tuple] = f_values[s]
+            coeffs_dict[bin_tuple] = f_value
 
     return coeffs_dict
 
@@ -106,8 +106,8 @@ class OutPoly(Operation):
         = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m) \text{mod} k\rangle.
 
     This operation leaves the input registers unchanged and stores the result of the
-    polynomial function in the output register. It is based on the implementation detailed
-    in `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
+    polynomial function in the output register. It is based on the idea detailed
+    in `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_ section II-B.
 
     .. note::
 
@@ -360,21 +360,20 @@ class OutPoly(Operation):
             if not 1 in item:
                 # Add the independent term
                 list_ops.append(qml.PhaseAdder(int(coeff), output_adder_mod))
-                continue
+            else:
+                controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
 
-            controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
-
-            list_ops.append(
-                qml.ctrl(
-                    qml.PhaseAdder(
-                        int(coeff) % mod,
-                        output_adder_mod,
-                        work_wire=work_wires[1],
-                        mod=mod,
-                    ),
-                    control=controls,
+                list_ops.append(
+                    qml.ctrl(
+                        qml.PhaseAdder(
+                            int(coeff) % mod,
+                            output_adder_mod,
+                            work_wire=work_wires[1],
+                            mod=mod,
+                        ),
+                        control=controls,
+                    )
                 )
-            )
 
         list_ops.append(qml.adjoint(qml.QFT)(wires=output_adder_mod))
 
