@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added functions `get_best_diff_method` and `get_gradient_fn` to `qml.workflow`.
+  [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
+
 * Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
   - This function takes probability distributions as input and returns sampled outcomes.
   - Simplifies the sampling process by separating it from other operations in the measurement chain.
