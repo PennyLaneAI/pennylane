@@ -127,9 +127,23 @@ def validate_device_wires(
         The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        WireError: if the tape has a wire not present in the provided wires.
+        WireError: if the tape has a wire not present in the provided wires, or if abstract wires are present.
     """
+
+    if any(qml.math.is_abstract(w) for w in tape.wires):
+        raise WireError(
+            f"Cannot run circuit(s) on {name} as abstract wires are present in the tape: {tape.wires}. "
+            f"Abstract wires are not yet supported."
+        )
+
     if wires:
+
+        if any(qml.math.is_abstract(w) for w in wires):
+            raise WireError(
+                f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
+                f"Abstract wires are not yet supported."
+            )
+
         if extra_wires := set(tape.wires) - set(wires):
             raise WireError(
                 f"Cannot run circuit(s) on {name} as they contain wires "
