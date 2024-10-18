@@ -45,7 +45,7 @@ latexcodec==3.0.0
 libclang==18.1.1
 m2r2==0.3.2
 Markdown==3.7
-MarkupSafe==3.0.1
+MarkupSafe==3.0.2
 matplotlib==3.8.0
 mistune==0.8.4
 ml_dtypes==0.5.0
@@ -117,5 +117,5 @@ urllib3==1.26.20
 Werkzeug==3.0.4
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
-yarl==1.15.4
+yarl==1.15.5
 zipp==3.20.2
