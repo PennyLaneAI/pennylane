@@ -54,7 +54,8 @@
 - <strong>*Master quantum algorithms*</strong>. From NISQ applications like VQE to fault-tolerant quantum computing, unlock algorithms for research and application. Analyze performance, visualize circuits, and access tools for [quantum chemistry](https://docs.pennylane.ai/en/stable/introduction/chemistry.html) and [algorithm development](https://pennylane.ai/search/?contentType=DEMO&categories=algorithms&sort=publication_date).
 
 
-- <strong>*Quantum datasets*</strong>. Access high-quality, pre-simulated datasets to decrease time-to-research and accelerate algorithm development. Easily [browse the datasets](https://pennylane.ai/datasets/) or contribute your own data.
+- <strong>*Quantum datasets*</strong>. Access high-quality, pre-simulated datasets to decrease time-to-research and accelerate algorithm development. [Browse the datasets](https://pennylane.ai/datasets/) or contribute your own data.
+
 
 - <strong>*Compilation and performance*</strong>. Capture hybrid quantum-classical workflows with just-in-time compilation, scaling from CPU to GPU. Decompose circuits into hardware-compatible gates and access high-performance simulators with fast quantum circuit differentiation. Easily install via pip, Conda, Spack, or Docker. See [Catalyst](https://github.com/pennylaneai/catalyst) for more details.
 
