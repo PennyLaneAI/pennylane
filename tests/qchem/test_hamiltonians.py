@@ -414,17 +414,36 @@ class TestJax:
         args = [geometry, mol.coeff, mol.alpha]
         dev = qml.device("default.qubit", wires=4)
 
-        def energy(mol):
+        def energy():
             @qml.qnode(dev, interface="jax")
             def circuit(*args):
                 qml.PauliX(0)
                 qml.PauliX(1)
                 qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
+                mol = qml.qchem.Molecule(symbols, geometry, alpha=args[2], coeff=args[1])
                 h_qubit = qchem.diff_hamiltonian(mol)(*args)
                 return qml.expval(h_qubit)
 
             return circuit
 
-        grad_jax = jax.grad(energy(mol), argnums=2)(*args)
+        grad_jax = jax.grad(energy(), argnums=2)(*args)
 
-        assert qml.math.allclose(grad_jax[0][0], 0.02461335393055819, rtol=1e-02)
+        # Finite Differences
+        alpha_1 = qml.math.array(
+            [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            like="jax",
+        )  # alpha[0][0] -= 0.0001
+
+        alpha_2 = qml.math.array(
+            [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            like="jax",
+        )  # alpha[0][0] += 0.0001
+
+        args_1 = [geometry, mol.coeff, alpha_1]
+        args_2 = [geometry, mol.coeff, alpha_2]
+        e_1 = energy()(*args_1)
+        e_2 = energy()(*args_2)
+
+        grad_finitediff = (e_2 - e_1) / 0.0002
+
+        assert qml.math.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
