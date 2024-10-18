@@ -343,9 +343,7 @@ class TestFermiWordArithmetic:
         (fw2, 3.7, FermiSentence({fw2: 3.7})),  # float
         (fw2, 2j, FermiSentence({fw2: 2j})),  # complex
         (fw2, np.array([2]), FermiSentence({fw2: 2})),  # numpy array
-        pytest.param(
-            fw2, qml.math.array([2], like="jax"), FermiSentence({fw2: 2}), marks=pytest.mark.jax
-        ),  # jax array
+        pytest.param(fw2, "JAX", FermiSentence({fw2: 2}), marks=pytest.mark.jax),  # jax array
         (fw1, pnp.array([2]), FermiSentence({fw1: 2})),  # pennylane numpy array
         (fw1, pnp.array([2, 2])[0], FermiSentence({fw1: 2})),  # pennylane tensor with no length
     )
@@ -354,12 +352,16 @@ class TestFermiWordArithmetic:
     def test_mul_number(self, fw, number, result):
         """Test that a FermiWord can be multiplied onto a number (from the left)
         and return a FermiSentence"""
+        if isinstance(number, str) and number == "JAX":
+            number = qml.math.array([2], like="jax")
         assert fw * number == result
 
     @pytest.mark.parametrize("fw, number, result", WORDS_AND_NUMBERS_MUL)
     def test_rmul_number(self, fw, number, result):
         """Test that a FermiWord can be multiplied onto a number (from the right)
         and return a FermiSentence"""
+        if isinstance(number, str) and number == "JAX":
+            number = qml.math.array([2], like="jax")
         assert number * fw == result
 
     tup_fw_mult_error = (
@@ -440,7 +442,7 @@ class TestFermiWordArithmetic:
         (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: 2.8})),  # pennylane numpy array
         pytest.param(
             fw2,
-            qml.math.array([2.8], like="jax"),
+            "JAX",
             FermiSentence({fw2: 1, fw4: 2.8}),
             marks=pytest.mark.jax,
         ),  # jax array
@@ -456,6 +458,8 @@ class TestFermiWordArithmetic:
     def test_add_fermi_words_and_constants(self, w, c, res):
         """Test that adding a constant (int, float or complex) to a FermiWord
         returns the expected FermiSentence"""
+        if isinstance(c, str) and c == "JAX":
+            c = qml.math.array([2.8], like="jax")
         sum = w + c
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
@@ -468,6 +472,8 @@ class TestFermiWordArithmetic:
     def test_radd_fermi_words_and_constants(self, w, c, res):
         """Test that adding a Fermi word to a constant (int, float or complex)
         returns the expected FermiSentence (__radd__)"""
+        if isinstance(c, str) and c == "JAX":
+            c = qml.math.array([2.8], like="jax")
         sum = c + w
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
@@ -540,7 +546,7 @@ class TestFermiWordArithmetic:
         (fw2, pnp.array([2.8]), FermiSentence({fw2: -1, fw4: 2.8})),  # pennylane numpy array
         pytest.param(
             fw2,
-            qml.math.array([2.8], like="jax"),
+            "JAX",
             FermiSentence({fw2: -1, fw4: 2.8}),
             marks=pytest.mark.jax,
         ),  # jax array
@@ -556,6 +562,8 @@ class TestFermiWordArithmetic:
     def test_subtract_fermi_words_from_constant(self, w, c, res):
         """Test that subtracting a constant (int, float or complex) from a FermiWord
         returns the expected FermiSentence"""
+        if isinstance(c, str) and c == "JAX":
+            c = qml.math.array([2.8], like="jax")
         diff = c - w
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
@@ -920,7 +928,7 @@ class TestFermiSentenceArithmetic:
         ),  # pennylane numpy array
         pytest.param(
             fs1,
-            qml.math.array([2], like="jax"),
+            "JAX",
             FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
             marks=pytest.mark.jax,
         ),  # jax array
@@ -935,12 +943,16 @@ class TestFermiSentenceArithmetic:
     def test_mul_number(self, fs, number, result):
         """Test that a FermiSentence can be multiplied onto a number (from the left)
         and return a FermiSentence"""
+        if isinstance(number, str) and number == "JAX":
+            number = qml.math.array([2], like="jax")
         assert fs * number == result
 
     @pytest.mark.parametrize("fs, number, result", SENTENCES_AND_NUMBERS_MUL)
     def test_rmul_number(self, fs, number, result):
         """Test that a FermiSentence can be multiplied onto a number (from the right)
         and return a FermiSentence"""
+        if isinstance(number, str) and number == "JAX":
+            number = qml.math.array([2], like="jax")
         assert number * fs == result
 
     tup_fs_add = (  # computed by hand
@@ -997,7 +1009,7 @@ class TestFermiSentenceArithmetic:
         ),  # numpy array
         pytest.param(
             FermiSentence({fw1: 1.2, fw3: 3j}),
-            qml.math.array([3], like="jax"),
+            "JAX",
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
             marks=pytest.mark.jax,
         ),  # jax array
@@ -1016,6 +1028,8 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("s, c, res", SENTENCES_AND_CONSTANTS_ADD)
     def test_add_fermi_sentences_and_constants(self, s, c, res):
         """Test that adding a constant to a FermiSentence returns the expected FermiSentence"""
+        if isinstance(c, str) and c == "JAX":
+            c = qml.math.array([3], like="jax")
         sum = s + c
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
@@ -1027,6 +1041,8 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("s, c, res", SENTENCES_AND_CONSTANTS_ADD)
     def test_radd_fermi_sentences_and_constants(self, s, c, res):
         """Test that adding a FermiSentence to a constant (__radd___) returns the expected FermiSentence"""
+        if isinstance(c, str) and c == "JAX":
+            c = qml.math.array([3], like="jax")
         sum = c + s
         # due to rounding, the actual result for floats is
         # e.g. -0.19999999999999... instead of 0.2, so we round to compare
@@ -1075,7 +1091,7 @@ class TestFermiSentenceArithmetic:
         ),  # numpy array
         pytest.param(
             FermiSentence({fw1: 1.2, fw3: 3j}),
-            qml.math.array([3], like="jax"),
+            "JAX",
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
             marks=pytest.mark.jax,
         ),  # jax array
@@ -1095,6 +1111,8 @@ class TestFermiSentenceArithmetic:
     def test_subtract_constant_from_fermi_sentence(self, fs, c, result):
         """Test that the correct result is produced if a FermiWord is
         subtracted from a FermiSentence"""
+        if isinstance(c, str) and c == "JAX":
+            c = qml.math.array([3], like="jax")
 
         simplified_diff = fs - c
         simplified_diff.simplify()
@@ -1117,7 +1135,7 @@ class TestFermiSentenceArithmetic:
         ),  # numpy array
         pytest.param(
             FermiSentence({fw1: 1.2, fw3: 3j}),
-            qml.math.array([3], like="jax"),
+            "JAX",
             FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
             marks=pytest.mark.jax,
         ),  # jax array
@@ -1137,6 +1155,8 @@ class TestFermiSentenceArithmetic:
     def test_subtract_fermi_sentence_from_constant(self, fs, c, result):
         """Test that the correct result is produced if a FermiWord is
         subtracted from a FermiSentence"""
+        if isinstance(c, str) and c == "JAX":
+            c = qml.math.array([3], like="jax")
 
         simplified_diff = c - fs
         simplified_diff.simplify()
