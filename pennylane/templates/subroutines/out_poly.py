@@ -335,7 +335,7 @@ class OutPoly(Operation):
     @staticmethod
     def compute_decomposition(
         f, output_wires, mod=None, work_wires=None, id=None, **kwargs
-    ):  # pylint: disable=unused-argument
+    ):  # pylint: disable=unused-argument, arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
