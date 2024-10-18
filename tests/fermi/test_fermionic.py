@@ -1161,7 +1161,7 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
     def test_radd_error(self, fs, bad_type):
         """Test __radd__ with unsupported type raises an error"""
-        with pytest.raises(TypeError, match=f"Cannot add a FermiSentence to {type(bad_type)}."):
+        with pytest.raises(TypeError, match=f"Cannot add {type(bad_type)} to a FermiSentence."):
             bad_type + fs  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
