@@ -343,6 +343,9 @@ class TestFermiWordArithmetic:
         (fw2, 3.7, FermiSentence({fw2: 3.7})),  # float
         (fw2, 2j, FermiSentence({fw2: 2j})),  # complex
         (fw2, np.array([2]), FermiSentence({fw2: 2})),  # numpy array
+        pytest.param(
+            fw2, qml.math.array([2], like="jax"), FermiSentence({fw2: 2}), marks=pytest.mark.jax
+        ),  # jax array
         (fw1, pnp.array([2]), FermiSentence({fw1: 2})),  # pennylane numpy array
         (fw1, pnp.array([2, 2])[0], FermiSentence({fw1: 2})),  # pennylane tensor with no length
     )
@@ -435,6 +438,12 @@ class TestFermiWordArithmetic:
         (fw3, (1 + 3j), FermiSentence({fw3: 1, fw4: (1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: 1, fw4: 5})),  # numpy array
         (fw2, pnp.array([2.8]), FermiSentence({fw2: 1, fw4: 2.8})),  # pennylane numpy array
+        pytest.param(
+            fw2,
+            qml.math.array([2.8], like="jax"),
+            FermiSentence({fw2: 1, fw4: 2.8}),
+            marks=pytest.mark.jax,
+        ),  # jax array
         (
             fw1,
             pnp.array([2, 2])[0],
@@ -529,6 +538,12 @@ class TestFermiWordArithmetic:
         (fw3, (1 + 3j), FermiSentence({fw3: -1, fw4: (1 + 3j)})),  # complex
         (fw1, np.array([5]), FermiSentence({fw1: -1, fw4: 5})),  # numpy array
         (fw2, pnp.array([2.8]), FermiSentence({fw2: -1, fw4: 2.8})),  # pennylane numpy array
+        pytest.param(
+            fw2,
+            qml.math.array([2.8], like="jax"),
+            FermiSentence({fw2: -1, fw4: 2.8}),
+            marks=pytest.mark.jax,
+        ),  # jax array
         (
             fw1,
             pnp.array([2, 2])[0],
@@ -903,6 +918,12 @@ class TestFermiSentenceArithmetic:
             pnp.array([2]),
             FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
         ),  # pennylane numpy array
+        pytest.param(
+            fs1,
+            qml.math.array([2], like="jax"),
+            FermiSentence({fw1: 1.23 * 2, fw2: 4j * 2, fw3: -0.5 * 2}),
+            marks=pytest.mark.jax,
+        ),  # jax array
         (
             fs1,
             pnp.array([2, 2])[0],
@@ -974,6 +995,12 @@ class TestFermiSentenceArithmetic:
             np.array([3]),
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
         ),  # numpy array
+        pytest.param(
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            qml.math.array([3], like="jax"),
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: 3}),
+            marks=pytest.mark.jax,
+        ),  # jax array
         (
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3]),
@@ -1046,6 +1073,12 @@ class TestFermiSentenceArithmetic:
             np.array([3]),
             FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
         ),  # numpy array
+        pytest.param(
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            qml.math.array([3], like="jax"),
+            FermiSentence({fw1: 1.2, fw3: 3j, fw4: -3}),
+            marks=pytest.mark.jax,
+        ),  # jax array
         (
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3]),
@@ -1082,6 +1115,12 @@ class TestFermiSentenceArithmetic:
             np.array([3]),
             FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
         ),  # numpy array
+        pytest.param(
+            FermiSentence({fw1: 1.2, fw3: 3j}),
+            qml.math.array([3], like="jax"),
+            FermiSentence({fw1: -1.2, fw3: -3j, fw4: 3}),
+            marks=pytest.mark.jax,
+        ),  # jax array
         (
             FermiSentence({fw1: 1.2, fw3: 3j}),
             pnp.array([3]),
