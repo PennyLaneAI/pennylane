@@ -472,6 +472,35 @@ class TestTOML:
         ):
             _get_compilation_flags(document)
 
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [
+            """
+            schema = 3
+            
+            [qjit.operators.gates]
+            
+            PauliX = {}
+            
+            [compilation]
+            
+            qjit_compatible = false
+            """
+        ],
+        indirect=True,
+    )
+    def test_qjit_incompatible_error(self, request):
+        """Tests that a device with qjit-specific features is qjit-compatible."""
+
+        document = load_toml_file(request.node.toml_file)
+        capabilities = parse_toml_document(document)
+        with pytest.raises(
+            InvalidCapabilitiesError,
+            match="qjit-specific sections are found but the device is not qjit-compatible.",
+        ):
+            update_device_capabilities(capabilities, document, "qjit")
+
 
 EXAMPLE_TOML_FILE = """
 schema = 3

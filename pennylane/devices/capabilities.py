@@ -156,7 +156,18 @@ VALID_COMPILATION_FLAGS = {
 
 
 def _get_toml_section(document: dict, path: str, prefix: str = "") -> dict:
-    """Retrieves a section from a TOML document using a given path."""
+    """Retrieves a section from a TOML document using a given path.
+
+    Args:
+        document (dict): The TOML document loaded from a file.
+        path (str): The title of the section to retrieve, typically in dot-separated format.
+        prefix (str): Optional prefix to the path. For example, if `path` is "operators.gates"
+            and `prefix` is "qjit", the "qjit.operators.gates" section will be retrieved.
+
+    Returns:
+        dict: the requested section from the TOML document.
+
+    """
 
     if prefix:
         path = f"{prefix}.{path}"
@@ -223,13 +234,25 @@ def _get_operators(section: dict) -> dict[str, OperatorProperties]:
 
 
 def _get_operations(document: dict, prefix: str = "") -> dict[str, OperatorProperties]:
-    """Gets the supported operations from a TOML document."""
+    """Gets the supported operations from a TOML document.
+
+    Args:
+        document (dict): The TOML document loaded from a file.
+        prefix (str): Optional prefix corresponding to the runtime interface.
+
+    """
     section = _get_toml_section(document, "operators.gates", prefix)
     return _get_operators(section)
 
 
 def _get_observables(document: dict, prefix: str = "") -> dict[str, OperatorProperties]:
-    """Gets the supported observables from a TOML document."""
+    """Gets the supported observables from a TOML document.
+
+    Args:
+        document (dict): The TOML document loaded from a file.
+        prefix (str): Optional prefix corresponding to the runtime interface.
+
+    """
     section = _get_toml_section(document, "operators.observables", prefix)
     return _get_operators(section)
 
@@ -237,7 +260,13 @@ def _get_observables(document: dict, prefix: str = "") -> dict[str, OperatorProp
 def _get_measurement_processes(
     document: dict, prefix: str = ""
 ) -> dict[str, list[ExecutionCondition]]:
-    """Gets the supported measurement processes from a TOML document."""
+    """Gets the supported measurement processes from a TOML document.
+
+    Args:
+        document (dict): The TOML document loaded from a file.
+        prefix (str): Optional prefix corresponding to the runtime interface.
+
+    """
 
     section = _get_toml_section(document, "measurement_processes", prefix)
     measurement_processes = {}
@@ -261,7 +290,14 @@ def _get_measurement_processes(
 def _get_compilation_flags(
     document: dict, prefix: str = "", default: bool = True
 ) -> dict[str, bool]:
-    """Gets the boolean capabilities in the compilation section."""
+    """Gets the boolean capabilities in the compilation section.
+
+    Args:
+        document (dict): The TOML document loaded from a file.
+        prefix (str): Optional prefix corresponding to the runtime interface.
+        default (bool): Whether to populate default values for unspecified flags.
+
+    """
 
     section = _get_toml_section(document, "compilation", prefix)
 
@@ -289,7 +325,13 @@ def _get_options(document: dict) -> dict[str, str]:
 
 
 def parse_toml_document(document: dict) -> DeviceCapabilities:
-    """Parses a TOML document into a DeviceCapabilities object."""
+    """Parses a TOML document into a DeviceCapabilities object.
+
+    This function will ignore sections that are specific to either runtime interface, such as
+    "qjit.operators.gates". To include these sections, use :func:`update_device_capabilities`
+    on the capabilities object returned from this function.
+
+    """
 
     schema = int(document["schema"])
     assert schema in ALL_SUPPORTED_SCHEMAS, f"Unsupported capabilities TOML schema {schema}"
@@ -326,3 +368,8 @@ def update_device_capabilities(
     compilation_flags = _get_compilation_flags(document, runtime_interface, default=False)
     for flag, value in compilation_flags.items():
         setattr(capabilities, flag, value)
+
+    if runtime_interface == "qjit" and "qjit" in document and not capabilities.qjit_compatible:
+        raise InvalidCapabilitiesError(
+            "qjit-specific sections are found but the device is not qjit-compatible."
+        )
