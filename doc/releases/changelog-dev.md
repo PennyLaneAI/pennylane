@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Added `show_wire_labels` option to `tape_text` and `tape_mpl`, which hides wire labels when set to `False`.
+* Added `show_wire_labels` option to `draw` and `draw_mpl`, which hides wire labels when set to `False`.
   Defaults to `True`.
   [(#6410)](https://github.com/PennyLaneAI/pennylane/pull/6410)
 
