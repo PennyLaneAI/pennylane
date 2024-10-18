@@ -22,6 +22,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.math import expand_matrix
 
 # Define a list of dtypes to test
 dtypes = ["complex64", "complex128"]
@@ -543,6 +544,70 @@ class TestExpandMatrix:
         assert np.allclose(op.matrix(), self.base_matrix_2_broadcasted, atol=tol)
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
+
+
+class TestExpandMatrixQutrit:
+
+    def test_add_wire_at_end(self):
+        """Test that expand_matrix works on qutrit matrices when an additional wire is added at the end."""
+
+        mat = np.reshape(np.arange(9), (3, 3))
+
+        new_mat = expand_matrix(mat, 0, (0, 1))
+        assert qml.math.allclose(new_mat, np.kron(mat, np.eye(3)))
+
+    def test_add_wire_at_start(self):
+        """Test that expand_matrix works on qutrit matrices when an additional wire is added at the start."""
+
+        mat = np.reshape(np.arange(9), (3, 3))
+        new_mat = expand_matrix(mat, 0, (1, 0))
+        assert qml.math.allclose(new_mat, np.kron(np.eye(3), mat))
+
+    def test_wire_permutation(self):
+        """Test that wires can be permuted."""
+        m1 = np.reshape(np.arange(81), (9, 9))
+        m2 = expand_matrix(m1, (0, 1), (1, 0))
+
+        # states across row are 00, 01, 02, 10, 11, 12, 20, 21, 22
+        # extract out right qubit state with mod
+        m1_wire_zero = m1 % 3
+        m2_wire_zero = m2 % 3
+
+        # extract out left qubit state  with floor then mod
+        m1_wire_one = np.floor(m1 / 3) % 3
+        m2_wire_one = np.floor(m2 / 3) % 3
+
+        assert qml.math.allclose(m1_wire_zero, m2_wire_one)
+        assert qml.math.allclose(m1_wire_one, m2_wire_zero)
+
+        # check columns also switched
+        # now matrix numbers indicate row number
+        m1p = np.floor(m1 / 9)
+        m2p = np.floor(m2 / 9)
+
+        # states across column are 00, 01, 02, 10, 11, 12, 20, 21, 22
+        # extract out right qubit state with mod
+        m1_wire_zerop = m1p % 3
+        m2_wire_zerop = m2p % 3
+
+        # extract out left qubit state  with floor then mod
+        m1_wire_onep = np.floor(m1p / 3) % 3
+        m2_wire_onep = np.floor(m2p / 3) % 3
+
+        assert qml.math.allclose(m1_wire_zerop, m2_wire_onep)
+        assert qml.math.allclose(m1_wire_onep, m2_wire_zerop)
+
+    def test_adding_wire_in_middle(self):
+        """Test that expand_matrix can add an identity wire in the middle of a two qutrit matrix."""
+
+        m1 = np.reshape(np.arange(9), (3, 3))
+        m2 = np.reshape(np.arange(9, 18), (3, 3))
+        m3 = np.kron(m1, m2)
+
+        m3_added_wire = expand_matrix(m3, (0, 1), (1, 2, 0))
+        m3_kron = np.kron(np.kron(m2, np.eye(3)), m1)
+
+        assert qml.math.allclose(m3_added_wire, m3_kron)
 
 
 class TestExpandMatrixSparse:

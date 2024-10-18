@@ -202,6 +202,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
+  `qml.transforms.decompositions.clifford_t_decomposition` respectively have been deprecated.
+  [(#6404)](https://github.com/PennyLaneAI/pennylane/pull/6404)
+
 * Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
   Note that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to
@@ -272,6 +276,12 @@
   [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `validate_device_wires` transform now raises an error if abstract wires are provided.
+  [(#6405)](https://github.com/PennyLaneAI/pennylane/pull/6405)
+
+* Fixes `qml.math.expand_matrix` for qutrit and arbitrary qudit operators.
+  [(#6398)](https://github.com/PennyLaneAI/pennylane/pull/6398/)
 
 * `MeasurementValue` now raises an error when it is used as a boolean.
   [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
