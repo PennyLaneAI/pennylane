@@ -437,9 +437,6 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
     ]
 
 
-@pytest.mark.filterwarnings(
-    "ignore:The max_expansion argument is deprecated:pennylane.PennyLaneDeprecationWarning"
-)
 class TestCreateCustomDecompExpandFn:
     """Tests for the custom_decomps argument for devices"""
 

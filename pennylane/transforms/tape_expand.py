@@ -15,6 +15,7 @@
 generate such functions from."""
 # pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation, no-member
 import contextlib
+import warnings
 
 import pennylane as qml
 from pennylane.operation import (
@@ -324,7 +325,7 @@ def _custom_decomp_context(custom_decomps):
         stack.close()
 
 
-def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
+def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=None):
     """Creates a custom expansion function for a device that applies
     a set of specified custom decompositions.
 
@@ -379,7 +380,7 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
     return custom_decomp_expand
 
 
-def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
+def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=None):
     """Creates a custom preprocessing method for a device that applies
     a set of specified custom decompositions.
 
@@ -458,8 +459,11 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
 
 
 @contextlib.contextmanager
-def set_decomposition(custom_decomps, dev, decomp_depth=10):
+def set_decomposition(custom_decomps, dev, decomp_depth=None):
     """Context manager for setting custom decompositions.
+
+    .. warning::
+        The ``decomp_depth`` argument is deprecated and will be removed in version 0.40.
 
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
@@ -505,6 +509,14 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
+    if decomp_depth is not None:
+        warnings.warn(
+            "The decomp_depth argument is deprecated and will be removed in version v0.40.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        decomp_depth = 10
+
     if isinstance(dev, qml.devices.LegacyDeviceFacade):
         dev = dev.target_device
 
@@ -525,14 +537,20 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
             dev.custom_expand_fn = original_custom_expand_fn
 
     else:
-        original_preprocess = dev.preprocess
-        new_preprocess = _create_decomp_preprocessing(
-            custom_decomps, dev, decomp_depth=decomp_depth
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                message=r"The max_expansion argument is deprecated",
+                category=qml.PennyLaneDeprecationWarning,
+            )
+            original_preprocess = dev.preprocess
+            new_preprocess = _create_decomp_preprocessing(
+                custom_decomps, dev, decomp_depth=decomp_depth
+            )
 
-        try:
-            dev.preprocess = new_preprocess
-            yield
+            try:
+                dev.preprocess = new_preprocess
+                yield
 
-        finally:
-            dev.preprocess = original_preprocess
+            finally:
+                dev.preprocess = original_preprocess
