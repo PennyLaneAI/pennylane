@@ -14,10 +14,12 @@
 """
 This submodule defines a capture compatible call to QNodes.
 """
-
+import warnings
+import numbers
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
+from pennylane.typing import TensorLike
 
 import pennylane as qml
 
@@ -32,7 +34,12 @@ except ImportError:
     has_jax = False
 
 
-def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
+def _is_non_scalar_tensor(arg):
+    """Helper function to check if an argument is a non-scalar tensor-like object."""
+    return isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number) and arg.shape != ()
+
+
+def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
     if jax.config.jax_enable_x64:  # pylint: disable=no-member
         dtype_map = {
             float: jax.numpy.float64,
@@ -53,8 +60,85 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
     for s in shots:
         for m in measurements:
             shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
+            shapes.append(jax.core.ShapedArray(batch_shape + shape, dtype_map.get(dtype, dtype)))
+
     return shapes
+
+
+class BatchingManager:
+    """A class to manage the batching state of the QNode."""
+
+    # indicates that the (lazy) batch shape has not yet been accessed/computed
+    _BATCH_SHAPE = ()
+
+    @classmethod
+    def enable_batching(cls, batch_shape):
+        """Enable batching for the QNode."""
+        cls._BATCH_SHAPE = batch_shape
+
+    @classmethod
+    def disable_batching(cls):
+        """Disable batching for the QNode."""
+        cls._BATCH_SHAPE = ()
+
+    @classmethod
+    def get_batch_shape(cls):
+        """Return the batch shape of the QNode."""
+        return cls._BATCH_SHAPE
+
+
+# pylint: disable=too-many-arguments
+def _qnode_batching_rule(
+    batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
+):
+    """
+    Batching rule for the ``qnode`` primitive.
+
+    This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
+    """
+
+    assert len(batched_args) == len(batch_dims) and all(
+        batch_dim is None or isinstance(batch_dim, int) for batch_dim in batch_dims
+    ), "Mismatch in batched arguments or invalid batch dimensions found."
+
+    consts = batched_args[:n_consts]
+    args = batched_args[n_consts:]
+
+    for i, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
+
+        if not _is_non_scalar_tensor(arg):
+            continue
+
+        if i < n_consts:
+            raise ValueError("Batched constant cannot currently be captured with jax.vmap.")
+
+        if arg.size > 1 and batch_dim is None:
+            warnings.warn(
+                f"Argument at index {i} has more than 1 element but is not batched. "
+                "This may lead to unintended behavior or wrong results if the argument is provided "
+                "using parameter broadcasting to a quantum operation that supports batching.",
+                UserWarning,
+            )
+
+        if arg.size == 0:
+            raise ValueError("Empty tensors are not supported with jax.vmap.")
+
+    input_shapes = [arg.shape for arg in args if _is_non_scalar_tensor(arg)]
+
+    batch_shape = jax.lax.broadcast_shapes(*input_shapes)
+
+    BatchingManager.enable_batching(batch_shape)
+
+    def qfunc(*inner_args):
+        return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
+
+    qnode = qml.QNode(qfunc, device, **qnode_kwargs)
+    result = qnode_call(qnode, *args, shots=shots)
+
+    BatchingManager.disable_batching()
+
+    # The batch dimension is at the front (axis 0) for all elements in the result.
+    return result, [0] * len(result)
 
 
 @lru_cache()
@@ -79,8 +163,15 @@ def _get_qnode_prim():
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
+
         mps = qfunc_jaxpr.outvars
-        return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+
+        return _get_shapes_for(
+            *mps,
+            shots=shots,
+            num_device_wires=len(device.wires),
+            batch_shape=BatchingManager.get_batch_shape(),
+        )
 
     def make_zero(tan, arg):
         return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
@@ -90,6 +181,8 @@ def _get_qnode_prim():
         return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
 
     ad.primitive_jvps[qnode_prim] = _qnode_jvp
+
+    jax.interpreters.batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
 
     return qnode_prim
 
@@ -172,7 +265,9 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
     flat_fn = FlatFn(qfunc)
+
     qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
