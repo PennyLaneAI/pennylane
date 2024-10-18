@@ -54,8 +54,7 @@ def get_gradient_fn(
         tape (Optional[.QuantumTape]): the circuit that will be differentiated. Should include shots information.
 
     Returns:
-        tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
-        ``gradient_kwargs``, and the device to use when calling the execute function.
+        str or .TransformDispatcher (the ``gradient_fn``)
     """
 
     if diff_method is None:
@@ -74,8 +73,6 @@ def get_gradient_fn(
 
     if diff_method == "best":
         qn = qml.QNode(lambda: None, device, diff_method=None)
-        # pylint: disable=protected-access
-        qn._tape = tape
         return qml.workflow.get_best_diff_method(qn)()
 
     if diff_method == "parameter-shift":
