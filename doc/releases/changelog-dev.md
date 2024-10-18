@@ -280,6 +280,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `validate_device_wires` transform now raises an error if abstract wires are provided.
+  [(#6405)](https://github.com/PennyLaneAI/pennylane/pull/6405)
+
 * Fixes `qml.math.expand_matrix` for qutrit and arbitrary qudit operators.
   [(#6398)](https://github.com/PennyLaneAI/pennylane/pull/6398/)
 
