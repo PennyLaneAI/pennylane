@@ -25,14 +25,14 @@ def _get_polynomial(f, mod, *variable_sizes):
     Args:
         f (callable):  the function from which the polynomial is extracted
         mod (int): the modulus to use for the result
-        variable_sizes (Sequence[int]):  a list storing the number of bits used to represent each of the variables of the function
+        *variable_sizes (int):  variable length argument specifying the number of bits used to represent each of the variables of the function
 
     Return:
         dict: A dictionary where each key is a tuple representing the variable terms of the polynomial (if the term includes the i-th variable, a 1 appears in the i-th position).
               Each value is the corresponding coefficient for that term.
 
     Example:
-        For the function f(x, y) = 4 * x * y` with `variable_sizes=(2, 1)` and `mod=5`, the target polynomial is `4 * (2x_0 + x_1) * y_0` that
+        For the function `f(x, y) = 4 * x * y` with `variable_sizes=(2, 1)` and `mod=5`, the target polynomial is `4 * (2x_0 + x_1) * y_0` that
         is expanded as `4 * x1 * y0 + 8 * x0 * y0`. Therefore, the expected output is:
 
         ```
@@ -44,14 +44,13 @@ def _get_polynomial(f, mod, *variable_sizes):
         ```
     In this example, the first two bits correspond to the binary representation of the first variable and the last
     bit corresponds to the binary representation of the second variable.
-
     """
 
     total_wires = sum(variable_sizes)
     num_combinations = 2**total_wires
 
     # Calculate the list with all possible keys
-    all_binary_list = [list(map(int, bin(i)[2:].zfill(total_wires))) for i in range(2**total_wires)]
+    all_binary_list = [list(map(int, bin(i)[2:].zfill(total_wires))) for i in range(num_combinations)]
 
     # Compute the f values for all combinations (2 ** len(total_wires))
     f_values = [0] * num_combinations
@@ -70,9 +69,8 @@ def _get_polynomial(f, mod, *variable_sizes):
             decimal_values.append(decimal)
             start += wire_length
 
-        f_values[s] = (
-            f(*decimal_values) % mod
-        )  # (f_values is the zeta transform of the target polynomial)
+        # (f_values is the zeta transform of the target polynomial)
+        f_values[s] = f(*decimal_values) % mod
 
     # Compute the Möbius inversion of f_values
     for i in range(total_wires):
@@ -102,8 +100,8 @@ class OutPoly(Operation):
 
     .. math::
 
-        \text{OutPoly}_{f, \text{mod}} |x_1 \rangle \dots |x_m \rangle |0 \rangle
-        = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m) \text{mod} k\rangle.
+        \text{OutPoly}_{f, k} |x_1 \rangle \dots |x_m \rangle |0 \rangle
+        = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m)\, \text{mod}\, k\rangle.
 
     This operation leaves the input registers unchanged and stores the result of the
     polynomial function in the output register. It is based on the idea detailed
@@ -118,9 +116,9 @@ class OutPoly(Operation):
         f (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
         mod (int, optional): The modulus to use for the result. If not provided, it defaults to :math:`2^{n}`, where `n` is the number of qubits in the output register.
-        work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of 2, two auxiliary work wires are required.
+        work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of two, then two auxiliary work wires are required.
         id (str or None, optional): The name of the operation.
-        kwargs: the wires associated with the function arguments. That is to say, if the polynomial takes two arguments, we will need to send two kwargs indicating the wires we will use to represent each argument. in the example below, the kwargs are ``x_wires`` and ``y_wires``.
+        **kwargs: the wires associated with the function arguments. That is to say, if the polynomial takes two arguments, we will need to send two keyword arguments indicating the wires we will use to represent each argument. in the example below, the kwargs are ``x_wires`` and ``y_wires``.
 
     Raises:
         ValueError: If `mod` is not a power of 2 and no or insufficient work wires are provided.
