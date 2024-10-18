@@ -268,6 +268,7 @@ def tape_text(
         show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
         cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
             and ``'matrices'``.
+        show_wire_labels (bool): Whether to show the wire labels.
 
     Returns:
         str : String based graphic of the circuit.
