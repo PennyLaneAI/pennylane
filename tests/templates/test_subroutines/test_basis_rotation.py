@@ -334,11 +334,12 @@ class TestInputs:
         assert template.id == "a"
 
 
-def circuit_template(unitary_matrix):
-    qml.BasisState(np.array([1, 1, 0]), wires=[0, 1, 2])
+def circuit_template(unitary_matrix, check=False):
+    qml.BasisState(qml.math.array([1, 1, 0]), wires=[0, 1, 2])
     qml.BasisRotation(
         wires=range(3),
         unitary_matrix=unitary_matrix,
+        check=check,
     )
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
@@ -402,7 +403,7 @@ class TestInterfaces:
         assert np.allclose(grads, np.zeros_like(unitary_matrix, dtype=complex), atol=tol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, tol):
+    def test_jax_jit(self, tol):
         """Test the jax interface."""
 
         import jax
@@ -415,36 +416,26 @@ class TestInterfaces:
                 [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
             ]
         )
-        weights = jnp.array(
-            [
-                2.2707802713289267,
-                2.9355948424220206,
-                -1.4869222527726533,
-                1.2601662579297865,
-                2.3559705032936717,
-                1.1748572730890159,
-                2.2500537657656356,
-                -0.7251404204443089,
-                2.3577346350335198,
-            ]
-        )
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = jax.jit(qml.QNode(circuit_template, dev), static_argnames="check")
+        circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(unitary_matrix)
-        res2 = circuit2(weights)
+        res2 = circuit2(unitary_matrix)
+        res3 = circuit2(qml.math.toarray(unitary_matrix))
+
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qml.math.allclose(res, res3, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(unitary_matrix)
 
         grad_fn2 = jax.grad(circuit2)
-        grads2 = grad_fn2(weights)
+        grads2 = grad_fn2(unitary_matrix)
 
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

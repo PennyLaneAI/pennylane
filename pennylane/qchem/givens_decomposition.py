@@ -15,8 +15,6 @@
 This module contains the functions needed for performing basis transformations defined by a set of fermionic ladder operators.
 """
 
-import numpy as np
-
 import pennylane as qml
 
 
@@ -38,26 +36,72 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
         tol (float): determines tolerance limits for :math:`|a|` and :math:`|b|` under which they are considered as zero.
 
     Returns:
-        np.ndarray (or tensor): Givens rotation matrix
+        tensor_like: Givens rotation matrix
+
+    Raises:
+        TypeError: if a and b have different interfaces
 
     """
-    abs_a, abs_b = np.abs(a), np.abs(b)
-    if abs_a < tol:
-        cosine, sine, phase = 1.0, 0.0, 1.0
-    elif abs_b < tol:
-        cosine, sine, phase = 0.0, 1.0, 1.0
-    else:
-        hypot = np.hypot(abs_a, abs_b)
-        cosine = abs_b / hypot
-        sine = abs_a / hypot
-        phase = 1.0 * b / abs_b * a.conjugate() / abs_a
+
+    abs_a, abs_b = qml.math.abs(a), qml.math.abs(b)
+    interface_a, interface_b = qml.math.get_interface(a), qml.math.get_interface(b)
+
+    if interface_a != interface_b:
+        raise TypeError(
+            f"The interfaces of 'a' and 'b' do not match. Got {interface_a} and {interface_b}."
+        )
+
+    interface = interface_a
+
+    aprod = qml.math.nan_to_num(abs_b * abs_a)
+    hypot = qml.math.hypot(abs_a, abs_b)
+
+    cosine = qml.math.where(abs_b < tol, 0.0, abs_b / hypot)
+    cosine = qml.math.where(abs_a < tol, 1.0, cosine)
+
+    sine = qml.math.where(abs_b < tol, 1.0, abs_a / hypot)
+    sine = qml.math.where(abs_a < tol, 0.0, sine)
+
+    phase = qml.math.where(abs_b < tol, 1.0, (1.0 * b * qml.math.conj(a)) / (aprod + 1e-15))
+    phase = qml.math.where(abs_a < tol, 1.0, phase)
 
     if left:
-        return np.array([[phase * cosine, -sine], [phase * sine, cosine]])
+        return qml.math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface)
 
-    return np.array([[phase * sine, cosine], [-phase * cosine, sine]])
+    return qml.math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
 
 
+def _set_unitary_matrix(unitary_matrix, index, value, like=None):
+    """Set the values in the ``unitary_matrix`` at the specified index.
+
+    Args:
+        unitary_matrix (tensor_like): unitary being modified
+        index (Tuple[Int | Ellipsis | List[Int]]): index for slicing the unitary
+        value (tensor_like): new values for the specified index
+        like (str): interface for the unitary matrix
+
+    Returns:
+        tensor_like: modified unitary
+
+    Examples:
+        A = np.eye(5)
+        A = _set_unitary_matrix(A, (0, 0), 5)
+        A = _set_unitary_matrix(A, (1, Ellipsis), np.array([1, 2, 3, 4, 5]))
+        A = _set_unitary_matrix(A, (1, [1, 2]), np.array([3, 4]))
+    """
+    if like is None:
+        like = qml.math.get_interface(unitary_matrix)
+
+    if like == "jax":
+        return unitary_matrix.at[index[0], index[1]].set(
+            value, indices_are_sorted=True, unique_indices=True
+        )
+
+    unitary_matrix[index[0], index[1]] = value
+    return unitary_matrix
+
+
+# pylint:disable = too-many-branches
 def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
@@ -110,7 +154,7 @@ def givens_decomposition(unitary):
         unitary (tensor): unitary matrix on which decomposition will be performed
 
     Returns:
-        (np.ndarray, list[(np.ndarray, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices.
+        (tensor_like, list[(tensor_like, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices
 
     Raises:
         ValueError: if the provided matrix is not square.
@@ -147,8 +191,10 @@ def givens_decomposition(unitary):
                             # Update U = T(N+j-i-1, N+j-i) @ U
 
     """
+    interface = qml.math.get_deep_interface(unitary)
+    unitary = qml.math.copy(unitary) if interface == "jax" else qml.math.toarray(unitary).copy()
+    M, N = qml.math.shape(unitary)
 
-    unitary, (M, N) = qml.math.toarray(unitary).copy(), unitary.shape
     if M != N:
         raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
 
@@ -158,32 +204,41 @@ def givens_decomposition(unitary):
             for j in range(0, i):
                 indices = [i - j - 1, i - j]
                 grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                unitary[:, indices] = unitary[:, indices] @ grot_mat.T
-                right_givens.append((grot_mat.conj(), indices))
+                unitary = _set_unitary_matrix(
+                    unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
+                )
+                right_givens.append((qml.math.conj(grot_mat), indices))
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
                 grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                unitary[indices] = grot_mat @ unitary[indices]
+                unitary = _set_unitary_matrix(
+                    unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
+                )
                 left_givens.append((grot_mat, indices))
 
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
-        sphase_mat = np.diag(np.diag(unitary)[[i, j]])
-        decomp_mat = grot_mat.conj().T @ sphase_mat
+        sphase_mat = qml.math.diag(qml.math.diag(unitary)[qml.math.array([i, j])])
+        decomp_mat = qml.math.conj(grot_mat).T @ sphase_mat
         givens_mat = _givens_matrix(*decomp_mat[1, :].T)
         nphase_mat = decomp_mat @ givens_mat.T
 
         # check for T_{m,n}^{-1} x D = D x T.
-        if not np.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
+        if not qml.math.is_abstract(decomp_mat) and not qml.math.allclose(
+            nphase_mat @ qml.math.conj(givens_mat), decomp_mat
+        ):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
-        unitary[i, i], unitary[j, j] = np.diag(nphase_mat)
-        nleft_givens.append((givens_mat.conj(), (i, j)))
+        for diag_idx, diag_val in zip([(i, i), (j, j)], qml.math.diag(nphase_mat)):
+            unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
+        nleft_givens.append((qml.math.conj(givens_mat), (i, j)))
 
-    phases, ordered_rotations = np.diag(unitary), []
+    phases, ordered_rotations = qml.math.diag(unitary), []
     for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-        if not np.all(np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])):  # pragma: no cover
+        if not qml.math.is_abstract(grot_mat) and not qml.math.all(
+            qml.math.isreal(grot_mat[0, 1]) and qml.math.isreal(grot_mat[1, 1])
+        ):  # pragma: no cover
             raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
         ordered_rotations.append((grot_mat, (i, j)))
 
