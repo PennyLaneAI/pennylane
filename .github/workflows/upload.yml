@@ -4,25 +4,34 @@ on:
     types: [published]
 
 jobs:
+  determine_runner:
+    name: Change to Large Runner
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+      force_large_runner: true
+
   tests:
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
       branch: ${{ github.ref }}
+      use_large_runner: true
 
   upload:
-    runs-on: ubuntu-latest
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     # Make sure that the PennyLane is not released unless the tests are passing.
     needs:
       - tests
+      - determine_runner
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
