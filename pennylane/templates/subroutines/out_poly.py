@@ -29,7 +29,7 @@ def _get_polynomial(f, mod, *variable_sizes):
 
     Return:
         dict: A dictionary where each key is a tuple representing the variable terms of the polynomial (if the term includes the i-th variable, a 1 appears in the i-th position).
-              Each value is the corresponding coefficient for that term.
+              Each key is a tuple containing a bitstring representing a term in the binary polynomial
 
     Example:
         For the function `f(x, y) = 4 * x * y` with `variable_sizes=(2, 1)` and `mod=5`, the target polynomial is `4 * (2x_0 + x_1) * y_0` that
@@ -49,8 +49,9 @@ def _get_polynomial(f, mod, *variable_sizes):
     total_wires = sum(variable_sizes)
     num_combinations = 2**total_wires
 
-    # Calculate the list with all possible keys
-    all_binary_list = [list(map(int, bin(i)[2:].zfill(total_wires))) for i in range(num_combinations)]
+    all_binary_list = [
+        list(map(int, bin(i)[2:].zfill(total_wires))) for i in range(num_combinations)
+    ]
 
     # Compute the f values for all combinations (2 ** len(total_wires))
     f_values = [0] * num_combinations
@@ -72,14 +73,8 @@ def _get_polynomial(f, mod, *variable_sizes):
         # (f_values is the zeta transform of the target polynomial)
         f_values[s] = f(*decimal_values) % mod
 
-    # Compute the Möbius inversion of f_values
-    for i in range(total_wires):
-        ith_bit_on = 1 << i
-        for mask in range(num_combinations):
-            if mask & ith_bit_on:
-                f_values[mask] = (f_values[mask] - f_values[mask ^ ith_bit_on]) % mod
+    f_values = _mobius_inversion_of_zeta_transform(f_values, mod)
 
-    # Adjust the algorithm result to the dictionary output format
     coeffs_dict = {}
     for s, f_value in enumerate(f_values):
         if f_value != 0:
@@ -87,6 +82,34 @@ def _get_polynomial(f, mod, *variable_sizes):
             coeffs_dict[bin_tuple] = f_value
 
     return coeffs_dict
+
+
+def _mobius_inversion_of_zeta_transform(f_values, mod):
+    """Applies the Möbius inversion to a zeta transform.
+
+    The input `f_values` is a list of integers representing a zeta transform
+    over subsets of a bitmask. This function performs the Möbius inversion
+    of the zeta transform by subtracting terms to recover the original
+    values before the transform.
+
+    Args:
+        f_values (list): A list of integers representing the zeta transform.
+        mod (int): The modulus to be used in the calculations.
+
+    Returns:
+        list: The list `f_values` after applying the Möbius inversion.
+    """
+
+    total_wires = int(qml.math.log2(len(f_values)))
+    num_combinations = len(f_values)
+
+    for i in range(total_wires):
+        ith_bit_on = 1 << i
+        for mask in range(num_combinations):
+            if mask & ith_bit_on:
+                f_values[mask] = (f_values[mask] - f_values[mask ^ ith_bit_on]) % mod
+
+    return f_values
 
 
 class OutPoly(Operation):
@@ -234,8 +257,6 @@ class OutPoly(Operation):
         if not isinstance(mod, int):
             raise ValueError("mod must be integer.")
 
-        self.hyperparameters["f"] = f
-
         all_wires = []
         self.hyperparameters["registers_wires"] = {}
 
@@ -248,6 +269,7 @@ class OutPoly(Operation):
         self.hyperparameters["registers_wires"]["output_wires"] = wires
         all_wires += wires
 
+        self.hyperparameters["f"] = f
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires) if work_wires else None
 
@@ -300,10 +322,20 @@ class OutPoly(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     def decomposition(self):  # pylint: disable=arguments-differ
-        return self.compute_decomposition(**self.hyperparameters)
+        input_registers = self.hyperparameters["registers_wires"]
+        return self.compute_decomposition(
+            **{
+                key: value
+                for key, value in self.hyperparameters.items()
+                if key != "registers_wires"
+            },
+            **input_registers,
+        )
 
     @staticmethod
-    def compute_decomposition(**kwargs):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        f, output_wires, mod=None, work_wires=None, id=None, **kwargs
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -315,25 +347,27 @@ class OutPoly(Operation):
 
         .. code-block:: python
 
-            kwargs = {
-                "f": lambda x, y: x + y,
-                "registers_wires": {"x": [0, 1], "y": [2, 3], "output_wires": [4]},
-                "mod": 2,
-                "work_wires": None,
-            }
+            print(
+            qml.OutPoly.compute_decomposition(
+                f=lambda x, y: x + y,
+                x_wires=[0, 1],
+                y_wires=[2, 3],
+                output_wires=[4, 5],
+                mod=4,
+            )
+        )
 
         .. code-block:: pycon
 
-        >>> print(qml.OutPoly.compute_decomposition(**kwargs))
         [QFT(wires=[4]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[3]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]), Adjoint(QFT(wires=[4]))]
 
         """
+        registers_wires = []
 
-        f = kwargs["f"]
-        mod = kwargs["mod"]
+        for key, value in kwargs.items():
+            registers_wires.append(qml.wires.Wires(value))
 
-        registers_wires = list(kwargs["registers_wires"].values())
-        work_wires = kwargs["work_wires"]
+        registers_wires.append(output_wires)
 
         if not work_wires:
             work_wires = [None, None]

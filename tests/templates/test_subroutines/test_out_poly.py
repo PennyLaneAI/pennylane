@@ -19,7 +19,10 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.out_poly import _get_polynomial
+from pennylane.templates.subroutines.out_poly import (
+    _get_polynomial,
+    _mobius_inversion_of_zeta_transform,
+)
 
 
 def test_get_polynomial():
@@ -40,6 +43,17 @@ def test_get_polynomial():
     for key in dic.keys():
         assert key in expected_dic
         assert dic[key] == expected_dic[key]
+
+
+def test_mobius_inversion_of_zeta_transform():
+    """Test that the Möbius inversion works correctly"""
+
+    f_values = [1, 3, 4, 10]
+    mod = 20
+
+    expected_values = [1, 2, 3, 4]
+    result = _mobius_inversion_of_zeta_transform(f_values.copy(), mod)
+    assert result == expected_values
 
 
 def f_test(x, y, z):
@@ -147,7 +161,7 @@ class TestOutPoly:
         ops = qml.OutPoly(f, x_wires=[0, 1], y_wires=[2], output_wires=[3]).decomposition()
 
         for op1, op2 in zip(expected_decomposition, ops):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.jax
     def test_jit_compatible(self):
