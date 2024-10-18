@@ -110,12 +110,21 @@ def _qnode_batching_rule(
         if arg.size == 0:
             raise ValueError("Empty tensors are not supported with jax.vmap.")
 
+        # TODO: to fix this, we need to add more properties to the AbstractOperator
+        # class to indicate which operators support batching and check them here
         if arg.size > 1 and batch_dim is None:
             warnings.warn(
                 f"Argument at index {i} has more than 1 element but is not batched. "
                 "This may lead to unintended behavior or wrong results if the argument is provided "
                 "using parameter broadcasting to a quantum operation that supports batching.",
                 UserWarning,
+            )
+
+        # TODO: this limitation will be removed in the following PR
+        if len(arg.shape) > 1:
+            raise ValueError(
+                f"Argument at index {i} has more than one dimension: {arg.shape}. "
+                "Currently, only single-dimension batching is supported."
             )
 
     input_shapes = [arg.shape for arg in args if is_non_scalar_tensor(arg)]

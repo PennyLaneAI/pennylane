@@ -612,3 +612,16 @@ class TestQNodeVmapIntegration:
         assert qml.math.allclose(out["a"], jax.numpy.cos(x))
         assert qml.math.allclose(out["b"], -jax.numpy.sin(x))
         assert list(out.keys()) == ["a", "b"]
+
+    def test_error_multidimensional_batching(self):
+        """Test that an error is raised when trying to vmap over a multidimensional batched parameter."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            ValueError, match="Currently, only single-dimension batching is supported"
+        ):
+            jax.make_jaxpr(jax.vmap(circuit))(jax.numpy.array([[0.1, 0.2], [0.3, 0.4]]))

@@ -605,4 +605,9 @@ def is_non_scalar_tensor(arg) -> bool:
     False
     """
 
-    return isinstance(arg, TensorLike) and not isinstance(arg, numbers.Number) and arg.shape != ()
+    return (
+        isinstance(arg, TensorLike)
+        and not isinstance(arg, numbers.Number)
+        and not isinstance(arg, (list, tuple))
+        and arg.shape != ()
+    )
