@@ -107,14 +107,15 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 PennyLane is at the forefront of research in quantum computing, quantum machine learning, and quantum chemistry. Discover how researchers are using PennyLane.
 
 - **Quantum Computing**
-  - *Example Paper*: [lorem ipsum - Quantum Neural Networks using PennyLane](https://arxiv.org/abs/2006.02994)
-  - *Collaborative Research*: Research with [ABC Institute] on optimizing neural network architectures with quantum circuits.
+  - *Example Paper*: [Variational quantum algorithm for molecular geometry optimization
+](https://arxiv.org/abs/2106.13840)
+  - *Collaborative Research*: Research with [lorem ipsum] on optimizing...
 
 - **Quantum Machine Learning**
-  - *Case Study*: [lorem ipsum - Quantum simulations of molecules using PennyLane](https://arxiv.org/abs/1904.03206)
+  - *Case Study*: [Classical surrogates for quantum learning models](https://arxiv.org/abs/2206.11740)
 
 - **Quantum Chemistry**
-  - *Example Paper*: [lorem ipsum - Using VQE for optimization on quantum devices](https://arxiv.org/abs/XXXXXX)
+  - *Example Paper*: [Accelerating Quantum Computations of Chemistry Through Regularized Compressed Double Factorization](https://quantum-journal.org/papers/q-2024-06-13-1371/)
 
 Impactful research drives PennyLane. Submit your feature ideas to tailor our roadmap to your research needs[LINK TO RESEARCH PAGE - UNRELEASED]
 
