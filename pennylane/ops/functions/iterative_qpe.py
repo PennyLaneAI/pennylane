@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 
 
-def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
+def iterative_qpe(base, aux_wire="unset", iters: int = "unset", ancilla="unset"):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
     Given a unitary :math:`U`, this function applies the circuit for iterative quantum phase
@@ -37,7 +37,7 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
         are provided, ``aux_wire`` will be used and ``ancilla`` will be ignored.
 
     Returns:
-      list[MidMeasureMP]: the list of measurements performed
+      list[MeasurementValue]: the abstract results of the mid circuit measurements
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`, :func:`~.measure`
 
@@ -100,16 +100,35 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
         if aux_wire == "unset":
             aux_wire = ancilla
 
-    measurements = []
+    if qml.capture.enabled():
+        measurements = qml.math.zeros(iters, dtype=int, like="jax")
+    else:
+        measurements = [0] * iters
 
-    for i in range(iters):
+    @qml.for_loop(iters)
+    def f(i, measurements, target):
+
         qml.Hadamard(wires=aux_wire)
-        qml.ctrl(qml.pow(base, z=2 ** (iters - i - 1)), control=aux_wire)
+        qml.ctrl(qml.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
 
-        for ind, meas in enumerate(measurements):
-            qml.cond(meas, qml.PhaseShift)(-2.0 * np.pi / 2 ** (ind + 2), wires=aux_wire)
+        @qml.for_loop(i)
+        def g(j):
+            meas = measurements[iters - i + j]
+
+            def cond_func(k):
+                qml.PhaseShift(-2.0 * np.pi / 2 ** (k + 2), wires=aux_wire)
+
+            qml.cond(meas, cond_func)(j)
+
+        g()
 
         qml.Hadamard(wires=aux_wire)
-        measurements.insert(0, qml.measure(wires=aux_wire, reset=True))
+        m = qml.measure(wires=aux_wire, reset=True)
+        if qml.capture.enabled():
+            measurements = measurements.at[iters - i - 1].set(m)
+        else:
+            measurements[iters - i - 1] = m
 
-    return measurements
+        return measurements, target
+
+    return f(measurements, base)[0]
