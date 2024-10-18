@@ -41,7 +41,7 @@ __resource_kwarg_config = ResourceConfig(
         "RZ": {"epsilon": 1e-3},
         "TrotterProduct": {"estimate": True},
         "TrotterizedQfunc": {"estimate": True},
-        "Exp": {"estimate": True},
+        "Exp": {"estimate": False},
     }
 )
 

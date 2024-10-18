@@ -270,7 +270,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
             ops = self.hyperparameters["base"].operands
             with qml.QueuingManager.stop_recording():
-                first_order_expansion = [qml.exp(op, (time / n) * 1j) for op in ops]
+                first_order_expansion = [qml.exp(op, (time / n) * 1j, num_steps=1) for op in ops]
 
             gate_types = defaultdict(int)
             gate_sizes = defaultdict(int)

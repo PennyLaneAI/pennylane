@@ -225,8 +225,8 @@ class Exp(ScalarSymbolicOp, ResourcesOperation):
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
             modified_resources = _resources_from_pauli_word(tuple(base.pauli_rep.keys())[0], estimate=estimate)
 
-        # elif (pauli_sentence := base.pauli_rep) and math.real(coeff) == 0: 
-        #     modified_resources = _resources_from_pauli_sentence(pauli_sentence, estimate=estimate)
+        elif (pauli_sentence := base.pauli_rep) and math.real(coeff) == 0: 
+            modified_resources = _resources_from_pauli_sentence(pauli_sentence, estimate=estimate)
 
         else:
             modified_resources = qml.resource.resource.resources_from_sequence_ops(
