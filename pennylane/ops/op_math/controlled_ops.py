@@ -16,6 +16,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 """
 # pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
 import warnings
+from collections import defaultdict
 from collections.abc import Iterable
 from functools import lru_cache
 
@@ -23,7 +24,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Wires
+from pennylane.operation import AnyWires, Wires, ResourcesOperation
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 
@@ -170,7 +171,7 @@ class ControlledQubitUnitary(ControlledOp):
         return True
 
 
-class CH(ControlledOp):
+class CH(ControlledOp, ResourcesOperation):
     r"""CH(wires)
     The controlled-Hadamard operator
 
@@ -281,8 +282,16 @@ class CH(ControlledOp):
             qml.RY(+np.pi / 4, wires=wires[1]),
         ]
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        r_Ry = 2 * qml.RY.compute_resources()
+        return r_Ry + qml.CZ.compute_resources(gate_set=gate_set)
 
-class CY(ControlledOp):
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
+
+
+class CY(ControlledOp, ResourcesOperation):
     r"""CY(wires)
     The controlled-Y operator
 
@@ -389,8 +398,27 @@ class CY(ControlledOp):
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
 
-class CZ(ControlledOp):
+        gate_sizes[1] = 1
+        gate_sizes[2] = 2
+
+        gate_types["S"] = 1
+        gate_types["CNOT"] = 2
+
+
+        res = qml.resource.resource.Resources(num_gates=3, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return res + 2 * qml.RY.compute_resources()
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
+
+
+class CZ(ControlledOp, ResourcesOperation):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -470,8 +498,22 @@ class CZ(ControlledOp):
     def compute_decomposition(wires):  # pylint: disable=arguments-differ
         return [qml.ControlledPhaseShift(np.pi, wires=wires)]
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
 
-class CSWAP(ControlledOp):
+        gate_sizes[2] = 2
+        gate_types["CNOT"] = 2
+
+        r_cnot = qml.resource.resource.Resources(num_gates=2, gate_types=gate_types, gate_sizes=gate_sizes)
+        return r_cnot + (3 * qml.RZ.compute_resources())
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
+
+
+class CSWAP(ControlledOp, ResourcesOperation):
     r"""CSWAP(wires)
     The controlled-swap operator
 
@@ -593,8 +635,16 @@ class CSWAP(ControlledOp):
         ]
         return decomp_ops
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        return 3 * qml.Toffoli.compute_resources(gate_set=gate_set)
+    
+    def resources(self, gate_set=None):
+        return  self.compute_resources(gate_set=gate_set)
 
-class CCZ(ControlledOp):
+
+
+class CCZ(ControlledOp, ResourcesOperation):
     r"""CCZ(wires)
     CCZ (controlled-controlled-Z) gate.
 
@@ -743,6 +793,23 @@ class CCZ(ControlledOp):
             qml.Hadamard(wires=wires[2]),
         ]
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        gate_types["T"] = 7
+        gate_types["CNOT"] = 6
+        gate_types["Hadamard"] = 2
+
+        gate_sizes[1] = 9
+        gate_sizes[2] = 6
+
+        return qml.resource.resource.Resources(num_gates=15, gate_types=gate_types, gate_sizes=gate_sizes)
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
+
 
 class CNOT(ControlledOp):
     r"""CNOT(wires)
@@ -848,7 +915,7 @@ class CNOT(ControlledOp):
         return qml.Toffoli(wires=wire + self.wires)
 
 
-class Toffoli(ControlledOp):
+class Toffoli(ControlledOp, ResourcesOperation):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
 
@@ -996,6 +1063,23 @@ class Toffoli(ControlledOp):
             qml.adjoint(qml.T(wires=wires[1])),
             CNOT(wires=[wires[0], wires[1]]),
         ]
+
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        gate_types["T"] = 7
+        gate_types["CNOT"] = 6
+        gate_types["Hadamard"] = 2
+
+        gate_sizes[1] = 9
+        gate_sizes[2] = 6
+
+        return qml.resource.resource.Resources(num_gates=15, gate_types=gate_types, gate_sizes=gate_sizes)
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
 
 
 def _check_and_convert_control_values(control_values, control_wires):
@@ -1238,7 +1322,7 @@ class MultiControlledX(ControlledOp):
         return self.compute_decomposition(self.wires, self.work_wires, self.control_values)
 
 
-class CRX(ControlledOp):
+class CRX(ControlledOp, ResourcesOperation):
     r"""The controlled-RX operator
 
     .. math::
@@ -1389,9 +1473,24 @@ class CRX(ControlledOp):
             qml.CNOT(wires=wires),
             qml.RZ(-pi_half, wires=wires[1]),
         ]
+  
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        gate_sizes[2] = 2
+        gate_types["CNOT"] = 2
+
+        r_cnot = qml.resource.resource.Resources(num_gates=2, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return r_cnot + 2*qml.RY.compute_resources() + 2*qml.RZ.compute_resources()
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
 
 
-class CRY(ControlledOp):
+class CRY(ControlledOp, ResourcesOperation):
     r"""The controlled-RY operator
 
     .. math::
@@ -1538,8 +1637,23 @@ class CRY(ControlledOp):
             qml.CNOT(wires=wires),
         ]
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
 
-class CRZ(ControlledOp):
+        gate_sizes[2] = 2
+        gate_types["CNOT"] = 2
+
+        r_cnot = qml.resource.resource.Resources(num_gates=2, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return r_cnot + 2 * qml.RY.compute_resources()
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
+
+
+class CRZ(ControlledOp, ResourcesOperation):
     r"""The controlled-RZ operator
 
     .. math::
@@ -1727,8 +1841,23 @@ class CRZ(ControlledOp):
             qml.CNOT(wires=wires),
         ]
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
 
-class CRot(ControlledOp):
+        gate_sizes[2] = 2
+        gate_types["CNOT"] = 2
+
+        r_cnot = qml.resource.resource.Resources(num_gates=2, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return r_cnot + 2*qml.RZ.compute_resources()
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
+
+
+class CRot(ControlledOp, ResourcesOperation):
     r"""The controlled-Rot operator
 
     .. math:: CR(\phi, \theta, \omega) = \begin{bmatrix}
@@ -1908,8 +2037,23 @@ class CRot(ControlledOp):
             qml.RZ(omega, wires=wires[1]),
         ]
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
 
-class ControlledPhaseShift(ControlledOp):
+        gate_sizes[2] = 2
+        gate_types["CNOT"] = 2
+
+        r_cnot = qml.resource.resource.Resources(num_gates=2, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return r_cnot + 2*qml.RY.compute_resources() + 3*qml.RZ.compute_resources()
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
+
+
+class ControlledPhaseShift(ControlledOp, ResourcesOperation):
     r"""A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -1951,6 +2095,21 @@ class ControlledPhaseShift(ControlledOp):
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
+    @staticmethod
+    def compute_resources(gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        gate_sizes[2] = 2
+        gate_types["CNOT"] = 2
+
+        r_cnot = qml.resource.resource.Resources(num_gates=2, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return r_cnot + (3 * qml.RZ.compute_resources())
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(gate_set=gate_set)
+    
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
 

@@ -25,6 +25,7 @@ from pennylane.operation import (
     AnyWires,
     CVObservable,
     Operation,
+    ResourcesOperation,
     SparseMatrixUndefinedError,
 )
 
@@ -231,7 +232,7 @@ simulators should always be equal to 1.
 """
 
 
-class GlobalPhase(Operation):
+class GlobalPhase(ResourcesOperation):
     r"""A global phase operation that multiplies all components of the state by :math:`e^{-i \phi}`.
 
     **Details:**
@@ -440,6 +441,9 @@ class GlobalPhase(Operation):
 
         """
         return []
+
+    def resources(self, gate_set=None, **kwargs):
+        return qml.resource.Resources()
 
     def eigvals(self):
         return self.compute_eigvals(self.data[0], n_wires=len(self.wires))

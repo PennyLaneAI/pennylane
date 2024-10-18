@@ -17,10 +17,10 @@ Contains the ModExp template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import ResourcesOperation
 
 
-class ModExp(Operation):
+class ModExp(ResourcesOperation):
     r"""Performs the out-place modular exponentiation operation.
 
     This operator performs the modular exponentiation of the integer :math:`base` to the power
@@ -223,7 +223,33 @@ class ModExp(Operation):
         op_list = []
         op_list.append(
             qml.ControlledSequence(
-                qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires
+                qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires,
             )
         )
         return op_list
+    
+    def resources(self, gate_set=None):
+        # TODO: Cancel the QFTs of consecutive Multipliers
+        k = self.hyperparameters["base"]
+        mod = self.hyperparameters["mod"]
+        x_wires = self.hyperparameters["x_wires"]
+        work_wires = self.hyperparameters["work_wires"]
+        output_wires = self.hyperparameters["output_wires"]
+
+        if mod != 2 ** len(output_wires):
+            work_wire_aux = work_wires[:1]
+            wires_aux = work_wires[1:]
+        else:
+            work_wire_aux = None
+            wires_aux = work_wires[: len(output_wires)]
+        
+        num_x, num_o = (len(x_wires), len(output_wires))
+
+        r_cswap = (num_x * num_o) * qml.CSWAP.compute_resources(gate_set=gate_set)
+        r_c_phase_add = num_o * qml.resource.resources_from_op(
+            qml.ctrl(qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=output_wires[0]),
+            gate_set=gate_set,
+        )
+        rc_qft = (6 + 2*(num_x - 2)) * qml.resource.resources_from_op(qml.QFT(wires=wires_aux), gate_set=gate_set)
+
+        return rc_qft + r_c_phase_add + r_cswap

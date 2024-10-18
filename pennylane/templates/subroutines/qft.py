@@ -17,14 +17,15 @@ This submodule contains the template for QFT.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 
 import functools
+from collections import defaultdict
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, ResourcesOperation
 
 
-class QFT(Operation):
+class QFT(ResourcesOperation):
     r"""QFT(wires)
     Apply a quantum Fourier transform (QFT).
 
@@ -135,6 +136,32 @@ class QFT(Operation):
         wires = qml.wires.Wires(wires)
         self.hyperparameters["n_wires"] = len(wires)
         super().__init__(wires=wires, id=id)
+
+    @staticmethod
+    def compute_resources(num_wires, gate_set=None):
+        half_wires = num_wires // 2
+
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        gate_sizes[1] = num_wires
+        gate_types["Hadamard"] = num_wires
+        
+        gate_sizes[2] = half_wires
+        gate_types["SWAP"] = half_wires
+
+        r_hadamards_and_swaps = qml.resource.resource.Resources(
+            num_gates=num_wires+half_wires, 
+            gate_types=gate_types, 
+            gate_sizes=gate_sizes
+        )
+
+        r_controlled_phase_shifts = qml.ControlledPhaseShift.compute_resources(gate_set=gate_set) * (num_wires*(num_wires - 1) // 2)
+        
+        return r_hadamards_and_swaps + r_controlled_phase_shifts
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(len(self.wires), gate_set=gate_set)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())

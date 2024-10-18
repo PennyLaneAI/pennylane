@@ -15,9 +15,11 @@ r"""
 Contains the MottonenStatePreparation template.
 """
 import numpy as np
+import sympy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, ResourcesOperation
+from collections import defaultdict
 
 
 # pylint: disable=len-as-condition,arguments-out-of-order,consider-using-enumerate
@@ -224,7 +226,7 @@ def _get_alpha_y(a, n, k):
     return 2 * qml.math.arcsin(qml.math.sqrt(division))
 
 
-class MottonenStatePreparation(Operation):
+class MottonenStatePreparation(ResourcesOperation):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
     by `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_.
@@ -391,3 +393,27 @@ class MottonenStatePreparation(Operation):
             op_list.extend([qml.GlobalPhase(global_phase, wires=wires)])
 
         return op_list
+
+    def resources(self, gate_set=None, epsilon=1e-3):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        r_count = 2**(len(self.wires) + 2) - 5
+
+        t_count = (
+            3 * sympy.log(1 / epsilon)
+            if isinstance(epsilon, sympy.Symbol)
+            else round(3 * np.log(1 / epsilon))
+        )
+        gate_sizes[1] = r_count*t_count
+        gate_types["T"] = r_count*t_count
+        num_gates = r_count*t_count
+
+        cnot_count = 2**(len(self.wires) + 2) - 4*len(self.wires) - 4
+        gate_sizes[2] = cnot_count
+        gate_types["CNOT"] = cnot_count
+        num_gates += cnot_count
+
+        return qml.resource.resource.Resources(
+            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
+        )
