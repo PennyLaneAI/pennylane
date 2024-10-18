@@ -156,7 +156,7 @@ class FermiWord(dict):
 
         if not isinstance(other, Number) and not hasattr(other, "size"):
             raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
-        elif qml.math.size(other) > 1:
+        if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -184,7 +184,7 @@ class FermiWord(dict):
 
         if not isinstance(other, Number) and not hasattr(other, "size"):
             raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
-        elif qml.math.size(other) > 1:
+        if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -197,7 +197,7 @@ class FermiWord(dict):
 
         if not isinstance(other, Number) and not hasattr(other, "size"):
             raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
-        elif qml.math.size(other) > 1:
+        if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -241,7 +241,7 @@ class FermiWord(dict):
 
         if not isinstance(other, Number) and not hasattr(other, "size"):
             raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
-        elif qml.math.size(other) > 1:
+        if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -472,37 +472,31 @@ class FermiSentence(dict):
         r"""Add a FermiSentence, FermiWord or constant to a FermiSentence by iterating over the
         smaller one and adding its terms to the larger one."""
 
+        if not isinstance(other, (Number, FermiWord, FermiSentence)) and not hasattr(other, "size"):
+            raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Fermi operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
         # ensure other is FermiSentence
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
-        if isinstance(other, Number):
-            other = FermiSentence({FermiWord({}): other})
-        if isinstance(other, (ndarray)) or qml.math.get_interface(other) == "jax":
-            if qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Fermi operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
+        if isinstance(other, Number) or hasattr(other, "size"):
             other = FermiSentence({FermiWord({}): other})
 
-        if isinstance(other, FermiSentence):
-            smaller_fs, larger_fs = (
-                (self, copy(other)) if len(self) < len(other) else (other, copy(self))
-            )
-            for key in smaller_fs:
-                larger_fs[key] += smaller_fs[key]
+        smaller_fs, larger_fs = (
+            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+        )
+        for key in smaller_fs:
+            larger_fs[key] += smaller_fs[key]
 
-            return larger_fs
-
-        raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
+        return larger_fs
 
     def __radd__(self, other):
         """Add a FermiSentence to a constant, i.e. `2 + FermiSentence({...})`"""
-
-        if isinstance(other, (Number, ndarray)) or qml.math.get_interface(other) == "jax":
-            return self.__add__(other)
-
-        raise TypeError(f"Cannot add a FermiSentence to {type(other)}.")
+        return self.__add__(other)
 
     def __sub__(self, other):
         r"""Subtract a FermiSentence, FermiWord or constant from a FermiSentence"""
@@ -520,7 +514,7 @@ class FermiSentence(dict):
 
         if not isinstance(other, Number) and not hasattr(other, "size"):
             raise TypeError(f"Cannot subtract {type(other)} from a FermiSentence.")
-        elif qml.math.size(other) > 1:
+        if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -536,7 +530,7 @@ class FermiSentence(dict):
         """
         if not isinstance(other, Number) and not hasattr(other, "size"):
             raise TypeError(f"Cannot subtract a FermiSentence from {type(other)}.")
-        elif qml.math.size(other) > 1:
+        if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -567,7 +561,7 @@ class FermiSentence(dict):
 
         if not isinstance(other, Number) and not hasattr(other, "size"):
             raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
-        elif qml.math.size(other) > 1:
+        if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
@@ -585,7 +579,7 @@ class FermiSentence(dict):
 
         if not isinstance(other, Number) and not hasattr(other, "size"):
             raise TypeError(f"Cannot multiply {type(other)} by FermiSentence.")
-        elif qml.math.size(other) > 1:
+        if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
