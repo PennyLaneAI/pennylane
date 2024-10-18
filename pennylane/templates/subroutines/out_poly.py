@@ -15,8 +15,6 @@
 Contains the OutPoly template.
 """
 
-# import inspect
-
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -227,9 +225,6 @@ class OutPoly(Operation):
 
         registers_wires = [*kwargs.values(), output_wires]
 
-        if not registers_wires or f is None:
-            raise ValueError("The register wires and the function f must be provided.")
-
         num_work_wires = 0 if not work_wires else len(work_wires)
         if mod is None:
             mod = 2 ** len(registers_wires[-1])
@@ -242,11 +237,6 @@ class OutPoly(Operation):
             raise ValueError("mod must be integer.")
 
         self.hyperparameters["f"] = f
-
-        # if len(inspect.signature(f).parameters) != len(registers_wires) - 1:
-        #    raise ValueError(
-        #        f"The function takes {len(inspect.signature(f).parameters)} input parameters but {len(registers_wires) - 1} has provided."
-        #    )
 
         all_wires = []
         self.hyperparameters["registers_wires"] = {}
