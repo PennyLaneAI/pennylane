@@ -75,6 +75,9 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* All PL templates are now unit tested to ensure JIT compatibility.
+  [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
+
 * `qml.QutritBasisStatePreparation` is now JIT compatible.
   [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
 
@@ -252,6 +255,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated links to PennyLane.ai in the documentation to use the latest URL format, which excludes the `.html` prefix.
+  [(#6412)](https://github.com/PennyLaneAI/pennylane/pull/6412)
+
 * Update `qml.Qubitization` documentation based on new decomposition.
   [(#6276)](https://github.com/PennyLaneAI/pennylane/pull/6276)
 
@@ -363,4 +369,5 @@ Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Ashish Kanwar Singh,
 David Wierichs,
