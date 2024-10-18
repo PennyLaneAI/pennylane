@@ -16,8 +16,6 @@ import re
 from copy import copy
 from numbers import Number
 
-from numpy import ndarray
-
 import pennylane as qml
 
 
