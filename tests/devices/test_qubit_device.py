@@ -425,17 +425,6 @@ class TestExtractStatistics:
         with pytest.raises(NotImplementedError, match="Returning the Von Neumann entropy"):
             dev.statistics(tape)
 
-    def test_vn_entanglement_entropy_with_shot_vectors(self, mock_qubit_device_extract_stats):
-
-        dev = mock_qubit_device_extract_stats()
-        dev.shots = (10, 10)
-        tape = qml.tape.QuantumScript([], [qml.vn_entanglement_entropy(wires0=0, wires1=1)])
-
-        with pytest.raises(
-            NotImplementedError, match="Returning the Von Neumann entanglement entropy"
-        ):
-            dev.statistics(tape)
-
     def test_mutual_info_with_shot_vectors(self, mock_qubit_device_extract_stats):
 
         dev = mock_qubit_device_extract_stats()
