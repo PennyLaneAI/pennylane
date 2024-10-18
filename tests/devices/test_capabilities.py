@@ -512,6 +512,10 @@ overlapping_observables = true
 non_commuting_observables = false
 initial_state_prep = true
 
+[pennylane.compilation]
+
+non_commuting_observables = true
+
 [options]
 
 option_key = "option_field"
@@ -642,7 +646,7 @@ class TestDeviceCapabilities:
             dynamic_qubit_management=False,
             runtime_code_generation=False,
             overlapping_observables=True,
-            non_commuting_observables=False,
+            non_commuting_observables=True,
             initial_state_prep=True,
             options={"option_key": "option_field"},
         )
