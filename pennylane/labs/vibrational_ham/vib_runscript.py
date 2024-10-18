@@ -30,6 +30,9 @@ _, ham = vib_obs(one=c_ham[0], two=c_ham[1])
 ham_jw = jordan_wigner(ham)
 print(ham_jw)
 
+
+# Bosonic Hamiltonian
+#ham = bosonic_form(pes)
 ## Standard binary mapped Hamiltonian
-ham_sb = binary_mapping(ham)
-print(ham_sb)
+#ham_sb = binary_mapping(ham, d=4)
+#print(ham_sb)

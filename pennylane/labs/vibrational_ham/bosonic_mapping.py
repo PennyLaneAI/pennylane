@@ -86,7 +86,6 @@ def _(bose_operator: BoseWord, d, tol=None):
                             pauliOp @= get_pauli_op(binary_row[n], binary_col[n], n+boson*nqub_per_boson)
 
                         oper += coeff * pauliOp
-            print(oper)
             qubit_operator @= oper
     qubit_operator.simplify()
     return qubit_operator

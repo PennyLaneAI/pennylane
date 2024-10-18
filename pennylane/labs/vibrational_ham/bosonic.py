@@ -18,7 +18,8 @@ from numbers import Number
 from numpy import ndarray
 from pennylane.typing import TensorLike
 import pennylane as qml
-import autoray as ar
+from functools import singledispatch
+from typing import Union
 
 class BoseWord(dict):
     r"""Immutable dictionary used to represent a Bose word, a product of bosonic creation and
@@ -487,4 +488,63 @@ class BoseSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
+
+def normal_order(bose_operator: Union[BoseWord, BoseSentence]):
+    r"""Convert a bosonic operator to normal-ordered form.
+    Args:
+      bose_operator(BoseWord, BoseSentence): the bosonic operator
+
+    Returns:
+      normal-ordered bosonic operator
+    
+    """
+    return _normal_order_dispatch(bose_operator)
+
+@singledispatch
+def _normal_order_dispatch(bose_operator):
+    """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
+    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
+
+@_normal_order_dispatch.register
+def _(bose_operator: BoseWord):
+
+    bw_terms = sorted(bose_operator)
+    len_op = len(bw_terms)
+    bw_comm = BoseSentence({BoseWord({}): 0.0})
+    for i in range(1, len_op):
+        for j in range(i, 0, -1):
+            key_r = bw_terms[j]
+            key_l = bw_terms[j-1]
+
+            if bose_operator[key_l] == "-" and bose_operator[key_r] == "+":
+                bw_terms[j] = key_l
+                bw_terms[j-1] = key_r
+
+                # Add the term for commutator
+                if key_r[1] == key_l[1]:
+                    term_dict_comm = {key: value for key, value in bose_operator.items()
+                                       if key not in [key_r, key_l]}
+                    bw_comm += normal_order(BoseWord(term_dict_comm))
+
+    bose_dict = {}
+    for i in range(len_op):
+        bose_dict[(i, bw_terms[i][1])] = bose_operator[bw_terms[i]]
+
+    ordered_op = BoseWord(bose_dict) + bw_comm
+    ordered_op.simplify(tol=1e-8)
+
+    return ordered_op
+
+               
+@_normal_order_dispatch.register
+def _(bose_operator: BoseSentence):
+
+    bose_sen_ordered = BoseSentence()  # Empty PS as 0 operator to add Pws to
+
+    for bw, coeff in bose_operator.items():
+        bose_word_ordered = normal_order(bw)
+
+        bose_sen_ordered[bose_word_ordered] = coeff
+
+    return bose_sen_ordered
 

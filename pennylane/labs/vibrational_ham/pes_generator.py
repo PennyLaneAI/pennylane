@@ -327,7 +327,8 @@ def get_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pe
         f.create_dataset('D3_DMS',data=local_dipole_threebody)
     f.close()
     comm.Barrier()
-            
+
+    pes_threebody = None
     if rank==0:
         pes_threebody = _load_pes_threebody(comm.Get_size(), len(freqs_au), len(gauss_grid))
         if do_dipole:
@@ -344,7 +345,7 @@ def get_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pe
         return pes_threebody, None
     
     
-def vibrational(molecule, quad_order, method="rhf", localize=True, loc_freqs=[2600], do_cubic=True, get_anh_dipole=2):
+def vibrational(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[2600], do_cubic=True, get_anh_dipole=2):
 
     r"""Builds potential energy surfaces over the normal modes.
 
@@ -360,7 +361,7 @@ def vibrational(molecule, quad_order, method="rhf", localize=True, loc_freqs=[26
     Returns:
        PES object.
     """
-    molecule, scf_result = get_equilibrium_geom(molecule, method)
+    molecule, scf_result = equilibrium_geom(molecule, method)
     
     harmonic_res = None
     loc_res = None

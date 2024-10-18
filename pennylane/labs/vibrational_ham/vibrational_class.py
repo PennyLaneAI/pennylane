@@ -151,7 +151,7 @@ def run_electronic_structure(molecule, method="rhf"):
         return pyscf.scf.UHF(mol).run(verbose=0)
 
 
-def get_equilibrium_geom(molecule, method):
+def equilibrium_geom(molecule, method):
     r"""Obtains equilibrium geometry for the molecule.
 
     Args:
