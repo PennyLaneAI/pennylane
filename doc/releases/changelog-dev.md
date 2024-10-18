@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
+  [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
+
 * Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
   - This function takes probability distributions as input and returns sampled outcomes.
   - Simplifies the sampling process by separating it from other operations in the measurement chain.
