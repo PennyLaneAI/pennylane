@@ -126,6 +126,23 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
             measurement_processes=measurement_processes,
         )
 
+    @classmethod
+    def from_toml_file(cls, file_path: str, runtime_interface="pennylane") -> "DeviceCapabilities":
+        """Loads a DeviceCapabilities object from a TOML file.
+
+        Args:
+            file_path (str): The path to the TOML file.
+            runtime_interface (str): The runtime execution interface to get the capabilities for.
+                Acceptable values are "pennylane" and "qjit". Use "pennylane" for capabilities of
+                the device's implementation of `Device.execute`, and "qjit" for capabilities of
+                the runtime execution function used by a qjit-compiled workflow.
+
+        """
+        document = load_toml_file(file_path)
+        capabilities = parse_toml_document(document)
+        update_device_capabilities(capabilities, document, runtime_interface)
+        return capabilities
+
 
 VALID_COMPILATION_FLAGS = {
     "qjit_compatible": False,
@@ -241,20 +258,29 @@ def _get_measurement_processes(
     return measurement_processes
 
 
-def _get_compilation_flags(document: dict, prefix: str = "") -> dict[str, bool]:
+def _get_compilation_flags(
+    document: dict, prefix: str = "", default: bool = True
+) -> dict[str, bool]:
     """Gets the boolean capabilities in the compilation section."""
 
     section = _get_toml_section(document, "compilation", prefix)
+
     if unknowns := set(section) - VALID_COMPILATION_FLAGS.keys():
         raise InvalidCapabilitiesError(
             f"The compilation section has unknown options: {list(unknowns)}"
         )
-    flags = {flag: section.get(flag, default) for flag, default in VALID_COMPILATION_FLAGS.items()}
-    if not flags["overlapping_observables"] and flags["non_commuting_observables"]:
+
+    if not section.get("overlapping_observables", True) and section.get(
+        "non_commuting_observables", False
+    ):
         raise InvalidCapabilitiesError(
             "When overlapping_observables is False, non_commuting_observables cannot be True."
         )
-    return flags
+
+    if not default:
+        return dict(section)
+
+    return {flag: section.get(flag, default) for flag, default in VALID_COMPILATION_FLAGS.items()}
 
 
 def _get_options(document: dict) -> dict[str, str]:
@@ -297,6 +323,6 @@ def update_device_capabilities(
     measurement_processes = _get_measurement_processes(document, runtime_interface)
     capabilities.measurement_processes.update(measurement_processes)
 
-    compilation_flags = _get_compilation_flags(document, runtime_interface)
+    compilation_flags = _get_compilation_flags(document, runtime_interface, default=False)
     for flag, value in compilation_flags.items():
         setattr(capabilities, flag, value)

@@ -39,6 +39,7 @@ from pennylane.devices.capabilities import (
     parse_toml_document,
     update_device_capabilities,
 )
+from pennylane.devices.reference_qubit import operations
 
 
 @pytest.fixture(scope="function")
@@ -609,3 +610,73 @@ class TestDeviceCapabilities:
             "SampleMP": [],
             "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
         }
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_from_toml_file_pennylane(self, request):
+        """Tests loading a device capabilities from a TOML file directly."""
+
+        capabilities = DeviceCapabilities.from_toml_file(request.node.toml_file, "pennylane")
+        assert isinstance(capabilities, DeviceCapabilities)
+        assert capabilities == DeviceCapabilities(
+            operations={
+                "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+                "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+                "CNOT": OperatorProperties(invertible=True),
+            },
+            observables={
+                "PauliX": OperatorProperties(),
+                "PauliY": OperatorProperties(),
+                "PauliZ": OperatorProperties(),
+                "SProd": OperatorProperties(),
+                "Prod": OperatorProperties(),
+                "Sum": OperatorProperties(conditions=[ExecutionCondition.TERMS_MUST_COMMUTE]),
+            },
+            measurement_processes={
+                "ExpectationMP": [],
+                "SampleMP": [],
+                "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
+                "CountsMP": [ExecutionCondition.FINITE_SHOTS_ONLY],
+            },
+            qjit_compatible=True,
+            mid_circuit_measurements=False,
+            dynamic_qubit_management=False,
+            runtime_code_generation=False,
+            overlapping_observables=True,
+            non_commuting_observables=False,
+            initial_state_prep=True,
+            options={"option_key": "option_field"},
+        )
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_from_toml_file_qjit(self, request):
+        """Tests loading a device capabilities from a TOML file directly for qjit"""
+
+        capabilities = DeviceCapabilities.from_toml_file(request.node.toml_file, "qjit")
+        assert isinstance(capabilities, DeviceCapabilities)
+        assert capabilities == DeviceCapabilities(
+            operations={
+                "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+                "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+                "CNOT": OperatorProperties(invertible=True),
+            },
+            observables={
+                "PauliX": OperatorProperties(),
+                "PauliY": OperatorProperties(),
+                "PauliZ": OperatorProperties(),
+            },
+            measurement_processes={
+                "ExpectationMP": [],
+                "SampleMP": [],
+                "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
+            },
+            qjit_compatible=True,
+            mid_circuit_measurements=False,
+            dynamic_qubit_management=False,
+            runtime_code_generation=False,
+            overlapping_observables=True,
+            non_commuting_observables=False,
+            initial_state_prep=True,
+            options={"option_key": "option_field"},
+        )
