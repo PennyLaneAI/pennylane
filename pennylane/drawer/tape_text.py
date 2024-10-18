@@ -250,8 +250,8 @@ def tape_text(
     decimals=None,
     max_length=100,
     show_matrices=True,
-    cache=None,
     show_wire_labels=True,
+    cache=None,
 ):
     """Text based diagram for a Quantum Tape.
 
@@ -266,9 +266,9 @@ def tape_text(
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
         show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
+        show_wire_labels (bool): Whether or not to show the wire labels.
         cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
             and ``'matrices'``.
-        show_wire_labels (bool): Whether to show the wire labels.
 
     Returns:
         str : String based graphic of the circuit.

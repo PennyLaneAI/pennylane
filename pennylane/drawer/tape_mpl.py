@@ -305,7 +305,7 @@ def tape_mpl(
             Default is ``14``.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
-        show_wire_labels (bool): Whether to show the wire labels.
+        show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         fig (None or matplotlib Figure): Matplotlib figure to plot onto. If None, then create a new figure.
