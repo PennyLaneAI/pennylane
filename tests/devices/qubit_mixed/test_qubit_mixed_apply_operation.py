@@ -21,6 +21,16 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 import pennylane.math as math
+from pennylane import (
+    CNOT,
+    ISWAP,
+    AmplitudeDamping,
+    DepolarizingChannel,
+    Hadamard,
+    PauliError,
+    PauliX,
+    ResetError,
+)
 from pennylane.devices.qubit_mixed import apply_operation
 from pennylane.devices.qubit_mixed.apply_operation import (
     GLOBALPHASE_WARNING,
@@ -407,3 +417,107 @@ class TestApplyMultiControlledX:
         result_autograd = apply_operation(op, state_autograd)
 
         assert np.allclose(result_numpy, result_autograd)
+
+
+def basis_state(index, nr_wires):
+    """Generate the density matrix of the computational basis state
+    indicated by ``index``."""
+    rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
+    rho[index, index] = 1
+    return rho
+
+
+def hadamard_state(nr_wires):
+    """Generate the equal superposition state (Hadamard on all qubits)"""
+    return np.ones((2**nr_wires, 2**nr_wires), dtype=np.complex128) / (2**nr_wires)
+
+
+def max_mixed_state(nr_wires):
+    """Generate the maximally mixed state."""
+    return np.eye(2**nr_wires, dtype=np.complex128) / (2**nr_wires)
+
+
+def root_state(nr_wires):
+    """Pure state with equal amplitudes but phases equal to roots of unity"""
+    dim = 2**nr_wires
+    ket = [np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)]
+    return np.outer(ket, np.conj(ket))
+
+
+def random_state(num_wires):
+    """Generate a random density matrix."""
+    shape = (2**num_wires, 2**num_wires)
+    state = np.random.random(shape) + 1j * np.random.random(shape)
+    state = state @ state.T.conj()
+    state /= np.trace(state)
+    return state
+
+
+@pytest.mark.parametrize("apply_method", [apply_operation_einsum, apply_operation_tensordot])
+class TestApplyChannel:
+    """Unit tests for apply operation of channels"""
+
+    x_apply_channel_init = [
+        [1, AmplitudeDamping(0.5, wires=0), basis_state(0, 1)],
+        [
+            1,
+            DepolarizingChannel(0.5, wires=0),
+            np.array([[2 / 3 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1 / 3 + 0.0j]]),
+        ],
+        [
+            1,
+            ResetError(0.1, 0.5, wires=0),
+            np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]),
+        ],
+        [1, PauliError("Z", 0.3, wires=0), basis_state(0, 1)],
+        [2, PauliError("XY", 0.5, wires=[0, 1]), 0.5 * basis_state(0, 2) + 0.5 * basis_state(3, 2)],
+    ]
+
+    @pytest.mark.parametrize("x", x_apply_channel_init)
+    def test_channel_init(self, x, tol, apply_method):
+        """Tests that channels are correctly applied to the default initial state"""
+        nr_wires = x[0]
+        op = x[1]
+        shape_state = [QUDIT_DIM] * 2 * nr_wires
+        init_state = basis_state(0, nr_wires)
+        init_state = np.reshape(init_state, shape_state)
+        target_state = np.reshape(x[2], shape_state)
+        res = apply_method(op, init_state)
+
+        assert np.allclose(res, target_state, atol=tol, rtol=0)
+
+    x_apply_channel_mixed = [
+        [1, PauliX(wires=0), max_mixed_state(1)],
+        [2, Hadamard(wires=0), max_mixed_state(2)],
+        [2, CNOT(wires=[0, 1]), max_mixed_state(2)],
+        [2, ISWAP(wires=[0, 1]), max_mixed_state(2)],
+        [
+            1,
+            AmplitudeDamping(0.5, wires=0),
+            np.array([[0.75 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.25 + 0.0j]]),
+        ],
+        [
+            1,
+            DepolarizingChannel(0.5, wires=0),
+            np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]),
+        ],
+        [
+            1,
+            ResetError(0.1, 0.5, wires=0),
+            np.array([[0.3 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.7 + 0.0j]]),
+        ],
+        [1, PauliError("Z", 0.3, wires=0), max_mixed_state(1)],
+        [2, PauliError("XY", 0.5, wires=[0, 1]), max_mixed_state(2)],
+    ]
+
+    @pytest.mark.parametrize("x", x_apply_channel_mixed)
+    def test_channel_mixed(self, x, tol, apply_method):
+        """Tests that channels are correctly applied to the maximally mixed state"""
+        nr_wires = x[0]
+        op = x[1]
+        shape_state = [QUDIT_DIM] * 2 * nr_wires
+        init_state = np.reshape(max_mixed_state(nr_wires), shape_state)
+        target_state = np.reshape(x[2], shape_state)
+        res = apply_method(op, init_state)
+
+        assert np.allclose(res, target_state, atol=tol, rtol=0)
