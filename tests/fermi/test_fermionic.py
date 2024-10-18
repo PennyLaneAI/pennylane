@@ -385,7 +385,7 @@ class TestFermiWordArithmetic:
     @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
     def test_radd_error(self, fw, bad_type):
         """Test __radd__ with unsupported type raises an error"""
-        with pytest.raises(TypeError, match=f"Cannot add a FermiWord to {type(bad_type)}"):
+        with pytest.raises(TypeError, match=f"Cannot add {type(bad_type)} to a FermiWord"):
             bad_type + fw  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
@@ -1161,7 +1161,7 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
     def test_radd_error(self, fs, bad_type):
         """Test __radd__ with unsupported type raises an error"""
-        with pytest.raises(TypeError, match=f"Cannot add a FermiSentence to {type(bad_type)}."):
+        with pytest.raises(TypeError, match=f"Cannot add {type(bad_type)} to a FermiSentence."):
             bad_type + fs  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
