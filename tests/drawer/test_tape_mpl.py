@@ -117,8 +117,8 @@ class TestLabelling:
 
         plt.close()
 
-    @pytest.mark.parametrize("kwargs, labels", label_data)
-    def test_hide_wire_labels(self, kwargs, labels):
+    @pytest.mark.parametrize("kwargs, _", label_data)
+    def test_hide_wire_labels(self, kwargs, _):
         """Test that wire labels are skipped with show_wire_labels=False."""
         fig, ax = tape_mpl(tape1, show_wire_labels=False, **kwargs)
 
