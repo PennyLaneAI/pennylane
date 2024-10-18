@@ -335,7 +335,7 @@ class OutPoly(Operation):
     @staticmethod
     def compute_decomposition(
         f, output_wires, mod=None, work_wires=None, id=None, **kwargs
-    ):  # pylint: disable=arguments-differ
+    ):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -354,17 +354,16 @@ class OutPoly(Operation):
                 y_wires=[2, 3],
                 output_wires=[4, 5],
                 mod=4,
+                )
             )
-        )
 
         .. code-block:: pycon
 
         [QFT(wires=[4]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[3]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]), Adjoint(QFT(wires=[4]))]
-
         """
         registers_wires = []
 
-        for key, value in kwargs.items():
+        for value in kwargs.values():
             registers_wires.append(qml.wires.Wires(value))
 
         registers_wires.append(output_wires)
