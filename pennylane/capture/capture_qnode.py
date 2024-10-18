@@ -14,14 +14,14 @@
 """
 This submodule defines a capture compatible call to QNodes.
 """
-import warnings
 import numbers
+import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
-from pennylane.typing import TensorLike
 
 import pennylane as qml
+from pennylane.typing import TensorLike
 
 from .flatfn import FlatFn
 
@@ -69,22 +69,22 @@ class BatchingManager:
     """A class to manage the batching state of the QNode."""
 
     # indicates that the (lazy) batch shape has not yet been accessed/computed
-    _BATCH_SHAPE = ()
+    _batch_shape = ()
 
     @classmethod
-    def enable_batching(cls, batch_shape):
+    def enable_batching(cls, batch_shape: tuple) -> None:
         """Enable batching for the QNode."""
-        cls._BATCH_SHAPE = batch_shape
+        cls._batch_shape = batch_shape
 
     @classmethod
-    def disable_batching(cls):
+    def disable_batching(cls) -> None:
         """Disable batching for the QNode."""
-        cls._BATCH_SHAPE = ()
+        cls._batch_shape = ()
 
     @classmethod
-    def get_batch_shape(cls):
+    def get_batch_shape(cls) -> tuple:
         """Return the batch shape of the QNode."""
-        return cls._BATCH_SHAPE
+        return cls._batch_shape
 
 
 # pylint: disable=too-many-arguments
@@ -97,9 +97,10 @@ def _qnode_batching_rule(
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
 
-    assert len(batched_args) == len(batch_dims) and all(
+    assert len(batched_args) == len(batch_dims), "Mismatch in batched arguments and dimensions."
+    assert all(
         batch_dim is None or isinstance(batch_dim, int) for batch_dim in batch_dims
-    ), "Mismatch in batched arguments or invalid batch dimensions found."
+    ), "Invalid batch dimensions found."
 
     consts = batched_args[:n_consts]
     args = batched_args[n_consts:]
@@ -112,6 +113,9 @@ def _qnode_batching_rule(
         if i < n_consts:
             raise ValueError("Batched constant cannot currently be captured with jax.vmap.")
 
+        if arg.size == 0:
+            raise ValueError("Empty tensors are not supported with jax.vmap.")
+
         if arg.size > 1 and batch_dim is None:
             warnings.warn(
                 f"Argument at index {i} has more than 1 element but is not batched. "
@@ -120,11 +124,7 @@ def _qnode_batching_rule(
                 UserWarning,
             )
 
-        if arg.size == 0:
-            raise ValueError("Empty tensors are not supported with jax.vmap.")
-
     input_shapes = [arg.shape for arg in args if _is_non_scalar_tensor(arg)]
-
     batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
     BatchingManager.enable_batching(batch_shape)

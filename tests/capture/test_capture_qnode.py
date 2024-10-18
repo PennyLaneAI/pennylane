@@ -543,7 +543,7 @@ class TestQNodeVmapIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Empty tensors are not supported with jax.vmap."):
             jax.make_jaxpr(jax.vmap(circuit))(jax.numpy.array([]))
 
     def test_warning_bypass_vmap(self):
