@@ -145,6 +145,7 @@ def test_givens_matrix_exceptions():
         _givens_matrix(a, b)
 
 
+# pylint:disable = too-many-arguments
 @pytest.mark.parametrize(
     ("jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
     [
