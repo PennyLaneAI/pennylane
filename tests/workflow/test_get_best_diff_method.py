@@ -93,9 +93,9 @@ class TestValidation:
         assert res == qml.gradients.param_shift
 
         # no interface - fall back on parameter-shift
-        dev2 = qml.device("default.qubit", wires=1, shots=50)
+        dev2 = qml.device("default.qubit", wires=1)
         qn = qml.QNode(dummyfunc, dev2)
-        res2 = qml.workflow.get_best_diff_method(qn)()
+        res2 = qml.workflow.get_best_diff_method(qn)(shots=50)
         assert res2 == qml.gradients.param_shift
 
     # pylint: disable=protected-access
