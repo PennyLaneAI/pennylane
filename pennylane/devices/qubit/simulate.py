@@ -663,7 +663,7 @@ def split_circuit_at_mcms(circuit):
     last_circuit_measurements = []
 
     for m in circuit.measurements:
-        if not m.mv:
+        if m.mv is None:
             last_circuit_measurements.append(m)
 
     circuits.append(
@@ -698,16 +698,17 @@ def prepend_state_prep(circuit, state, interface, wires):
 
 def insert_mcms(circuit, results, mid_measurements):
     """Inserts terminal measurements of MCMs if the circuit is evaluated in analytic mode."""
-    if circuit.shots or not any(m.mv for m in circuit.measurements):
+    if circuit.shots or all(m.mv is None for m in circuit.measurements):
         return results
     results = list(results)
     new_results = []
     mid_measurements = {k: qml.math.array([[v]]) for k, v in mid_measurements.items()}
     for m in circuit.measurements:
-        if m.mv:
-            new_results.append(gather_mcm(m, mid_measurements, qml.math.array([[True]])))
-        else:
+        if m.mv is None:
             new_results.append(results.pop(0))
+        else:
+            new_results.append(gather_mcm(m, mid_measurements, qml.math.array([[True]])))
+
     return new_results
 
 
@@ -841,9 +842,9 @@ def variance_transform(circuit):
     extra_measurements = []
     for m in circuit.measurements:
         if isinstance(m, VarianceMP):
-            obs2 = m.mv * m.mv if m.mv else m.obs @ m.obs
+            obs2 = m.mv * m.mv if m.mv is not None else m.obs @ m.obs
             new_measurements.append(ExpectationMP(obs=obs2))
-            extra_measurements.append(ExpectationMP(obs=m.mv if m.mv else m.obs))
+            extra_measurements.append(ExpectationMP(obs=m.mv if m.mv is not None else m.obs))
         else:
             new_measurements.append(m)
     new_measurements.extend(extra_measurements)
@@ -870,16 +871,18 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
     """Returns combined measurement values of various types."""
     empty_mcm_samples = False
     need_mcm_samples = not all(v is None for v in mcm_samples.values())
-    need_mcm_samples = need_mcm_samples and any(circ_meas.mv for circ_meas in terminal_measurements)
+    need_mcm_samples = need_mcm_samples and any(
+        circ_meas.mv is not None for circ_meas in terminal_measurements
+    )
     if need_mcm_samples:
         empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
         if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):  # pragma: no cover
             raise ValueError("mcm_samples have inconsistent shapes.")
     final_measurements = []
     for circ_meas in terminal_measurements:
-        if need_mcm_samples and circ_meas.mv and empty_mcm_samples:
+        if need_mcm_samples and circ_meas.mv is not None and empty_mcm_samples:
             comb_meas = measurement_with_no_shots(circ_meas)
-        elif need_mcm_samples and circ_meas.mv:
+        elif need_mcm_samples and circ_meas.mv is not None:
             mcm_samples = {k: v.reshape((-1, 1)) for k, v in mcm_samples.items()}
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = gather_mcm(circ_meas, mcm_samples, is_valid)

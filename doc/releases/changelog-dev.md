@@ -4,6 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* Added `show_wire_labels` option to `draw` and `draw_mpl`, which hides wire labels when set to `False`.
+  Defaults to `True`.
+  [(#6410)](https://github.com/PennyLaneAI/pennylane/pull/6410)
+
+* Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
+  - This function takes probability distributions as input and returns sampled outcomes.
+  - Simplifies the sampling process by separating it from other operations in the measurement chain.
+  - Improves modularity: The same code can be easily adapted for other devices (e.g., a potential `default_mixed` device).
+  - Enhances maintainability by isolating the sampling logic.
+  [(#6354)](https://github.com/PennyLaneAI/pennylane/pull/6354)
+  
 * `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
   [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
 
@@ -28,15 +39,14 @@
   [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
-* A new `qml.vn_entanglement_entropy` measurement process has been added which measures the
-  Von Neumann entanglement entropy of a quantum state.
-  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
-
 * A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
 <h3>Improvements 🛠</h3>
+
+* RTD support for `qml.labs` added to API.
+  [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
 
 * Module-level sandboxing added to `qml.labs` via pre-commit hooks.
   [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
@@ -68,6 +78,9 @@
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* All PL templates are now unit tested to ensure JIT compatibility.
+  [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
 
 * `qml.QutritBasisStatePreparation` is now JIT compatible.
   [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
@@ -194,7 +207,16 @@
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
+* Native folding method `qml.transforms.fold_global` for `qml.transforms.mitiagte_with_zne`
+  transform no longer expands the circuit automatically. Instead, the user should apply `qml.transforms.decompose` to
+  decompose a circuit into a target gate set before applying `fold_global` or `mitigate_with_zne`.
+  [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
+
 <h3>Deprecations 👋</h3>
+
+* The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
+  `qml.transforms.decompositions.clifford_t_decomposition` respectively have been deprecated.
+  [(#6404)](https://github.com/PennyLaneAI/pennylane/pull/6404)
 
 * Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
@@ -242,6 +264,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated links to PennyLane.ai in the documentation to use the latest URL format, which excludes the `.html` prefix.
+  [(#6412)](https://github.com/PennyLaneAI/pennylane/pull/6412)
+
 * Update `qml.Qubitization` documentation based on new decomposition.
   [(#6276)](https://github.com/PennyLaneAI/pennylane/pull/6276)
 
@@ -262,7 +287,22 @@
 * Removed ambiguity in error raised by the `PauliRot` class.
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
+* Renamed an incorrectly named test in `test_pow_ops.py`.
+  [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
+
 <h3>Bug fixes 🐛</h3>
+
+* `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
+  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
+
+* The `validate_device_wires` transform now raises an error if abstract wires are provided.
+  [(#6405)](https://github.com/PennyLaneAI/pennylane/pull/6405)
+
+* Fixes `qml.math.expand_matrix` for qutrit and arbitrary qudit operators.
+  [(#6398)](https://github.com/PennyLaneAI/pennylane/pull/6398/)
+
+* `MeasurementValue` now raises an error when it is used as a boolean.
+  [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
 
 * `default.qutrit` now returns integer samples.
   [(#6385)](https://github.com/PennyLaneAI/pennylane/pull/6385)
@@ -311,6 +351,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
+  [(#6360)](https://github.com/PennyLaneAI/pennylane/pull/6360)
+
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
 
@@ -338,4 +381,5 @@ Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Ashish Kanwar Singh,
 David Wierichs,
