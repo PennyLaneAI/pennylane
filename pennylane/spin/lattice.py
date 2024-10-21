@@ -382,6 +382,34 @@ def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order
     >>> lattice = qml.spin.generate_lattice(shape, n_cells, boundary_condition)
     >>> lattice.edges
     [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
+
+    .. details::
+        :title: details
+
+        The following lattice shapes are currently supported.
+
+        * 'chain': linear arrangement of sites in one dimension
+
+        * 'square': square arrangement of sites in two dimensions
+
+        * 'rectangle': rectangular arrangement of sites in two dimensions
+
+        * 'triangle': triangular arrangement of sites in two dimensions [`Phys. Rev. B 7, 5017 (1973) <https://journals.aps.org/pr/abstract/10.1103/PhysRev.79.357>`_]
+
+        * 'honeycomb': `honeycomb <https://en.wikipedia.org/wiki/Hexagonal_lattice#Honeycomb_point_set>`_ arrangement of sites in two dimensions
+
+        * 'kagome': kagome arrangement of sites in two dimensions [`Prog. Theor. Phys. 6, 306 (1951) <https://academic.oup.com/ptp/article/6/3/306/1852171>`_]
+
+        * 'lieb': Lieb arrangement of sites in two dimensions [`arXiv:1004.5172 <https://arxiv.org/abs/1004.5172>`_]
+
+        * 'cubic': `cubic <https://en.wikipedia.org/wiki/Cubic_crystal_system>`_ arrangement of sites in three dimensions
+
+        * 'bcc': `body-centered cubic <https://en.wikipedia.org/wiki/Cubic_crystal_system>`_ arrangement of sites in three dimensions
+
+        * 'fcc': `face-centered cubic <https://en.wikipedia.org/wiki/Cubic_crystal_system>`_ arrangement of sites in three dimensions
+
+        * 'diamond': `diamond <https://en.wikipedia.org/wiki/Diamond_cubic>`_ arrangement of sites in three dimensions
+
     """
 
     lattice_shape = lattice.strip().lower()
