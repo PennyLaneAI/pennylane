@@ -207,6 +207,11 @@
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
+* Native folding method `qml.transforms.fold_global` for `qml.transforms.mitiagte_with_zne`
+  transform no longer expands the circuit automatically. Instead, the user should apply `qml.transforms.decompose` to
+  decompose a circuit into a target gate set before applying `fold_global` or `mitigate_with_zne`.
+  [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
+
 <h3>Deprecations 👋</h3>
 
 * The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
@@ -286,6 +291,9 @@
   [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
 
 <h3>Bug fixes 🐛</h3>
+
+* `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
+  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
 
 * The `validate_device_wires` transform now raises an error if abstract wires are provided.
   [(#6405)](https://github.com/PennyLaneAI/pennylane/pull/6405)
