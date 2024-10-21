@@ -35,6 +35,8 @@ from .support import (
     _get_urls_resp,
     _list_attrs_resp,
     _parameter_tree,
+    _qchem_parameter_tree,
+    _rydberggpt_url_resp,
 )
 
 has_rich = False
@@ -151,10 +153,24 @@ def graphql_mock(url, query, variables=None):
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
         json_data = _list_attrs_resp
+    elif variables is not None and "rydberggpt" == variables["datasetClassId"]:
+        json_data = _rydberggpt_url_resp
     elif "GetDatasetsForDownload" in query:
         json_data = _get_urls_resp
     elif "GetParameterTree" in query:
         json_data = _parameter_tree
+    elif "GetDatasetClasses" in query:
+        json_data = _dataclass_ids
+    return json_data
+
+
+# pylint:disable=unused-argument
+def graphql_mock_qchem(url, query, variables=None):
+    """Return the JSON according to the query."""
+    if "ListAttributes" in query:
+        json_data = _list_attrs_resp
+    elif "GetParameterTree" in query:
+        json_data = _qchem_parameter_tree
     elif "GetDatasetClasses" in query:
         json_data = _dataclass_ids
     return json_data
@@ -195,7 +211,6 @@ def mock_load(monkeypatch):
     return mock
 
 
-@patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch("pennylane.data.data_manager.sleep")
 @patch("builtins.input")
@@ -205,6 +220,7 @@ class TestLoadInteractive:
     [data name, *params, attributes, Force, Folder, continue]
     """
 
+    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
     @pytest.mark.parametrize(
         ("side_effect"),
         [
@@ -247,6 +263,7 @@ class TestLoadInteractive:
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
 
+    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
     def test_load_interactive_without_confirm(
         self, mock_input, _mock_sleep, mock_load
     ):  # pylint:disable=redefined-outer-name
@@ -265,6 +282,7 @@ class TestLoadInteractive:
         assert qml.data.load_interactive() is None
         mock_load.assert_not_called()
 
+    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
     @pytest.mark.parametrize(
         ("side_effect", "error_message"),
         [
@@ -288,6 +306,35 @@ class TestLoadInteractive:
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):
             qml.data.load_interactive()
+
+    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock_qchem)
+    @pytest.mark.parametrize(
+        ("side_effect"),
+        [
+            (
+                [
+                    "qchem",
+                    "H2",
+                    "STO-3G",
+                    "0.742",
+                    "full",
+                    True,
+                    PosixPath("/my/path"),
+                    "Y",
+                ]
+            ),
+        ],
+    )
+    def test_load_interactive_qchem(
+        self,
+        mock_input,
+        mock_sleep,
+        mock_load,
+        side_effect,
+    ):
+        """Test that load_interactive succeeds."""
+        mock_input.side_effect = side_effect
+        assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
 
 
 class TestMiscHelpers:
@@ -362,7 +409,8 @@ def mock_download_dataset(monkeypatch):
             "qchem",
             {"molname": "H2", "basis": "STO-3G", "bondlength": ["1.0", "0.46", "1.16"]},
             ["qchem/h2_sto-3g_1.0.h5", "qchem/h2_sto-3g_0.46.h5", "qchem/h2_sto-3g_1.16.h5"],
-        )
+        ),
+        ("other", {"name": "rydberggpt"}, ["rydberggpt/rydberggpt.h5"]),
     ],
 )
 @pytest.mark.parametrize("progress_bar", [True, False])
