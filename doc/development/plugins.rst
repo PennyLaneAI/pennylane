@@ -349,13 +349,9 @@ Device Modifiers
 
 PennyLane currently provides two device modifiers.
 
-.. currentmodule:: pennylane.devices.modifiers
-.. autosummary::
-    :toctree: api
+* :func:`pennylane.devices.modifiers.single_tape_support`
+* :func:`pennylane.devices.modifiers.simulator_tracking`
 
-    single_tape_support
-    simulator_tracking
-    
 For example, with a custom device we can add simulator-style tracking and the ability
 to handle a single circuit. See the documentation for each modifier for more details.
 
