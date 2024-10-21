@@ -70,7 +70,7 @@ def _get_qnode_prim():
 
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
-    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_size=()):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_shape=()):
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -82,7 +82,7 @@ def _get_qnode_prim():
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
-    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_size=()):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_shape=()):
 
         mps = qfunc_jaxpr.outvars
 
@@ -90,7 +90,7 @@ def _get_qnode_prim():
             *mps,
             shots=shots,
             num_device_wires=len(device.wires),
-            batch_shape=batch_size,
+            batch_shape=batch_shape,
         )
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -146,7 +146,7 @@ def _get_qnode_prim():
                 )
 
         input_shapes = [arg.shape for arg in args if is_non_scalar_tensor(arg)]
-        batch_size = jax.lax.broadcast_shapes(*input_shapes)
+        batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
         result = qnode_prim.bind(
             *batched_args,
@@ -156,7 +156,7 @@ def _get_qnode_prim():
             qnode_kwargs=qnode_kwargs,
             qfunc_jaxpr=qfunc_jaxpr,
             n_consts=n_consts,
-            batch_size=batch_size,
+            batch_shape=batch_shape,
         )
 
         # The batch dimension is at the front (axis 0) for all elements in the result.
