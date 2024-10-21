@@ -130,7 +130,6 @@ class TestWhileLoops:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
 
-    @pytest.mark.xfail(reason="for_loop not implemented yet")
     def test_whileloop_forloop_interop(self):
         """Test for-loop co-existing with while loop."""
 
