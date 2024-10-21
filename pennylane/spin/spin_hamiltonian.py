@@ -703,7 +703,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
 
 
 def spin_hamiltonian(lattice):
-    r"""Generates a spin Hamiltonian for a custom lattice.
+    r"""Generates a spin Hamiltonian for a custom :class:`~pennylane.spin.Lattice` object.
 
     Args:
         lattice (Lattice): custom lattice defined with custom_edges
