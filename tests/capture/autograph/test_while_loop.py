@@ -130,7 +130,7 @@ class TestWhileLoops:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
 
-    # ToDo: why doesnt this test fail since for isn't implemented on this branch?
+    @pytest.mark.xfail(reason="for_loop not implemented yet")
     def test_whileloop_forloop_interop(self):
         """Test for-loop co-existing with while loop."""
 
@@ -145,6 +145,7 @@ class TestWhileLoops:
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
         assert "while" in str(jaxpr)
+        assert "for" in str(jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 0 + 1 + sum([1, 2, 3])
 
