@@ -209,6 +209,7 @@
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
 
 * The `LightningVJPs` class is removed as all lightning devices now follow the new device interface.
+  [(#6420)])(https://github.com/PennyLaneAI/pennylane/pull/6420)
 
 <h3>Deprecations 👋</h3>
 
