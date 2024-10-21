@@ -80,24 +80,25 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         observables: Observables that the device can measure.
         measurement_processes: List of measurement processes supported by the backend device.
         qjit_compatible (bool): Whether the device is compatible with qjit.
-        mid_circuit_measurements (bool): Whether the device supports mid-circuit measurements natively.
         runtime_code_generation (bool): Whether the device requires run time generation of the quantum circuit.
         dynamic_qubit_management (bool): Whether the device supports dynamic qubit allocation/deallocation.
         overlapping_observables (bool): Whether the device supports measuring overlapping observables on the same tape.
         non_commuting_observables (bool): Whether the device supports measuring non-commuting observables on the same tape.
         initial_state_prep (bool): Whether the device supports initial state preparation.
+        supported_mcm_methods (list[str]): List of supported methods of mid-circuit measurements.
+        options (dict[str, any]): Additional options for the device.
     """
 
     operations: dict[str, OperatorProperties] = field(default_factory=dict)
     observables: dict[str, OperatorProperties] = field(default_factory=dict)
     measurement_processes: dict[str, list[ExecutionCondition]] = field(default_factory=dict)
     qjit_compatible: bool = False
-    mid_circuit_measurements: bool = False
     runtime_code_generation: bool = False
     dynamic_qubit_management: bool = False
     overlapping_observables: bool = True
     non_commuting_observables: bool = False
     initial_state_prep: bool = False
+    supported_mcm_methods: list[str] = field(default_factory=list)
     options: dict[str, any] = field(default_factory=dict)
 
     def filter(self, finite_shots: bool) -> "DeviceCapabilities":
@@ -144,14 +145,14 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         return capabilities
 
 
-VALID_COMPILATION_FLAGS = {
-    "qjit_compatible": False,
-    "mid_circuit_measurements": False,
-    "runtime_code_generation": False,
-    "dynamic_qubit_management": False,
-    "overlapping_observables": True,
-    "non_commuting_observables": False,
-    "initial_state_prep": False,
+VALID_COMPILATION_OPTIONS = {
+    "qjit_compatible",
+    "runtime_code_generation",
+    "dynamic_qubit_management",
+    "overlapping_observables",
+    "non_commuting_observables",
+    "initial_state_prep",
+    "supported_mcm_methods",
 }
 
 
@@ -287,21 +288,18 @@ def _get_measurement_processes(
     return measurement_processes
 
 
-def _get_compilation_flags(
-    document: dict, prefix: str = "", default: bool = True
-) -> dict[str, bool]:
-    """Gets the boolean capabilities in the compilation section.
+def _get_compilation_options(document: dict, prefix: str = "") -> dict[str, bool]:
+    """Gets the capabilities in the compilation section.
 
     Args:
         document (dict): The TOML document loaded from a file.
         prefix (str): Optional prefix corresponding to the runtime interface.
-        default (bool): Whether to populate default values for unspecified flags.
 
     """
 
     section = _get_toml_section(document, "compilation", prefix)
 
-    if unknowns := set(section) - VALID_COMPILATION_FLAGS.keys():
+    if unknowns := set(section) - VALID_COMPILATION_OPTIONS:
         raise InvalidCapabilitiesError(
             f"The compilation section has unknown options: {list(unknowns)}"
         )
@@ -313,10 +311,7 @@ def _get_compilation_flags(
             "When overlapping_observables is False, non_commuting_observables cannot be True."
         )
 
-    if not default:
-        return dict(section)
-
-    return {flag: section.get(flag, default) for flag, default in VALID_COMPILATION_FLAGS.items()}
+    return section
 
 
 def _get_options(document: dict) -> dict[str, str]:
@@ -338,12 +333,12 @@ def parse_toml_document(document: dict) -> DeviceCapabilities:
     operations = _get_operations(document)
     observables = _get_observables(document)
     measurement_processes = _get_measurement_processes(document)
-    compilation_flags = _get_compilation_flags(document)
+    compilation_options = _get_compilation_options(document)
     return DeviceCapabilities(
         operations=operations,
         observables=observables,
         measurement_processes=measurement_processes,
-        **compilation_flags,
+        **compilation_options,
         options=_get_options(document),
     )
 
@@ -365,9 +360,9 @@ def update_device_capabilities(
     measurement_processes = _get_measurement_processes(document, runtime_interface)
     capabilities.measurement_processes.update(measurement_processes)
 
-    compilation_flags = _get_compilation_flags(document, runtime_interface, default=False)
-    for flag, value in compilation_flags.items():
-        setattr(capabilities, flag, value)
+    compilation_options = _get_compilation_options(document, runtime_interface)
+    for option, value in compilation_options.items():
+        setattr(capabilities, option, value)
 
     if runtime_interface == "qjit" and "qjit" in document and not capabilities.qjit_compatible:
         raise InvalidCapabilitiesError(
