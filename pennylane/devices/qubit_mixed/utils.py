@@ -41,7 +41,7 @@ def get_einsum_mapping(
         str: Indices mapping that defines the einsum
     """
     num_ch_wires = len(op.wires)
-    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     rho_dim = 2 * num_wires
 
     # Step 1: The first rho_dim indices are the original state indices
@@ -74,7 +74,6 @@ def get_einsum_mapping(
         col_indices=col_indices,
         new_col_indices=new_col_indices,
     )
-
 
 
 def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
