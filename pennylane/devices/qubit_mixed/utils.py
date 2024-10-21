@@ -19,13 +19,16 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 
-from .constants import QUDIT_DIM
+QUDIT_DIM = 2
 
 alphabet_array = np.array(list(alphabet))
 
 
 def get_einsum_mapping(
-    op: qml.operation.Operator, state, map_indices, is_state_batched: bool = False
+    op: qml.operation.Operator,
+    state,
+    map_indices,
+    is_state_batched: bool = False,
 ):
     r"""Finds the indices for einsum to apply kraus operators to a mixed state
 
@@ -34,7 +37,6 @@ def get_einsum_mapping(
         state (array[complex]): Input quantum state
         map_indices (function): Maps the calculated indices to an einsum indices string
         is_state_batched (bool): Boolean representing whether the state is batched or not
-
     Returns:
         str: Indices mapping that defines the einsum
     """

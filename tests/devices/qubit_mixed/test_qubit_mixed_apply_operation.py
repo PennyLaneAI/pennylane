@@ -37,7 +37,7 @@ from pennylane.devices.qubit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
 )
-from pennylane.devices.qubit_mixed.constants import QUDIT_DIM
+from pennylane.devices.qubit_mixed.utils import QUDIT_DIM
 
 ml_frameworks_list = [
     "numpy",
@@ -152,7 +152,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
             op (Operation): Quantum operation to apply.
             ml_framework (str): The machine learning framework in use (numpy, autograd, etc.).
         """
-        state = qml.math.asarray(get_random_mixed_state(num_q), like=ml_framework)
+        state = math.asarray(get_random_mixed_state(num_q), like=ml_framework)
         res = apply_operation(op, state)
         res_tensordot = apply_operation_tensordot(op, state)
         res_einsum = apply_operation_einsum(op, state)
@@ -160,9 +160,9 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         expanded_operator = self.expand_matrices(op, num_q)
         expected = self.get_expected_state(np.array(expanded_operator), np.array(state), num_q)
 
-        # assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected), f"Operation {op} failed. {res} \n != {expected}"
-        assert qml.math.allclose(
+        # assert math.get_interface(res) == ml_framework
+        assert math.allclose(res, expected), f"Operation {op} failed. {res} \n != {expected}"
+        assert math.allclose(
             res_tensordot, expected
         ), f"Tensordot and einsum results do not match. {res_tensordot} != {res_einsum}"
 
@@ -177,34 +177,34 @@ class TestOperation:  # pylint: disable=too-few-public-methods
             ml_framework (str): The machine learning framework in use (numpy, autograd, etc.).
         """
         state_np = get_random_mixed_state(num_q)
-        state = qml.math.asarray(state_np, like=ml_framework)
+        state = math.asarray(state_np, like=ml_framework)
         res = apply_operation(op, state)
 
         expanded_operator = self.expand_matrices(op, num_q)
         expected = self.get_expected_state(expanded_operator, state_np, num_q)
 
-        assert qml.math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
+        assert math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
 
     @pytest.mark.parametrize("num_q", num_qubits)
     def test_identity(self, num_q, ml_framework):
         """Tests that the identity operation is applied correctly to an unbatched state."""
         state_np = get_random_mixed_state(num_q)
-        state = qml.math.asarray(state_np, like=ml_framework)
+        state = math.asarray(state_np, like=ml_framework)
         op = qml.Identity(wires=0)
         res = apply_operation(op, state)
 
-        assert qml.math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
+        assert math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
 
     @pytest.mark.parametrize("num_q", num_qubits)
     def test_globalphase(self, num_q, ml_framework):
         """Tests that the identity operation is applied correctly to an unbatched state."""
         state_np = get_random_mixed_state(num_q)
-        state = qml.math.asarray(state_np, like=ml_framework)
+        state = math.asarray(state_np, like=ml_framework)
         op = qml.GlobalPhase(np.pi / 7, wires=0)
         with pytest.warns(UserWarning, match=GLOBALPHASE_WARNING):
             res = apply_operation(op, state)
 
-        assert qml.math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
+        assert math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     @pytest.mark.parametrize("num_q", num_qubits)
@@ -212,7 +212,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         """Test that unbroadcasted operations are applied correctly to batched states."""
         batch_size = self.num_batched
         state = np.array([get_random_mixed_state(num_q) for _ in range(batch_size)])
-        state = qml.math.asarray(state, like=ml_framework)
+        state = math.asarray(state, like=ml_framework)
         res = apply_operation(op, state, is_state_batched=True)
 
         expanded_operator = self.expand_matrices(op, num_q)
@@ -231,7 +231,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         # Make both res and expected the same shape
         res = np.array(res).reshape(expected.shape)
 
-        assert qml.math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
+        assert math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
 
     @pytest.mark.parametrize("op", diagonal_ops)
     @pytest.mark.parametrize("num_q", num_qubits)
@@ -239,13 +239,13 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         """Test that diagonal operations are applied correctly to batched states."""
         batch_size = self.num_batched
         state = np.array([get_random_mixed_state(num_q) for _ in range(batch_size)])
-        state = qml.math.asarray(state, like=ml_framework)
+        state = math.asarray(state, like=ml_framework)
         res = apply_operation(op, state, is_state_batched=True)
 
         expanded_operator = self.expand_matrices(op, num_q)
         expected = np.array([self.get_expected_state(expanded_operator, s, num_q) for s in state])
 
-        assert qml.math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
+        assert math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
 
 
 class TestApplyGroverOperator:
@@ -268,8 +268,8 @@ class TestApplyGroverOperator:
 
         op = qml.GroverOperator(wires=range(num_wires))
 
-        spy_einsum = mocker.spy(qml.math, "einsum")
-        spy_tensordot = mocker.spy(qml.math, "moveaxis")
+        spy_einsum = mocker.spy(math, "einsum")
+        spy_tensordot = mocker.spy(math, "moveaxis")
 
         apply_operation(op, state)
 
@@ -353,8 +353,8 @@ class TestApplyMultiControlledX:
 
         op = qml.MultiControlledX(wires=range(num_wires))
 
-        spy_einsum = mocker.spy(qml.math, "einsum")
-        spy_tensordot = mocker.spy(qml.math, "moveaxis")
+        spy_einsum = mocker.spy(math, "einsum")
+        spy_tensordot = mocker.spy(math, "moveaxis")
 
         apply_operation(op, state)
 
@@ -521,3 +521,32 @@ class TestApplyChannel:
         res = apply_method(op, init_state)
 
         assert np.allclose(res, target_state, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+class TestBroadcasting:  # pylint: disable=too-few-public-methods
+    """Tests that broadcasted operations are applied correctly."""
+
+    broadcasted_ops = [
+        qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
+        qml.QubitUnitary(
+            np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
+            wires=[0, 1, 2],
+        ),
+    ]
+
+    @pytest.mark.parametrize("op", broadcasted_ops)
+    def test_broadcasted_op(self, op, ml_framework):
+        """Tests that batched operations are applied correctly to an unbatched state."""
+        num_q = 3
+        state = math.asarray(get_random_mixed_state(num_q), like=ml_framework)
+
+        res = apply_operation(op, state)
+
+        expanded_mat = TestOperation.expand_matrices(op, 3, batch_size=3)
+        expected = [TestOperation.get_expected_state(mat, state, num_q) for mat in expanded_mat]
+
+        assert math.get_interface(res) == ml_framework
+        assert math.allclose(res, expected)

@@ -25,8 +25,7 @@ from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
-from .constants import QUDIT_DIM
-from .utils import get_einsum_mapping, get_new_state_einsum_indices
+from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
 
 GLOBALPHASE_WARNING = "The GlobalPhase operation does not have any effect on the density matrix. This operation is only meaningful for state vectors."
 
@@ -163,9 +162,6 @@ def apply_operation_einsum(
         array[complex]: output_state
     """
 
-    #! Note that there the state should be a density matrix
-    einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
-
     num_ch_wires = len(op.wires)
 
     # This could be pulled into separate function if tensordot is added
@@ -194,6 +190,8 @@ def apply_operation_einsum(
     kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
     kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
 
+    #! Note that there the state should be a density matrix
+    einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
     res = math.einsum(einsum_indices, kraus, state, kraus_dagger)
     # Cast back to the same as state
     return math.cast_like(res, state)
@@ -228,8 +226,16 @@ def apply_operation_tensordot(
 
         kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in op.kraus_matrices()]
     else:
-        kraus = [math.cast_like(math.reshape(op.matrix(), kraus_shape), state)]
-
+        mat = op.matrix() + 0j
+        dim = QUDIT_DIM**num_ch_wires
+        batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
+        if batch_size is not None:
+            # Add broadcasting dimension to shape
+            kraus_shape = [batch_size] + kraus_shape
+            if op.batch_size is None:
+                op._batch_size = batch_size  # pylint:disable=protected-access
+        kraus = [mat]
+    kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in kraus]
     # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
     row_wires_list = channel_wires.tolist()  # Example: H0 => [0]
     col_wires_list = [w + num_wires for w in row_wires_list]  # Example: H0 => [3]
@@ -238,6 +244,10 @@ def apply_operation_tensordot(
         row_wires_list = [w + 1 for w in row_wires_list]
         col_wires_list = [w + 1 for w in col_wires_list]
     channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
+    if batch_size is not None:
+        channel_col_ids = [0] + [i + 1 for i in channel_col_ids]
+        row_wires_list = [0] + row_wires_list
+        col_wires_list = [0] + col_wires_list
     axes_left = [channel_col_ids, row_wires_list]
     axes_right = [col_wires_list, channel_col_ids]
 
@@ -263,6 +273,11 @@ def apply_operation_tensordot(
     dest_left = row_wires_list
     source_right = list(range(-num_ch_wires, 0))
     dest_right = col_wires_list
+
+    # Adjust for batched operators
+    if batch_size is not None:
+        source_left = [0] + [i + 1 for i in source_left]
+        source_right = [0] + [i + 1 for i in source_right]
     result = math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
     return math.cast_like(result, state)
