@@ -384,7 +384,7 @@ def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order
     [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
 
     .. details::
-        :title: details
+        :title: Details
 
         The following lattice shapes are currently supported.
 
