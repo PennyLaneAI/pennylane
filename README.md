@@ -145,7 +145,7 @@ projects or applications built on PennyLane.
 
 See our [contributions
 page](https://github.com/PennyLaneAI/pennylane/blob/master/.github/CONTRIBUTING.md) and our
-[developer hub](https://pennylane.readthedocs.io/en/stable/development/guide.html) for more
+[Development guide](https://pennylane.readthedocs.io/en/stable/development/guide.html) for more
 details.
 
 ## Support
