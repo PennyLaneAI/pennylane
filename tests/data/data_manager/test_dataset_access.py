@@ -153,7 +153,7 @@ def graphql_mock(url, query, variables=None):
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
         json_data = _list_attrs_resp
-    elif variables is not None and "rydberggpt" == variables["datasetClassId"]:
+    elif variables is not None and variables["datasetClassId"] == "rydberggpt":
         json_data = _rydberggpt_url_resp
     elif "GetDatasetsForDownload" in query:
         json_data = _get_urls_resp
