@@ -26,7 +26,6 @@ from pennylane.workflow.jacobian_products import (
     DeviceDerivatives,
     DeviceJacobianProducts,
     JacobianProductCalculator,
-    LightningVJPs,
     TransformJacobianProducts,
 )
 
@@ -35,7 +34,6 @@ dev_lightning = qml.device("lightning.qubit", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 dev_ps = ParamShiftDerivativesDevice()
 ps_config = qml.devices.ExecutionConfig(gradient_method="parameter-shift")
-aj_config = qml.devices.ExecutionConfig(gradient_keyword_arguments={"method": "adjoint_jacobian"})
 
 
 def inner_execute_numpy(tapes):
@@ -161,55 +159,6 @@ class TestBasics:
         )
 
         assert repr(jpc) == expected
-
-    def test_lightning_vjps_repr(self):
-        """Test the repr method for lightning vjps."""
-
-        device = qml.device("lightning.qubit", wires=5)
-
-        jpc = LightningVJPs(
-            device,
-            qml.devices.ExecutionConfig(gradient_keyword_arguments={"use_device_state": True}),
-        )
-
-        assert repr(jpc) == "<LightningVJPs: lightning.qubit, {'use_device_state': True}>"
-
-    def test_lightning_vjps_exp_error(self):
-        """Test that having non-expval measurements when computing VJPs raises an error."""
-        device = qml.device("lightning.qubit", wires=5)
-
-        jpc = LightningVJPs(
-            device,
-            qml.devices.ExecutionConfig(gradient_keyword_arguments={"use_device_state": True}),
-        )
-
-        tape = qml.tape.QuantumScript(
-            [qml.RX(0.123, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])]
-        )
-
-        with pytest.raises(
-            NotImplementedError, match="Lightning device VJPs only support expectation values."
-        ):
-            _ = jpc.compute_vjp([tape], [])
-
-    def test_lightning_vjps_batched_dy(self):
-        """Test that computing VJPs with batched dys raise an error."""
-        device = qml.device("lightning.qubit", wires=5)
-
-        jpc = LightningVJPs(
-            device,
-            qml.devices.ExecutionConfig(gradient_keyword_arguments={"use_device_state": True}),
-        )
-
-        tape = qml.tape.QuantumScript(
-            [qml.RX(0.123, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))]
-        )
-        dys = ((np.array([0.0, 1.0]), np.array([1.0, 0.0])),)
-
-        with pytest.raises(
-            NotImplementedError, match="Lightning device VJPs are not supported with jax jacobians."
-        ):
-            _ = jpc.compute_vjp([tape], dys)
 
 
 @pytest.mark.parametrize("jpc", jpc_matrix)

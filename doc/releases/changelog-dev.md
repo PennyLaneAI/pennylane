@@ -208,6 +208,8 @@
   decompose a circuit into a target gate set before applying `fold_global` or `mitigate_with_zne`.
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
 
+* The `LightningVJPs` class is removed as all lightning devices now follow the new device interface.
+
 <h3>Deprecations 👋</h3>
 
 * The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
