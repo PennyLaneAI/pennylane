@@ -23,7 +23,6 @@ import pytest
 import pennylane as qml
 
 
-@pytest.mark.xfail(reason="PrepSelPrep does not work with parameter-shift (GitHub issue #6331)")
 @pytest.mark.parametrize(
     ("lcu", "control"),
     [
@@ -32,10 +31,19 @@ import pennylane as qml
         (qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
         (0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2), [0]),
         (qml.Z(2) + qml.X(1) @ qml.X(2), [0]),
-        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1]),
-        (
+        pytest.param(
+            qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]),
+            [0, 1],
+            marks=pytest.mark.skip(
+                reason="This test case is expected to fail due to `NaN` being returned as gradients. This is a known limitation of ``MottonenStatePreparation``."
+            ),
+        ),
+        pytest.param(
             qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
             [0, 1, 2, 3],
+            marks=pytest.mark.skip(
+                reason="This test case is expected to fail due to `NaN` being returned as gradients. This is a known limitation of ``MottonenStatePreparation``."
+            ),
         ),
     ],
 )
