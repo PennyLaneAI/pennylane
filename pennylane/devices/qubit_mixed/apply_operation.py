@@ -61,13 +61,13 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-def _phase_shift(state, axis, phase_factor=-1):
+def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
     """
     Applies a phase shift to a quantum state along a specified axis.
 
     This function takes a quantum state and applies a phase shift along a given axis.
     The phase shift operation multiplies one part of the state by a complex phase factor.
-    This can represent various quantum gates including Pauli-Z, S, T, and other phase gates.
+    This can represent various quantum gates including Pauli-Z, S, T, and other phase gates. Please note that in PennyLane this is slightly different than the standard phase shift operation, as it is only to apply on a single site without broadcasting.
 
     Args:
         state (array-like): The quantum state to which the phase shift will be applied. Can be a vector or a multi-dimensional array representing a quantum state.
@@ -229,7 +229,7 @@ def apply_operation_tensordot(
         mat = op.matrix() + 0j
         dim = QUDIT_DIM**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
-        if batch_size is not None:
+        if is_mat_batched := batch_size is not None:
             # Add broadcasting dimension to shape
             kraus_shape = [batch_size] + kraus_shape
             if op.batch_size is None:
@@ -237,23 +237,15 @@ def apply_operation_tensordot(
         kraus = [mat]
     kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in kraus]
     # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
-    row_wires_list = channel_wires.tolist()  # Example: H0 => [0]
-    col_wires_list = [w + num_wires for w in row_wires_list]  # Example: H0 => [3]
-    if is_state_batched:
-        # Add 1 for each ids in the two lists
-        row_wires_list = [w + 1 for w in row_wires_list]
-        col_wires_list = [w + 1 for w in col_wires_list]
-    channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
-    if batch_size is not None:
-        channel_col_ids = [0] + [i + 1 for i in channel_col_ids]
-        row_wires_list = [0] + row_wires_list
-        col_wires_list = [0] + col_wires_list
+    row_wires_list = [w + is_state_batched for w in channel_wires.tolist()]
+    col_wires_list = [w + num_wires for w in row_wires_list]
+    channel_col_ids = list(range(-num_ch_wires, 0))
     axes_left = [channel_col_ids, row_wires_list]
     axes_right = [col_wires_list, channel_col_ids]
 
     # Apply the Kraus operators, and sum over all Kraus operators afterwards
     def _conjugate_state_with(k):
-        """Perform the double tensor product k @ self._state @ k.conj().
+        """Perform the double tensor product k @ self._state @ k.conj(), with given, single matrix k.
         The `axes_left` and `axes_right` arguments are taken from the ambient variable space
         and `axes_right` is assumed to incorporate the tensor product and the transposition
         of k.conj() simultaneously."""
@@ -263,24 +255,27 @@ def apply_operation_tensordot(
             axes_right,
         )
 
-    if len(kraus) == 1:
-        _state = _conjugate_state_with(kraus[0])
+    def _tensordot_single_kraus(kraus):
+        if len(kraus) == 1:
+            _state = _conjugate_state_with(kraus[0])
 
-    else:
-        _state = math.sum(math.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
+        else:
+            _state = math.sum(math.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
 
-    source_left = list(range(num_ch_wires))
-    dest_left = row_wires_list
-    source_right = list(range(-num_ch_wires, 0))
-    dest_right = col_wires_list
+        source_left = list(range(num_ch_wires))
+        dest_left = row_wires_list
+        source_right = list(range(-num_ch_wires, 0))
+        dest_right = col_wires_list
 
-    # Adjust for batched operators
-    if batch_size is not None:
-        source_left = [0] + [i + 1 for i in source_left]
-        source_right = [0] + [i + 1 for i in source_right]
-    result = math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
+        result = math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
-    return math.cast_like(result, state)
+        return math.cast_like(result, state)
+
+    if not is_mat_batched:
+        return _tensordot_single_kraus(kraus)
+    # Due to the limit of tensordot we better deal with each batch separately
+    kraus_batch = [[k[batch_i] for k in kraus] for batch_i in range(batch_size)]
+    return math.stack([_tensordot_single_kraus(kraus_batch_i) for kraus_batch_i in kraus_batch])
 
 
 @singledispatch
@@ -459,23 +454,58 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    # Common constants always needed
+    n_dim = math.ndim(state)
+    num_wires = _get_num_wires(state, is_state_batched)
+
+    # Start applying from the left side
+    axis = op.wires[0] + is_state_batched
+
+    # Slice indices of the affected axis
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    # Get the phase shift parameter
     params = math.cast(op.parameters[0], dtype=complex)
+    state0 = state[sl_0]
+    state1 = state[sl_1]
     if op.batch_size is not None and len(params) > 1:
         interface = math.get_interface(state)
         if interface == "torch":
             params = math.array(params, like=interface)
         if is_state_batched:
+            # If both op and state are batched, they have to have the same batch size
             params = math.reshape(params, (-1,) + (1,) * (n_dim - 2))
         else:
+            # Op is batched, state is not, so we need to expand the state to batched
             params = math.reshape(params, (-1,) + (1,) * (n_dim - 1))
-    # First, flip the left side
-    axis = op.wires[0] + is_state_batched
-    state = _phase_shift(state, axis, phase_factor=math.exp(1j * params))
+            state0 = math.expand_dims(state0, 0) + math.zeros_like(params)
+            state1 = math.expand_dims(state1, 0)
+            # Update status
+            is_state_batched = True
+            axis = axis + 1
+            n_dim = n_dim + 1
+    state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
+    state = math.stack([state0, state1], axis=axis)
+    if not is_state_batched and op.batch_size == 1:
+        state = math.stack([state], axis=0)
+    # Left side finished
 
-    # Second, flip the right side
-    axis = op.wires[0] + is_state_batched + num_wires
-    state = _phase_shift(state, axis, phase_factor=math.exp(-1j * params))
+    # Now start right side
+    axis += num_wires  # Move to the right side (conjugate side)
+    # Slice indices of the affected axis
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+    # Get the phase shift parameter, conjugated
+    state0 = state[sl_0]
+    state1 = state[sl_1]
+    # No need for expanding, since on the left side we already did
 
+    state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(-1.0j * params))
+    state = math.stack([state0, state1], axis=axis)
+    if not is_state_batched and op.batch_size == 1:
+        state = math.stack([state], axis=0)
     return state
 
 

@@ -546,7 +546,9 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         res = apply_operation(op, state)
 
         expanded_mat = TestOperation.expand_matrices(op, 3, batch_size=3)
-        expected = [TestOperation.get_expected_state(mat, state, num_q) for mat in expanded_mat]
+        expected = [
+            (TestOperation.get_expected_state(expanded_mat[i], state, num_q)) for i in range(3)
+        ]
 
         assert math.get_interface(res) == ml_framework
         assert math.allclose(res, expected)
