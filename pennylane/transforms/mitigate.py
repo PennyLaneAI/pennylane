@@ -216,7 +216,6 @@ def fold_global_tape(circuit, scale_factor):
     # Treat all circuits as lists of operations, build new tape in the end
     base_ops = circuit.operations
 
-
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
 
     n_ops = len(base_ops)
@@ -422,7 +421,7 @@ def mitigate_with_zne(
         import pennylane as qml
 
         dev = qml.device("default.mixed", wires=2)
- 
+
         fcond = qml.noise.wires_in(dev.wires)
         noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.05)
         noise_model = qml.NoiseModel({fcond: noise})
