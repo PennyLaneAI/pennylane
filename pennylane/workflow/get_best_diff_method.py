@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane.workflow.qnode import _make_execution_config
 
 
-# pylint: disable=unused-argument
 def get_best_diff_method(qnode):
     """Returns a function that computes the 'best' differentiation method
     for a particular QNode.
@@ -40,23 +39,21 @@ def get_best_diff_method(qnode):
 
     Args:
         qnode (.QNode): the qnode to get the 'best' differentiation method for.
-        return_as_str (bool): return the 'best' differentiation method in human-readable format.
 
     Returns:
-        str or .TransformDispatcher (a.k.a the ``gradient_fn``)
+        str: the gradient transform.
     """
 
-    def handle_return(transform, return_as_str):
-        """Helper function to manage the return type"""
-        if return_as_str:
-            if transform is qml.gradients.finite_diff:
-                return "finite-diff"
-            if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
-                return "parameter-shift"
+    def handle_return(transform):
+        """Helper function to manage the return"""
+        if transform is qml.gradients.finite_diff:
+            return "finite-diff"
+        if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
+            return "parameter-shift"
         return transform
 
     @wraps(qnode)
-    def wrapper(*args, return_as_str=False, **kwargs):
+    def wrapper(*args, **kwargs):
         device = qnode.device
         (tape,), _ = qml.workflow.construct_batch(qnode)(*args, **kwargs)
 
@@ -65,13 +62,13 @@ def get_best_diff_method(qnode):
         if device.supports_derivatives(config, circuit=tape):
             new_config = device.preprocess(config)[1]
             transform = new_config.gradient_method
-            return handle_return(transform, return_as_str)
+            return handle_return(transform)
 
         if tape and any(isinstance(o, qml.operation.CV) for o in tape):
             transform = qml.gradients.param_shift_cv
-            return handle_return(transform, return_as_str)
+            return handle_return(transform)
 
         transform = qml.gradients.param_shift
-        return handle_return(transform, return_as_str)
+        return handle_return(transform)
 
     return wrapper

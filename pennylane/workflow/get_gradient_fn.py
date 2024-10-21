@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for getting the gradient function for a given device or tape.
+"""Contains a function for retrieving the gradient function for a given device or tape.
 
 """
 
@@ -42,7 +42,7 @@ def get_gradient_fn(
     diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
     tape: Optional["qml.tape.QuantumTape"] = None,
 ):
-    """Determine the best differentiation method for a requested device and diff method.
+    """Determine the best differentiation method for a given device and diff method.
 
     Args:
         device (.device.Device): PennyLane device
