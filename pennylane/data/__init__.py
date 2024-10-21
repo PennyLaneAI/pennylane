@@ -38,6 +38,7 @@ Additionally, users can easily create, write to disk, and read custom datasets u
     load_interactive
     list_attributes
     list_data_names
+    list_datasets
 
 In addition, various dataset types are provided
 
@@ -216,7 +217,15 @@ from .attributes import (
 from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
 from .base.dataset import Dataset, field
-from .data_manager import DEFAULT, FULL, list_attributes, list_data_names, load, load_interactive
+from .data_manager import (
+    DEFAULT,
+    FULL,
+    list_attributes,
+    list_datasets,
+    list_data_names,
+    load,
+    load_interactive,
+)
 
 __all__ = (
     "AttributeInfo",
@@ -241,6 +250,7 @@ __all__ = (
     "load_interactive",
     "list_attributes",
     "list_data_names",
+    "list_datasets",
     "DEFAULT",
     "FULL",
 )

@@ -41,6 +41,27 @@ from .params import DEFAULT, FULL, format_params
 
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
+FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
+DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
+
+
+# @lru_cache(maxsize=1)
+def _get_foldermap():
+    """Fetch the foldermap from S3."""
+    response = get(FOLDERMAP_URL, timeout=5.0)
+    response.raise_for_status()
+
+    return FolderMapView(response.json())
+
+
+@lru_cache(maxsize=1)
+def _get_data_struct():
+    """Fetch the data struct from S3."""
+    response = get(DATA_STRUCT_URL, timeout=5.0)
+    response.raise_for_status()
+
+
+S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 
 
 def _download_partial(  # pylint: disable=too-many-arguments
@@ -357,6 +378,47 @@ def load(  # pylint: disable=too-many-arguments
         )
 
     return [Dataset.open(path, "a") for path in download_paths]
+
+
+def list_datasets() -> dict:
+    r"""Returns a dictionary of the available datasets.
+
+    Return:
+        dict: Nested dictionary representing the directory structure of the hosted datasets.
+
+    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.load`.
+
+    **Example:**
+
+    Note that the results of calling this function may differ from this example as more datasets
+    are added. For updates on available data see the `datasets website <https://pennylane.ai/datasets>`_.
+
+    >>> available_data = qml.data.list_datasets()
+    >>> available_data.keys()
+    dict_keys(["qspin", "qchem"])
+    >>> available_data["qchem"].keys()
+    dict_keys(["H2", "LiH", ...])
+    >>> available_data['qchem']['H2'].keys()
+    dict_keys(["CC-PVDZ", "6-31G", "STO-3G"])
+    >>> print(available_data['qchem']['H2']['STO-3G'])
+    ["0.5", "0.54", "0.62", "0.66", ...]
+
+    Note that this example limits the results of the function calls for
+    clarity and that as more data becomes available, the results of these
+    function calls will change.
+    """
+
+    def remove_paths(foldermap):
+        """Copies the foldermap, converting the bottom-level mapping of parameters
+        to Paths to a list of the parameters."""
+        value = next(iter(foldermap.values()))
+
+        if not isinstance(value, Mapping):
+            return sorted(foldermap.keys())
+
+        return {param: remove_paths(foldermap[param]) for param in foldermap.keys()}
+
+    return remove_paths(_get_foldermap())
 
 
 def _interactive_request_data_name(data_names):

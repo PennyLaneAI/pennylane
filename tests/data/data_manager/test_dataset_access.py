@@ -21,6 +21,7 @@ from typing import NamedTuple
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+import requests
 
 import pennylane as qml
 import pennylane.data.data_manager
@@ -48,6 +49,84 @@ except ImportError:
 
 
 pytestmark = pytest.mark.data
+
+
+_folder_map = {
+    "__params": {
+        "qchem": ["molname", "basis", "bondlength"],
+        "qspin": ["sysname", "periodicity", "lattice", "layout"],
+    },
+    "qchem": {
+        "H2": {
+            "6-31G": {
+                "0.46": PosixPath("qchem/H2/6-31G/0.46.h5"),
+                "1.16": PosixPath("qchem/H2/6-31G/1.16.h5"),
+                "1.0": PosixPath("qchem/H2/6-31G/1.0.h5"),
+            }
+        }
+    },
+    "qspin": {
+        "Heisenberg": {
+            "closed": {"chain": {"1x4": PosixPath("qspin/Heisenberg/closed/chain/1x4/1.4.h5")}}
+        }
+    },
+}
+
+_data_struct = {
+    "qchem": {
+        "docstr": "Quantum chemistry dataset.",
+        "params": ["molname", "basis", "bondlength"],
+        "attributes": ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full"],
+    },
+    "qspin": {
+        "docstr": "Quantum many-body spin system dataset.",
+        "params": ["sysname", "periodicity", "lattice", "layout"],
+        "attributes": ["parameters", "hamiltonians", "ground_states", "full"],
+    },
+}
+
+
+# pylint:disable=unused-argument
+def get_mock(url, timeout=1.0):
+    """Return the foldermap or data_struct according to URL"""
+    resp = MagicMock(ok=True)
+    resp.json.return_value = _folder_map if "foldermap" in url else _data_struct
+    return resp
+
+
+@pytest.fixture(autouse=True)
+def mock_requests_get(request, monkeypatch, mock_get_args):
+    """Patches `requests.get()` in the data_manager module so that
+    it returns mock JSON data for the foldermap and data struct."""
+
+    def mock_get(url, *args, **kwargs):
+        mock_get_args(url, *args, **kwargs)
+
+        mock_resp = MagicMock()
+        if url == qml.data.data_manager.FOLDERMAP_URL:
+            json_data = _folder_map
+        elif url == qml.data.data_manager.DATA_STRUCT_URL:
+            json_data = _data_struct
+        else:
+            json_data = None
+
+        mock_resp.json.return_value = json_data
+        if hasattr(request, "param"):
+            content = request.param
+            mock_resp.content = content
+
+            def mock_iter_content(chunk_size: int):
+                """Mock for Response.iter_content()."""
+                for i in range(0, len(content), chunk_size):
+                    yield content[i : i + chunk_size]
+
+            mock_resp.iter_content = mock_iter_content
+
+        return mock_resp
+
+    monkeypatch.setattr(qml.data.data_manager, "get", mock_get)
+
+    return mock_get
 
 
 @pytest.fixture(scope="session")
@@ -91,36 +170,6 @@ def mock_get_args():
     """A Mock object that tracks the arguments passed to ``mock_requests_get``."""
 
     return MagicMock()
-
-
-@pytest.fixture(autouse=True)
-def mock_requests_get(request, monkeypatch, mock_get_args):
-    """Patches `requests.get()` in the data_manager module so that
-    it returns mock JSON data."""
-
-    def mock_get(url, *args, **kwargs):
-        mock_get_args(url, *args, **kwargs)
-
-        mock_resp = MagicMock()
-        json_data = None
-
-        mock_resp.json.return_value = json_data
-        if hasattr(request, "param"):
-            content = request.param
-            mock_resp.content = content
-
-            def mock_iter_content(chunk_size: int):
-                """Mock for Response.iter_content()."""
-                for i in range(0, len(content), chunk_size):
-                    yield content[i : i + chunk_size]
-
-            mock_resp.iter_content = mock_iter_content
-
-        return mock_resp
-
-    monkeypatch.setattr(qml.data.data_manager, "get", mock_get)
-
-    return mock_get
 
 
 def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
@@ -241,14 +290,23 @@ class TestLoadInteractive:
             qml.data.load_interactive()
 
 
-@patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
 class TestMiscHelpers:
     """Test miscellaneous helper functions in data_manager."""
 
+    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
     def test_list_data_names(self):
         """Test list_data_names."""
         assert qml.data.list_data_names() == ["other", "qchem", "qspin"]
 
+    @patch.object(requests, "get", get_mock)
+    def test_list_datasets(self, tmp_path):
+        """Test that list_datasets returns either the S3 foldermap, or the local tree."""
+        assert qml.data.list_datasets() == {
+            "qspin": {"Heisenberg": {"closed": {"chain": ["1x4"]}}},
+            "qchem": {"H2": {"6-31G": ["0.46", "1.0", "1.16"]}},
+        }
+
+    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
     def test_list_attributes(self):
         """Test list_attributes."""
         assert qml.data.list_attributes("qchem") == [
