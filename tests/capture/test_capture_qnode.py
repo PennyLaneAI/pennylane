@@ -456,6 +456,7 @@ class TestQNodeVmapIntegration:
         )
         assert qml.math.allclose(res3_vmap, jax.numpy.array([1.0, 1.0]))
 
+        assert len(jaxpr.eqns[0].outvars) == 3
         assert jaxpr.out_avals[0] == jax.core.ShapedArray(
             (2, 5, 4), jax.numpy.int64 if x64_mode else jax.numpy.int32
         )
@@ -577,6 +578,7 @@ class TestQNodeVmapIntegration:
         assert qml.math.allclose(res, jax.numpy.cos(x["val"]))
 
         assert len(jaxpr.eqns[0].invars) == 2
+
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
 
@@ -595,6 +597,7 @@ class TestQNodeVmapIntegration:
         assert qml.math.allclose(res, jax.numpy.cos(x["data"]["val"]))
 
         assert len(jaxpr.eqns[0].invars) == 2
+
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
 

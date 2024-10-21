@@ -585,10 +585,10 @@ def is_non_scalar_tensor(arg) -> bool:
     """Helper function to check if an argument is a non-scalar tensor-like object.
 
     Args:
-        arg (tensor_like): input tensor
+        arg (tensor_like): input tensor.
 
     Returns:
-        bool: whether the tensor is non-scalar or not
+        bool: whether the tensor is non-scalar or not.
 
     **Example**
 

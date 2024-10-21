@@ -433,6 +433,14 @@ class TestLabeling:
         assert split_str[2][:6] == "    a:"
         assert split_str[3][:6] == "1.234:"
 
+    def test_hiding_labels(self):
+        """Test that printing wire labels can be skipped with show_wire_labels=False."""
+
+        split_str = tape_text(tape, show_wire_labels=False).split("\n")
+        assert split_str[0].startswith("─")
+        assert split_str[1].startswith("─")
+        assert split_str[2].startswith("─")
+
 
 class TestDecimals:
     """Test the decimals keyword argument."""
