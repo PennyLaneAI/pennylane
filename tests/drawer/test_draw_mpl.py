@@ -187,6 +187,21 @@ class TestKwargs:
             assert l.get_fontsize() == 20
         plt.close()
 
+    def test_hide_wire_labels(self):
+        """Test that wire labels are skipped with show_wire_labels=False."""
+        fig, ax = qml.draw_mpl(circuit1, show_wire_labels=False)(1.23, 2.34)
+        fig_with_labels, ax_with_labels = qml.draw_mpl(circuit1)(1.23, 2.34)
+
+        # Only PauliX gate labels should be present
+        assert len(ax.texts) == 2
+        assert len(ax_with_labels.texts) == 2 + 3
+        assert ax.texts[0].get_text() == "RX"
+        assert ax.texts[1].get_text() == "RY"
+        assert fig.get_figwidth() == 4
+        assert fig_with_labels.get_figwidth() == 4 + 1
+
+        plt.close()
+
     @pytest.mark.parametrize(
         "notches, n_patches",
         [
