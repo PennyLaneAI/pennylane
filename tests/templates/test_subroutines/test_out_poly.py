@@ -66,9 +66,7 @@ def test_standard_validity_OutPoly():
 
     op = qml.OutPoly(
         f_test,
-        x_wires=wires["x"],
-        y_wires=wires["y"],
-        z_wires=wires["z"],
+        input_registers=[wires["x"], wires["y"], wires["z"]],
         output_wires=wires["output"],
     )
 
@@ -79,18 +77,20 @@ class TestOutPoly:
     """Test the qml.OutPoly template."""
 
     @pytest.mark.parametrize(
-        ("f", "x_wires", "y_wires", "output_wires", "mod", "work_wires"),
+        ("polynomial_function", "input_registers", "output_wires", "mod", "work_wires"),
         [
-            (lambda x, y: 3 * x**3 - 3 * y, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6, [10, 11]),
-            (lambda x, y: 2 * x * y - 3 * x, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 7, [10, 11]),
-            (lambda x, y: -2 * x - 3 * y + 1, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], None, None),
-            (lambda x, y: 2 * x * y - 3 * x + 5, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], None, None),
+            (lambda x, y: 3 * x**3 - 3 * y, [[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6, [10, 11]),
+            (lambda x, y: 2 * x * y - 3 * x, [[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 7, [10, 11]),
+            (lambda x, y: -2 * x - 3 * y + 1, [[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], None, None),
+            (lambda x, y: 2 * x * y - 3 * x + 5, [[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], None, None),
         ],
     )
     def test_operation_result(
-        self, f, x_wires, y_wires, output_wires, mod, work_wires
+        self, polynomial_function, input_registers, output_wires, mod, work_wires
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutPoly template output."""
+
+        x_wires, y_wires = input_registers
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -99,9 +99,8 @@ class TestOutPoly:
             qml.BasisEmbedding(2, wires=x_wires)
             qml.BasisEmbedding(1, wires=y_wires)
             qml.OutPoly(
-                f,
-                x_wires=x_wires,
-                y_wires=y_wires,
+                polynomial_function,
+                input_registers=input_registers,
                 output_wires=output_wires,
                 mod=mod,
                 work_wires=work_wires,
@@ -110,28 +109,27 @@ class TestOutPoly:
 
         if mod is None:
             mod = int(2 ** len(output_wires))
-        assert np.isclose(np.argmax(circuit()), f(2, 1) % mod)
+        assert np.isclose(np.argmax(circuit()), polynomial_function(2, 1) % mod)
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
+        ("input_registers", "output_wires", "mod", "work_wires", "msg_match"),
         [
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6.1, [10, 11], "mod must be integer."),
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6, [0, 11], "None of the wires in"),
-            ([0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6, [10], "If mod is not"),
-            # ([0, 1, 2], None, [6, 7, 8, 9], 6, [10, 11], "The function takes"),
+            ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6.1, [10, 11], "mod must be integer."),
+            ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6, [0, 11], "None of the wires in"),
+            ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6, [10], "If mod is not"),
         ],
     )
     def test_operation_and_test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
+        self, input_registers, output_wires, mod, work_wires, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test that proper errors are raised"""
+        x_wires, y_wires = input_registers
 
         with pytest.raises(ValueError, match=msg_match):
             if y_wires:
                 qml.OutPoly(
                     lambda x, y: 3 * x**3 - 3 * y,
-                    x_wires=x_wires,
-                    y_wires=y_wires,
+                    input_registers=input_registers,
                     output_wires=output_wires,
                     mod=mod,
                     work_wires=work_wires,
@@ -139,7 +137,7 @@ class TestOutPoly:
             else:
                 qml.OutPoly(
                     lambda x, y: 3 * x**3 - 3 * y,
-                    x_wires=x_wires,
+                    input_registers=[x_wires],
                     output_wires=output_wires,
                     mod=mod,
                     work_wires=work_wires,
@@ -148,7 +146,7 @@ class TestOutPoly:
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
 
-        def f(x, y):
+        def polynomial_function(x, y):
             return x + y
 
         expected_decomposition = [
@@ -158,7 +156,9 @@ class TestOutPoly:
             qml.adjoint(qml.QFT(wires=[3])),
         ]
 
-        ops = qml.OutPoly(f, x_wires=[0, 1], y_wires=[2], output_wires=[3]).decomposition()
+        ops = qml.OutPoly(
+            polynomial_function, input_registers=[[0, 1], [2]], output_wires=[3]
+        ).decomposition()
 
         for op1, op2 in zip(expected_decomposition, ops):
             qml.assert_equal(op1, op2)
@@ -187,9 +187,7 @@ class TestOutPoly:
             # applying the polynomial
             qml.OutPoly(
                 f,
-                x_wires=wires["x"],
-                y_wires=wires["y"],
-                z_wires=wires["z"],
+                input_registers=[wires["x"], wires["y"], wires["z"]],
                 output_wires=wires["output"],
                 mod=6,
                 work_wires=wires["aux"],

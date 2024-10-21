@@ -240,11 +240,11 @@ class OutPoly(Operation):
     grad_method = None
 
     def __init__(
-        self, f, output_wires, mod=None, work_wires=None, id=None, **kwargs
+        self, polynomial_function, input_registers, output_wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
         r"""Initialize the OutPoly class"""
 
-        registers_wires = [*kwargs.values(), output_wires]
+        registers_wires = [*input_registers, output_wires]
 
         num_work_wires = 0 if not work_wires else len(work_wires)
         if mod is None:
@@ -258,18 +258,20 @@ class OutPoly(Operation):
             raise ValueError("mod must be integer.")
 
         all_wires = []
-        self.hyperparameters["registers_wires"] = {}
+        inp_regs = []
 
-        for key, value in kwargs.items():
-            wires = qml.wires.Wires(value)
-            self.hyperparameters["registers_wires"][key] = wires
+        for reg in input_registers:
+            wires = qml.wires.Wires(reg)
+            inp_regs.append(wires)
             all_wires += wires
 
+        self.hyperparameters["input_registers"] = tuple(inp_regs)
+
         wires = qml.wires.Wires(output_wires)
-        self.hyperparameters["registers_wires"]["output_wires"] = wires
+        self.hyperparameters["output_wires"] = wires
         all_wires += wires
 
-        self.hyperparameters["f"] = f
+        self.hyperparameters["polynomial_function"] = polynomial_function
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires) if work_wires else None
 
@@ -284,12 +286,9 @@ class OutPoly(Operation):
         super().__init__(wires=all_wires, id=id)
 
     def _flatten(self):
-        metadata1 = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "registers_wires"
-        )
-        metadata2 = tuple(self.hyperparameters["registers_wires"].items())
+        metadata1 = tuple((key, value) for key, value in self.hyperparameters.items())
 
-        return tuple(), (*metadata1, *metadata2)
+        return tuple(), metadata1
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -299,10 +298,12 @@ class OutPoly(Operation):
 
     def map_wires(self, wire_map: dict):
 
-        new_registers_wires = {
-            key: qml.wires.Wires([wire_map[wire] for wire in wires])
-            for key, wires in self.hyperparameters["registers_wires"].items()
-        }
+        new_input_registers = [
+            qml.wires.Wires([wire_map[wire] for wire in reg])
+            for reg in self.hyperparameters["input_registers"]
+        ]
+
+        new_output_wires = [wire_map[wire] for wire in self.hyperparameters["output_wires"]]
 
         new_work_wires = (
             [wire_map[wire] for wire in self.hyperparameters["work_wires"]]
@@ -311,10 +312,11 @@ class OutPoly(Operation):
         )
 
         return OutPoly(
-            f=self.hyperparameters["f"],
+            polynomial_function=self.hyperparameters["polynomial_function"],
+            input_registers=new_input_registers,
+            output_wires=new_output_wires,
             mod=self.hyperparameters["mod"],
             work_wires=new_work_wires,
-            **new_registers_wires,
         )
 
     @classmethod
@@ -322,19 +324,11 @@ class OutPoly(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     def decomposition(self):  # pylint: disable=arguments-differ
-        input_registers = self.hyperparameters["registers_wires"]
-        return self.compute_decomposition(
-            **{
-                key: value
-                for key, value in self.hyperparameters.items()
-                if key != "registers_wires"
-            },
-            **input_registers,
-        )
+        return self.compute_decomposition(**self.hyperparameters)
 
     @staticmethod
     def compute_decomposition(
-        f, output_wires, mod=None, work_wires=None, id=None, **kwargs
+        polynomial_function, input_registers, output_wires, mod=None, work_wires=None
     ):  # pylint: disable=unused-argument, arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -361,12 +355,7 @@ class OutPoly(Operation):
 
         [QFT(wires=[4]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[3]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]), Adjoint(QFT(wires=[4]))]
         """
-        registers_wires = []
-
-        for value in kwargs.values():
-            registers_wires.append(qml.wires.Wires(value))
-
-        registers_wires.append(output_wires)
+        registers_wires = [*input_registers, output_wires]
 
         if not work_wires:
             work_wires = [None, None]
@@ -382,7 +371,7 @@ class OutPoly(Operation):
         wires_vars = [len(w) for w in registers_wires[:-1]]
 
         # Extract the coefficients and control wires from the binary polynomial
-        coeffs_list = _get_polynomial(f, mod, *wires_vars)
+        coeffs_list = _get_polynomial(polynomial_function, mod, *wires_vars)
 
         all_wires_input = sum([*registers_wires[:-1]], start=[])
 
