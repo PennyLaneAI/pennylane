@@ -283,7 +283,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes incorrect differentiation of `PrepSelPrep` using `diff_method="parameter-shift"`. 
+* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`. 
   [(#6423)](https://github.com/PennyLaneAI/pennylane/pull/6423)
 
 * The `validate_device_wires` transform now raises an error if abstract wires are provided.
