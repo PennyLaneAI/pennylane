@@ -414,6 +414,12 @@ class DefaultTensor(Device):
         # that access it as soon as the device is created before running a circuit.
         self._quimb_circuit = self._initial_quimb_circuit(self.wires)
 
+        shots = kwargs.pop("shots", None)
+        if shots is not None:
+            raise qml.DeviceError(
+                "default.tensor only supports analytic simulations with shots=None."
+            )
+
         for arg in kwargs:
             if arg not in self._device_options:
                 raise TypeError(
@@ -571,13 +577,17 @@ class DefaultTensor(Device):
         Update the execution config with choices for how the device should be used and the device options.
         """
         # TODO: add options for gradients next quarter
-
         updated_values = {}
 
         new_device_options = dict(config.device_options)
         for option in self._device_options:
             if option not in new_device_options:
                 new_device_options[option] = getattr(self, f"_{option}", None)
+
+        if config.mcm_config.mcm_method not in {None, "deferred"}:
+            raise qml.DeviceError(
+                f"{self.name} only supports the deferred measurement principle, not {config.mcm_config.mcm_method}"
+            )
 
         return replace(config, **updated_values, device_options=new_device_options)
 
@@ -610,6 +620,7 @@ class DefaultTensor(Device):
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
         program.add_transform(validate_device_wires, self._wires, name=self.name)
+        program.add_transform(qml.defer_measurements, device=self)
         program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
