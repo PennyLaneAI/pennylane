@@ -73,7 +73,7 @@ def test_operator_definition_qpe(hamiltonian):
             qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]),
             [3, 4],
             marks=pytest.mark.skip(
-                reason="This test case is expected to fail due to `NaN` being returned as gradients. This is a known limitation of ``MottonenStatePreparation``."
+                reason="This test case is expected to fail due to `NaN`s being returned in the gradient. This is a known limitation of ``MottonenStatePreparation``."
             ),
         ),
     ],

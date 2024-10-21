@@ -39,7 +39,7 @@ class PrepSelPrep(Operation):
     """Implements a block-encoding of a linear combination of unitaries.
 
     .. warning::
-        Derivatives of this module are not always guaranteed to exist.
+        Derivatives of this operator are not always guaranteed to exist.
 
     Args:
         lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
