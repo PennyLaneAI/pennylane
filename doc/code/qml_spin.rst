@@ -7,8 +7,8 @@ Overview
 This module contains functions and classes for creating and manipulating Hamiltonians for
 spin models.
 
-Hamiltonian template functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Hamiltonian functions
+^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.spin
 
