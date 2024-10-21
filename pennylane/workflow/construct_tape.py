@@ -23,18 +23,22 @@ def construct_tape(qnode, level="user"):
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
-        level (None, str, int, slice): And indication of what transforms to use from the full program.
-
-            * ``None``: use the full transform program.
-            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
-            * ``int``: How many transforms to include, starting from the front of the program.
-            * ``slice``: a slice to select out components of the transform program.
+        level (None, str, int, slice): Specifies which stage of the QNode's transform program to use for tape construction.
+            - ``None``: Uses the entire transformation pipeline.
+            - ``"top"``: Uses the top-level transformations.
+            - ``"user"``: Uses transformations up to and including user-defined operations.
+            - ``"device"``: Uses only device-level transformations.
+            - ``"gradient"``: Extracts the gradient-level tape.
+            - ``int``: Specifies the number of transforms to include from the start of the transformation program.
+            - ``slice``: Selects a subset of the transformation program.
 
     Returns:
         tape (QuantumScript): a quantum circuit.
 
     Raises:
-        ValueError: ``level`` argument corresponds to more than one tape.
+        ValueError: if the `level` argument corresponds to more than one tape.
+
+    .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
 
     **Example**
 
