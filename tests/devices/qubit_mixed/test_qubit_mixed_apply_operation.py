@@ -38,6 +38,7 @@ from pennylane.devices.qubit_mixed.apply_operation import (
     apply_operation_tensordot,
 )
 from pennylane.devices.qubit_mixed.utils import QUDIT_DIM
+from pennylane.operation import _UNSET_BATCH_SIZE
 
 ml_frameworks_list = [
     "numpy",
@@ -537,6 +538,16 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         ),
     ]
 
+    unbroadcasted_ops = [
+        qml.PauliX(2),
+        qml.PauliZ(2),
+        qml.CNOT([1, 2]),
+        qml.RX(np.pi, wires=2),
+        qml.PhaseShift(np.pi / 2, wires=2),
+        qml.IsingXX(np.pi / 2, wires=[1, 2]),
+        qml.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
+    ]
+
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, ml_framework):
         """Tests that batched operations are applied correctly to an unbatched state."""
@@ -552,3 +563,49 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
         assert math.get_interface(res) == ml_framework
         assert math.allclose(res, expected)
+
+    @pytest.mark.parametrize("op", unbroadcasted_ops)
+    def test_broadcasted_state(self, op, ml_framework):
+        """Tests that batched operations are applied correctly to an unbatched state."""
+        num_q = 3
+        state = [math.asarray(get_random_mixed_state(num_q), like=ml_framework) for _ in range(3)]
+        state = math.stack(state)
+
+        res = apply_operation(op, state, is_state_batched=True)
+
+        expanded_mat = TestOperation.expand_matrices(op, 3)
+        expected = [
+            (TestOperation.get_expected_state(expanded_mat, state[i], num_q)) for i in range(3)
+        ]
+
+        assert math.get_interface(res) == ml_framework
+        assert math.allclose(res, expected)
+
+    @pytest.mark.parametrize("op", broadcasted_ops)
+    def test_broadcasted_op_broadcasted_state(self, op, ml_framework):
+        """Tests that batched operations are applied correctly to batched state."""
+        num_q = 3
+        state = [math.asarray(get_random_mixed_state(num_q), like=ml_framework) for _ in range(3)]
+        state = math.stack(state)
+
+        res = apply_operation(op, state, is_state_batched=True)
+
+        expanded_mat = TestOperation.expand_matrices(op, 3, batch_size=3)
+        expected = [
+            (TestOperation.get_expected_state(expanded_mat[i], state[i], num_q)) for i in range(3)
+        ]
+
+        assert math.get_interface(res) == ml_framework
+        assert math.allclose(res, expected)
+
+    @pytest.mark.parametrize("method", [apply_operation_einsum, apply_operation_tensordot])
+    def test_batch_size_set_if_missing(self, method, ml_framework):
+        """Tests that the batch_size is set on an operator if it was missing before.
+        Mostly useful for TF-autograph since it may have batch size set to None."""
+        param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
+        state = np.ones((2, 2)) / 2
+        op = qml.RX(param, 0)
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
+        state = method(op, state)
+        assert state.shape == (3, 2, 2)
+        assert op.batch_size == 3

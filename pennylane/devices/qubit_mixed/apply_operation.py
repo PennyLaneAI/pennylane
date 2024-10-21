@@ -243,8 +243,8 @@ def apply_operation_tensordot(
     axes_right = [col_wires_list, channel_col_ids]
 
     # Apply the Kraus operators, and sum over all Kraus operators afterwards
-    def _conjugate_state_with(k):
-        """Perform the double tensor product k @ self._state @ k.conj(), with given, single matrix k.
+    def _conjugate_state_with(k, state=state):
+        """Perform the double tensor product k @ state @ k.conj(), with given, single matrix k.
         The `axes_left` and `axes_right` arguments are taken from the ambient variable space
         and `axes_right` is assumed to incorporate the tensor product and the transposition
         of k.conj() simultaneously."""
@@ -254,12 +254,12 @@ def apply_operation_tensordot(
             axes_right,
         )
 
-    def _tensordot_single_kraus(kraus):
+    def _tensordot_single_kraus(kraus, state=state):
         if len(kraus) == 1:
-            _state = _conjugate_state_with(kraus[0])
+            _state = _conjugate_state_with(kraus[0], state)
 
         else:
-            _state = math.sum(math.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
+            _state = math.sum(math.stack([_conjugate_state_with(k, state) for k in kraus]), axis=0)
 
         source_left = list(range(num_ch_wires))
         dest_left = row_wires_list
@@ -270,11 +270,21 @@ def apply_operation_tensordot(
 
         return math.cast_like(result, state)
 
-    if is_op_channel or not is_mat_batched:
+    if is_op_channel or not is_mat_batched:  # First deal with the channel case
         return _tensordot_single_kraus(kraus)
     # Due to the limit of tensordot we better deal with each batch separately
     kraus_batch = [[k[batch_i] for k in kraus] for batch_i in range(batch_size)]
-    return math.stack([_tensordot_single_kraus(kraus_batch_i) for kraus_batch_i in kraus_batch])
+    if not is_state_batched:
+        return math.stack([_tensordot_single_kraus(kraus_batch_i) for kraus_batch_i in kraus_batch])
+    # If the both mat and state are batched, we can directly apply the tensordot
+    row_wires_list = channel_wires.tolist()
+    col_wires_list = [w + num_wires for w in row_wires_list]
+    axes_left = [channel_col_ids, row_wires_list]
+    axes_right = [col_wires_list, channel_col_ids]
+    kraus = math.reshape(kraus, state.shape)
+    return math.stack(
+        [_tensordot_single_kraus([kraus[batch_i]], state[batch_i]) for batch_i in range(batch_size)]
+    )
 
 
 @singledispatch
