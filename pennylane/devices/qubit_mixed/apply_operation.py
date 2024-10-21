@@ -222,8 +222,7 @@ def apply_operation_tensordot(
     #! Note that here we do not take into consideration the len of kraus list
     kraus_shape = [QUDIT_DIM] * num_ch_wires * 2
     # This could be pulled into separate function if tensordot is added
-    if isinstance(op, Channel):
-
+    if is_op_channel := isinstance(op, Channel):
         kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in op.kraus_matrices()]
     else:
         mat = op.matrix() + 0j
@@ -271,7 +270,7 @@ def apply_operation_tensordot(
 
         return math.cast_like(result, state)
 
-    if not is_mat_batched:
+    if is_op_channel or not is_mat_batched:
         return _tensordot_single_kraus(kraus)
     # Due to the limit of tensordot we better deal with each batch separately
     kraus_batch = [[k[batch_i] for k in kraus] for batch_i in range(batch_size)]
