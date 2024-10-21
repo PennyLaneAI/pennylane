@@ -41,7 +41,8 @@ def transverse_ising(
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
         coupling (float or tensor_like[float]): Coupling between spins. It should
             be a number, an array of length equal to ``neighbour_order`` or a square matrix of shape
@@ -116,7 +117,8 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
         coupling (tensor_like[float]): Coupling between spins. It can be an
             array of shape ``(neighbour_order, 3)`` or
@@ -211,7 +213,8 @@ def fermi_hubbard(
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
         hopping (float or tensor_like[float]): Hopping strength between
             neighbouring sites. It can be a number, an array of length equal to ``neighbour_order`` or
@@ -341,7 +344,8 @@ def emery(
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         hopping (float or tensor_like[float]): Hopping strength between
             neighbouring sites. It can be a number, an array of length equal to ``neighbour_order`` or
@@ -507,7 +511,8 @@ def haldane(
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         hopping (float or tensor_like[float]): Hopping strength between
             nearest neighbouring sites. It can be a number, or

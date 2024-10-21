@@ -358,12 +358,13 @@ class Lattice:
 
 
 def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates a Lattice object for a given lattice shape and number of cells.
+    r"""Generates a :class:`~pennylane.spin.Lattice` object for a given lattice shape and number of
+    cells.
 
     Args:
-        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``, ``'rectangle'``,
-            ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, ``'fcc'``,
-            or ``'diamond'``.
+        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes.
             Default is ``False`` indicating open boundary condition.
@@ -371,7 +372,7 @@ def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order
             Default is 1, indicating nearest neighbour.
 
     Returns:
-        lattice object.
+        ~pennylane.spin.Lattice: lattice object.
 
     **Example**
 
