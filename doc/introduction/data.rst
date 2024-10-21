@@ -127,6 +127,27 @@ Note that this example limits the results
 of the function calls for clarity and that as more data becomes available, the results of these
 function calls will change.
 
+Viewing Available Datasets
+--------------------------
+
+We can call the 
+:func:`~pennylane.data.list_datasets` function to get a snapshot of the currently available data.
+This function returns a nested dictionary as shown below. 
+
+>>> available_data = qml.data.list_datasets()
+>>> available_data.keys()
+dict_keys(["qspin", "qchem"])
+>>> available_data["qchem"].keys()
+dict_keys(["H2", "LiH", ...])
+>>> available_data['qchem']['H2'].keys()
+dict_keys(["6-31G", "STO-3G"])
+>>> print(available_data['qchem']['H2']['STO-3G'])
+["0.5", "0.54", "0.62", "0.66", ...]
+
+Note that this example limits the results
+of the function calls for clarity and that as more data becomes available, the results of these
+function calls will change.
+
 Creating Custom Datasets
 ------------------------
 
@@ -170,8 +191,9 @@ Quantum Datasets Functions and Classes
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.data.list_data_names
     ~pennylane.data.list_attributes
+    ~pennylane.data.list_data_names
+    ~pennylane.data.list_datasets
     ~pennylane.data.load
     ~pennylane.data.load_interactive
     ~pennylane.data.Dataset
