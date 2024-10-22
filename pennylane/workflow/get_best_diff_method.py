@@ -31,7 +31,6 @@ def get_best_diff_method(qnode):
     * ``"device"``
     * ``"backprop"``
     * ``"parameter-shift"``
-    * ``"finite-diff"``
 
     The first differentiation method that is supported (going from
     top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradients
@@ -46,8 +45,6 @@ def get_best_diff_method(qnode):
 
     def handle_return(transform):
         """Helper function to manage the return"""
-        if transform is qml.gradients.finite_diff:
-            return "finite-diff"
         if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
             return "parameter-shift"
         return transform
