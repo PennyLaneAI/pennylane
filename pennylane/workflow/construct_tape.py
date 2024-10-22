@@ -24,6 +24,7 @@ def construct_tape(qnode, level="user"):
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
         level (None, str, int, slice): Specifies which stage of the QNode's transform program to use for tape construction.
+
             - ``None``: Uses the entire transformation pipeline.
             - ``"top"``: Uses the top-level transformations.
             - ``"user"``: Uses transformations up to and including user-defined operations.
