@@ -458,8 +458,6 @@ def _interactive_requests(parameters, parameter_tree):
 
     branch = parameter_tree
     for param in parameters:
-        if isinstance(branch, str):
-            return branch
 
         if len(branch["next"]) == 1:
             branch = next(iter(branch["next"].values()))
