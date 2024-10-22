@@ -33,4 +33,6 @@ Modules
 
 """
 
+# from .resource_estimation import *
+
 __all__ = []
