@@ -286,6 +286,9 @@ ar.register_function(
 ar.register_function(
     "tensorflow", "gather", lambda *args, **kwargs: _i("tf").gather(*args, **kwargs)
 )
+ar.register_function(
+    "tensorflow", "concat", lambda *args, **kwargs: _i("tf").concat(*args, **kwargs)
+)
 
 
 def _tensorflow_allclose(a, b, **kwargs):
