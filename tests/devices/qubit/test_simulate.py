@@ -671,7 +671,7 @@ class TestSampleMeasurements:
         assert len(result) == len(mps)
 
         # check that samples are reused when possible
-        assert spy.call_count == 8
+        assert spy.call_count == 7
 
     shots_data = [
         [10000, 10000],

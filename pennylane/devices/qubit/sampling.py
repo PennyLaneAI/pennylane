@@ -17,15 +17,8 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import (
-    ClassicalShadowMP,
-    CountsMP,
-    ExpectationMP,
-    SampleMeasurement,
-    ShadowExpvalMP,
-    Shots,
-)
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.measurements import ClassicalShadowMP, SampleMeasurement, ShadowExpvalMP, Shots
+from pennylane.ops import Prod, SProd, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation
@@ -49,7 +42,11 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
       - measurements with observables that are not pauli words are all in different groups
       - measurements without observables are all in the same group
       - classical shadow measurements are all in different groups
+
     """
+    # Note: this function is used by lightning qubit and so cannot yet be deleted.
+    # TODO: delete this function when possible.
+
     if len(mps) == 1:
         return [mps], [[0]]
 
@@ -97,50 +94,6 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
     return all_mp_groups, all_indices
 
 
-def _get_num_executions_for_expval_H(obs):
-    indices = obs.grouping_indices
-    if indices:
-        return len(indices)
-    return _get_num_wire_groups_for_expval_H(obs)
-
-
-def _get_num_wire_groups_for_expval_H(obs):
-    _, obs_list = obs.terms()
-    wires_list = []
-    added_obs = []
-    num_groups = 0
-    for o in obs_list:
-        if o in added_obs:
-            continue
-        if isinstance(o, qml.Identity):
-            continue
-        added = False
-        for wires in wires_list:
-            if len(qml.wires.Wires.shared_wires([wires, o.wires])) == 0:
-                added_obs.append(o)
-                added = True
-                break
-        if not added:
-            added_obs.append(o)
-            wires_list.append(o.wires)
-            num_groups += 1
-    return num_groups
-
-
-def _get_num_executions_for_sum(obs):
-
-    if obs.grouping_indices:
-        return len(obs.grouping_indices)
-
-    if not obs.pauli_rep:
-        return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
-
-    _, ops = obs.terms()
-    with qml.QueuingManager.stop_recording():
-        op_groups = qml.pauli.group_observables(ops)
-    return len(op_groups)
-
-
 # pylint: disable=no-member
 def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int]:
     """Get the total number of qpu executions and shots.
@@ -152,31 +105,15 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int
         int, int: the total number of QPU executions and the total number of shots
 
     """
-    groups, _ = _group_measurements(tape.measurements)
+    batch, _ = qml.transforms.split_non_commuting(tape)
 
     num_executions = 0
-    num_shots = 0
-    for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
-        ):
-            H_executions = _get_num_executions_for_expval_H(group[0].obs)
-            num_executions += H_executions
-            if tape.shots:
-                num_shots += tape.shots.total_shots * H_executions
-        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, qml.ops.Sum):
-            sum_executions = _get_num_executions_for_sum(group[0].obs)
-            num_executions += sum_executions
-            if tape.shots:
-                num_shots += tape.shots.total_shots * sum_executions
-        elif isinstance(group[0], (ClassicalShadowMP, ShadowExpvalMP)):
-            num_executions += tape.shots.total_shots
-            if tape.shots:
-                num_shots += tape.shots.total_shots
+    num_shots = tape.shots.total_shots * len(batch) if tape.shots else tape.shots
+    for t in batch:
+        if isinstance(t.measurements[0], (ClassicalShadowMP, ShadowExpvalMP)):
+            num_executions += t.shots.total_shots
         else:
             num_executions += 1
-            if tape.shots:
-                num_shots += tape.shots.total_shots
 
     if tape.batch_size:
         num_executions *= tape.batch_size
@@ -185,20 +122,58 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int
     return num_executions, num_shots
 
 
-def _apply_diagonalizing_gates(
-    mps: list[SampleMeasurement], state: np.ndarray, is_state_batched: bool = False
-):
-    if len(mps) == 1:
-        diagonalizing_gates = mps[0].diagonalizing_gates()
-    elif all(mp.obs for mp in mps):
-        diagonalizing_gates = qml.pauli.diagonalize_qwc_pauli_words([mp.obs for mp in mps])[0]
-    else:
-        diagonalizing_gates = []
+def _measure_classical_shadows(tape, state, is_state_batched, rng=None):
+    num_wires = len(qml.math.shape(state)) - is_state_batched
+    wire_order = qml.wires.Wires(list(range(num_wires)))
+    results = []
+    for s in tape.shots:
+        r = tuple(
+            mp.process_state_with_shots(state, wire_order, s, rng=rng) for mp in tape.measurements
+        )
+        results.append(r[0] if len(tape.measurements) == 1 else r)
+    return tuple(results) if tape.shots.has_partitioned_shots else results[0]
 
-    for op in diagonalizing_gates:
+
+def _sample_qwc_tape(tape, state, is_state_batched, rng=None, prng_key=None):
+    if isinstance(tape.measurements[0], (ClassicalShadowMP, ShadowExpvalMP)):
+        return _measure_classical_shadows(tape, state, is_state_batched, rng=rng)
+
+    (tape,), _ = qml.transforms.diagonalize_measurements(tape)
+
+    for op in tape.operations:
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
-    return state
+    num_wires = len(qml.math.shape(state)) - is_state_batched
+    wire_order = qml.wires.Wires(list(range(num_wires)))
+
+    try:
+        samples = sample_state(
+            state,
+            shots=tape.shots.total_shots,
+            is_state_batched=is_state_batched,
+            rng=rng,
+            prng_key=prng_key,
+        )
+    except ValueError as e:
+        if str(e) != "probabilities contain NaN":
+            raise e
+        samples = qml.math.full((tape.shots.total_shots, num_wires), 0)
+
+    results = []
+    for lower, upper in tape.shots.bins():
+        sub_samples = samples[:, lower:upper] if is_state_batched else samples[lower:upper]
+
+        def next_res(s):
+            for mp in tape.measurements:
+                r = mp.process_samples(s, wire_order)
+                yield r if isinstance(r, dict) else qml.math.squeeze(r)
+
+        results.append(tuple(next_res(sub_samples)))
+    if len(tape.measurements) == 1:
+        results = tuple(res[0] for res in results)
+    if tape.shots.has_partitioned_shots:
+        return tuple(results)
+    return results[0]
 
 
 # pylint:disable = too-many-arguments
@@ -210,7 +185,7 @@ def measure_with_samples(
     rng=None,
     prng_key=None,
     mid_measurements: dict = None,
-) -> list[TensorLike]:
+) -> tuple[TensorLike]:
     """
     Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process
@@ -233,217 +208,35 @@ def measure_with_samples(
         List[TensorLike[Any]]: Sample measurement results
     """
     # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
-    mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
+    mps = measurements[: -len(mid_measurements)] if mid_measurements else measurements
+    if not mps:
+        return tuple(mid_measurements.values()) if mid_measurements else tuple()
 
-    groups, indices = _group_measurements(mps)
-    all_res = []
-    for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, (Hamiltonian, LinearCombination)
-        ):
-            measure_fn = _measure_hamiltonian_with_samples
-        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
-            measure_fn = _measure_sum_with_samples
-        elif isinstance(group[0], (ClassicalShadowMP, ShadowExpvalMP)):
-            measure_fn = _measure_classical_shadow
-        else:
-            # measure with the usual method (rotate into the measurement basis)
-            measure_fn = _measure_with_samples_diagonalizing_gates
+    tape = qml.tape.QuantumScript([], mps, shots=shots)
+    batch, postprocessing = qml.transforms.split_non_commuting(tape)
 
-        prng_key, key = jax_random_split(prng_key)
-        all_res.extend(
-            measure_fn(
-                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=key
-            )
-        )
+    kwargs = {"state": state, "is_state_batched": is_state_batched, "rng": rng}
+    if prng_key is not None:
+        keys = jax_random_split(prng_key, len(batch))
+        results = tuple(_sample_qwc_tape(t, **kwargs, prng_key=key) for t, key in zip(batch, keys))
+    else:
+        results = tuple(_sample_qwc_tape(t, **kwargs) for t in batch)
+    results = postprocessing(results)
 
-    flat_indices = [_i for i in indices for _i in i]
-
-    # reorder results
-    sorted_res = tuple(
-        res for _, res in sorted(list(enumerate(all_res)), key=lambda r: flat_indices[r[0]])
-    )
+    if tape.shots.has_partitioned_shots and len(mps) == 1:
+        results = tuple((val,) for val in results)
+    else:
+        results = (results,) if len(mps) == 1 else results
 
     # append MCM samples
     if mid_measurements:
-        sorted_res += tuple(mid_measurements.values())
+        if shots.has_partitioned_shots:
+            mcm_results = tuple(mid_measurements.values())
+            results = tuple(r + mcm_r for r, mcm_r in zip(results, mcm_results))
+        else:
+            results += tuple(mid_measurements.values())
 
-    # put the shot vector axis before the measurement axis
-    if shots.has_partitioned_shots:
-        sorted_res = tuple(zip(*sorted_res))
-
-    return sorted_res
-
-
-def _measure_with_samples_diagonalizing_gates(
-    mps: list[SampleMeasurement],
-    state: np.ndarray,
-    shots: Shots,
-    is_state_batched: bool = False,
-    rng=None,
-    prng_key=None,
-) -> TensorLike:
-    """
-    Returns the samples of the measurement process performed on the given state,
-    by rotating the state into the measurement basis using the diagonalizing gates
-    given by the measurement process.
-
-    Args:
-        mp (~.measurements.SampleMeasurement): The sample measurement to perform
-        state (np.ndarray[complex]): The state vector to sample from
-        shots (~.measurements.Shots): The number of samples to take
-        is_state_batched (bool): whether the state is batched or not
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
-
-    Returns:
-        TensorLike[Any]: Sample measurement results
-    """
-    # apply diagonalizing gates
-    state = _apply_diagonalizing_gates(mps, state, is_state_batched)
-
-    total_indices = len(state.shape) - is_state_batched
-    wires = qml.wires.Wires(range(total_indices))
-
-    def _process_single_shot(samples):
-        processed = []
-        for mp in mps:
-            res = mp.process_samples(samples, wires)
-            if not isinstance(mp, CountsMP):
-                res = qml.math.squeeze(res)
-
-            processed.append(res)
-
-        return tuple(processed)
-
-    try:
-        prng_key, _ = jax_random_split(prng_key)
-        samples = sample_state(
-            state,
-            shots=shots.total_shots,
-            is_state_batched=is_state_batched,
-            wires=wires,
-            rng=rng,
-            prng_key=prng_key,
-        )
-    except ValueError as e:
-        if str(e) != "probabilities contain NaN":
-            raise e
-        samples = qml.math.full((shots.total_shots, len(wires)), 0)
-
-    processed_samples = []
-    for lower, upper in shots.bins():
-        shot = _process_single_shot(samples[..., lower:upper, :])
-        processed_samples.append(shot)
-
-    if shots.has_partitioned_shots:
-        return tuple(zip(*processed_samples))
-
-    return processed_samples[0]
-
-
-def _measure_classical_shadow(
-    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
-    state: np.ndarray,
-    shots: Shots,
-    is_state_batched: bool = False,
-    rng=None,
-    prng_key=None,
-):
-    """
-    Returns the result of a classical shadow measurement on the given state.
-
-    A classical shadow measurement doesn't fit neatly into the current measurement API
-    since different diagonalizing gates are used for each shot. Here it's treated as a
-    state measurement with shots instead of a sample measurement.
-
-    Args:
-        mp (~.measurements.SampleMeasurement): The sample measurement to perform
-        state (np.ndarray[complex]): The state vector to sample from
-        shots (~.measurements.Shots): The number of samples to take
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
-
-    Returns:
-        TensorLike[Any]: Sample measurement results
-    """
-    # pylint: disable=unused-argument
-
-    # the list contains only one element based on how we group measurements
-    mp = mp[0]
-
-    wires = qml.wires.Wires(range(len(state.shape)))
-
-    if shots.has_partitioned_shots:
-        return [tuple(mp.process_state_with_shots(state, wires, s, rng=rng) for s in shots)]
-
-    return [mp.process_state_with_shots(state, wires, shots.total_shots, rng=rng)]
-
-
-def _measure_hamiltonian_with_samples(
-    mp: list[SampleMeasurement],
-    state: np.ndarray,
-    shots: Shots,
-    is_state_batched: bool = False,
-    rng=None,
-    prng_key=None,
-):
-    # the list contains only one element based on how we group measurements
-    mp = mp[0]
-
-    # if the measurement process involves a Hamiltonian, measure each
-    # of the terms separately and sum
-    def _sum_for_single_shot(s, prng_key=None):
-        results = measure_with_samples(
-            [ExpectationMP(t) for t in mp.obs.terms()[1]],
-            state,
-            s,
-            is_state_batched=is_state_batched,
-            rng=rng,
-            prng_key=prng_key,
-        )
-        return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
-
-    keys = jax_random_split(prng_key, num=shots.num_copies)
-    unsqueezed_results = tuple(
-        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
-    )
-    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
-
-
-def _measure_sum_with_samples(
-    mp: list[SampleMeasurement],
-    state: np.ndarray,
-    shots: Shots,
-    is_state_batched: bool = False,
-    rng=None,
-    prng_key=None,
-):
-    # the list contains only one element based on how we group measurements
-    mp = mp[0]
-
-    # if the measurement process involves a Sum, measure each
-    # of the terms separately and sum
-    def _sum_for_single_shot(s, prng_key=None):
-        results = measure_with_samples(
-            [ExpectationMP(t) for t in mp.obs],
-            state,
-            s,
-            is_state_batched=is_state_batched,
-            rng=rng,
-            prng_key=prng_key,
-        )
-        return sum(results)
-
-    keys = jax_random_split(prng_key, num=shots.num_copies)
-    unsqueezed_results = tuple(
-        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
-    )
-    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
+    return results
 
 
 def sample_state(

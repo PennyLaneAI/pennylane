@@ -192,6 +192,13 @@ class TestSampleState:
 class TestMeasureSamples:
     """Test that the measure_with_samples function works as expected"""
 
+    def test_empty_measurements(self):
+        """Test that if the measurements are an empty list, and empty tuple is also still returned."""
+
+        state = np.array([1, 0])
+        shots = qml.measurements.Shots(10)
+        assert measure_with_samples([], state, shots) == ()
+
     def test_sample_measure(self):
         """Test that a sample measurement works as expected"""
         state = qml.math.array(two_qubit_state)
@@ -676,7 +683,6 @@ class TestInvalidStateSamples:
         res = measure_with_samples(
             (qml.classical_shadow([0]),), state, _FlexShots(shots), is_state_batched=False
         )
-
         if not isinstance(shots, list):
             assert isinstance(res, tuple)
             res = res[0]
@@ -1015,7 +1021,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(234),
         )
 
         spy.assert_called()
