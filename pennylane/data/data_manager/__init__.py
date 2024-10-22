@@ -45,7 +45,7 @@ FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
 DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
 
 
-# @lru_cache(maxsize=1)
+@lru_cache(maxsize=1)
 def _get_foldermap():
     """Fetch the foldermap from S3."""
     response = get(FOLDERMAP_URL, timeout=5.0)
