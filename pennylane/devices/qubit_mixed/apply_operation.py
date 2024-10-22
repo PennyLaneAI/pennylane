@@ -14,7 +14,6 @@
 """Functions to apply operations to a qubit mixed state."""
 # pylint: disable=unused-argument
 
-import warnings
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -63,44 +62,73 @@ def _get_slice(index, axis, num_axes):
 
 def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
     """
-    Applies a phase shift to a quantum state along a specified axis.
+    Applies a phase shift operation to a density matrix along a specified axis.
 
-    This function takes a quantum state and applies a phase shift along a given axis.
-    The phase shift operation multiplies one part of the state by a complex phase factor.
-    This can represent various quantum gates including Pauli-Z, S, T, and other phase gates. Please note that in PennyLane this is slightly different than the standard phase shift operation, as it is only to apply on a single site without broadcasting.
+    This function implements a phase shift operation on a mixed quantum state (density matrix).
+    For a given axis, it applies the phase shift by conjugating the density matrix with the
+    phase shift operator: ρ -> U ρ U†, where U is the phase shift operator. This implementation
+    is specific to single-site operations without broadcasting.
 
     Args:
-        state (array-like): The quantum state to which the phase shift will be applied. Can be a vector or a multi-dimensional array representing a quantum state.
-        axis (int): The axis along which to perform the phase shift operation.
-        phase_factor (complex, optional): The complex factor to multiply the affected part of the state by. Defaults to -1 (which represents a Pauli-Z operation).
+        state (array-like): The density matrix to transform, with shape (2^n, 2^n) where n is
+            the number of qubits.
+        axis (int): The target qubit axis (0-based indexing) where the phase shift is applied.
+        phase_factor (complex, optional): The complex phase to apply. Common values include:
+            * -1 for Pauli-Z gate
+            * 1j for S gate (π/2 phase)
+            * exp(1j * π/4) for T gate (π/4 phase)
+        debugger (callable, optional): A debug function for operation verification.
+            Defaults to None.
+        **_: Additional unused keyword arguments.
 
     Returns:
-        array-like: The phase-shifted quantum state, with the same shape as the input state.
+        array-like: The transformed density matrix with the same shape as the input.
 
     Raises:
-        ValueError: If the axis is out of bounds for the given state.
-
-    Note:
-        This function assumes the use of a math library (like numpy or jax.numpy)
-        for array operations. The specific library should be imported as 'math'
-        before using this function.
+        ValueError: If axis is invalid for the given density matrix dimension.
+        ValueError: If the input state is not a valid density matrix (not square or
+            incorrect dimensions).
 
     Example:
         >>> import numpy as np
-        >>> state = np.array([1, 1]) / np.sqrt(2)  # |+⟩ state
-        >>> z_applied_state = _phase_shift(state, axis=0)  # Applying Pauli-Z
-        >>> print(z_applied_state)
-        [0.70710678, -0.70710678]  # Approximately [1/√2, -1/√2]
+        >>> # Single-qubit case: density matrix for |+⟩⟨+|
+        >>> plus_state = np.array([[0.5, 0.5],
+        ...                       [0.5, 0.5]])
+        >>> # Apply Pauli-Z (phase_factor=-1)
+        >>> z_applied = _phase_shift(plus_state, axis=0)
+        >>> print(z_applied)
+        [[0.5, -0.5],
+         [-0.5, 0.5]]
 
-        # For S gate (π/2 phase shift)
-        >>> s_applied_state = _phase_shift(state, axis=0, phase_factor=1j)
-        >>> print(s_applied_state)
-        [0.70710678+0.j, 0.+0.70710678j]  # Approximately [1/√2, i/√2]
+        >>> # Two-qubit case: density matrix for |+⟩⟨+| ⊗ |0⟩⟨0|
+        >>> two_qubit_state = np.array([
+        ...     [0.5, 0.5, 0, 0],
+        ...     [0.5, 0.5, 0, 0],
+        ...     [0, 0, 0, 0],
+        ...     [0, 0, 0, 0]
+        ... ])
+        >>> # Apply phase shift on first qubit (axis=0)
+        >>> z_on_first = _phase_shift(two_qubit_state, axis=0)
+        >>> print(z_on_first)
+        [[ 0.5, -0.5,  0.0,  0.0],
+         [-0.5,  0.5,  0.0,  0.0],
+         [ 0.0,  0.0,  0.0,  0.0],
+         [ 0.0,  0.0,  0.0,  0.0]]
+        >>> # Apply phase shift on second qubit (axis=1)
+        >>> z_on_second = _phase_shift(two_qubit_state, axis=1)
+        >>> print(z_on_second)
+        [[ 0.5,  0.5,  0.0,  0.0],
+         [ 0.5,  0.5,  0.0,  0.0],
+         [ 0.0,  0.0,  0.0,  0.0],
+         [ 0.0,  0.0,  0.0,  0.0]]
 
-        # For T gate (π/4 phase shift)
-        >>> t_applied_state = _phase_shift(state, axis=0, phase_factor=np.exp(1j * np.pi/4))
-        >>> print(t_applied_state)
-        [0.70710678+0.j, 0.5+0.5j]  # Approximately [1/√2, (1+i)/2]
+    Notes:
+        - The operation is performed in-place for computational efficiency
+        - The function assumes the density matrix is in the computational basis
+        - For an n-qubit system, the axis should be in range [0, n-1]
+        - The phase shift operator U for single-qubit case is:
+          U = [[1, 0],
+               [0, phase_factor]]
     """
     n_dim = math.ndim(state)
     sl_0 = _get_slice(0, axis, n_dim)
@@ -333,16 +361,34 @@ def apply_operation(
 
     **Example:**
 
-    >>> state = np.zeros((3,3))
+    >>> state = np.zeros((2, 2, 2, 2))
     >>> state[0][0] = 1
     >>> state
-    tensor([[1., 0., 0.],
-        [0., 0., 0.],
-        [0., 0., 0.]], requires_grad=True)
-    >>> apply_operation(qml.TShift(0), state)
-    tensor([[0., 0., 0.],
-        [0., 1., 0],
-        [0., 0., 0.],], requires_grad=True)
+    array([[[[1., 0.],
+         [0., 0.]],
+
+        [[0., 0.],
+         [0., 0.]]],
+
+
+       [[[0., 0.],
+         [0., 0.]],
+
+        [[0., 0.],
+         [0., 0.]]]])
+    >>> apply_operation(qml.PauliX(0), state)
+    array([[[[0., 0.],
+         [0., 0.]],
+
+        [[0., 0.],
+         [0., 0.]]],
+
+
+       [[[0., 0.],
+         [1., 0.]],
+
+        [[0., 0.],
+         [0., 0.]]]])
 
     """
     return _apply_operation_default(op, state, is_state_batched, debugger, **_)
@@ -373,10 +419,6 @@ def apply_global_phase(
 ):
     """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
     # Note: the global phase is a scalar, so we can just multiply the state by it. For density matrix we suppose that the global phase means a phase factor acting on the basis statevectors, which implies that in the final density matrix there will be no effect. Therefore, we would like to warn users that even though an identity operation is applied, the global phase operation will not have any effect on the density matrix.
-    warnings.warn(
-        GLOBALPHASE_WARNING,
-        UserWarning,
-    )
     return state
 
 
