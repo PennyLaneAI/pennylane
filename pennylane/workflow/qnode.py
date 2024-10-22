@@ -111,32 +111,18 @@ def _to_qfunc_output_type(
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
     qfunc_output_leaves, qfunc_output_structure = qml.pytrees.flatten(
-        qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
     )
-    num_of_measurements = len(qfunc_output_leaves)
 
-    results_leaves, results_structure = qml.pytrees.flatten(results)
-    num_of_results = len(results_leaves)
+    # add dimension back in if measurement dim is squeezed out
+    if len(qfunc_output_leaves) == 1:
+        results = (results,)
 
-    # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
-        results = [results]
+    # If the return type is tuple (Autograd and TF backprop removed)
+    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+        return qml.pytrees.unflatten(results, qfunc_output_structure)
 
-    if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
-        return results
-
-    if num_of_measurements != num_of_results or (
-        qfunc_output_structure.is_leaf != results_structure.is_leaf
-    ):
-        if isinstance(qfunc_output, (tuple)):
-            # FIXME: Work around for Autograd and TF backprop
-            return results
-        return type(qfunc_output)(results)
-
-    if isinstance(qfunc_output, qml.typing.TensorLike):
-        return type(qfunc_output)(results)
-
-    return qml.pytrees.unflatten(results, qfunc_output_structure)
+    return type(qfunc_output)(qml.pytrees.unflatten(results, qfunc_output_structure))
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:

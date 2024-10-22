@@ -510,6 +510,7 @@ class TestPyTreeStructure:
             ],
             lambda: [qml.probs(), {"expval": qml.expval(qml.X(0))}],
             lambda: ({"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))}),
+            lambda: {"exp": qml.expval(qml.Z(0))},
         ],
     )
     def test_pytree_structure_preservation(self, measurement):
