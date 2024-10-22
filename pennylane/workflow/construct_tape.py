@@ -71,7 +71,9 @@ def construct_tape(qnode, level="user"):
         batch, _ = qml.workflow.construct_batch(qnode, level)(*args, **kwargs)
 
         if len(batch) > 1:
-            raise ValueError("Level requested corresponds to more than one tape.")
+            raise ValueError(
+                "Level requested corresponds to more than one tape. Please use `qml.workflow.construct_batch` instead for this level."
+            )
 
         return batch[0]
 
