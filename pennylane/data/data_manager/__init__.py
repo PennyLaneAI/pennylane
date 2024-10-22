@@ -177,12 +177,6 @@ def _download_datasets(  # pylint: disable=too-many-arguments
     Returns:
         list[Path]: List of downloaded dataset paths
     """
-    safe_urls = []
-    for dataset_url in dataset_urls:
-        split_url = list(urllib.parse.urlsplit(str(dataset_url), "2"))
-        split_url[2] = urllib.parse.quote(str(split_url[2]))
-        safe_urls.append(urllib.parse.urlunsplit(split_url))
-
     file_names = [dataset_id + ".h5" for dataset_id in dataset_ids]
     dest_paths = [folder_path / data_name / data_id for data_id in file_names]
 
@@ -191,10 +185,10 @@ def _download_datasets(  # pylint: disable=too-many-arguments
 
     if pbar is not None:
         if attributes is None:
-            file_sizes = [int(head(url).headers["Content-Length"]) for url in safe_urls]
+            file_sizes = [int(head(url).headers["Content-Length"]) for url in dataset_urls]
         else:
             # Can't get file sizes for partial downloads
-            file_sizes = (None for _ in safe_urls)
+            file_sizes = (None for _ in dataset_urls)
 
         pbar_tasks = [
             pbar.add_task(str(dest_path.relative_to(folder_path)), total=file_size)
@@ -204,7 +198,7 @@ def _download_datasets(  # pylint: disable=too-many-arguments
         pbar_tasks = (None for _ in dest_paths)
 
     with futures.ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
-        for url, dest_path, pbar_task in zip(safe_urls, dest_paths, pbar_tasks):
+        for url, dest_path, pbar_task in zip(dataset_urls, dest_paths, pbar_tasks):
             futs = [
                 pool.submit(
                     _download_dataset,
