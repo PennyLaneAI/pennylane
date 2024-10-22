@@ -113,13 +113,13 @@ def _mobius_inversion_of_zeta_transform(f_values, mod):
 
 
 class OutPoly(Operation):
-    r"""Performs the out-place polynomial operation.
+    r"""Performs the out-of-place polynomial operation.
 
     This class implements an out-of-place operation that computes a polynomial function
     over a set of input registers and stores the result in an output register. The result
     is computed modulo a given value.
 
-    Given a function :math:`f(x_1, \dots, x_m)` and a modulus `k`, the operator performs:
+    Given a function :math:`f(x_1, \dots, x_m)` and a modulus :math:`k`, the operator performs:
 
     .. math::
 
@@ -128,18 +128,18 @@ class OutPoly(Operation):
 
     This operation leaves the input registers unchanged and stores the result of the
     polynomial function in the output register. It is based on the idea detailed
-    in `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_ section II-B.
+    in Section II-B of `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
 
     .. note::
 
-        To obtain the correct result, the values of the input registers :math:`x_i` must
+        The integer values :math:`x_i` stored in each input register must
         be smaller than the modulus `mod`.
 
     Args:
         polynomial_function (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
-        input_registers (Sequence[WiresLike]): List whose elements are the wires used to store each variable of the polynomial.
+        input_registers (Sequence[WiresLike]): Tuple whose elements are the wires used to store each variable of the polynomial.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
-        mod (int, optional): The modulus to use for the result. If not provided, it defaults to :math:`2^{n}`, where `n` is the number of qubits in the output register.
+        mod (int, optional): The modulus to use for the result stored in the output register. If not provided, it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of two, then two auxiliary work wires are required.
         id (str or None, optional): The name of the operation.
 
@@ -149,15 +149,11 @@ class OutPoly(Operation):
 
     Example:
         Given a polynomial function :math:`f(x, y) = x^2 + y`,
-        we can apply this operation as follows:
+        we can calculate :math:`f(3, 2)` as follows:
 
         .. code-block:: python
 
-            x_wires = [0, 1, 2]
-            y_wires = [3, 4, 5]
-
-            input_registers = [x_wires, y_wires]
-            output_wires = [6, 7, 8, 9]
+            reg = qml.registers({"x_wires": 3, "y_wires": 3, "output_wires": 4})
 
             def f(x, y):
                 return x ** 2 + y
@@ -165,16 +161,16 @@ class OutPoly(Operation):
             @qml.qnode(qml.device("default.qubit", shots = 1))
             def circuit():
                 # loading values for x and y
-                qml.BasisEmbedding(3, wires=wires_x)
-                qml.BasisEmbedding(2, wires=wires_y)
+                qml.BasisEmbedding(3, wires=reg["x_wires"])
+                qml.BasisEmbedding(2, wires=reg["y_wires"])
 
                 # applying the polynomial
                 qml.OutPoly(
                     f,
-                    input_registers = input_registers,
-                    output_wires = output_wires)
+                    input_registers = (reg["x_wires"], reg["y_wires"]),
+                    output_wires = reg["output_wires"])
 
-                return qml.sample(wires=output_wires)
+                return qml.sample(wires=reg["output_wires"])
 
             print(circuit())
 
@@ -184,8 +180,8 @@ class OutPoly(Operation):
             [1 0 1 1]
 
         The result, :math:`[1 0 1 1]`, is the binary representation of :math:`3^2 + 2 = 11`.
-        Note that by not specifying `mod`, the default value :math:`2 ^{\text{len(output_wires)}}` is used.
-        In the usage details it is shown an example where a specific modulus is used.
+        Note that by not specifying `mod`, the default value :math:`2^{\text{len(output_wires)}} = 2^4 = 16` is used.
+        For more information on using `mod`, see the Usage Details section below.
 
 
     .. seealso:: :class:`~.PhaseAdder`
