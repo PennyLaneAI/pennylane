@@ -479,7 +479,6 @@ class FermiSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        # ensure other is FermiSentence
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
         if isinstance(other, Number) or hasattr(other, "size"):
