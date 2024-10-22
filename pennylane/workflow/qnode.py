@@ -113,13 +113,20 @@ def _to_qfunc_output_type(
     qfunc_output_leaves, qfunc_output_structure = qml.pytrees.flatten(
         qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
     )
+    results_leaves, _ = qml.pytrees.flatten(results)
+
+    if len(results_leaves) != len(qfunc_output_leaves):
+        return results
 
     # add dimension back in if measurement dim is squeezed out
     if len(qfunc_output_leaves) == 1:
-        results = (results,)
+        results = [results]
 
     # If the return type is tuple (Autograd and TF backprop removed)
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+        # FIXME: squeeze out dim for results with tensors
+        if len(results_leaves) == 1:
+            return results[0]
         return qml.pytrees.unflatten(results, qfunc_output_structure)
 
     return type(qfunc_output)(qml.pytrees.unflatten(results, qfunc_output_structure))
