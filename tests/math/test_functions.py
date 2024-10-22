@@ -1994,6 +1994,21 @@ class TestDiag:
         res = fn.diag(t, k=1)
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
 
+    def test_array_to_vector_tensorflow(self):
+        """Test that calling diag on a 2D array returns the diagonal."""
+
+        x = tf.Variable([[1.0, 2.0], [3.0, 4.0]])
+        res = fn.diag(x)
+        assert fn.allclose(res, tf.Variable([1.0, 4.0]))
+
+    def test_error_on_higher_dim_tensorflow(self):
+        """Test that a ValueError is raised if diag is called on a 3D tensor."""
+
+        x = tf.reshape(tf.range(27), (3, 3, 3))
+
+        with pytest.raises(ValueError, match="Input must be 1- or 2-d."):
+            fn.diag(x)
+
     def test_torch(self):
         """Test that a torch tensor is automatically converted into
         a diagonal tensor"""
