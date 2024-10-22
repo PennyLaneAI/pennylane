@@ -15,6 +15,7 @@
 import re
 from copy import copy
 from numbers import Number
+from pennylane.typing import TensorLike
 
 import pennylane as qml
 
@@ -152,7 +153,7 @@ class FermiWord(dict):
         if isinstance(other, FermiWord):
             return self_fs + FermiSentence({other: 1.0})
 
-        if not isinstance(other, Number) and not hasattr(other, "size"):
+        if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -180,7 +181,7 @@ class FermiWord(dict):
             other_fs = FermiSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_fs + other_fs
 
-        if not isinstance(other, Number) and not hasattr(other, "size"):
+        if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -193,7 +194,7 @@ class FermiWord(dict):
     def __rsub__(self, other):
         """Subtract a FermiWord to a constant, i.e. `2 - FermiWord({...})`"""
 
-        if not isinstance(other, Number) and not hasattr(other, "size"):
+        if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -237,7 +238,7 @@ class FermiWord(dict):
         if isinstance(other, FermiSentence):
             return FermiSentence({self: 1}) * other
 
-        if not isinstance(other, Number) and not hasattr(other, "size"):
+        if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -510,7 +511,7 @@ class FermiSentence(dict):
             other = FermiSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
             return self.__add__(other)
 
-        if not isinstance(other, Number) and not hasattr(other, "size"):
+        if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract {type(other)} from a FermiSentence.")
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -526,7 +527,7 @@ class FermiSentence(dict):
 
         >>> 2 - FermiSentence({...})
         """
-        if not isinstance(other, Number) and not hasattr(other, "size"):
+        if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a FermiSentence from {type(other)}.")
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -557,7 +558,7 @@ class FermiSentence(dict):
 
             return product
 
-        if not isinstance(other, Number) and not hasattr(other, "size"):
+        if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -575,7 +576,7 @@ class FermiSentence(dict):
         multiplying ``2 * fermi_sentence``, since the ``__mul__`` operator on an integer
         will fail to multiply with a FermiSentence"""
 
-        if not isinstance(other, Number) and not hasattr(other, "size"):
+        if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply {type(other)} by FermiSentence.")
         if qml.math.size(other) > 1:
             raise ValueError(

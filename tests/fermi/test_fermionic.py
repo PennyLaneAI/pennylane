@@ -359,10 +359,7 @@ class TestFermiWordArithmetic:
         and return a FermiSentence"""
         assert number * fw == result
 
-    tup_fw_mult_error = (
-        (fw1, [1.5]),
-        (fw4, "string"),
-    )
+    tup_fw_mult_error = ((fw4, "string"),)
 
     @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
     def test_mul_error(self, fw, bad_type):
@@ -1147,10 +1144,7 @@ class TestFermiSentenceArithmetic:
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
 
-    TYPE_ERRORS = (
-        (fs1, [1.5]),
-        (fs4, "string"),
-    )
+    TYPE_ERRORS = ((fs4, "string"),)
 
     @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
     def test_add_error(self, fs, bad_type):
