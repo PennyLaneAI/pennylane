@@ -295,6 +295,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Patches the `math` module to function with autoray 0.7.0.
+
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
   [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
 

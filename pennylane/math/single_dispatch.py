@@ -267,11 +267,12 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 
 
-def _coerce_tensorflow_diag(x, **kwargs):
-    return ar.autoray.tensorflow_diag(_tf_convert_to_tensor(x), **kwargs)
-
-
-ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
+ar.register_function(
+    "tensorflow", "unstack", lambda *args, **kwargs: _i("tf").unstack(*args, **kwargs)
+)
+ar.register_function(
+    "tensorflow", "gather", lambda *args, **kwargs: _i("tf").gather(*args, **kwargs)
+)
 
 
 def _tensorflow_allclose(a, b, **kwargs):
