@@ -215,6 +215,9 @@
   decompose a circuit into a target gate set before applying `fold_global` or `mitigate_with_zne`.
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
 
+* The `LightningVJPs` class is removed as all lightning devices now follow the new device interface.
+  [(#6420)])(https://github.com/PennyLaneAI/pennylane/pull/6420)
+
 <h3>Deprecations 👋</h3>
 
 * The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
@@ -294,6 +297,8 @@
   [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
 
 <h3>Bug fixes 🐛</h3>
+
+* Registers `qml.math.unstack` for `tensorflow` to add support for autoray 0.7.0.
 
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
   [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
