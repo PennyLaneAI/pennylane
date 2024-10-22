@@ -267,6 +267,19 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 
 
+def _coerce_tensorflow_diag(x, **kwargs):
+    x = _tf_convert_to_tensor(x)
+    tf = _i("tf")
+    nd = len(x.shape)
+    if nd == 2:
+        return tf.linalg.diag_part(x, **kwargs)
+    if nd == 1:
+        return tf.linalg.diag(x, **kwargs)
+    raise ValueError("Input must be 1- or 2-d.")
+
+
+ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
+
 ar.register_function(
     "tensorflow", "unstack", lambda *args, **kwargs: _i("tf").unstack(*args, **kwargs)
 )
