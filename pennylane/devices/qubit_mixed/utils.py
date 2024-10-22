@@ -47,7 +47,7 @@ def get_einsum_mapping(
     # Step 1: The first rho_dim indices are the original state indices
     state_indices = alphabet[:rho_dim]
 
-    # Step 2: construct the for the Kraus operators. Note that the indices here are not necessarily consecutive any more therefore we first map them into list then pick the corresponding letters
+    # Step 2: construct the indices for the Kraus operators. Note that the indices here are not necessarily consecutive any more therefore we first map them into list then pick the corresponding letters
 
     # row indices of the quantum state affected by this operation
     row_wires_list = op.wires.tolist()

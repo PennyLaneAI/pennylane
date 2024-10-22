@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,9 +24,3 @@ at your own discretion.
     apply_operation
 """
 from .apply_operation import apply_operation
-
-# from .adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp
-# from .initialize_state import create_initial_state
-# from .measure import measure
-# from .sampling import sample_state, measure_with_samples
-# from .simulate import simulate, get_final_state, measure_final_state

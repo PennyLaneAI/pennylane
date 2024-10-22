@@ -117,7 +117,7 @@
 <h4>Other Improvements</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
-  - A new API interface for mixed-state operations
+  - A new API for mixed-state operations
   - An `apply_operation` helper function featuring:
     - Two density matrix contraction methods using `einsum` and `tensordot`
     - Optimized handling of special cases including:
