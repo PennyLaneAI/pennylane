@@ -39,6 +39,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* A `OutPoly` arithmetic template is added to apply polynomials to quantum registers.
+* [(#6320)](https://github.com/PennyLaneAI/pennylane/pull/6320)
+
 <h3>Improvements 🛠</h3>
 
 * RTD support for `qml.labs` added to API.
