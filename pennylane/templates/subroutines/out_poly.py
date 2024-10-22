@@ -345,7 +345,7 @@ class OutPoly(Operation):
 
             print(
             qml.OutPoly.compute_decomposition(
-                f=lambda x, y: x + y,
+                lambda x, y: x + y,
                 input_registers=[[0, 1],[2,3]],
                 output_wires=[4, 5],
                 mod=4,
