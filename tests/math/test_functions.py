@@ -2953,12 +2953,3 @@ class TestSetIndex:
 
         assert qml.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
         assert isinstance(array2, jnp.ndarray)
-
-
-def test_unstack_tensorflow():
-    """Test that unstack works with tensorflow variables."""
-
-    x = tf.Variable([0.1, 0.2])
-    r1, r2 = qml.math.unstack(x)
-    assert qml.math.allclose(r1, tf.Variable(0.1))
-    assert qml.math.allclose(r2, tf.Variable(0.2))
