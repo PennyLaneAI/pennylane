@@ -136,12 +136,12 @@ class OutPoly(Operation):
         be smaller than the modulus `mod`.
 
     Args:
-        f (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
+        polynomial_function (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
+        input_registers (Sequence[WiresLike]): List whose elements are the wires used to store each variable of the polynomial.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
         mod (int, optional): The modulus to use for the result. If not provided, it defaults to :math:`2^{n}`, where `n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of two, then two auxiliary work wires are required.
         id (str or None, optional): The name of the operation.
-        **kwargs: the wires associated with the function arguments. That is to say, if the polynomial takes two arguments, we will need to send two keyword arguments indicating the wires we will use to represent each argument. in the example below, the kwargs are ``x_wires`` and ``y_wires``.
 
     Raises:
         ValueError: If `mod` is not a power of 2 and no or insufficient work wires are provided.
@@ -155,6 +155,8 @@ class OutPoly(Operation):
 
             x_wires = [0, 1, 2]
             y_wires = [3, 4, 5]
+
+            input_registers = [x_wires, y_wires]
             output_wires = [6, 7, 8, 9]
 
             def f(x, y):
@@ -169,8 +171,7 @@ class OutPoly(Operation):
                 # applying the polynomial
                 qml.OutPoly(
                     f,
-                    x_wires = x_wires,
-                    y_wires = y_wires,
+                    input_registers = input_registers,
                     output_wires = output_wires)
 
                 return qml.sample(wires=output_wires)
@@ -198,6 +199,8 @@ class OutPoly(Operation):
 
             x_wires = [0, 1, 2]
             y_wires = [3, 4, 5]
+            input_registers = [x_wires, y_wires]
+
             output_wires = [6, 7, 8]
             work_wires = [9,10]
 
@@ -214,8 +217,7 @@ class OutPoly(Operation):
                 # applying the polynomial
                 qml.OutPoly(
                     f,
-                    x_wires = x_wires,
-                    y_wires = y_wires,
+                    input_registers = input_registers,
                     output_wires = output_wires,
                     mod = 7,
                     work_wires = work_wires)
@@ -344,8 +346,7 @@ class OutPoly(Operation):
             print(
             qml.OutPoly.compute_decomposition(
                 f=lambda x, y: x + y,
-                x_wires=[0, 1],
-                y_wires=[2, 3],
+                input_registers=[[0, 1],[2,3]],
                 output_wires=[4, 5],
                 mod=4,
                 )

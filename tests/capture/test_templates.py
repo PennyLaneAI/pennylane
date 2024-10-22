@@ -917,9 +917,8 @@ class TestModifiedTemplates:
             return x**2 + y
 
         kwargs = {
-            "f": func,
-            "x_wires": [0, 1],
-            "y_wires": [2, 3],
+            "polynomial_function": func,
+            "input_registers": [[0, 1], [2, 3]],
             "output_wires": [4, 5],
             "mod": 3,
             "work_wires": [6, 7],
