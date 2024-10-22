@@ -50,7 +50,6 @@ Jacobian Product Calculation
     ~workflow.jacobian_products.TransformJacobianProducts
     ~workflow.jacobian_products.DeviceDerivatives
     ~workflow.jacobian_products.DeviceJacobianProducts
-    ~workflow.jacobian_products.LightningVJPs
 
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 

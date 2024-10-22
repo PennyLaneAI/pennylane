@@ -34,9 +34,9 @@ kwargs = {
 }
 
 qubit_device_and_diff_method = [
-    [DefaultQubit(), "finite-diff"],
-    [DefaultQubit(), "parameter-shift"],
-    [DefaultQubit(), "spsa"],
+    [DefaultQubit(seed=123), "finite-diff"],
+    [DefaultQubit(seed=123), "parameter-shift"],
+    [DefaultQubit(seed=123), "spsa"],
 ]
 
 TOLS = {
