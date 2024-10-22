@@ -13,4 +13,4 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality. """
 
-from .resource_contianer import Resources, OpTypeWithParams
+from .resource_container import Resources, OpTypeWithParams
