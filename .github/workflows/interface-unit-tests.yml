@@ -652,9 +652,9 @@ jobs:
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
       additional_pip_packages: |
-        ${{ contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
-        ${{ contains(matrix.config.skip_interface, 'tf') && needs.default-dependency-versions.outputs.tensorflow-version || '' }}
-        ${{ contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'tf') && needs.default-dependency-versions.outputs.tensorflow-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_test_directory: pennylane/devices/tests
