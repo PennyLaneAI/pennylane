@@ -295,6 +295,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes incorrect differentiation of `TrotterProduct` when using `diff_method="parameter-shift"`.
+  [(#6432)](https://github.com/PennyLaneAI/pennylane/pull/6432)
+
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
   [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
 
