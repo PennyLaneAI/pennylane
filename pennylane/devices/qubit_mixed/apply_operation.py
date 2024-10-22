@@ -179,8 +179,6 @@ def apply_operation_einsum(
         if batch_size is not None:
             # Add broadcasting dimension to shape
             kraus_shape = [batch_size] + kraus_shape
-            if op.batch_size is None:
-                op._batch_size = batch_size  # pylint:disable=protected-access
 
     kraus = math.stack(kraus)
     kraus_transpose = math.stack(math.moveaxis(kraus, source=-1, destination=-2))
@@ -231,8 +229,6 @@ def apply_operation_tensordot(
         if is_mat_batched := batch_size is not None:
             # Add broadcasting dimension to shape
             kraus_shape = [batch_size] + kraus_shape
-            if op.batch_size is None:
-                op._batch_size = batch_size  # pylint:disable=protected-access
         kraus = [mat]
     kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in kraus]
     # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
@@ -497,8 +493,6 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
             n_dim = n_dim + 1
     state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
     state = math.stack([state0, state1], axis=axis)
-    if not is_state_batched and op.batch_size == 1:
-        state = math.stack([state], axis=0)
     # Left side finished
 
     # Now start right side
@@ -513,8 +507,6 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 
     state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(-1.0j * params))
     state = math.stack([state0, state1], axis=axis)
-    if not is_state_batched and op.batch_size == 1:
-        state = math.stack([state], axis=0)
     return state
 
 
