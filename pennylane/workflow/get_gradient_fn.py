@@ -15,25 +15,15 @@
 
 """
 
-from typing import Literal, Optional, Union, get_args
+from typing import Optional, Union, get_args
 
 import pennylane as qml
 from pennylane.transforms.core import TransformDispatcher
-from pennylane.workflow.qnode import _make_execution_config
-
-SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
-
-SupportedDiffMethods = Literal[
-    None,
-    "best",
-    "device",
-    "backprop",
-    "adjoint",
-    "parameter-shift",
-    "hadamard",
-    "finite-diff",
-    "spsa",
-]
+from pennylane.workflow.qnode import (
+    SupportedDeviceAPIs,
+    SupportedDiffMethods,
+    _make_execution_config,
+)
 
 
 # pylint: disable=too-many-return-statements
