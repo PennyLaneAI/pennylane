@@ -139,7 +139,7 @@ jobs:
             "gradients-tests": 2,
             "jax-tests": 4,
             "tf-tests": 3,
-            "device-tests": 2
+            "device-tests": 1
           }
           EOF
           else
@@ -150,7 +150,7 @@ jobs:
             "jax-tests": 8,
             "tf-tests": 6,
             "torch-tests": 2,
-            "device-tests": 2
+            "device-tests": 1
           }
           EOF
           fi
