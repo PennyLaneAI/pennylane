@@ -439,6 +439,7 @@ def mitigate_with_zne(
     and then applying this transform by passing ``folding`` and ``extrapolate`` functions. PennyLane provides native
     functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate`, or
     :func:`~.pennylane.transforms.richardson_extrapolate`, that allow for differentiating through them. Custom functions, as well as
+    that allow for differentiating through them. Custom functions, as well as
 
     functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package are supported as well (see usage details below).
 
