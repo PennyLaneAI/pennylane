@@ -119,7 +119,8 @@ jobs:
             "qchem-tests": ["3.10"],
             "gradients-tests": ["3.10"],
             "data-tests": ["3.10"],
-            "device-tests": ["3.10"]
+            "device-tests": ["3.10"],
+            "labs-tests": ["3.10"]
           }
           EOF
           fi
@@ -139,7 +140,8 @@ jobs:
             "gradients-tests": 2,
             "jax-tests": 4,
             "tf-tests": 3,
-            "device-tests": 1
+            "device-tests": 1,
+            "labs-tests": 1
           }
           EOF
           else
@@ -150,7 +152,8 @@ jobs:
             "jax-tests": 8,
             "tf-tests": 6,
             "torch-tests": 2,
-            "device-tests": 1
+            "device-tests": 1,
+            "labs-tests": 1
           }
           EOF
           fi
@@ -662,6 +665,29 @@ jobs:
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
+  labs-tests:
+    needs:
+      - setup-ci-load
+      - determine_runner
+      - default-dependency-versions
+    strategy:
+      max-parallel: 1
+      matrix:
+        group: [1]
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-ci-load.outputs.python-version).labs-tests
+           }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'labs-tests') }}
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+      job_name: ${{ inputs.job_name_prefix }}labs-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
+      branch: ${{ inputs.branch }}
+      coverage_artifact_name: core-interfaces-coverage-labs-${{ matrix.python-version }}-${{ matrix.group }}
+      python_version: ${{ matrix.python-version }}
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+      pytest_test_directory: pennylane/labs/tests
 
   upload-to-codecov:
     runs-on: ubuntu-latest
@@ -679,6 +705,7 @@ jobs:
       - gradients-tests
       - data-tests
       - device-tests
+      - labs-tests
 
     # Run this even if any of the above jobs are skipped but not if any of the jobs failed
     if: >-
