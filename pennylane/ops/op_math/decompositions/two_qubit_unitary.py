@@ -114,6 +114,8 @@ def _compute_num_cnots(U):
     u = math.dot(Edag, math.dot(U, E))
     gammaU = math.dot(u, math.T(u))
     trace = math.trace(gammaU)
+    gU2 = math.dot(gammaU, gammaU)
+    id4 = math.eye(4)
 
     # Case: 0 CNOTs (tensor product), the trace is +/- 4
     # We need a tolerance of around 1e-7 here in order to work with the case where U
@@ -121,15 +123,9 @@ def _compute_num_cnots(U):
     if math.allclose(trace, 4, atol=1e-7) or math.allclose(trace, -4, atol=1e-7):
         return 0
 
-    # To distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
-    evs = math.linalg.eigvals(gammaU)
-
-    sorted_evs = math.sort(math.imag(evs))
-
     # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
-    # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield
-    # a trace 0.
-    if math.allclose(trace, 0j, atol=1e-7) and math.allclose(sorted_evs, [-1, -1, 1, 1]):
+    # Try gammaU^2 + I = 0 along with zero trace
+    if math.allclose(trace, 0j, atol=1e-7) and math.allclose(gU2 + id4, 0):
         return 1
 
     # Case: 2 CNOTs, the trace has only a real part (or is 0)
@@ -138,6 +134,7 @@ def _compute_num_cnots(U):
 
     # For the case with 3 CNOTs, the trace is a non-zero complex number
     # with both real and imaginary parts.
+    # TODO: add test over trainability of trace
     return 3
 
 
