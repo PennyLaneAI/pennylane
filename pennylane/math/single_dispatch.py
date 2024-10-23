@@ -246,6 +246,10 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experime
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "ravel"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "vstack"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "unstack"] = "tensorflow"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "gather"] = "tensorflow"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "concat"] = "tensorflow"
+
 
 tf_fft_functions = [
     "fft",
@@ -279,16 +283,6 @@ def _coerce_tensorflow_diag(x, **kwargs):
 
 
 ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
-
-ar.register_function(
-    "tensorflow", "unstack", lambda *args, **kwargs: _i("tf").unstack(*args, **kwargs)
-)
-ar.register_function(
-    "tensorflow", "gather", lambda *args, **kwargs: _i("tf").gather(*args, **kwargs)
-)
-ar.register_function(
-    "tensorflow", "concat", lambda *args, **kwargs: _i("tf").concat(*args, **kwargs)
-)
 
 
 def _tensorflow_allclose(a, b, **kwargs):

@@ -120,6 +120,10 @@ def _(
     return math.asarray(state, like=interface)
 
 
+def _interface(config: ExecutionConfig) -> str:
+    return INTERFACE_TO_LIKE[config.interface] if config.gradient_method == "backprop" else "numpy"
+
+
 @simulator_tracking
 @single_tape_support
 class NullQubit(Device):
@@ -325,13 +329,7 @@ class NullQubit(Device):
                     str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
                 ),
             )
-
-        interface = (
-            INTERFACE_TO_LIKE[execution_config.interface]
-            if execution_config.gradient_method == "backprop"
-            else "numpy"
-        )
-        return tuple(self._simulate(c, interface) for c in circuits)
+        return tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         return execution_config is None or execution_config.gradient_method in (
@@ -359,25 +357,15 @@ class NullQubit(Device):
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        interface = (
-            INTERFACE_TO_LIKE[execution_config.interface]
-            if execution_config.gradient_method == "backprop"
-            else "numpy"
-        )
-        return tuple(self._derivatives(c, interface) for c in circuits)
+        return tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        interface = (
-            INTERFACE_TO_LIKE[execution_config.interface]
-            if execution_config.gradient_method == "backprop"
-            else "numpy"
-        )
-        results = tuple(self._simulate(c, interface) for c in circuits)
-        jacs = tuple(self._derivatives(c, interface) for c in circuits)
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        jacs = tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
         return results, jacs
 
@@ -387,12 +375,7 @@ class NullQubit(Device):
         tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        interface = (
-            INTERFACE_TO_LIKE[execution_config.interface]
-            if execution_config.gradient_method == "backprop"
-            else "numpy"
-        )
-        return tuple(self._jvp(c, interface) for c in circuits)
+        return tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_jvp(
         self,
@@ -400,13 +383,8 @@ class NullQubit(Device):
         tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        interface = (
-            INTERFACE_TO_LIKE[execution_config.interface]
-            if execution_config.gradient_method == "backprop"
-            else "numpy"
-        )
-        results = tuple(self._simulate(c, interface) for c in circuits)
-        jvps = tuple(self._jvp(c, interface) for c in circuits)
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        jvps = tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
         return results, jvps
 
@@ -416,12 +394,7 @@ class NullQubit(Device):
         cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        interface = (
-            INTERFACE_TO_LIKE[execution_config.interface]
-            if execution_config.gradient_method == "backprop"
-            else "numpy"
-        )
-        return tuple(self._vjp(c, interface) for c in circuits)
+        return tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_vjp(
         self,
@@ -429,11 +402,6 @@ class NullQubit(Device):
         cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        interface = (
-            INTERFACE_TO_LIKE[execution_config.interface]
-            if execution_config.gradient_method == "backprop"
-            else "numpy"
-        )
-        results = tuple(self._simulate(c, interface) for c in circuits)
-        vjps = tuple(self._vjp(c, interface) for c in circuits)
+        results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
+        vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
