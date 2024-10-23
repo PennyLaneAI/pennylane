@@ -23,7 +23,7 @@ def _get_polynomial(f, mod, *variable_sizes):
     """Calculate the polynomial binary representation of a given function using the `Möbius inversion formula <https://en.wikipedia.org/wiki/Möbius_inversion_formula#On_posets>`_ .
 
     Args:
-        f (callable):  the function from which the polynomial is extracted. f is the zeta transform of the extracted polynomial.
+        f (callable):  the function from which the polynomial is extracted.
         mod (int): the modulus to use for the result
         *variable_sizes (int):  variable length argument specifying the number of bits used to represent each of the variables of the function
 
@@ -42,8 +42,9 @@ def _get_polynomial(f, mod, *variable_sizes):
             (1, 0, 1): 3,  # 8 mod 5 = 3
         }
         ```
-    In this example, the first two bits correspond to the binary representation of the first variable and the last
-    bit corresponds to the binary representation of the second variable.
+
+        In this example, the first two bits correspond to the binary representation of the first variable and the last
+        bit corresponds to the binary representation of the second variable.
     """
 
     total_wires = sum(variable_sizes)
@@ -76,7 +77,7 @@ def _get_polynomial(f, mod, *variable_sizes):
 
     coeffs_dict = {}
     for s, f_value in enumerate(f_values):
-        if f_value != 0:
+        if not qml.math.isclose(f_value, 0.0):
             bin_tuple = tuple(all_binary_list[s])
             coeffs_dict[bin_tuple] = f_value
 
