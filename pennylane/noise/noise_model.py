@@ -23,9 +23,9 @@ class NoiseModel:
     define noise operations using some optional metadata.
 
     Args:
-        model_map (dict[BooleanFn -> Callable]): Data for adding the gate errors as
+        model_map (dict[BooleanFn -> Callable]): Data for applying the gate errors as
             a ``{conditional: noise_fn}`` dictionary. The signature of ``noise_fn``
-            must be ``noise_fn(op: Operation, **kwargs) -> None``, where ``op``
+            should be ``noise_fn(op: Operation, **kwargs) -> None``, where ``op``
             is the operation that the conditional evaluates and ``kwargs`` are
             the specified metadata arguments.
         meas_map (dict[BooleanFn -> Callable]): Data for adding the readout errors
@@ -164,7 +164,7 @@ class NoiseModel:
 
     @staticmethod
     def check_model(model: dict) -> None:
-        """Method to validate a ``conditional -> noise_fn`` map for constructing a noise model."""
+        """Method to validate a ``{conditional -> noise_fn}`` map for constructing a noise model."""
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
                 raise ValueError(

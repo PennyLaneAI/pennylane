@@ -31,7 +31,7 @@ def add_noise(tape, noise_model, level=None):
     contained within the given circuit. For conditions that evaluate to ``True``,
     the noisy gates contained within the ``Callable`` will be inserted after the
     operation under consideration. Similar procedure will be followed for each
-    measurement in the circuit, in case a second mapping will be present in the
+    measurement in the circuit, in case a second mapping is present in the
     noise model to indicate readout errors.
 
     Args:
@@ -82,9 +82,7 @@ def add_noise(tape, noise_model, level=None):
         noise3 = qml.noise.partial_wires(qml.PhaseFlip, 0.2)
 
         noise_model = qml.NoiseModel(
-            {fcond1: noise1, fcond2: noise2},
-            meas_map = {fcond3: noise3},
-            t1=2.0, t2=0.2
+            {fcond1: noise1, fcond2: noise2}, {fcond3: noise3}, t1=2.0, t2=0.2
         )
 
         @partial(qml.transforms.add_noise, noise_model=noise_model)

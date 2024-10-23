@@ -516,12 +516,12 @@ class MeasEq(qml.BooleanFn):
         return all(mp1 == mp2 for mp1, mp2 in zip(cmps, self._cmps))
 
 
-def meas_eq(mp):
+def meas_eq(mps):
     """Builds a conditional as a :class:`~.BooleanFn` for evaluating
     if a given measurement process is equal to the specified measurement process.
 
     Args:
-        mp (MeasurementProcess, Callable): An instance(s) of any class that inherits from
+        mps (MeasurementProcess, Callable): An instance(s) of any class that inherits from
             :class:`~.MeasurementProcess` or a :mod:`measurement <pennylane.measurements>` function(s).
 
     Returns:
@@ -557,7 +557,7 @@ def meas_eq(mp):
     >>> cond_func(qml.counts(qml.Z(0)))
     False
     """
-    return MeasEq(mp)
+    return MeasEq(mps)
 
 
 _MEAS_FUNC_MAP = {
@@ -644,7 +644,7 @@ def partial_wires(operation, *args, **kwargs):
             These will override any arguments present in the operation instance or ``args``.
 
     Returns:
-        callable: A wrapper function that accepts a sequence of wires as an argument or
+        Callable: A wrapper function that accepts a sequence of wires as an argument or
         any object with a ``wires`` property.
 
     Raises:
