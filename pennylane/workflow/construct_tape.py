@@ -25,13 +25,12 @@ def construct_tape(qnode, level="user"):
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
         level (None, str, int, slice): Specifies which stage of the QNode's transform program to use for tape construction.
 
-            - ``None``: Uses the entire transformation pipeline.
-            - ``"top"``: Uses the top-level transformations.
-            - ``"user"``: Uses transformations up to and including user-defined operations.
-            - ``"device"``: Uses only device-level transformations.
+            - ``None`` or ``"device"``: Uses the entire transformation pipeline.
+            - ``"top"``: Ignores transformations and return the original tape as defined.
+            - ``"user"``: Includes transformations that are manually applied by the user.
             - ``"gradient"``: Extracts the gradient-level tape.
-            - ``int``: Specifies the number of transforms to include from the start of the transformation program.
-            - ``slice``: Selects a subset of the transformation program.
+            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program.
+            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
 
     Returns:
         tape (QuantumScript): a quantum circuit.
