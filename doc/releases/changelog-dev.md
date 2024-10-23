@@ -22,6 +22,11 @@
 
 <h4>Readout Noise 📠</h4>
 
+* Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class
+  and ``add_noise`` transform. One can specify conditions on measurement processes for this purpose via
+  ``qml.noise.meas_eq(mps)``.
+  [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
+
 <h4>User-friendly decompositions 📠</h4>
 
 * `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
@@ -230,7 +235,7 @@
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
 
 * The `LightningVJPs` class is removed as all lightning devices now follow the new device interface.
-  [(#6420)])(https://github.com/PennyLaneAI/pennylane/pull/6420)
+  [(#6420)](https://github.com/PennyLaneAI/pennylane/pull/6420)
 
 <h3>Deprecations 👋</h3>
 
