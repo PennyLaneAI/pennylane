@@ -1361,16 +1361,19 @@ class TestMidMeasurements:
             shots=shots,
         )
 
-        results0 = simulate(qscript, mcm_method="tree-traversal")
+        rng = np.random.default_rng(1234)
+        results0 = simulate(qscript, mcm_method="tree-traversal", rng=rng)
 
         deferred_tapes, deferred_func = qml.defer_measurements(qscript)
-        results1 = deferred_func([simulate(tape, mcm_method="deferred") for tape in deferred_tapes])
+        results1 = deferred_func(
+            [simulate(tape, mcm_method="deferred", rng=rng) for tape in deferred_tapes]
+        )
         mcm_utils.validate_measurements(measure_f, shots, results1, results0)
 
         if shots is not None:
             one_shot_tapes, one_shot_func = qml.dynamic_one_shot(qscript)
             results2 = one_shot_func(
-                [simulate(tape, mcm_method="one-shot") for tape in one_shot_tapes]
+                [simulate(tape, mcm_method="one-shot", rng=rng) for tape in one_shot_tapes]
             )
             mcm_utils.validate_measurements(measure_f, shots, results2, results0)
 
@@ -1458,7 +1461,8 @@ class TestMidMeasurements:
             shots=5500,
         )
 
-        res1, res2 = simulate_tree_mcm(qscript, interface=ml_framework)
+        rng = np.random.default_rng(123)
+        res1, res2 = simulate_tree_mcm(qscript, interface=ml_framework, rng=rng)
 
         p1 = [qml.math.mean(res1 == -1), qml.math.mean(res1 == 1)]
         p2 = [qml.math.mean(res2 == True), qml.math.mean(res2 == False)]
@@ -1477,8 +1481,8 @@ class TestMidMeasurements:
             [qml.RX(np.pi / 4, wires=0)], [qml.sample(qml.Z(0))], shots=5500
         )
 
-        res3 = simulate_tree_mcm(qscript2, postselect_mode=postselect_mode)
-        res4 = simulate(qscript3)
+        res3 = simulate_tree_mcm(qscript2, postselect_mode=postselect_mode, rng=rng)
+        res4 = simulate(qscript3, rng=rng)
 
         p3 = [qml.math.mean(res3 == -1), qml.math.mean(res3 == 1)]
         p4 = [qml.math.mean(res4 == -1), qml.math.mean(res4 == 1)]
@@ -1551,7 +1555,6 @@ class TestMidMeasurements:
     )
     def test_tree_traversal_combine_measurements(self, measurements, expected):
         """Test that the measurement value of a given type can be combined"""
-        print(combine_measurements_core(*measurements))
         combined_measurement = combine_measurements_core(*measurements)
         if isinstance(combined_measurement, dict):
             assert combined_measurement == expected
@@ -1573,6 +1576,7 @@ class TestMidMeasurements:
 
         circuit = qml.tape.QuantumScript(q.queue, [qml.expval(qml.Z(0)), qml.sample(m)], shots=[1])
 
+        rng = np.random.default_rng(1234)
         n_shots = 500
         results = [
             simulate_one_shot_native_mcm(
@@ -1580,6 +1584,7 @@ class TestMidMeasurements:
                 n_shots,
                 interface=ml_framework,
                 postselect_mode=postselect_mode,
+                rng=rng,
             )
             for _ in range(n_shots)
         ]
@@ -1590,26 +1595,26 @@ class TestMidMeasurements:
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
-            expected_sample = simulate(equivalent_tape)
+            expected_sample = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(terminal_results, expected_sample, outcomes=(-1, 1))
 
         else:
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
             )
-            expected_result = simulate(equivalent_tape)
+            expected_result = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(mcm_results, expected_result)
 
             subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
-            expected_sample = simulate(equivalent_tape)
+            expected_sample = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
 
             subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
-            expected_sample = simulate(equivalent_tape)
+            expected_sample = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
