@@ -367,14 +367,16 @@ class OutPoly(Operation):
         wires_vars = [len(w) for w in registers_wires[:-1]]
 
         # Extract the coefficients and control wires from the binary polynomial
-        coeffs_list = _get_polynomial(polynomial_function, mod, *wires_vars)
-        assert all(
-            x.is_integer() for x in coeffs_list.values()
+        coeffs_dic = _get_polynomial(polynomial_function, mod, *wires_vars)
+        coeffs = [coeff[1] for coeff in coeffs_dic.items()]
+
+        assert qml.math.allclose(
+            coeffs, qml.math.floor(coeffs)
         ), "The polynomial function must have integer coefficients"
 
         all_wires_input = sum([*registers_wires[:-1]], start=[])
 
-        for item, coeff in coeffs_list.items():
+        for item, coeff in coeffs_dic.items():
 
             if not 1 in item:
                 # Add the independent term

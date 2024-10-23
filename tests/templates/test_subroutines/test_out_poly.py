@@ -114,7 +114,7 @@ class TestOutPoly:
     @pytest.mark.parametrize(
         ("input_registers", "output_wires", "mod", "work_wires", "msg_match"),
         [
-            ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6.1, [10, 11], "mod must be integer."),
+            ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6.1, [10, 11], "mod must be an integer."),
             (
                 [[0, 1, 2], [3, 4, 5]],
                 [6, 7, 8, 9],
@@ -167,7 +167,7 @@ class TestOutPoly:
 
             return qml.sample(wires=reg["output_wires"])
 
-        with pytest.raises(ValueError, match="The polynomial function must"):
+        with pytest.raises(AssertionError, match="The polynomial function must"):
             circuit()
 
     def test_decomposition(self):
