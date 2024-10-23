@@ -44,17 +44,18 @@ class CompressedResourceOp:
             >>> print(op_tp)
             QSVT(num_wires=5, num_angles=100)
         """
+        self._name = op_type.__name__
         self.op_type = op_type
         self.params = params_tuple
     
     def __hash__(self) -> int:
-        return hash((self.op_type.__name__, self.params))
+        return hash((self._name, self.params))
     
     def __eq__(self, other: object) -> bool:
         return (self.op_type == other.op_type) and (dict(self.params) == dict(other.params))
     
     def __repr__(self) -> str:
-        op_type_str = self.op_type.__name__ + "("
+        op_type_str = self._name + "("
         params_str = ", ".join([f"{param[0]}={param[1]}" for param in self.params]) + ")"
 
         return op_type_str + params_str
