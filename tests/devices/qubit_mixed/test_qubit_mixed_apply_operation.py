@@ -333,7 +333,7 @@ class TestApplyMultiControlledX:
         "num_wires, interface, expected_method",
         [
             (3, "numpy", "tensordot"),
-            (4, "torch", "einsum"),
+            (4, pytest.param("torch", marks=pytest.mark.torch), "einsum"),
             (7, "numpy", "tensordot"),
             (8, "numpy", "tensordot"),
             (9, "numpy", "custom"),
