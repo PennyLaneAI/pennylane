@@ -333,21 +333,52 @@ class TestApplyMultiControlledX:
         "num_wires, interface, expected_method",
         [
             (3, "numpy", "tensordot"),
-            (4, pytest.param("torch", marks=pytest.mark.torch), "einsum"),
             (7, "numpy", "tensordot"),
             (8, "numpy", "tensordot"),
             (9, "numpy", "custom"),
-            # (13, "custom"),
+            (3, "autograd", "tensordot"),
+            (7, "autograd", "tensordot"),
+            (8, "autograd", "tensordot"),
+            (9, "autograd", "custom"),
         ],
     )
     def test_dispatch_method(self, num_wires, expected_method, interface, mocker):
         """Test that the correct dispatch method is used based on the number of wires."""
         state = get_random_mixed_state(num_wires)
-        if interface == pytest.param("torch", marks=pytest.mark.torch):
-            # pylint: disable=import-outside-toplevel
-            import torch
+        # Convert to interface
+        state = math.asarray(state, like=interface)
 
-            state = torch.tensor(state, dtype=torch.complex128)
+        op = qml.MultiControlledX(wires=range(num_wires))
+
+        spy_einsum = mocker.spy(math, "einsum")
+        spy_tensordot = mocker.spy(math, "tensordot")
+
+        apply_operation(op, state)
+
+        if expected_method == "einsum":
+            assert spy_einsum.called
+            assert not spy_tensordot.called
+        elif expected_method == "tensordot":
+            assert not spy_einsum.called
+            assert spy_tensordot.called
+        else:  # custom method
+            assert not spy_einsum.called
+            assert not spy_tensordot.called
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize(
+        "num_wires, expected_method",
+        [
+            (4, "einsum"),
+            (7, "einsum"),
+        ],
+    )
+    def test_dispatch_torch_einsum_method(self, num_wires, expected_method, mocker):
+        """Test that the correct dispatch method einsum is used based on the number of wires."""
+        import torch
+
+        state = get_random_mixed_state(num_wires)
+        state = torch.tensor(state, dtype=torch.complex128)
 
         op = qml.MultiControlledX(wires=range(num_wires))
 
