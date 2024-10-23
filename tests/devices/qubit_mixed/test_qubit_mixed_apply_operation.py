@@ -327,33 +327,38 @@ class TestApplyMultiControlledX:
     """Test that MultiControlledX is applied correctly to mixed states."""
 
     @pytest.mark.parametrize(
-        "num_wires, expected_method",
+        "num_wires, interface, expected_method",
         [
-            (3, "tensordot"),
-            (7, "tensordot"),
-            (8, "tensordot"),
-            (9, "custom"),
+            (3, "numpy", "tensordot"),
+            (4, "torch", "einsum"),
+            (7, "numpy", "tensordot"),
+            (8, "numpy", "tensordot"),
+            (9, "numpy", "custom"),
             # (13, "custom"),
         ],
     )
-    def test_dispatch_method(self, num_wires, expected_method, mocker):
+    def test_dispatch_method(self, num_wires, expected_method, interface, mocker):
         """Test that the correct dispatch method is used based on the number of wires."""
         state = get_random_mixed_state(num_wires)
+        # convert to the correct interface
+        state = math.asarray(state, like=interface)
 
         op = qml.MultiControlledX(wires=range(num_wires))
 
         spy_einsum = mocker.spy(math, "einsum")
-        spy_tensordot = mocker.spy(math, "moveaxis")
+        spy_tensordot = mocker.spy(math, "tensordot")
 
         apply_operation(op, state)
 
         if expected_method == "einsum":
             assert spy_einsum.called
+            assert not spy_tensordot.called
         elif expected_method == "tensordot":
             assert not spy_einsum.called
             assert spy_tensordot.called
         else:  # custom method
             assert not spy_einsum.called
+            assert not spy_tensordot.called
 
     @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
     def test_correctness(self, num_wires):
