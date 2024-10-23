@@ -36,7 +36,7 @@ Our `einsum` implementation is visualized as follows:
 Where:
 - $\rho$ represents the density matrix
 - $O$ denotes a Kraus operator
-- $O'$ is the conjugate of the Kraus operator
+- $O^\dagger$ is the conjugate of the Kraus operator
 
 The order of contraction is automatically determined by `numpy.einsum` itself.
 
