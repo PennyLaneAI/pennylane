@@ -70,6 +70,32 @@ def get_random_mixed_state(num_qubits):
     return mixed_state.reshape([QUDIT_DIM] * (2 * num_qubits))
 
 
+def get_expected_state(expanded_operator, state, num_q):
+    """Finds expected state after applying operator"""
+    # Convert the state into numpy
+    state = np.asarray(state)
+    shape = (QUDIT_DIM**num_q,) * 2
+    flattened_state = state.reshape(shape)
+    adjoint_matrix = np.conj(expanded_operator).T
+
+    new_state = expanded_operator @ flattened_state @ adjoint_matrix
+    return new_state.reshape([QUDIT_DIM] * (num_q * 2))
+
+
+def expand_matrices(op, num_q, batch_size=0):
+    """Find expanded operator matrices, independent of qml implementation"""
+    pre_wires_identity = np.eye(QUDIT_DIM ** op.wires[0])
+    post_wires_identity = np.eye(QUDIT_DIM ** ((num_q - 1) - op.wires[-1]))
+    mat = op.matrix()
+
+    def expand_matrix(matrix):
+        return reduce(np.kron, (pre_wires_identity, matrix, post_wires_identity))
+
+    if batch_size:
+        return [expand_matrix(mat[i]) for i in range(batch_size)]
+    return expand_matrix(mat)
+
+
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestOperation:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations (not channels) are applied correctly."""
@@ -99,32 +125,6 @@ class TestOperation:  # pylint: disable=too-few-public-methods
     num_batched = 4
 
     @classmethod
-    def get_expected_state(cls, expanded_operator, state, num_q):
-        """Finds expected state after applying operator"""
-        # Convert the state into numpy
-        state = np.asarray(state)
-        shape = (QUDIT_DIM**num_q,) * 2
-        flattened_state = state.reshape(shape)
-        adjoint_matrix = np.conj(expanded_operator).T
-
-        new_state = expanded_operator @ flattened_state @ adjoint_matrix
-        return new_state.reshape([QUDIT_DIM] * (num_q * 2))
-
-    @classmethod
-    def expand_matrices(cls, op, num_q, batch_size=0):
-        """Find expanded operator matrices, independent of qml implementation"""
-        pre_wires_identity = np.eye(QUDIT_DIM ** op.wires[0])
-        post_wires_identity = np.eye(QUDIT_DIM ** ((num_q - 1) - op.wires[-1]))
-        mat = op.matrix()
-
-        def expand_matrix(matrix):
-            return reduce(np.kron, (pre_wires_identity, matrix, post_wires_identity))
-
-        if batch_size:
-            return [expand_matrix(mat[i]) for i in range(batch_size)]
-        return expand_matrix(mat)
-
-    @classmethod
     def circuit_matrices(cls, op, num_q, batch_size=0):
         """defines the circuit matrices, an alternative to expand_matrices"""
 
@@ -151,8 +151,8 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         res_tensordot = apply_operation_tensordot(op, state)
         res_einsum = apply_operation_einsum(op, state)
 
-        expanded_operator = self.expand_matrices(op, num_q)
-        expected = self.get_expected_state(np.array(expanded_operator), np.array(state), num_q)
+        expanded_operator = expand_matrices(op, num_q)
+        expected = get_expected_state(np.array(expanded_operator), np.array(state), num_q)
 
         # assert math.get_interface(res) == ml_framework
         assert math.allclose(res, expected), f"Operation {op} failed. {res} \n != {expected}"
@@ -174,8 +174,8 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         state = math.asarray(state_np, like=ml_framework)
         res = apply_operation(op, state)
 
-        expanded_operator = self.expand_matrices(op, num_q)
-        expected = self.get_expected_state(expanded_operator, state_np, num_q)
+        expanded_operator = expand_matrices(op, num_q)
+        expected = get_expected_state(expanded_operator, state_np, num_q)
 
         assert math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
 
@@ -208,11 +208,11 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         state = math.asarray(state, like=ml_framework)
         res = apply_operation(op, state, is_state_batched=True)
 
-        expanded_operator = self.expand_matrices(op, num_q)
+        expanded_operator = expand_matrices(op, num_q)
         expanded_operator = math.expand_matrix(op.matrix(), op.wires, wire_order=range(num_q))
         expected = np.array(
             [
-                self.get_expected_state(
+                get_expected_state(
                     expanded_operator,
                     s,
                     num_q,
@@ -235,8 +235,8 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         state = math.asarray(state, like=ml_framework)
         res = apply_operation(op, state, is_state_batched=True)
 
-        expanded_operator = self.expand_matrices(op, num_q)
-        expected = np.array([self.get_expected_state(expanded_operator, s, num_q) for s in state])
+        expanded_operator = expand_matrices(op, num_q)
+        expected = np.array([get_expected_state(expanded_operator, s, num_q) for s in state])
 
         assert math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
 
@@ -318,8 +318,8 @@ class TestApplyGroverOperator:
 
         # Test with bruteforce
         op_mat = op.matrix()
-        op_mat = TestOperation.expand_matrices(op, num_wires)
-        result_bf = TestOperation.get_expected_state(op_mat, state, num_wires)
+        op_mat = expand_matrices(op, num_wires)
+        result_bf = get_expected_state(op_mat, state, num_wires)
 
         result = apply_operation(op, state)
 
@@ -552,10 +552,8 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
         res = apply_operation(op, state)
 
-        expanded_mat = TestOperation.expand_matrices(op, 3, batch_size=3)
-        expected = [
-            (TestOperation.get_expected_state(expanded_mat[i], state, num_q)) for i in range(3)
-        ]
+        expanded_mat = expand_matrices(op, 3, batch_size=3)
+        expected = [(get_expected_state(expanded_mat[i], state, num_q)) for i in range(3)]
 
         assert math.get_interface(res) == ml_framework
         assert math.allclose(res, expected)
@@ -569,10 +567,8 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
         res = apply_operation(op, state, is_state_batched=True)
 
-        expanded_mat = TestOperation.expand_matrices(op, 3)
-        expected = [
-            (TestOperation.get_expected_state(expanded_mat, state[i], num_q)) for i in range(3)
-        ]
+        expanded_mat = expand_matrices(op, 3)
+        expected = [(get_expected_state(expanded_mat, state[i], num_q)) for i in range(3)]
 
         assert math.get_interface(res) == ml_framework
         assert math.allclose(res, expected)
@@ -586,10 +582,8 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
         res = apply_operation(op, state, is_state_batched=True)
 
-        expanded_mat = TestOperation.expand_matrices(op, 3, batch_size=3)
-        expected = [
-            (TestOperation.get_expected_state(expanded_mat[i], state[i], num_q)) for i in range(3)
-        ]
+        expanded_mat = expand_matrices(op, 3, batch_size=3)
+        expected = [(get_expected_state(expanded_mat[i], state[i], num_q)) for i in range(3)]
 
         assert math.get_interface(res) == ml_framework
         assert math.allclose(res, expected)
