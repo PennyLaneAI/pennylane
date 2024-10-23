@@ -247,7 +247,7 @@ class TestBasicCircuit:
             qs = qml.tape.QuantumScript(
                 [qml.RX(x, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
             )
-            return dev.execute(qs, ExecutionConfig(interface="torch"))
+            return dev.execute(qs, ExecutionConfig(interface="torch", gradient_method="backprop"))
 
         expected = np.zeros(2)
         assert np.array_equal(f(phi), expected)
@@ -280,6 +280,8 @@ class TestBasicCircuit:
         """Test that even if no interface parameters are given, result is correct."""
         dev = NullQubit()
 
+        import tensorflow as tf
+
         @qml.qnode(dev, interface="tf")
         def circuit(p):
             op(p, wires=[0])
@@ -287,7 +289,8 @@ class TestBasicCircuit:
 
         res = circuit(param)
         assert qml.math.get_interface(res) == "tensorflow"
-        assert res == qml.math.asarray(0.0, like="tensorflow")
+        # float64 due to float64 input variables
+        assert qml.math.allclose(res, tf.Variable(0.0, dtype=tf.float64))  # input variables float64
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
@@ -527,7 +530,7 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        config = ExecutionConfig(interface=qml.math.get_interface(phi))
+        config = ExecutionConfig(interface=qml.math.get_interface(phi), gradient_method="backprop")
         return dev.execute((qs1, qs2), config)
 
     @staticmethod
@@ -549,7 +552,10 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        return NullQubit().execute((qs1, qs2))
+        config = qml.devices.ExecutionConfig(
+            gradient_method="backprop", interface=qml.math.get_interface(phi)
+        )
+        return NullQubit().execute((qs1, qs2), execution_config=config)
 
     @staticmethod
     def assert_results(results):
