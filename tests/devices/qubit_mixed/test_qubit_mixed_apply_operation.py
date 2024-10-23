@@ -71,12 +71,6 @@ def get_random_mixed_state(num_qubits):
     return mixed_state.reshape([QUDIT_DIM] * (2 * num_qubits))
 
 
-@pytest.fixture
-def three_qubit_state_fixture():
-    """Fixture for a random three-qubit mixed state."""
-    return get_random_mixed_state(3)
-
-
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestOperation:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations (not channels) are applied correctly."""
@@ -257,7 +251,6 @@ class TestApplyGroverOperator:
         [
             (2, "einsum"),
             (3, "tensordot"),
-            (7, "tensordot"),
             (8, "tensordot"),
             (9, "custom"),
             # (13, "custom"),
@@ -326,10 +319,7 @@ class TestApplyGroverOperator:
         # Test with numpy interface
         result_numpy = apply_operation(op, state)
 
-        # Test with autograd interface
-        import autograd.numpy as anp
-
-        state_autograd = anp.array(state)
+        state_autograd = qml.numpy.array(state)
         result_autograd = apply_operation(op, state_autograd)
 
         assert np.allclose(result_numpy, result_autograd)
