@@ -33,7 +33,6 @@ from pennylane import (
 )
 from pennylane.devices.qubit_mixed import apply_operation
 from pennylane.devices.qubit_mixed.apply_operation import (
-    GLOBALPHASE_WARNING,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
@@ -196,8 +195,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         state_np = get_random_mixed_state(num_q)
         state = math.asarray(state_np, like=ml_framework)
         op = qml.GlobalPhase(np.pi / 7, wires=0)
-        with pytest.warns(UserWarning, match=GLOBALPHASE_WARNING):
-            res = apply_operation(op, state)
+        res = apply_operation(op, state)
 
         assert math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
 
