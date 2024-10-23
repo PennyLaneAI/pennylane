@@ -315,6 +315,9 @@
 * Patches the `math` module to function with autoray 0.7.0.
   [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
 
+* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`. 
+  [(#6423)](https://github.com/PennyLaneAI/pennylane/pull/6423)
+
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
   [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
 
