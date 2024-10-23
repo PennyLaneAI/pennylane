@@ -22,11 +22,8 @@
 
 <h4>Readout Noise 📠</h4>
 
-* Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class and
-  ``add_noise`` transform.
-  [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
-
-* One can now specify conditions for adding noisy operations to measurement processes via
+* Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class
+  and ``add_noise`` transform. One can specify conditions on measurement processes for this purpose via
   ``qml.noise.meas_eq(mps)``.
   [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
 
@@ -189,9 +186,6 @@
 * A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
   [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
 
-* ``qml.noise.partial_wires`` now has better support for templates and measurements based on their ``map_wires`` methods.
-  [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321)
-
 <h3>Breaking changes 💔</h3>
 
 * `AllWires` validation in `QNode.construct` has been removed. 
@@ -241,7 +235,7 @@
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
 
 * The `LightningVJPs` class is removed as all lightning devices now follow the new device interface.
-  [(#6420)])(https://github.com/PennyLaneAI/pennylane/pull/6420)
+  [(#6420)](https://github.com/PennyLaneAI/pennylane/pull/6420)
 
 <h3>Deprecations 👋</h3>
 
