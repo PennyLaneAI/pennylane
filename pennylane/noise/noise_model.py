@@ -19,20 +19,21 @@ import pennylane as qml
 
 
 class NoiseModel:
-    """Builds a noise model based on a mapping of conditionals to callables that
-    defines noise operations using some optional metadata.
+    """Builds a noise model based on the mappings of conditionals to callables that
+    define noise operations using some optional metadata.
 
     Args:
-        model_map (dict[BooleanFn -> Callable]): Data for the
-            noise model as a ``{conditional: noise_fn}`` dictionary. The signature of
-            ``noise_fn`` must be ``noise_fn(op: Operation, **kwargs) -> None``, where
-            ``op`` is the operation that the conditional evaluates and ``kwargs`` are
+        model_map (dict[BooleanFn -> Callable]): Data for adding the gate errors as
+            a ``{conditional: noise_fn}`` dictionary. The signature of ``noise_fn``
+            must be ``noise_fn(op: Operation, **kwargs) -> None``, where ``op``
+            is the operation that the conditional evaluates and ``kwargs`` are
             the specified metadata arguments.
-        meas_map (dict[BooleanFn -> Callable]): Data for adding the readout noise similar
-            to ``model_map``. The signature of ``noise_fn`` must be
+        meas_map (dict[BooleanFn -> Callable]): Data for adding the readout errors
+            similar to ``model_map``. The signature of ``noise_fn`` must be
             ``noise_fn(mp: MeasurementProcess, **kwargs) -> None``, where ``mp`` is
-            the measurement process that the conditional evaluates.
-        **kwargs: Keyword arguments for specifying metadata related to noise model.
+            the measurement process that the conditional evaluates and ``kwargs``
+            are the specified metadata arguments.
+        **kwargs: Keyword arguments for specifying metadata related to the noise model.
 
     .. note::
 
@@ -41,24 +42,24 @@ class NoiseModel:
         - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
           a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
           the ``qml.noise`` module, or their bitwise combination.
-        - The definition of ``noise_fn(op, **kwargs)`` should have the operations in the same the order
-          in which they are to be queued for an operation ``op``, whenever the corresponding
-          ``conditional`` evaluates to ``True``.
-        - Each ``conditional`` in ``meas_map`` is evaluated on each measurement process in the order
-          they are specified, and the corresponding noise channel is added if the condition is satisfied.
+        - The definition of ``noise_fn(Union[op, mp], **kwargs)`` should have the operations
+          in the same the order in which they are to be queued for an operation ``op`` or
+          measurement process ``mp``, whenever the corresponding ``conditional`` evaluates
+          to ``True``.
+        - Each ``conditional`` in ``meas_map`` is evaluated on each measurement process in
+          the order they are specified. The corresponding noise has to be added `before`
+          the measurement, i.e., custom queing in ``noise_fn`` should not be done.
 
     **Example**
 
     .. code-block:: python
 
-        # Set up the conditionals
+        # Set up the gate noise
         c0 = qml.noise.op_eq(qml.PauliX) | qml.noise.op_eq(qml.PauliY)
         c1 = qml.noise.op_eq(qml.Hadamard) & qml.noise.wires_in([0, 1])
 
-        # Set up the noise functions
         def n0(op, **kwargs):
             qml.ThermalRelaxationError(0.4, kwargs["t1"], 0.2, 0.6, op.wires)
-
         n1 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
         # set up the readout noise
@@ -163,7 +164,7 @@ class NoiseModel:
 
     @staticmethod
     def check_model(model: dict) -> None:
-        """Method to validate the ``model`` map for constructing a NoiseModel."""
+        """Method to validate a ``conditional -> noise_fn`` map for constructing a noise model."""
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
                 raise ValueError(

@@ -24,7 +24,7 @@ def add_noise(tape, noise_model, level=None):
     """Insert operations according to a provided noise model.
 
     Circuits passed through this quantum transform will be updated to apply the
-    insertion-based :class:`~.NoiseModel`, which contains a mapping
+    insertion-based :class:`~.NoiseModel`, which contains mappings
     ``{BooleanFn: Callable}`` from conditions to the corresponding noise
     gates for circuit operations and measurements each. First, each condition
     in the first mapping of a noise model will be evaluated on the operations
@@ -56,10 +56,10 @@ def add_noise(tape, noise_model, level=None):
 
     .. note::
 
-        For a given ``model_map`` and ``meas_map`` within a ``NoiseModel``, if multiple conditionals in the
-        ``model_map`` evaluate to ``True`` for an operation, then the noise operations defined via their
-        respective noisy quantum functions will be added in the same order in which the conditionals
-        appear in the ``model_map``.
+        For a given ``model_map`` and ``meas_map`` within a ``NoiseModel``, if multiple conditionals
+        in the given maps evaluate to ``True`` for an operation or measurement process, then the
+        noise operations defined via their respective noisy quantum functions will be added in the
+        same order in which the conditionals appear in them.
 
     **Example:**
 

@@ -429,7 +429,7 @@ def op_eq(ops):
 
     Args:
         ops (str, class, Operation, MeasurementProcess): String representation, an instance
-        or class of the operation, or a measurement process.
+            or class of the operation, or a measurement process.
 
     Returns:
         :class:`OpEq <pennylane.noise.conditionals.OpEq>`: A callable object that accepts
@@ -470,7 +470,8 @@ class MeasEq(qml.BooleanFn):
     """A conditional for evaluating if a given measurement process is equal to the specified measurement process.
 
     Args:
-        mp(Union[Iterable[MeasurementProcess], MeasurementProcess]): Sequence of measurement process.
+        mp(Union[Iterable[MeasurementProcess], MeasurementProcess, Callable]): A measurement process instance or
+            a measurement function to build the measurement set.
 
     .. seealso:: Users are advised to use :func:`~.meas_eq` for a functional construction.
     """
@@ -520,7 +521,7 @@ def meas_eq(mp):
     if a given measurement process is equal to the specified measurement process.
 
     Args:
-        mp (MeasurementProcess, function): An instance(s) of any class that inherits from
+        mp (MeasurementProcess, Callable): An instance(s) of any class that inherits from
             :class:`~.MeasurementProcess` or a :mod:`measurement <pennylane.measurements>` function(s).
 
     Returns:
@@ -631,12 +632,12 @@ def _process_name(op_class, op_params, arg_params):
 
 
 def partial_wires(operation, *args, **kwargs):
-    """Builds a partial function based on the given operation or measurement process with
-    all argument frozen except ``wires``.
+    """Builds a partial function based on the given gate operation or measurement process
+    with all argument frozen except ``wires``.
 
     Args:
-        operation (Operation | MeasurementProcess | class): Instance of an operation or the class
-            corresponding to the operation.
+        operation (Operation | MeasurementProcess | class | Callable): Instance of an
+            operation or the class (callable) corresponding to the operation (measurement).
         *args: Positional arguments provided in the case where the keyword argument
             ``operation`` is a class for building the partially evaluated instance.
         **kwargs: Keyword arguments for the building the partially evaluated instance.
@@ -688,7 +689,7 @@ def partial_wires(operation, *args, **kwargs):
     else:
         op_class, op_type, args, kwargs = _process_instance(operation, *args, **kwargs)
 
-    # Developer Note: We use three TYPES to keep a track of PennyLane `operation`` we have
+    # Developer Note: We use three TYPES to keep a track of PennyLane ``operation`` we have
     # 1. "Mappable" -> We can use `map_wires` method of the `operation` with new wires.
     # 2. "MeasFunc" -> We need to handle observable and/or wires for the measurement process.
     # 3: "MetaFunc" -> We need to handle base operation for Adjoint or Controlled operation.
