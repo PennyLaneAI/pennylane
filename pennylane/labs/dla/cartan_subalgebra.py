@@ -58,9 +58,9 @@ def _orthogonal_complement_basis(h, m, tol):
     return basis.T  # Transpose to get row vectors
 
 
-def cartan_subalgebra(g, k, m, ad, which=0, tol=1e-14, verbose=0):
+def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-14, verbose=0, return_adjvec=False):
     r"""
-    Compute Cartan subalgebra of g given m, the odd parity subspace. I.e. the maximal Abelian subalgebra in m.
+    Compute Cartan subalgebra (CSA) m in g, the odd parity subspace. I.e. the maximal Abelian subalgebra in m.
 
     .. seealso:: :func:`~cartan_decomposition`, :func:`~structure_constants`
 
@@ -69,9 +69,13 @@ def cartan_subalgebra(g, k, m, ad, which=0, tol=1e-14, verbose=0):
         k (List[Union[PauliSentence, np.ndarray]]): Vertical space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         m (List[Union[PauliSentence, np.ndarray]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         ad (Array): The math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`
+        start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
+        tol (float): Numerical tolerance for linear independence check
+        verbose (bool): Whether or not to output progress during computation
+        return_adjvec (bool): The output format. If ``False``, returns operators in their original
+            input format (matrices of :class:`~PauliSentence`). If ``True``, returns the spaces as adjoint representaiton vectors.
 
     Returns:
-        np_newg, np_k, np_mtilde, np_h, new_adj, basis_change
         np.ndarray: Adjoint vectors for new ordered :math:`\mathfrak{g}` of dimension :math:`|\mathfrak{g}| \times |\mathfrak{g}|`, ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \tilde{\mathfrak{m}} \oplus \mathfrak{h}`
         np.ndarray: Adjoint vectors for :math:`\mathfrak{k}` of dimension :math:`|\mathfrak{k}| \times |\mathfrak{g}|`.
         np.ndarray: Adjoint vectors for :math:`\tilde{\mathfrak{m}}` of dimension :math:`|\tilde{\mathfrak{m}}| \times |\mathfrak{g}|`.
@@ -85,14 +89,27 @@ def cartan_subalgebra(g, k, m, ad, which=0, tol=1e-14, verbose=0):
     >>> import pennylane as qml
     >>> from pennylane.labs.dla import cartan_decomposition, cartan_subalgebra, even_odd_involution
     >>> g = list(qml.pauli.pauli_group(2)) # u(4)
-    >>> g = g[1:]       # remove identity -> su(4)
+    >>> g = g[1:] # remove identity -> su(4)
+    >>> g = [op.pauli_rep for op in g] # optional; turn to PauliSentence for convenience
     >>> k, m = cartan_decomposition(g, even_odd_involution)
     >>> g = k + m # re-order g to separate k and m
     >>> adj = qml.structure_constants(g)
-    >>> np_newg, np_k, np_mtilde, np_h, new_adj = cartan_subalgebra(g, k, m, adj)
+    >>> newg, k, mtilde, h, new_adj = cartan_subalgebra(g, k, m, adj)
+    >>> newg == k + mtilde + h
+    True
+    >>> h
+    [(1+0j) * Z(0) @ Z(1), (-1+0j) * Y(0) @ Y(1), (1+0j) * X(0) @ X(1)]
 
-    All results are what we call adjoint vectors of dimension :math:`|\mathfrak{g}|`, where each component corresponds to an entry in (the ordered) ``g``.
+    We can confirm that these all commute with each other, as the CSA is Abelian (= all operators commute).
+
+    >>> from pennylane.labs.dla import check_all_commuting
+    >>> assert check_all_commuting(h)
+
+    We can opt-in to return what we call adjoint vectors of dimension :math:`|\mathfrak{g}|`, where each component corresponds to an entry in (the ordered) ``g``.
     The adjoint vectors for the Cartan subalgebra are in ``np_h``.
+
+    >>> np_newg, np_k, np_mtilde, np_h, new_adj = cartan_subalgebra(g, k, m, adj, return_adjvec=True)
+
     We can reconstruct an operator by computing :math:`\hat{O}_v = \sum_i v_i g_i` for an adjoint vector :math:`v` and :math:`g_i \in \mathfrak{g}`.
 
     >>> v = np_h[0]
@@ -142,9 +159,20 @@ def cartan_subalgebra(g, k, m, ad, which=0, tol=1e-14, verbose=0):
 
         Finally, we can compute a Cartan subalgebra :math:`\mathfrak{h}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
 
-        >>> np_newg, np_k, np_mtilde, np_h, new_adj, basis_change = cartan_subalgebra(g, k, m, adj, which=3)
+        >>> newg, k, mtilde, h, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=3)
 
-        The final results are all returned as what we call adjoint representation vectors.
+        The new DLA ``newg`` is just the concatenation of ``k``, ``mtilde``, ``h``. Each component is returned in the original input format.
+        Here we obtain collections of :math:`8\times 8` matrices (``numpy`` arrays), as this is what we started from.
+
+        >>> newg.shape, k.shape, mtilde.shape, h.shape, new_adj.shape
+        ((15, 8, 8), (6, 8, 8), (6, 8, 8), (3, 8, 8), (15, 15, 15))
+
+        We can also let the function return what we call adjoint representation vectors.
+
+        >>> np_newg, np_k, np_mtilde, np_h, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=3, return_adjvec=True)
+        >>> np_newg.shape, np_k.shape, np_mtilde.shape, np_h.shape, new_adj.shape
+        ((15, 15), (6, 15), (6, 15), (3, 15), (15, 15, 15))
+
         These are dense vector representations of dimension :math:`|\mathfrak{g}|`, in which each entry corresponds to the respective operator in :math:`\mathfrak{g}`.
         Given an adjoint representation vector :math:`v`, we can reconstruct the respective operator by simply computing :math:`\hat{O}_v = \sum_i v_i g_i`, where
         :math:`g_i \in \mathfrak{g}` (hence the need for a canonical ordering).
@@ -170,7 +198,7 @@ def cartan_subalgebra(g, k, m, ad, which=0, tol=1e-14, verbose=0):
     """
 
     np_m = op_to_adjvec(m, g)
-    np_h = op_to_adjvec([m[which]], g)
+    np_h = op_to_adjvec([m[start_idx]], g)
 
     iteration = 1
     while True:
@@ -186,6 +214,8 @@ def cartan_subalgebra(g, k, m, ad, which=0, tol=1e-14, verbose=0):
 
             # intersect kernel to stay in m
             kernel_intersection = _intersect_bases(kernel_intersection, new_kernel, rcond=tol)
+
+        print(kernel_intersection.T.shape, np_h.shape)
 
         if kernel_intersection.shape[1] == len(np_h):
             # No new vector was added from all the kernels
@@ -209,10 +239,15 @@ def cartan_subalgebra(g, k, m, ad, which=0, tol=1e-14, verbose=0):
     # implementation to be tested:
     basis_change = np.linalg.lstsq(np.vstack([np_k, np_m]).T, np_newg.T, rcond=None)[
         0
-    ]  # basis change old g @ X = new g => adj_new = contact(adj, X, X, X)
+    ]  # basis change old g @ X = new g => adj_new = contract(adj, X, X, X)
     new_adj = np.einsum("kmn,ki,mj,nl->ijl", ad, basis_change, basis_change, basis_change)
 
-    return np_newg, np_k, np_mtilde, np_h, new_adj
+    if return_adjvec:
+        return np_newg, np_k, np_mtilde, np_h, new_adj
+
+    newg, k, mtilde, h = [adjvec_to_op(adjvec, g) for adjvec in [np_newg, np_k, np_mtilde, np_h]]
+
+    return newg, k, mtilde, h, new_adj
 
 
 def adjvec_to_op(adj_vecs, basis):

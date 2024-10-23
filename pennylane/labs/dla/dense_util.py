@@ -214,7 +214,11 @@ def check_commutation(ops1, ops2, vspace):
     for o1 in ops1:
         for o2 in ops2:
             com = o1.commutator(o2)
-            assert_vals.append(not vspace.is_independent(com))
+            com.simplify()
+            if len(com) != 0:
+                assert_vals.append(not vspace.is_independent(com))
+            else:
+                assert_vals.append(True)
 
     return all(assert_vals)
 
