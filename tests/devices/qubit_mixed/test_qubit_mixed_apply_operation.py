@@ -343,8 +343,11 @@ class TestApplyMultiControlledX:
     def test_dispatch_method(self, num_wires, expected_method, interface, mocker):
         """Test that the correct dispatch method is used based on the number of wires."""
         state = get_random_mixed_state(num_wires)
-        # convert to the correct interface
-        state = math.asarray(state, like=interface)
+        if interface == pytest.param("torch", marks=pytest.mark.torch):
+            # pylint: disable=import-outside-toplevel
+            import torch
+
+            state = torch.tensor(state, dtype=torch.complex128)
 
         op = qml.MultiControlledX(wires=range(num_wires))
 
