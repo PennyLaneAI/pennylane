@@ -24,7 +24,7 @@ from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
-from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
+from .utils import get_einsum_mapping, get_new_state_einsum_indices
 
 GLOBALPHASE_WARNING = "The GlobalPhase operation does not have any effect on the density matrix. This operation is only meaningful for state vectors."
 
@@ -199,10 +199,10 @@ def apply_operation_einsum(
         kraus = [math.cast_like(op.matrix(), state)]
 
     # Shape kraus operators
-    kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
+    kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
     if not isinstance(op, Channel):
         mat = op.matrix() + 0j
-        dim = QUDIT_DIM**num_ch_wires
+        dim = 2**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
         if batch_size is not None:
             # Add broadcasting dimension to shape
@@ -246,13 +246,13 @@ def apply_operation_tensordot(
 
     num_wires = _get_num_wires(state, is_state_batched)
     #! Note that here we do not take into consideration the len of kraus list
-    kraus_shape = [QUDIT_DIM] * num_ch_wires * 2
+    kraus_shape = [2] * num_ch_wires * 2
     # This could be pulled into separate function if tensordot is added
     if is_op_channel := isinstance(op, Channel):
         kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in op.kraus_matrices()]
     else:
         mat = op.matrix() + 0j
-        dim = QUDIT_DIM**num_ch_wires
+        dim = 2**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
         if is_mat_batched := batch_size is not None:
             # Add broadcasting dimension to shape
@@ -347,7 +347,7 @@ def apply_operation(
         This function assumes that the wires of the operator correspond to indices
         of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-        The shape of state should be ``[QUDIT_DIM]*(num_wires * 2)`` (the original tensor form) or ``[QUDIT_DIM**num_wires, QUDIT_DIM**num_wires]`` (the expanded matrix form), where ``QUDIT_DIM`` is
+        The shape of state should be ``[2]*(num_wires * 2)`` (the original tensor form) or ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where ``2`` is
         the dimension of the system.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
@@ -625,7 +625,7 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
 
     eigvals = op.eigvals()
     eigvals = math.stack(eigvals)
-    eigvals = math.reshape(eigvals, [QUDIT_DIM] * len(channel_wires))
+    eigvals = math.reshape(eigvals, [2] * len(channel_wires))
     eigvals = math.cast_like(eigvals, state)
 
     state_indices = alphabet[: 2 * num_wires + is_state_batched]

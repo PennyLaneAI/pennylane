@@ -19,8 +19,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 
-QUDIT_DIM = 2
-
 alphabet_array = np.array(list(alphabet))
 
 

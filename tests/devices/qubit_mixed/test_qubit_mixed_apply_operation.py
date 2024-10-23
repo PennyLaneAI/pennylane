@@ -36,7 +36,6 @@ from pennylane.devices.qubit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
 )
-from pennylane.devices.qubit_mixed.utils import QUDIT_DIM
 from pennylane.operation import _UNSET_BATCH_SIZE
 
 ml_frameworks_list = [
@@ -58,7 +57,7 @@ def get_random_mixed_state(num_qubits):
     Returns:
         np.ndarray: A tensor representing the random mixed state.
     """
-    dim = QUDIT_DIM**num_qubits
+    dim = 2**num_qubits
 
     rng = np.random.default_rng(seed=4774)
     basis = unitary_group(dim=dim, seed=584545).rvs()
@@ -67,25 +66,25 @@ def get_random_mixed_state(num_qubits):
     for i in range(dim):
         mixed_state += schmidt_weights[i] * np.outer(np.conj(basis[i]), basis[i])
 
-    return mixed_state.reshape([QUDIT_DIM] * (2 * num_qubits))
+    return mixed_state.reshape([2] * (2 * num_qubits))
 
 
 def get_expected_state(expanded_operator, state, num_q):
     """Finds expected state after applying operator"""
     # Convert the state into numpy
     state = np.asarray(state)
-    shape = (QUDIT_DIM**num_q,) * 2
+    shape = (2**num_q,) * 2
     flattened_state = state.reshape(shape)
     adjoint_matrix = np.conj(expanded_operator).T
 
     new_state = expanded_operator @ flattened_state @ adjoint_matrix
-    return new_state.reshape([QUDIT_DIM] * (num_q * 2))
+    return new_state.reshape([2] * (num_q * 2))
 
 
 def expand_matrices(op, num_q, batch_size=0):
     """Find expanded operator matrices, independent of qml implementation"""
-    pre_wires_identity = np.eye(QUDIT_DIM ** op.wires[0])
-    post_wires_identity = np.eye(QUDIT_DIM ** ((num_q - 1) - op.wires[-1]))
+    pre_wires_identity = np.eye(2 ** op.wires[0])
+    post_wires_identity = np.eye(2 ** ((num_q - 1) - op.wires[-1]))
     mat = op.matrix()
 
     def expand_matrix(matrix):
@@ -509,7 +508,7 @@ class TestApplyChannel:
         """Tests that channels are correctly applied to the default initial state"""
         nr_wires = x[0]
         op = x[1]
-        shape_state = [QUDIT_DIM] * 2 * nr_wires
+        shape_state = [2] * 2 * nr_wires
         init_state = basis_state(0, nr_wires)
         init_state = np.reshape(init_state, shape_state)
         target_state = np.reshape(x[2], shape_state)
@@ -546,7 +545,7 @@ class TestApplyChannel:
         """Tests that channels are correctly applied to the maximally mixed state"""
         nr_wires = x[0]
         op = x[1]
-        shape_state = [QUDIT_DIM] * 2 * nr_wires
+        shape_state = [2] * 2 * nr_wires
         init_state = np.reshape(max_mixed_state(nr_wires), shape_state)
         target_state = np.reshape(x[2], shape_state)
         res = apply_method(op, init_state)
