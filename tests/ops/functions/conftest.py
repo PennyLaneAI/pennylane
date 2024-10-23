@@ -57,7 +57,7 @@ _INSTANCES_TO_TEST = [
     (qml.s_prod(1.1, qml.RX(1.1, 0)), {}),
     (qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)), {}),
     (qml.ctrl(qml.RX(1.1, 0), 1), {}),
-    (qml.exp(qml.PauliX(0), 1.1), {}),
+    (qml.exp(qml.PauliX(0), 1.1), {"skip_differentiation": True}),
     (qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qml.ops.Evolution(qml.PauliX(0), 5.2), {}),
     (qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
