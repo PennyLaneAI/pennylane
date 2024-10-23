@@ -26,8 +26,6 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
 
-GLOBALPHASE_WARNING = "The GlobalPhase operation does not have any effect on the density matrix. This operation is only meaningful for state vectors."
-
 alphabet_array = np.array(list(alphabet))
 
 
