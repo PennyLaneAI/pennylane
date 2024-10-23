@@ -277,9 +277,7 @@ class OutPoly(Operation):
             all_wires += work_wires
 
         if len(all_wires) != sum(len(register) for register in registers_wires) + num_work_wires:
-            raise ValueError(
-                "A wire appeared in multiple registers."
-            )
+            raise ValueError("A wire appeared in multiple registers.")
 
         super().__init__(wires=all_wires, id=id)
 
