@@ -216,7 +216,8 @@ class OutPoly(Operation):
                     input_registers = input_registers,
                     output_wires = output_wires,
                     mod = 7,
-                    work_wires = work_wires)
+                    work_wires = work_wires
+                )
 
                 return qml.sample(wires=output_wires)
 
@@ -253,7 +254,7 @@ class OutPoly(Operation):
             )
 
         if not isinstance(mod, int):
-            raise ValueError("mod must be integer.")
+            raise ValueError("mod must be an integer.")
 
         all_wires = []
         inp_regs = []
