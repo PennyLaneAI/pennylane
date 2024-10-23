@@ -20,7 +20,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.tape import QuantumTape
 
 from .single_qubit_unitary import one_qubit_decomposition
 
@@ -52,53 +51,38 @@ def _check_differentiability_warning(U):
     Args:
         U (tensor): Input unitary matrix to check
     """
-    # Check if we're inside a QNode/tape context
-    current_tape = qml.queuing.QueuingManager.active_context()
 
-    if current_tape is not None and isinstance(current_tape, QuantumTape):
-        # Check if U requires gradients
-        if hasattr(U, "requires_grad") and U.requires_grad:
-            warnings.warn(
-                "The two-qubit decomposition may not be differentiable when the input "
-                "unitary depends on trainable parameters. Known issues exist with:\n"
-                "- Autograd: fails on eigenvalue calculations\n"
-                "- PyTorch: cannot differentiate complex determinants\n"
-                "- TensorFlow: limited support for multiple CNOTs\n"
-                "- JAX: type errors during differentiation\n"
-                "Consider using an alternative parameterization for gradients.",
-                RuntimeWarning,
-                stacklevel=2,
-            )
+    interface = qml.math.get_interface(U)
 
-        # Check interface-specific conditions
-        if qml.math.get_interface(U) == "autograd":
-            warnings.warn(
-                "Autograd interface detected. The decomposition may fail with "
-                "'ArrayBox has no attribute conjugate' or during eigenvalue calculations.",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-        elif qml.math.get_interface(U) == "torch":
-            warnings.warn(
-                "PyTorch interface detected. The decomposition may fail when "
-                "differentiating through complex determinants.",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-        elif qml.math.get_interface(U) == "tensorflow":
-            warnings.warn(
-                "TensorFlow interface detected. The decomposition may have "
-                "limited support for multiple CNOTs.",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-        elif qml.math.get_interface(U) == "jax":
-            warnings.warn(
-                "JAX interface detected. The decomposition may fail with "
-                "TypeError during differentiation.",
-                RuntimeWarning,
-                stacklevel=2,
-            )
+    # Check if matrix is trainable based on interface
+    is_trainable = False
+
+    if interface == "torch":
+        # pylint: disable=import-outside-toplevel
+        import torch
+
+        is_trainable = isinstance(U, torch.Tensor) and U.requires_grad
+    elif interface == "tensorflow":
+        # pylint: disable=import-outside-toplevel
+        import tensorflow as tf
+
+        is_trainable = isinstance(U, tf.Variable) or (
+            isinstance(U, tf.Tensor) and not U.dtype.is_floating
+        )
+    elif interface == "jax":
+        # For JAX, consider arrays in a quantum context as potentially trainable
+        is_trainable = True
+    elif interface == "autograd":
+        # For autograd, arrays in QNodes are potentially trainable
+        is_trainable = True
+
+    if is_trainable:
+        warnings.warn(
+            "The two-qubit decomposition may not be differentiable when the input "
+            "unitary depends on trainable parameters.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
 
 # This gate E is called the "magic basis". It can be used to convert between
@@ -192,7 +176,6 @@ def _compute_num_cnots(U):
 
     # For the case with 3 CNOTs, the trace is a non-zero complex number
     # with both real and imaginary parts.
-    # TODO: add test over trainability of trace
     return 3
 
 
