@@ -65,12 +65,18 @@ def test_operator_definition_qpe(hamiltonian):
     assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
 
 
-@pytest.mark.xfail(reason="PrepSelPrep does not work with parameter-shift (GitHub issue #6331)")
-def test_standard_validity():
+@pytest.mark.parametrize(
+    ("lcu", "control", "skip_diff"),
+    [
+        (qml.dot([0.1, -0.3], [qml.X(2), qml.Z(3)]), [0], False),
+        (qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]), [3, 4], True),
+    ],
+)
+def test_standard_validity(lcu, control, skip_diff):
     """Check the operation using the assert_valid function."""
-    H = qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)])
-    op = qml.Qubitization(H, control=[3, 4])
-    qml.ops.functions.assert_valid(op)
+    op = qml.Qubitization(lcu, control)
+    # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
+    qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
