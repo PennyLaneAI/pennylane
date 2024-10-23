@@ -13,7 +13,6 @@
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
 
-from itertools import product
 from typing import Optional
 
 import numpy as np
