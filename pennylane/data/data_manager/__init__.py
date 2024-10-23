@@ -37,7 +37,7 @@ from .graphql import (
     list_attributes,
 )
 from .foldermap import DataPath, FolderMapView, ParamArg
-from .params import DEFAULT, FULL, format_params
+from .params import DEFAULT, FULL, format_params, provide_defaults
 
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
@@ -337,6 +337,8 @@ def load(  # pylint: disable=too-many-arguments
     if data_name == "other":
         data_name = params[0]["values"][0]
         params = []
+
+    params = provide_defaults(data_name, params)
 
     dataset_ids_and_urls = _get_dataset_urls(data_name, params)
     dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]

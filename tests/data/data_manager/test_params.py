@@ -23,6 +23,7 @@ from pennylane.data.data_manager.params import (
     ParamArg,
     format_param_args,
     format_params,
+    provide_defaults,
 )
 
 pytestmark = pytest.mark.data
@@ -126,3 +127,68 @@ class TestDescription:
         """Test that __repr__ is equivalent to dict __repr__."""
         params = {"foo": "bar", "x": "y"}
         assert repr(Description(params)) == f"Description({repr(params)})"
+
+
+@pytest.mark.parametrize(
+    "data_name, params, expected_params",
+    [
+        (
+            "qchem",
+            [{"name": "molname", "values": ["H2"]}],
+            [
+                {"name": "molname", "values": ["H2"]},
+                {"default": True, "name": "basis"},
+                {"default": True, "name": "bondlength"},
+            ],
+        ),
+        (
+            "qchem",
+            [{"name": "molname", "values": ["H2"]}, {"name": "bondlength", "values": ["0.82"]}],
+            [
+                {"name": "molname", "values": ["H2"]},
+                {"name": "bondlength", "values": ["0.82"]},
+                {"default": True, "name": "basis"},
+            ],
+        ),
+        (
+            "qspin",
+            [{"name": "sysname", "values": ["BoseHubbard"]}],
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"default": True, "name": "periodicity"},
+                {"default": True, "name": "lattice"},
+                {"default": True, "name": "layout"},
+            ],
+        ),
+        (
+            "qspin",
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"name": "periodicity", "values": ["closed"]},
+            ],
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"name": "periodicity", "values": ["closed"]},
+                {"default": True, "name": "lattice"},
+                {"default": True, "name": "layout"},
+            ],
+        ),
+        (
+            "qspin",
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"name": "periodicity", "values": ["closed"]},
+                {"name": "lattice", "values": ["chain"]},
+            ],
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"name": "periodicity", "values": ["closed"]},
+                {"name": "lattice", "values": ["chain"]},
+                {"default": True, "name": "layout"},
+            ],
+        ),
+        ("other", [], []),
+    ],
+)
+def test_provide_defaults(data_name, params, expected_params):
+    assert provide_defaults(data_name, params) == expected_params

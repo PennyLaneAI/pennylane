@@ -133,3 +133,28 @@ def format_params(**params: Any) -> list[dict[str:ParamName, str : Union[ParamAr
         param_name: format_param_args(param_name, param) for param_name, param in params.items()
     }
     return [{"name": k, "values": v} for k, v in input_params.items()]
+
+
+def provide_defaults(
+    data_name: str, params: list[dict[str:ParamName, str : Union[ParamArg, ParamVal]]]
+) -> list[dict[str:ParamName, str : Union[ParamArg, ParamVal]]]:
+    """
+    Provides default parameters to the qchem and qspin query parameters if the parameter
+    names are missing from the provided ``params``.
+    """
+    param_names = [param["name"] for param in params]
+    if data_name == "qchem":
+        if "basis" not in param_names:
+            params.append({"default": True, "name": "basis"})
+        if "bondlength" not in param_names:
+            params.append({"default": True, "name": "bondlength"})
+
+    if data_name == "qspin":
+        if "periodicity" not in param_names:
+            params.append({"default": True, "name": "periodicity"})
+        if "lattice" not in param_names:
+            params.append({"default": True, "name": "lattice"})
+        if "layout" not in param_names:
+            params.append({"default": True, "name": "layout"})
+
+    return params
