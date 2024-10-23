@@ -126,7 +126,7 @@ shots_10k = Shots(10000)
 shots_2_10k = Shots((10000, 10000))
 dev_def = DefaultQubit(seed=42)
 dev_ps = ParamShiftDerivativesDevice(seed=54353453)
-dev_ref = qml.device("reference.qubit")
+dev_ref = qml.device("reference.qubit", seed=786345)
 test_matrix = [
     ({"gradient_fn": param_shift}, shots_10k, dev_def),  # 0
     ({"gradient_fn": param_shift}, shots_2_10k, dev_def),  # 1
