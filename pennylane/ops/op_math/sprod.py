@@ -25,6 +25,7 @@ from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
 
+from .composite import handle_recursion_error
 from .symbolicop import ScalarSymbolicOp
 
 
@@ -155,12 +156,14 @@ class SProd(ScalarSymbolicOp):
         else:
             self._pauli_rep = None
 
+    @handle_recursion_error
     def __repr__(self):
         """Constructor-call-like representation."""
         if isinstance(self.base, qml.ops.CompositeOp):
             return f"{self.scalar} * ({self.base})"
         return f"{self.scalar} * {self.base}"
 
+    @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
         """The label produced for the SProd op."""
         scalar_val = (
@@ -172,6 +175,7 @@ class SProd(ScalarSymbolicOp):
         return base_label or f"{scalar_val}*{self.base.label(decimals=decimals, cache=cache)}"
 
     @property
+    @handle_recursion_error
     def num_params(self):
         """Number of trainable parameters that the operator depends on.
         Usually 1 + the number of trainable parameters for the base op.
@@ -181,6 +185,7 @@ class SProd(ScalarSymbolicOp):
         """
         return 1 + self.base.num_params
 
+    @handle_recursion_error
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -200,6 +205,7 @@ class SProd(ScalarSymbolicOp):
             return [self.scalar], [self.base]
 
     @property
+    @handle_recursion_error
     def is_hermitian(self):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
@@ -207,10 +213,12 @@ class SProd(ScalarSymbolicOp):
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
+    @handle_recursion_error
     def has_diagonalizing_gates(self):
         """Bool: Whether the Operator returns defined diagonalizing gates."""
         return self.base.has_diagonalizing_gates
 
+    @handle_recursion_error
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
@@ -230,6 +238,7 @@ class SProd(ScalarSymbolicOp):
         """
         return self.base.diagonalizing_gates()
 
+    @handle_recursion_error
     def eigvals(self):
         r"""Return the eigenvalues of the specified operator.
 
@@ -244,6 +253,7 @@ class SProd(ScalarSymbolicOp):
             base_eigs = qml.math.convert_like(base_eigs, self.scalar)
         return self.scalar * base_eigs
 
+    @handle_recursion_error
     def sparse_matrix(self, wire_order=None):
         """Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
@@ -264,15 +274,18 @@ class SProd(ScalarSymbolicOp):
         return mat
 
     @property
+    @handle_recursion_error
     def has_sparse_matrix(self):
         return self.pauli_rep is not None or self.base.has_sparse_matrix
 
     @property
+    @handle_recursion_error
     def has_matrix(self):
         """Bool: Whether or not the Operator returns a defined matrix."""
         return isinstance(self.base, qml.ops.Hamiltonian) or self.base.has_matrix
 
     @staticmethod
+    @handle_recursion_error
     def _matrix(scalar, mat):
         return scalar * mat
 
@@ -303,6 +316,7 @@ class SProd(ScalarSymbolicOp):
         return SProd(scalar=qml.math.conjugate(self.scalar), base=qml.adjoint(self.base))
 
     # pylint: disable=too-many-return-statements
+    @handle_recursion_error
     def simplify(self) -> Operator:
         """Reduce the depth of nested operators to the minimum.
 

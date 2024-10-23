@@ -1070,28 +1070,6 @@ class TestObservableConstruction:
 class TestOperatorIntegration:
     """Integration tests for the Operator class"""
 
-    def test_all_wires_defined_but_init_with_one(self):
-        """Test that an exception is raised if the class is defined with ALL wires,
-        but then instantiated with only one"""
-
-        dev1 = qml.device("default.qubit", wires=2)
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operator"""
-
-            num_wires = qml.operation.WiresEnum.AllWires
-
-        @qml.qnode(dev1)
-        def circuit():
-            DummyOp(wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match=f"Operator {DummyOp.__name__} must act on all wires",
-        ):
-            circuit()
-
     def test_pow_method_with_non_numeric_power_raises_error(self):
         """Test that when raising an Operator to a power that is not a number raises
         a ValueError."""

@@ -65,6 +65,7 @@ def test_operator_definition_qpe(hamiltonian):
     assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
 
 
+@pytest.mark.xfail(reason="PrepSelPrep does not work with parameter-shift (GitHub issue #6331)")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     H = qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)])

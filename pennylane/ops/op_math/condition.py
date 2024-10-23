@@ -715,21 +715,21 @@ def _get_cond_qfunc_prim():
         for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):
             consts = consts_flat[start : start + n_consts]
             start += n_consts
-            if pred and jaxpr is not None:
-                if isinstance(pred, qml.measurements.MeasurementValue):
-                    with qml.queuing.AnnotatedQueue() as q:
-                        out = jax.core.eval_jaxpr(jaxpr, consts, *args)
+            if jaxpr is None:
+                continue
+            if isinstance(pred, qml.measurements.MeasurementValue):
+                with qml.queuing.AnnotatedQueue() as q:
+                    out = jax.core.eval_jaxpr(jaxpr, consts, *args)
 
-                    if len(out) != 0:
-                        raise ConditionalTransformError(
-                            "Only quantum functions without return values can be applied "
-                            "conditionally with mid-circuit measurement predicates."
-                        )
-                    for wrapped_op in q:
-                        Conditional(pred, wrapped_op.obj)
-
-                else:
-                    return jax.core.eval_jaxpr(jaxpr, consts, *args)
+                if len(out) != 0:
+                    raise ConditionalTransformError(
+                        "Only quantum functions without return values can be applied "
+                        "conditionally with mid-circuit measurement predicates."
+                    )
+                for wrapped_op in q:
+                    Conditional(pred, wrapped_op.obj)
+            elif pred:
+                return jax.core.eval_jaxpr(jaxpr, consts, *args)
 
         return ()
 

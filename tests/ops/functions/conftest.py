@@ -23,55 +23,61 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import (
-    Channel,
-    MatrixUndefinedError,
-    Observable,
-    Operation,
-    Operator,
-    Tensor,
-)
+from pennylane.operation import Channel, Observable, Operation, Operator, Tensor
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 
 _INSTANCES_TO_TEST = [
-    qml.sum(qml.PauliX(0), qml.PauliZ(0)),
-    qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)),
-    qml.BasisState([1], wires=[0]),
-    qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
-    qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
-    qml.MultiControlledX(wires=[0, 1]),
-    qml.Projector([1], 0),  # the state-vector version is already tested
-    qml.SpecialUnitary([1, 1, 1], 0),
-    qml.IntegerComparator(1, wires=[0, 1]),
-    qml.PauliRot(1.1, "X", wires=[0]),
-    qml.StatePrep([0, 1], 0),
-    qml.PCPhase(0.27, dim=2, wires=[0, 1]),
-    qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-    qml.adjoint(qml.PauliX(0)),
-    qml.adjoint(qml.RX(1.1, 0)),
-    Tensor(qml.PauliX(0), qml.PauliX(1)),
-    qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]),
-    qml.s_prod(1.1, qml.RX(1.1, 0)),
-    qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)),
-    qml.ctrl(qml.RX(1.1, 0), 1),
-    qml.exp(qml.PauliX(0), 1.1),
-    qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5),
-    qml.ops.Evolution(qml.PauliX(0), 5.2),
-    qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]),
-    qml.resource.FirstQuantization(1, 2, 1),
-    qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)),
-    qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"),
-    qml.Snapshot(tag="tag"),
+    (qml.sum(qml.PauliX(0), qml.PauliZ(0)), {}),
+    (qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)), {}),
+    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True}),
+    (
+        qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
+        {"skip_differentiation": True},
+    ),
+    (
+        qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
+        {"skip_differentiation": True},
+    ),
+    (qml.MultiControlledX(wires=[0, 1]), {}),
+    (qml.Projector([1], 0), {"skip_differentiation": True}),
+    (qml.Projector([1, 0], 0), {"skip_differentiation": True}),
+    (qml.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),
+    (qml.QubitUnitary(np.eye(2), wires=[0]), {"skip_differentiation": True}),
+    (qml.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
+    (qml.IntegerComparator(1, wires=[0, 1]), {"skip_differentiation": True}),
+    (qml.PauliRot(1.1, "X", wires=[0]), {}),
+    (qml.StatePrep([0, 1], 0), {"skip_differentiation": True}),
+    (qml.PCPhase(0.27, dim=2, wires=[0, 1]), {}),
+    (qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]), {"skip_differentiation": True}),
+    (qml.adjoint(qml.PauliX(0)), {}),
+    (qml.adjoint(qml.RX(1.1, 0)), {}),
+    (Tensor(qml.PauliX(0), qml.PauliX(1)), {}),
+    (qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]), {}),
+    (qml.s_prod(1.1, qml.RX(1.1, 0)), {}),
+    (qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)), {}),
+    (qml.ctrl(qml.RX(1.1, 0), 1), {}),
+    (qml.exp(qml.PauliX(0), 1.1), {}),
+    (qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5), {}),
+    (qml.ops.Evolution(qml.PauliX(0), 5.2), {}),
+    (qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
+    (qml.resource.FirstQuantization(1, 2, 1), {}),
+    (qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)), {}),
+    (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
+    (qml.Snapshot(tag="tag"), {}),
+    (qml.Identity(0), {}),
 ]
 """Valid operator instances that could not be auto-generated."""
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning)
     _INSTANCES_TO_TEST.append(
-        qml.operation.convert_to_legacy_H(
-            qml.Hamiltonian([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)])
-        ),
+        (
+            qml.operation.convert_to_legacy_H(
+                qml.Hamiltonian([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)])
+            ),
+            {},
+        )
     )
 
 
@@ -97,12 +103,8 @@ _INSTANCES_TO_FAIL = [
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
     ),
     (
-        qml.Identity(0),
-        MatrixUndefinedError,  # empty decomposition, matrix differs from decomp's matrix
-    ),
-    (
         qml.GlobalPhase(1.1),
-        MatrixUndefinedError,  # empty decomposition, matrix differs from decomp's matrix
+        AssertionError,  # empty decomposition, matrix differs from decomp's matrix
     ),
     (
         qml.pulse.ParametrizedEvolution(qml.PauliX(0) + sum * qml.PauliZ(0)),
@@ -130,6 +132,7 @@ _ABSTRACT_OR_META_TYPES = {
     Operation,
     Observable,
     Channel,
+    qml.ops.Projector,
     qml.ops.SymbolicOp,
     qml.ops.ScalarSymbolicOp,
     qml.ops.Pow,
@@ -164,7 +167,7 @@ def get_all_classes(c):
 _CLASSES_TO_TEST = (
     set(get_all_classes(Operator))
     - {i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
-    - {type(op) for op in _INSTANCES_TO_TEST}
+    - {type(op) for (op, _) in _INSTANCES_TO_TEST}
     - {type(op) for (op, _) in _INSTANCES_TO_FAIL}
 )
 """All operators, except those tested manually, abstract/meta classes, and templates."""
@@ -176,7 +179,7 @@ def class_to_validate(request):
 
 
 @pytest.fixture(params=_INSTANCES_TO_TEST)
-def valid_instance(request):
+def valid_instance_and_kwargs(request):
     yield request.param
 
 

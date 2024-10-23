@@ -262,7 +262,8 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
                 op_cls = self._supported_ops_dict()[op_class_name]
                 if op_cls is Tensor:
-                    ops.append(Tensor(*self._hdf5_to_ops(bind[op_key])))
+                    prod_op = qml.ops.Prod if qml.operation.active_new_opmath() else Tensor
+                    ops.append(prod_op(*self._hdf5_to_ops(bind[op_key])))
                 elif op_cls in (qml.ops.Hamiltonian, qml.ops.LinearCombination):
                     ops.append(
                         qml.Hamiltonian(

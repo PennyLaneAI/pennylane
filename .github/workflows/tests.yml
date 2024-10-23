@@ -11,14 +11,11 @@ on:
       - ready_for_review
   # Scheduled trigger on Monday at 2:47am UTC
   schedule:
-  - cron: '47 2 * * 1'
+    - cron: "47 2 * * 1"
 
 concurrency:
   group: unit-tests-${{ github.ref }}
   cancel-in-progress: true
-
-env:
-  DEPS_BRANCH: bot/stable-deps-update
 
 jobs:
   tests:
@@ -38,74 +35,42 @@ jobs:
           && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
           || false
          }}
-      pytest_store_durations: true
 
   upload-stable-deps:
     needs: tests
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: master
+    uses: ./.github/workflows/check_in_artifact.yml
+    if: github.event_name == 'push'
+    with:
+      artifact_name_pattern: "frozen-*"
+      artifact_save_path: ".github/stable/"
+      pull_request_head_branch_name: bot/stable-deps-update
+      commit_message_description: Frozen Dependencies Update
+      pull_request_title: Update stable dependency files
+      pull_request_body: |
+        Automatic update of stable requirement files to snapshot valid python environments.
 
-      - name: Prepare local repo
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "<>"
-          if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
-            git checkout "${{ env.DEPS_BRANCH }}"
-          else
-            git checkout -b "${{ env.DEPS_BRANCH }}"
-          fi
+        Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: frozen-*
-          path: .github/stable/
-          merge-multiple: true
+        ```
+        git commit --allow-empty -m 'trigger ci'
+        ```
 
-      - name: Determine if changes have been made
-        id: changed
-        run: |
-          echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
+  # TODO: This will be added separately in a future PR
+  # upload-durations-files:
+  #   needs: tests
+  #   uses: ./.github/workflows/check_in_artifact.yml
+  #   if: github.event_name == 'push'
+  #   with:
+  #     artifact_name_pattern: '*-durations.json'
+  #     artifact_save_path: '.github/durations/'
+  #     pull_request_head_branch_name: bot/durations-update
+  #     commit_message_description: Durations Update
+  #     pull_request_title: Update durations files
+  #     pull_request_body: |
+  #       Automatic update of durations files to snapshot valid python environments.
 
-      - name: Stage changes
-        if: steps.changed.outputs.has_changes != '0'
-        run: |
-          git add .github/stable/
-          git commit -m "Update changed dependencies"
-          git push -f --set-upstream origin "${{ env.DEPS_BRANCH }}"
+  #       Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
 
-      # Create PR to master
-      - name: Create pull request
-        if: steps.changed.outputs.has_changes != '0'
-        uses: repo-sync/pull-request@v2
-        with:
-          source_branch: "${{ env.DEPS_BRANCH }}"
-          destination_branch: "master"
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
-          pr_title: "Update stable dependency files"
-          # if updating the pr_body, please also update the same text in the docs.yml file
-          pr_body: |
-            Automatic update of stable requirement files to snapshot valid python environments.
-
-            Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
-
-            ```
-            git commit --allow-empty -m 'trigger ci'
-            ```
-
-            Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
-            
-            Note that it is expected that the PennyLane-Lightning repo is a version ahead of the release, because the 
-            version number is taken from the dev branch. Trying to `pip install` from the files will fail until that 
-            major version of Lightning is released.
-            
-            If pip install fails with a not found error when installing because of this, it can be fixed by manually 
-            downgrading the PennyLane-Lightning version number in the file by 1 version and trying again.
-          pr_allow_empty: false
-          pr_draft: false
+  #       ```
+  #       git commit --allow-empty -m 'trigger ci'
+  #       ```

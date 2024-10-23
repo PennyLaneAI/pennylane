@@ -19,6 +19,7 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
+from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.typing import PostprocessingFn
 
 
@@ -280,7 +281,7 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-@partial(transform, is_informative=True)
+@partial(transform, classical_cotransform=_contract_metric_tensor_with_cjac, is_informative=True)
 def quantum_fisher(
     tape: qml.tape.QuantumScript, device, *args, **kwargs
 ) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:

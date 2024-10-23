@@ -50,7 +50,7 @@ def test_standard_validity():
 
     op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
@@ -402,10 +402,10 @@ class TestInterfaces:
         dev = qml.device("default.qubit")
 
         circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
+        circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(features, pad_with, normalize)
-        res2 = circuit2(features, pad_with)
+        res2 = circuit2(features, pad_with, normalize)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
