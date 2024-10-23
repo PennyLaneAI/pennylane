@@ -31,10 +31,11 @@ Utility functions
 .. autosummary::
     :toctree: api
 
+    ~pauli_coefficients
     ~pauli_decompose
 
 
 """
 
 from .lie_closure_dense import lie_closure_dense
-from .dense_util import pauli_decompose
+from .dense_util import pauli_coefficients, pauli_decompose
