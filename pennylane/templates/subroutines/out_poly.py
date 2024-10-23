@@ -85,8 +85,7 @@ def _get_polynomial(f, mod, *variable_sizes):
 
 
 def _mobius_inversion_of_zeta_transform(f_values, mod):
-    """Applies the Möbius inversion to a zeta transform.
-
+    """Applies the `Möbius inversion <https://codeforces.com/blog/entry/72488>`_ to a zeta transform.
     The input `f_values` is a list of integers representing a zeta transform
     over subsets of a bitmask. This function performs the Möbius inversion
     of the zeta transform by subtracting terms to recover the original
