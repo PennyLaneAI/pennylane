@@ -27,10 +27,9 @@ from pennylane.transforms.dynamic_one_shot import fill_in_value
 pytestmark = pytest.mark.slow
 
 
-def get_device(**kwargs):
-    kwargs.setdefault("shots", None)
-    kwargs.setdefault("seed", 8237945)
-    return qml.device("default.qubit", **kwargs)
+# def get_device(**kwargs):
+#     kwargs.setdefault("shots", None)
+#     return qml.device("default.qubit", **kwargs)
 
 
 def test_combine_measurements_core():
@@ -57,8 +56,9 @@ def test_measurement_with_no_shots():
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 def test_all_invalid_shots_circuit(obs, mcm_method):
     """Test that circuits in which all shots mismatch with post-selection conditions return the same answer as ``defer_measurements``."""
-    dev = get_device()
-    dev_shots = get_device(shots=10)
+
+    dev = qml.device("default.qubit")
+    dev_shots = qml.device("default.qubit", shots=10)
 
     def circuit_op():
         m = qml.measure(0, postselect=1)
@@ -85,7 +85,8 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 def test_unsupported_measurement(mcm_method):
     """Test that circuits with unsupported measurements raise the correct error."""
-    dev = get_device(shots=1000)
+
+    dev = qml.device("default.qubit", shots=1000)
     params = np.pi / 4 * np.ones(2)
 
     @qml.qnode(dev, mcm_method=mcm_method)
@@ -132,7 +133,7 @@ def obs_tape(x, y, z, reset=False, postselect=None):
 )
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, reset):
+def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, reset, seed):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
     and a conditional gate. Multiple measurements of the mid-circuit measurement value are
     performed. This function also tests `reset` parametrizing over the parameter."""
@@ -150,7 +151,7 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
     if batch_size is not None and shots is not None and postselect is not None:
         pytest.skip("Postselection with samples doesn't work with broadcasting")
 
-    dev = get_device(shots=shots)
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
     obs = qml.PauliY(1)
     state = qml.math.zeros((4,))
     state[0] = 1.0
@@ -212,7 +213,7 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
     ],
 )
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
-def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f):
+def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a composite mid-circuit measurement is performed
     at the end."""
@@ -233,7 +234,7 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f):
             "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected using arithmetic operators."
         )
 
-    dev = get_device(shots=shots)
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
     param = qml.numpy.array([np.pi / 3, np.pi / 6])
 
     def func(x, y):
@@ -260,12 +261,12 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f):
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
 @pytest.mark.parametrize("measure_f", [qml.expval])
-def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
+def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f, seed):
     """Tests that DefaultQubit can differentiate a circuit with a composite mid-circuit
     measurement and a conditional gate. A single measurement of a common observable is
     performed at the end."""
 
-    dev = get_device(shots=shots)
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
     param = qml.numpy.array([np.pi / 3, np.pi / 6])
     obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
@@ -294,7 +295,7 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
-def test_sample_with_broadcasting_and_postselection_error(mcm_method):
+def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
     """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
     tape = qml.tape.QuantumScript(
         [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1)], [qml.sample(wires=0)], shots=10
@@ -302,7 +303,7 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method):
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         qml.transforms.dynamic_one_shot(tape)
 
-    dev = get_device(shots=10)
+    dev = qml.device("default.qubit", shots=10, seed=seed)
 
     @qml.qnode(dev, mcm_method=mcm_method)
     def circuit(x):
@@ -317,11 +318,11 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method):
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["torch", "tensorflow", "jax", "autograd"])
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
-def test_finite_diff_in_transform_program(interface, mcm_method):
+def test_finite_diff_in_transform_program(interface, mcm_method, seed):
     """Test that finite diff is in the transform program of a qnode containing
     mid-circuit measurements"""
 
-    dev = get_device(shots=10)
+    dev = qml.device("default.qubit", shots=10, seed=seed)
 
     @qml.qnode(dev, mcm_method=mcm_method, diff_method="finite-diff")
     def circuit(x):
@@ -348,13 +349,13 @@ class TestJaxIntegration:
     @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
     @pytest.mark.parametrize("shots", [100, [100, 101], [100, 100, 101]])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
-    def test_sample_with_prng_key(self, mcm_method, shots, postselect):
+    def test_sample_with_prng_key(self, mcm_method, shots, postselect, seed):
         """Test that setting a PRNGKey gives the expected behaviour. With separate calls
         to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
         # pylint: disable=import-outside-toplevel
         from jax.random import PRNGKey
 
-        dev = get_device(shots=shots, seed=PRNGKey(678))
+        dev = qml.device("default.qubit", shots=shots, seed=PRNGKey(seed))
         params = [np.pi / 4, np.pi / 3]
         obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
@@ -389,14 +390,14 @@ class TestJaxIntegration:
     @pytest.mark.parametrize("diff_method", [None, "best"])
     @pytest.mark.parametrize("postselect", [None, 1])
     @pytest.mark.parametrize("reset", [False, True])
-    def test_jax_jit(self, diff_method, postselect, reset):
+    def test_jax_jit(self, diff_method, postselect, reset, seed):
         """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
         conditional gate. A single measurement of a common observable is performed at the end."""
         import jax
 
         shots = 10
 
-        dev = get_device(shots=shots, seed=jax.random.PRNGKey(678))
+        dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(seed))
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
         obs = qml.PauliY(0)
 
