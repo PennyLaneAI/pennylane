@@ -203,12 +203,12 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-14, verbose=0, return_adj
     iteration = 1
     while True:
         if verbose:
-            print(f"iteration: {iteration}")
+            print(f"iteration {iteration}: Found {len(np_h)} independent Abelian operators.")
         kernel_intersection = np_m.T
         for h_i in np_h:
 
             # obtain adjoint rep of candidate h_i
-            adjoint_of_h_i = np.einsum("gab,a->gb", ad, h_i)
+            adjoint_of_h_i = np.tensordot(ad, h_i, axes=[[1], [0]])
             # compute kernel of adjoint
             new_kernel = null_space(adjoint_of_h_i, rcond=tol)
 
@@ -235,12 +235,15 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-14, verbose=0, return_adj
     np_mtilde = _orthogonal_complement_basis(np_h, np_m, tol=tol)  # the "rest" of m without h
     np_newg = np.vstack([np_k, np_mtilde, np_h])
 
-    # Instead of recomputing the adjoint representation, take the basis transformation oldg -> newg and transform the adjoint representation accordingly
-    # implementation to be tested:
-    basis_change = np.linalg.lstsq(np.vstack([np_k, np_m]).T, np_newg.T, rcond=None)[
-        0
-    ]  # basis change old g @ X = new g => adj_new = contract(adj, X, X, X)
-    new_adj = np.einsum("kmn,ki,mj,nl->ijl", ad, basis_change, basis_change, basis_change)
+    # Instead of recomputing the adjoint representation, take the basis transformation
+    # oldg -> newg and transform the adjoint representation accordingly
+    # TODO: implementation to be tested:
+    # basis change old g @ X = new g => adj_new = contact(adj, X, X, X)
+    basis_change = np.linalg.lstsq(np.vstack([np_k, np_m]).T, np_newg.T, rcond=None)[0]
+    # Perform the einsum contraction "kmn,ki,mj,nl->ijl" via three tensordot steps
+    new_adj = np.tensordot(ad, basis_change, axes=[[0], [0]])  # "kmn,ki->mni"
+    new_adj = np.tensordot(ad, basis_change, axes=[[0], [0]])  # "mni,mj->nij"
+    new_adj = np.tensordot(ad, basis_change, axes=[[0], [0]])  # "nij,nl->ijl"
 
     if return_adjvec:
         return np_newg, np_k, np_mtilde, np_h, new_adj
@@ -275,7 +278,7 @@ def adjvec_to_op(adj_vecs, basis):
         return res
 
     if all(isinstance(op, np.ndarray) for op in basis):
-        res = np.einsum("id,dmn->imn", adj_vecs, basis)  # i, dimg | dimg m n
+        res = np.tensordot(adj_vecs, basis, axes=1)
         return res
 
     return NotImplementedError
@@ -317,9 +320,7 @@ def op_to_adjvec(ops, basis):
         basis = np.array(basis)
         # if len(ops.shape) == 2:
         #     ops = np.array([ops])
-        ops = np.array(ops)
-
-        res = np.einsum("bij,cji->bc", ops, basis)
+        res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
 
         return res
 
