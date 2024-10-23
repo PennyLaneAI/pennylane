@@ -22,6 +22,14 @@
 
 <h4>Readout Noise 📠</h4>
 
+* Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class and
+  ``add_noise`` transform.
+  [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
+
+* One can now specify conditions for adding noisy operations to measurement processes via
+  ``qml.noise.meas_eq(mps)``.
+  [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
+
 <h4>User-friendly decompositions 📠</h4>
 
 * `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
@@ -180,6 +188,9 @@
 
 * A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
   [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
+
+* ``qml.noise.partial_wires`` now has better support for templates and measurements based on their ``map_wires`` methods.
+  [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321)
 
 <h3>Breaking changes 💔</h3>
 
