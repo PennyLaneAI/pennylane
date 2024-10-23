@@ -548,3 +548,74 @@ def _(bose_operator: BoseSentence):
 
     return bose_sen_ordered
 
+def bosonic_hamiltonian(pes_data):
+    """
+    Implementation pending
+    """
+    pass
+
+
+def position_to_boson(index):
+    """
+    Given an index of a product of position operators,
+    expand them using HO ladder operators and simplify.
+    """
+
+    # creation operator
+    factors_c = tuple([(int(entry), 1) for entry in index])
+    # annihilation operator
+    factors_a = tuple([(int(entry), 0) for entry in index])
+
+    # This section should be re-written using BoseSentences.
+    expr = of.BosonOperator.identity()
+    for ii in range(len(index)):
+        expr *= (
+            of.BosonOperator(factors_c[ii], 1.0) + of.BosonOperator(factors_a[ii], 1.0)
+        ) / np.sqrt(2)
+
+    return of.normal_ordered(expr)
+
+
+def taylor_to_bosonic(coeffs):
+    """
+    Convert taylor coefficients to bosonic hamiltonian.
+    """
+    num_coups = len(coeffs)
+
+    nmodes, deg = np.shape(coeffs[0])
+    deg += 2
+
+    degs_2d = _twobody_degs(deg)  # Missing for now
+    degs_3d = _threebody_degs(deg)
+
+    b_op = of.BosonOperator.zero()  # Should use BoseSentence.
+    for nc in range(num_coups):
+        f_eff = coeffs[nc]
+
+        # The following can be refactored.
+        if nc == 0:
+            for ii in range(nmodes):
+                for i_deg, f_val in enumerate(f_eff[ii, :]):
+                    idx = (i_deg + 3) * [ii]
+                    b_op += f_val * position_to_boson(idx)
+
+        if nc == 1:
+            for i1 in range(nmodes):
+                for i2 in range(i1):
+                    for deg_idx, Qs in enumerate(degs_2d):
+                        idx = Qs[0] * [i1] + Qs[1] * [i2]
+                        b_op += f_eff[i1, i2, deg_idx] * position_to_boson(idx)
+
+        if nc == 2:
+            for i1 in range(nmodes):
+                for i2 in range(i1):
+                    for i3 in range(i2):
+                        for deg_idx, Qs in enumerate(degs_3d):
+                            idx = Qs[0] * [i1] + Qs[1] * [i2] + Qs[2] * [i3]
+                            b_op += f_eff[i1, i2, i3, deg_idx] * position_to_boson(idx)
+
+        if nc > 2:
+            print("Warning, entered array for more than 3-mode couplings, not implemented!")
+            print("Returning up to three-mode couplings")
+
+    return of.normal_ordered(b_op)  # Should use BoseSentence equivalent
