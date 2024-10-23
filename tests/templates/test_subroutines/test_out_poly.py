@@ -149,6 +149,27 @@ class TestOutPoly:
                     work_wires=work_wires,
                 )
 
+    def test_non_integer_coeffs(self):
+        """Test that an error is raised if the coefficient of the polynomial are not integer"""
+        reg = qml.registers({"x_wires": 3, "y_wires": 3, "output_wires": 4})
+
+        def f(x, y):
+            return 2.5 * x + 2 * y
+
+        @qml.qnode(qml.device("default.qubit", shots=1))
+        def circuit():
+
+            qml.OutPoly(
+                f,
+                input_registers=(reg["x_wires"], reg["y_wires"]),
+                output_wires=reg["output_wires"],
+            )
+
+            return qml.sample(wires=reg["output_wires"])
+
+        with pytest.raises(ValueError, match="The polynomial function must"):
+            circuit()
+
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
 

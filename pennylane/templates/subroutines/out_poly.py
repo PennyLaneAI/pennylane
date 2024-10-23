@@ -146,6 +146,7 @@ class OutPoly(Operation):
     Raises:
         ValueError: If `mod` is not a power of 2 and no or insufficient work wires are provided.
         ValueError: If the wires used in the input and output registers overlap.
+        ValueError: If the function is not defined with integer coefficients.
 
     Example:
         Given a polynomial function :math:`f(x, y) = x^2 + y`,
@@ -368,6 +369,9 @@ class OutPoly(Operation):
 
         # Extract the coefficients and control wires from the binary polynomial
         coeffs_list = _get_polynomial(polynomial_function, mod, *wires_vars)
+        assert all(
+            x.is_integer() for x in coeffs_list.values()
+        ), "The polynomial function must have integer coefficients"
 
         all_wires_input = sum([*registers_wires[:-1]], start=[])
 
