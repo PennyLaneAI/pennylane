@@ -339,8 +339,15 @@ def load(  # pylint: disable=too-many-arguments
         params = []
 
     params = provide_defaults(data_name, params)
+    params = [param for param in params if ("values", ParamArg.FULL) not in list(param.items())]
 
     dataset_ids_and_urls = _get_dataset_urls(data_name, params)
+    if dataset_ids_and_urls == []:
+        raise ValueError(
+            "No datasets exist for the provided configuration.\n"
+            "Please check the available datasets by using the ``qml.data.list_datasets()`` function."
+        )
+
     dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]
     dataset_ids = [dataset_id for dataset_id, _ in dataset_ids_and_urls]
 

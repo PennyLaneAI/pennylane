@@ -176,6 +176,11 @@ def graphql_mock_qchem(url, query, variables=None):
     return json_data
 
 
+def get_dataset_urls_mock(class_id, parameters):
+    """Returns an empty response for the ``_get_dataset_urls`` function."""
+    return []
+
+
 def head_mock(url):
     """Return a fake header stating content-length is 1."""
     return NamedTuple("Head", headers=dict)(headers={"Content-Length": 10000})
@@ -431,6 +436,15 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
     assert {Path(dset.bind.filename) for dset in dsets} == {
         Path(tmp_path, path) for path in expect_paths
     }
+
+
+@patch.object(pennylane.data.data_manager, "_get_dataset_urls", get_dataset_urls_mock)
+def test_load_bad_config():
+    msg = re.escape(
+        """No datasets exist for the provided configuration.\nPlease check the available datasets by using the ``qml.data.list_datasets()`` function."""
+    )
+    with pytest.raises(ValueError, match=msg):
+        pennylane.data.data_manager.load(data_name="qchem", molname="bad_name")
 
 
 @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)

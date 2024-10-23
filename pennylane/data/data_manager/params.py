@@ -129,6 +129,7 @@ def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, list[Pa
 def format_params(**params: Any) -> list[dict[str:ParamName, str : Union[ParamArg, ParamVal]]]:
     """Converts params to a list of dictionaries whose values are parameter names and
     single ``ParamaterArg`` objects or lists of parameter values."""
+
     input_params = {
         param_name: format_param_args(param_name, param) for param_name, param in params.items()
     }
