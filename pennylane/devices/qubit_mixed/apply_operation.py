@@ -220,7 +220,7 @@ def apply_operation_einsum(
     einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
     res = math.einsum(einsum_indices, kraus, state, kraus_dagger)
     # Cast back to the same as state
-    return math.cast_like(res, state)
+    return res
 
 
 def apply_operation_tensordot(
@@ -258,7 +258,7 @@ def apply_operation_tensordot(
             # Add broadcasting dimension to shape
             kraus_shape = [batch_size] + kraus_shape
         kraus = [mat]
-    kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in kraus]
+    kraus = [math.reshape(k, kraus_shape) for k in kraus]
     # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
     row_wires_list = [w + is_state_batched for w in channel_wires.tolist()]
     col_wires_list = [w + num_wires for w in row_wires_list]
@@ -292,7 +292,7 @@ def apply_operation_tensordot(
 
         result = math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
-        return math.cast_like(result, state)
+        return result
 
     if is_op_channel or not is_mat_batched:  # First deal with the channel case
         return _tensordot_single_kraus(kraus)
