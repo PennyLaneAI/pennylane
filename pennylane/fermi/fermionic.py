@@ -14,10 +14,9 @@
 """The fermionic representation classes and functions."""
 import re
 from copy import copy
-from numbers import Number
-from pennylane.typing import TensorLike
 
 import pennylane as qml
+from pennylane.typing import TensorLike
 
 
 class FermiWord(dict):
@@ -471,7 +470,7 @@ class FermiSentence(dict):
         r"""Add a FermiSentence, FermiWord or constant to a FermiSentence by iterating over the
         smaller one and adding its terms to the larger one."""
 
-        if not isinstance(other, (Number, FermiWord, FermiSentence)) and not hasattr(other, "size"):
+        if not isinstance(other, (TensorLike, FermiWord, FermiSentence)):
             raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -481,7 +480,7 @@ class FermiSentence(dict):
 
         if isinstance(other, FermiWord):
             other = FermiSentence({other: 1})
-        if isinstance(other, Number) or hasattr(other, "size"):
+        if isinstance(other, TensorLike):
             other = FermiSentence({FermiWord({}): other})
 
         smaller_fs, larger_fs = (
@@ -500,10 +499,6 @@ class FermiSentence(dict):
         r"""Subtract a FermiSentence, FermiWord or constant from a FermiSentence"""
         if isinstance(other, FermiWord):
             other = FermiSentence({other: -1})
-            return self.__add__(other)
-
-        if isinstance(other, Number):
-            other = FermiSentence({FermiWord({}): -1 * other})  # -constant * I
             return self.__add__(other)
 
         if isinstance(other, FermiSentence):
