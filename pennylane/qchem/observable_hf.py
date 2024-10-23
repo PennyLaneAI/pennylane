@@ -52,35 +52,37 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     + 0.5 * a⁺(3) a(3)
     """
     coeffs = qml.math.array([])
-
-    if not qml.math.allclose(constant, 0.0):
-        coeffs = qml.math.concatenate((coeffs, constant))
-        operators = [[]]
-    else:
-        operators = []
+    operators = [[]]
+    # if not qml.math.allclose(constant, 0.0):
+    #     coeffs = qml.math.concatenate((coeffs, constant))
+    #     operators = [[]]
+    # else:
+    #     operators = []
 
     if one is not None:
-        indices_one = qml.math.argwhere(abs(one) >= cutoff)
-        # up-up + down-down terms
-        operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
-        coeffs_one = qml.math.tile(one[abs(one) >= cutoff], 2)
-        coeffs = qml.math.convert_like(coeffs, one)
-        coeffs = qml.math.concatenate((coeffs, coeffs_one))
-        operators = operators + operators_one
+        pass
+        # indices_one = qml.math.argwhere(abs(one) >= cutoff)
+        # # up-up + down-down terms
+        # operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
+        # coeffs_one = qml.math.tile(one[abs(one) >= cutoff], 2)
+        # coeffs = qml.math.convert_like(coeffs, one)
+        # coeffs = qml.math.concatenate((coeffs, coeffs_one))
+        # operators = operators + operators_one
 
     if two is not None:
-        indices_two = np.array(qml.math.argwhere(abs(two) >= cutoff))
-        n = len(indices_two)
-        operators_two = (
-            [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up
-            + [(indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)]  # up-down-down-up
-            + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]  # down-up-up-down
-            + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down
-        )
-        coeffs_two = qml.math.tile(two[abs(two) >= cutoff], 4) / 2
+        pass
+        # indices_two = np.array(qml.math.argwhere(abs(two) >= cutoff))
+        # n = len(indices_two)
+        # operators_two = (
+        #     [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up
+        #     + [(indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)]  # up-down-down-up
+        #     + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]  # down-up-up-down
+        #     + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down
+        # )
+        # coeffs_two = qml.math.tile(two[abs(two) >= cutoff], 4) / 2
 
-        coeffs = qml.math.concatenate((coeffs, coeffs_two))
-        operators = operators + operators_two
+        # coeffs = qml.math.concatenate((coeffs, coeffs_two))
+        # operators = operators + operators_two
 
     sentence = FermiSentence({FermiWord({}): constant[0]})
     for c, o in sorted(zip(coeffs, operators), key=lambda item: item[1]):
@@ -91,7 +93,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
             sentence.update(
                 {FermiWord({(0, o[0]): "+", (1, o[1]): "+", (2, o[2]): "-", (3, o[3]): "-"}): c}
             )
-    sentence.simplify()
+    #sentence.simplify()
 
     return sentence
 
