@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
+  [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
+
 <h4>Spin Hamiltonians 💞</h4>
  
 * Function is added for generating the spin Hamiltonian for the
