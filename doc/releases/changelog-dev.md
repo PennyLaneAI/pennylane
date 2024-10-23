@@ -7,6 +7,9 @@
 * Added functions `get_best_diff_method` and `get_gradient_fn` to `qml.workflow`.
   [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
 
+* Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
+  [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
+
 <h4>Spin Hamiltonians 💞</h4>
  
 * Function is added for generating the spin Hamiltonian for the
@@ -24,6 +27,11 @@
 <h4>Calculating Polynomials 🔢</h4>
 
 <h4>Readout Noise 📠</h4>
+
+* Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class
+  and ``add_noise`` transform. One can specify conditions on measurement processes for this purpose via
+  ``qml.noise.meas_eq(mps)``.
+  [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
 
 <h4>User-friendly decompositions 📠</h4>
 
@@ -233,7 +241,7 @@
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
 
 * The `LightningVJPs` class is removed as all lightning devices now follow the new device interface.
-  [(#6420)])(https://github.com/PennyLaneAI/pennylane/pull/6420)
+  [(#6420)](https://github.com/PennyLaneAI/pennylane/pull/6420)
 
 <h3>Deprecations 👋</h3>
 
@@ -314,6 +322,12 @@
   [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
 
 <h3>Bug fixes 🐛</h3>
+
+* Patches the `math` module to function with autoray 0.7.0.
+  [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
+
+* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`. 
+  [(#6423)](https://github.com/PennyLaneAI/pennylane/pull/6423)
 
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
   [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
