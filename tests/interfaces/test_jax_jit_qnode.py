@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
-import copy
 
 # pylint: disable=too-many-arguments,too-few-public-methods,protected-access
 from functools import partial
@@ -21,7 +20,7 @@ import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
-from pennylane import numpy as np, device
+from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
@@ -29,10 +28,9 @@ from pennylane.devices import DefaultQubit
 def get_device(device_name, wires, seed):
     if device_name == "param_shift.qubit":
         return ParamShiftDerivativesDevice(seed=seed)
-    elif device_name == "lightning.qubit":
+    if device_name == "lightning.qubit":
         return qml.device("lightning.qubit", wires=wires)
-    else:
-        return qml.device("default.qubit", seed=seed)
+    return qml.device("default.qubit", seed=seed)
 
 
 # device_name, diff_method, grad_on_execution, device_vjp
