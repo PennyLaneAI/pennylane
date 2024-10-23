@@ -106,12 +106,6 @@ def qutrit_device_3_wires(request):
 #######################################################################
 
 
-@pytest.fixture(scope="module", params=[1, 2, 3])
-def seed(request):
-    """Different seeds."""
-    return request.param
-
-
 @pytest.fixture(scope="function")
 def mock_device(monkeypatch):
     """A mock instance of the abstract Device class"""

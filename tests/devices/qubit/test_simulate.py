@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 import scipy as sp
 from dummy_debugger import Debugger
-from flaky import flaky
 from stat_utils import fisher_exact_test
 
 import pennylane as qml
@@ -304,7 +303,7 @@ class TestBroadcasting:
         assert np.allclose(res[0], np.cos(x))
         assert np.allclose(res[1], -np.cos(x))
 
-    def test_broadcasted_prep_sample(self):
+    def test_broadcasted_prep_sample(self, seed):
         """Test that simulate works for sample measurements
         when the state prep has broadcasted parameters"""
         x = np.array(1.2)
@@ -313,8 +312,8 @@ class TestBroadcasting:
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
         prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
-        qs = qml.tape.QuantumScript(prep + ops, measurements, shots=qml.measurements.Shots(10000))
-        res = simulate(qs, rng=123)
+        qs = qml.tape.QuantumScript(prep + ops, measurements, shots=qml.measurements.Shots(5000))
+        res = simulate(qs, rng=seed)
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -326,7 +325,7 @@ class TestBroadcasting:
         )
 
         state, is_state_batched = get_final_state(qs)
-        res = measure_final_state(qs, state, is_state_batched, rng=123)
+        res = measure_final_state(qs, state, is_state_batched, rng=seed)
         expected_state = np.array(
             [
                 [np.cos(x / 2), 0, 0, np.sin(x / 2)],
@@ -347,7 +346,7 @@ class TestBroadcasting:
             res[1], np.array([np.cos(x), -np.cos(x), -np.cos(x), np.cos(x)]), atol=0.05
         )
 
-    def test_broadcasted_op_sample(self):
+    def test_broadcasted_op_sample(self, seed):
         """Test that simulate works for sample measurements
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
@@ -355,8 +354,8 @@ class TestBroadcasting:
         ops = [qml.PauliX(wires=1), qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
 
-        qs = qml.tape.QuantumScript(ops, measurements, shots=qml.measurements.Shots(10000))
-        res = simulate(qs, rng=123)
+        qs = qml.tape.QuantumScript(ops, measurements, shots=qml.measurements.Shots(5000))
+        res = simulate(qs, rng=seed)
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -364,7 +363,7 @@ class TestBroadcasting:
         assert np.allclose(res[1], -np.cos(x), atol=0.05)
 
         state, is_state_batched = get_final_state(qs)
-        res = measure_final_state(qs, state, is_state_batched, rng=123)
+        res = measure_final_state(qs, state, is_state_batched, rng=seed)
 
         expected_state = np.zeros((4, 2, 2))
         expected_state[:, 0, 1] = np.cos(x / 2)
@@ -1295,7 +1294,7 @@ class TestMidMeasurements:
     @pytest.mark.parametrize(
         "meas_obj", [qml.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"]
     )
-    def test_simple_dynamic_circuit(self, shots, measure_f, postselect, reset, meas_obj):
+    def test_simple_dynamic_circuit(self, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
             * qml.counts with obs (comp basis or not), single wire, multiple wires (ordered/unordered), MCM, f(MCM), MCM list
@@ -1361,7 +1360,7 @@ class TestMidMeasurements:
             shots=shots,
         )
 
-        rng = np.random.default_rng(1234)
+        rng = np.random.default_rng(seed)
         results0 = simulate(qscript, mcm_method="tree-traversal", rng=rng)
 
         deferred_tapes, deferred_func = qml.defer_measurements(qscript)
@@ -1378,10 +1377,9 @@ class TestMidMeasurements:
             mcm_utils.validate_measurements(measure_f, shots, results2, results0)
 
     @pytest.mark.parametrize("shots", [None, 5500, [5500, 5500]])
-    @pytest.mark.parametrize("rng", [None, 42, np.array([37])])
     @pytest.mark.parametrize("angles", [(0.123, 0.015), (0.543, 0.057)])
     @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample])
-    def test_approx_dynamic_mid_meas_circuit(self, shots, rng, angles, measure_f):
+    def test_approx_dynamic_mid_meas_circuit(self, shots, angles, measure_f, seed):
         """Test execution of a dynamic circuit with an equivalent static one."""
 
         if measure_f in (qml.sample,) and shots is None:
@@ -1422,8 +1420,8 @@ class TestMidMeasurements:
             [measure_f(wires=[0, 1, 2, 3])],
             shots=shots,
         )  # approximate compiled circuit of the above
-        res1 = simulate_tree_mcm(qs_with_mid_meas, rng=rng)
-        res2 = simulate(qs_without_mid_meas, rng=rng)
+        res1 = simulate_tree_mcm(qs_with_mid_meas, rng=seed)
+        res2 = simulate(qs_without_mid_meas, rng=seed)
 
         if not isinstance(shots, list):
             res1, res2 = (res1,), (res2,)
@@ -1447,7 +1445,7 @@ class TestMidMeasurements:
     @pytest.mark.parametrize(
         "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
     )
-    def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode):
+    def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
         """Test that tree traversal works numerically with different interfaces"""
         # pylint:disable = singleton-comparison, import-outside-toplevel
 
@@ -1461,7 +1459,7 @@ class TestMidMeasurements:
             shots=5500,
         )
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         res1, res2 = simulate_tree_mcm(qscript, interface=ml_framework, rng=rng)
 
         p1 = [qml.math.mean(res1 == -1), qml.math.mean(res1 == 1)]
@@ -1561,12 +1559,11 @@ class TestMidMeasurements:
         else:
             assert qml.math.allclose(combined_measurement, expected)
 
-    @flaky(max_runs=3, min_passes=1)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
         "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
     )
-    def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode):
+    def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode, seed):
         """Unit tests for simulate_one_shot_native_mcm"""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -1576,8 +1573,8 @@ class TestMidMeasurements:
 
         circuit = qml.tape.QuantumScript(q.queue, [qml.expval(qml.Z(0)), qml.sample(m)], shots=[1])
 
-        rng = np.random.default_rng(1234)
-        n_shots = 500
+        rng = np.random.default_rng(seed)
+        n_shots = 1000
         results = [
             simulate_one_shot_native_mcm(
                 circuit,
