@@ -18,23 +18,30 @@
 from functools import wraps
 
 import pennylane as qml
-from pennylane.workflow.qnode import _make_execution_config
+from pennylane.workflow.qnode import QNode, _make_execution_config
 
 
-def get_best_diff_method(qnode):
+def get_best_diff_method(qnode: QNode):
     """Returns a function that computes the 'best' differentiation method
     for a particular QNode.
 
-    This method attempts to determine support for differentiation
-    methods using the following order:
+    This method prioritizes differentiation methods in the following order (SPSA-based and Hadamard-based gradients
+    are not included here):
 
     * ``"device"``
     * ``"backprop"``
     * ``"parameter-shift"``
 
-    The first differentiation method that is supported (going from
-    top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradients
-    are not included here.
+    .. note::
+
+        The first differentiation method that is supported (from top to bottom)
+        will be returned. The order is designed to maximize efficiency, generality,
+        and stability.
+
+    .. seealso::
+
+        For a detailed comparison of the backpropagation and parameter-shift methods,
+        refer to the :doc:`quantum gradients with backpropagation example <demo:demos/tutorial_backprop>`.
 
     Args:
         qnode (.QNode): the qnode to get the 'best' differentiation method for.
