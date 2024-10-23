@@ -27,9 +27,7 @@ from pennylane.transforms.dynamic_one_shot import fill_in_value
 pytestmark = pytest.mark.slow
 
 
-# def get_device(**kwargs):
-#     kwargs.setdefault("shots", None)
-#     return qml.device("default.qubit", **kwargs)
+# pylint: disable=too-many-arguments
 
 
 def test_combine_measurements_core():
