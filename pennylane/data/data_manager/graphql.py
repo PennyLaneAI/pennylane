@@ -14,7 +14,7 @@ class GraphQLError(BaseException):
     """Exception for GraphQL"""
 
 
-def _get_graphql(url: str, query: str, variables: Optional[dict[str, Any]] = None):
+def get_graphql(url: str, query: str, variables: Optional[dict[str, Any]] = None):
     """
     Args:
         url: The URL to send a query to.
@@ -40,7 +40,7 @@ def _get_graphql(url: str, query: str, variables: Optional[dict[str, Any]] = Non
     return response.json()
 
 
-def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[tuple[str, str]]:
+def get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[tuple[str, str]]:
     """
     Args:
         class_id: Dataset class id e.g 'qchem', 'qspin'
@@ -50,11 +50,11 @@ def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[t
         list of tuples (dataset_id, dataset_url)
 
     Example usage:
-    >>> _get_dataset_urls("qchem", {"molname": ["H2"], "basis": ["STO-3G"], "bondlength": ["0.5"]})
+    >>> get_dataset_urls("qchem", {"molname": ["H2"], "basis": ["STO-3G"], "bondlength": ["0.5"]})
     [("H2_STO-3G_0.5", "https://cloud.pennylane.ai/datasets/h5/qchem/h2/sto-3g/0.5.h5")]
     """
 
-    response = _get_graphql(
+    response = get_graphql(
         GRAPHQL_URL,
         """
         query GetDatasetsForDownload($datasetClassId: String!, $parameters: [DatasetParameterInput!]) {
@@ -76,7 +76,7 @@ def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[t
 
 def list_data_names() -> list[str]:
     """Get list of dataclass IDs."""
-    response = _get_graphql(
+    response = get_graphql(
         GRAPHQL_URL,
         """
         query GetDatasetClasses {
@@ -111,11 +111,11 @@ def list_attributes(data_name) -> list[str]:
      'vqe_energy']
     """
 
-    response = _get_graphql(
+    response = get_graphql(
         GRAPHQL_URL,
         """
         query ListAttributes($datasetClassId: String!) {
-          datasetClass($datasetClassId: String!) {
+          datasetClass(id: $datasetClassId) {
             attributes {
                 name
             }
@@ -131,7 +131,7 @@ def list_attributes(data_name) -> list[str]:
 def _get_parameter_tree(class_id) -> tuple[list[str], list[str], dict]:
     """Returns the (parameters, attributes, parameter_tree) for a given ``class_id``."""
 
-    response = _get_graphql(
+    response = get_graphql(
         GRAPHQL_URL,
         """
         query GetParameterTree($datasetClassId: String!) {

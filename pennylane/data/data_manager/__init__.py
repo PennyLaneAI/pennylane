@@ -31,7 +31,7 @@ from pennylane.data.base.hdf5 import open_hdf5_s3
 from pennylane.data.data_manager import progress
 
 from .graphql import (
-    _get_dataset_urls,
+    get_dataset_urls,
     _get_parameter_tree,
     list_data_names,
     list_attributes,
@@ -341,7 +341,7 @@ def load(  # pylint: disable=too-many-arguments
     params = provide_defaults(data_name, params)
     params = [param for param in params if ("values", ParamArg.FULL) not in list(param.items())]
 
-    dataset_ids_and_urls = _get_dataset_urls(data_name, params)
+    dataset_ids_and_urls = get_dataset_urls(data_name, params)
     if dataset_ids_and_urls == []:
         raise ValueError(
             "No datasets exist for the provided configuration.\n"
@@ -443,17 +443,14 @@ def _interactive_request_attributes(attribute_options):
     for i, option in enumerate(attribute_options):
         print(f"{i + 1}: {option}")
 
-    choice_input = input("Choice of attributes: ")
-    if isinstance(choice_input, str):
-        choice = choice_input.strip()
-    elif isinstance(choice_input, list):
-        choice = [ci.strip() for ci in choice_input]
-
-    if choice == "full":
+    choice_input = input("Comma-separated list of attributes: ")
+    choices = [str(choice).strip() for choice in choice_input.strip("[]").split(",")]
+    if "full" in choices:
         return attribute_options
-    if not set(choice).issubset(set(attribute_options)):
+    if not (choices and set(choices).issubset(set(attribute_options))):
         raise ValueError(f"Must select a list of attributes from {attribute_options}")
-    return choice
+
+    return choices
 
 
 def _interactive_requests(parameters, parameter_tree):

@@ -177,7 +177,7 @@ def graphql_mock_qchem(url, query, variables=None):
 
 
 def get_dataset_urls_mock(class_id, parameters):
-    """Returns an empty response for the ``_get_dataset_urls`` function."""
+    """Returns an empty response for the ``get_dataset_urls`` function."""
     return []
 
 
@@ -225,7 +225,7 @@ class TestLoadInteractive:
     [data name, *params, attributes, Force, Folder, continue]
     """
 
-    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     @pytest.mark.parametrize(
         ("side_effect"),
         [
@@ -249,7 +249,7 @@ class TestLoadInteractive:
                     "open",
                     "chain",
                     "1x4",
-                    ["parameters", "shadow_basis", "shadow_meas"],
+                    "[parameters, shadow_basis, shadow_meas]",
                     True,
                     PosixPath("/my/path"),
                     "Y",
@@ -268,7 +268,7 @@ class TestLoadInteractive:
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
 
-    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     def test_load_interactive_without_confirm(
         self, mock_input, _mock_sleep, mock_load
     ):  # pylint:disable=redefined-outer-name
@@ -287,7 +287,7 @@ class TestLoadInteractive:
         assert qml.data.load_interactive() is None
         mock_load.assert_not_called()
 
-    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     @pytest.mark.parametrize(
         ("side_effect", "error_message"),
         [
@@ -312,7 +312,7 @@ class TestLoadInteractive:
         with pytest.raises(ValueError, match=error_message):
             qml.data.load_interactive()
 
-    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock_qchem)
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock_qchem)
     @pytest.mark.parametrize(
         ("side_effect"),
         [
@@ -345,7 +345,7 @@ class TestLoadInteractive:
 class TestMiscHelpers:
     """Test miscellaneous helper functions in data_manager."""
 
-    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     def test_list_data_names(self):
         """Test list_data_names."""
         assert qml.data.list_data_names() == ["other", "qchem", "qspin"]
@@ -358,7 +358,7 @@ class TestMiscHelpers:
             "qchem": {"H2": {"6-31G": ["0.46", "1.0", "1.16"]}},
         }
 
-    @patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     def test_list_attributes(self):
         """Test list_attributes."""
         assert qml.data.list_attributes("qchem") == [
@@ -405,7 +405,7 @@ def mock_download_dataset(monkeypatch):
 
 # pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
-@patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
 @pytest.mark.parametrize(
     "data_name, params, expect_paths",
@@ -438,7 +438,7 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
     }
 
 
-@patch.object(pennylane.data.data_manager, "_get_dataset_urls", get_dataset_urls_mock)
+@patch.object(pennylane.data.data_manager, "get_dataset_urls", get_dataset_urls_mock)
 def test_load_bad_config():
     msg = re.escape(
         """No datasets exist for the provided configuration.\nPlease check the available datasets by using the ``qml.data.list_datasets()`` function."""
@@ -447,7 +447,7 @@ def test_load_bad_config():
         pennylane.data.data_manager.load(data_name="qchem", molname="bad_name")
 
 
-@patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 def test_load_except(monkeypatch, tmp_path):
     """Test that an exception raised by _download_dataset is propagated."""
@@ -487,7 +487,7 @@ def test_download_dataset_full_or_partial(
     assert download_full.called is not called_partial
 
 
-@patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.parametrize("force", (True, False))
 @patch("pennylane.data.data_manager._download_full")
 def test_download_dataset_full_call(download_full, force):
@@ -512,7 +512,7 @@ def test_download_dataset_full_call(download_full, force):
     )
 
 
-@patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.parametrize("attributes", [None, ["x"]])
 @pytest.mark.parametrize("force", (True, False))
 @patch("pennylane.data.data_manager._download_partial")
@@ -670,7 +670,7 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
     open_hdf5_s3.assert_not_called()
 
 
-@patch.object(pennylane.data.data_manager.graphql, "_get_graphql", graphql_mock)
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.parametrize(
     "attributes,msg",
     [
@@ -693,7 +693,7 @@ def test_validate_attributes_except(attributes, msg):
 
 
 class TestGetGraphql:
-    """Tests for the ``_get_graphql()`` function."""
+    """Tests for the ``get_graphql()`` function."""
 
     query = (
         """
@@ -711,7 +711,7 @@ class TestGetGraphql:
     @patch.object(pennylane.data.data_manager.graphql, "post", post_mock)
     def test_return_json(self):
         """Tests that an expected json response is returned for a valid query and url."""
-        response = pennylane.data.data_manager.graphql._get_graphql(
+        response = pennylane.data.data_manager.graphql.get_graphql(
             GRAPHQL_URL,
             self.query,
             self.inputs,
@@ -735,7 +735,7 @@ class TestGetGraphql:
             pennylane.data.data_manager.graphql.GraphQLError,
             match="Errors in request: Mock error message.",
         ):
-            pennylane.data.data_manager.graphql._get_graphql(
+            pennylane.data.data_manager.graphql.get_graphql(
                 GRAPHQL_URL,
                 error_query,
             )

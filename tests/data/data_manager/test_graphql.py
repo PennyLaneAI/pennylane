@@ -9,7 +9,7 @@ from pennylane.data.data_manager.graphql import GRAPHQL_URL
 
 # pylint: disable=protected-access
 class TestGetGraphql:
-    """Tests for the ``_get_graphql()`` function."""
+    """Tests for the ``get_graphql()`` function."""
 
     query = """
         query DatasetClass {
@@ -22,7 +22,7 @@ class TestGetGraphql:
     def test_return_json(self):
         """Tests that a dictionary representation of a json response is returned for a
         valid query and url."""
-        response = pennylane.data.data_manager.graphql._get_graphql(
+        response = pennylane.data.data_manager.graphql.get_graphql(
             GRAPHQL_URL,
             self.query,
         )
@@ -32,7 +32,7 @@ class TestGetGraphql:
         """Tests that a ``ConnectionError`` is returned for a valid query and invalid url."""
 
         with pytest.raises(requests.exceptions.ConnectionError):
-            pennylane.data.data_manager.graphql._get_graphql(
+            pennylane.data.data_manager.graphql.get_graphql(
                 "https://bad/url/graphql",
                 self.query,
             )
@@ -49,7 +49,7 @@ class TestGetGraphql:
             """
 
         with pytest.raises(requests.exceptions.HTTPError):
-            pennylane.data.data_manager.graphql._get_graphql(
+            pennylane.data.data_manager.graphql.get_graphql(
                 GRAPHQL_URL,
                 bad_query,
             )
