@@ -2,6 +2,7 @@ import pennylane as qml
 import pes_generator
 import numpy as np
 from christiansenForm import christiansen_ham, christiansen_dipole
+from real_space_ham import realspace_ham_coeff, realspace_dipole_coeff
 from vib_observables import *
 from bosonic_mapping import *
 from mpi4py import MPI 
@@ -11,25 +12,39 @@ size = comm.Get_size()
 
 
 
-#sym = ["H", "F"]
-#geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+sym = ["H", "F"]
+geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
 #sym = ["C", "O"]
 #geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
-sym = ["H", "H", "S"]
-geometry = np.array([[0.0,-1.0,-1.0], [0.0,1.0,-1.0], [0.0,0.0,0.0]])
+#sym = ["H", "H", "S"]
+#geometry = np.array([[0.0,-1.0,-1.0], [0.0,1.0,-1.0], [0.0,0.0,0.0]])
 load_data = True
+localize = True
+
 
 ## Generate PES object
 molecule = qml.qchem.Molecule(sym, geometry, basis_name="6-31g", unit="Angstrom", load_data=load_data)
-pes = pes_generator.vibrational(molecule, quad_order=9, do_cubic=True, get_anh_dipole=2)
+pes = pes_generator.vibrational(molecule, quad_order=9, localize=localize, do_cubic=True, get_anh_dipole=2)
 
 if rank == 0:
     print("onebody: ", pes.pes_onebody, pes.dipole_onebody)
     print("twobody: ", pes.pes_twobody, pes.dipole_twobody)
     print("threebody: ", pes.pes_threebody, pes.dipole_threebody)
 
+
+## Generate Real-space/Taylor Hamiltonian and dipole
+if rank == 0:
+    if localize:
+        min_deg = 2
+    else:
+        min_deg = 3
+    t_ham = realspace_ham_coeff(pes, min_deg=min_deg)
+    t_dipole = realspace_dipole_coeff(pes, min_deg=min_deg)
+
+
+exit()
 ## Generate Christiansen Hamiltonian and dipole
 c_ham = christiansen_ham(pes, nbos=4, do_cubic=False)
 c_dipole = christiansen_dipole(pes, nbos=4)

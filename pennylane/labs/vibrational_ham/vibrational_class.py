@@ -31,70 +31,7 @@ class PES():
         self.dipole_threebody = dipole_arr[2] if len(dipole_arr)>2 else None
         self.localized = localized
         self.get_anh_dipole = get_anh_dipole
-    # def save_pes(self, do_cubic=True, get_anh_dipole=2, savename="data_pes"):
-    #     if rank == 0:
-    #         if get_anh_dipole < 2 or get_anh_dipole is False:
-    #             do_dip_2 = False
-    #         elif get_anh_dipole > 1 or get_anh_dipole is True:
-    #             do_dip_2 = True    
-                
-    #         if get_anh_dipole < 3 or get_anh_dipole is False:
-    #             do_dip_3 = False
-    #         elif get_anh_dipole > 2 or get_anh_dipole is True:
-    #             do_dip_3 = True    
 
-    #         f = h5py.File(savename + '.hdf5', 'w')
-    #         f.create_dataset('V1_PES',data=self.pes_onebody)
-    #         f.create_dataset('D1_DMS',data=self.dipole_onebody)
-    #         f.create_dataset('GH_quad_order', data=self.quad_order)
-    #         f.create_dataset('V2_PES',data=self.pes_twobody)
-    #         if do_dip_2:
-    #             f.create_dataset('D2_DMS',data=self.dipole_twobody)
-
-    #         if do_cubic:
-    #             f.create_dataset('V3_PES',data=self.pes_threebody)
-    #             if do_dip_3:
-    #                 f.create_dataset('D3_DMS',data=self.dipole_threebody)
-    #         f.close()
-    
-    # def plot_pes_onebody(self, do_dipole=True, save_dir="plots"):
-    #     fig, ax = plt.subplots()
-    #     ax.set_xlim((-2,2))
-    #     ax.plot(self.gauss_grid, self.pes_onebody[ii,:], label='PES')
-    #     ax.plot(self.gauss_grid, self.harmonic_pes[ii, :], label='Harmonic')
-    #     ax.legend()
-    #     ymax = ho_const * 4
-    #     ax.set_ylim((0,ymax))
-    #     fig.savefig(f"plots/pes_onebody_{ii}.png", format="png")
-    #     plt.close()
-    #     if do_dipole:
-    #         fig, ax = plt.subplots()
-    #         ax.plot(self.gauss_grid, self.dipole_onebody[ii,:,0], label='d_x')
-    #         ax.plot(self.gauss_grid, self.dipole_onebody[ii,:,1], label='d_y')
-    #         ax.plot(self.gauss_grid, self.dipole_onebody[ii,:,2], label='d_z')
-    #         ax.legend()
-    #         fig.savefig(f"plots/dipole_onebody_{ii}.png", format="png")
-    #     plt.close()
-
-    # def plot_pes_twobody(self, do_dipole=True):
-    #     fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
-    #     ax.plot_wireframe(gridx, gridy, pes_twobody[aa,bb,:,:])
-    #     fig.savefig(f"plots/pes_twobody_{aa,bb}.png", format="png")
-    #     plt.close()
-    #     if do_dipole:
-    #         fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
-    #         ax.plot_wireframe(gridx, gridy, self.dipole_twobody[aa,bb,:,:,0])
-    #         fig.savefig(f"plots/dipole_x_twobody_{aa,bb}.png", format="png")
-    #         plt.close()
-    #         fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
-    #         ax.plot_wireframe(gridx, gridy, self.dipole_twobody[aa,bb,:,:,1])
-    #         fig.savefig(f"plots/dipole_y_twobody_{aa,bb}.png", format="png")
-    #         plt.close()
-    #         fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
-    #         ax.plot_wireframe(gridx, gridy, self.dipole_twobody[aa,bb,:,:,2])
-    #         fig.savefig(f"plots/dipole_z_twobody_{aa,bb}.png", format="png")
-    #         plt.close()
-        
 
 def harmonic_analysis(scf_result, method):
     r"""Performs harmonic analysis by evaluating the Hessian using PySCF routines.
@@ -151,7 +88,7 @@ def run_electronic_structure(molecule, method="rhf"):
         return pyscf.scf.UHF(mol).run(verbose=0)
 
 
-def equilibrium_geom(molecule, method):
+def build_equilibrium_geom(molecule, method):
     r"""Obtains equilibrium geometry for the molecule.
 
     Args:

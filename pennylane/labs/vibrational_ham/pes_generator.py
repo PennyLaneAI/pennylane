@@ -361,7 +361,7 @@ def vibrational(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[
     Returns:
        PES object.
     """
-    molecule, scf_result = equilibrium_geom(molecule, method)
+    molecule, scf_result = build_equilibrium_geom(molecule, method)
     
     harmonic_res = None
     loc_res = None
