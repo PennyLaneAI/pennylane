@@ -231,7 +231,7 @@ def apply_operation_einsum(
     kraus_dagger = math.conj(kraus_transpose)
 
     kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
-    kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
+    kraus_dagger = math.reshape(kraus_dagger, kraus_shape)
 
     #! Note that there the state should be a density matrix
     einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
