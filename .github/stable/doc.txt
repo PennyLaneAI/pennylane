@@ -22,7 +22,7 @@ duet==0.2.9
 exceptiongroup==1.2.2
 flatbuffers==24.3.25
 fonttools==4.54.1
-frozenlist==1.4.1
+frozenlist==1.5.0
 fsspec==2024.10.0
 gast==0.4.0
 google-auth==2.35.0
