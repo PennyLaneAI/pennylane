@@ -28,6 +28,8 @@ from .utils import get_einsum_mapping, get_new_state_einsum_indices
 
 alphabet_array = np.array(list(alphabet))
 
+TENSORDOT_STATE_NDIM_PERF_THRESHOLD = 9
+
 
 def _get_slice(index, axis, num_axes):
     """Allows slicing along an arbitrary axis of an array or tensor.
@@ -454,7 +456,7 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -474,7 +476,7 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -494,7 +496,7 @@ def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -514,7 +516,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # Common constants always needed
@@ -571,7 +573,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply cnot gate to state."""
     n_dim = math.ndim(state)
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
@@ -594,7 +596,7 @@ def apply_multicontrolledx(
     for 8 operation wires or less. Otherwise, apply a custom kernel based on
     composing transpositions, rolling of control axes and the CNOT logic above."""
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
-    if len(op.wires) < 9:
+    if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
         return _apply_operation_default(op, state, is_state_batched, debugger)
 
     state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
@@ -614,7 +616,7 @@ def apply_grover(
 ):
     """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
     wires) or via standard matrix based methods (else)."""
-    if len(op.wires) < 9:
+    if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
         return _apply_operation_default(op, state, is_state_batched, debugger)
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
