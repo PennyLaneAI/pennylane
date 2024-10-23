@@ -23,7 +23,7 @@ def _get_polynomial(f, mod, *variable_sizes):
     """Calculate the polynomial binary representation of a given function using the `Möbius inversion formula <https://en.wikipedia.org/wiki/Möbius_inversion_formula#On_posets>`_ .
 
     Args:
-        f (callable):  the function from which the polynomial is extracted
+        f (callable):  the function from which the polynomial is extracted. f is the zeta transform of the extracted polynomial.
         mod (int): the modulus to use for the result
         *variable_sizes (int):  variable length argument specifying the number of bits used to represent each of the variables of the function
 
@@ -53,7 +53,6 @@ def _get_polynomial(f, mod, *variable_sizes):
         list(map(int, bin(i)[2:].zfill(total_wires))) for i in range(num_combinations)
     ]
 
-    # Compute the f values for all combinations (2 ** len(total_wires))
     f_values = [0] * num_combinations
     for s in range(num_combinations):
         bin_list = all_binary_list[s]
