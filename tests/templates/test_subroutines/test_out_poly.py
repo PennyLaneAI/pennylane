@@ -115,7 +115,7 @@ class TestOutPoly:
         ("input_registers", "output_wires", "mod", "work_wires", "msg_match"),
         [
             ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6.1, [10, 11], "mod must be integer."),
-            ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6, [0, 11], "None of the wires in"),
+            ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6, [0, 11], "A wire appeared in multiple registers"),
             ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6, [10], "If mod is not"),
         ],
     )

@@ -278,7 +278,7 @@ class OutPoly(Operation):
 
         if len(all_wires) != sum(len(register) for register in registers_wires) + num_work_wires:
             raise ValueError(
-                "None of the wires in a register must be contained in another register."
+                "A wire appeared in multiple registers."
             )
 
         super().__init__(wires=all_wires, id=id)
