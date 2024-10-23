@@ -52,7 +52,7 @@ def get_best_diff_method(qnode):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         device = qnode.device
-        (tape,), _ = qml.workflow.construct_batch(qnode)(*args, **kwargs)
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
 
         config = _make_execution_config(None, "best")
 
