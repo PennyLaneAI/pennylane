@@ -298,6 +298,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated `qml.spin` documentation.
+  [(#6387)](https://github.com/PennyLaneAI/pennylane/pull/6387)
+
 * Updated links to PennyLane.ai in the documentation to use the latest URL format, which excludes the `.html` prefix.
   [(#6412)](https://github.com/PennyLaneAI/pennylane/pull/6412)
 
@@ -411,6 +414,7 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Austin Huang,
+Soran Jahangiri,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
