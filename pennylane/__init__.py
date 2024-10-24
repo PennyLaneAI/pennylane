@@ -15,23 +15,23 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-
+# pylint: disable=undefined-variable
 
 from pennylane.boolean_fn import BooleanFn
-import pennylane.numpy
+from pennylane import numpy
 from pennylane.queuing import QueuingManager, apply
 
-import pennylane.capture
-import pennylane.kernels
-import pennylane.math
-import pennylane.operation
-import pennylane.qnn
-import pennylane.templates
-import pennylane.pauli
+from pennylane import capture
+from pennylane import kernels
+from pennylane import math
+from pennylane import operation
+from pennylane import qnn
+from pennylane import templates
+from pennylane import pauli
 from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
 from pennylane.resource import specs
-import pennylane.resource
-import pennylane.qchem
+from pennylane import resource
+from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
@@ -128,27 +128,26 @@ from pennylane.debugging import (
 )
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
-import pennylane.pulse
+from pennylane import pulse
 
-import pennylane.fourier
+from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-import pennylane.gradients  # pylint:disable=wrong-import-order
-import pennylane.qinfo
+from pennylane import gradients
+from pennylane import qinfo
 
-# pylint:disable=wrong-import-order
-import pennylane.logging  # pylint:disable=wrong-import-order
+from pennylane import logging
 
 from pennylane.compiler import qjit, while_loop, for_loop
-import pennylane.compiler
+from pennylane import compiler
 
-import pennylane.data
+from pennylane import data
 
-import pennylane.noise
+from pennylane import noise
 from pennylane.noise import NoiseModel
 
 from pennylane.devices.device_constructor import device, refresh_devices
 
-import pennylane.spin
+from pennylane import spin
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
