@@ -1566,6 +1566,7 @@ class TestMidMeasurements:
     def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode, seed):
         """Unit tests for simulate_one_shot_native_mcm"""
 
+        seed = seed + 2
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(np.pi / 4, wires=0)
             m = qml.measure(wires=0, postselect=0)

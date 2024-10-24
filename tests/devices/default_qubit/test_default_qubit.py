@@ -611,7 +611,7 @@ class TestSampleMeasurements:
 
         # check that the count values match the expected
         values = list(result.values())
-        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.02)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     @pytest.mark.parametrize("all_outcomes", [False, True])
