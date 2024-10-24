@@ -14,8 +14,4 @@
 r"""This module contains experimental resource estimation functionality. """
 
 # from .resource_constructor import ResourceConstructor
-from .resource_container import CompressedResourceOp
-from .resources_base import Resources
-
-# Resource Operators
-# from .resource_qft import ResourceQFT
+from .resource_container import CompressedResourceOp, Resources
