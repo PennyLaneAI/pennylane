@@ -150,10 +150,9 @@ def _get_qnode_prim():
                     UserWarning,
                 )
 
+        # TODO: this must be extended to the multidimensional case
         input_shapes = [arg.shape for arg in args if is_non_scalar_tensor(arg)]
         batch_shape = jax.lax.broadcast_shapes(*input_shapes)
-
-        print("I am going to call the qnode_prim.bind from the batching rule")
 
         result = qnode_prim.bind(
             *batched_args,
@@ -166,9 +165,8 @@ def _get_qnode_prim():
             batch_shape=batch_shape,
         )
 
-        print(f"result of batching rule: {result}")
-
         # The batch dimension is at the front (axis 0) for all elements in the result.
+        # TODO: check if this is statement is still correct in the multidimensional case
         return result, [0] * len(result)
 
     def make_zero(tan, arg):
@@ -263,56 +261,21 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
-    def is_batched(arg):
-        # Check if the argument is a Tracer and if it contains a BatchTrace
+    def _is_batched(arg):
+        # Check if the argument is a Tracer and if it contains a BatchTrace object.
+        # TODO: this currently does not work with pytrees
         return isinstance(arg, jax.core.Tracer) and isinstance(
             arg._trace, jax.interpreters.batching.BatchTrace
         )
 
-    for arg in args:
-        if is_batched(arg):
-            batched_args = (arg.val,)
-            batch_dims = (arg.batch_dim,)
-            print(f"batched_args before calling batching rule: {batched_args}")
-            print(f"batched_dims before calling batching rule: {batch_dims}")
-
-            qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-            flat_fn = FlatFn(qfunc)
-            qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*batched_args)
-
-            execute_kwargs = copy(qnode.execute_kwargs)
-            mcm_config = asdict(execute_kwargs.pop("mcm_config"))
-            qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
-            qnode_prim = _get_qnode_prim()
-
-            flat_args = jax.tree_util.tree_leaves(batched_args)
-
-            batching_rule = jax.interpreters.batching.primitive_batchers[qnode_prim]
-
-            # Call the batching rule
-            batched_result, result_batch_dims = batching_rule(
-                *qfunc_jaxpr.consts,
-                flat_args,
-                batch_dims,
-                shots=shots,
-                qnode=qnode,
-                device=qnode.device,
-                qnode_kwargs=qnode_kwargs,
-                qfunc_jaxpr=qfunc_jaxpr.jaxpr,
-                n_consts=len(qfunc_jaxpr.consts),
-            )
-
-            print(f"batched_result: {batched_result}")
-            print(f"result_batch_dims: {result_batch_dims}")
-
-            assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
-            return jax.tree_util.tree_unflatten(flat_fn.out_tree, batched_result)
-
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-
     flat_fn = FlatFn(qfunc)
 
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+    # This is only needed if the QNode is called with jax.vmap to make
+    # the batching rule work correctly with parameter broadcasting.
+    unbatched_args = tuple(arg.val if _is_batched(arg) else arg for arg in args)
+
+    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*unbatched_args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
