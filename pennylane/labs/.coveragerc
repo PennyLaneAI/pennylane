@@ -1,6 +1,6 @@
 # .coveragerc to control coverage.py
 [run]
-source = pennylane.labs
+source = pennylane/labs
 omit =
     pennylane/labs/tests*
 
