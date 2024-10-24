@@ -239,7 +239,14 @@ class OutPoly(Operation):
     grad_method = None
 
     def __init__(
-        self, polynomial_function, input_registers, output_wires, mod=None, work_wires=None, id=None
+        self,
+        polynomial_function,
+        input_registers,
+        output_wires,
+        mod=None,
+        work_wires=None,
+        id=None,
+        **kwargs,
     ):  # pylint: disable=too-many-arguments
         r"""Initialize the OutPoly class"""
 
@@ -274,6 +281,16 @@ class OutPoly(Operation):
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires) if work_wires else None
 
+        wires_vars = [len(w) for w in registers_wires[:-1]]
+
+        self.hyperparameters["coeffs_list"] = kwargs.get(
+            "coeffs_list",
+            tuple(
+                (key, value)
+                for key, value in _get_polynomial(polynomial_function, mod, *wires_vars).items()
+            ),
+        )
+
         if work_wires:
             all_wires += work_wires
 
@@ -289,7 +306,6 @@ class OutPoly(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-
         hyperparams_dict = dict(metadata)
         return cls(*data, **hyperparams_dict)
 
@@ -325,7 +341,7 @@ class OutPoly(Operation):
 
     @staticmethod
     def compute_decomposition(
-        polynomial_function, input_registers, output_wires, mod=None, work_wires=None
+        polynomial_function, input_registers, output_wires, mod=None, work_wires=None, **kwargs
     ):  # pylint: disable=unused-argument, arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -364,10 +380,7 @@ class OutPoly(Operation):
 
         list_ops.append(qml.QFT(wires=output_adder_mod))
 
-        wires_vars = [len(w) for w in registers_wires[:-1]]
-
-        # Extract the coefficients and control wires from the binary polynomial
-        coeffs_dic = _get_polynomial(polynomial_function, mod, *wires_vars)
+        coeffs_dic = {key: coeff for (key, coeff) in kwargs["coeffs_list"]}
         coeffs = [coeff[1] for coeff in coeffs_dic.items()]
 
         assert qml.math.allclose(
