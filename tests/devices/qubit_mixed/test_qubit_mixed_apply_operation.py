@@ -45,6 +45,60 @@ ml_frameworks_list = [
     pytest.param("torch", marks=pytest.mark.torch),
     pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
+INV_SQRT2 = 1 / np.sqrt(2)
+
+
+def basis_state(index, nr_wires):
+    """Generate the density matrix of the computational basis state
+    indicated by ``index``."""
+    rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
+    rho[index, index] = 1
+    return rho
+
+
+def base0(nr_wires):
+    """Generate the density matrix of the computational basis state
+    indicated by ``00...0``."""
+    return basis_state(0, nr_wires)
+
+
+def base1(nr_wires):
+    """Generate the density matrix of the computational basis state
+    indicated by ``11...1``."""
+    return basis_state(2**nr_wires - 1, nr_wires)
+
+
+def cat_state(nr_wires):
+    """Generate the density matrix of the cat state. |0...0> + |1...1>"""
+    rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
+    first = 0
+    last = 2**nr_wires - 1
+    # Make the four corners of the matrix 0.5
+    rho[first, first] = 0.5
+    rho[first, last] = 0.5
+    rho[last, first] = 0.5
+    rho[last, last] = 0.5
+    return rho
+
+
+def hadamard_state(nr_wires):
+    """Generate the equal superposition state (Hadamard on all qubits)"""
+    return np.ones((2**nr_wires, 2**nr_wires), dtype=np.complex128) / (2**nr_wires)
+
+
+def max_mixed_state(nr_wires):
+    """Generate the maximally mixed state."""
+    return np.eye(2**nr_wires, dtype=np.complex128) / (2**nr_wires)
+
+
+def root_state(nr_wires):
+    """Pure state with equal amplitudes but phases equal to roots of unity"""
+    dim = 2**nr_wires
+    ket = [np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)]
+    return np.outer(ket, np.conj(ket))
+
+
+special_state_generator = [base0, base1, cat_state, hadamard_state, max_mixed_state, root_state]
 
 
 def get_random_mixed_state(num_qubits):
@@ -236,6 +290,20 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
         expanded_operator = expand_matrices(op, num_q)
         expected = np.array([get_expected_state(expanded_operator, s, num_q) for s in state])
+
+        assert math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
+
+    @pytest.mark.parametrize("state_gen", special_state_generator)
+    @pytest.mark.parametrize("op", unbroadcasted_ops)
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_special_states(self, ml_framework, state_gen, op, num_q):
+        """Test that special states are handled correctly."""
+        state = math.asarray(state_gen(num_q), like=ml_framework)
+        state = math.reshape(state, [2] * (2 * num_q))
+        res = apply_operation(op, state)
+
+        expanded_operator = expand_matrices(op, num_q)
+        expected = get_expected_state(expanded_operator, state, num_q)
 
         assert math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
 
@@ -447,40 +515,6 @@ class TestApplyMultiControlledX:
         result_autograd = apply_operation(op, state_autograd)
 
         assert np.allclose(result_numpy, result_autograd)
-
-
-def basis_state(index, nr_wires):
-    """Generate the density matrix of the computational basis state
-    indicated by ``index``."""
-    rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
-    rho[index, index] = 1
-    return rho
-
-
-def hadamard_state(nr_wires):
-    """Generate the equal superposition state (Hadamard on all qubits)"""
-    return np.ones((2**nr_wires, 2**nr_wires), dtype=np.complex128) / (2**nr_wires)
-
-
-def max_mixed_state(nr_wires):
-    """Generate the maximally mixed state."""
-    return np.eye(2**nr_wires, dtype=np.complex128) / (2**nr_wires)
-
-
-def root_state(nr_wires):
-    """Pure state with equal amplitudes but phases equal to roots of unity"""
-    dim = 2**nr_wires
-    ket = [np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)]
-    return np.outer(ket, np.conj(ket))
-
-
-def random_state(num_wires):
-    """Generate a random density matrix."""
-    shape = (2**num_wires, 2**num_wires)
-    state = np.random.random(shape) + 1j * np.random.random(shape)
-    state = state @ state.T.conj()
-    state /= np.trace(state)
-    return state
 
 
 @pytest.mark.parametrize("apply_method", [apply_operation_einsum, apply_operation_tensordot])
