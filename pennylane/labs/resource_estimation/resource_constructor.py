@@ -8,7 +8,6 @@ CompressedResourceOp = resource_container.CompressedResourceOp
 Resources = resources_base.Resources
 
 class ResourceConstructor(ABC):
-
     @staticmethod
     @abstractmethod
     def compute_resources(*args, **kwargs) -> Resources:
@@ -23,3 +22,6 @@ class ResourceConstructor(ABC):
     def resource_rep(self) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
+
+class ResourcesNotDefined(Exception):
+    """Exception to be raised when a ResourceConstructor does not implement compute_resources"""

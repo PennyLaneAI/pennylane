@@ -1,5 +1,6 @@
+import numpy as np
 import pennylane as qml
-from pennylane.labs.resource_estimation import ResourceConstructor, CompressedResourceOp
+from pennylane.labs.resource_estimation import ResourceConstructor, CompressedResourceOp, ResourcesNotDefined
 
 #pylint: disable=too-many-ancestors,arguments-differ
 
@@ -8,6 +9,12 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
 
     @staticmethod
     def compute_resources(num_wires) -> dict:
+        if not isinstance(num_wires, int):
+            raise TypeError("num_wires must be an int.")
+
+        if num_wires < 1:
+            raise ValueError("num_wires must be greater than 0.")
+
         gate_types = {}
 
         hadamard = CompressedResourceOp(qml.Hadamard, ())
@@ -46,5 +53,36 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, ResourceConstructor
 class ResourceCNOT(qml.CNOT, ResourceConstructor):
     """Resource class for CNOT"""
 
+    @staticmethod
+    def compute_resources() -> dict:
+        raise ResourcesNotDefined
+
+    def resource_rep(self) -> CompressedResourceOp:
+        return CompressedResourceOp(qml.CNOT, ())
+
 class ResourceRZ(qml.RZ, ResourceConstructor):
     """Resource class for RZ"""
+
+    @staticmethod
+    def compute_resources(epsilon=10e-3) -> dict:
+        gate_types = {}
+
+        num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
+        t = CompressedResourceOp(qml.T, ())
+        gate_types[t] = num_gates
+
+        return gate_types
+
+    def resource_rep(self) -> CompressedResourceOp:
+        return CompressedResourceOp(qml.RZ, ())
+
+
+class ResourceT(qml.T, ResourceConstructor):
+    """Resource class for T"""
+
+    @staticmethod
+    def compute_resources() -> dict:
+        raise ResourcesNotDefined
+
+    def resource_rep(self) -> CompressedResourceOp:
+        return CompressedResourceOp(qml.T, ())
