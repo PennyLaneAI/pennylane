@@ -1,11 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
-import pennylane.labs.resource_estimation.resources_base as resources_base
-import pennylane.labs.resource_estimation.resource_container as resource_container
+from .resource_container import CompressedResourceOp, Resources
 
-CompressedResourceOp = resource_container.CompressedResourceOp
-Resources = resources_base.Resources
 
 class ResourceConstructor(ABC):
     @staticmethod

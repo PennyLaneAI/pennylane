@@ -1,7 +1,7 @@
 import pytest
 
 import pennylane as qml
-import pennylane.labs.resource_estimation.resource_ops as ops
+import pennylane.labs.resource_estimation.ops as ops
 from pennylane.labs.resource_estimation import CompressedResourceOp
 
 class TestQFT:
@@ -17,9 +17,9 @@ class TestQFT:
     )
     def test_compute_resources(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
         """Test the compute_resources method returns the correct dictionary"""
-        hadamard = CompressedResourceOp(qml.Hadamard, ())
-        swap = CompressedResourceOp(qml.SWAP, ())
-        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, ())
+        hadamard = CompressedResourceOp(qml.Hadamard, {})
+        swap = CompressedResourceOp(qml.SWAP, {})
+        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
 
         expected = {
             hadamard: num_hadamard,
@@ -33,7 +33,7 @@ class TestQFT:
     def test_resource_rep(self, num_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
-        expected = CompressedResourceOp(qml.QFT, (("num_wires", num_wires),))
+        expected = CompressedResourceOp(qml.QFT, {"num_wires": num_wires})
         op = ops.ResourceQFT(wires=range(num_wires))
 
         assert op.resource_rep() == expected
@@ -42,16 +42,16 @@ class TestQFT:
         [
             (1, 1, 0, 0),
             (2, 2, 1, 1),
-            (3, 3, 1, 1),
-            (4, 4, 2, 2),
+            (3, 3, 1, 3),
+            (4, 4, 2, 6),
         ]
     )
     def test_resources_from_rep(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
         """Test that computing the resources from a compressed representation works"""
 
-        hadamard = CompressedResourceOp(qml.Hadamard, ())
-        swap = CompressedResourceOp(qml.SWAP, ())
-        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, ())
+        hadamard = CompressedResourceOp(qml.Hadamard, {})
+        swap = CompressedResourceOp(qml.SWAP, {})
+        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
 
         expected = {
             hadamard: num_hadamard,

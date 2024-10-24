@@ -1,6 +1,7 @@
 import numpy as np
 import pennylane as qml
-from pennylane.labs.resource_estimation import ResourceConstructor, CompressedResourceOp, ResourcesNotDefined
+
+from .. import ResourceConstructor, CompressedResourceOp, ResourcesNotDefined
 
 #pylint: disable=too-many-ancestors,arguments-differ
 
@@ -17,9 +18,9 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
 
         gate_types = {}
 
-        hadamard = CompressedResourceOp(qml.Hadamard, ())
-        swap = CompressedResourceOp(qml.SWAP, ())
-        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, ())
+        hadamard = CompressedResourceOp(qml.Hadamard, {})
+        swap = CompressedResourceOp(qml.SWAP, {})
+        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
 
         gate_types[hadamard] = num_wires
         gate_types[swap] = num_wires // 2
@@ -28,7 +29,7 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
         return gate_types
 
     def resource_rep(self) -> CompressedResourceOp:
-        params = (('num_wires', len(self.wires)),)
+        params = {"num_wires": len(self.wires)}
         return CompressedResourceOp(qml.QFT, params)
 
 
@@ -39,8 +40,8 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, ResourceConstructor
     def compute_resources() -> dict:
         gate_types = {}
 
-        cnot = CompressedResourceOp(qml.CNOT, ())
-        rz = CompressedResourceOp(qml.RZ, ())
+        cnot = CompressedResourceOp(qml.CNOT, {})
+        rz = CompressedResourceOp(qml.RZ, {})
 
         gate_types[cnot] = 2
         gate_types[rz] = 3
@@ -48,7 +49,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, ResourceConstructor
         return gate_types
 
     def resource_rep(self) -> CompressedResourceOp:
-        return CompressedResourceOp(qml.ControlledPhaseShift, ())
+        return CompressedResourceOp(qml.ControlledPhaseShift, {})
 
 class ResourceCNOT(qml.CNOT, ResourceConstructor):
     """Resource class for CNOT"""
@@ -58,7 +59,7 @@ class ResourceCNOT(qml.CNOT, ResourceConstructor):
         raise ResourcesNotDefined
 
     def resource_rep(self) -> CompressedResourceOp:
-        return CompressedResourceOp(qml.CNOT, ())
+        return CompressedResourceOp(qml.CNOT, {})
 
 class ResourceRZ(qml.RZ, ResourceConstructor):
     """Resource class for RZ"""
@@ -68,13 +69,13 @@ class ResourceRZ(qml.RZ, ResourceConstructor):
         gate_types = {}
 
         num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
-        t = CompressedResourceOp(qml.T, ())
+        t = CompressedResourceOp(qml.T, {})
         gate_types[t] = num_gates
 
         return gate_types
 
     def resource_rep(self) -> CompressedResourceOp:
-        return CompressedResourceOp(qml.RZ, ())
+        return CompressedResourceOp(qml.RZ, {})
 
 
 class ResourceT(qml.T, ResourceConstructor):
@@ -85,4 +86,4 @@ class ResourceT(qml.T, ResourceConstructor):
         raise ResourcesNotDefined
 
     def resource_rep(self) -> CompressedResourceOp:
-        return CompressedResourceOp(qml.T, ())
+        return CompressedResourceOp(qml.T, {})
