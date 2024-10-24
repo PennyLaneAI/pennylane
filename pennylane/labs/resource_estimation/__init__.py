@@ -13,9 +13,5 @@
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality. """
 
-<<<<<<< HEAD
 from .resource_constructor import ResourceConstructor, ResourcesNotDefined
-=======
-from .resource_constructor import ResourceConstructor
->>>>>>> 8d4e0357c402d3b64b6033c0adc9d40236871c53
 from .resource_container import CompressedResourceOp, Resources
