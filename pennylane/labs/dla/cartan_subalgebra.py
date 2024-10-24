@@ -13,7 +13,11 @@
 # limitations under the License.
 """Functionality to compute the Cartan subalgebra"""
 # pylint: disable=too-many-arguments
+from datetime import datetime
+
+import jax
 import numpy as np
+import optax
 from scipy.linalg import null_space
 
 import pennylane as qml
@@ -326,3 +330,51 @@ def op_to_adjvec(ops, basis):
         return res
 
     return NotImplemented
+
+
+def run_opt(
+    value_and_grad,
+    theta,
+    n_epochs=100,
+    lr=0.1,
+    b1=0.99,
+    b2=0.999,
+    E_exact=0.0,
+    verbose=True,
+    interrupt_tol=None,
+):
+    """Boilerplate jax optimization"""
+    optimizer = optax.adam(learning_rate=lr, b1=b1, b2=b2)
+    opt_state = optimizer.init(theta)
+
+    energy = []
+    gradients = []
+    thetas = []
+
+    @jax.jit
+    def partial_step(grad_circuit, opt_state, theta):
+        updates, opt_state = optimizer.update(grad_circuit, opt_state)
+        theta = optax.apply_updates(theta, updates)
+
+        return opt_state, theta
+
+    t0 = datetime.now()
+    ## Optimization loop
+    for n in range(n_epochs):
+        # val, theta, grad_circuit, opt_state = step(theta, opt_state)
+        val, grad_circuit = value_and_grad(theta)
+        opt_state, theta = partial_step(grad_circuit, opt_state, theta)
+
+        energy.append(val)
+        gradients.append(grad_circuit)
+        thetas.append(theta)
+        if interrupt_tol is not None and (norm := np.linalg.norm(gradients[-1])) < interrupt_tol:
+            print(
+                f"Interrupting after {n} epochs because gradient norm is {norm} < {interrupt_tol}"
+            )
+            break
+    t1 = datetime.now()
+    if verbose:
+        print(f"final loss: {val - E_exact}; min loss: {np.min(energy) - E_exact}; after {t1 - t0}")
+
+    return thetas, energy, gradients
