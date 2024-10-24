@@ -15,7 +15,7 @@
 
 """
 
-from typing import Optional, Union, get_args
+from typing import Optional, get_args
 
 import pennylane as qml
 from pennylane.transforms.core import TransformDispatcher
@@ -26,24 +26,24 @@ from pennylane.workflow.qnode import (
 )
 
 
-# pylint: disable=too-many-return-statements
-def get_gradient_fn(
+# pylint: disable=too-many-return-statements, unsupported-binary-operation
+def _get_gradient_fn(
     device: SupportedDeviceAPIs,
-    diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
+    diff_method: TransformDispatcher | SupportedDiffMethods = "best",
     tape: Optional["qml.tape.QuantumTape"] = None,
 ):
-    """Determine the best differentiation method for a given device and diff method.
+    """Determines the differentiation method for a given device and diff method.
 
     Args:
-        device (.device.Device): PennyLane device
-        diff_method (str or .TransformDispatcher): The requested method of differentiation.
+        device (:class:`~.devices.Device`): PennyLane device
+        diff_method (str or :class:`~.TransformDispatcher`): The requested method of differentiation. Defaults to ``"best"``.
             If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
             ``"device"``, ``"parameter-shift"``, ``"hadamard"``, ``"finite-diff"``, or ``"spsa"``.
-            A gradient transform may also be passed here.
+            Alternatively, a gradient transform can be provided.
         tape (Optional[.QuantumTape]): the circuit that will be differentiated. Should include shots information.
 
     Returns:
-        str or .TransformDispatcher (the ``gradient_fn``)
+        str or :class:`~.TransformDispatcher` (the ``gradient_fn``)
     """
 
     if diff_method is None:
