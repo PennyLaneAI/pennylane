@@ -130,6 +130,18 @@
 
 <h4>Other Improvements</h4>
 
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
+  - A new API for mixed-state operations
+  - An `apply_operation` helper function featuring:
+    - Two density matrix contraction methods using `einsum` and `tensordot`
+    - Optimized handling of special cases including:
+      - Diagonal operators
+      - Identity operators 
+      - CX (controlled-X)
+      - Multi-controlled X gates
+      - Grover operators
+  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
+  
 * Added `show_wire_labels` option to `draw` and `draw_mpl`, which hides wire labels when set to `False`.
   Defaults to `True`.
   [(#6410)](https://github.com/PennyLaneAI/pennylane/pull/6410)
@@ -414,6 +426,7 @@ Guillermo Alonso,
 Utkarsh Azad,
 Oleksandr Borysenko,
 Astral Cai,
+Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
 Lillian M. A. Frederiksen,
