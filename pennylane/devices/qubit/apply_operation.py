@@ -83,9 +83,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     num_indices = len(op.wires)
 
     state_indices = alphabet[:total_indices]
-    affected_indices = "".join(
-        alphabet[i] for i in op.wires
-    )  # Here we created some dummy indices to sum over
+    affected_indices = "".join(alphabet[i] for i in op.wires)
 
     new_indices = alphabet[total_indices : total_indices + num_indices]
 
