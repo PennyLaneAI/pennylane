@@ -71,6 +71,11 @@ def _get_qnode_prim():
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_shape=()):
+
+        print(f"qnode_def_impl")
+
+        print(f"args: {args}")
+
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -83,6 +88,8 @@ def _get_qnode_prim():
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_shape=()):
+
+        print(f"qnode_abstract_eval")
 
         mps = qfunc_jaxpr.outvars
 
@@ -109,6 +116,11 @@ def _get_qnode_prim():
 
         This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
         """
+
+        print("batching rule called")
+
+        print(f"batched_args received by batching rule: {batched_args}")
+        print(f"batch_dims received by batching rule: {batch_dims}")
 
         assert len(batched_args) == len(batch_dims), "Mismatch in batched arguments and dimensions."
         assert all(
@@ -138,13 +150,7 @@ def _get_qnode_prim():
                     UserWarning,
                 )
 
-            # TODO: this limitation will be removed in the following PR
-            if len(arg.shape) > 1:
-                raise ValueError(
-                    f"Argument at index {i} has more than one dimension: {arg.shape}. "
-                    "Currently, only single-dimension batching is supported."
-                )
-
+        # TODO: this must be extended to the multidimensional case
         input_shapes = [arg.shape for arg in args if is_non_scalar_tensor(arg)]
         batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
@@ -160,6 +166,7 @@ def _get_qnode_prim():
         )
 
         # The batch dimension is at the front (axis 0) for all elements in the result.
+        # TODO: check if this is statement is still correct in the multidimensional case
         return result, [0] * len(result)
 
     def make_zero(tan, arg):
@@ -240,6 +247,9 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
 
     """
+
+    print(f"qnode_call")
+
     if "shots" in kwargs:
         shots = qml.measurements.Shots(kwargs.pop("shots"))
     else:
@@ -251,11 +261,21 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
-    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
+    def _is_batched(arg):
+        # Check if the argument is a Tracer and if it contains a BatchTrace object.
+        # TODO: this currently does not work with pytrees
+        return isinstance(arg, jax.core.Tracer) and isinstance(
+            arg._trace, jax.interpreters.batching.BatchTrace
+        )
 
+    qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     flat_fn = FlatFn(qfunc)
 
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+    # This is only needed if the QNode is called with jax.vmap to make
+    # the batching rule work correctly with parameter broadcasting.
+    unbatched_args = tuple(arg.val if _is_batched(arg) else arg for arg in args)
+
+    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*unbatched_args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
