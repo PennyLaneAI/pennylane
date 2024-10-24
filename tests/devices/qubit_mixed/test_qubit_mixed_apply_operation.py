@@ -45,7 +45,6 @@ ml_frameworks_list = [
     pytest.param("torch", marks=pytest.mark.torch),
     pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
-INV_SQRT2 = 1 / np.sqrt(2)
 
 
 def basis_state(index, nr_wires):
