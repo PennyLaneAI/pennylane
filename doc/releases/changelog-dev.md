@@ -189,7 +189,7 @@
 * A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
   [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
 
-* Moved the calculation of `shift_len = len(shifts)` outside of a loop in the `compute_decomposition` function, reducing redundant recalculations and improving performance.
+* Moved the calculation of `shift_len = len(shifts)` outside of a loop in the `QFT.compute_decomposition` static method, reducing redundant recalculations and improving performance.
   [(#6434)](https://github.com/PennyLaneAI/pennylane/pull/6434)
 
 <h3>Breaking changes 💔</h3>
