@@ -23,11 +23,11 @@ def _get_polynomial(f, mod, *variable_sizes):
     """Calculate the polynomial binary representation of a given function using the `Möbius inversion formula <https://en.wikipedia.org/wiki/Möbius_inversion_formula#On_posets>`_ .
 
     Args:
-        f (callable):  the function from which the polynomial is extracted.
-        mod (int): the modulus to use for the result
-        *variable_sizes (int):  variable length argument specifying the number of bits used to represent each of the variables of the function
+        f (callable):  the function from which the polynomial is extracted
+        mod (int): the modulus to use for the arithmetic operation
+        *variable_sizes (int):  number of bits needed to represent each of the variables of the function
 
-    Return:
+    Returns:
         dict: A dictionary where each key is a tuple representing the variable terms of the polynomial (if the term includes the i-th variable, a 1 appears in the i-th position).
               Each key is a tuple containing a bitstring representing a term in the binary polynomial
 
@@ -70,7 +70,7 @@ def _get_polynomial(f, mod, *variable_sizes):
             decimal_values.append(decimal)
             start += wire_length
 
-        # (f_values is the zeta transform of the target polynomial)
+        # compute the zeta transform of the target polynomial
         f_values[s] = f(*decimal_values) % mod
 
     f_values = _mobius_inversion_of_zeta_transform(f_values, mod)
@@ -114,9 +114,9 @@ def _mobius_inversion_of_zeta_transform(f_values, mod):
 class OutPoly(Operation):
     r"""Performs the out-of-place polynomial operation.
 
-    This class implements an out-of-place operation that computes a polynomial function
+    This operator implements an out-of-place polynomial operation
     over a set of input registers and stores the result in an output register. The result
-    is computed modulo a given value.
+    is computed modulo :math:`k` in the computational basis.
 
     Given a function :math:`f(x_1, \dots, x_m)` and a modulus :math:`k`, the operator performs:
 
@@ -135,15 +135,15 @@ class OutPoly(Operation):
         be smaller than the modulus `mod`.
 
     Args:
-        polynomial_function (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
-        input_registers (Sequence[WiresLike]): Tuple whose elements are the wires used to store each variable of the polynomial.
+        polynomial_function (callable): The polynomial function to be applied. The number of arguments in the function must be equal to the number of input registers.
+        input_registers (Sequence[WiresLike]): Tuple containing the wires used to store each variable of the polynomial.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
-        mod (int, optional): The modulus to use for the result stored in the output register. If not provided, it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
+        mod (int, optional): The modulus for performing the polynomial operation. If not provided, it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of two, then two auxiliary work wires are required.
         id (str or None, optional): The name of the operation.
 
     Raises:
-        ValueError: If `mod` is not a power of 2 and no or insufficient work wires are provided.
+        ValueError: If `mod` is not a power of 2 and insufficient number of work wires are provided.
         ValueError: If the wires used in the input and output registers overlap.
         ValueError: If the function is not defined with integer coefficients.
 
@@ -160,11 +160,11 @@ class OutPoly(Operation):
 
             @qml.qnode(qml.device("default.qubit", shots = 1))
             def circuit():
-                # loading values for x and y
+                # load values of x and y
                 qml.BasisEmbedding(3, wires=reg["x_wires"])
                 qml.BasisEmbedding(2, wires=reg["y_wires"])
 
-                # applying the polynomial
+                # apply the polynomial
                 qml.OutPoly(
                     f,
                     input_registers = (reg["x_wires"], reg["y_wires"]),
@@ -180,8 +180,8 @@ class OutPoly(Operation):
             [1 0 1 1]
 
         The result, :math:`[1 0 1 1]`, is the binary representation of :math:`3^2 + 2 = 11`.
-        Note that by not specifying `mod`, the default value :math:`2^{\text{len(output_wires)}} = 2^4 = 16` is used.
-        For more information on using `mod`, see the Usage Details section below.
+        Note that the default value of `mod` in this example is :math:`2^{\text{len(output_wires)}} = 2^4 = 16`.
+        For more information on using `mod`, see the Usage Details section.
 
 
     .. seealso:: :class:`~.PhaseAdder`
