@@ -314,18 +314,25 @@ def apply_operation_tensordot(
     if is_op_channel or not is_mat_batched:  # First deal with the channel case
         return _tensordot_single_kraus(kraus)
     # Due to the limit of tensordot we better deal with each batch separately
-    kraus_batch = [[k[batch_i] for k in kraus] for batch_i in range(batch_size)]
+    # commented out due to the redirect to einsum
+    # kraus_batch = [[k[batch_i] for k in kraus] for batch_i in range(batch_size)]
     if not is_state_batched:
-        return math.stack([_tensordot_single_kraus(kraus_batch_i) for kraus_batch_i in kraus_batch])
+        return apply_operation_einsum(
+            op, state, is_state_batched, debugger, **_
+        )  # Try redirecting to the default einsum implementation
+        # Let's also put orignal code here for reference, incase future use
+        # return math.stack([_tensordot_single_kraus(kraus_batch_i) for kraus_batch_i in kraus_batch])
     # If the both mat and state are batched, we can directly apply the tensordot
     row_wires_list = channel_wires.tolist()
     col_wires_list = [w + num_wires for w in row_wires_list]
     axes_left = [channel_col_ids, row_wires_list]
     axes_right = [col_wires_list, channel_col_ids]
     kraus = math.reshape(kraus, state.shape)
-    return math.stack(
-        [_tensordot_single_kraus([kraus[batch_i]], state[batch_i]) for batch_i in range(batch_size)]
-    )
+    return apply_operation_einsum(op, state, is_state_batched, debugger, **_)
+    # Let's also put orignal code here for reference, incase future use
+    # return math.stack(
+    #     [_tensordot_single_kraus([kraus[batch_i]], state[batch_i]) for batch_i in range(batch_size)]
+    # )
 
 
 @singledispatch
