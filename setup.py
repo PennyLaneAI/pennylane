@@ -28,7 +28,7 @@ requirements = [
     "autograd",
     "toml",
     "appdirs",
-    "autoray>=0.6.11,<0.7",
+    "autoray>=0.6.11",
     "cachetools",
     "pennylane-lightning>=0.38",
     "requests",
