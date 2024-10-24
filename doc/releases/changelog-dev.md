@@ -400,6 +400,9 @@
 * Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
   [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
 
+* Fixes a bug where `mitigate_with_zne` loses the `shots` information of the original tape.
+  [(#6444)](https://github.com/PennyLaneAI/pennylane/pull/6444)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
