@@ -4,6 +4,7 @@ source = pennylane/labs
 omit =
     pennylane/*
     pennylane/labs/tests*
+disable_warnings = no-data-collected
 
 [report]
 # Regexes for lines to exclude from consideration
