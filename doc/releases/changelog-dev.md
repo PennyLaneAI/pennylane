@@ -35,6 +35,9 @@
 * `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
   [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
 
+* Support is added for if/else statements in circuits executed with `qml.capture.enabled`, via `autograph`
+  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+
 <h3>Improvements 🛠</h3>
 
 <h4>Capturing and representing hybrid programs</h4>
