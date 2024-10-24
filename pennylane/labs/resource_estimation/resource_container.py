@@ -45,7 +45,7 @@ class CompressedResourceOp:
         QSVT(num_wires=5, num_angles=100)
     """
 
-    def __init__(self, op_type: type, params_tuple: tuple) -> None:
+    def __init__(self, op_type: type, params: dict) -> None:
         r"""Instantiate the light weight class corressponding to the operator type and parameters.
 
         Args:
@@ -75,13 +75,17 @@ class CompressedResourceOp:
         """
         self._name = op_type.__name__
         self.op_type = op_type
-        self.params = params_tuple
+        self.params = params
+
+        sorted_keys = sorted(list(params))
+        self._hashable_params = tuple((key, params[key]) for key in sorted_keys)  # tuple of sorted params
+
 
     def __hash__(self) -> int:
-        return hash((self._name, self.params))
+        return hash((self._name, self._hashable_params))
 
     def __eq__(self, other: object) -> bool:
-        return (self.op_type == other.op_type) and (dict(self.params) == dict(other.params))
+        return (self.op_type == other.op_type) and (self.params == other.params)
 
     def __repr__(self) -> str:
         op_type_str = self._name + "("
