@@ -27,10 +27,7 @@ class ResourceConstructor(ABC):
         """Returns the Resource object. This method is only to be used inside
         the methods of classes inheriting from ResourceConstructor."""
 
-    @classmethod
-    def resources(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        """Returns the Resource object"""
-        return cls._resource_decomp(*args, **kwargs)
+    resources = _resource_decomp
 
     @classmethod
     def set_resources(cls, new_func: Callable) -> None:
