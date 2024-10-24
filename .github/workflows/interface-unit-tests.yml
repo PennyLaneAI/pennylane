@@ -182,37 +182,9 @@ jobs:
   default-dependency-versions:
     needs:
       - determine_runner
-    
-    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
-    
-    steps:
-      - name: Default JAX Version
-        id: jax
-        run: echo "version=0.4.28" >> $GITHUB_OUTPUT
-      
-      - name: Default Tensorflow Version
-        id: tensorflow
-        run: echo "version=2.16.0" >> $GITHUB_OUTPUT
-      
-      - name: Default PyTorch Version
-        id: pytorch
-        run: echo "version=2.3.0" >> $GITHUB_OUTPUT
-      
-      - name: Nightly Catalyst Version
-        id: catalyst
-        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre" >> $GITHUB_OUTPUT
-      
-      - name: PennyLane-Lightning Latest Version
-        id: pennylane-lightning
-        run: echo "latest=-i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade" >> $GITHUB_OUTPUT
-    
-    outputs:
-      jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
-      tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
-      pytorch-version: torch==${{ steps.pytorch.outputs.version }} -f https://download.pytorch.org/whl/torch_stable.html
-      catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
-      pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}
-
+    uses: ./.github/workflows/interface-dependency-versions.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
 
   torch-tests:
     needs:

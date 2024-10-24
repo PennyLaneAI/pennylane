@@ -1,0 +1,65 @@
+name: PennyLane Labs 
+on:
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: qml-labs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # This workflow is `required` if the PR has updated any files within `pennylane/labs/*`
+  # However, if we use the file filtering feature of GitHub Actions, then we cannot have this workflow marked as required.
+  # Instead, this workflow will run on all pull requests, but if `pennylane/labs/*` was not touched within the PR, it will
+  # exit early with a successful status (not tests will get run).
+  determine_if_workflow_should_run:
+    name: Determine if QML Labs Unit-Tests need to run
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        
+      - name: Assess changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: pennylane/labs/**
+
+    outputs:
+      run_labs_tests: ${{ steps.changed-files.outputs.all_changed_files_count != '0' }}
+  
+  determine_runner:
+    name: Determine runner type to use
+    if: github.event.pull_request.draft == false
+    needs:
+      - determine_if_workflow_should_run
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+  
+  default-dependency-versions:
+    needs:
+      - determine_if_workflow_should_run
+      - determine_runner
+    uses: ./.github/workflows/interface-dependency-versions.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+  
+  run_pennylane_labs_test:
+    name: PennyLane Labs Unit-Tests
+    needs:
+      - determine_if_workflow_should_run
+      - determine_runner
+      - default-dependency-versions
+    if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+    uses: .github/workflows/unit-test.yml
+    with:
+      job_name: labs-tests
+      branch: ${{ github.ref }}
+      coverage_artifact_name: labs-coverage
+      python_version: '3.10'
+      pytest_test_directory: pennylane/labs/tests
+      additional_pip_packages: |
+        ${{ needs.default-dependency-versions.outputs.jax-version }}
