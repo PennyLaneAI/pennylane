@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
+# pylint: disable=too-many-return-statements
 from itertools import combinations, product
-from typing import List
+from typing import List, Union
 
 import numpy as np
 
@@ -223,7 +224,7 @@ def check_commutation(ops1, ops2, vspace):
     return all(assert_vals)
 
 
-def check_all_commuting(ops: List[PauliSentence]):
+def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
     """Helper function to check if all operators in a set of operators commute"""
     if all(isinstance(op, PauliSentence) for op in ops):
         for oi, oj in combinations(ops, 2):
@@ -242,12 +243,13 @@ def check_all_commuting(ops: List[PauliSentence]):
 
         return True
 
-    if all(isinstance(op, PauliSentence) for op in ops):
+    if all(isinstance(op, np.ndarray) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = oj @ oi - oi @ oj
-            res.append(np.allclose(com, np.zeros_like(com)))
+            if not np.allclose(com, np.zeros_like(com)):
+                return False
 
-        return all(res)
+        return True
 
     return NotImplemented
 

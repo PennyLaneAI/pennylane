@@ -58,7 +58,7 @@ def _orthogonal_complement_basis(h, m, tol):
     return basis.T  # Transpose to get row vectors
 
 
-def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-14, verbose=0, return_adjvec=False):
+def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False):
     r"""
     Compute Cartan subalgebra (CSA) m in g, the odd parity subspace. I.e. the maximal Abelian subalgebra in m.
 
