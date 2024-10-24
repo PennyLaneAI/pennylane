@@ -267,6 +267,7 @@ tested_modified_templates = [
     qml.OutMultiplier,
     qml.OutAdder,
     qml.ModExp,
+    qml.OutPoly,
 ]
 
 
@@ -908,6 +909,46 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.ModExp(**kwargs))
+
+    def test_out_poly(self):
+        """Test the primitive bind call of OutPoly."""
+
+        def func(x, y):
+            return x**2 + y
+
+        kwargs = {
+            "polynomial_function": func,
+            "input_registers": [[0, 1], [2, 3]],
+            "output_wires": [4, 5],
+            "mod": 3,
+            "work_wires": [6, 7],
+        }
+
+        def qfunc():
+            qml.OutPoly(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.OutPoly._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+
+        assert eqn.params == kwargs
+
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.OutPoly(**kwargs))
 
     @pytest.mark.parametrize(
         "template, kwargs",
