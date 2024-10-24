@@ -1,0 +1,77 @@
+# There are dependencies that we install on a sub-set of Tests when running the PennyLane Unit Tests.
+# Since they are not installed in every instance, they are omitted from requirements-ci.txt.
+# However, we want a single source of truth for the versions of these dependencies.
+# This workflow maintains a single source of truth for the versions of these dependencies.
+
+name: Determine Package Versions to use for testing certain PennyLane Interfaces
+on:
+  workflow_call:
+    inputs:
+      job_runner_name:
+        description: The name of the runner to use for the job
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+      jax_version:
+        description: The version of JAX to use for testing
+        required: false
+        type: string
+        default: '0.4.28'
+      tensorflow_version:
+        description: The version of TensorFlow to use for testing
+        required: false
+        type: string
+        default: '2.16.0'
+      torch_version:
+        description: The version of PyTorch to use for testing
+        required: false
+        type: string
+        default: '2.3.0'
+    outputs:
+      jax-version:
+        description: The version of JAX to use
+        value: ${{ jobs.default-dependency-versions.outputs.jax-version }}
+      tensorflow-version:
+        description: The version of TensorFlow to use
+        value: ${{ jobs.default-dependency-versions.outputs.tensorflow-version }}
+      pytorch-version:
+        description: The version of PyTorch to use
+        value: ${{ jobs.default-dependency-versions.outputs.pytorch-version }}
+      catalyst-nightly:
+        description: The nightly version of Catalyst to use
+        value: ${{ jobs.default-dependency-versions.outputs.catalyst-nightly }}
+      pennylane-lightning-latest:
+        description: The latest version of PennyLane-Lightning to use
+        value: ${{ jobs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+  
+jobs:
+  default-dependency-versions:
+    runs-on: ${{ inputs.job_runner_name }}
+    
+    steps:
+      - name: Default JAX Version
+        id: jax
+        run: echo "version=${{ inputs.jax_version }}" >> $GITHUB_OUTPUT
+      
+      - name: Default Tensorflow Version
+        id: tensorflow
+        run: echo "version=${{ inputs.tensorflow_version }}" >> $GITHUB_OUTPUT
+      
+      - name: Default PyTorch Version
+        id: pytorch
+        run: echo "version=${{ inputs.torch_version }}" >> $GITHUB_OUTPUT
+      
+      - name: Nightly Catalyst Version
+        id: catalyst
+        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre" >> $GITHUB_OUTPUT
+      
+      - name: PennyLane-Lightning Latest Version
+        id: pennylane-lightning
+        run: echo "latest=-i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade" >> $GITHUB_OUTPUT
+    
+    outputs:
+      jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
+      tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
+      pytorch-version: torch==${{ steps.pytorch.outputs.version }} -f https://download.pytorch.org/whl/torch_stable.html
+      catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
+      pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}
