@@ -1203,13 +1203,15 @@ class TestReadoutError:
     @pytest.mark.parametrize("prob", [0, 0.5, 1])
     @pytest.mark.parametrize("nr_wires", [2, 3])
     def test_readout_vnentropy_and_mutualinfo(self, nr_wires, prob):
-        """Tests the output of qml.vn_entropy and qml.mutual_info is not affected by readout error"""
+        """Tests the output of qml.vn_entropy and qml.mutual_info
+        are not affected by readout error"""
         dev = qml.device("default.mixed", wires=nr_wires, readout_prob=prob)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.vn_entropy(wires=0, log_base=2), qml.mutual_info(
-                wires0=[0], wires1=[1], log_base=2
+            return (
+                qml.vn_entropy(wires=0, log_base=2),
+                qml.mutual_info(wires0=[0], wires1=[1], log_base=2),
             )
 
         res = circuit()

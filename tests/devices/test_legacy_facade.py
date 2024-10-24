@@ -19,6 +19,7 @@ import copy
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.devices.execution_config import ExecutionConfig
@@ -105,7 +106,7 @@ def test_tracker():
 def test_debugger():
     """Test that snapshots still work with legacy devices."""
 
-    dev = LegacyDeviceFacade(qml.devices.DefaultQubitLegacy(wires=1))
+    dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
 
     @qml.qnode(dev)
     def circuit():

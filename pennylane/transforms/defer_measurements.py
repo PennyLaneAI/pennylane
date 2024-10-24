@@ -39,7 +39,7 @@ def _check_tape_validity(tape: QuantumScript):
 
     for mp in tape.measurements:
         if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
-            mp.obs or mp._wires or mp.mv
+            mp.obs or mp._wires or mp.mv is not None
         ):
             raise ValueError(
                 f"Cannot use {mp.__class__.__name__} as a measurement without specifying wires "
@@ -199,7 +199,7 @@ def defer_measurements(
     >>> qml.grad(qnode)(par)
     tensor(-0.49622252, requires_grad=True)
 
-    Reusing and reseting measured wires will work as expected with the
+    Reusing and resetting measured wires will work as expected with the
     ``defer_measurements`` transform:
 
     .. code-block:: python3

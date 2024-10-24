@@ -84,7 +84,7 @@ Features
 
 - *Device-independent*.
   The same quantum circuit model can be **run on different backends**. Install
-  `plugins <https://pennylane.ai/plugins.html>`_ to access even more
+  `plugins <https://pennylane.ai/plugins>`_ to access even more
   devices, including **Strawberry Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
   **Microsoft QDK**, and **ProjectQ**.
 
@@ -94,15 +94,15 @@ Getting started
 
 For an introduction to quantum machine learning, we have several guides and resources available
 on our `QML website <https://pennylane.ai/qml/>`_, including
-`What is QML? <https://pennylane.ai/qml/whatisqml.html>`_,
-`frequently asked questions <https://pennylane.ai/faq.html>`_,
-a `glossary of key concepts <https://pennylane.ai/qml/glossary.html>`_, and a curated selection
-of `QML videos <https://pennylane.ai/qml/videos.html>`_.
+`What is QML? <https://pennylane.ai/qml/whatisqml>`_,
+`frequently asked questions <https://pennylane.ai/faq>`_,
+a `glossary of key concepts <https://pennylane.ai/qml/glossary>`_, and a curated selection
+of `QML videos <https://pennylane.ai/qml/videos>`_.
 
 Then, take a deeper dive into quantum machine learning by
 exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
 with our collection of
-`QML demonstrations <https://pennylane.ai/qml/demonstrations.html>`_.
+`QML demonstrations <https://pennylane.ai/qml/demonstrations>`_.
 
 You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
 more details on the :doc:`quantum operations <introduction/operations>`, and to explore
@@ -110,7 +110,7 @@ the available :doc:`optimization tools <introduction/interfaces>` provided by Pe
 We also have a detailed guide on :doc:`how to write your own <development/plugins>`
 PennyLane-compatible quantum device.
 
-Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
+Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins>`_
 available for running your hybrid optimizations—these include
 IBM Q, provided by the `PennyLane-Qiskit <https://docs.pennylane.ai/projects/qiskit/en/stable/>`__
 plugin, as well as the Rigetti Aspen QPU provided by `PennyLane-Rigetti
@@ -137,7 +137,7 @@ If you are having issues, please let us know by posting the issue on our GitHub 
 
 We encourage contributions — simply fork the PennyLane repository, and then make a
 `pull request <https://help.github.com/articles/about-pull-requests/>`_ containing
-your contribution. All contributers to PennyLane will be listed as authors on the releases.
+your contribution. All contributors to PennyLane will be listed as authors on the releases.
 
 To chat directly with the team designing and building PennyLane, as well as members of
 our community — ranging from quantum machine learning researchers, to students, to those
@@ -201,6 +201,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_fourier
    code/qml_gradients
    code/qml_kernels
+   code/qml_labs
    code/qml_logging
    code/qml_math
    code/qml_noise

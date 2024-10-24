@@ -479,7 +479,7 @@ class ClassicalShadowMP(MeasurementTransform):
 class ShadowExpvalMP(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
-    Please refer to :func:`shadow_expval` for detailed documentation.
+    Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
     Args:
         H (Operator, Sequence[Operator]): Operator or list of Operators to compute the expectation value over.

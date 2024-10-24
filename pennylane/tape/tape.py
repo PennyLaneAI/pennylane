@@ -78,10 +78,9 @@ def _validate_computational_basis_sampling(tape):
         with (
             QueuingManager.stop_recording()
         ):  # stop recording operations - the constructed operator is just aux
+            prod_op = qml.ops.Prod if qml.operation.active_new_opmath() else qml.operation.Tensor
             pauliz_for_cb_obs = (
-                qml.Z(all_wires)
-                if len(all_wires) == 1
-                else qml.operation.Tensor(*[qml.Z(w) for w in all_wires])
+                qml.Z(all_wires) if len(all_wires) == 1 else prod_op(*[qml.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:
@@ -188,7 +187,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         The ``stop_at`` callable allows the specification of terminal
         operations that should no longer be decomposed. In this example, the ``X``
-        operator is not decomposed becasue ``stop_at(qml.X(0)) == True``.
+        operator is not decomposed because ``stop_at(qml.X(0)) == True``.
 
         >>> def stop_at(obj):
         ...     return isinstance(obj, qml.X)

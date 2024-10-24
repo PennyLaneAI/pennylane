@@ -116,7 +116,7 @@ class TestSupportedObservables:
         if dev.shots and observable == "SparseHamiltonian":
             pytest.skip("SparseHamiltonian only supported in analytic mode")
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             assert hasattr(dev, "observables")
             if observable not in dev.observables:
                 pytest.skip("observable not supported")
@@ -313,7 +313,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         theta = 0.432
@@ -342,7 +342,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device) and "Projector" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
         theta = 0.732
@@ -380,7 +380,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         theta = 0.432
@@ -426,7 +426,7 @@ class TestExpval:
     def test_op_arithmetic_matches_default_qubit(self, o, device, tol):
         """Test that devices (which support the observable) match default.qubit results."""
         dev = device(2)
-        if isinstance(dev, qml.Device) and o.name not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and o.name not in dev.observables:
             pytest.skip(f"Skipped because device does not support the {o.name} observable.")
 
         def circuit():
@@ -448,7 +448,7 @@ class TestTensorExpval:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -473,7 +473,7 @@ class TestTensorExpval:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -517,7 +517,7 @@ class TestTensorExpval:
         """
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         @qml.qnode(dev)
@@ -545,7 +545,7 @@ class TestTensorExpval:
         """
         dev = device(wires=3)
         dev_custom_labels = device(wires=label_map)
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         def circ(wire_labels):
@@ -567,7 +567,7 @@ class TestTensorExpval:
         n_wires = 3
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             if "Hermitian" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Hermitian observable.")
 
@@ -609,7 +609,7 @@ class TestTensorExpval:
         n_wires = 3
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             if "Projector" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Projector observable.")
 
@@ -661,7 +661,7 @@ class TestTensorExpval:
         n_wires = 4
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             if "SparseHamiltonian" not in dev.observables:
                 pytest.skip(
                     "Skipped because device does not support the SparseHamiltonian observable."
@@ -694,6 +694,25 @@ class TestTensorExpval:
 class TestSample:
     """Tests for the sample return type."""
 
+    def test_sample_wires(self, device):
+        """Test that a device can return samples."""
+
+        n_wires = 1
+        dev = device(n_wires)
+
+        if not dev.shots:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            return qml.sample(wires=0)
+
+        res = circuit()
+        assert qml.math.allclose(res, 1)  # note, might be violated with a noisy device?
+        assert qml.math.shape(res) == (dev.shots.total_shots,)
+        assert qml.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
+
     def test_sample_values(self, device, tol):
         """Tests if the samples returned by sample have
         the correct values
@@ -724,7 +743,7 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.Device) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         A_ = np.array([[1, 2j], [-2j, 0]])
@@ -760,7 +779,7 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.Device) and "Projector" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
         theta = 0.543
@@ -808,7 +827,7 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.Device) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         theta = 0.543
@@ -857,7 +876,7 @@ class TestSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.Device) and "Projector" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
         theta = 0.543
@@ -915,7 +934,7 @@ class TestTensorSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -959,7 +978,7 @@ class TestTensorSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -1001,7 +1020,7 @@ class TestTensorSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             if "Hermitian" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Hermitian observable.")
 
@@ -1095,7 +1114,7 @@ class TestTensorSample:
         if not dev.shots:
             pytest.skip("Device is in analytic mode, cannot test sampling.")
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             if "Projector" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Projector observable.")
 
@@ -1270,7 +1289,7 @@ class TestVar:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device) and "Hermitian" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Hermitian" not in dev.observables:
             pytest.skip("Skipped because device does not support the Hermitian observable.")
 
         phi = 0.543
@@ -1306,7 +1325,7 @@ class TestVar:
         n_wires = 2
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device) and "Projector" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
         phi = 0.543
@@ -1367,7 +1386,7 @@ class TestTensorVar:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -1399,7 +1418,7 @@ class TestTensorVar:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
@@ -1449,7 +1468,7 @@ class TestTensorVar:
         """
         n_wires = 3
         dev = device(n_wires)
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         @qml.qnode(dev)
@@ -1476,7 +1495,7 @@ class TestTensorVar:
         """
         dev = device(wires=3)
         dev_custom_labels = device(wires=label_map)
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             skip_if(dev, {"supports_tensor_observables": False})
 
         def circ(wire_labels):
@@ -1498,7 +1517,7 @@ class TestTensorVar:
         n_wires = 3
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             if "Hermitian" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Hermitian observable.")
 
@@ -1570,7 +1589,7 @@ class TestTensorVar:
         n_wires = 3
         dev = device(n_wires)
 
-        if isinstance(dev, qml.Device):
+        if isinstance(dev, qml.devices.LegacyDevice):
             if "Projector" not in dev.observables:
                 pytest.skip("Skipped because device does not support the Projector observable.")
 

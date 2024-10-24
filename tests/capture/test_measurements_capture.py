@@ -578,7 +578,7 @@ def test_shadow_expval(x64_mode):
 
 @pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("mtype, kwargs", [(VnEntropyMP, {"log_base": 2}), (PurityMP, {})])
-def test_qinfo_measurements(mtype, kwargs, x64_mode):
+def test_vn_entropy_purity(mtype, kwargs, x64_mode):
     """Test the capture of a vn entropy and purity measurement."""
 
     initial_mode = jax.config.jax_enable_x64
@@ -609,14 +609,14 @@ def test_qinfo_measurements(mtype, kwargs, x64_mode):
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
-def test_MutualInfo(x64_mode):
-    """Test the capture of a vn entropy and purity measurement."""
+def test_mutual_info(x64_mode):
+    """Test the capture of a mutual info and vn entanglement entropy measurement."""
 
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 
     def f(w1, w2):
-        return qml.mutual_info(wires0=[w1, 1], wires1=[w2, 3], log_base=2)
+        return MutualInfoMP(wires=(qml.wires.Wires([w1, 1]), qml.wires.Wires([w2, 3])), log_base=2)
 
     jaxpr = jax.make_jaxpr(f)(0, 2)
     assert len(jaxpr.eqns) == 1

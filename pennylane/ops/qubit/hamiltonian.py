@@ -75,14 +75,13 @@ class Hamiltonian(Observable):
 
     .. warning::
 
-        As of ``v0.36``, ``qml.Hamiltonian`` dispatches to :class:`~.pennylane.ops.op_math.LinearCombination`
-        by default. For further details, see :doc:`Updated Operators </news/new_opmath/>`.
+        As of ``v0.39``, ``qml.ops.Hamiltonian`` is deprecated. When using the new operator arithmetic,
+        ``qml.Hamiltonian`` will dispatch to :class:`~pennylane.ops.op_math.LinearCombination`. See
+        :doc:`Updated Operators </news/new_opmath/>` for more details.
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
-        simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
-                         (like-terms are combined). The default value is `False`. Use of this argument is deprecated.
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -90,10 +89,6 @@ class Hamiltonian(Observable):
         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this Hamiltonian instance
-
-    .. warning::
-        The ``simplify`` argument is deprecated and will be removed in a future release.
-        Instead, you can call ``qml.simplify`` on the constructed operator.
 
     **Example:**
 
@@ -146,7 +141,7 @@ class Hamiltonian(Observable):
 
         The following code examples show the behaviour of ``qml.Hamiltonian`` using old operator
         arithmetic. See :doc:`Updated Operators </news/new_opmath/>` for more details. The old
-        behaviour can be reactivated by calling
+        behaviour can be reactivated by calling the deprecated
 
         >>> qml.operation.disable_new_opmath()
 
@@ -254,19 +249,18 @@ class Hamiltonian(Observable):
         self,
         coeffs: TensorLike,
         observables: Iterable[Observable],
-        simplify: bool = False,
         grouping_type: Literal[None, "qwc", "commuting", "anticommuting"] = None,
         _grouping_indices: Optional[list[list[int]]] = None,
         method: Literal["lf", "rlf"] = "rlf",
         id: str = None,
     ):
-        if qml.operation.active_new_opmath():
-            warn(
-                "Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. "
-                "Instead, use 'qml.Hamiltonian'. "
-                "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
-                qml.PennyLaneDeprecationWarning,
-            )
+        warn(
+            "qml.ops.Hamiltonian uses the old approach to operator arithmetic, which will become "
+            "unavailable in version 0.40 of PennyLane. If you are experiencing issues, visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html or contact the PennyLane "
+            "team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -292,23 +286,6 @@ class Hamiltonian(Observable):
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
         self._grouping_indices = _grouping_indices
-
-        if simplify:
-
-            warn(
-                "The simplify argument in qml.Hamiltonian and qml.ops.LinearCombination is deprecated. "
-                "Instead, you can call qml.simplify on the constructed operator.",
-                qml.PennyLaneDeprecationWarning,
-            )
-
-            # simplify upon initialization changes ops such that they wouldnt be
-            # removed in self.queue() anymore, removing them here manually.
-            if qml.QueuingManager.recording():
-                for o in observables:
-                    qml.QueuingManager.remove(o)
-
-            with qml.QueuingManager.stop_recording():
-                self.simplify()
 
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():

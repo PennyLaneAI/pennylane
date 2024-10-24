@@ -19,8 +19,7 @@ from functools import partial
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
-from pennylane.gradients import adjoint_metric_tensor, metric_tensor
+from pennylane.devices import DefaultMixed
 from pennylane.measurements import DensityMatrixMP, StateMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
@@ -30,6 +29,11 @@ from pennylane.typing import PostprocessingFn
 def reduced_dm(tape: QuantumScript, wires, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compute the reduced density matrix from a :class:`~.QNode` returning
     :func:`~pennylane.state`.
+
+    .. warning::
+
+        The ``qml.qinfo.reduced_dm`` transform is deprecated and will be removed in v0.40. Instead include
+        the :func:`pennylane.density_matrix` measurement process in the return line of your QNode.
 
     Args:
         tape (QuantumTape or QNode or Callable)): A quantum circuit returning :func:`~pennylane.state`.
@@ -78,6 +82,14 @@ def reduced_dm(tape: QuantumScript, wires, **kwargs) -> tuple[QuantumScriptBatch
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+
+    warnings.warn(
+        "The qml.qinfo.reduced_dm transform is deprecated and will be removed "
+        "in v0.40. Instead include the qml.density_matrix measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -137,6 +149,11 @@ def purity(tape: QuantumScript, wires, **kwargs) -> tuple[QuantumScriptBatch, Po
     It is possible to compute the purity of a sub-system from a given state. To find the purity of
     the overall state, include all wires in the ``wires`` argument.
 
+    .. warning::
+
+        The ``qml.qinfo.purity transform`` is deprecated and will be removed in v0.40. Instead include
+        the :func:`pennylane.purity` measurement process in the return line of your QNode.
+
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit object returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
@@ -175,6 +192,14 @@ def purity(tape: QuantumScript, wires, **kwargs) -> tuple[QuantumScriptBatch, Po
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+
+    warnings.warn(
+        "The qml.qinfo.purity transform is deprecated and will be removed "
+        "in v0.40. Instead include the qml.purity measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -229,6 +254,11 @@ def vn_entropy(
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
+    .. warning::
+
+        The ``qml.qinfo.vn_entropy`` transform is deprecated and will be removed in v0.40. Instead include
+        the :func:`pennylane.vn_entropy` measurement process in the return line of your QNode.
+
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
@@ -263,6 +293,14 @@ def vn_entropy(
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
+
+    warnings.warn(
+        "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
+        "in v0.40. Instead include the qml.vn_entropy measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -366,6 +404,11 @@ def mutual_info(
     More specifically, it quantifies the amount of information obtained about
     one system by measuring the other system.
 
+    .. warning::
+
+        The ``qml.qinfo.mutual_info`` transform is deprecated and will be removed in v0.40. Instead include
+        the :func:`pennylane.mutual_info` measurement process in the return line of your QNode.
+
     Args:
         qnode (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
         wires0 (Sequence(int)): List of wires in the first subsystem.
@@ -403,6 +446,14 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
+
+    warnings.warn(
+        "The qml.qinfo.mutual_info transform is deprecated and will be removed "
+        "in v0.40. Instead include the qml.mutual_info measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
@@ -437,6 +488,11 @@ def vn_entanglement_entropy(
     where :math:`S` is the von Neumann entropy; :math:`\rho_A = \text{Tr}_B [\rho_{AB}]` and
     :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
 
+    .. warning::
+
+        The ``qml.qinfo.vn_entanglement_entropy`` transform is deprecated and will be removed in v0.40.
+        See the :func:`pennylane.vn_entropy` measurement instead.
+
     The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
     two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
     Von Neumann entropy of the reduced density matrix for any of the subsystems. If it is non-zero,
@@ -455,296 +511,17 @@ def vn_entanglement_entropy(
         will provide the entanglement entropy in the form of a tensor.
 
     """
+
+    warnings.warn(
+        "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will "
+        "be removed in v0.40. Instead include the qml.vn_entropy measurement process "
+        "on one of the subsystems.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     return _bipartite_qinfo_transform(
         qml.math.vn_entanglement_entropy, tape, wires0, wires1, base, **kwargs
     )
-
-
-def classical_fisher(qnode, argnums=0):
-    r"""Returns a function that computes the classical fisher information matrix (CFIM) of a given :class:`.QNode` or
-    quantum tape.
-
-    Given a parametrized (classical) probability distribution :math:`p(\bm{\theta})`, the classical fisher information
-    matrix quantifies how changes to the parameters :math:`\bm{\theta}` are reflected in the probability distribution.
-    For a parametrized quantum state, we apply the concept of classical fisher information to the computational
-    basis measurement.
-    More explicitly, this function implements eq. (15) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_:
-
-    .. math::
-
-        \text{CFIM}_{i, j} = \sum_{\ell=0}^{2^N-1} \frac{1}{p_\ell(\bm{\theta})} \frac{\partial p_\ell(\bm{\theta})}{
-        \partial \theta_i} \frac{\partial p_\ell(\bm{\theta})}{\partial \theta_j}
-
-    for :math:`N` qubits.
-
-    Args:
-        tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
-        argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
-
-    Returns:
-        func: The function that computes the classical fisher information matrix. This function accepts the same
-        signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
-        returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
-        it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
-
-    .. warning::
-        ``pennylane.qinfo.classical_fisher`` is being migrated to a different module and will
-        removed in version 0.39. Instead, use :func:`pennylane.gradients.classical_fisher`.
-
-    .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
-
-    **Example**
-
-    First, let us define a parametrized quantum state and return its (classical) probability distribution for all
-    computational basis elements:
-
-    .. code-block:: python
-
-        import pennylane.numpy as pnp
-
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def circ(params):
-            qml.RX(params[0], wires=0)
-            qml.CNOT([0, 1])
-            qml.CRY(params[1], wires=[1, 0])
-            qml.Hadamard(1)
-            return qml.probs(wires=[0, 1])
-
-    Executing this circuit yields the ``2**2=4`` elements of :math:`p_\ell(\bm{\theta})`
-
-    >>> pnp.random.seed(25)
-    >>> params = pnp.random.random(2)
-    >>> circ(params)
-    [0.41850088 0.41850088 0.08149912 0.08149912]
-
-    We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
-    by ``classical_fisher()``:
-
-    >>> cfim_func = qml.qinfo.classical_fisher(circ)
-    >>> cfim_func(params)
-    [[ 0.901561 -0.125558]
-     [-0.125558  0.017486]]
-
-    This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
-
-    .. code-block:: python
-
-        @qml.qnode(dev)
-        def circ(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            return qml.probs(wires=range(n_wires))
-
-    >>> x, y = pnp.array([0.5, 0.6], requires_grad=True)
-    >>> circ(x, y)
-    [0.86215007 0.         0.13784993 0.        ]
-    >>> qml.qinfo.classical_fisher(circ)(x, y)
-    [array([[0.32934729]]), array([[0.51650396]])]
-
-    Note how in the case of multiple variables we get a list of matrices with sizes
-    ``[(n_params0, n_params0), (n_params1, n_params1)]``, which in this case is simply two ``(1, 1)`` matrices.
-
-
-    A typical setting where the classical fisher information matrix is used is in variational quantum algorithms.
-    Closely related to the `quantum natural gradient <https://arxiv.org/abs/1909.02108>`_, which employs the
-    `quantum` fisher information matrix, we can compute a rescaled gradient using the CFIM. In this scenario,
-    typically a Hamiltonian objective function :math:`\langle H \rangle` is minimized:
-
-    .. code-block:: python
-
-        H = qml.Hamiltonian(coeffs=[0.5, 0.5], observables=[qml.Z(0), qml.Z(1)])
-
-        @qml.qnode(dev)
-        def circ(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.RX(params[2], wires=1)
-            qml.RY(params[3], wires=1)
-            qml.CNOT(wires=(0,1))
-            return qml.expval(H)
-
-        params = pnp.random.random(4)
-
-    We can compute both the gradient of :math:`\langle H \rangle` and the CFIM with the same :class:`.QNode` ``circ``
-    in this example since ``classical_fisher()`` ignores the return types and assumes ``qml.probs()`` for all wires.
-
-    >>> grad = qml.grad(circ)(params)
-    >>> cfim = qml.qinfo.classical_fisher(circ)(params)
-    >>> print(grad.shape, cfim.shape)
-    (4,) (4, 4)
-
-    Combined together, we can get a rescaled gradient to be employed for optimization schemes like natural gradient
-    descent.
-
-    >>> rescaled_grad = cfim @ grad
-    >>> print(rescaled_grad)
-    [-0.66772533 -0.16618756 -0.05865127 -0.06696078]
-
-    The ``classical_fisher`` matrix itself is again differentiable:
-
-    .. code-block:: python
-
-        @qml.qnode(dev)
-        def circ(params):
-            qml.RX(qml.math.cos(params[0]), wires=0)
-            qml.RX(qml.math.cos(params[0]), wires=1)
-            qml.RX(qml.math.cos(params[1]), wires=0)
-            qml.RX(qml.math.cos(params[1]), wires=1)
-            return qml.probs(wires=range(2))
-
-        params = pnp.random.random(2)
-
-    >>> qml.qinfo.classical_fisher(circ)(params)
-    [[4.18575068e-06 2.34443943e-03]
-     [2.34443943e-03 1.31312079e+00]]
-    >>> qml.jacobian(qml.qinfo.classical_fisher(circ))(params)
-    array([[[9.98030491e-01, 3.46944695e-18],
-            [1.36541817e-01, 5.15248592e-01]],
-           [[1.36541817e-01, 5.15248592e-01],
-            [2.16840434e-18, 2.81967252e-01]]]))
-
-    """
-    warnings.warn(
-        "pennylane.qinfo.classical_fisher is being migrated to a different module and will "
-        "removed in version 0.39. Instead, use pennylane.gradients.classical_fisher.",
-        qml.PennyLaneDeprecationWarning,
-    )
-
-    return qml.gradients.classical_fisher(qnode, argnums=argnums)
-
-
-@partial(transform, is_informative=True)
-def quantum_fisher(
-    tape: QuantumScript, device, *args, **kwargs
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
-
-    Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
-    are reflected in the quantum state. The metric used to induce the QFIM is the fidelity :math:`f = |\langle \psi | \psi' \rangle|^2` between two (pure) quantum states.
-    This leads to the following definition of the QFIM (see eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_):
-
-    .. math::
-
-        \text{QFIM}_{i, j} = 4 \text{Re}\left[ \langle \partial_i \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle
-        - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
-
-    with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
-
-    .. seealso::
-        :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.transforms.classical_fisher`
-
-    Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit that may have arbitrary return types.
-        *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
-
-    Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will provide the quantum Fisher information in the form of a tensor.
-
-    .. warning::
-        ``pennylane.qinfo.quantum_fisher`` is being migrated to a different module and will
-        removed in version 0.39. Instead, use :func:`pennylane.gradients.quantum_fisher`.
-
-    .. note::
-
-        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`.
-        Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on ``"default.qubit"``
-        with exact expectations (``shots=None``). In all other cases, e.g. if a device with finite shots
-        is used, the hardware-compatible transform :func:`~.pennylane.metric_tensor` is used, which
-        may require an additional wire on the device.
-        Please refer to the respective documentations for details.
-
-    **Example**
-
-    The quantum Fisher information matrix (QIFM) can be used to compute the `natural` gradient for `Quantum Natural Gradient Descent <https://arxiv.org/abs/1909.02108>`_.
-    A typical scenario is optimizing the expectation value of a Hamiltonian:
-
-    .. code-block:: python
-
-        n_wires = 2
-
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        H = 1.*qml.X(0) @ qml.X(1) - 0.5 * qml.Z(1)
-
-        @qml.qnode(dev)
-        def circ(params):
-            qml.RY(params[0], wires=1)
-            qml.CNOT(wires=(1,0))
-            qml.RY(params[1], wires=1)
-            qml.RZ(params[2], wires=1)
-            return qml.expval(H)
-
-        params = pnp.array([0.5, 1., 0.2], requires_grad=True)
-
-    The natural gradient is then simply the QFIM multiplied by the gradient:
-
-    >>> grad = qml.grad(circ)(params)
-    >>> grad
-    [ 0.59422561 -0.02615095 -0.05146226]
-    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
-    >>> qfim
-    [[1.         0.         0.        ]
-     [0.         1.         0.        ]
-     [0.         0.         0.77517241]]
-    >>> qfim @ grad
-    tensor([ 0.59422561, -0.02615095, -0.03989212], requires_grad=True)
-
-    When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
-    To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
-
-    >>> dev = qml.device("default.qubit", wires=n_wires+1, shots=1000)
-    >>> @qml.qnode(dev)
-    ... def circ(params):
-    ...     qml.RY(params[0], wires=1)
-    ...     qml.CNOT(wires=(1,0))
-    ...     qml.RY(params[1], wires=1)
-    ...     qml.RZ(params[2], wires=1)
-    ...     return qml.expval(H)
-    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
-
-    Alternatively, we can fall back on the block-diagonal QFIM without the additional wire.
-
-    >>> qfim = qml.qinfo.quantum_fisher(circ, approx="block-diag")(params)
-
-    """
-    warnings.warn(
-        "pennylane.qinfo.quantum_fisher is being migrated to a different module and will "
-        "removed in version 0.39. Instead, use pennylane.gradients.quantum_fisher.",
-        qml.PennyLaneDeprecationWarning,
-    )
-
-    if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
-        tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
-
-        def processing_fn_multiply(res):
-            res = qml.execute(res, device=device)
-            return 4 * processing_fn(res)
-
-        return tapes, processing_fn_multiply
-
-    res = adjoint_metric_tensor(tape, *args, **kwargs)
-
-    def processing_fn_multiply(r):  # pylint: disable=function-redefined
-        r = qml.math.stack(r)
-        return 4 * r
-
-    return res, processing_fn_multiply
-
-
-@quantum_fisher.custom_qnode_transform
-def qnode_execution_wrapper(self, qnode, targs, tkwargs):
-    """Here, we overwrite the QNode execution wrapper in order
-    to take into account that classical processing may be present
-    inside the QNode."""
-
-    tkwargs["device"] = qnode.device
-
-    return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 def fidelity(qnode0, qnode1, wires0, wires1):
@@ -772,6 +549,11 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     .. note::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
         of the interface of the first state.
+
+    .. warning::
+
+        ``qml.qinfo.fidelity`` is deprecated and will be removed in v0.40. Instead, use
+        :func:`pennylane.math.fidelity`.
 
     Args:
         state0 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
@@ -877,9 +659,21 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     .. seealso:: :func:`pennylane.math.fidelity`
     """
 
+    warnings.warn(
+        "qml.qinfo.fidelity is deprecated and will be removed in v0.40. Instead, use "
+        "qml.math.fidelity.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
+    # with warnings.catch_warnings():
+    warnings.filterwarnings(
+        action="ignore",
+        message="The qml.qinfo.reduced_dm transform",
+        category=qml.PennyLaneDeprecationWarning,
+    )
     state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
     state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
@@ -947,6 +741,11 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     Roughly speaking, quantum relative entropy is a measure of distinguishability between two
     quantum states. It is the quantum mechanical analog of relative entropy.
 
+    .. warning::
+
+        ``qml.qinfo.relative_entropy`` is deprecated and will be removed in v0.40. Instead, use
+        :func:`~pennylane.math.relative_entropy`.
+
     Args:
         qnode0 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
         qnode1 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
@@ -997,9 +796,21 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
      tensor(0.16953273, requires_grad=True))
     """
 
+    warnings.warn(
+        "qml.qinfo.relative_entropy is deprecated and will be removed in v0.40. Instead, use "
+        "qml.math.relative_entropy.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
+    # with warnings.catch_warnings():
+    warnings.filterwarnings(
+        action="ignore",
+        message="The qml.qinfo.reduced_dm transform",
+        category=qml.PennyLaneDeprecationWarning,
+    )
     state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
     state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
@@ -1068,6 +879,11 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
     The trace distance measures how close two quantum states are. In particular, it upper-bounds
     the probability of distinguishing two quantum states.
 
+    .. warning::
+
+        ``qml.qinfo.trace_distance`` is deprecated and will be removed in v0.40. Instead, use
+        :func:`~pennylane.math.trace_distance`.
+
     Args:
         qnode0 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
         qnode1 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
@@ -1118,9 +934,21 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
      tensor(0.28232124, requires_grad=True))
     """
 
+    warnings.warn(
+        "qml.qinfo.trace_distance is deprecated and will be removed in v0.40. Instead, use "
+        "qml.math.trace_distance.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
+    # with warnings.catch_warnings():
+    warnings.filterwarnings(
+        action="ignore",
+        message="The qml.qinfo.reduced_dm transform",
+        category=qml.PennyLaneDeprecationWarning,
+    )
     state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
     state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 

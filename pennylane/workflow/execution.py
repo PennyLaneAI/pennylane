@@ -35,12 +35,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
 
-from .jacobian_products import (
-    DeviceDerivatives,
-    DeviceJacobianProducts,
-    LightningVJPs,
-    TransformJacobianProducts,
-)
+from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -51,12 +46,9 @@ jpc_interfaces = {
     "autograd",
     "numpy",
     "torch",
-    "pytorch",
     "jax",
-    "jax-python",
     "jax-jit",
     "tf",
-    "tensorflow",
 }
 
 SupportedInterfaceUserInput = Literal[
@@ -78,29 +70,28 @@ SupportedInterfaceUserInput = Literal[
 ]
 
 _mapping_output = (
-    "Numpy",
+    "numpy",
     "auto",
     "autograd",
     "autograd",
     "numpy",
     "jax",
-    "jax",
+    "jax-jit",
     "jax",
     "jax",
     "torch",
     "torch",
     "tf",
     "tf",
-    "tf",
-    "tf",
+    "tf-autograph",
+    "tf-autograph",
 )
+
 INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
-#: list[str]: allowed interface strings
-SUPPORTED_INTERFACES = list(INTERFACE_MAP)
+SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
-
 
 _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
     "Cached execution with finite shots detected!\n"
@@ -135,23 +126,21 @@ def _get_ml_boundary_execute(
         pennylane.QuantumFunctionError if the required package is not installed.
 
     """
-    mapped_interface = INTERFACE_MAP[interface]
     try:
-        if mapped_interface == "autograd":
+        if interface == "autograd":
             from .interfaces.autograd import autograd_execute as ml_boundary
 
-        elif mapped_interface == "tf":
-            if "autograph" in interface:
-                from .interfaces.tensorflow_autograph import execute as ml_boundary
+        elif interface == "tf-autograph":
+            from .interfaces.tensorflow_autograph import execute as ml_boundary
 
-                ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
+            ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
-            else:
-                from .interfaces.tensorflow import tf_execute as full_ml_boundary
+        elif interface == "tf":
+            from .interfaces.tensorflow import tf_execute as full_ml_boundary
 
-                ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
+            ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
-        elif mapped_interface == "torch":
+        elif interface == "torch":
             from .interfaces.torch import execute as ml_boundary
 
         elif interface == "jax-jit":
@@ -159,7 +148,8 @@ def _get_ml_boundary_execute(
                 from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
                 from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
-        else:  # interface in {"jax", "jax-python", "JAX"}:
+
+        else:  # interface is jax
             if device_vjp:
                 from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
@@ -167,9 +157,10 @@ def _get_ml_boundary_execute(
 
     except ImportError as e:  # pragma: no cover
         raise qml.QuantumFunctionError(
-            f"{mapped_interface} not found. Please install the latest "
-            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
+            f"{interface} not found. Please install the latest "
+            f"version of {interface} to enable the '{interface}' interface."
         ) from e
+
     return ml_boundary
 
 
@@ -263,12 +254,22 @@ def _get_interface_name(tapes, interface):
 
     Returns:
         str: Interface name"""
+
+    if interface not in SUPPORTED_INTERFACE_NAMES:
+        raise qml.QuantumFunctionError(
+            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
+        )
+
+    interface = INTERFACE_MAP[interface]
+
     if interface == "auto":
         params = []
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
-    if INTERFACE_MAP.get(interface, "") == "tf" and _use_tensorflow_autograph():
+        if interface != "numpy":
+            interface = INTERFACE_MAP[interface]
+    if interface == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
     if interface == "jax":
         try:  # pragma: no cover
@@ -439,6 +440,7 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
+    _interface_user_input = interface
     interface = _get_interface_name(tapes, interface)
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {"jax", "jax-jit"}:
@@ -460,7 +462,11 @@ def execute(
     )
 
     # Mid-circuit measurement configuration validation
-    mcm_interface = interface or _get_interface_name(tapes, "auto")
+    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
+    # workflow still needs to know if jax-jit is used
+    mcm_interface = (
+        _get_interface_name(tapes, "auto") if _interface_user_input is None else interface
+    )
     finite_shots = any(tape.shots for tape in tapes)
     _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
@@ -479,12 +485,12 @@ def execute(
         cache = None
 
     # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = interface is None or config.gradient_method in {
+    no_interface_boundary_required = interface == "numpy" or config.gradient_method in {
         None,
         "backprop",
     }
     device_supports_interface_data = no_interface_boundary_required and (
-        interface is None
+        interface == "numpy"
         or config.gradient_method == "backprop"
         or getattr(device, "short_name", "") == "default.mixed"
     )
@@ -497,9 +503,9 @@ def execute(
         numpy_only=not device_supports_interface_data,
     )
 
-    # moved to its own explicit step so it will be easier to remove
+    # moved to its own explicit step so that it will be easier to remove
     def inner_execute_with_empty_jac(tapes, **_):
-        return (inner_execute(tapes), [])
+        return inner_execute(tapes), []
 
     if interface in jpc_interfaces:
         execute_fn = inner_execute
@@ -517,17 +523,7 @@ def execute(
         results = inner_execute(tapes)
         return post_processing(results)
 
-    if (
-        device_vjp
-        and getattr(device, "short_name", "") in ("lightning.gpu", "lightning.kokkos")
-        and interface in jpc_interfaces
-    ):  # pragma: no cover
-        if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
-            gradient_kwargs["use_device_state"] = False
-
-        jpc = LightningVJPs(device, gradient_kwargs=gradient_kwargs)
-
-    elif config.use_device_jacobian_product and interface in jpc_interfaces:
+    if config.use_device_jacobian_product and interface in jpc_interfaces:
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
@@ -563,7 +559,7 @@ def execute(
                     config: the ExecutionConfig that specifies how to perform the simulations.
                 """
                 numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
-                return (device.execute(numpy_tapes, config), tuple())
+                return device.execute(numpy_tapes, config), tuple()
 
             def gradient_fn(internal_tapes):
                 """A partial function that wraps compute_derivatives method of the device.
@@ -612,7 +608,7 @@ def execute(
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
-    if interface in {"jax", "jax-python", "jax-jit"}:
+    if "jax" in interface:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)

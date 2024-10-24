@@ -229,7 +229,7 @@ class TestValidation:
             return capabilities
 
         # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultMixed, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
@@ -434,7 +434,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.interface is None
+        assert circuit.interface == "numpy"
         with pytest.warns(
             qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
         ):
@@ -645,61 +645,6 @@ class TestTapeConstruction:
         assert qn.qtape.operations == contents[0:3]
         assert qn.qtape.measurements == contents[3:]
 
-    def test_operator_all_device_wires(self, monkeypatch, tol):
-        """Test that an operator that must act on all wires raises an error
-        if the operator wires are not the device wires (when device wires
-        are defined)."""
-        monkeypatch.setattr(qml.RX, "num_wires", qml.operation.AllWires)
-
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=2)
-        qn = QNode(circuit, dev)
-
-        with pytest.raises(qml.QuantumFunctionError, match="Operator RX must act on all wires"):
-            qn(0.5)
-
-        dev = qml.device("default.qubit", wires=1)
-        qn = QNode(circuit, dev)
-        assert np.allclose(qn(0.5), np.cos(0.5), atol=tol, rtol=0)
-
-    def test_all_wires_new_device(self):
-        """Test that an operator on AllWires must act on all device wires if they
-        are specified, and otherwise all tape wires, with the new device API."""
-
-        assert qml.GlobalPhase.num_wires == qml.operation.AllWires
-
-        dev = qml.device("default.qubit")
-        dev_with_wires = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circuit1(x):
-            qml.GlobalPhase(x, wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # fails when GlobalPhase is a strict subset of all tape wires
-        with pytest.raises(qml.QuantumFunctionError, match="GlobalPhase must act on all wires"):
-            circuit1(0.5)
-
-        @qml.qnode(dev)
-        def circuit2(x):
-            qml.GlobalPhase(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # passes here, does not care for device.wires because it has none
-        assert circuit2(0.5) == 1
-
-        @qml.qnode(dev_with_wires)
-        def circuit3(x):
-            qml.GlobalPhase(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # fails when GlobalPhase is a subset of device wires, even if it acts on all tape wires
-        with pytest.raises(qml.QuantumFunctionError, match="GlobalPhase must act on all wires"):
-            circuit3(0.5)
-
     @pytest.mark.jax
     def test_jit_counts_raises_error(self):
         """Test that returning counts in a quantum function with trainable parameters while
@@ -897,7 +842,7 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
@@ -945,12 +890,11 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 2
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
-    def test_dynamic_one_shot_if_mcm_unsupported(self, dev_name):
+    def test_dynamic_one_shot_if_mcm_unsupported(self):
         """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
         does not support mid circuit measurements.
         """
-        dev = qml.device(dev_name, wires=2, shots=100)
+        dev = qml.device("default.mixed", wires=2, shots=100)
 
         with pytest.raises(
             TypeError,
@@ -975,7 +919,7 @@ class TestIntegration:
         @qml.qnode(dev)
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
+            qml.BasisState(basis_state, wires=[0, 1])
             qml.CRY(x, wires=[0, 1])
             return qml.sample(qml.PauliZ(1))
 
@@ -983,7 +927,7 @@ class TestIntegration:
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
+            qml.BasisState(basis_state, wires=[0, 1])
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
@@ -1138,6 +1082,20 @@ class TestIntegration:
 
         assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert len(circuit.tape.operations) == 1
+
+    def test_qnode_preserves_inferred_numpy_interface(self):
+        """Tests that the QNode respects the inferred numpy interface."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.8)
+        res = circuit(x)
+        assert qml.math.get_interface(res) == "numpy"
 
 
 class TestShots:
@@ -1720,10 +1678,9 @@ class TestNewDeviceIntegration:
 class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
-    def test_one_shot_error_without_shots(self, dev_name):
+    def test_one_shot_error_without_shots(self):
         """Test that an error is raised if mcm_method="one-shot" with no shots"""
-        dev = qml.device(dev_name, wires=3)
+        dev = qml.device("default.qubit", wires=3)
         param = np.pi / 4
 
         @qml.qnode(dev, mcm_method="one-shot")
@@ -1899,7 +1856,7 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = np.array(0.5)
+        x = pnp.array(0.5)
         circuit(x)
 
         tape = spy.call_args[0][0][0]
@@ -2051,7 +2008,7 @@ def test_prune_dynamic_transform_with_mcm():
 
 
 def test_gradient_fn_lightning_metric_tensor():
-    """Test that if lightning is used with the metric tensor, the graident_fn is parameter shift."""
+    """Test that if lightning is used with the metric tensor, the gradient_fn is parameter shift."""
 
     dev = qml.device("lightning.qubit", wires=2)
 

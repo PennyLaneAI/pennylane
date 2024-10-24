@@ -24,36 +24,41 @@ import pennylane as qml
 
 
 @pytest.mark.parametrize(
-    ("lcu", "control"),
+    ("lcu", "control", "skip_diff"),
     [
-        (qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
-        (qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
-        (qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
-        (0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2), [0]),
-        (qml.Z(2) + qml.X(1) @ qml.X(2), [0]),
-        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1]),
+        (qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
+        (qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
+        (qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
+        (0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2), [0], False),
+        (qml.Z(2) + qml.X(1) @ qml.X(2), [0], False),
+        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1], True),
         (
             qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
             [0, 1, 2, 3],
+            True,
         ),
     ],
 )
-def test_standard_checks(lcu, control):
+def test_standard_checks(lcu, control, skip_diff):
     """Run standard validity tests."""
 
     op = qml.PrepSelPrep(lcu, control)
-    qml.ops.functions.assert_valid(op)
+    # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
+    qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
 
 
 def test_repr():
     """Test the repr method."""
+
     lcu = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
     control = [0]
 
     op = qml.PrepSelPrep(lcu, control)
-    assert (
-        repr(op) == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"
-    )
+    with np.printoptions(legacy="1.21"):
+        assert (
+            repr(op)
+            == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"
+        )
 
 
 def _get_new_terms(lcu):

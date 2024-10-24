@@ -164,7 +164,7 @@ class TestInheritanceMixins:
         # check the dir
         assert "grad_recipe" not in dir(ob)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_observable_legacy_opmath(self, power_method):
         """Test that when the base is an Observable, Pow will also inherit from Observable."""
 
@@ -258,7 +258,7 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires((0, 1))
         assert op.num_wires == 2
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_base(self, power_method):
         """Test pow initialization for a hamiltonian."""
         base = qml.Hamiltonian([2.0, 1.0], [qml.PauliX(0) @ qml.PauliY(0), qml.PauliZ("b")])
@@ -423,7 +423,7 @@ class TestProperties:
         op: Pow = power_method(base=qml.PauliX(0), z=3.5)
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_queue_category_None(self, power_method):
         """Test that the queue category `None` for some observables carries over."""
         op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
@@ -568,7 +568,7 @@ class TestSimplify:
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
-    def test_simplify_with_adjoint_not_defined(self):
+    def test_simplify_with_pow_not_defined(self):
         """Test the simplify method with an operator that has not defined the op.pow method."""
         op = Pow(qml.U2(1, 1, 0), z=3)
         simplified_op = op.simplify()

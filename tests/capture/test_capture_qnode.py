@@ -37,11 +37,10 @@ def enable_disable_plxpr():
     qml.capture.disable()
 
 
-@pytest.mark.parametrize("dev_name", ("default.qubit", "default.qubit.legacy"))
-def test_error_if_shot_vector(dev_name):
+def test_error_if_shot_vector():
     """Test that a NotImplementedError is raised if a shot vector is provided."""
 
-    dev = qml.device(dev_name, wires=1, shots=(50, 50))
+    dev = qml.device("default.qubit", wires=1, shots=(50, 50))
 
     @qml.qnode(dev)
     def circuit():
@@ -58,11 +57,10 @@ def test_error_if_shot_vector(dev_name):
     assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
 
-@pytest.mark.parametrize("dev_name", ("default.qubit", "default.qubit.legacy"))
-def test_error_if_overridden_shot_vector(dev_name):
+def test_error_if_overridden_shot_vector():
     """Test that a NotImplementedError is raised if a shot vector is provided on call."""
 
-    dev = qml.device(dev_name, wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev)
     def circuit():
@@ -141,14 +139,13 @@ def test_simple_qnode(x64_mode):
     jax.config.update("jax_enable_x64", initial_mode)
 
 
-@pytest.mark.parametrize("dev_name", ("default.qubit", "default.qubit.legacy"))
 @pytest.mark.parametrize("x64_mode", (True, False))
-def test_overriding_shots(dev_name, x64_mode):
+def test_overriding_shots(x64_mode):
     """Test that the number of shots can be overridden on call."""
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 
-    dev = qml.device(dev_name, wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev)
     def circuit():

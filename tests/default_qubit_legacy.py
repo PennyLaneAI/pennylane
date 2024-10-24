@@ -20,7 +20,6 @@ simulation of a qubit-based quantum circuit architecture.
 """
 import functools
 import itertools
-import warnings
 from string import ascii_letters as ABC
 
 import numpy as np
@@ -28,6 +27,8 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import BasisState, Snapshot, StatePrep
+from pennylane._version import __version__
+from pennylane.devices._qubit_device import QubitDevice
 from pennylane.devices.qubit import measure
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
@@ -36,9 +37,6 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
-
-from .._version import __version__
-from ._qubit_device import QubitDevice
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -208,14 +206,6 @@ class DefaultQubitLegacy(QubitDevice):
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):
-        warnings.warn(
-            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
-            "which supports backpropagation. "
-            "If you experience issues, reach out to the PennyLane team on "
-            "the discussion forum: https://discuss.pennylane.ai/",
-            qml.PennyLaneDeprecationWarning,
-        )
-
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 

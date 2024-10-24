@@ -14,13 +14,13 @@
 """
 Tests for the gradients.finite_difference module.
 """
-# pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import numpy
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import finite_diff, finite_diff_coeffs
 from pennylane.operation import AnyWires, Observable
 

@@ -82,8 +82,12 @@ def _get_qnode_prim():
         mps = qfunc_jaxpr.outvars
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
 
-    def _qnode_jvp(*args_and_tangents, **impl_kwargs):
-        return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), *args_and_tangents)
+    def make_zero(tan, arg):
+        return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
+
+    def _qnode_jvp(args, tangents, **impl_kwargs):
+        tangents = tuple(map(make_zero, tangents, args))
+        return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
 
     ad.primitive_jvps[qnode_prim] = _qnode_jvp
 
@@ -174,7 +178,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
-    flat_args, _ = jax.tree_util.tree_flatten(args)
+    flat_args = jax.tree_util.tree_leaves(args)
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *flat_args,

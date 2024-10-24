@@ -230,7 +230,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
     def shadow_expval(self, obs, circuit):
         r"""Compute expectation values using classical shadows in a differentiable manner.
 
-        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+        Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
         .. seealso:: :func:`~pennylane.shadow_expval`
 

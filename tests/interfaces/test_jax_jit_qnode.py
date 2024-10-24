@@ -27,20 +27,21 @@ from pennylane.devices import DefaultQubit
 
 # device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
-    [DefaultQubit(), "backprop", True, False],
-    [DefaultQubit(), "finite-diff", False, False],
-    [DefaultQubit(), "parameter-shift", False, False],
-    [DefaultQubit(), "adjoint", True, False],
-    [DefaultQubit(), "adjoint", True, True],
-    [ParamShiftDerivativesDevice(), "device", False, True],
-    [DefaultQubit(), "adjoint", False, False],
-    [DefaultQubit(), "spsa", False, False],
-    [DefaultQubit(), "hadamard", False, False],
+    [DefaultQubit(seed=123), "backprop", True, False],
+    [DefaultQubit(seed=123), "finite-diff", False, False],
+    [DefaultQubit(seed=123), "parameter-shift", False, False],
+    [DefaultQubit(seed=123), "adjoint", True, False],
+    [DefaultQubit(seed=123), "adjoint", True, True],
+    [ParamShiftDerivativesDevice(seed=123), "device", False, True],
+    [DefaultQubit(seed=123), "adjoint", False, False],
+    [DefaultQubit(seed=123), "spsa", False, False],
+    [DefaultQubit(seed=123), "hadamard", False, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
     [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=5), "parameter-shift", False, False],
+    [qml.device("reference.qubit", seed=123), "parameter-shift", False, False],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
@@ -812,6 +813,7 @@ class TestShotsIntegration:
         res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
         assert res.shape == (100, 2)  # pylint:disable=comparison-with-callable
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
@@ -911,6 +913,7 @@ class TestShotsIntegration:
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_sampling(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test sampling works as expected"""
         if grad_on_execution:
@@ -940,6 +943,7 @@ class TestQubitIntegration:
         assert isinstance(res[1], jax.Array)
         assert res[1].shape == (10,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_counts(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test counts works as expected"""
         if grad_on_execution:
@@ -1040,6 +1044,8 @@ class TestQubitIntegration:
             pytest.xfail("gradient transforms have a different vjp shape convention")
         elif dev.name == "lightning.qubit":
             pytest.xfail("lightning qubit does not support postselection.")
+        if dev.name == "reference.qubit":
+            pytest.skip("reference.qubit does not support postselection.")
 
         @qml.qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -1431,6 +1437,8 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
 
         P = jax.numpy.array(state)
         x, y = 0.765, -0.654
@@ -1514,6 +1522,11 @@ class TestTapeExpansion:
         are non-commuting groups and the number of shots is None
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
+        if dev.name == "reference.qubit":
+            pytest.skip(
+                "Cannot add transform to the transform program in preprocessing"
+                "when using mocker.spy on it."
+            )
         if dev.name == "param_shift.qubit":
             pytest.xfail("gradients transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
@@ -1840,6 +1853,9 @@ class TestJIT:
         to different reasons, hence the parametrization in the test.
         """
         # pylint: disable=unused-argument
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support Hermitians (sc-72911)")
+
         if diff_method == "backprop":
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 
@@ -2028,6 +2044,7 @@ class TestJIT:
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian with different return types."""
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2060,6 +2077,7 @@ class TestReturn:
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == ()
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2097,6 +2115,7 @@ class TestReturn:
         assert grad[0].shape == ()
         assert grad[1].shape == ()
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_multiple_param_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2129,6 +2148,7 @@ class TestReturn:
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_param_probs(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2162,6 +2182,7 @@ class TestReturn:
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_probs_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2201,6 +2222,7 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (4,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2233,6 +2255,7 @@ class TestReturn:
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_expval_expval_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2282,6 +2305,7 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == ()
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_expval_expval_multiple_params_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2320,6 +2344,7 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (2,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_var_var_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2372,6 +2397,7 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == ()
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_var_var_multiple_params_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2412,6 +2438,7 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (2,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_single_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2450,6 +2477,7 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (4,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2497,6 +2525,7 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (4,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2858,6 +2887,7 @@ class TestReturnHessian:
         assert hess[1].shape == (2, 2, 2)
 
 
+@pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
 @pytest.mark.parametrize("hessian", hessian_fn)
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "hadamard"])
 def test_jax_device_hessian_shots(hessian, diff_method):

@@ -1188,7 +1188,7 @@ class SWAP(Operation):
 class ECR(Operation):
     r""" ECR(wires)
 
-    An echoed RZX(pi/2) gate.
+    An echoed RZX(:math:`\pi/2`) gate.
 
     .. math:: ECR = {\frac{1}{\sqrt{2}}} \begin{bmatrix}
             0 & 0 & 1 & i \\

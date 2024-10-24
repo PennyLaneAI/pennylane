@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
-    features = (0, 1, 2)
+    features = (0.0, 1.0, 2.0)
 
     op = qml.IQPEmbedding(features, wires=(0, 1, 2))
     qml.ops.functions.assert_valid(op)
@@ -283,6 +283,33 @@ class TestInterfaces:
         grads2 = grad_fn2(features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
+    def test_jax_jit(self, tol, features):
+        """Tests the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array(features)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.jacobian(circuit)
+        grads = grad_fn(features)
+
+        grad_fn2 = jax.jacobian(circuit2)
+        grads2 = grad_fn2(features)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])

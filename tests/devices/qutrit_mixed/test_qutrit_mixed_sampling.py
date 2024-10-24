@@ -25,7 +25,11 @@ from pennylane.devices.qutrit_mixed import (
     measure_with_samples,
     sample_state,
 )
-from pennylane.devices.qutrit_mixed.sampling import _sample_state_jax
+from pennylane.devices.qutrit_mixed.sampling import (
+    _sample_probs_jax,
+    _sample_state_jax,
+    sample_probs,
+)
 from pennylane.measurements import Shots
 
 APPROX_ATOL = 0.05
@@ -33,6 +37,9 @@ QUDIT_DIM = 3
 ONE_QUTRIT = 1
 TWO_QUTRITS = 2
 THREE_QUTRITS = 3
+
+MISMATCH_ERROR = "a and p must have same size"
+MISMATCH_ERROR_JAX = "p must be None or match the shape of a"
 
 ml_frameworks_list = [
     "numpy",
@@ -402,7 +409,7 @@ class TestInvalidSampling:
         mp = qml.sample(wires=range(2))
         _shots = Shots(shots)
 
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = measure_with_samples(mp, state, _shots)
 
     @pytest.mark.parametrize("mp", [qml.probs(0), qml.probs(op=qml.GellMann(0, 1))])
@@ -606,7 +613,6 @@ class TestBroadcastingPRNG:
     )
     def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
-
         import jax
 
         spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
@@ -693,3 +699,165 @@ class TestHamiltonianSamples:
         assert isinstance(res, tuple)
         assert np.allclose(res[0], expected, atol=APPROX_ATOL)
         assert np.allclose(res[1], expected, atol=APPROX_ATOL)
+
+
+class TestSampleProbs:
+    # pylint: disable=attribute-defined-outside-init
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.rng = np.random.default_rng(42)
+        self.shots = 1000
+
+    def test_sample_probs_basic(self):
+        probs = np.array([0.2, 0.3, 0.5])
+        num_wires = 1
+        is_state_batched = False
+
+        result = sample_probs(probs, self.shots, num_wires, is_state_batched, self.rng)
+
+        assert result.shape == (self.shots, num_wires)
+        assert np.all(result >= 0) and np.all(result < QUDIT_DIM)
+
+        _, counts = np.unique(result, return_counts=True)
+        observed_probs = counts / self.shots
+        np.testing.assert_allclose(observed_probs, probs, atol=0.05)
+
+    def test_sample_probs_multi_wire(self):
+        probs = np.array(
+            [0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]
+        )  # 3^2 = 9 probabilities for 2 wires
+        num_wires = 2
+        is_state_batched = False
+
+        result = sample_probs(probs, self.shots, num_wires, is_state_batched, self.rng)
+
+        assert result.shape == (self.shots, num_wires)
+        assert np.all(result >= 0) and np.all(result < QUDIT_DIM)
+
+    def test_sample_probs_batched(self):
+        probs = np.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]])
+        num_wires = 1
+        is_state_batched = True
+
+        result = sample_probs(probs, self.shots, num_wires, is_state_batched, self.rng)
+
+        assert result.shape == (2, self.shots, num_wires)
+        assert np.all(result >= 0) and np.all(result < QUDIT_DIM)
+
+    @pytest.mark.parametrize(
+        "probs,num_wires,is_state_batched,expected_shape",
+        [
+            (np.array([0.2, 0.3, 0.5]), 1, False, (1000, 1)),
+            (np.array([0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]), 2, False, (1000, 2)),
+            (np.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]]), 1, True, (2, 1000, 1)),
+        ],
+    )
+    def test_sample_probs_shapes(self, probs, num_wires, is_state_batched, expected_shape):
+        result = sample_probs(probs, self.shots, num_wires, is_state_batched, self.rng)
+        assert result.shape == expected_shape
+
+    def test_invalid_probs(self):
+        probs = np.array(
+            [0.1, 0.2, 0.3, 0.4]
+        )  # 4 probabilities, which is invalid for qutrit system
+        num_wires = 2
+        is_state_batched = False
+
+        with pytest.raises(ValueError, match=MISMATCH_ERROR):
+            sample_probs(probs, self.shots, num_wires, is_state_batched, self.rng)
+
+
+class TestSampleProbsJax:
+    # pylint: disable=attribute-defined-outside-init
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        import jax
+
+        self.jax_key = jax.random.PRNGKey(42)
+        self.shots = 1000
+
+    @pytest.mark.jax
+    def test_sample_probs_jax_basic(self):
+        probs = np.array([0.2, 0.3, 0.5])
+        num_wires = 1
+        is_state_batched = False
+        state_len = 1
+
+        result = _sample_probs_jax(
+            probs, self.shots, num_wires, is_state_batched, self.jax_key, state_len
+        )
+
+        assert result.shape == (self.shots, num_wires)
+        assert np.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
+
+        _, counts = qml.math.unique(result, return_counts=True)
+        observed_probs = counts / self.shots
+        np.testing.assert_allclose(observed_probs, probs, atol=0.05)
+
+    @pytest.mark.jax
+    def test_sample_probs_jax_multi_wire(self):
+        probs = qml.math.array(
+            [0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]
+        )  # 3^2 = 9 probabilities for 2 wires
+        num_wires = 2
+        is_state_batched = False
+        state_len = 1
+
+        result = _sample_probs_jax(
+            probs, self.shots, num_wires, is_state_batched, self.jax_key, state_len
+        )
+
+        assert result.shape == (self.shots, num_wires)
+        assert qml.math.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
+
+    @pytest.mark.jax
+    def test_sample_probs_jax_batched(self):
+        probs = qml.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]])
+        num_wires = 1
+        is_state_batched = True
+        state_len = 2
+
+        result = _sample_probs_jax(
+            probs, self.shots, num_wires, is_state_batched, self.jax_key, state_len
+        )
+
+        assert result.shape == (2, self.shots, num_wires)
+        assert qml.math.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
+
+    # pylint: disable=too-many-arguments
+    @pytest.mark.parametrize(
+        "probs,num_wires,is_state_batched,expected_shape,state_len",
+        [
+            (qml.math.array([0.2, 0.3, 0.5]), 1, False, (1000, 1), 1),
+            (
+                qml.math.array([0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]),
+                2,
+                False,
+                (1000, 2),
+                1,
+            ),
+            (qml.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]]), 1, True, (2, 1000, 1), 2),
+        ],
+    )
+    @pytest.mark.jax
+    def test_sample_probs_jax_shapes(
+        self, probs, num_wires, is_state_batched, expected_shape, state_len
+    ):
+        result = _sample_probs_jax(
+            probs, self.shots, num_wires, is_state_batched, self.jax_key, state_len
+        )
+        assert result.shape == expected_shape
+
+    @pytest.mark.jax
+    def test_invalid_probs_jax(self):
+        probs = qml.math.array(
+            [0.1, 0.2, 0.3, 0.4]
+        )  # 4 probabilities, which is invalid for qutrit system
+        num_wires = 2
+        is_state_batched = False
+        state_len = 1
+
+        with pytest.raises(ValueError, match=MISMATCH_ERROR_JAX):
+            _sample_probs_jax(
+                probs, self.shots, num_wires, is_state_batched, self.jax_key, state_len
+            )

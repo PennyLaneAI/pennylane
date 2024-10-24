@@ -21,6 +21,7 @@ import pickle
 from string import ascii_lowercase
 
 import numpy as np
+import scipy.sparse
 
 import pennylane as qml
 from pennylane.operation import EigvalsUndefinedError
@@ -112,6 +113,23 @@ def _check_matrix(op):
         )()
 
 
+def _check_sparse_matrix(op):
+    """Check that if the operation says it has a sparse matrix, it does. Otherwise a ``SparseMatrixUndefinedError`` should be raised."""
+    if op.has_sparse_matrix:
+        mat = op.sparse_matrix()
+        assert isinstance(mat, scipy.sparse.csr_matrix), "matrix must be a TensorLike"
+        l = 2 ** len(op.wires)
+        failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
+        assert qml.math.shape(mat) == (l, l), failure_comment
+    else:
+        failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
+        _assert_error_raised(
+            op.sparse_matrix,
+            qml.operation.SparseMatrixUndefinedError,
+            failure_comment=failure_comment,
+        )()
+
+
 def _check_matrix_matches_decomp(op):
     """Check that if both the matrix and decomposition are defined, they match."""
     if op.has_matrix and op.has_decomposition:
@@ -167,6 +185,25 @@ def _check_eigendecomposition(op):
         original_mat = qml.matrix(op)
         failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
         assert qml.math.allclose(decomp_mat, original_mat), failure_comment
+
+
+def _check_generator(op):
+    """Checks that if an operator's has_generator property is True, it has a generator."""
+
+    if op.has_generator:
+        gen = op.generator()
+        assert isinstance(gen, qml.operation.Operator)
+        new_op = qml.exp(gen, 1j * op.data[0])
+        assert qml.math.allclose(
+            qml.matrix(op, wire_order=op.wires), qml.matrix(new_op, wire_order=op.wires)
+        )
+    else:
+        failure_comment = (
+            "If has_generator is False, the matrix method must raise a ``GeneratorUndefinedError``."
+        )
+        _assert_error_raised(
+            op.generator, qml.operation.GeneratorUndefinedError, failure_comment=failure_comment
+        )()
 
 
 def _check_copy(op):
@@ -258,6 +295,39 @@ def _check_bind_new_parameters(op):
         assert qml.math.allclose(d1, d2), failure_comment
 
 
+def _check_differentiation(op):
+    """Checks that the operator can be executed and differentiated correctly."""
+
+    if op.num_params == 0:
+        return
+
+    data, struct = qml.pytrees.flatten(op)
+
+    def circuit(*args):
+        qml.apply(qml.pytrees.unflatten(args, struct))
+        return qml.probs(wires=op.wires)
+
+    qnode_ref = qml.QNode(circuit, qml.device("default.qubit"), diff_method="backprop")
+    qnode_ps = qml.QNode(circuit, qml.device("default.qubit"), diff_method="parameter-shift")
+
+    params = [x if isinstance(x, int) else qml.numpy.array(x) for x in data]
+
+    ps = qml.jacobian(qnode_ps)(*params)
+    expected_bp = qml.jacobian(qnode_ref)(*params)
+
+    error_msg = (
+        "Parameter-shift does not produce the same Jacobian as with backpropagation. "
+        "This might be a bug, or it might be expected due to the mathematical nature "
+        "of backpropagation, in which case, this test can be skipped for this operator."
+    )
+
+    if isinstance(ps, tuple):
+        for actual, expected in zip(ps, expected_bp):
+            assert qml.math.allclose(actual, expected), error_msg
+    else:
+        assert qml.math.allclose(ps, expected_bp), error_msg
+
+
 def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
@@ -270,7 +340,12 @@ def _check_wires(op, skip_wire_mapping):
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mapping=False) -> None:
+def assert_valid(
+    op: qml.operation.Operator,
+    skip_pickle=False,
+    skip_wire_mapping=False,
+    skip_differentiation=False,
+) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
@@ -280,6 +355,8 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
     Keyword Args:
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
+        skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
+            the operator is parametrized but not differentiable.
 
     **Examples:**
 
@@ -332,5 +409,9 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
     _check_decomposition(op, skip_wire_mapping)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
+    _check_sparse_matrix(op)
     _check_eigendecomposition(op)
+    _check_generator(op)
+    if not skip_differentiation:
+        _check_differentiation(op)
     _check_capture(op)

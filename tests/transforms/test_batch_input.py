@@ -200,6 +200,9 @@ def test_mottonenstate_preparation(mocker):
     assert np.allclose(res, indiv_res)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+)
 def test_basis_state_preparation(mocker):
     """Test that batching works for BasisStatePreparation"""
     dev = qml.device("default.qubit", wires=3)

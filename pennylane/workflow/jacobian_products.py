@@ -18,7 +18,7 @@ import abc
 import inspect
 import logging
 from collections.abc import Callable, Sequence
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 from cachetools import LRUCache
@@ -334,7 +334,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
 
 class DeviceDerivatives(JacobianProductCalculator):
-    """Calculate jacobian products via a device provided jacobian.  This class relies on either ``qml.Device.gradients`` or
+    """Calculate jacobian products via a device provided jacobian.  This class relies on
     ``qml.devices.Device.compute_derivatives``.
 
     Args:
@@ -399,7 +399,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: Union["qml.devices.Device", "qml.Device"],
+        device: "qml.devices.Device",
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
     ):
         if execution_config is None:
@@ -691,61 +691,3 @@ class DeviceJacobianProducts(JacobianProductCalculator):
             logger.debug("execute_and_compute_jacobian called with %s", tapes)
         numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
-
-
-class LightningVJPs(DeviceDerivatives):
-    """Calculates VJPs natively using lightning.qubit.
-
-    Args:
-        device (LightningBase): Lightning ecosystem devices ``lightning.gpu`` or ``lightning.kokkos``.
-        gradient_kwargs (Optional[dict]):  Any gradient options.
-
-    >>> dev = qml.device('lightning.qubit', wires=5)
-    >>> jpc = LightningVJPs(dev, gradient_kwargs={"use_device_state": True, "method": "adjoint_jacobian"})
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0))])
-    >>> dev.batch_execute((tape,))
-    [array(0.36235775)]
-    >>> jpc.compute_vjp((tape,), (0.5,) )
-    ((array(-0.46601954),),)
-    >>> -0.5 * np.sin(1.2)
-    -0.46601954298361314
-
-    """
-
-    def __repr__(self):
-        long_to_short_name = {
-            "LightningQubit": "lightning.qubit",
-            "LightningKokkos": "lightning.kokkos",
-            "LightningGPU": "lightning.gpu",
-        }
-        return f"<LightningVJPs: {long_to_short_name[type(self._device).__name__]}, {self._execution_config.gradient_keyword_arguments}>"
-
-    def __init__(self, device, execution_config=None):
-        super().__init__(device, execution_config=execution_config)
-        self._processed_gradient_kwargs = {
-            key: value
-            for key, value in self._execution_config.gradient_keyword_arguments.items()
-            if key != "method"
-        }
-
-    def compute_vjp(self, tapes, dy):  # pragma: no cover
-        if not all(
-            isinstance(m, qml.measurements.ExpectationMP) for t in tapes for m in t.measurements
-        ):
-            raise NotImplementedError("Lightning device VJPs only support expectation values.")
-        results = []
-        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
-        for dyi, tape in zip(dy, numpy_tapes):
-            if len(tape.measurements) == 1:
-                dyi = (dyi,)
-            dyi = np.array(qml.math.unwrap(dyi))
-            if qml.math.ndim(dyi) > 1:
-                raise NotImplementedError(
-                    "Lightning device VJPs are not supported with jax jacobians."
-                )
-            vjp_f = self._device.vjp(tape.measurements, dyi, **self._processed_gradient_kwargs)
-            out = vjp_f(tape)
-            if len(tape.trainable_params) == 1:
-                out = (out,)
-            results.append(out)
-        return tuple(results)

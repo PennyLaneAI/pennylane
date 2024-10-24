@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
-# pylint:disable=use-implicit-booleaness-not-comparison
+# pylint:disable=use-implicit-booleaness-not-comparison,abstract-method
 from functools import partial
 
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.measurements import Shots
 from pennylane.operation import AnyWires, Observable
@@ -556,7 +556,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     def test_Rot_gradient(self, mocker, theta, shift, broadcast):
-        """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
+        """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
 
         shot_vec = tuple([1000000] * 2)
@@ -646,7 +646,7 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", angles)
     def test_CRot_gradient(self, theta, broadcast):
-        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parametrized
         gate is correct."""
         shot_vec = tuple([1000000] * 2)
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
@@ -2228,8 +2228,7 @@ class TestHamiltonianExpvalGradients:
         tape = qml.tape.QuantumScript.from_queue(q, shots=dev.shots)
         tape.trainable_params = {0, 1, 2, 3, 4, 5}
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        execute_fn = dev.batch_execute if isinstance(dev, qml.Device) else dev.execute
-        return fn(execute_fn(tapes))
+        return fn(dev.execute(tapes))
 
     @staticmethod
     def cost_fn_expected(weights, coeffs1, coeffs2):

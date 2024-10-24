@@ -1,3 +1,11 @@
+# This workflow is designed to run unit tests for the PennyLane library on GitHub Actions. 
+# It allows for customization of various parameters such as the branch to checkout, 
+# the Python version to use, the directory where the tests are located, and additional packages to install. 
+# The workflow also includes steps to install dependencies, run the unit tests using PyTest, 
+# and upload the coverage file and test durations as artifacts. 
+# Additionally, it provides options to freeze the dependencies and upload the frozen requirements 
+# file as an artifact.
+
 name: Unit Test
 on:
   workflow_call:
@@ -14,6 +22,11 @@ on:
         description: Name of the artifact file that will contain the coverage file for codevoc
         required: true
         type: string
+      job_runner_name:
+        description: The name of the runner to use for the job
+        required: false
+        type: string
+        default: 'ubuntu-latest'
       checkout_fetch_depth:
         description: How many commits to checkout from HEAD of branch passed
         required: false
@@ -24,51 +37,6 @@ on:
         required: false
         type: string
         default: '3.10'
-      pipeline_mode:
-        description: The pipeline mode can be unit-tests, benchmarks, reference-benchmark, or warnings
-        required: false
-        type: string
-        default: 'unit-tests'
-      install_jax:
-        description: Indicate if JAX should be installed or not
-        required: false
-        type: boolean
-        default: true
-      jax_version:
-        description: The version of JAX to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
-      install_tensorflow:
-        description: Indicate if TensorFlow should be installed or not
-        required: false
-        type: boolean
-        default: true
-      tensorflow_version:
-        description: The version of TensorFlow to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
-      install_pytorch:
-        description: Indicate if PyTorch should be installed or not
-        required: false
-        type: boolean
-        default: true
-      pytorch_version:
-        description: The version of PyTorch to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
-      install_catalyst_nightly:
-        description: Indicate if PennyLane-Catalyst should be installed from TestPyPi
-        required: false
-        type: boolean
-        default: false
-      install_pennylane_lightning_master:
-        description: Indicate if PennyLane-Lightning should be installed from the master branch
-        required: false
-        type: boolean
-        default: true
       pytest_test_directory:
         description: The directory where the PennyLane tests are that should be run by PyTest
         required: false
@@ -94,13 +62,13 @@ on:
         required: false
         type: string
         default: ''
-      pytest_store_durations:
-        description: Whether to store artifacts for test durations
-        required: false
-        type: boolean
-        default: false
       additional_pip_packages:
         description: Additional packages to install. Values will be passed to pip install {value}
+        required: false
+        type: string
+        default: ''
+      additional_pip_packages_post:
+        description: Additional packages to install after pennylane. Values will be passed to pip install {value}
         required: false
         type: string
         default: ''
@@ -114,85 +82,82 @@ on:
         required: false
         type: string
         default: "False"
-      python_warning_level:
-        description: Sets the default Python warning level as defined by https://docs.python.org/3/using/cmdline.html#envvar-PYTHONWARNINGS
-        required: false
-        type: string
-        default: 'default'
 
 jobs:
   test:
     name: ${{ inputs.job_name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.job_runner_name }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
           repository: PennyLaneAI/pennylane
-
-      - name: Determine benchmark name
-        if: ${{ contains(fromJSON('["benchmarks"]'), inputs.pipeline_mode) }}
-        id: benchmark_name
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '${{ inputs.python_version }}'
+      
+      - name: Upgrade PIP and install wheel
+        run: pip install --upgrade pip && pip install wheel --upgrade
+      
+      - name: Install PennyLane dependencies
         run: |
-          job_name="${{ inputs.job_name }}"
-          _benchmark_name=${job_name//[(,)]/""}
-          _benchmark_name=${_benchmark_name//[(" ")]/"-"}
-          echo "benchmark_name=$_benchmark_name" >> $GITHUB_OUTPUT
-
-      - name: Cache reference benchmarks
-        if: ${{ contains(fromJSON('["benchmarks"]'), inputs.pipeline_mode) }}
-        id: benchmark-cache
-        uses: actions/cache@v3
-        with:
-          path: benchmark_reference
-          key: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks_references
-
-      - name: Check if the shared part of the job will continue
-        id: continue
-        run: >-
-          echo "confirm=${{
-            contains(fromJSON('["unit-tests", "benchmarks", "warnings"]'), inputs.pipeline_mode)
-            || (inputs.pipeline_mode == 'reference-benchmarks'
-            && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
-
-      - name: Install PennyLane and dependencies
-        if: steps.continue.outputs.confirm == 'true'
-        uses: ./.github/workflows/install_deps
-        with:
-          python_version: ${{ inputs.python_version }}
-          install_pytorch: ${{ inputs.install_pytorch }}
-          install_tensorflow: ${{ inputs.install_tensorflow }}
-          install_jax: ${{ inputs.install_jax }}
-          additional_pip_packages: ${{ inputs.additional_pip_packages }}
-          install_catalyst_nightly: ${{ inputs.install_catalyst_nightly }}
-          install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
-          requirements_file: ${{ inputs.requirements_file }}
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+      
+      - name: Install additional PIP packages (Pre-PennyLane)
+        shell: bash
+        if: inputs.additional_pip_packages != ''
+        env:
+          ADDITIONAL_PIP_PACKAGES: ${{ inputs.additional_pip_packages }}
+        run: |
+          while IFS= read -r line; do
+            if [ ! -z "$line" ]; then
+                echo ''
+                echo "Now installing -> pip install $line"
+                echo ''
+                
+                pip install $line
+            fi
+          done <<< "$ADDITIONAL_PIP_PACKAGES"
+      
+      - name: Install PennyLane
+        shell: bash
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+      
+      - name: Install additional PIP packages (Post PennyLane Install)
+        shell: bash
+        if: inputs.additional_pip_packages_post != ''
+        env:
+          ADDITIONAL_PIP_PACKAGES: ${{ inputs.additional_pip_packages_post }}
+        run: |
+          while IFS= read -r line; do
+            if [ ! -z "$line" ]; then
+                echo ''
+                echo "Now installing -> pip install $line"
+                echo ''
+                
+                pip install $line
+            fi
+          done <<< "$ADDITIONAL_PIP_PACKAGES"
 
       - name: Set PyTest Args
-        if: steps.continue.outputs.confirm == 'true'
         id: pytest_args
         env:
-          PIPELINE_MODE: ${{ inputs.pipeline_mode }}
           PYTEST_COVERAGE_ARGS: ${{ inputs.pytest_coverage_flags }}
           PYTEST_PARALLELISE_ARGS: -n auto
-          PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
-          PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}"', inputs.pytest_durations_file_path) || '' }}
-          PYTEST_STORE_ARGS: ${{ inputs.pytest_store_durations == true && '--store-durations --clean-durations' || '' }}
+          PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}" --store-durations --clean-durations', inputs.pytest_durations_file_path) || '' }}
         run: |
-          if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
-            echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
-          elif [[ "$PIPELINE_MODE" =~ .*"warnings".* ]]; then
-            echo "args=$PYTEST_ADDITIONAL_ARGS --continue-on-collection-errors" >> $GITHUB_OUTPUT
-          else
-            echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_STORE_ARGS" >> $GITHUB_OUTPUT
-          fi
+          echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS" >> $GITHUB_OUTPUT
 
       - name: Run PennyLane Unit Tests
-        if: steps.continue.outputs.confirm == 'true'
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
           COV_CORE_SOURCE: pennylane
@@ -200,54 +165,33 @@ jobs:
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest -W ${{ inputs.python_warning_level }} ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
-
-      - name: Upload Durations file as artifact
-        if: ${{ inputs.pytest_store_durations == true }}
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
+      
+      - name: Freeze dependencies
+        shell: bash
+        if: inputs.requirements_file != ''
+        run: pip freeze | grep -v "file:///" | sed 's/\(pennylane[-_]lightning==[0-9\.]\+\)\.dev[0-9]\+/\1/gI' > ${{ inputs.requirements_file }}
+  
+      - name: Upload frozen requirements
+        if: inputs.requirements_file != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.job_name }}-durations.json
+          name: frozen-${{ inputs.requirements_file }}
+          path: ${{ inputs.requirements_file }}
+
+      - name: Upload Durations file as artifact
+        if: inputs.pytest_durations_file_path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: durations-${{ inputs.job_name }}
           path: ${{ inputs.pytest_durations_file_path }}
           include-hidden-files: true
 
       - name: Adjust coverage file for Codecov
-        if: inputs.pipeline_mode == 'unit-tests'
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload Coverage File
-        if: inputs.pipeline_mode == 'unit-tests'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
-
-      # If this is a reference benchmark move file to the cached directory, and we have a non-empty reference benchmark file.
-      - name: Move reference pytest benchmark file to cache
-        if: inputs.pipeline_mode == 'reference-benchmarks' && hashFiles('benchmarks.json') != ''
-        run: mkdir -p ${{ github.workspace }}/benchmark_reference && cp benchmarks.json "$_"
-
-      - name: Convert pytest benchmark JSON files to XUBM-JSON
-        if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmarks.json') != '' && hashFiles('benchmark_reference/benchmarks.json') != ''
-        run: |
-          mkdir ${{ github.workspace }}/benchmark_results
-          python .github/workflows/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename_XUBM benchmark_results/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }} --github_reference ${{ github.ref }}
-          python .github/workflows/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename benchmark_reference/benchmarks.json --filename_XUBM benchmark_reference/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }}
-
-      - name: Plotting benchmark graphs
-        if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != ''
-        run: |
-          python .github/workflows/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ steps.benchmark_name.outputs.benchmark_name }}
-
-      # Merge benchmarks data in a single JSON. Create a CSV file with runtimes. Move data to the artifact directory.
-      - name: Post-process benchmark data
-        if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != ''
-        run: |
-          python .github/workflows/scripts/benchmarks/export_benchmarks_data.py
-
-      # If this is an assessment benchmark, upload the data as an artifact.
-      - name: Upload pytest benchmark results
-        if: inputs.pipeline_mode == 'benchmarks'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks
-          path: ${{ github.workspace }}/benchmark_results

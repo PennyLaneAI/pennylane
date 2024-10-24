@@ -14,7 +14,7 @@
 # pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
-core parameterized gates.
+core parametrized gates.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools

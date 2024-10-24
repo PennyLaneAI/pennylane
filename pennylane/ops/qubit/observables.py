@@ -137,6 +137,10 @@ class Hermitian(Observable):
         Hermitian._validate_input(A)
         return A
 
+    @staticmethod
+    def compute_sparse_matrix(A) -> csr_matrix:  # pylint: disable=arguments-differ
+        return csr_matrix(Hermitian.compute_matrix(A))
+
     @property
     def eigendecomposition(self) -> dict[str, TensorLike]:
         """Return the eigendecomposition of the matrix specified by the Hermitian observable.

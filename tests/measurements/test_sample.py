@@ -121,8 +121,8 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert len(result) == 3
-        assert isinstance(result[0], np.ndarray)
-        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[0], float)
+        assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
 
@@ -458,7 +458,7 @@ class TestJAXCompatibility:
     @pytest.mark.parametrize("samples", (1, 10))
     def test_jitting_with_sampling_on_subset_of_wires(self, samples):
         """Test case covering bug in Issue #3904.  Sampling should be jit-able
-        when sampling occurs on a subset of wires. The bug was occuring due an improperly
+        when sampling occurs on a subset of wires. The bug was occurring due an improperly
         set shape method."""
         import jax
 

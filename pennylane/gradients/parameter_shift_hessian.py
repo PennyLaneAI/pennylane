@@ -490,7 +490,7 @@ def param_shift_hessian(
         in the QNode execution.
 
 
-        Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
+        Note: By default a QNode with the keyword ``hybrid=True`` computes derivatives with respect to
         QNode arguments, which can include classical computations on those arguments before they are
         passed to quantum operations. The "purely quantum" Hessian can instead be obtained with
         ``hybrid=False``, which is then computed with respect to the gate arguments and produces a

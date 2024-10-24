@@ -197,6 +197,7 @@ class TestAnnotatedQueue:
             ]
         assert q.queue == ops
 
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_append_tensor_ops(self):
         """Test that ops which are used as inputs to `Tensor`
         are successfully added to the queue, as well as the `Tensor` object."""
@@ -208,7 +209,7 @@ class TestAnnotatedQueue:
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_append_tensor_ops_overloaded(self):
         """Test that Tensor ops created using `@`
         are successfully added to the queue, as well as the `Tensor` object."""
@@ -220,7 +221,7 @@ class TestAnnotatedQueue:
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_append_prod_ops_overloaded(self):
         """Test that Prod ops created using `@`
         are successfully added to the queue, as well as the `Prod` object."""

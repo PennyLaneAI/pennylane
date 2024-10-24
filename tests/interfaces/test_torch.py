@@ -152,12 +152,29 @@ test_matrix = [
     (
         {"gradient_fn": "device", "device_vjp": False},
         Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(),
+        ParamShiftDerivativesDevice(seed=42),
     ),
     (
         {"gradient_fn": "device", "device_vjp": True},
         Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(),
+        ParamShiftDerivativesDevice(seed=42),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(None),
+        qml.device(
+            "reference.qubit",
+        ),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(100000),
+        qml.device("reference.qubit", seed=42),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots((100000, 100000)),
+        qml.device("reference.qubit", seed=42),
     ),
 ]
 

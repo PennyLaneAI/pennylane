@@ -966,7 +966,7 @@ class TestProperties:
         prod_op = prod(qml.Identity(wires=0), DummyOp(wires=0))
         assert prod_op._queue_category is None
 
-    def test_eigendecompostion(self):
+    def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
         eig_decomp = diag_prod_op.eigendecomposition

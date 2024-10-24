@@ -46,14 +46,14 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Catalyst supports compiling QNodes that use ``lightning.qubit``,
-        ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
-        devices. It does not support ``default.qubit``.
+        Catalyst only supports the JAX interface and selected devices.
+        Supported backend devices for Catalyst include
+        ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
+        but **not** ``default.qubit``.
 
-        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on
-        supported devices, operations, and measurements.
+        For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
-        CUDA Quantum supports ``softwareq.qpp``, ``nvidida.custatevec``, and ``nvidia.cutensornet``.
+        CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
 
     Args:
         fn (Callable): Hybrid (quantum-classical) function to compile
@@ -77,7 +77,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.
-        static_argnums(int or Seqence[Int]): an index or a sequence of indices that specifies the
+        static_argnums(int or Sequence[Int]): an index or a sequence of indices that specifies the
             positions of static arguments.
         abstracted_axes (Sequence[Sequence[str]] or Dict[int, str] or Sequence[Dict[int, str]]):
             An experimental option to specify dynamic tensor shapes.
@@ -419,15 +419,15 @@ def _get_while_loop_qfunc_prim():
 
         # If cond_fn(*init_state) is False, return the initial state
         fn_res = init_state
-        while jax.core.eval_jaxpr(jaxpr_cond_fn.jaxpr, jaxpr_consts_cond, *fn_res)[0]:
-            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts_body, *fn_res)
+        while jax.core.eval_jaxpr(jaxpr_cond_fn, jaxpr_consts_cond, *fn_res)[0]:
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn, jaxpr_consts_body, *fn_res)
 
         return fn_res
 
     @while_loop_prim.def_abstract_eval
     def _(*_, jaxpr_body_fn, **__):
 
-        return jaxpr_body_fn.out_avals
+        return [out.aval for out in jaxpr_body_fn.outvars]
 
     return while_loop_prim
 
@@ -471,8 +471,8 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             *jaxpr_body_fn.consts,
             *jaxpr_cond_fn.consts,
             *flat_args,
-            jaxpr_body_fn=jaxpr_body_fn,
-            jaxpr_cond_fn=jaxpr_cond_fn,
+            jaxpr_body_fn=jaxpr_body_fn.jaxpr,
+            jaxpr_cond_fn=jaxpr_cond_fn.jaxpr,
             n_consts_body=len(jaxpr_body_fn.consts),
             n_consts_cond=len(jaxpr_cond_fn.consts),
         )
@@ -635,14 +635,14 @@ def _get_for_loop_qfunc_prim():
         fn_res = init_state
 
         for i in range(lower_bound, upper_bound, step):
-            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, i, *fn_res)
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn, jaxpr_consts, i, *fn_res)
 
         return fn_res
 
     @for_loop_prim.def_abstract_eval
     def _(*_, jaxpr_body_fn, **__):
 
-        return jaxpr_body_fn.out_avals
+        return [out.aval for out in jaxpr_body_fn.outvars]
 
     return for_loop_prim
 
@@ -695,7 +695,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
             self.step,
             *jaxpr_body_fn.consts,
             *flat_args,
-            jaxpr_body_fn=jaxpr_body_fn,
+            jaxpr_body_fn=jaxpr_body_fn.jaxpr,
             n_consts=len(jaxpr_body_fn.consts),
         )
         assert flat_fn.out_tree is not None

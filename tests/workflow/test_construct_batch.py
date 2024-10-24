@@ -157,7 +157,7 @@ class TestTransformProgramGetter:
     def test_get_transform_program_legacy_device_interface(self):
         """Test the contents of the transform program with the legacy device interface."""
 
-        dev = qml.device("default.qubit.legacy", wires=5)
+        dev = qml.device("default.mixed", wires=5)
 
         @qml.transforms.merge_rotations
         @qml.qnode(dev, diff_method="backprop")
@@ -334,7 +334,7 @@ class TestConstructBatch:
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit.legacy", wires=2, shots=50))
+        @qml.qnode(qml.device("default.mixed", wires=2, shots=50))
         def circuit(order):
             qml.Permute(order, wires=(0, 1, 2))
             qml.X(0)

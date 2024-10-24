@@ -24,13 +24,21 @@ on:
       - ready_for_review
 
 jobs:
+  determine_runner:
+    if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+
   sphinx:
     if: github.event.pull_request.draft == false
     env:
       DEPS_BRANCH: bot/stable-deps-update
-    runs-on: ubuntu-latest
+    needs: [determine_runner]
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: PennyLaneAI/sphinx-action@master
       with:
         docs-folder: "doc/"

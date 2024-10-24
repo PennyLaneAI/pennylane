@@ -38,6 +38,7 @@ qubit_device_and_diff_method = [
     [qml.device("lightning.qubit", wires=4), "adjoint", False, False],
     [qml.device("lightning.qubit", wires=4), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=4), "adjoint", True, False],
+    [qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 TOL_FOR_SPSA = 1.0
@@ -980,6 +981,8 @@ class TestQubitIntegration:
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
 
         P = tf.constant(state, dtype=dtype)
 
@@ -1013,6 +1016,9 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+
+        if dev.name == "reference.qubit":
+            pytest.skip("reference.qubit does not support postselection.")
 
         @qml.qnode(
             dev,

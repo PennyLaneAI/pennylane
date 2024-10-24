@@ -48,7 +48,7 @@ except ImportError:
 
 def _one_parameter_generators(op):
     r"""Compute the effective generators :math:`\{\Omega_k\}` of one-parameter groups that
-    reproduce the partial derivatives of a parameterized evolution.
+    reproduce the partial derivatives of a parametrized evolution.
     In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
     and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
@@ -460,7 +460,7 @@ def pulse_odegen(
 
     **Example**
 
-    Consider the parameterized Hamiltonian
+    Consider the parametrized Hamiltonian
     :math:`\theta_0 Y_{0}+f(\boldsymbol{\theta_1}, t) Y_{1} + \theta_2 Z_{0}X_{1}`
     with parameters :math:`\theta_0 = \frac{1}{5}`,
     :math:`\boldsymbol{\theta_1}=\left(\frac{3}{5}, \frac{1}{5}\right)^{T}` and

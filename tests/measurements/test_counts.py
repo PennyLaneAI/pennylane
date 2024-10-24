@@ -135,9 +135,9 @@ class TestProcessSamples:
         rng = np.random.default_rng(123)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.float64)
 
-        samples[0][0] = np.NaN
-        samples[17][1] = np.NaN
-        samples[850][0] = np.NaN
+        samples[0][0] = np.nan
+        samples[17][1] = np.nan
+        samples[850][0] = np.nan
 
         result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
 

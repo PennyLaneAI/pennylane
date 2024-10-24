@@ -19,10 +19,11 @@ from random import random
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane import QubitDevice
 from pennylane import numpy as pnp
+from pennylane.devices import QubitDevice
 from pennylane.measurements import (
     Expectation,
     ExpectationMP,
@@ -45,7 +46,7 @@ mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
 
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
+# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name,abstract-method
 
 
 @pytest.fixture(scope="function")
@@ -163,6 +164,12 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
         return size // expected_size
 
     return None
+
+
+def test_deprecated_access():
+    """Test that accessing via top-level is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
+        qml.QubitDevice  # pylint: disable=pointless-statement
 
 
 def test_notimplemented_circuit_hash(mock_qubit_device):
@@ -1205,7 +1212,7 @@ class TestCapabilities:
 class TestNativeMidCircuitMeasurements:
     """Unit tests for mid-circuit measurements related functionality"""
 
-    class MCMDevice(qml.devices.DefaultQubitLegacy):
+    class MCMDevice(DefaultQubitLegacy):
         def apply(self, *args, **kwargs):
             for op in args[0]:
                 if isinstance(op, qml.measurements.MidMeasureMP):
@@ -1213,7 +1220,7 @@ class TestNativeMidCircuitMeasurements:
 
         @classmethod
         def capabilities(cls):
-            default_capabilities = copy.copy(qml.devices.DefaultQubitLegacy.capabilities())
+            default_capabilities = copy.copy(DefaultQubitLegacy.capabilities())
             default_capabilities["supports_mid_measure"] = True
             return default_capabilities
 
@@ -1508,20 +1515,17 @@ class TestResourcesTracker:
         Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
     )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
 
-    devices = ("default.qubit.legacy",)
-
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("dev_name", devices)
     @pytest.mark.parametrize(
         "qs_shots_wires, expected_resource", zip(qs_shots_wires_data, expected_resources)
     )
-    def test_tracker_single_execution(self, dev_name, qs_shots_wires, expected_resource):
+    def test_tracker_single_execution(self, qs_shots_wires, expected_resource):
         """Test that the tracker accurately tracks resources in a single execution"""
         qs, shots, wires = qs_shots_wires
 
         qs._shots = qml.measurements.Shots(shots)
 
-        dev = qml.device(dev_name, shots=shots, wires=wires)
+        dev = DefaultQubitLegacy(shots=shots, wires=wires)
 
         with qml.Tracker(dev) as tracker:
             dev.execute(qs)
@@ -1530,8 +1534,7 @@ class TestResourcesTracker:
         assert tracker.history["resources"][0] == expected_resource
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("dev_name", devices)
-    def test_tracker_multi_execution(self, dev_name):
+    def test_tracker_multi_execution(self):
         """Test that the tracker accurately tracks resources for multi executions"""
         qs1 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
         qs2 = qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)])
@@ -1539,7 +1542,7 @@ class TestResourcesTracker:
         exp_res1 = Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(10))
         exp_res2 = Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10))
 
-        dev = qml.device(dev_name, shots=10, wires=[0, 1, 2])
+        dev = DefaultQubitLegacy(shots=10, wires=[0, 1, 2])
         with qml.Tracker(dev) as tracker:
             dev.batch_execute([qs1])
             dev.batch_execute([qs1, qs2])
@@ -1555,7 +1558,7 @@ class TestResourcesTracker:
     @pytest.mark.autograd
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
-        dev = qml.device("default.qubit", wires=1, shots=100)
+        dev = DefaultQubitLegacy(wires=1, shots=100)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1599,9 +1602,9 @@ class TestSamplesToCounts:
 
         # imitate hardware return with NaNs (requires dtype float)
         samples = qml.math.cast_like(samples, np.array([1.2]))
-        samples[0][0] = np.NaN
-        samples[17][1] = np.NaN
-        samples[850][0] = np.NaN
+        samples[0][0] = np.nan
+        samples[17][1] = np.nan
+        samples[850][0] = np.nan
 
         result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
 
@@ -1655,7 +1658,7 @@ def test_generate_basis_states():
 def test_samples_to_counts_all_outomces():
     """Test that _samples_to_counts can handle counts with all outcomes."""
 
-    class DummyQubitDevice(qml.QubitDevice):
+    class DummyQubitDevice(qml.devices.QubitDevice):
 
         author = None
         name = "bla"
@@ -1676,7 +1679,7 @@ def test_samples_to_counts_all_outomces():
 def test_no_adjoint_jacobian_errors():
     """Test that adjoint_jacobian errors with batching and shot vectors"""
 
-    class DummyQubitDevice(qml.QubitDevice):
+    class DummyQubitDevice(qml.devices.QubitDevice):
 
         author = None
         name = "bla"

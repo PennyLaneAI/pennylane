@@ -918,7 +918,7 @@ class TestConditionalOperations:
         assert isinstance(meas_op1, qml.CNOT)
         assert meas_op1.wires == qml.wires.Wires([0, 5])
 
-        # Check the underlying CNOT for reseting measured wire
+        # Check the underlying CNOT for resetting measured wire
         meas_op1 = tape.operations[1]
         assert isinstance(meas_op1, qml.CNOT)
         assert meas_op1.wires == qml.wires.Wires([5, 0])
@@ -1347,6 +1347,9 @@ class TestExpressionConditionals:
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 
+    @pytest.mark.filterwarnings(
+        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+    )
     def test_basis_state_prep(self):
         """Test the basis state prep template conditioned on mid-circuit
         measurement outcomes."""

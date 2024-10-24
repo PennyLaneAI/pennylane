@@ -37,6 +37,7 @@ qubit_device_and_diff_method = [
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
+    [qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 interface_qubit_device_and_diff_method = [
@@ -62,6 +63,7 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "hadamard", False, False],
     ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
     ["auto", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
+    ["auto", qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -1378,6 +1380,8 @@ class TestQubitIntegration:
         """Test that the variance of a projector is correctly returned"""
         if diff_method == "adjoint":
             pytest.skip("adjoint supports either expvals or diagonal measurements.")
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -1435,6 +1439,8 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+        if dev.name == "reference.qubit":
+            pytest.skip("reference.qubit does not support postselection.")
 
         @qml.qnode(
             dev,

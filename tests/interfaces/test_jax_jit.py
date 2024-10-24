@@ -107,7 +107,7 @@ class TestJaxExecuteUnitTests:
                 interface="None",
             )[0]
 
-        with pytest.raises(ValueError, match="Unknown interface"):
+        with pytest.raises(qml.QuantumFunctionError, match="Unknown interface"):
             cost(a, device=dev)
 
     def test_grad_on_execution(self, mocker):

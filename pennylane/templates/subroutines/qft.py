@@ -166,8 +166,11 @@ class QFT(Operation):
 
         **Example:**
 
-        >>> qml.QFT.compute_decomposition((0,1,2,4))
-        [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
+        >>> qml.QFT.compute_decomposition(wires=(0,1,2), n_wires=3)
+        [Hadamard(wires=[0]), ControlledPhaseShift(1.5707963267948966, wires=Wires([1, 0])),
+        ControlledPhaseShift(0.7853981633974483, wires=Wires([2, 0])), Hadamard(wires=[1]),
+        ControlledPhaseShift(1.5707963267948966, wires=Wires([2, 1])), Hadamard(wires=[2]),
+        SWAP(wires=[0, 2])]
 
         """
         shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]

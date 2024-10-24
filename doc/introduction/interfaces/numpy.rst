@@ -170,7 +170,7 @@ the following QNode that accepts two arguments ``data`` and ``weights``:
         qml.CNOT(wires=[0, 2])
         return qml.expval(qml.PauliZ(0))
 
-    rng = np.random.default_rng(seed=42)  # make the results reproducable
+    rng = np.random.default_rng(seed=42)  # make the results reproducible
     data = rng.random([2 ** 3], requires_grad=False)
     weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 

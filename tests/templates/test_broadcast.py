@@ -27,6 +27,10 @@ from pennylane.templates import broadcast
 from pennylane.templates.broadcast import wires_all_to_all, wires_pyramid, wires_ring
 from pennylane.wires import Wires
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:qml.broadcast is deprecated:pennylane.PennyLaneDeprecationWarning"
+)
+
 
 def ConstantTemplate(wires):
     T(wires=wires)
@@ -129,6 +133,15 @@ GATE_PARAMETERS = [
         ],
     ),
 ]
+
+
+def test_broadcast_deprecation():
+    """Test that a warning is raised when using qml.broadcast"""
+    op = qml.Hadamard
+    wires = [0, 1, 2]
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="qml.broadcast is deprecated"):
+        qml.broadcast(op, wires, "single")
 
 
 class TestBuiltinPatterns:

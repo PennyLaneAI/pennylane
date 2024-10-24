@@ -20,9 +20,28 @@ import pytest
 
 import pennylane as qml
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:The qml.qinfo.vn_entanglement_entropy transform is deprecated:pennylane.PennyLaneDeprecationWarning"
+)
+
 
 class TestVnEntanglementEntropy:
     """Tests for the vn entanglement entropy transform"""
+
+    def test_qinfo_transform_deprecated(self):
+        """Test that vn_entanglement_entropy is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The qml.qinfo.vn_entanglement_entropy transform is deprecated",
+        ):
+            _ = qml.qinfo.vn_entanglement_entropy(circuit, [0], [1])()
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
@@ -175,6 +194,7 @@ class TestVnEntanglementEntropy:
         )
 
         params = torch.tensor(params, dtype=torch.float64, requires_grad=True)
+
         entropy = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
         entropy.backward()
         actual = params.grad
