@@ -154,6 +154,7 @@ class FermiWord(dict):
 
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot add {type(other)} to a FermiWord.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
@@ -182,6 +183,7 @@ class FermiWord(dict):
 
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract {type(other)} from a FermiWord.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
@@ -195,6 +197,7 @@ class FermiWord(dict):
 
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a FermiWord from {type(other)}.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
@@ -239,6 +242,7 @@ class FermiWord(dict):
 
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply FermiWord by {type(other)}.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
@@ -472,6 +476,7 @@ class FermiSentence(dict):
 
         if not isinstance(other, (TensorLike, FermiWord, FermiSentence)):
             raise TypeError(f"Cannot add {type(other)} to a FermiSentence.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
@@ -507,6 +512,7 @@ class FermiSentence(dict):
 
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract {type(other)} from a FermiSentence.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
@@ -523,6 +529,7 @@ class FermiSentence(dict):
         """
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot subtract a FermiSentence from {type(other)}.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
@@ -554,6 +561,7 @@ class FermiSentence(dict):
 
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply FermiSentence by {type(other)}.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
@@ -572,6 +580,7 @@ class FermiSentence(dict):
 
         if not isinstance(other, TensorLike):
             raise TypeError(f"Cannot multiply {type(other)} by FermiSentence.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Fermi operations can only accept an array of length 1, "
