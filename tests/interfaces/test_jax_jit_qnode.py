@@ -27,21 +27,21 @@ from pennylane.devices import DefaultQubit
 
 # device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
-    [DefaultQubit(), "backprop", True, False],
-    [DefaultQubit(), "finite-diff", False, False],
-    [DefaultQubit(), "parameter-shift", False, False],
-    [DefaultQubit(), "adjoint", True, False],
-    [DefaultQubit(), "adjoint", True, True],
-    [ParamShiftDerivativesDevice(), "device", False, True],
-    [DefaultQubit(), "adjoint", False, False],
-    [DefaultQubit(), "spsa", False, False],
-    [DefaultQubit(), "hadamard", False, False],
+    [DefaultQubit(seed=123), "backprop", True, False],
+    [DefaultQubit(seed=123), "finite-diff", False, False],
+    [DefaultQubit(seed=123), "parameter-shift", False, False],
+    [DefaultQubit(seed=123), "adjoint", True, False],
+    [DefaultQubit(seed=123), "adjoint", True, True],
+    [ParamShiftDerivativesDevice(seed=123), "device", False, True],
+    [DefaultQubit(seed=123), "adjoint", False, False],
+    [DefaultQubit(seed=123), "spsa", False, False],
+    [DefaultQubit(seed=123), "hadamard", False, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
     [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=5), "parameter-shift", False, False],
-    [qml.device("reference.qubit"), "parameter-shift", False, False],
+    [qml.device("reference.qubit", seed=123), "parameter-shift", False, False],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method

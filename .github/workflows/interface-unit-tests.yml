@@ -135,22 +135,22 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 5,
+            "core-tests": 6,
             "gradients-tests": 2,
-            "jax-tests": 5,
+            "jax-tests": 4,
             "tf-tests": 3,
-            "device-tests": 2
+            "device-tests": 1
           }
           EOF
           else
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 5,
-            "jax-tests": 10,
+            "core-tests": 6,
+            "jax-tests": 8,
             "tf-tests": 6,
             "torch-tests": 2,
-            "device-tests": 2
+            "device-tests": 1
           }
           EOF
           fi
@@ -331,7 +331,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [1, 2, 3, 4, 5]
+        group: [1, 2, 3, 4]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
@@ -351,7 +351,7 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --dist=loadscope --splits 5 --group ${{ matrix.group }}
+      pytest_additional_args: --dist=loadscope --splits 4 --group ${{ matrix.group }}
       pytest_durations_file_path: '.github/durations/jax_tests_durations.json'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'jax.txt' || '' }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
@@ -369,7 +369,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [1, 2, 3, 4, 5]
+        group: [1, 2, 3, 4, 5, 6]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
@@ -387,7 +387,7 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: core and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 5 --group ${{ matrix.group }}
+      pytest_additional_args: --splits 6 --group ${{ matrix.group }}
       pytest_durations_file_path: '.github/durations/core_tests_durations.json'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'core.txt' || '' }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
@@ -652,9 +652,9 @@ jobs:
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
       additional_pip_packages: |
-        ${{ contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
-        ${{ contains(matrix.config.skip_interface, 'tf') && needs.default-dependency-versions.outputs.tensorflow-version || '' }}
-        ${{ contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'tf') && needs.default-dependency-versions.outputs.tensorflow-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_test_directory: pennylane/devices/tests
