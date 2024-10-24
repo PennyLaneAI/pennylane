@@ -16,6 +16,7 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 # pylint: disable=comparison-with-callable
 import abc
+import warnings
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
@@ -30,7 +31,7 @@ from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
-from .capabilities import DeviceCapabilities
+from .capabilities import DeviceCapabilities, InvalidCapabilitiesError
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -132,7 +133,13 @@ class Device(abc.ABC):
 
     def __init_subclass__(cls, **kwargs):
         if cls.config is not None:
-            cls.capabilities = DeviceCapabilities.from_toml_file(cls.config)
+            # TODO: remove this try-except block once all TOML files are updated to the new schema.
+            try:
+                cls.capabilities = DeviceCapabilities.from_toml_file(cls.config)
+            except AssertionError as e:
+                if "Unsupported config TOML schema" not in str(e):
+                    raise e
+                warnings.warn(str(e))
         super().__init_subclass__(**kwargs)
 
     @property

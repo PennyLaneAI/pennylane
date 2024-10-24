@@ -337,7 +337,7 @@ def parse_toml_document(document: dict) -> DeviceCapabilities:
     """
 
     schema = int(document["schema"])
-    assert schema in ALL_SUPPORTED_SCHEMAS, f"Unsupported capabilities TOML schema {schema}"
+    assert schema in ALL_SUPPORTED_SCHEMAS, f"Unsupported config TOML schema {schema}"
     operations = _get_operations(document)
     observables = _get_observables(document)
     measurement_processes = _get_measurement_processes(document)
