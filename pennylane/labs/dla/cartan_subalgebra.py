@@ -301,7 +301,7 @@ def op_to_adjvec(ops, basis):
     ):
         res = []
         for op in ops:
-            rep = np.zeros((len(basis),), dtype=complex)
+            rep = np.zeros((len(basis),))
             for i, basis_i in enumerate(basis):
                 # v = ∑ (v · e_j / ||e_j||^2) * e_j
                 value = (basis_i @ op).trace()
