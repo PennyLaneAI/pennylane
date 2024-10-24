@@ -201,6 +201,7 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
 
     >>> pauli_decompose(batch, tol=1e-6)
     [0.25 * X(0), 0.5 * Z(0)]
+
     """
     if tol is None:
         tol = 1e-10
