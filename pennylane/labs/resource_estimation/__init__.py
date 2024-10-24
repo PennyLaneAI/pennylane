@@ -17,5 +17,4 @@ from .resource_constructor import ResourceConstructor, ResourcesNotDefined
 from .resource_container import CompressedResourceOp
 from .resources_base import Resources
 
-# Resource Operators
 from .resource_ops import *
