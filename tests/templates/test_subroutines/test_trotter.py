@@ -447,7 +447,6 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""

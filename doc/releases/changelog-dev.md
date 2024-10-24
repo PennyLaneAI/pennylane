@@ -332,6 +332,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes incorrect differentiation of `TrotterProduct` when using `diff_method="parameter-shift"`.
+  [(#6432)](https://github.com/PennyLaneAI/pennylane/pull/6432)
+
 * Patches the `math` module to function with autoray 0.7.0.
   [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
 

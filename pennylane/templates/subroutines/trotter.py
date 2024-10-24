@@ -186,6 +186,8 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
 
+    grad_method = None
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         # accepts no wires, so bypasses the wire processing.
