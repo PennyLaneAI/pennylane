@@ -35,6 +35,16 @@
 * `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
   [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
 
+* A `DeviceCapabilities` data class is defined to contain all capabilities of the device's execution interface (i.e. its implementation of `Device.execute`). A TOML file can be used to define the capabilities of a device, and it can be loaded into a `DeviceCapabilities` object.
+  ```pycon
+  >>> from pennylane.devices.capabilities import load_toml_file, parse_toml_document, DeviceCapabilities
+  >>> document = load_toml_file("my_device.toml")
+  >>> capabilities = parse_toml_document(document)
+  >>> isinstance(capabilities, DeviceCapabilities)
+  True
+  ```
+  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
+
 <h3>Improvements 🛠</h3>
 
 <h4>Capturing and representing hybrid programs</h4>
