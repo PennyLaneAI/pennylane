@@ -449,7 +449,7 @@ def mitigate_with_zne(
 
     .. code-block:: python3
 
-        import pennylane.numpy as np
+        import numpy as np
         from functools import partial
         from pennylane import qnode
         from pennylane.transforms import fold_global, poly_extrapolate
@@ -466,6 +466,7 @@ def mitigate_with_zne(
             scale_factors=[1., 2., 3.],
             folding=fold_global,
             extrapolate=poly_extrapolate,
+            extrapolate_kwargs={"order":2},
         )
         @partial(qml.transforms.decompose, gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
@@ -476,7 +477,7 @@ def mitigate_with_zne(
     Executions of ``circuit`` will now be mitigated:
 
     >>> circuit(w1, w2)
-    0.19113067083636542
+    0.19113067088978522
 
     The unmitigated circuit result is ``0.33652776`` while the ideal circuit result is
     ``0.23688169`` and we can hence see that mitigation has helped reduce our estimation error.
