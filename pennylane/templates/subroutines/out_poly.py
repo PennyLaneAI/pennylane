@@ -28,8 +28,8 @@ def _get_polynomial(f, mod, *variable_sizes):
         *variable_sizes (int):  variable length argument specifying the number of bits used to represent each of the variables of the function
 
     Return:
-        dict: A dictionary where each key is a tuple representing the variable terms of the polynomial (if the term includes the i-th variable, a 1 appears in the i-th position).
-              Each key is a tuple containing a bitstring representing a term in the binary polynomial
+        Dict: A dictionary with format {tuple: int}, where each key is a tuple representing the variable terms of the polynomial (if the term includes the i-th variable, a 1 appears in the i-th position).
+              The values correspond to the coefficients associated with those terms.
 
     Example:
         For the function `f(x, y) = 4 * x * y` with `variable_sizes=(2, 1)` and `mod=5`, the target polynomial is `4 * (2x_0 + x_1) * y_0` that
@@ -93,10 +93,10 @@ def _mobius_inversion_of_zeta_transform(f_values, mod):
 
     Args:
         f_values (list): A list of integers representing the zeta transform.
-        mod (int): The modulus to be used in the calculations.
+        mod (int): the modulus to use for the arithmetic operation.
 
     Returns:
-        list: The list `f_values` after applying the Möbius inversion.
+        List[int]: The list `f_values` after applying the Möbius inversion.
     """
 
     total_wires = int(qml.math.log2(len(f_values)))
@@ -118,16 +118,19 @@ class OutPoly(Operation):
     over a set of input registers and stores the result in an output register. The result
     is computed modulo a given value.
 
-    Given a function :math:`f(x_1, \dots, x_m)` and a modulus :math:`k`, the operator performs:
+    Given a function :math:`f(x_1, \dots, x_m)` and a modulus :math:`mod`, the operator performs:
 
     .. math::
 
-        \text{OutPoly}_{f, k} |x_1 \rangle \dots |x_m \rangle |0 \rangle
-        = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m)\, \text{mod}\, k\rangle.
+        \text{OutPoly}_{f, mod} |x_1 \rangle \dots |x_m \rangle |0 \rangle
+        = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m)\, \text{mod} \; mod\rangle.
 
     This operation leaves the input registers unchanged and stores the result of the
-    polynomial function in the output register. It is based on the idea detailed
+    polynomial function in the output register. If the output wires are not initialized to zero, the result of the polynomial
+    operation will be added to the number initialized value.
+    The decomposition is based on the idea detailed
     in Section II-B of `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
+
 
     .. note::
 
@@ -136,11 +139,12 @@ class OutPoly(Operation):
 
     Args:
         polynomial_function (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
-        input_registers (Sequence[WiresLike]): Tuple whose elements are the wires used to store each variable of the polynomial.
+        input_registers (List[List[int]]): List whose elements are the wires used to store each variable of the polynomial.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
         mod (int, optional): The modulus to use for the result stored in the output register. If not provided, it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
-        work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of two, then two auxiliary work wires are required.
-        id (str or None, optional): The name of the operation.
+        work_wires (Sequence[int], optional): the auxiliary wires to use for the addition. The
+            work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
+            should be provided. Defaults to ``None``.
 
     Raises:
         ValueError: If `mod` is not a power of 2 and no or insufficient work wires are provided.
@@ -189,7 +193,7 @@ class OutPoly(Operation):
     .. details::
         :title: Usage Details
 
-        This template can take a modulus different from powers of two. In these cases it should be provided two auxiliary qubits.
+        This template can take a modulus different from powers of two. If the value of mod is not a power of two, then two auxiliary qubits must be provided.
 
         .. code-block:: python
 
@@ -291,6 +295,11 @@ class OutPoly(Operation):
             ),
         )
 
+        coeffs = [c[1] for c in self.hyperparameters["coeffs_list"]]
+        assert qml.math.allclose(
+            coeffs, qml.math.floor(coeffs)
+        ), "The polynomial function must have integer coefficients"
+
         if work_wires:
             all_wires += work_wires
 
@@ -381,18 +390,13 @@ class OutPoly(Operation):
         list_ops.append(qml.QFT(wires=output_adder_mod))
 
         coeffs_dic = dict(kwargs["coeffs_list"])
-        coeffs = [coeff[1] for coeff in coeffs_dic.items()]
-
-        assert qml.math.allclose(
-            coeffs, qml.math.floor(coeffs)
-        ), "The polynomial function must have integer coefficients"
 
         all_wires_input = sum([*registers_wires[:-1]], start=[])
 
         for item, coeff in coeffs_dic.items():
 
             if not 1 in item:
-                # Add the independent term
+                # Add the constant term
                 list_ops.append(qml.PhaseAdder(int(coeff), output_adder_mod))
             else:
                 controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
