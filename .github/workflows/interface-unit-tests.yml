@@ -719,9 +719,9 @@ jobs:
     if: >-
       ${{
         always() &&
+        inputs.upload_to_codecov == true &&
         !contains(needs.*.result, 'failure') &&
-        !contains(needs.*.result, 'cancelled') &&
-        inputs.pipeline_mode == 'unit-tests'
+        !contains(needs.*.result, 'cancelled')
        }}
 
     steps:
