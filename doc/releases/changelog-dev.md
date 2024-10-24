@@ -98,6 +98,10 @@
 
 * Added a dense implementation of computing the Lie closure in a new function `lie_closure_dense` in `pennylane.labs.lie`.
 
+* Added a dense implementation of computing the Lie closure in a new function
+  `lie_closure_dense` in `pennylane.labs.dla`.
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
