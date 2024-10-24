@@ -1348,8 +1348,10 @@ class TestTwoQubitDecompositionWarnings:
 
         def my_qfunc(params):
             params = tf.cast(params, tf.complex128)
-            U = tf.Variable(tf.eye(4, dtype=tf.complex128) * params)
-            ops = qml.ops.two_qubit_decomposition(U, wires=[0, 1])
+            U = tf.eye(4, dtype=tf.complex128) * params  # Create tensor without Variable
+            with tf.GradientTape() as tape:
+                tape.watch(U)  # Explicitly watch U
+                ops = qml.ops.two_qubit_decomposition(U, wires=[0, 1])
             for op in ops:
                 qml.apply(op)
             return qml.expval(qml.PauliZ(0))
@@ -1366,6 +1368,7 @@ class TestTwoQubitDecompositionWarnings:
         """Test warning is raised for parameterized matrix with JAX"""
         try:
             # pylint: disable=import-outside-toplevel
+            import jax
             import jax.numpy as jnp
         except ImportError:
             pytest.skip("JAX not installed")
@@ -1381,10 +1384,15 @@ class TestTwoQubitDecompositionWarnings:
 
         qnode = qml.QNode(my_qfunc, dev, interface="jax")
 
+        # Convert function to one that JAX can differentiate
+        def cost(x):
+            return jnp.real(qnode(x))
+
         with pytest.warns(
             RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
         ):
-            qnode(1.0)
+            # Use JAX's grad to create a Tracer
+            jax.grad(cost)(1.0)
 
     def test_warning_complex_input(self):
         """Test warning is raised with complex input parameters"""

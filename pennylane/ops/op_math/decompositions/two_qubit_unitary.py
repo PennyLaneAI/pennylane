@@ -52,30 +52,6 @@ def _check_differentiability_warning(U):
         U (tensor): Input unitary matrix to check
     """
 
-    interface = qml.math.get_interface(U)
-
-    # Check if matrix is trainable based on interface
-    is_trainable = False
-
-    if interface == "torch":
-        # pylint: disable=import-outside-toplevel
-        import torch
-
-        is_trainable = isinstance(U, torch.Tensor) and U.requires_grad
-    elif interface == "tensorflow":
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        is_trainable = isinstance(U, tf.Variable) or (
-            isinstance(U, tf.Tensor) and not U.dtype.is_floating
-        )
-    elif interface == "jax":
-        # For JAX, consider arrays in a quantum context as potentially trainable
-        is_trainable = True
-    elif interface == "autograd":
-        # For autograd, arrays in QNodes are potentially trainable
-        is_trainable = True
-
     if qml.math.requires_grad(U):
         warnings.warn(
             "The two-qubit decomposition may not be differentiable when the input "
