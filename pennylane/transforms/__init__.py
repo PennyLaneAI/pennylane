@@ -16,6 +16,8 @@ This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
+.. _transforms:
+
 Custom transforms
 -----------------
 

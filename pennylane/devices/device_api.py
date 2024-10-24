@@ -16,6 +16,7 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 # pylint: disable=comparison-with-callable
 import abc
+import warnings
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
@@ -30,6 +31,7 @@ from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .capabilities import DeviceCapabilities, InvalidCapabilitiesError
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -45,7 +47,7 @@ class Device(abc.ABC):
         **Streamlined interface:** Only methods that are required to interact with the rest of PennyLane will be placed in the
         interface. Developers will be able to clearly see what they can change while still having a fully functional device.
 
-        **Reduction of duplicate methods:** Methods that solve similar problems are combined together. Only one place will have
+        **Reduction of duplicate methods:** Methods that solve similar problems are combined. Only one place will have
         to solve each individual problem.
 
         **Support for dynamic execution configurations:** Properties such as shots belong to specific executions.
@@ -120,6 +122,25 @@ class Device(abc.ABC):
         * ``derivative_order``: Relevant for requested device derivatives.
 
     """
+
+    config: Optional[str] = None
+    """A device can use a `toml` file to specify the capabilities of the backend device. If this
+    is provided, the file will be loaded into a :class:`~.DeviceCapabilities` object assigned to
+    the :attr:`capabilities` attribute."""
+
+    capabilities: Optional[DeviceCapabilities] = None
+    """A :class:`~.DeviceCapabilities` object describing the capabilities of the backend device."""
+
+    def __init_subclass__(cls, **kwargs):
+        if cls.config is not None:
+            # TODO: remove this try-except block once all TOML files are updated to the new schema.
+            try:
+                cls.capabilities = DeviceCapabilities.from_toml_file(cls.config)
+            except AssertionError as e:
+                if "Unsupported config TOML schema" not in str(e):
+                    raise e
+                warnings.warn(str(e))
+        super().__init_subclass__(**kwargs)
 
     @property
     def name(self) -> str:
