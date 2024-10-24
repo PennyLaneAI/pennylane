@@ -16,8 +16,10 @@ import re
 from copy import copy
 from numbers import Number
 from numpy import ndarray
+import numpy as np
 from pennylane.typing import TensorLike
 import pennylane as qml
+from pennylane.labs.vibrational_ham.real_space_ham import _find_2d_degs, _find_3d_degs
 from functools import singledispatch
 from typing import Union
 
@@ -457,7 +459,7 @@ class BoseSentence(dict):
         multiplying ``2 * bose_sentence``, since the ``__mul__`` operator on an integer
         will fail to multiply with a BoseSentence"""
 
-        if isinstance(other, (Number, ar.numpy.array)):
+        if isinstance(other, (Number, ndarray)):
             if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Bose operations can only accept an array of length 1, "
@@ -554,6 +556,28 @@ def bosonic_hamiltonian(pes_data):
     """
     pass
 
+def kinetic_term(freqs):
+    nmodes = len(freqs)
+    expr = of.BosonOperator.zero()
+    for ii in range(nmodes):
+        pi = of.BosonOperator((ii,1), 1. ) - of.BosonOperator((ii,0), 1.)
+        expr -= 0.25 * freqs[ii] * pi*pi
+
+    return of.normal_ordered(expr)
+
+def harmonic_oscillators(freqs):
+    """
+    Builds the harmonic oscillator term in the Vib Hamiltonian as Bosonic Operators
+    """
+
+    nmodes = len(freqs)
+    kin = kinetic_term(freqs)
+
+    pot = of.BosonOperator.zero()
+    for ii in range(nmodes):
+        pot += position_to_boson([ii,ii]) * freqs[ii] * 0.5
+
+    return kin + pot
 
 def position_to_boson(index):
     """
@@ -567,7 +591,7 @@ def position_to_boson(index):
     factors_a = tuple([(int(entry), 0) for entry in index])
 
     # This section should be re-written using BoseSentences.
-    expr = of.BosonOperator.identity()
+    expr = BoseSentence()
     for ii in range(len(index)):
         expr *= (
             of.BosonOperator(factors_c[ii], 1.0) + of.BosonOperator(factors_a[ii], 1.0)
@@ -585,8 +609,8 @@ def taylor_to_bosonic(coeffs):
     nmodes, deg = np.shape(coeffs[0])
     deg += 2
 
-    degs_2d = _twobody_degs(deg)  # Missing for now
-    degs_3d = _threebody_degs(deg)
+    degs_2d = _find_2d_degs(deg)  # Missing for now
+    degs_3d = _find_3d_degs(deg)
 
     b_op = of.BosonOperator.zero()  # Should use BoseSentence.
     for nc in range(num_coups):
@@ -615,7 +639,7 @@ def taylor_to_bosonic(coeffs):
                             b_op += f_eff[i1, i2, i3, deg_idx] * position_to_boson(idx)
 
         if nc > 2:
-            print("Warning, entered array for more than 3-mode couplings, not implemented!")
+            print("Warning, enter   ed array for more than 3-mode couplings, not implemented!")
             print("Returning up to three-mode couplings")
 
     return of.normal_ordered(b_op)  # Should use BoseSentence equivalent
