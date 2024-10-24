@@ -2,6 +2,7 @@
 [run]
 source = pennylane/labs
 omit =
+    pennylane/*
     pennylane/labs/tests*
 
 [report]
