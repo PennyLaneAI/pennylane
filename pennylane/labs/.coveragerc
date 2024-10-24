@@ -2,8 +2,6 @@
 [run]
 source = pennylane/labs
 omit = pennylane/labs/tests/*
-#     pennylane/*
-#     pennylane/labs/tests*
 disable_warnings = no-data-collected
 
 [report]

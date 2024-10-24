@@ -21,17 +21,15 @@ import pytest
 
 def test_module_access():
     "labs module should not be visible without explicit import"
-    # import pennylane as qml
+    import pennylane as qml
 
-    # with pytest.raises(Exception):
-    #     print(qml.labs)
-    assert True
+    with pytest.raises(Exception):
+        print(qml.labs)
 
 
 def test_module_import():
     "Validate that explicitly importing the module makes it available under the `qml` alias."
-    # import pennylane as qml
-    # from pennylane import labs
+    import pennylane as qml
+    from pennylane import labs
 
-    # print(qml.labs)
-    assert True
+    print(qml.labs)
