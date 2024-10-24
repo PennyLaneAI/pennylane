@@ -28,7 +28,6 @@ Execution functions and utilities
     ~workflow.construct_batch
     ~workflow.get_transform_program
     ~workflow.get_best_diff_method
-    ~workflow.get_gradient_fn
 
 Supported interfaces
 ~~~~~~~~~~~~~~~~~~~~

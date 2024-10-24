@@ -68,15 +68,13 @@ def _get_gradient_fn(
         if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):
             return qml.gradients.param_shift_cv
         return qml.gradients.param_shift
-
-    if diff_method == "finite-diff":
-        return qml.gradients.finite_diff
-
-    if diff_method == "spsa":
-        return qml.gradients.spsa_grad
-
-    if diff_method == "hadamard":
-        return qml.gradients.hadamard_grad
+    gradient_transform_map = {
+        "finite-diff": qml.gradients.finite_diff,
+        "spsa": qml.gradients.spsa_grad,
+        "hadamard": qml.gradients.hadamard_grad
+    }
+    if diff_method in gradient_transform_map:
+        return gradient_transform_map[diff_method]
 
     if isinstance(diff_method, str):
         raise qml.QuantumFunctionError(
