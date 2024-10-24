@@ -78,8 +78,9 @@ class CompressedResourceOp:
         self.params = params
 
         sorted_keys = sorted(list(params))
-        self._hashable_params = tuple((key, params[key]) for key in sorted_keys)  # tuple of sorted params
-
+        self._hashable_params = tuple(
+            (key, params[key]) for key in sorted_keys
+        )  # tuple of sorted params
 
     def __hash__(self) -> int:
         return hash((self._name, self._hashable_params))
@@ -89,7 +90,7 @@ class CompressedResourceOp:
 
     def __repr__(self) -> str:
         op_type_str = self._name + "("
-        params_str = ", ".join([f"{param[0]}={param[1]}" for param in self.params]) + ")"
+        params_str = ", ".join([f"{key}={self.params[key]}" for key in self.params]) + ")"
 
         return op_type_str + params_str
 

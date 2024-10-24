@@ -27,13 +27,13 @@ class TestCompressedResourceOp:
 
     hamiltonian_arg = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
     compressed_op_args_lst = (
-        ("PauliX", qml.X, tuple({"num_wires": 1}.items())),
-        ("QFT", qml.QFT, tuple({"num_wires": 5}.items())),
-        ("QSVT", qml.QSVT, tuple({"num_wires": 3, "num_angles": 5}.items())),
+        ("PauliX", qml.X, {"num_wires": 1}),
+        ("QFT", qml.QFT, {"num_wires": 5}),
+        ("QSVT", qml.QSVT, {"num_wires": 3, "num_angles": 5}),
         (
             "TrotterProduct",
             qml.TrotterProduct,
-            tuple({"Hamiltonian": hamiltonian_arg, "num_steps": 5, "order": 2}.items()),
+            {"Hamiltonian": hamiltonian_arg, "num_steps": 5, "order": 2},
         ),
     )
 
@@ -53,15 +53,14 @@ class TestCompressedResourceOp:
         assert cr_op.op_type is op_type
         assert cr_op.params == parameters
 
+        hashable_parameters = tuple((key, parameters[key]) for key in sorted(parameters))
+        assert cr_op._hashable_params == hashable_parameters
+
     def test_hash(self):
         """Test that the hash method behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(
-            qml.QSVT, tuple({"num_wires": 3, "num_angles": 5}.items())
-        )
-        CmprssedQSVT2 = CompressedResourceOp(
-            qml.QSVT, tuple({"num_wires": 3, "num_angles": 5}.items())
-        )
-        Other = CompressedResourceOp(qml.QFT, tuple({"num_wires": 3}.items()))
+        CmprssedQSVT1 = CompressedResourceOp(qml.QSVT, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT2 = CompressedResourceOp(qml.QSVT, {"num_wires": 3, "num_angles": 5})
+        Other = CompressedResourceOp(qml.QFT, {"num_wires": 3})
 
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT1)  # compare same object
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT2)  # compare identical instance
@@ -69,16 +68,10 @@ class TestCompressedResourceOp:
 
     def test_equality(self):
         """Test that the equality methods behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(
-            qml.QSVT, tuple({"num_wires": 3, "num_angles": 5}.items())
-        )
-        CmprssedQSVT2 = CompressedResourceOp(
-            qml.QSVT, tuple({"num_wires": 3, "num_angles": 5}.items())
-        )
-        CmprssedQSVT3 = CompressedResourceOp(
-            qml.QSVT, tuple({"num_angles": 5, "num_wires": 3}.items())
-        )
-        Other = CompressedResourceOp(qml.QFT, tuple({"num_wires": 3}.items()))
+        CmprssedQSVT1 = CompressedResourceOp(qml.QSVT, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT2 = CompressedResourceOp(qml.QSVT, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT3 = CompressedResourceOp(qml.QSVT, {"num_angles": 5, "num_wires": 3})
+        Other = CompressedResourceOp(qml.QFT, {"num_wires": 3})
 
         assert CmprssedQSVT1 == CmprssedQSVT1  # compare same object
         assert CmprssedQSVT1 == CmprssedQSVT2  # compare identical instance
