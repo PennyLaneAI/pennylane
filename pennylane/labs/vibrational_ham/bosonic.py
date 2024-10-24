@@ -16,8 +16,10 @@ import re
 from copy import copy
 from numbers import Number
 from numpy import ndarray
+import numpy as np
 from pennylane.typing import TensorLike
 import pennylane as qml
+from pennylane.labs.vibrational_ham.real_space_ham import _find_2d_degs, _find_3d_degs
 from functools import singledispatch
 from typing import Union
 
@@ -457,7 +459,7 @@ class BoseSentence(dict):
         multiplying ``2 * bose_sentence``, since the ``__mul__`` operator on an integer
         will fail to multiply with a BoseSentence"""
 
-        if isinstance(other, (Number, ar.numpy.array)):
+        if isinstance(other, (Number, ndarray)):
             if isinstance(other, ndarray) and qml.math.size(other) > 1:
                 raise ValueError(
                     f"Arithmetic Bose operations can only accept an array of length 1, "
@@ -548,3 +550,96 @@ def _(bose_operator: BoseSentence):
 
     return bose_sen_ordered
 
+def bosonic_hamiltonian(pes_data):
+    """
+    Implementation pending
+    """
+    pass
+
+def kinetic_term(freqs):
+    nmodes = len(freqs)
+    expr = BoseSentence()
+    for ii in range(nmodes):
+        pi = BoseWord({(0, ii): '+'}) - BoseWord({(1, ii): '-'})
+        expr -= 0.25 * freqs[ii] * pi*pi
+
+    return normal_order(expr)
+
+def harmonic_oscillators(freqs):
+    """
+    Builds the harmonic oscillator term in the Vib Hamiltonian as Bosonic Operators
+    """
+
+    nmodes = len(freqs)
+    kin = kinetic_term(freqs)
+
+    pot = BoseSentence()
+    for ii in range(nmodes):
+        pot += position_to_boson([ii,ii]) * freqs[ii] * 0.5
+
+    return kin + pot
+
+def position_to_boson(index):
+    """
+    Given an index of a product of position operators,
+    expand them using HO ladder operators and simplify.
+    """
+
+    # creation operator
+    factors_c = tuple([(int(entry), 1) for entry in index])
+    # annihilation operator
+    factors_a = tuple([(int(entry), 0) for entry in index])
+
+    # This section should be re-written using BoseSentences.
+    expr = BoseSentence()
+    for ii in range(len(index)):
+        expr *= (
+            BoseWord({(ii, index[ii]) : '+'}) + BoseWord({(ii, index[ii]) : '-'})
+        ) / np.sqrt(2)
+
+    return normal_order(expr)
+
+
+def taylor_to_bosonic(coeffs):
+    """
+    Convert taylor coefficients to bosonic hamiltonian.
+    """
+    num_coups = len(coeffs)
+
+    nmodes, deg = np.shape(coeffs[0])
+    deg += 2
+
+    degs_2d = _find_2d_degs(deg)  # Missing for now
+    degs_3d = _find_3d_degs(deg)
+
+    b_op = BoseSentence()  # Should use BoseSentence.
+    for nc in range(num_coups):
+        f_eff = coeffs[nc]
+
+        # The following can be refactored.
+        if nc == 0:
+            for ii in range(nmodes):
+                for i_deg, f_val in enumerate(f_eff[ii, :]):
+                    idx = (i_deg + 3) * [ii]
+                    b_op += f_val * position_to_boson(idx)
+
+        if nc == 1:
+            for i1 in range(nmodes):
+                for i2 in range(i1):
+                    for deg_idx, Qs in enumerate(degs_2d):
+                        idx = Qs[0] * [i1] + Qs[1] * [i2]
+                        b_op += f_eff[i1, i2, deg_idx] * position_to_boson(idx)
+
+        if nc == 2:
+            for i1 in range(nmodes):
+                for i2 in range(i1):
+                    for i3 in range(i2):
+                        for deg_idx, Qs in enumerate(degs_3d):
+                            idx = Qs[0] * [i1] + Qs[1] * [i2] + Qs[2] * [i3]
+                            b_op += f_eff[i1, i2, i3, deg_idx] * position_to_boson(idx)
+
+        if nc > 2:
+            print("Warning, enter   ed array for more than 3-mode couplings, not implemented!")
+            print("Returning up to three-mode couplings")
+
+    return normal_order(b_op)  # Should use BoseSentence equivalent
