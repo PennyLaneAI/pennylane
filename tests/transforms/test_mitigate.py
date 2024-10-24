@@ -118,9 +118,8 @@ class TestMitigateWithZNE:
     def test_shots_preserved(self):
         """Tests that the mitigated circuits contain the same shots as the original circuit"""
 
-        w1, w2 = [np.random.random(2) for _ in range(2)]
         _tape = qml.tape.QuantumScript(
-            [qml.SimplifiedTwoDesign(w1, w2, wires=range(2))],
+            [qml.RX(0.1, wires=0)],
             [qml.expval(qml.PauliZ(0))],
             shots=1000,
         )
