@@ -4,6 +4,15 @@ on:
   schedule:
   - cron: '35 2 * * 0'
   workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 concurrency:
   group: warnings-as-errors-tests-${{ github.ref }}
@@ -20,5 +29,12 @@ jobs:
     with:
       branch: ${{ github.ref }}
       python_warning_level: 'error'
-      pipeline_mode: 'warnings'
       run_lightened_ci: false
+      skip_ci_test_jobs: |
+        tf-tests
+        all-interfaces-tests
+        external-libraries-tests
+        qcut-tests
+        qchem-tests
+        gradients-tests
+        device-tests
