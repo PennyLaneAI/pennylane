@@ -380,7 +380,7 @@ class OutPoly(Operation):
 
         list_ops.append(qml.QFT(wires=output_adder_mod))
 
-        coeffs_dic = {key: coeff for (key, coeff) in kwargs["coeffs_list"]}
+        coeffs_dic = dict(kwargs["coeffs_list"])
         coeffs = [coeff[1] for coeff in coeffs_dic.items()]
 
         assert qml.math.allclose(
