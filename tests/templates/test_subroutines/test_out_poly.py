@@ -33,7 +33,7 @@ def test_get_polynomial():
     the polynomial, and the values represent the corresponding coefficients of those terms, reduced by `mod`.
 
     In this test, It is used the function `lambda x, y: x**2 * y`, with two variables `x` and `y`, each represented by
-    2 bits (hence `variable_sizes=(2, 2)`). We expect the resulting dictionary to reflect the expansion of
+    2 bits (hence `variable_sizes=(2, 2)`). It is expected the resulting dictionary to reflect the expansion of
     `(2x_0 + x_1)^2 * (2y_0 + y_1)`.
 
     The expected keys represent which bits (variables) are involved in each term, and the expected values

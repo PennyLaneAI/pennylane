@@ -103,7 +103,7 @@ def _mobius_inversion_of_zeta_transform(f_values, mod):
     recovering the original values before the transformation.
 
     Args:
-        f_values (list): A list of integers representing the zeta transform over subsets of a bitmask.
+        f_values (List[int]): A list of integers representing the zeta transform over subsets of a bitmask.
         mod (int): The modulus used to perform the arithmetic operations.
 
     Returns:
@@ -156,7 +156,7 @@ class OutPoly(Operation):
         output_wires (Sequence[int]): The wires used to store the output of the operation.
         mod (int, optional): The modulus for performing the polynomial operation. If not provided, it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): the auxiliary wires to use for performing the polynomial operation. The
-                    work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
+                    work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
                     should be provided. Defaults to ``None``.
         id (str or None, optional): The name of the operation.
 
@@ -171,7 +171,7 @@ class OutPoly(Operation):
 
         .. code-block:: python
 
-            reg = qml.registers({"x_wires": 3, "y_wires": 3, "output_wires": 4})
+            wires = qml.registers({"x": 3, "y": 3, "output": 4})
 
             def f(x, y):
                 return x ** 2 + y
@@ -179,16 +179,16 @@ class OutPoly(Operation):
             @qml.qnode(qml.device("default.qubit", shots = 1))
             def circuit():
                 # load values of x and y
-                qml.BasisEmbedding(3, wires=reg["x_wires"])
-                qml.BasisEmbedding(2, wires=reg["y_wires"])
+                qml.BasisEmbedding(3, wires=wires["x"])
+                qml.BasisEmbedding(2, wires=wires["y"])
 
                 # apply the polynomial
                 qml.OutPoly(
                     f,
-                    input_registers = (reg["x_wires"], reg["y_wires"]),
-                    output_wires = reg["output_wires"])
+                    input_registers = [wires["x"], wires["y"]],
+                    output_wires = wires["output"])
 
-                return qml.sample(wires=reg["output_wires"])
+                return qml.sample(wires=wires["output"])
 
             print(circuit())
 
@@ -225,14 +225,14 @@ class OutPoly(Operation):
             @qml.qnode(qml.device("default.qubit", shots = 1))
             def circuit():
                 # loading values for x and y
-                qml.BasisEmbedding(3, wires=wires_x)
-                qml.BasisEmbedding(2, wires=wires_y)
+                qml.BasisEmbedding(3, wires=x_wires)
+                qml.BasisEmbedding(2, wires=y_wires)
 
                 # applying the polynomial
                 qml.OutPoly(
                     f,
-                    input_registers = input_registers,
-                    output_wires = output_wires,
+                    input_registers,
+                    output_wires,
                     mod = 7,
                     work_wires = work_wires
                 )
@@ -390,7 +390,8 @@ class OutPoly(Operation):
 
         .. code-block:: pycon
 
-        [QFT(wires=[4]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[3]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]), Adjoint(QFT(wires=[4]))]
+            [QFT(wires=[4]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[3]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]), Adjoint(QFT(wires=[4]))]
+
         """
         registers_wires = [*input_registers, output_wires]
 
