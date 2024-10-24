@@ -585,16 +585,10 @@ def position_to_boson(index):
     expand them using HO ladder operators and simplify.
     """
 
-    # creation operator
-    factors_c = tuple([(int(entry), 1) for entry in index])
-    # annihilation operator
-    factors_a = tuple([(int(entry), 0) for entry in index])
-
-    # This section should be re-written using BoseSentences.
     expr = BoseSentence()
-    for ii in range(len(index)):
+    for i, entry in enumerate(index):
         expr *= (
-            BoseWord({(ii, index[ii]) : '+'}) + BoseWord({(ii, index[ii]) : '-'})
+            BoseWord({(i, entry) : '+'}) + BoseWord({(i, entry) : '-'})
         ) / np.sqrt(2)
 
     return normal_order(expr)
