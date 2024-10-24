@@ -466,7 +466,7 @@ def mitigate_with_zne(
             scale_factors=[1., 2., 3.],
             folding=fold_global,
             extrapolate=poly_extrapolate,
-            extrapolate_kwargs={"order" : 2},
+            extrapolate_kwargs={'order' : 2},
         )
         @partial(qml.transforms.decompose, gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
