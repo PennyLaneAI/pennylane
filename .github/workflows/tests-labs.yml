@@ -60,8 +60,8 @@ jobs:
       job_name: labs-tests
       branch: ${{ github.ref }}
       coverage_artifact_name: labs-coverage
-      pytest_coverage_flags:  --cov=pennylane/labs --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
+      pytest_coverage_flags:  --cov-config=pennylane/labs/.coveragerc --cov=pennylane.labs --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
       python_version: '3.10'
-      pytest_test_directory: tests_labs
+      pytest_test_directory: pennylane/labs/tests
       additional_pip_packages: |
         ${{ needs.default-dependency-versions.outputs.jax-version }}
