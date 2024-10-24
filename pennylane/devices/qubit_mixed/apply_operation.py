@@ -67,7 +67,7 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
     This function implements a phase shift operation on a mixed quantum state (density matrix).
     For a given axis, it applies the phase shift by conjugating the density matrix with the
     phase shift operator: ρ -> U ρ U†, where U is the phase shift operator. This implementation
-    is specific to single-site operations without broadcasting.
+    is specific to single-qubit operations without broadcasting.
 
     Args:
         state (array-like): The density matrix to transform, with shape (2^n, 2^n) where n is
