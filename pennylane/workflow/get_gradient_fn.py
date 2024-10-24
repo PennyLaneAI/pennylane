@@ -29,7 +29,7 @@ from pennylane.workflow.qnode import (
 # pylint: disable=too-many-return-statements, unsupported-binary-operation
 def _get_gradient_fn(
     device: SupportedDeviceAPIs,
-    diff_method: TransformDispatcher | SupportedDiffMethods = "best",
+    diff_method: "TransformDispatcher | SupportedDiffMethods" = "best",
     tape: Optional["qml.tape.QuantumTape"] = None,
 ):
     """Determines the differentiation method for a given device and diff method.
@@ -84,7 +84,7 @@ def _get_gradient_fn(
             f"options are {tuple(get_args(SupportedDiffMethods))}."
         )
 
-    if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
+    if isinstance(diff_method, TransformDispatcher):
         return diff_method
 
     raise qml.QuantumFunctionError(
