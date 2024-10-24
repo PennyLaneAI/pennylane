@@ -52,9 +52,7 @@ class TestCompressedResourceOp:
         assert cr_op._name == name
         assert cr_op.op_type is op_type
         assert cr_op.params == parameters
-
-        hashable_parameters = tuple((key, parameters[key]) for key in sorted(parameters))
-        assert cr_op._hashable_params == hashable_parameters
+        assert cr_op._hashable_params == tuple(parameters.items())
 
     def test_hash(self):
         """Test that the hash method behaves as expected"""
