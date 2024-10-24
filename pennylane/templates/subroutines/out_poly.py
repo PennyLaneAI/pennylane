@@ -28,32 +28,28 @@ def _get_polynomial(f, mod, *variable_sizes):
         *variable_sizes (int):  number of bits needed to represent each of the variables of the function
 
     Returns:
-        Dict: A dictionary with format {tuple: int},where each key is a tuple representing the variable terms of the polynomial (if the term includes the i-th variable, a 1 appears in the i-th position).
-              The values correspond to the coefficients associated with those terms.
+        dict[tuple: int]: dictionary with keys representing the variable terms of the polynomial
+              and values representing the coefficients associated with those terms
 
     Example:
-        Suppose `f(x, y) = 4 * x * y` with `variable_sizes=(2, 1)` and `mod=5`.
-        This means that `x` is represented by two bits and `y` by one bit.
+        For the function `f(x, y) = 4 * x * y`, setting `variable_sizes=(2, 1)`
+        means that `x` is represented by two bits and `y` by one bit.
 
         We can expand `f(x, y)` as `4 * (2x_0 + x_1) * y_0`, where `x_0` and `x_1` are the binary digits of `x`.
-        When this is fully expanded, it becomes:
+        When fully expanded, the function becomes:
 
         `4 * x1 * y0 + 8 * x0 * y0`.
 
-        Applying modulus 5, the result is:
+        Applying modulus 5, this can be represented as 
 
         ```
-        # Key (x0, x1, y0) -> Coefficient
         {
-            (0, 1, 1): 4,  # Corresponds to the term x1 * y0
-            (1, 0, 1): 3   # Corresponds to the term x0 * y0, where 8 mod 5 = 3
+            (0, 1, 1): 4,  # represents the term x1 * y0 with coefficient 4
+            (1, 0, 1): 3   # represents the term x0 * y0 with coefficient 3 because 8 mod 5 = 3
         }
         ```
 
-        Explanation of the tuple:
-        - The first two bits correspond to the binary representation of the variable `x`.
-        - The third bit corresponds to the binary representation of the variable `y`.
-        - If a bit is `1`, that variable is present in the term. For example, `(0, 1, 1)` means `x1 * y0` (since x0 is absent).
+        Note that in each tuple, the first two bits correspond to the binary representation of the variable `x` and the third bit corresponds to the binary representation of the variable `y`. For example, `(0, 1, 1)` means `x1 * y0`, since `x0` is absent the first number in the tuple is zero. 
     """
 
     total_wires = sum(variable_sizes)
@@ -137,11 +133,11 @@ class OutPoly(Operation):
         \text{OutPoly}_{f, mod} |x_1 \rangle \dots |x_m \rangle |0 \rangle
         = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m)\, \text{mod} \; mod\rangle.
 
-    This operation leaves the input registers unchanged and stores the result of the
+    This operation stores the result of the
     polynomial function in the output register. If the output wires are not initialized to zero, the result of the polynomial
-    operation will be added to the number initialized value.
-    The decomposition is based on the idea detailed
-    in Section II-B of `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
+    operation will be added to the value initialized in the output register.
+    The decomposition is based on
+    Section II-B of `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
 
 
     .. note::
@@ -155,7 +151,7 @@ class OutPoly(Operation):
         input_registers (List[Sequence[int]]): List containing the wires used to store each variable of the polynomial.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
         mod (int, optional): The modulus for performing the polynomial operation. If not provided, it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
-        work_wires (Sequence[int], optional): the auxiliary wires to use for performing the polynomial operation. The
+        work_wires (Sequence[int], optional): The auxiliary wires to use for performing the polynomial operation. The
                     work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
                     should be provided. Defaults to ``None``.
         id (str or None, optional): The name of the operation.
@@ -207,7 +203,7 @@ class OutPoly(Operation):
     .. details::
         :title: Usage Details
 
-        This template can take a modulus different from powers of two. If the value of mod is not a power of two, then two auxiliary qubits must be provided.
+        If the value of `mod` is not a power of two, then two auxiliary qubits must be provided.
 
         .. code-block:: python
 

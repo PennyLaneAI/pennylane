@@ -28,18 +28,6 @@ from pennylane.templates.subroutines.out_poly import (
 def test_get_polynomial():
     """Test the private function _get_polynomial by checking its output for a specific function.
 
-    The function under test takes as input a callable `f`, a modulus `mod`, and the bit sizes of the variables.
-    It returns a dictionary where the keys represent the binary form of the variables involved in each term of
-    the polynomial, and the values represent the corresponding coefficients of those terms, reduced by `mod`.
-
-    In this test, It is used the function `lambda x, y: x**2 * y`, with two variables `x` and `y`, each represented by
-    2 bits (hence `variable_sizes=(2, 2)`). It is expected the resulting dictionary to reflect the expansion of
-    `(2x_0 + x_1)^2 * (2y_0 + y_1)`.
-
-    The expected keys represent which bits (variables) are involved in each term, and the expected values
-    are the coefficients of those terms.
-
-    Key format: (x0, x1, y0, y1), where x0, x1 are bits for `x` and y0, y1 are bits for `y`.
     """
     dic = _get_polynomial(lambda x, y: x**2 * y, 16, 2, 2)
 
