@@ -300,6 +300,8 @@
   [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
 
 <h3>Documentation 📝</h3>
+* Add reporting of test warnings as failures.
+  [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
 * Updated `qml.spin` documentation.
   [(#6387)](https://github.com/PennyLaneAI/pennylane/pull/6387)
