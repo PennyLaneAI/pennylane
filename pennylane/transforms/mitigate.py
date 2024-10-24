@@ -581,7 +581,7 @@ def mitigate_with_zne(
         tapes = [t[0] for t, _ in tapes]
 
     prep_ops = tape.operations[: tape.num_preps]
-    out_tapes = [QuantumScript(prep_ops + tape_.operations, tape.measurements) for tape_ in tapes]
+    out_tapes = [tape.copy(operations=prep_ops + tape_.operations) for tape_ in tapes]
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
