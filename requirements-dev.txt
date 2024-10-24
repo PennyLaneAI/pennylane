@@ -16,3 +16,6 @@ tach==0.13.1
 h5py
 aiohttp
 fsspec
+pyscf
+basis-set-exchange
+openfermionpyscf
