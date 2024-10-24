@@ -90,6 +90,9 @@
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
+* `mitigate_with_zne` now gives clearer error message when being used with circuits with channel noise.
+  [(#6346)](https://github.com/PennyLaneAI/pennylane/pull/6346)
+
 * The `make_plxpr` function is added, to take a function and create a `Callable` that,
   when called, will return a PLxPR representation of the input function.
   [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
