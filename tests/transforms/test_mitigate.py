@@ -14,7 +14,7 @@
 """
 Tests for mitigation transforms.
 """
-# pylint:disable=no-self-use
+# pylint:disable=no-self-use, unnecessary-lambda-assignment
 from functools import partial
 
 import pytest
@@ -256,6 +256,7 @@ class TestMitiqIntegration:
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -305,6 +306,7 @@ class TestMitiqIntegration:
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -345,6 +347,7 @@ class TestMitiqIntegration:
             extrapolate=RichardsonFactory.extrapolate,
             reps_per_factor=2,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -391,6 +394,7 @@ class TestMitiqIntegration:
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_qnode(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -440,6 +444,7 @@ class TestMitiqIntegration:
             folding=fold_global,
             extrapolate=RichardsonFactory.extrapolate,
         )
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -494,6 +499,7 @@ class TestDifferentiableZNE:
         dev = qml.device("default.qubit", wires=range(n_wires))
 
         # This circuit itself produces the identity by construction
+        @partial(qml.transforms.decompose, gate_set=["RY", "CZ"])
         @qml.qnode(dev)
         def circuit(w1, w2):
             template(w1, w2, wires=range(n_wires))

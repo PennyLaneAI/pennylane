@@ -311,7 +311,7 @@ def _merge_param_gates(operations, merge_ops=None):
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    max_expansion=6,
+    max_expansion=None,
     method="sk",
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -327,6 +327,9 @@ def clifford_t_decomposition(
     Then, the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
     :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
+
+    .. warning::
+        The ``max_expansion`` argument is deprecated and will be removed in version 0.40.
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
@@ -370,15 +373,29 @@ def clifford_t_decomposition(
     >>> qml.math.allclose(result, approx, atol=1e-4)
     True
     """
+    if max_expansion is not None:
+        warnings.warn(
+            "The max_expansion argument is deprecated and will be removed in version v0.40. ",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        max_expansion = 6
+
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for intial compilation pass
         basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
         pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
         # Compile the tape according to depth provided by the user and expand it
-        [compiled_tape], _ = qml.compile(
-            tape, pipelines, basis_set=basis_set, expand_depth=max_expansion
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                message=r"The expand_depth argument is deprecated",
+                category=qml.PennyLaneDeprecationWarning,
+            )
+            [compiled_tape], _ = qml.compile(
+                tape, pipelines, basis_set=basis_set, expand_depth=max_expansion
+            )
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
