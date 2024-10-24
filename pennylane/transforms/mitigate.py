@@ -215,6 +215,12 @@ def fold_global_tape(circuit, scale_factor):
     # Generate base_circuit without measurements
     # Treat all circuits as lists of operations, build new tape in the end
     base_ops = circuit.operations
+    if any((isinstance(op, qml.operation.Channel) for op in base_ops)):
+        raise ValueError(
+            "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
+            "To use zero-noise extrapolation on the circuit with channel noise, "
+            "consider adding the noise on the device rather than the circuit."
+        )
 
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
 
