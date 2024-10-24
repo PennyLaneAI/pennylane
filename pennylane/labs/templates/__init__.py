@@ -11,28 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-.. currentmodule:: pennylane
-
-This module module contains experimental features enabling
-advanced quantum computing research.
-
-.. warning::
-
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
 
 
-"""
-
-__all__ = []
-
-from pennylane.labs.templates.state_preparations import *
+from .state_preparations import *

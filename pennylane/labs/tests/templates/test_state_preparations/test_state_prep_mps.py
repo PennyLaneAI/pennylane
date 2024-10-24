@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,28 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-.. currentmodule:: pennylane
-
-This module module contains experimental features enabling
-advanced quantum computing research.
-
-.. warning::
-
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-
+"""
+Tests for the MPSPrep template.
 """
 
-__all__ = []
+import numpy as np
+import pennylane as qml
 
-from pennylane.labs.templates.state_preparations import *
+
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.labs.MPSPrep(mps=[1.0, 2.0, 3.0], wires=[0, 1, 2])
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+
+
+def test_access_to_param():
+    mps = [1.0, 2.0, 3.0]
+    op = qml.labs.MPSPrep(mps=mps, wires=[0, 1, 2])
+    assert np.allclose(mps, op.mps)
