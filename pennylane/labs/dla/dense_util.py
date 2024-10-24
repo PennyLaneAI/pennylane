@@ -24,7 +24,7 @@ from pennylane.typing import TensorLike
 
 
 def _make_phase_mat(n: int) -> np.ndarray:
-    """Create an array with shape ``(2**n, 2**n)`` containing powers of :math:`i`.
+    r"""Create an array with shape ``(2**n, 2**n)`` containing powers of :math:`i`.
     For the entry at position ``(i, k)``, the entry is ``1j**p(i,k)`` with the
     power being the Hamming weight of the product of the binary bitstrings of
     ``i`` and ``k``.
@@ -40,7 +40,7 @@ def _make_phase_mat(n: int) -> np.ndarray:
 
 
 def _make_permutation_indices(dim: int) -> list[np.ndarray]:
-    """Make a list of ``dim`` arrays of length ``dim`` containing the indices
+    r"""Make a list of ``dim`` arrays of length ``dim`` containing the indices
     ``0`` through ``dim-1`` in a specific permutation order to match the Walsh-Hadamard
     transform to the Pauli decomposition task."""
     indices = [qml.math.arange(dim)]
@@ -76,19 +76,25 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
     Returns:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
         matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
+
     **Examples**
+
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
+
     >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
     >>> mat = H.matrix()
     array([[ 0.  +0.j,  0.4 +0.j,  0.25+0.j,  0.  +0.j],
            [ 0.4 +0.j,  0.  +0.j,  0.  +0.j,  0.25+0.j],
            [ 0.25+0.j,  0.  +0.j,  0.  +0.j, -0.4 +0.j],
            [ 0.  +0.j,  0.25+0.j, -0.4 +0.j,  0.  +0.j]])
+
     Then we can obtain the coefficients of :math:`H` in the Pauli basis via
+
     >>> from pennylane.labs.dla import pauli_coefficients
     >>> pauli_coefficients(mat)
     array([ 0.  ,  0.  ,  0.  ,  0.  ,  0.25,  0.  ,  0.  ,  0.  ,  0.  ,
             0.  , -0.  ,  0.  ,  0.  ,  0.4 ,  0.  ,  0.  ])
+
     The function can be used on a batch of matrices:
     >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0), 3 / 5 * qml.Y(0)]
     >>> batch = np.stack([op.matrix() for op in ops])
@@ -96,6 +102,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
     array([[0.  , 0.25, 0.  , 0.  ],
            [0.  , 0.  , 0.  , 0.5 ],
            [0.  , 0.  , 0.6 , 0.  ]])
+
     """
     # Preparations
     shape = H.shape
@@ -147,19 +154,25 @@ def _idx_to_pw(idx, n):
 
 def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+
     Args:
         H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
             of Hermitian matrices of dimension ``(batch, 2**n, 2**n)``.
         tol (float): Tolerance below which Pauli coefficients are discarded.
         pauli (bool): Whether to format the output as :class:`~.PauliSentence`.
+
     Returns:
         Union[~.Hamiltonian, ~.PauliSentence]: the matrix (matrices) decomposed as a
         linear combination of Pauli operators, returned either as a :class:`~.Hamiltonian`
         or :class:`~.PauliSentence` instance.
+
     .. seealso:: :func:`~.pauli_coefficients`
+
     **Examples**
+
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1`. We can compute its
     matrix and get back the Pauli representation via ``pauli_decompose``.
+
     >>> from pennylane.labs.dla import pauli_decompose
     >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
     >>> mat = H.matrix()
@@ -168,18 +181,24 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
     0.25 * X(1) + 0.4 * Z(1)
     >>> type(op)
     pennylane.ops.op_math.sum.Sum
+
     We can choose to receive a :class:`~.PauliSentence` instead as output instead, by setting
     ``pauli=True``:
+
     >>> op = pauli_decompose(mat, pauli=True)
     >>> type(op)
     pennylane.pauli.pauli_arithmetic.PauliSentence
+
     This function supports batching and will return a list of operations for a batched input:
+
     >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0) + 1e-7 * qml.Y(0)]
     >>> batch = np.stack([op.matrix() for op in ops])
     >>> pauli_decompose(batch)
     [0.25 * X(0), 1e-07 * Y(0) + 0.5 * Z(0)]
+
     Small contributions can be removed by specifying the ``tol`` parameter, which defaults
     to ``1e-10``, accordingly:
+
     >>> pauli_decompose(batch, tol=1e-6)
     [0.25 * X(0), 0.5 * Z(0)]
     """
