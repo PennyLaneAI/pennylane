@@ -20,7 +20,7 @@ import functools
 import inspect
 import logging
 import warnings
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any, Literal, Optional, Union, get_args
 
 from cachetools import Cache
@@ -110,15 +110,26 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
-        results = [results]
+    qfunc_output_leaves, qfunc_output_structure = qml.pytrees.flatten(
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+    )
+    results_leaves, _ = qml.pytrees.flatten(results)
 
-    # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+    if len(results_leaves) != len(qfunc_output_leaves):
         return results
 
-    return type(qfunc_output)(results)
+    # add dimension back in if measurement dim is squeezed out
+    if len(qfunc_output_leaves) == 1:
+        results = [results]
+
+    # If the return type is tuple (Autograd and TF backprop removed)
+    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+        # FIXME: squeeze out dim for results with tensors
+        if len(results_leaves) == 1:
+            return results[0]
+        return qml.pytrees.unflatten(results, qfunc_output_structure)
+
+    return type(qfunc_output)(qml.pytrees.unflatten(results, qfunc_output_structure))
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
@@ -152,12 +163,20 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
 
 
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
-    if isinstance(qfunc_output, qml.numpy.ndarray):
-        measurement_processes = tuple(measurements)
-    elif not isinstance(qfunc_output, Sequence):
-        measurement_processes = (qfunc_output,)
-    else:
-        measurement_processes = qfunc_output
+    measurement_processes = qml.pytrees.flatten(
+        qfunc_output,
+        is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess),
+    )[0]
+
+    # Work around for tensor objects coming from qml.math.hstack
+    if len(measurement_processes) != 0 and isinstance(measurement_processes[0], qml.numpy.tensor):
+        measurement_processes = [
+            m.base.item()
+            for m in measurement_processes[0]
+            if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
+        ]
+    if len(measurement_processes) == 0:
+        measurement_processes = [qfunc_output]
 
     if not measurement_processes or not all(
         isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes

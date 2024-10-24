@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added support to handle any PyTree of measurements in a circuit. 
+  [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
+
 * Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
   [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
 
