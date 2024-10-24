@@ -41,7 +41,7 @@ def _get_polynomial(f, mod, *variable_sizes):
 
         `4 * x1 * y0 + 8 * x0 * y0`.
 
-        Applying modulus 5, this can be represented as 
+        Applying modulus 5, this can be represented as
 
         ```
         {

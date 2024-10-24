@@ -26,9 +26,7 @@ from pennylane.templates.subroutines.out_poly import (
 
 
 def test_get_polynomial():
-    """Test the private function _get_polynomial by checking its output for a specific function.
-
-    """
+    """Test the private function _get_polynomial by checking its output for a specific function."""
     dic = _get_polynomial(lambda x, y: x**2 * y, 16, 2, 2)
 
     expected_dic = {
