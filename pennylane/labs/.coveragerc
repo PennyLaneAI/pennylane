@@ -1,0 +1,35 @@
+# .coveragerc to control coverage.py
+[run]
+source = pennylane.labs
+omit =
+    pennylane/labs/tests*
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about debug-only or logging code:
+    if self\.debug
+    if "LOGGING" in os.environ
+
+    # print statements
+    def __format__
+    def _print_list
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == .__main__.:
+
+    # Ignore things that would have trivial tests
+    def version
+
+    # Ignore overload stubs
+    @overload
+
+
+ignore_errors = True
+
+[html]
+directory = coverage_html_report
