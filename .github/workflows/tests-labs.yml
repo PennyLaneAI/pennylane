@@ -1,4 +1,4 @@
-name: PennyLane Labs 
+name: PennyLane Labs Unit-Tests
 on:
   pull_request:
     branches:
@@ -12,7 +12,7 @@ jobs:
   # This workflow is `required` if the PR has updated any files within `pennylane/labs/*`
   # However, if we use the file filtering feature of GitHub Actions, then we cannot have this workflow marked as required.
   # Instead, this workflow will run on all pull requests, but if `pennylane/labs/*` was not touched within the PR, it will
-  # exit early with a successful status (not tests will get run).
+  # exit early with a successful status (no tests will get run).
   determine_if_workflow_should_run:
     name: Determine if QML Labs Unit-Tests need to run
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
   
   determine_runner:
     name: Determine runner type to use
-    if: github.event.pull_request.draft == false && needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+    if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
     needs:
       - determine_if_workflow_should_run
     uses: ./.github/workflows/determine-workflow-runner.yml
@@ -43,7 +43,7 @@ jobs:
     needs:
       - determine_if_workflow_should_run
       - determine_runner
-    if: github.event.pull_request.draft == false && needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+    if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
     uses: ./.github/workflows/interface-dependency-versions.yml
     with:
       job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
@@ -54,7 +54,7 @@ jobs:
       - determine_if_workflow_should_run
       - determine_runner
       - default-dependency-versions
-    if: github.event.pull_request.draft == false && needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+    if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: labs-tests
