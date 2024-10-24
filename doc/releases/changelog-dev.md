@@ -127,6 +127,9 @@
 
 <h4>Other Improvements</h4>
 
+* Updated top-level imports of PennyLane submodules to improve IDE integration and hinting.
+  [(#6445)](https://github.com/PennyLaneAI/pennylane/pull/6445)
+
 * Added `show_wire_labels` option to `draw` and `draw_mpl`, which hides wire labels when set to `False`.
   Defaults to `True`.
   [(#6410)](https://github.com/PennyLaneAI/pennylane/pull/6410)
