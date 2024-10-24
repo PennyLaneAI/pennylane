@@ -9,7 +9,7 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
     """Resource class for QFT"""
 
     @staticmethod
-    def compute_resources(num_wires) -> dict:
+    def _resource_decomp(num_wires) -> dict:
         if not isinstance(num_wires, int):
             raise TypeError("num_wires must be an int.")
 
@@ -37,7 +37,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, ResourceConstructor
     """Resource class for ControlledPhaseShift"""
 
     @staticmethod
-    def compute_resources() -> dict:
+    def _resource_decomp() -> dict:
         gate_types = {}
 
         cnot = CompressedResourceOp(qml.CNOT, {})
@@ -55,7 +55,7 @@ class ResourceCNOT(qml.CNOT, ResourceConstructor):
     """Resource class for CNOT"""
 
     @staticmethod
-    def compute_resources() -> dict:
+    def _resource_decomp() -> dict:
         raise ResourcesNotDefined
 
     def resource_rep(self) -> CompressedResourceOp:
@@ -65,7 +65,7 @@ class ResourceRZ(qml.RZ, ResourceConstructor):
     """Resource class for RZ"""
 
     @staticmethod
-    def compute_resources(epsilon=10e-3) -> dict:
+    def _resource_decomp(epsilon=10e-3) -> dict:
         gate_types = {}
 
         num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
@@ -82,7 +82,7 @@ class ResourceT(qml.T, ResourceConstructor):
     """Resource class for T"""
 
     @staticmethod
-    def compute_resources() -> dict:
+    def _resource_decomp() -> dict:
         raise ResourcesNotDefined
 
     def resource_rep(self) -> CompressedResourceOp:
