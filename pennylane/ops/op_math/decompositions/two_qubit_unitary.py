@@ -76,7 +76,7 @@ def _check_differentiability_warning(U):
         # For autograd, arrays in QNodes are potentially trainable
         is_trainable = True
 
-    if is_trainable:
+    if qml.math.requires_grad(U):
         warnings.warn(
             "The two-qubit decomposition may not be differentiable when the input "
             "unitary depends on trainable parameters.",
