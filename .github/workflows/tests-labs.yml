@@ -32,7 +32,7 @@ jobs:
   
   determine_runner:
     name: Determine runner type to use
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
     needs:
       - determine_if_workflow_should_run
     uses: ./.github/workflows/determine-workflow-runner.yml
@@ -43,6 +43,7 @@ jobs:
     needs:
       - determine_if_workflow_should_run
       - determine_runner
+    if: github.event.pull_request.draft == false && needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
     uses: ./.github/workflows/interface-dependency-versions.yml
     with:
       job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
@@ -53,7 +54,7 @@ jobs:
       - determine_if_workflow_should_run
       - determine_runner
       - default-dependency-versions
-    if: needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
+    if: github.event.pull_request.draft == false && needs.determine_if_workflow_should_run.outputs.run_labs_tests == 'true'
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: labs-tests
