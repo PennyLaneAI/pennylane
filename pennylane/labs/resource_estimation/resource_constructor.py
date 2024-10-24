@@ -27,7 +27,11 @@ class ResourceConstructor(ABC):
         """Returns the Resource object. This method is only to be used inside
         the methods of classes inheriting from ResourceConstructor."""
 
-    resources = _resource_decomp
+    @classmethod
+    def resources(cls, *args, **kwargs):
+        """Returns the Resource object. This method is intended to be user facing
+        and overridable."""
+        return cls._resource_decomp(*args, **kwargs)
 
     @classmethod
     def set_resources(cls, new_func: Callable) -> None:
