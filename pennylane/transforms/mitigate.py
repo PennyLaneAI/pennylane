@@ -219,7 +219,7 @@ def fold_global_tape(circuit, scale_factor):
         raise ValueError(
             "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
             "To use zero-noise extrapolation on the circuit with channel noise, "
-            "consider adding the noise on the device rather than the circuit."
+            "please add the noise on the device rather than the circuit."
         )
 
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)

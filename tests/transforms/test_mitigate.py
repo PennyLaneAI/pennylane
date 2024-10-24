@@ -238,7 +238,10 @@ class TestMitigateWithZNE:
         )
 
         # following result has been obtained manually and also by using
-        # mitiq.zne.scaling.fold_global and mitiq.zne.inference.RichardsonFactory.extrapolate
+        # qml.transforms.mitigate_with_zne(
+        #     noise_qnode, [1, 2, 3],
+        #     mitiq.zne.scaling.fold_global, mitiq.zne.inference.RichardsonFactory.extrapolate
+        # )()
         mitigated_result = 0.39843788456
         assert qml.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
 
