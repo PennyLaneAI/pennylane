@@ -221,21 +221,22 @@ def check_commutation(ops1, ops2, vspace):
 
 def check_all_commuting(ops: List[PauliSentence]):
     """Helper function to check if all operators in a set of operators commute"""
-    res = []
     if all(isinstance(op, PauliSentence) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = oj.commutator(oi)
             com.simplify()
-            res.append(len(com) == 0)
+            if len(com) != 0:
+                return False
 
-        return all(res)
+        return True
 
     if all(isinstance(op, Operator) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = qml.simplify(qml.commutator(oj, oi))
-            res.append(qml.equal(com, 0 * qml.Identity()))
+            if not qml.equal(com, 0 * qml.Identity()):
+                return False
 
-        return all(res)
+        return True
 
     if all(isinstance(op, PauliSentence) for op in ops):
         for oi, oj in combinations(ops, 2):
