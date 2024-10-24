@@ -20,5 +20,6 @@ class ResourceConstructor(ABC):
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
+
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ResourceConstructor does not implement compute_resources"""
