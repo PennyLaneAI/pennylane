@@ -110,7 +110,7 @@ def Ipq(p, q, wire=None):
         return -1 * Z(wire).matrix(wire_order=range(int_log2(p) + 1))
     if wire is not None:
         raise ValueError("The wire argument is only supported for p=q=2**N for some N." "")
-    return np.block([[-np.eye(p), np.zeros((p, p))], [np.zeros((q, q)), np.eye(q)]])
+    return np.block([[-np.eye(p), np.zeros((p, q))], [np.zeros((q, p)), np.eye(q)]])
 
 
 def Kpq(p, q, wire=None):
