@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
+  [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
+
 <h4>Spin Hamiltonians 💞</h4>
  
 * Function is added for generating the spin Hamiltonian for the
@@ -21,6 +24,11 @@
 <h4>Calculating Polynomials 🔢</h4>
 
 <h4>Readout Noise 📠</h4>
+
+* Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class
+  and ``add_noise`` transform. One can specify conditions on measurement processes for this purpose via
+  ``qml.noise.meas_eq(mps)``.
+  [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
 
 <h4>User-friendly decompositions 📠</h4>
 
@@ -184,6 +192,9 @@
 * A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
   [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
 
+* Moved the calculation of `shift_len = len(shifts)` outside of a loop in the `QFT.compute_decomposition` static method, reducing redundant recalculations and improving performance.
+  [(#6434)](https://github.com/PennyLaneAI/pennylane/pull/6434)
+
 <h3>Breaking changes 💔</h3>
 
 * `AllWires` validation in `QNode.construct` has been removed. 
@@ -233,7 +244,7 @@
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
 
 * The `LightningVJPs` class is removed as all lightning devices now follow the new device interface.
-  [(#6420)])(https://github.com/PennyLaneAI/pennylane/pull/6420)
+  [(#6420)](https://github.com/PennyLaneAI/pennylane/pull/6420)
 
 <h3>Deprecations 👋</h3>
 
@@ -315,6 +326,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Patches the `math` module to function with autoray 0.7.0.
+  [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
+
+* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`. 
+  [(#6423)](https://github.com/PennyLaneAI/pennylane/pull/6423)
+
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
   [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
 
@@ -394,6 +411,7 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Austin Huang,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
