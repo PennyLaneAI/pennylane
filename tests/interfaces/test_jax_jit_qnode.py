@@ -907,7 +907,6 @@ class TestShotsIntegration:
     def test_shot_vectors_single_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors."""
 
-        seed = seed + 6  # create new local seed for this test from the generated seed
         dev = qml.device("default.qubit", shots=shots, seed=seed)
 
         @jax.jit
@@ -930,7 +929,6 @@ class TestShotsIntegration:
     def test_shot_vectors_multiple_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors."""
 
-        seed = seed + 13  # create new local seed for this test from the generated seed
         dev = qml.device("default.qubit", shots=shots, seed=seed)
 
         @jax.jit
