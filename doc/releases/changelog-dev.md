@@ -189,6 +189,9 @@
 * A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
   [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
 
+* `qml.BasisRotation` template is now JIT compatible.
+  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+
 <h3>Breaking changes 💔</h3>
 
 * `AllWires` validation in `QNode.construct` has been removed. 
