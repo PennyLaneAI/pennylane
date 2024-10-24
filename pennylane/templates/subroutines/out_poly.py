@@ -32,19 +32,28 @@ def _get_polynomial(f, mod, *variable_sizes):
               The values correspond to the coefficients associated with those terms.
 
     Example:
-        For the function `f(x, y) = 4 * x * y` with `variable_sizes=(2, 1)` and `mod=5`, the target polynomial is `4 * (2x_0 + x_1) * y_0` that
-        is expanded as `4 * x1 * y0 + 8 * x0 * y0`. Therefore, the expected output is:
+        Suppose `f(x, y) = 4 * x * y` with `variable_sizes=(2, 1)` and `mod=5`.
+        This means that `x` is represented by two bits and `y` by one bit.
+
+        We can expand `f(x, y)` as `4 * (2x_0 + x_1) * y_0`, where `x_0` and `x_1` are the binary digits of `x`.
+        When this is fully expanded, it becomes:
+
+        `4 * x1 * y0 + 8 * x0 * y0`.
+
+        Applying modulus 5, the result is:
 
         ```
-        # (x0, x1, y0) -> coefficient
+        # Key (x0, x1, y0) -> Coefficient
         {
-            (0, 1, 1): 4,
-            (1, 0, 1): 3,  # 8 mod 5 = 3
+            (0, 1, 1): 4,  # Corresponds to the term x1 * y0
+            (1, 0, 1): 3   # Corresponds to the term x0 * y0, where 8 mod 5 = 3
         }
         ```
 
-        In this example, the first two bits correspond to the binary representation of the first variable and the last
-        bit corresponds to the binary representation of the second variable.
+        Explanation of the tuple:
+        - The first two bits correspond to the binary representation of the variable `x`.
+        - The third bit corresponds to the binary representation of the variable `y`.
+        - If a bit is `1`, that variable is present in the term. For example, `(0, 1, 1)` means `x1 * y0` (since x0 is absent).
     """
 
     total_wires = sum(variable_sizes)
@@ -85,18 +94,21 @@ def _get_polynomial(f, mod, *variable_sizes):
 
 
 def _mobius_inversion_of_zeta_transform(f_values, mod):
-    """Applies the `Möbius inversion <https://codeforces.com/blog/entry/72488>`_ to a zeta transform.
-    The input `f_values` is a list of integers representing a zeta transform
-    over subsets of a bitmask. This function performs the Möbius inversion
-    of the zeta transform by subtracting terms to recover the original
-    values before the transform.
+    """
+    Applies the `Möbius inversion <https://codeforces.com/blog/entry/72488>`_ to reverse a zeta transform and recover the original function values.
+
+    The function loops over each bit position (from `total_wires`) and adjusts the values in `f_values`
+    based on whether the corresponding bit in the bitmask is set (1) or not (0). The aim is to reverse
+    the effect of the zeta transform by subtracting contributions from supersets in each step, effectively
+    recovering the original values before the transformation.
 
     Args:
-        f_values (list): A list of integers representing the zeta transform.
-        mod (int): the modulus to use for the arithmetic operation.
+        f_values (list): A list of integers representing the zeta transform over subsets of a bitmask.
+        mod (int): The modulus used to perform the arithmetic operations.
 
     Returns:
-        List[int]: The list `f_values` after applying the Möbius inversion.
+        List[int]: The list `f_values` after applying the Möbius inversion, reduced modulo `mod`.
+
     """
 
     total_wires = int(qml.math.log2(len(f_values)))
@@ -143,7 +155,7 @@ class OutPoly(Operation):
         input_registers (List[Sequence[int]]): List containing the wires used to store each variable of the polynomial.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
         mod (int, optional): The modulus for performing the polynomial operation. If not provided, it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
-        work_wires (Sequence[int], optional): the auxiliary wires to use for the addition. The
+        work_wires (Sequence[int], optional): the auxiliary wires to use for performing the polynomial operation. The
                     work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
                     should be provided. Defaults to ``None``.
         id (str or None, optional): The name of the operation.
@@ -306,7 +318,9 @@ class OutPoly(Operation):
             all_wires += work_wires
 
         if len(all_wires) != sum(len(register) for register in registers_wires) + num_work_wires:
-            raise ValueError("A wire appeared in multiple registers.")
+            raise ValueError(
+                "None of the wires in a register should be included in other register."
+            )
 
         super().__init__(wires=all_wires, id=id)
 

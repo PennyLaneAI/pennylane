@@ -26,18 +26,30 @@ from pennylane.templates.subroutines.out_poly import (
 
 
 def test_get_polynomial():
+    """Test the private function _get_polynomial by checking its output for a specific function.
 
+    The function under test takes as input a callable `f`, a modulus `mod`, and the bit sizes of the variables.
+    It returns a dictionary where the keys represent the binary form of the variables involved in each term of
+    the polynomial, and the values represent the corresponding coefficients of those terms, reduced by `mod`.
+
+    In this test, It is used the function `lambda x, y: x**2 * y`, with two variables `x` and `y`, each represented by
+    2 bits (hence `variable_sizes=(2, 2)`). We expect the resulting dictionary to reflect the expansion of
+    `(2x_0 + x_1)^2 * (2y_0 + y_1)`.
+
+    The expected keys represent which bits (variables) are involved in each term, and the expected values
+    are the coefficients of those terms.
+
+    Key format: (x0, x1, y0, y1), where x0, x1 are bits for `x` and y0, y1 are bits for `y`.
+    """
     dic = _get_polynomial(lambda x, y: x**2 * y, 16, 2, 2)
-    # `dic` should contain the coefficient of (2x0 + x1)^2 * (2y0 + y1)
 
-    # key format (x0, x1, y0, y1)
     expected_dic = {
-        (0, 1, 0, 1): 1,  # x1.y1
-        (0, 1, 1, 0): 2,  # + 2 x1.y0
-        (1, 0, 0, 1): 4,  # + 4 x0.y1
-        (1, 0, 1, 0): 8,  # + 8 x0.y0
-        (1, 1, 0, 1): 4,  # + 4 x0.x1.y1
-        (1, 1, 1, 0): 8,  # + 8 x0.x1.y0
+        (0, 1, 0, 1): 1,  # x1.y1: 1
+        (0, 1, 1, 0): 2,  # x1.y0: 2
+        (1, 0, 0, 1): 4,  # x0.y1: 4
+        (1, 0, 1, 0): 8,  # x0.y0: 8
+        (1, 1, 0, 1): 4,  # x0.x1.y1: 4
+        (1, 1, 1, 0): 8,  # x0.x1.y0: 8
     }
 
     for key in dic.keys():
@@ -120,7 +132,7 @@ class TestOutPoly:
                 [6, 7, 8, 9],
                 6,
                 [0, 11],
-                "A wire appeared in multiple registers",
+                "None of the wires in",
             ),
             ([[0, 1, 2], [3, 4, 5]], [6, 7, 8, 9], 6, [10], "If mod is not"),
         ],
