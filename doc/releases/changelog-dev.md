@@ -397,6 +397,9 @@
 * Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
   [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
 
+* Fixes a bug where `pip` requirements didn't cover all necessary packages. These packages have now been added to `requirements-dev.txt`.  
+  [(#6443)](https://github.com/PennyLaneAI/pennylane/pull/6443)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
