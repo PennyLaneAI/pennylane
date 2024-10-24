@@ -18,20 +18,20 @@ PennyLane can be directly imported.
 # pylint: disable=undefined-variable
 
 from pennylane.boolean_fn import BooleanFn
-from pennylane import numpy
+from pennylane import numpy as numpy
 from pennylane.queuing import QueuingManager, apply
 
-from pennylane import capture
-from pennylane import kernels
-from pennylane import math
-from pennylane import operation
-from pennylane import qnn
-from pennylane import templates
-from pennylane import pauli
+from pennylane import capture as capture
+from pennylane import kernels as kernels
+from pennylane import math as math
+from pennylane import operation as operation
+from pennylane import qnn as qnn
+from pennylane import templates as templates
+from pennylane import pauli as pauli
 from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
 from pennylane.resource import specs
-from pennylane import resource
-from pennylane import qchem
+from pennylane import resource as resource
+from pennylane import qchem as qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
@@ -81,7 +81,7 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import qaoa
+from pennylane import qaoa as qaoa
 from pennylane.workflow import QNode, qnode, execute
 from pennylane.transforms import (
     transform,
@@ -128,26 +128,26 @@ from pennylane.debugging import (
 )
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane import pulse
+from pennylane import pulse as pulse
 
-from pennylane import fourier
+from pennylane import fourier as fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-from pennylane import gradients
-from pennylane import qinfo
+from pennylane import gradients as gradients
+from pennylane import qinfo as qinfo
 
-from pennylane import logging
+from pennylane import logging as logging
 
 from pennylane.compiler import qjit, while_loop, for_loop
-from pennylane import compiler
+from pennylane import compiler as compiler
 
-from pennylane import data
+from pennylane import data as data
 
-from pennylane import noise
+from pennylane import noise as noise
 from pennylane.noise import NoiseModel
 
 from pennylane.devices.device_constructor import device, refresh_devices
 
-from pennylane import spin
+from pennylane import spin as spin
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
