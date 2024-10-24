@@ -1559,6 +1559,7 @@ class TestMidMeasurements:
         else:
             assert qml.math.allclose(combined_measurement, expected)
 
+    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
         "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
@@ -1566,7 +1567,6 @@ class TestMidMeasurements:
     def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode, seed):
         """Unit tests for simulate_one_shot_native_mcm"""
 
-        seed = seed + 2
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(np.pi / 4, wires=0)
             m = qml.measure(wires=0, postselect=0)
