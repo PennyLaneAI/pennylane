@@ -36,7 +36,7 @@ class ResourceConstructor(ABC):
     @classmethod
     def set_resources(cls, new_func: Callable) -> None:
         """Override the compute_resources method."""
-        cls.resources = classmethod(new_func)
+        cls.resources = new_func
 
     @abstractmethod
     def resource_rep(self) -> CompressedResourceOp:
