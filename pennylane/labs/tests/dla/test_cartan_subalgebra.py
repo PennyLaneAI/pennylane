@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure_dense.py functionality"""
 # pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring
+import numpy as np
 
 import pennylane as qml
 from pennylane import X, Z
@@ -37,7 +38,11 @@ def test_Ising2():
 
     adj = qml.structure_constants(g)
 
-    _, k, mtilde, h, _ = cartan_subalgebra(g, k, m, adj, start_idx=0, verbose=1)
+    newg, k, mtilde, h, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=0)
     assert len(h) == 2
     assert len(mtilde) == 2
     assert len(h) + len(mtilde) == len(m)
+
+    new_adj_re = qml.structure_constants(newg)
+
+    assert np.allclose(new_adj_re, new_adj)
