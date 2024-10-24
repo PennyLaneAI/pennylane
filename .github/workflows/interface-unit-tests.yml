@@ -31,7 +31,7 @@ on:
         description: PyTest Coverage flags to pass to all jobs
         required: false
         type: string
-        default: --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
+        default: --cov-config=.coveragerc --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
       pytest_additional_args:
         description: Additional arguments to pass to pytest
         required: false
