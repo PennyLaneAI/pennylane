@@ -206,10 +206,10 @@ def __getattr__(key):
 
         return TransformTracer
 
-    if key == "TransformTraceInterpreter":
-        from .transforms import TransformTraceInterpreter
+    if key == "TransformInterpreter":
+        from .transforms import TransformInterpreter
 
-        return TransformTraceInterpreter
+        return TransformInterpreter
 
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 

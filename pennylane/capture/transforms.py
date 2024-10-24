@@ -20,7 +20,8 @@ from jax.core import MainTrace, Primitive, ShapedArray, Trace, Tracer
 
 import pennylane as qml
 
-from .base_interpreter import PlxprInterpreter
+from .base_interpreter import jaxpr_to_jaxpr, PlxprInterpreter
+from .primitives import qnode_prim
 
 
 class TransformTrace(Trace):
@@ -34,22 +35,33 @@ class TransformTrace(Trace):
     ):
         super().__init__(main, sublevel)
         self._transform_program = transform_program
+        self._state = None
 
     def pure(self, val: Any):
         return TransformTracer(self, val, 0)
 
     lift = sublift = pure
 
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        self._state = state
+
     def process_primitive(self, primitive: Primitive, tracers: tuple[Tracer], params: dict):
         idx = max(t.idx for t in tracers if isinstance(t, TransformTracer))
-        if idx >= len(self._transform_program):
+        is_qml_primitive = primitive.__class__.__module__.split(".")[0] == "pennylane"
+
+        if idx >= len(self._transform_program) or not is_qml_primitive:
             tracers = [t.val if isinstance(t, TransformTracer) else t for t in tracers]
             return primitive.bind(*tracers, **params)
 
         transform: "qml.transforms.core.TransformContainer" = self._transform_program[idx]
         bind_fn = transform.plxpr_transform
         targs, tkwargs = transform.args, transform.kwargs
-        return bind_fn(primitive, tracers, params, targs, tkwargs)
+        return bind_fn(primitive, tracers, params, targs, tkwargs, state=self.state)
 
 
 class TransformTracer(Tracer):
@@ -82,7 +94,7 @@ class TransformTracer(Tracer):
         return self
 
 
-class TransformTraceInterpreter(PlxprInterpreter):
+class TransformInterpreter(PlxprInterpreter):
     """Interpreter for transforming PLxPR."""
 
     _trace: TransformTrace
@@ -90,7 +102,9 @@ class TransformTraceInterpreter(PlxprInterpreter):
 
     def __init__(self, transform_program: "qml.transforms.core.TransformProgram"):
         self._trace = None
+        self._state = {}
         self._transform_program = transform_program
+
         super().__init__()
 
     def cleanup(self) -> None:
@@ -101,6 +115,7 @@ class TransformTraceInterpreter(PlxprInterpreter):
         a Catalyst variant jaxpr.
         """
         self._trace = None
+        self._state = {}
 
     def read_with_trace(self, var):
         """Extract the value corresponding to a variable."""
@@ -123,13 +138,12 @@ class TransformTraceInterpreter(PlxprInterpreter):
         # We only wrap inputs in tracers if interpreting PennyLane primitive,
         # and only transform primitives which are being applied in circuit
         if isinstance(eqn.outvars[0], jax.core.DropVar):
-            invals = [self.read_with_trace(invar) for invar in eqn.invars]
+            invals = [self.read_with_trace(inval) for inval in invals]
             return eqn.primitive.bind(*invals, **eqn.params)
 
         # Other operators are created normally and saved to the environment
         # to be used for later
-        with jax.core.new_main(jax.core.EvalTrace, dynamic=True):
-            op = eqn.primitive.bind(*invals, **eqn.params)
+        op = eqn.primitive.impl(*invals, **eqn.params)
 
         return op
 
@@ -164,3 +178,23 @@ class TransformTraceInterpreter(PlxprInterpreter):
             tracers_out = super().eval(jaxpr, consts, *args)
 
         return [r.val if isinstance(r, TransformTracer) else r for r in tracers_out]
+
+
+# pylint: disable=unused-argument, too-many-arguments
+@TransformInterpreter.register_primitive(qnode_prim)
+def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr, n_consts):
+    """Handle a qnode primitive."""
+    consts = invals[:n_consts]
+
+    self._state["shots"] = qml.measurements.Shots(shots)
+    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *invals[n_consts:])
+
+    return qnode_prim.bind(
+        *invals,
+        shots=shots,
+        qnode=qnode,
+        device=device,
+        qnode_kwargs=qnode_kwargs,
+        qfunc_jaxpr=new_qfunc_jaxpr,
+        n_consts=n_consts,
+    )

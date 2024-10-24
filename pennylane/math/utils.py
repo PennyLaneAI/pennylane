@@ -417,7 +417,7 @@ def is_abstract(tensor, like=None):
             # Otherwise, it will be abstract.
             return not isinstance(tensor.aval, jax.core.ConcreteArray)
 
-        return isinstance(tensor, DynamicJaxprTracer)
+        return isinstance(tensor, jax.core.Tracer)
 
     if interface == "tensorflow":
         import tensorflow as tf

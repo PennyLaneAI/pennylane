@@ -235,7 +235,9 @@ class TransformDispatcher:
         """Register a custom function for processing primitives to transform PLxPR"""
         self._plxpr_transform = types.MethodType(fn, self)
 
-    def default_plxpr_transform(self, *_, **__):
+    def default_plxpr_transform(
+        self, primitive, params, targs, tkwargs, state=None
+    ):  # pylint: disable=unused-argument
         """Default implementation for a function for processing primitives to transform PLxPR."""
         raise ValueError(f"{self._transform.__name__} cannot be used to transform PLxPR.")
 
