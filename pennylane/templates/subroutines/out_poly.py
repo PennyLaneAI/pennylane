@@ -20,7 +20,8 @@ from pennylane.operation import Operation
 
 
 def _get_polynomial(f, mod, *variable_sizes):
-    """Calculate the polynomial binary representation of a given function using the `Möbius inversion formula <https://en.wikipedia.org/wiki/Möbius_inversion_formula#On_posets>`_ .
+    """Calculate the polynomial binary representation of a given function using
+    the `Möbius inversion formula <https://en.wikipedia.org/wiki/Möbius_inversion_formula#On_posets>`_ .
 
     Args:
         f (callable):  the function from which the polynomial is extracted
@@ -49,7 +50,9 @@ def _get_polynomial(f, mod, *variable_sizes):
         }
         ```
 
-        Note that in each tuple, the first two bits correspond to the binary representation of the variable `x` and the third bit corresponds to the binary representation of the variable `y`. For example, `(0, 1, 1)` means `x1 * y0`, since `x0` is absent the first number in the tuple is zero. 
+        Note that in each tuple, the first two bits correspond to the binary representation of the variable `x` and
+        the third bit corresponds to the binary representation of the variable `y`. For example, `(0, 1, 1)`
+        means `x1 * y0`, since `x0` is absent the first number in the tuple is zero.
     """
 
     total_wires = sum(variable_sizes)
@@ -91,7 +94,8 @@ def _get_polynomial(f, mod, *variable_sizes):
 
 def _mobius_inversion_of_zeta_transform(f_values, mod):
     """
-    Applies the `Möbius inversion <https://codeforces.com/blog/entry/72488>`_ to reverse a zeta transform and recover the original function values.
+    Applies the `Möbius inversion <https://codeforces.com/blog/entry/72488>`_ to reverse a zeta
+    transform and recover the original function values.
 
     The function loops over each bit position (from `total_wires`) and adjusts the values in `f_values`
     based on whether the corresponding bit in the bitmask is set (1) or not (0). The aim is to reverse
@@ -124,7 +128,7 @@ class OutPoly(Operation):
 
     This operator implements an out-of-place polynomial operation
     over a set of input registers and stores the result in an output register. The result
-    is computed modulo :math:`k` in the computational basis.
+    is computed modulo :math:`mod` in the computational basis.
 
     Given a function :math:`f(x_1, \dots, x_m)` and a modulus :math:`mod`, the operator performs:
 
@@ -134,8 +138,8 @@ class OutPoly(Operation):
         = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m)\, \text{mod} \; mod\rangle.
 
     This operation stores the result of the
-    polynomial function in the output register. If the output wires are not initialized to zero, the result of the polynomial
-    operation will be added to the value initialized in the output register.
+    polynomial function in the output register. If the output wires are not initialized to zero,
+    the result of the polynomial operation will be added to the value initialized in the output register.
     The decomposition is based on
     Section II-B of `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
 
@@ -147,10 +151,12 @@ class OutPoly(Operation):
 
     Args:
 
-        polynomial_function (callable): The polynomial function to be applied. The number of arguments in the function must be equal to the number of input registers.
+        polynomial_function (callable): The polynomial function to be applied. The number of arguments in the function
+        must be equal to the number of input registers.
         input_registers (List[Sequence[int]]): List containing the wires used to store each variable of the polynomial.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
-        mod (int, optional): The modulus for performing the polynomial operation. If not provided, it defaults to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
+        mod (int, optional): The modulus for performing the polynomial operation. If not provided, it defaults
+                             to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): The auxiliary wires to use for performing the polynomial operation. The
                     work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
                     should be provided. Defaults to ``None``.
@@ -241,7 +247,8 @@ class OutPoly(Operation):
             [1 0 0]
 
         The result, :math:`[1 0 0]`, is the binary representation of :math:`3^2 + 2  \; \text{modulo} \; 7 = 4`.
-        If the output wires are not initialized to zero, this value will be added to the solution. Generically, the expression is definded as:
+        If the output wires are not initialized to zero, this value will be added to the solution. Generically,
+        the expression is definded as:
 
         .. math::
 
@@ -386,8 +393,11 @@ class OutPoly(Operation):
 
         .. code-block:: pycon
 
-            [QFT(wires=[4]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[3]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]), Adjoint(QFT(wires=[4]))]
-
+            [QFT(wires=[4]),
+             Controlled(PhaseAdder(wires=[4, None]),
+             control_wires=[3]),
+             Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]),
+             Adjoint(QFT(wires=[4]))]
         """
         registers_wires = [*input_registers, output_wires]
 
