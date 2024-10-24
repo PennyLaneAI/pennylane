@@ -115,6 +115,18 @@ class TestMitigateWithZNE:
         for t in tapes:
             same_tape(t, tape)
 
+    def test_shots_preserved(self):
+        """Tests that the mitigated circuits contain the same shots as the original circuit"""
+
+        w1, w2 = [np.random.random(2) for _ in range(2)]
+        tape = qml.tape.QuantumScript(
+            [qml.SimplifiedTwoDesign(w1, w2, wires=range(2))],
+            [qml.expval(qml.PauliZ(0))],
+            shots=1000,
+        )
+        tapes, _ = mitigate_with_zne(tape, [1, 2, 3], fold_global, exponential_extrapolate)
+        assert all(t.shots.total_shots == 1000 for t in tapes)
+
     @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
     def test_multi_returns(self, extrapolate):
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""
