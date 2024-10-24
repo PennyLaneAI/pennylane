@@ -33,4 +33,7 @@ Modules
 
 """
 
-__all__ = []
+from .sample_func import add_num
+
+__all__ = ["add_num"]
+
