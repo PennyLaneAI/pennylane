@@ -558,12 +558,12 @@ def bosonic_hamiltonian(pes_data):
 
 def kinetic_term(freqs):
     nmodes = len(freqs)
-    expr = of.BosonOperator.zero()
+    expr = BoseSentence()
     for ii in range(nmodes):
-        pi = of.BosonOperator((ii,1), 1. ) - of.BosonOperator((ii,0), 1.)
+        pi = BoseWord({(0, ii): '+'}) - BoseWord({(1, ii): '-'})
         expr -= 0.25 * freqs[ii] * pi*pi
 
-    return of.normal_ordered(expr)
+    return normal_order(expr)
 
 def harmonic_oscillators(freqs):
     """
@@ -573,7 +573,7 @@ def harmonic_oscillators(freqs):
     nmodes = len(freqs)
     kin = kinetic_term(freqs)
 
-    pot = of.BosonOperator.zero()
+    pot = BoseSentence()
     for ii in range(nmodes):
         pot += position_to_boson([ii,ii]) * freqs[ii] * 0.5
 
@@ -594,10 +594,10 @@ def position_to_boson(index):
     expr = BoseSentence()
     for ii in range(len(index)):
         expr *= (
-            of.BosonOperator(factors_c[ii], 1.0) + of.BosonOperator(factors_a[ii], 1.0)
+            BoseWord({(ii, index[ii]) : '+'}) + BoseWord({(ii, index[ii]) : '-'})
         ) / np.sqrt(2)
 
-    return of.normal_ordered(expr)
+    return normal_order(expr)
 
 
 def taylor_to_bosonic(coeffs):
@@ -612,7 +612,7 @@ def taylor_to_bosonic(coeffs):
     degs_2d = _find_2d_degs(deg)  # Missing for now
     degs_3d = _find_3d_degs(deg)
 
-    b_op = of.BosonOperator.zero()  # Should use BoseSentence.
+    b_op = BoseSentence()  # Should use BoseSentence.
     for nc in range(num_coups):
         f_eff = coeffs[nc]
 
@@ -642,4 +642,4 @@ def taylor_to_bosonic(coeffs):
             print("Warning, enter   ed array for more than 3-mode couplings, not implemented!")
             print("Returning up to three-mode couplings")
 
-    return of.normal_ordered(b_op)  # Should use BoseSentence equivalent
+    return normal_order(b_op)  # Should use BoseSentence equivalent
