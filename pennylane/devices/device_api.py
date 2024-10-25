@@ -31,7 +31,7 @@ from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
-from .capabilities import DeviceCapabilities, InvalidCapabilitiesError
+from .capabilities import DeviceCapabilities
 
 
 # pylint: disable=unused-argument, no-self-use
