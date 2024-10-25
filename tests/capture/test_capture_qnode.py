@@ -364,6 +364,13 @@ def test_qnode_jvp():
 class TestQNodeVmapIntegration:
     """Tests for integrating JAX vmap with the QNode primitive."""
 
+    def get_qnode_abstract_output(self, jaxpr):
+        for eqn in jaxpr.eqns:
+            # Check if the equation involves `qnode`
+            if "qnode" in str(eqn.primitive):
+                return eqn
+        return None  # If no qnode equation was found
+
     @pytest.mark.parametrize("x64_mode", (True, False))
     @pytest.mark.parametrize(
         "input, expected_shape",
@@ -387,7 +394,8 @@ class TestQNodeVmapIntegration:
             return qml.expval(qml.Z(0))
 
         jaxpr = jax.make_jaxpr(jax.vmap(circuit))(input)
-        eqn0 = jaxpr.eqns[0]
+
+        eqn0 = self.get_qnode_abstract_output(jaxpr)
 
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, input)
         assert qml.math.allclose(res, jax.numpy.cos(input))
@@ -456,7 +464,9 @@ class TestQNodeVmapIntegration:
         )
         assert qml.math.allclose(res3_vmap, jax.numpy.array([1.0, 1.0]))
 
-        assert len(jaxpr.eqns[0].outvars) == 3
+        eqn0 = self.get_qnode_abstract_output(jaxpr)
+
+        assert len(eqn0.outvars) == 3
         assert jaxpr.out_avals[0] == jax.core.ShapedArray(
             (2, 5, 4), jax.numpy.int64 if x64_mode else jax.numpy.int32
         )
@@ -485,7 +495,7 @@ class TestQNodeVmapIntegration:
 
         x = jax.numpy.array([1.0, 2.0, 3.0])
         jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
-        eqn0 = jaxpr.eqns[0]
+        eqn0 = self.get_qnode_abstract_output(jaxpr)
 
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(res, circuit(x))

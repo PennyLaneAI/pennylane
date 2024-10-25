@@ -42,7 +42,11 @@ def create_non_jvp_primitive():
             """Bind the ``NonJVPPrimitive`` with a trace. If the trace is a ``JVPTrace``,
             binding falls back to a standard Python function call. Otherwise, the
             bind call of JAX's standard Primitive is used."""
-            if isinstance(trace, jax.interpreters.ad.JVPTrace):
+
+            if isinstance(trace, (jax.interpreters.ad.JVPTrace, jax.interpreters.batching.BatchTrace)):
+
+                print("trace is a JVPTrace")
+
                 return self.impl(*args, **params)
             return super().bind_with_trace(trace, args, params)
 
@@ -65,7 +69,6 @@ def _get_grad_prim():
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
-
         consts = args[:n_consts]
         args = args[n_consts:]
 

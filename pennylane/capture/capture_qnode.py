@@ -70,7 +70,9 @@ def _get_qnode_prim():
 
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
-    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_shape=()):
+    def _(
+        *args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, in_axes=(), batch_shape=()
+    ):
 
         print(f"qnode_def_impl")
 
@@ -82,12 +84,19 @@ def _get_qnode_prim():
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
+        # Create a QNode with the given function, device, and additional kwargs
         qnode = qml.QNode(qfunc, device, **qnode_kwargs)
+
+        if batch_shape != ():
+            return jax.vmap(qnode._impl_call, in_axes=in_axes, out_axes=0)(
+                *args
+            )  # pylint: disable=protected-access
+
         return qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
-    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_shape=()):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, in_axes=(), batch_shape=()):
 
         print(f"qnode_abstract_eval")
 
@@ -151,6 +160,7 @@ def _get_qnode_prim():
                 )
 
         # TODO: this must be extended to the multidimensional case
+
         input_shapes = [arg.shape for arg in args if is_non_scalar_tensor(arg)]
         batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
@@ -162,11 +172,11 @@ def _get_qnode_prim():
             qnode_kwargs=qnode_kwargs,
             qfunc_jaxpr=qfunc_jaxpr,
             n_consts=n_consts,
+            in_axes=batch_dims[n_consts:],
             batch_shape=batch_shape,
         )
 
         # The batch dimension is at the front (axis 0) for all elements in the result.
-        # TODO: check if this is statement is still correct in the multidimensional case
         return result, [0] * len(result)
 
     def make_zero(tan, arg):
@@ -184,69 +194,6 @@ def _get_qnode_prim():
 
 
 def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
-    """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
-
-    Args:
-        qnode (QNode): a QNode
-        args: the arguments the QNode is called with
-
-    Keyword Args:
-        kwargs (Any): Any keyword arguments accepted by the quantum function
-
-    Returns:
-        qml.typing.Result: the result of a qnode execution
-
-    **Example:**
-
-    .. code-block:: python
-
-        qml.capture.enable()
-
-        @qml.qnode(qml.device('lightning.qubit', wires=1))
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.Z(0)), qml.probs()
-
-        def f(x):
-            expval_z, probs = circuit(np.pi * x, shots=50000)
-            return 2 * expval_z + probs
-
-        jaxpr = jax.make_jaxpr(f)(0.1)
-        print("jaxpr:")
-        print(jaxpr)
-
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
-        print()
-        print("result:")
-        print(res)
-
-
-    .. code-block:: none
-
-        jaxpr:
-        { lambda ; a:f32[]. let
-            b:f32[] = mul 3.141592653589793 a
-            c:f32[] d:f32[2] = qnode[
-              device=<lightning.qubit device (wires=1) at 0x10557a070>
-              qfunc_jaxpr={ lambda ; e:f32[]. let
-                  _:AbstractOperator() = RX[n_wires=1] e 0
-                  f:AbstractOperator() = PauliZ[n_wires=1] 0
-                  g:AbstractMeasurement(n_wires=None) = expval_obs f
-                  h:AbstractMeasurement(n_wires=0) = probs_wires
-                in (g, h) }
-              qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x10557a070>', interface='auto', diff_method='best'>
-              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
-              shots=Shots(total=50000)
-            ] b
-            i:f32[] = mul 2.0 c
-            j:f32[2] = add i d
-          in (j,) }
-
-        result:
-        [Array([-0.96939224, -0.38207346], dtype=float32)]
-
-
-    """
 
     print(f"qnode_call")
 
@@ -261,21 +208,10 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if not qnode.device.wires:
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
-    def _is_batched(arg):
-        # Check if the argument is a Tracer and if it contains a BatchTrace object.
-        # TODO: this currently does not work with pytrees
-        return isinstance(arg, jax.core.Tracer) and isinstance(
-            arg._trace, jax.interpreters.batching.BatchTrace
-        )
-
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     flat_fn = FlatFn(qfunc)
 
-    # This is only needed if the QNode is called with jax.vmap to make
-    # the batching rule work correctly with parameter broadcasting.
-    unbatched_args = tuple(arg.val if _is_batched(arg) else arg for arg in args)
-
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*unbatched_args)
+    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
