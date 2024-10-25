@@ -39,6 +39,8 @@ class Hadamard(Observable, Operation):
 
     .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
 
+    .. seealso:: The equivalent short-form alias :class:`~H`
+
     **Details:**
 
     * Number of wires: 1
@@ -63,6 +65,17 @@ class Hadamard(Observable, Operation):
         cache: Optional[dict] = None,
     ) -> str:
         return base_label or "H"
+
+    def __repr__(self) -> str:
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"H('{wire}')"
+        return f"H({wire})"
+
+    @property
+    def name(self) -> str:
+        return "Hadamard"
 
     @staticmethod
     @lru_cache()
@@ -180,6 +193,24 @@ class Hadamard(Observable, Operation):
 
     def pow(self, z: Union[int, float]):
         return super().pow(z % 2)
+
+
+H = Hadamard
+r"""Hadamard(wires)
+The Hadamard operator
+
+.. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
+
+.. seealso:: The equivalent long-form alias :class:`~Hadamard`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
 class PauliX(Observable, Operation):
