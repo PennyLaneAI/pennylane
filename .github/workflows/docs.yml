@@ -23,6 +23,9 @@ on:
       - synchronize
       - ready_for_review
 
+permissions:
+  pull-requests: write
+
 jobs:
   determine_runner:
     if: github.event.pull_request.draft == false
@@ -82,15 +85,15 @@ jobs:
     # Create PR to master
     - name: Create pull request
       if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane' && steps.changed.outputs.has_changes != '0'
-      uses: repo-sync/pull-request@v2
-      with:
-        source_branch: "${{ env.DEPS_BRANCH }}"
-        destination_branch: "master"
-        github_token: "${{ secrets.GITHUB_TOKEN }}"
-        pr_title: "Update stable dependency files"
-        # if updating the pr_body, please also update the same text in the tests.yml file
-        pr_body: |
-          Automatic update of stable requirement files to snapshot valid python environments.
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_TITLE: ${{ inputs.pull_request_title }}
+        PR_BODY: ${{ inputs.pull_request_body }}
+
+      run: |
+        gh_pr_up() { gh pr create $* || gh pr edit $* }
+        gh_pr_up --title "Update stable dependency files" --body \
+        "Automatic update of stable requirement files to snapshot valid python environments.
 
           Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
 
@@ -105,6 +108,4 @@ jobs:
           major version of Lightning is released. 
           
           If pip install fails with a not found error when installing because of this, it can be fixed by manually 
-          downgrading the PennyLane-Lightning version number in the file by 1 version and trying again.
-        pr_allow_empty: false
-        pr_draft: false
+          downgrading the PennyLane-Lightning version number in the file by 1 version and trying again."
