@@ -16,11 +16,11 @@ Tests the apply_operation functions from devices/qubit
 """
 from functools import reduce
 
+import numpy
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
 from scipy.stats import unitary_group
-from sympy.stats.sampling.sample_numpy import numpy
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import (

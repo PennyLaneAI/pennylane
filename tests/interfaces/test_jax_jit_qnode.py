@@ -30,7 +30,7 @@ def get_device(device_name, wires, seed):
         return ParamShiftDerivativesDevice(seed=seed)
     if device_name == "lightning.qubit":
         return qml.device("lightning.qubit", wires=wires)
-    return qml.device("default.qubit", seed=seed)
+    return qml.device(device_name, seed=seed)
 
 
 # device_name, diff_method, grad_on_execution, device_vjp

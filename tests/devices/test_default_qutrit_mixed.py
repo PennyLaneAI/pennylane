@@ -1556,6 +1556,7 @@ class TestReadoutError:
         res = circuit()
         assert res == expected
 
+    # pylint:disable=too-many-arguments
     @pytest.mark.parametrize(
         "relaxations, misclassifications, expected",
         [

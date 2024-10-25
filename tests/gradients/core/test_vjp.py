@@ -428,7 +428,7 @@ class TestVJPGradients:
         can be differentiated using TF."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = tf.Variable(params_np, dtype=tf.float64)
