@@ -15,6 +15,7 @@
 Test base Resource class and its associated methods
 """
 
+import copy
 from collections import defaultdict
 
 import pytest
@@ -25,6 +26,10 @@ from pennylane.labs.resource_estimation.resource_container import (
     Resources,
     _combine_dict,
     _scale_dict,
+    add_in_parallel,
+    add_in_series,
+    mul_in_parallel,
+    mul_in_series,
 )
 
 
@@ -95,18 +100,14 @@ class TestResources:
 
     resource_quantities = (
         Resources(),
-        Resources(5, 0, {}),
-        Resources(
-            1,
-            3,
-            defaultdict(int, {"Hadamard": 1, "PauliZ": 2}),
-        ),
-        Resources(4, 2, {"Hadamard": 1, "CNOT": 1}),
+        Resources(5, 0, defaultdict(int, {})),
+        Resources(1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2})),
+        Resources(4, 2, defaultdict(int, {"Hadamard": 1, "CNOT": 1})),
     )
 
     resource_parameters = (
-        (0, 0, {}),
-        (5, 0, {}),
+        (0, 0, defaultdict(int, {})),
+        (5, 0, defaultdict(int, {})),
         (1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2})),
         (4, 2, defaultdict(int, {"Hadamard": 1, "CNOT": 1})),
     )
@@ -120,32 +121,144 @@ class TestResources:
         assert r.num_gates == num_gates
         assert r.gate_types == gate_types
 
-    # @pytest.mark.parametrize("in_place", (False, True))
-    # @pytest.mark.parametrize("resource_obj", resource_quantities)
-    # def test_add_in_series(self, resource_obj, in_place):
-    #     """Test the add_in_series function works with Resoruces"""
-    #     other_obj = Resources(
-    #         num_wires=2,
-    #         num_gates=6,
-    #         gate_types=defaultdict(int, {"RZ":2, "CNOT":1, "RY":2, "Hadamard":1})
-    #     )
+    expected_results_add_series = (
+        Resources(2, 6, defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1})),
+        Resources(5, 6, defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1})),
+        Resources(
+            2, 9, defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 2, "PauliZ": 2})
+        ),
+        Resources(4, 8, defaultdict(int, {"RZ": 2, "CNOT": 2, "RY": 2, "Hadamard": 2})),
+    )
 
-    #     resultant_obj = resource_obj.add_in_series(other_obj, in_place=in_place)
-    #     expected_res_obj = Resources(
-    #         num_wires = other_obj.num_wires
-    #     )
-    #     assert True
+    @pytest.mark.parametrize("in_place", (False, True))
+    @pytest.mark.parametrize(
+        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
+    )
+    def test_add_in_series(self, resource_obj, expected_res_obj, in_place):
+        """Test the add_in_series function works with Resoruces"""
+        resource_obj = copy.deepcopy(resource_obj)
+        other_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        )
 
-    def test_add_in_parallel(self):
+        resultant_obj = add_in_series(resource_obj, other_obj, in_place=in_place)
+        assert resultant_obj == expected_res_obj
+
+        if in_place:
+            assert resultant_obj is resource_obj
+
+    expected_results_add_parallel = (
+        Resources(2, 6, defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1})),
+        Resources(7, 6, defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1})),
+        Resources(
+            3, 9, defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 2, "PauliZ": 2})
+        ),
+        Resources(6, 8, defaultdict(int, {"RZ": 2, "CNOT": 2, "RY": 2, "Hadamard": 2})),
+    )
+
+    @pytest.mark.parametrize("in_place", (False, True))
+    @pytest.mark.parametrize(
+        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_parallel)
+    )
+    def test_add_in_parallel(self, resource_obj, expected_res_obj, in_place):
         """Test the add_in_parallel function works with Resoruces"""
-        assert True
+        resource_obj = copy.deepcopy(resource_obj)
+        other_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        )
 
-    def test_mul_in_series(self):
+        resultant_obj = add_in_parallel(resource_obj, other_obj, in_place=in_place)
+        assert resultant_obj == expected_res_obj
+
+        if in_place:
+            assert resultant_obj is resource_obj
+
+    expected_results_mul_series = (
+        Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=12,
+            gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=18,
+            gate_types=defaultdict(int, {"RZ": 6, "CNOT": 3, "RY": 6, "Hadamard": 3}),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=30,
+            gate_types=defaultdict(int, {"RZ": 10, "CNOT": 5, "RY": 10, "Hadamard": 5}),
+        ),
+    )
+
+    @pytest.mark.parametrize("in_place", (False, True))
+    @pytest.mark.parametrize(
+        "scalar, expected_res_obj", zip((1, 2, 3, 5), expected_results_mul_series)
+    )
+    def test_mul_in_series(self, scalar, expected_res_obj, in_place):
         """Test the mul_in_series function works with Resoruces"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        )
+
+        resultant_obj = mul_in_series(resource_obj, scalar, in_place=in_place)
+        assert resultant_obj == expected_res_obj
+
+        if in_place:
+            assert resultant_obj is resource_obj
         assert True
 
-    def test_mul_in_parallel(self):
+    expected_results_mul_parallel = (
+        Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        ),
+        Resources(
+            num_wires=4,
+            num_gates=12,
+            gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
+        ),
+        Resources(
+            num_wires=6,
+            num_gates=18,
+            gate_types=defaultdict(int, {"RZ": 6, "CNOT": 3, "RY": 6, "Hadamard": 3}),
+        ),
+        Resources(
+            num_wires=10,
+            num_gates=30,
+            gate_types=defaultdict(int, {"RZ": 10, "CNOT": 5, "RY": 10, "Hadamard": 5}),
+        ),
+    )
+
+    @pytest.mark.parametrize("in_place", (False, True))
+    @pytest.mark.parametrize(
+        "scalar, expected_res_obj", zip((1, 2, 3, 5), expected_results_mul_parallel)
+    )
+    def test_mul_in_parallel(self, scalar, expected_res_obj, in_place):
         """Test the mul_in_parallel function works with Resoruces"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        )
+
+        resultant_obj = mul_in_parallel(resource_obj, scalar, in_place=in_place)
+        assert resultant_obj == expected_res_obj
+
+        if in_place:
+            assert resultant_obj is resource_obj
         assert True
 
     test_str_data = (
@@ -185,14 +298,14 @@ def test_combine_dict(in_place):
         assert result is not d1
 
 
-@pytest.mark.parametrize("scaler", (1, 2, 3))
+@pytest.mark.parametrize("scalar", (1, 2, 3))
 @pytest.mark.parametrize("in_place", (False, True))
-def test_scale_dict(scaler, in_place):
+def test_scale_dict(scalar, in_place):
     """Test that we can scale the values of a dictionary as expected."""
     d1 = defaultdict(int, {"a": 2, "b": 4, "c": 6})
 
-    expected = defaultdict(int, {k: scaler * v for k, v in d1.items()})
-    result = _scale_dict(d1, scaler, in_place=in_place)
+    expected = defaultdict(int, {k: scalar * v for k, v in d1.items()})
+    result = _scale_dict(d1, scalar, in_place=in_place)
 
     assert result == expected
 

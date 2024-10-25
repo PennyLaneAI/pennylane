@@ -230,7 +230,7 @@ def mul_in_series(first: Resources, scaler: int, in_place=False) -> Resources:
     return Resources(first.num_wires, new_gates, new_gate_types)
 
 
-def mul_in_parllel(first: Resources, scaler: int, in_place=False) -> Resources:
+def mul_in_parallel(first: Resources, scaler: int, in_place=False) -> Resources:
     """Multiply two resources assuming the circuits are executed in parallel.
 
     Args:
