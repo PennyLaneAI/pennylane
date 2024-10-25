@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added functions `get_best_diff_method` to `qml.workflow`.
+  [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
+
 * Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
   [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
 
