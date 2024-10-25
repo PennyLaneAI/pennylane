@@ -23,8 +23,7 @@ on:
       - synchronize
       - ready_for_review
 
-permissions:
-  pull-requests: write
+permissions: write-all
 
 jobs:
   determine_runner:
@@ -81,15 +80,14 @@ jobs:
         git add .github/stable/doc.txt
         git commit -m "Update stable docs dependencies"
         git push -f --set-upstream origin "${{ env.DEPS_BRANCH }}"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     # Create PR to master
     - name: Create pull request
       if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane' && steps.changed.outputs.has_changes != '0'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PR_TITLE: ${{ inputs.pull_request_title }}
-        PR_BODY: ${{ inputs.pull_request_body }}
-
       run: |
         gh_pr_up() { gh pr create $* || gh pr edit $* }
         gh_pr_up --title "Update stable dependency files" --body \
