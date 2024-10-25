@@ -936,9 +936,16 @@ class DefaultTensor(Device):
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
-    device._quimb_circuit.apply_gate(
-        qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
-    )
+    if not isinstance(ops, qml.Identity):
+        device._quimb_circuit.apply_gate(
+            qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
+        )
+
+
+@apply_operation_core.register
+def apply_operation_core_global_phase(ops: qml.GlobalPhase, device):
+    """Dispatcher for _apply_operation."""
+    device._quimb_circuit._psi *= qml.math.exp(-1j * ops.data[0])
 
 
 @apply_operation_core.register
@@ -956,7 +963,14 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
     arrays = []
     sites = list(ops.wires)
     for i, P in enumerate(pauli_string):
-        if i == 0:
+
+        if len(sites) == 1:
+            # Special case for a single-qubit Pauli rotation
+            arr = qml.math.zeros((1, 1, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
+            arr[0, 0] += qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
+
+        elif i == 0:
             arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
             arr[0, 1] = qml.math.eye(2, dtype=complex)
