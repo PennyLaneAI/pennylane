@@ -93,10 +93,16 @@
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
+* `mitigate_with_zne` now gives clearer error message when being used with circuits with channel noise.
+  [(#6346)](https://github.com/PennyLaneAI/pennylane/pull/6346)
+
 * The `make_plxpr` function is added, to take a function and create a `Callable` that,
   when called, will return a PLxPR representation of the input function.
   [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
+* `FermiWord` and `FermiSentence` are now compatible with JAX arrays.
+  [(#6324)](https://github.com/PennyLaneAI/pennylane/pull/6324)
+  
 <h4>Quantum information measurements</h4>
 
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
@@ -191,6 +197,9 @@
 
 * A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
   [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
+
+* Moved the calculation of `shift_len = len(shifts)` outside of a loop in the `QFT.compute_decomposition` static method, reducing redundant recalculations and improving performance.
+  [(#6434)](https://github.com/PennyLaneAI/pennylane/pull/6434)
 
 <h3>Breaking changes 💔</h3>
 
@@ -295,6 +304,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated `qml.spin` documentation.
+  [(#6387)](https://github.com/PennyLaneAI/pennylane/pull/6387)
+
 * Updated links to PennyLane.ai in the documentation to use the latest URL format, which excludes the `.html` prefix.
   [(#6412)](https://github.com/PennyLaneAI/pennylane/pull/6412)
 
@@ -394,6 +406,9 @@
 * Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
   [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
 
+* Fixes a bug where `mitigate_with_zne` loses the `shots` information of the original tape.
+  [(#6444)](https://github.com/PennyLaneAI/pennylane/pull/6444)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -408,6 +423,8 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Austin Huang,
+Soran Jahangiri,
+Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
