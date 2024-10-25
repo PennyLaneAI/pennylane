@@ -4,15 +4,6 @@ on:
   schedule:
   - cron: '35 2 * * 0'
   workflow_dispatch:
-  push:
-    branches:
-      - master
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
 
 concurrency:
   group: warnings-as-errors-tests-${{ github.ref }}
