@@ -196,7 +196,7 @@ class Hadamard(Observable, Operation):
 
 
 H = Hadamard
-r"""Hadamard(wires)
+r"""H(wires)
 The Hadamard operator
 
 .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
