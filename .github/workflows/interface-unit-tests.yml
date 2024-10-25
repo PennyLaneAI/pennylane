@@ -103,7 +103,7 @@ jobs:
       - name: Set fail-fast for WAE
         id: mat_fail_fast
         run: |
-          if [ "${{ inputs.python_warning_level }}" == "true" ];
+          if [ "${{ contains(inputs.python_warning_level, "default") }}" ];
           then
             cat >python_warning_level.json <<-EOF
           {
