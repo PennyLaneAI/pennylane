@@ -338,6 +338,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable module is used.
+  [(#6437)](https://github.com/PennyLaneAI/pennylane/pull/6437)
+
 * Patches the `math` module to function with autoray 0.7.0.
   [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
 
@@ -420,6 +423,7 @@ Guillermo Alonso,
 Utkarsh Azad,
 Oleksandr Borysenko,
 Astral Cai,
+Yushao Chen,
 Isaac De Vlugt,
 Diksha Dhawan,
 Lillian M. A. Frederiksen,
