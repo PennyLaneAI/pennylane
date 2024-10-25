@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the probs module"""
+
+# pylint:disable=too-many-arguments
+
 from collections.abc import Sequence
 
 import numpy as np
