@@ -617,6 +617,7 @@ def apply_snapshot(
         measurement = op.hyperparameters["measurement"]
 
         shots = execution_kwargs.get("tape_shots")
+        print(measurement.wires)
 
         if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
