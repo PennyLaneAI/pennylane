@@ -516,6 +516,10 @@ class TestSnapshotSupportedQNode:
 
     def test_all_sample_measurement_snapshot(self):
         """Test that the correct measurement snapshots are returned for different measurement types."""
+
+        # TODO: The fact that this entire test depends on a global seed is not good
+        np.random.seed(9872653)
+
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qml.qnode(dev)
