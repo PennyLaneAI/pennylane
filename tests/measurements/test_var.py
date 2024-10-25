@@ -82,15 +82,14 @@ class TestVar:
             res = func(phi)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
-    @flaky(max_runs=5)
     @pytest.mark.parametrize("shots", [None, 5555, [5555, 5555]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(
-        self, shots, phi, tol, tol_stochastic
+        self, shots, phi, tol, tol_stochastic, seed
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=seed)
 
         @qml.qnode(dev)
         def circuit(phi):
