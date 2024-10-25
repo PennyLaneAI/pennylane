@@ -35,7 +35,7 @@
 * `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
   [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
 
-* `OutPoly` template is added to implement polynomial arithmetic.
+* `qml.OutPoly` template is added to implement polynomial arithmetic.
   [(#6320)](https://github.com/PennyLaneAI/pennylane/pull/6320)
 
 <h3>Improvements 🛠</h3>
