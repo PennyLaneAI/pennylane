@@ -654,14 +654,13 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert math.get_interface(res) == ml_framework
         assert math.allclose(res, expected)
 
-    @pytest.mark.parametrize("method", [apply_operation_einsum, apply_operation_tensordot])
-    def test_batch_size_set_if_missing(self, method, ml_framework):
+    def test_batch_size_set_if_missing(self, ml_framework):
         """Tests that the batch_size is set on an operator if it was missing before.
         Mostly useful for TF-autograph since it may have batch size set to None."""
         param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qml.RX(param, 0)
         assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
-        state = method(op, state)
+        state = apply_operation_einsum(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3
