@@ -2513,14 +2513,13 @@ class TestCutCircuitMCTransform:
     Tests that the `cut_circuit_mc` transform gives the correct results.
     """
 
-    @flaky(max_runs=3)
-    def test_cut_circuit_mc_expval(self, dev_fn):
+    def test_cut_circuit_mc_expval(self, dev_fn, seed):
         """
         Tests that a circuit containing sampling measurements can be cut and
         recombined to give the correct expectation value
         """
 
-        dev_sim = dev_fn(wires=3)
+        dev_sim = dev_fn(wires=3, seed=seed)
 
         @qml.qnode(dev_sim)
         def target_circuit(v):
