@@ -216,8 +216,6 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
             # intersect kernel to stay in m
             kernel_intersection = _intersect_bases(kernel_intersection, new_kernel, rcond=tol)
 
-        # print(kernel_intersection.T.shape, np_h.shape)
-
         if kernel_intersection.shape[1] == len(np_h):
             # No new vector was added from all the kernels
             break
