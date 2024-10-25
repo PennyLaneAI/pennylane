@@ -24,6 +24,7 @@ Experimental Lie theory features
     ~structure_constants_dense
     ~cartan_decomposition
     ~recursive_cartan_decomposition
+    ~cartan_khk
 
 
 Utility functions
@@ -41,6 +42,7 @@ Utility functions
     ~check_all_commuting
     ~project
     ~apply_basis_change
+    ~validate_khk
 
 Involutions
 ~~~~~~~~~~~
@@ -96,3 +98,5 @@ from .involutions import (
 )
 
 from .cartan_subalgebra import cartan_subalgebra, adjvec_to_op, op_to_adjvec
+
+from .variational_khk import validate_khk, variational_khk
