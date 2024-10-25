@@ -317,7 +317,6 @@ class TestApplyGroverOperator:
             (3, "tensordot"),
             (8, "tensordot"),
             (9, "custom"),
-            # (13, "custom"),
         ],
     )
     def test_dispatch_method(self, num_wires, expected_method, mocker):
@@ -406,21 +405,42 @@ class TestApplyMultiControlledX:
             (7, "autograd", "tensordot"),
             (8, "autograd", "tensordot"),
             (9, "autograd", "custom"),
-            (3, "jax", "einsum"),
-            (7, "jax", "einsum"),
-            (8, "jax", "tensordot"),
-            (9, "jax", "custom"),
-            (3, "tensorflow", "einsum"),
-            (7, "tensorflow", "einsum"),
-            (8, "tensorflow", "tensordot"),
-            (9, "tensorflow", "custom"),
-            (3, "torch", "einsum"),
-            (7, "torch", "einsum"),
-            (8, "torch", "tensordot"),
-            (9, "torch", "custom"),
         ],
     )
     def test_dispatch_method(self, num_wires, expected_method, interface, mocker):
+        """Test that the correct dispatch method is used based on the number of wires."""
+        state = get_random_mixed_state(num_wires)
+        # Convert to interface
+        state = math.asarray(state, like=interface)
+
+        op = qml.MultiControlledX(wires=range(num_wires))
+
+        spy_einsum = mocker.spy(math, "einsum")
+        spy_tensordot = mocker.spy(math, "tensordot")
+
+        apply_operation(op, state)
+
+        if expected_method == "einsum":
+            assert spy_einsum.called
+            assert not spy_tensordot.called
+        elif expected_method == "tensordot":
+            assert not spy_einsum.called
+            assert spy_tensordot.called
+        else:  # custom method
+            assert not spy_einsum.called
+            assert not spy_tensordot.called
+
+    @pytest.mark.parametrize("interface", ml_frameworks_list[2:])
+    @pytest.mark.parametrize(
+        "num_wires, expected_method",
+        [
+            (3, "einsum"),
+            (7, "einsum"),
+            (8, "tensordot"),
+            (9, "custom"),
+        ],
+    )
+    def test_dispatch_method_special_cases(self, num_wires, expected_method, interface, mocker):
         """Test that the correct dispatch method is used based on the number of wires."""
         state = get_random_mixed_state(num_wires)
         # Convert to interface
