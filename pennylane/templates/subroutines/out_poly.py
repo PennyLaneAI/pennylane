@@ -26,7 +26,8 @@ def _get_polynomial(f, mod, *variable_sizes):
     Args:
         f (callable):  the function from which the polynomial is extracted
         mod (int): the modulus to use for the arithmetic operation
-        *variable_sizes (int):  variadic arguments that specify the number of bits needed to represent each of the variables of the function
+        *variable_sizes (int):  variadic arguments that specify the number of bits needed to represent each
+                                of the variables of the function
 
     Returns:
         dict[tuple -> int]: dictionary with keys representing the variable terms of the polynomial
@@ -98,7 +99,9 @@ def _mobius_inversion_of_zeta_transform(f_values, mod):
     transform and recover the original function values.
 
     The function loops over each bit position (from `total_wires`) and adjusts the values in `f_values`
-    based on whether the corresponding bit in the bitmask is set (1) or not (0). The aim is to reverse
+    based on whether the corresponding bit in the bitmask is set (1) or not (0). The bitmask is a sequence of bits
+    used to enable (1) or disable (0) specific positions in binary operations, allowing individual bits in data
+    structures or numeric values to be checked or modified. The aim is to reverse
     the effect of the zeta transform by subtracting contributions from supersets in each step, effectively
     recovering the original values before the transformation.
 
@@ -133,10 +136,10 @@ class OutPoly(Operation):
         \text{OutPoly}_{f, mod} |x_1 \rangle \dots |x_m \rangle |0 \rangle
         = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m)\, \text{mod} \; mod\rangle,
 
-	where the integer inputs :math:`x_i` are embedded in the `input` registers. The result of the
+        where the integer inputs :math:`x_i` are embedded in the `input` registers. The result of the
     polynomial function :math:`f(x_1, \dots, x_m)` is computed modulo :math:`mod` in the computational
     basis and stored in the `output` wires. If the output wires are not initialized to zero, the evaluated result
-	:math:`f(x_1, \dots, x_m)\ \text{%}\ mod` will be added to the value initialized in the output register.
+        :math:`f(x_1, \dots, x_m)\ \text{%}\ mod` will be added to the value initialized in the output register.
     This implementation is based on the Section II-B of `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
 
 
@@ -151,7 +154,7 @@ class OutPoly(Operation):
                                         must be equal to the number of input registers.
         input_registers (List[Union[Wires, Sequence[int]]]): List containing the wires (or the wire indices) used to store each variable of the polynomial.
         output_wires (Union[Wires, Sequence[int]]): The wires (or wire indices) used to store the output of the operation.
-        mod (int, optional): The modulus for performing the polynomial operation. If not provided, it defaults
+        mod (int, optional): The integer for performing the modulo on the result of the polynomial operation. If not provided, it defaults
                              to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): The auxiliary wires to use for performing the polynomial operation. The
                     work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
@@ -198,8 +201,7 @@ class OutPoly(Operation):
         Note that the default value of `mod` in this example is :math:`2^{\text{len(output_wires)}} = 2^4 = 16`.
         For more information on using `mod`, see the Usage Details section.
 
-
-    .. seealso:: :class:`~.PhaseAdder`
+    .. seealso:: The decomposition of this operator consists of controlled :class:`~.PhaseAdder` gates.
 
     .. details::
         :title: Usage Details
@@ -224,6 +226,7 @@ class OutPoly(Operation):
                 # loading values for x and y
                 qml.BasisEmbedding(3, wires=x_wires)
                 qml.BasisEmbedding(2, wires=y_wires)
+                qml.BasisEmbedding(1, wires=output_wires)
 
                 # applying the polynomial
                 qml.OutPoly(
@@ -239,11 +242,12 @@ class OutPoly(Operation):
         .. code-block:: pycon
 
             >>> print(circuit())
-            [1 0 0]
+            [1 0 1]
 
-        The result, :math:`[1 0 0]`, is the binary representation of :math:`3^2 + 2  \; \text{mod} \; 7 = 4`.
-        If the output wires are not initialized to zero, this value will be added to the solution. Generically,
-        the expression is definded as:
+        The result, :math:`[1 0 1]`, is the binary representation
+        of :math:`1 + f(3, 2) = 1 + 3^2 + 2  \; \text{mod} \; 7 = 5`.
+        In this example ``output_wires`` is initialized to :math:`1`, so this value is added to the solution.
+        Generically, the expression is definded as:
 
         .. math::
 
