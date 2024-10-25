@@ -138,8 +138,8 @@ class OutPoly(Operation):
 
     where the integer inputs :math:`x_i` are embedded in the `input` registers. The result of the
     polynomial function :math:`f(x_1, \dots, x_m)` is computed modulo :math:`mod` in the computational
-    basis and stored in the `output` wires. If the output wires are not initialized to zero, the evaluated result
-        :math:`f(x_1, \dots, x_m)\ \text{%}\ mod` will be added to the value initialized in the output register.
+    basis and stored in the `output` wires. If the output wires are not initialized to zero, the evaluated
+    result :math:`f(x_1, \dots, x_m)\ \text{%}\ mod` will be added to the value initialized in the output register.
     This implementation is based on the Section II-B of `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
 
 
