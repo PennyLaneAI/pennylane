@@ -936,9 +936,16 @@ class DefaultTensor(Device):
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
-    device._quimb_circuit.apply_gate(
-        qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
-    )
+    if not isinstance(ops, qml.Identity):
+        device._quimb_circuit.apply_gate(
+            qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
+        )
+
+
+@apply_operation_core.register
+def apply_operation_core_global_phase(ops: qml.GlobalPhase, device):
+    """Dispatcher for _apply_operation."""
+    device._quimb_circuit._psi *= qml.math.exp(-1j * ops.data[0])
 
 
 @apply_operation_core.register
@@ -949,24 +956,39 @@ def apply_operation_core_multirz(ops: qml.MultiRZ, device):
 
 @apply_operation_core.register
 def apply_operation_core_paulirot(ops: qml.PauliRot, device):
-    """Dispatcher for _apply_operation."""
+    """Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO)."""
+
     theta = ops.parameters[0]
     pauli_string = ops._hyperparameters["pauli_word"]
 
     arrays = []
     sites = list(ops.wires)
     for i, P in enumerate(pauli_string):
-        if i == 0:
+
+        if len(sites) == 1:
+            # Special case for a single-qubit Pauli rotation
+            arr = qml.math.zeros((1, 1, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
+            arr[0, 0] += qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
+
+        # Multi-qubit Pauli rotations are implemented with an MPO chain. Each tensor
+        # in this chain has the shape of (in_dim, out_dim, 2, 2), where the last two
+        # dimensions are the physical dimensions, i.e., the dimensions of the operator
+        # acting on a single site.
+        elif i == 0:
+            # The first tensor has an in-dimension of 1, and an out-dimension of 2.
             arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
             arr[0, 1] = qml.math.eye(2, dtype=complex)
 
         elif i == len(sites) - 1:
+            # The last tensor has an out-dimension of 1, and an in-dimension of 2.
             arr = qml.math.zeros((2, 1, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
             arr[1, 0] = qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
 
         else:
+            # The middle tensors maintain connectivity with the previous and next tensors.
             arr = qml.math.zeros((2, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
             arr[1, 1] = qml.math.eye(2, dtype=complex)
