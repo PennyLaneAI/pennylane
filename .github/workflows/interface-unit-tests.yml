@@ -95,6 +95,10 @@ jobs:
       force_large_runner: ${{ inputs.use_large_runner }}
 
   disable-fail-fast-wae:
+    needs:
+      - determine_runner
+    
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
       - name: Set fail-fast for WAE
         id: mat_fail_fast
