@@ -726,12 +726,6 @@ PARAMS = rng.uniform(low=0, high=2 * np.pi, size=_shape)
 class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
-    @pytest.fixture
-    def PARAMS(self, request):
-        rng = np.random.default_rng(request.getfixturevalue("seed"))
-        _shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
-        return rng.uniform(low=0, high=2 * np.pi, size=_shape)
-
     # pylint: disable=cell-var-from-loop
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)

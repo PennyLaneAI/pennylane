@@ -287,8 +287,6 @@ class TestInterfaces:
             from jax.random import PRNGKey
 
             seed = PRNGKey(seed)
-        else:
-            seed = seed
 
         dev = qml.device("default.qubit", wires=4, shots=shots, seed=seed)
         param = qml.math.array(np.pi / 2, like=interface)

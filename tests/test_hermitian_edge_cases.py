@@ -21,6 +21,8 @@ import pytest
 
 import pennylane as qml
 
+# pylint:disable=too-many-arguments
+
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 

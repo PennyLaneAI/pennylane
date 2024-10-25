@@ -73,7 +73,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, **_):
             qml.RY(a, wires=0)
@@ -101,7 +101,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, b, **_):
             qml.RY(a, wires=0)
@@ -133,7 +133,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, **_):
             qml.RY(a[0], wires=0)
@@ -162,7 +162,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, **_):
             qml.RY(a, wires=0)
@@ -191,7 +191,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, b, **_):
             qml.RY(a, wires=0)
@@ -224,7 +224,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, **_):
             qml.RY(a[0], wires=0)
@@ -255,7 +255,7 @@ class TestReturnWithShotVectors:
             diff_method=diff_method,
             interface=interface,
             max_diff=1,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x, y, **_):
             qml.RX(x, wires=[0])
@@ -285,7 +285,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, **_):
             qml.RY(a[0], wires=0)
@@ -314,7 +314,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, **_):
             qml.RY(a, wires=0)
@@ -342,7 +342,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, b, **_):
             qml.RY(a, wires=0)
@@ -374,7 +374,7 @@ class TestReturnWithShotVectors:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(a, **_):
             qml.RY(a[0], wires=0)
@@ -421,7 +421,7 @@ class TestReturnShotVectorHessian:
             diff_method=diff_method,
             interface=interface,
             max_diff=2,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x, y, **_):
             qml.RX(x, wires=[0])
@@ -471,7 +471,7 @@ class TestReturnShotVectorIntegration:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x, y, **_):
             qml.RX(x, wires=[0])
@@ -509,7 +509,7 @@ class TestReturnShotVectorIntegration:
             qml.device(dev_name, seed=seed),
             diff_method=diff_method,
             interface=interface,
-            **gradient_kwargs
+            **gradient_kwargs,
         )
         def circuit(x, y, **_):
             qml.RX(x, wires=[0])
