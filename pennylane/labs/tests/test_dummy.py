@@ -27,9 +27,8 @@ def test_module_access():
         print(qml.labs)
 
 
-def test_module_import():
+def test_module_import(import_labs):
     "Validate that explicitly importing the module makes it available under the `qml` alias."
     import pennylane as qml
-    from pennylane import labs
 
     print(qml.labs)
