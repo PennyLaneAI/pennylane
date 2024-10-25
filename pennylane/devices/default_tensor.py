@@ -956,30 +956,8 @@ def apply_operation_core_multirz(ops: qml.MultiRZ, device):
 
 @apply_operation_core.register
 def apply_operation_core_paulirot(ops: qml.PauliRot, device):
-    """
-    Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO).
+    """Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO)."""
 
-    Please note that the single-qubit case and multi-qubit case need to be handled differently.
-
-    1. **Single Qubit MPO**:
-       For a single-qubit Pauli rotation, the MPO tensor is structured as:
-       [[O]]
-       where `O` is the Pauli matrix rotated by the specified angle. This tensor has shape (1, 1, 2, 2) since no other sites are linked.
-
-    2. **Multi-Qubit Chain**:
-       In the case of multiple qubits, the MPO follows a chain-like pattern:
-       - **First Qubit**:
-         [[O, I]]
-         where `O` is the Pauli matrix and `I` is the identity matrix. The tensor shape is (1, 2, 2, 2), connecting this qubit to the next one.
-       - **Intermediate Qubits**:
-         [[O, 0];
-          [0, I]]
-         This tensor has shape (2, 2, 2, 2), maintaining connectivity with both the previous and next qubits. The diagonal blocks represent the Pauli operator and identity matrix, ensuring proper linkage.
-       - **Last Qubit**:
-         [[O];
-          [I]]
-         where the tensor has shape (2, 1, 2, 2). This structure links the last qubit back to the previous one.
-    """
     theta = ops.parameters[0]
     pauli_string = ops._hyperparameters["pauli_word"]
 
@@ -993,17 +971,24 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
             arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
             arr[0, 0] += qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
 
+        # Multi-qubit Pauli rotations are implemented with an MPO chain. Each tensor
+        # in this chain has the shape of (in_dim, out_dim, 2, 2), where the last two
+        # dimensions are the physical dimensions, i.e., the dimensions of the operator
+        # acting on a single site.
         elif i == 0:
+            # The first tensor has an in-dimension of 1, and an out-dimension of 2.
             arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
             arr[0, 1] = qml.math.eye(2, dtype=complex)
 
         elif i == len(sites) - 1:
+            # The last tensor has an out-dimension of 1, and an in-dimension of 2.
             arr = qml.math.zeros((2, 1, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
             arr[1, 0] = qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
 
         else:
+            # The middle tensors maintain connectivity with the previous and next tensors.
             arr = qml.math.zeros((2, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
             arr[1, 1] = qml.math.eye(2, dtype=complex)
