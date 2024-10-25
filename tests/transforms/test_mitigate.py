@@ -71,6 +71,7 @@ def same_tape(tape1, tape2):
 class TestMitigateWithZNE:
     """Tests for the mitigate_with_zne function"""
 
+    # pylint:disable = unnecessary-lambda-assignment
     folding = lambda *args, **kwargs: tape_base
     extrapolate = lambda *args, **kwargs: [3.141]
 
@@ -114,6 +115,17 @@ class TestMitigateWithZNE:
 
         for t in tapes:
             same_tape(t, tape)
+
+    def test_shots_preserved(self):
+        """Tests that the mitigated circuits contain the same shots as the original circuit"""
+
+        _tape = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            shots=1000,
+        )
+        tapes, _ = mitigate_with_zne(_tape, [1, 2, 3], fold_global, exponential_extrapolate)
+        assert all(t.shots.total_shots == 1000 for t in tapes)
 
     @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
     def test_multi_returns(self, extrapolate):
@@ -207,6 +219,52 @@ class TestMitigateWithZNE:
         result_orig = mitigated_qnode_orig(inputs)
         result_expanded = mitigated_qnode_expanded(inputs)
         assert qml.math.allclose(result_orig, result_expanded)
+
+    # pylint:disable=not-callable
+    def test_zne_with_noise_models(self):
+        """Test that mitigate_with_zne transform works with noise models"""
+        fcond = qml.noise.wires_in([0, 1])
+        noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.05)
+        noise_model = qml.NoiseModel({fcond: noise})
+
+        def circuit():
+            qml.RX(1.23, wires=0)
+            qml.RZ(0.45, wires=1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        noise_qnode = qml.QNode(circuit, device=qml.add_noise(dev_ideal, noise_model))
+        zne_qnode = qml.transforms.mitigate_with_zne(
+            noise_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+        )
+
+        # following result has been obtained manually and also by using
+        # qml.transforms.mitigate_with_zne(
+        #     noise_qnode, [1, 2, 3],
+        #     mitiq.zne.scaling.fold_global, mitiq.zne.inference.RichardsonFactory.extrapolate
+        # )()
+        mitigated_result = 0.39843788456
+        assert qml.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
+
+    # pylint:disable=not-callable
+    def test_zne_error_with_channels(self):
+        """Test that mitigate_with_zne transform raises correct error with channels"""
+        fcond = qml.noise.wires_in([0, 1])
+        noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.05)
+        noise_model = qml.NoiseModel({fcond: noise})
+
+        def circuit():
+            qml.RX(1.23, wires=0)
+            qml.RZ(0.45, wires=1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        with pytest.raises(
+            ValueError,
+            match="Circuits containing quantum channels cannot be folded with mitigate_with_zne.",
+        ):
+            noisy_qnode = qml.add_noise(qml.QNode(circuit, device=dev_ideal), noise_model)
+            qml.transforms.mitigate_with_zne(
+                noisy_qnode, [1, 2, 3], fold_global, richardson_extrapolate
+            )()
 
 
 @pytest.fixture
