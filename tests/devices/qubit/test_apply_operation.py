@@ -16,7 +16,6 @@ Tests the apply_operation functions from devices/qubit
 """
 from functools import reduce
 
-import numpy
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
@@ -1348,7 +1347,7 @@ class TestConditionalsAndMidMeasure:
         m0, m1 = qml.measure(0).measurements[0], qml.measure(1).measurements[0]
         mid_meas = {}
 
-        monkeypatch.setattr(numpy.random, "binomial", lambda *args: m_res[0])
+        monkeypatch.setattr(np.random, "binomial", lambda *args: m_res[0])
 
         res_state = apply_operation(m0, initial_state, mid_measurements=mid_meas)
         assert qml.math.allclose(mid_state, res_state)
