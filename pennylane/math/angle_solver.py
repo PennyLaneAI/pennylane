@@ -67,6 +67,8 @@ def get_complementary_poly(P, precision = 1e-7):
     smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
 
     for r in roots:
+        if verify:
+            assert not (np.abs(r) <= verify_precision), "zero root!"
         if np.allclose(np.abs(r), 1):
             units.append(r)
         elif np.abs(r) > 1:
@@ -81,7 +83,7 @@ def get_complementary_poly(P, precision = 1e-7):
     for z in units:
         matched_z = None
         for w in unpaired_units:
-            if np.allclose(z, w, rtol=precision):
+            if np.allclose(z, w, rtol=verify_precision):
                 matched_z = w
                 break
 
@@ -91,6 +93,25 @@ def get_complementary_poly(P, precision = 1e-7):
         else:
             unpaired_units.append(z)
 
+    if verify:
+        assert len(unpaired_units) == 0
+
+        # verify that the non-unit roots indeed occur in conjugate pairs.
+        def assert_is_permutation(A, B):
+            assert len(A) == len(B)
+            A = list(A)
+            unmatched = []
+            for z in B:
+                for w in A:
+                    if np.allclose(z, w, rtol=verify_precision, atol=verify_precision):
+                        A.remove(w)
+                        break
+                else:
+                    unmatched.append(z)
+
+            assert len(unmatched) == 0
+
+        assert_is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
     # Q = G \hat{G}, where
     # - \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
