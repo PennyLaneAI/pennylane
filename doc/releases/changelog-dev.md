@@ -189,6 +189,9 @@
 
 <h4>Other Improvements</h4>
 
+* Added `qml.H` as an alias for the Hadamard operator.
+  [(#6450)](https://github.com/PennyLaneAI/pennylane/pull/6450)
+
 * Added `show_wire_labels` option to `draw` and `draw_mpl`, which hides wire labels when set to `False`.
   Defaults to `True`.
   [(#6410)](https://github.com/PennyLaneAI/pennylane/pull/6410)
@@ -496,5 +499,6 @@ Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Alex Preciado,
 Ashish Kanwar Singh,
 David Wierichs,
