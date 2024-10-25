@@ -8,7 +8,7 @@ astunparse==1.6.3
 async-timeout==4.0.3
 attrs==24.2.0
 autograd==1.7.0
-autoray==0.6.12
+autoray==0.7.0
 babel==2.16.0
 cachetools==5.5.0
 certifi==2024.8.30
@@ -22,8 +22,8 @@ duet==0.2.9
 exceptiongroup==1.2.2
 flatbuffers==24.3.25
 fonttools==4.54.1
-frozenlist==1.4.1
-fsspec==2024.9.0
+frozenlist==1.5.0
+fsspec==2024.10.0
 gast==0.4.0
 google-auth==2.35.0
 google-auth-oauthlib==0.4.6
@@ -45,7 +45,7 @@ latexcodec==3.0.0
 libclang==18.1.1
 m2r2==0.3.2
 Markdown==3.7
-MarkupSafe==3.0.1
+MarkupSafe==3.0.2
 matplotlib==3.8.0
 mistune==0.8.4
 ml_dtypes==0.5.0
@@ -114,8 +114,8 @@ tqdm==4.66.5
 typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==1.26.20
-Werkzeug==3.0.4
+Werkzeug==3.0.5
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
-yarl==1.15.4
+yarl==1.16.0
 zipp==3.20.2
