@@ -97,6 +97,8 @@ from .utils import (
     requires_grad,
 )
 
+from .angle_solver import poly_to_angles, transform_angles
+
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
