@@ -152,7 +152,7 @@ class OutPoly(Operation):
     Args:
 
         polynomial_function (callable): The polynomial function to be applied. The number of arguments in the function
-        must be equal to the number of input registers.
+                                        must be equal to the number of input registers.
         input_registers (List[Sequence[int]]): List containing the wires used to store each variable of the polynomial.
         output_wires (Sequence[int]): The wires used to store the output of the operation.
         mod (int, optional): The modulus for performing the polynomial operation. If not provided, it defaults
@@ -252,8 +252,8 @@ class OutPoly(Operation):
 
         .. math::
 
-            \text{OutPoly}_{f, \text{mod}} |x_1 \rangle \dots |x_m \rangle |b \rangle
-            = |x_1 \rangle \dots |x_m \rangle |b + f(x_1, \dots, x_m) \mod \text{mod} \rangle.
+            \text{OutPoly}_{f, mod} |x_1 \rangle \dots |x_m \rangle |b \rangle
+            = |x_1 \rangle \dots |x_m \rangle |b + f(x_1, \dots, x_m) \mod mod \rangle.
 
     """
 
