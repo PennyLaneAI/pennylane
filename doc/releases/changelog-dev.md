@@ -190,6 +190,7 @@
 <h4>Other Improvements</h4>
 
 * Added `H` as an alias for the Hadamard operator.
+  [(#6450)](https://github.com/PennyLaneAI/pennylane/pull/6450)
 
 * Added `show_wire_labels` option to `draw` and `draw_mpl`, which hides wire labels when set to `False`.
   Defaults to `True`.
