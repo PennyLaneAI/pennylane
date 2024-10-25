@@ -656,10 +656,10 @@ class TestCondCircuits:
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("shots", [None, 20])
-    def test_mcm_predicate_execution(self, reset, postselect, shots):
+    def test_mcm_predicate_execution(self, reset, postselect, shots, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results."""
-        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(1234))
+        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
 
         def true_fn(arg):
             qml.RX(arg, 0)
@@ -696,11 +696,11 @@ class TestCondCircuits:
             ([0, 0, 0, 0], (1 / np.sqrt(2), 0, 0, 1)),  # false_fn, PauliZ basis
         ],
     )
-    def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol):
+    def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results when there are also elifs present."""
         # pylint: disable=expression-not-assigned
-        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(10))
+        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(seed))
 
         def true_fn():
             # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
