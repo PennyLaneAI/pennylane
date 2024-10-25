@@ -43,12 +43,6 @@ class DummyDevice(DefaultGaussian):
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
 
-@pytest.fixture(autouse=True)
-def set_numpy_seed():
-    np.random.seed(9872653)
-    yield
-
-
 @pytest.fixture(scope="session")
 def tol():
     """Numerical tolerance for equality tests."""
@@ -104,12 +98,6 @@ def qutrit_device_3_wires(request):
 
 
 #######################################################################
-
-
-@pytest.fixture(scope="module", params=[1, 2, 3])
-def seed(request):
-    """Different seeds."""
-    return request.param
 
 
 @pytest.fixture(scope="function")
@@ -188,6 +176,44 @@ def new_opmath_only():
 def legacy_opmath_only():
     if qml.operation.active_new_opmath():
         pytest.skip("This test exclusively tests legacy opmath")
+
+
+#######################################################################
+
+
+@pytest.fixture(autouse=True)
+def restore_global_seed():
+    original_state = np.random.get_state()
+    yield
+    np.random.set_state(original_state)
+
+
+@pytest.fixture
+def seed(request):
+    """An integer random number generator seed
+
+    This fixture overrides the ``seed`` fixture provided by pytest-rng, adding the flexibility
+    of locally getting a new seed for a test case by applying the ``local_salt`` marker. This is
+    useful when the seed from pytest-rng happens to be a bad seed that causes your test to fail.
+
+    .. code_block:: python
+
+        @pytest.mark.local_salt(42)
+        def test_something(seed):
+            ...
+
+    The value passed to ``local_salt`` needs to be an integer.
+
+    """
+
+    fixture_manager = request._fixturemanager  # pylint:disable=protected-access
+    fixture_defs = fixture_manager.getfixturedefs("seed", request.node)
+    original_fixture_def = fixture_defs[0]  # the original seed fixture provided by pytest-rng
+    original_seed = original_fixture_def.func(request)
+    marker = request.node.get_closest_marker("local_salt")
+    if marker and marker.args:
+        return original_seed + marker.args[0]
+    return original_seed
 
 
 #######################################################################

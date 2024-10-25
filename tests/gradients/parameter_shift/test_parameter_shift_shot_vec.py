@@ -1721,11 +1721,11 @@ class TestParameterShiftRule:
             assert isinstance(gradF, tuple)
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
-    def test_expval_and_variance_multi_param(self, broadcast):
+    def test_expval_and_variance_multi_param(self, broadcast, seed):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
         multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec, seed=12393)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec, seed=seed)
 
         a = 0.54
         b = -0.423

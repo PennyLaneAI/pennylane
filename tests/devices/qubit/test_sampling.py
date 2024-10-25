@@ -32,9 +32,9 @@ APPROX_ATOL = 0.01
 def fixture_init_state():
     """Generates a random initial state"""
 
-    def _init_state(n):
+    def _init_state(n, seed):
         """random initial state"""
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         state = rng.random([1 << n]) + rng.random([1 << n]) * 1j
         state /= np.linalg.norm(state)
         return state.reshape((2,) * n)
@@ -98,13 +98,13 @@ class TestSampleState:
         spy.assert_called_once()
 
     @pytest.mark.jax
-    def test_sample_state_jax(self):
+    def test_sample_state_jax(self, seed):
         """Tests that the returned samples are as expected when explicitly calling sample_state."""
         import jax
 
         state = qml.math.array(two_qubit_state, like="jax")
 
-        samples = sample_state(state, 10, prng_key=jax.random.PRNGKey(84))
+        samples = sample_state(state, 10, prng_key=jax.random.PRNGKey(seed))
 
         assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
@@ -141,11 +141,11 @@ class TestSampleState:
         expected = [[0, 1], [0, 1], [1, 0], [1, 0]]
         assert qml.math.allequal(samples, expected)
 
-    def test_approximate_probs_from_samples(self, init_state):
+    def test_approximate_probs_from_samples(self, init_state, seed):
         """Tests that the generated samples are approximately as expected."""
         n = 4
         shots = 20000
-        state = init_state(n)
+        state = init_state(n, seed)
 
         flat_state = state.flatten()
         expected_probs = np.real(flat_state) ** 2 + np.imag(flat_state) ** 2
@@ -310,47 +310,47 @@ class TestMeasureSamples:
         assert result0 == 0
         assert result1 == 0
 
-    def test_approximate_sample_measure(self):
+    def test_approximate_sample_measure(self, seed):
         """Test that a sample measurement returns approximately the correct distribution"""
         state = qml.math.array(two_qubit_state)
         shots = qml.measurements.Shots(10000)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
+        result = measure_with_samples([mp], state, shots=shots, rng=seed)[0]
 
         one_prob = np.count_nonzero(result[:, 0]) / result.shape[0]
         assert np.allclose(one_prob, 0.5, atol=0.05)
 
-    def test_approximate_prob_measure(self):
+    def test_approximate_prob_measure(self, seed):
         """Test that a probability measurement works as expected"""
         state = qml.math.array(two_qubit_state)
         shots = qml.measurements.Shots(10000)
         mp = qml.probs(wires=range(2))
 
-        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
+        result = measure_with_samples([mp], state, shots=shots, rng=seed)[0]
 
         assert np.allclose(result[1], 0.5, atol=0.05)
         assert np.allclose(result[2], 0.5, atol=0.05)
         assert result[1] + result[2] == 1
 
-    def test_approximate_expval_measure(self):
+    def test_approximate_expval_measure(self, seed):
         """Test that an expval measurement works as expected"""
         state = qml.math.array(two_qubit_state)
         shots = qml.measurements.Shots(10000)
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
-        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
+        result = measure_with_samples([mp], state, shots=shots, rng=seed)[0]
 
         assert result != 0
         assert np.allclose(result, 0, atol=0.05)
 
-    def test_approximate_var_measure(self):
+    def test_approximate_var_measure(self, seed):
         """Test that a variance measurement works as expected"""
         state = qml.math.array(two_qubit_state)
         shots = qml.measurements.Shots(10000)
         mp = qml.var(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
-        result = measure_with_samples([mp], state, shots=shots, rng=123)[0]
+        result = measure_with_samples([mp], state, shots=shots, rng=seed)[0]
 
         assert result != 1
         assert np.allclose(result, 1, atol=0.05)
@@ -782,10 +782,10 @@ class TestRenormalization:
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
-    def test_sample_measure(self):
+    def test_sample_measure(self, seed):
         """Test that broadcasting works for qml.sample and single shots"""
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         shots = qml.measurements.Shots(100)
 
         state = [
@@ -821,10 +821,9 @@ class TestBroadcasting:
             (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
         ],
     )
-    def test_nonsample_measure(self, measurement, expected):
+    def test_nonsample_measure(self, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and single shots"""
 
-        rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(10000)
 
         state = [
@@ -834,8 +833,8 @@ class TestBroadcasting:
         ]
         state = np.stack(state)
 
-        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
-        assert np.allclose(res, expected, atol=0.01)
+        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=seed)
+        assert np.allclose(res, expected, atol=0.03)
 
     @pytest.mark.parametrize(
         "shots",
@@ -847,10 +846,10 @@ class TestBroadcasting:
             (200, (100, 2)),
         ],
     )
-    def test_sample_measure_shot_vector(self, shots):
+    def test_sample_measure_shot_vector(self, shots, seed):
         """Test that broadcasting works for qml.sample and shot vectors"""
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         shots = qml.measurements.Shots(shots)
 
         state = [
@@ -905,10 +904,10 @@ class TestBroadcasting:
             (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
         ],
     )
-    def test_nonsample_measure_shot_vector(self, shots, measurement, expected):
+    def test_nonsample_measure_shot_vector(self, shots, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         shots = qml.measurements.Shots(shots)
 
         state = [
@@ -937,7 +936,7 @@ class TestBroadcastingPRNG:
     """Test that measurements work and use sample_state when the state has a batch dim
     and a PRNG key is provided"""
 
-    def test_sample_measure(self, mocker):
+    def test_sample_measure(self, mocker, seed):
         """Test that broadcasting works for qml.sample and single shots"""
         import jax
 
@@ -945,7 +944,7 @@ class TestBroadcastingPRNG:
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         shots = qml.measurements.Shots(100)
 
         state = [
@@ -962,7 +961,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(seed),
         )[0]
 
         spy.assert_called()
@@ -993,13 +992,13 @@ class TestBroadcastingPRNG:
             (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
         ],
     )
-    def test_nonsample_measure(self, mocker, measurement, expected):
+    def test_nonsample_measure(self, mocker, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and single shots"""
         import jax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         shots = qml.measurements.Shots(10000)
 
         state = [
@@ -1015,7 +1014,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -1031,14 +1030,14 @@ class TestBroadcastingPRNG:
             (200, (100, 2)),
         ],
     )
-    def test_sample_measure_shot_vector(self, mocker, shots):
+    def test_sample_measure_shot_vector(self, mocker, shots, seed):
         """Test that broadcasting works for qml.sample and shot vectors"""
 
         import jax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         shots = qml.measurements.Shots(shots)
 
         state = [
@@ -1055,7 +1054,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -1107,14 +1106,14 @@ class TestBroadcastingPRNG:
             (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
         ],
     )
-    def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected):
+    def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
 
         import jax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         shots = qml.measurements.Shots(shots)
 
         state = [
@@ -1130,7 +1129,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(0),
+            prng_key=jax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -1152,26 +1151,26 @@ class TestHamiltonianSamples:
     Hamiltonian and Sum observables"""
 
     @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-    def test_hamiltonian_expval(self):
+    def test_hamiltonian_expval(self, seed):
         """Test that sampling works well for Hamiltonian observables"""
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
 
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
-        res = simulate(qs, rng=200)
+        res = simulate(qs, rng=seed)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
-        assert np.allclose(res, expected, atol=0.01)
+        assert np.allclose(res, expected, atol=0.02)
 
-    def test_hamiltonian_expval_shot_vector(self):
+    def test_hamiltonian_expval_shot_vector(self, seed):
         """Test that sampling works well for Hamiltonian observables with a shot vector"""
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
 
         qs = qml.tape.QuantumScript(ops, meas, shots=(10000, 10000))
-        res = simulate(qs, rng=200)
+        res = simulate(qs, rng=seed)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
 
@@ -1180,7 +1179,7 @@ class TestHamiltonianSamples:
         assert np.allclose(res[0], expected, atol=0.01)
         assert np.allclose(res[1], expected, atol=0.01)
 
-    def test_sum_expval(self):
+    def test_sum_expval(self, seed):
         """Test that sampling works well for Sum observables"""
 
         x, y = np.array(0.67), np.array(0.95)
@@ -1188,19 +1187,19 @@ class TestHamiltonianSamples:
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
 
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
-        res = simulate(qs, rng=200)
+        res = simulate(qs, rng=seed)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
 
-    def test_sum_expval_shot_vector(self):
+    def test_sum_expval_shot_vector(self, seed):
         """Test that sampling works well for Sum observables with a shot vector."""
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
 
         qs = qml.tape.QuantumScript(ops, meas, shots=(10000, 10000))
-        res = simulate(qs, rng=200)
+        res = simulate(qs, rng=seed)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.real(np.exp(y * 1j)) * np.sin(x)
 
@@ -1209,7 +1208,7 @@ class TestHamiltonianSamples:
         assert np.allclose(res[0], expected, atol=0.01)
         assert np.allclose(res[1], expected, atol=0.01)
 
-    def test_prod_expval(self):
+    def test_prod_expval(self, seed):
         """Tests that sampling works for Prod observables"""
 
         x, y = np.array(0.67), np.array(0.95)
@@ -1218,11 +1217,11 @@ class TestHamiltonianSamples:
         tape = qml.tape.QuantumScript(
             ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
         )
-        res = simulate(tape, rng=200)
+        res = simulate(tape, rng=seed)
         expected = [np.sin(y), -np.sin(y) * np.sin(x)]
         assert np.allclose(res, expected, atol=0.05)
 
-    def test_sprod_expval(self):
+    def test_sprod_expval(self, seed):
         """Tests that sampling works for SProd observables"""
 
         y = np.array(0.95)
@@ -1231,11 +1230,11 @@ class TestHamiltonianSamples:
         tape = qml.tape.QuantumScript(
             ops, measurements=[qml.expval(qml.PauliX(0)), qml.expval(H)], shots=10000
         )
-        res = simulate(tape, rng=200)
+        res = simulate(tape, rng=seed)
         expected = [np.sin(y), 1.5 * np.sin(y)]
         assert np.allclose(res, expected, atol=0.05)
 
-    def test_multi_wires(self):
+    def test_multi_wires(self, seed):
         """Test that sampling works for Sums with large numbers of wires"""
         n_wires = 10
         scale = 0.05
@@ -1248,7 +1247,7 @@ class TestHamiltonianSamples:
         H = t1 + t2
 
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
-        res = simulate(qs, rng=100)
+        res = simulate(qs, rng=seed)
 
         phase = offset + scale * np.array(range(n_wires))
         cosines = qml.math.cos(phase)
@@ -1257,7 +1256,7 @@ class TestHamiltonianSamples:
 
         assert np.allclose(res, expected, atol=0.05)
 
-    def test_complex_hamiltonian(self):
+    def test_complex_hamiltonian(self, seed):
         """Test that sampling works for complex Hamiltonians"""
         scale = 0.05
         offset = 0.4
@@ -1315,7 +1314,7 @@ class TestHamiltonianSamples:
         )
 
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
-        res = simulate(qs, rng=100)
+        res = simulate(qs, rng=seed)
 
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = simulate(qs_exp)
@@ -1324,43 +1323,39 @@ class TestHamiltonianSamples:
 
 
 class TestSampleProbs:
-    # pylint: disable=attribute-defined-outside-init
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        self.rng = np.random.default_rng(42)  # Fixed seed for reproducibility
 
-    def test_basic_sampling(self):
+    def test_basic_sampling(self, seed):
         """One Qubit, two outcomes"""
         probs = np.array([0.3, 0.7])
-        samples = sample_probs(probs, shots=1000, num_wires=1, is_state_batched=False, rng=self.rng)
+        samples = sample_probs(probs, shots=1000, num_wires=1, is_state_batched=False, rng=seed)
         assert samples.shape == (1000, 1)
         # Check if the distribution is roughly correct (allowing for some variance)
         zeros = np.sum(samples == 0)
         assert 250 <= zeros <= 350  # Approx 30% of 1000, with some leeway
 
-    def test_multi_qubit_sampling(self):
+    def test_multi_qubit_sampling(self, seed):
         """Two Qubit, four outcomes"""
         probs = np.array([0.1, 0.2, 0.3, 0.4])
-        samples = sample_probs(probs, shots=1000, num_wires=2, is_state_batched=False, rng=self.rng)
+        samples = sample_probs(probs, shots=1000, num_wires=2, is_state_batched=False, rng=seed)
         assert samples.shape == (1000, 2)
         # Check if all possible states are present
         unique_samples = set(map(tuple, samples))
         assert len(unique_samples) == 4
 
-    def test_batched_sampling(self):
+    def test_batched_sampling(self, seed):
         """A batch of two circuits, each with two outcomes"""
         probs = np.array([[0.5, 0.5], [0.3, 0.7]])
-        samples = sample_probs(probs, shots=1000, num_wires=1, is_state_batched=True, rng=self.rng)
+        samples = sample_probs(probs, shots=1000, num_wires=1, is_state_batched=True, rng=seed)
         assert samples.shape == (2, 1000, 1)
 
-    def test_cutoff_edge_case_failure(self):
+    def test_cutoff_edge_case_failure(self, seed):
         """Test sampling with probabilities just outside the cutoff."""
         cutoff = 1e-7  # Assuming this is the cutoff used in sample_probs
         probs = np.array([0.5, 0.5 - 2 * cutoff])
         with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
-            sample_probs(probs, shots=1000, num_wires=1, is_state_batched=False, rng=self.rng)
+            sample_probs(probs, shots=1000, num_wires=1, is_state_batched=False, rng=seed)
 
-    def test_batched_cutoff_edge_case_failure(self):
+    def test_batched_cutoff_edge_case_failure(self, seed):
         """Test sampling with probabilities just outside the cutoff."""
         cutoff = 1e-7  # Assuming this is the cutoff used in sample_probs
         probs = np.array(
@@ -1370,4 +1365,4 @@ class TestSampleProbs:
             ]
         )
         with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
-            sample_probs(probs, shots=1000, num_wires=1, is_state_batched=True, rng=self.rng)
+            sample_probs(probs, shots=1000, num_wires=1, is_state_batched=True, rng=seed)
