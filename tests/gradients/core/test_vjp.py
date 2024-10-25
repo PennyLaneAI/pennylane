@@ -423,7 +423,7 @@ class TestVJPGradients:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf(self, tol):
+    def test_tf(self, tol, seed):
         """Tests that the output of the VJP transform
         can be differentiated using TF."""
         import tensorflow as tf
@@ -468,7 +468,7 @@ class TestVJPGradients:
     #             qml.RX(weights[i], wires=i)
     #         return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-    #     vanilla_numpy.random.seed(42)
+    #     vanilla_numpy.random.seed(seed)
 
     #     ndata = 100
     #     data = [vanilla_numpy.random.randn(nwires).astype("float32") for _ in range(ndata)]

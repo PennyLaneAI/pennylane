@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 from dummy_debugger import Debugger
 from scipy.stats import unitary_group
+from sympy.stats.sampling.sample_numpy import numpy
 
 import pennylane as qml
 from pennylane.devices.qubit.apply_operation import (
@@ -1329,8 +1330,8 @@ class TestConditionalsAndMidMeasure:
             qml.math.squeeze(initial_state), qml.math.reshape(new_state, (n_states, 4))
         )
 
-    @pytest.mark.parametrize("rng_seed, m_res", ((12, (0, 0)), (42, (1, 1))))
-    def test_mid_measure(self, rng_seed, m_res):
+    @pytest.mark.parametrize("m_res", [(0, 0), (1, 1)])
+    def test_mid_measure(self, m_res, monkeypatch):
         """Test the application of a MidMeasureMP on an arbitrary state to give a basis state."""
 
         initial_state = np.array(
@@ -1344,14 +1345,15 @@ class TestConditionalsAndMidMeasure:
         mid_state[m_res[0]] = initial_state[m_res[0]] / np.linalg.norm(initial_state[m_res[0]])
         end_state[m_res] = mid_state[m_res] / np.abs(mid_state[m_res])
 
-        rng = np.random.default_rng(rng_seed)
         m0, m1 = qml.measure(0).measurements[0], qml.measure(1).measurements[0]
         mid_meas = {}
 
-        res_state = apply_operation(m0, initial_state, mid_measurements=mid_meas, rng=rng)
+        monkeypatch.setattr(numpy.random, "binomial", lambda *args: m_res[0])
+
+        res_state = apply_operation(m0, initial_state, mid_measurements=mid_meas)
         assert qml.math.allclose(mid_state, res_state)
 
-        res_state = apply_operation(m1, res_state, mid_measurements=mid_meas, rng=rng)
+        res_state = apply_operation(m1, res_state, mid_measurements=mid_meas)
         assert qml.math.allclose(end_state, res_state)
 
         assert mid_meas == {m0: m_res[0], m1: m_res[1]}

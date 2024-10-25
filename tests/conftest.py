@@ -181,6 +181,13 @@ def legacy_opmath_only():
 #######################################################################
 
 
+@pytest.fixture(autouse=True)
+def restore_global_seed():
+    original_state = np.random.get_state()
+    yield
+    np.random.set_state(original_state)
+
+
 @pytest.fixture
 def seed(request):
     """An integer random number generator seed
