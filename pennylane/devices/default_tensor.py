@@ -963,29 +963,21 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
 
     1. **Single Qubit MPO**:
        For a single-qubit Pauli rotation, the MPO tensor is structured as:
-       ```
-       [O]
-       ```
+       [[O]]
        where `O` is the Pauli matrix rotated by the specified angle. This tensor has shape (1, 1, 2, 2) since no other sites are linked.
 
     2. **Multi-Qubit Chain**:
        In the case of multiple qubits, the MPO follows a chain-like pattern:
        - **First Qubit**:
-         ```
-         [O, I]
-         ```
+         [[O, I]]
          where `O` is the Pauli matrix and `I` is the identity matrix. The tensor shape is (1, 2, 2, 2), connecting this qubit to the next one.
        - **Intermediate Qubits**:
-         ```
-         [O, 0;
-          0, I]
-         ```
+         [[O, 0];
+          [0, I]]
          This tensor has shape (2, 2, 2, 2), maintaining connectivity with both the previous and next qubits. The diagonal blocks represent the Pauli operator and identity matrix, ensuring proper linkage.
        - **Last Qubit**:
-         ```
-         [O;
-          I]
-         ```
+         [[O];
+          [I]]
          where the tensor has shape (2, 1, 2, 2). This structure links the last qubit back to the previous one.
     """
     theta = ops.parameters[0]
