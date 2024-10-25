@@ -244,8 +244,7 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
     # TODO: implementation to be tested:
     # basis change old g @ X = new g => adj_new = contact(adj, X, X, X)
     basis_change = np.linalg.lstsq(np.vstack([np_k, np_m]).T, np_newg.T, rcond=None)[0]
-    # Perform the einsum contraction "kmn,ki,mj,nl->ijl" via three tensordot steps
-    # new_adj = np.einsum("kmn,ki,mj,nl->ijl", ad, basis_change, basis_change, basis_change)
+    # Perform the einsum contraction "mnp, mh, ni, pj -> hij" via three tensordot steps
     new_adj = np.einsum("mnp,mi->inp", ad, basis_change)
     new_adj = np.einsum("mnp,ni->mip", new_adj, basis_change)
     new_adj = np.einsum("mnp,pi->mni", new_adj, basis_change)
