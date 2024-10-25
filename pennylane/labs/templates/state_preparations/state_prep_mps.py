@@ -51,8 +51,12 @@ class MPSPrep(Operation):
     """
 
     def __init__(self, mps, wires, id=None):
-        self.mps = mps
-        super().__init__(mps, wires=wires, id=id)
+        class MPSsite_wrapper_data:
+            def __init__(self, mps):
+                self.data = mps
+                
+        self.mps = MPSsite_wrapper_data(mps)
+        super().__init__(self.mps, wires=wires, id=id)
 
     def _flatten(self):
         return tuple(self.data), self.wires
