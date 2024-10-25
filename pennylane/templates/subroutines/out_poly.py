@@ -136,7 +136,7 @@ class OutPoly(Operation):
         \text{OutPoly}_{f, mod} |x_1 \rangle \dots |x_m \rangle |0 \rangle
         = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m)\, \text{mod} \; mod\rangle,
 
-        where the integer inputs :math:`x_i` are embedded in the `input` registers. The result of the
+    where the integer inputs :math:`x_i` are embedded in the `input` registers. The result of the
     polynomial function :math:`f(x_1, \dots, x_m)` is computed modulo :math:`mod` in the computational
     basis and stored in the `output` wires. If the output wires are not initialized to zero, the evaluated result
         :math:`f(x_1, \dots, x_m)\ \text{%}\ mod` will be added to the value initialized in the output register.
