@@ -956,7 +956,63 @@ def apply_operation_core_multirz(ops: qml.MultiRZ, device):
 
 @apply_operation_core.register
 def apply_operation_core_paulirot(ops: qml.PauliRot, device):
-    """Dispatcher for _apply_operation."""
+    """
+    Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO).
+
+    This function constructs the MPO representation of a Pauli rotation by breaking down
+    the operation into a sequence of tensors, each corresponding to a qubit site. The MPO
+    structure follows a specific pattern to ensure efficient representation and manipulation
+    within the tensor network framework.
+
+    An MPO can be visualized as a series of blocks (tensors), where each tensor has four indices:
+    - Two "virtual" (bond) indices that connect to neighboring tensors (representing the links between sites).
+    - Two "physical" indices that correspond to the operator's input and output dimensions at each site.
+
+    The expansion of an operator `O` across qubits (sites) is done in the following way:
+
+    1. **Single Qubit MPO**:
+       For a single-qubit Pauli rotation, the MPO tensor is structured as:
+       ```
+       [O]
+       ```
+       where `O` is the Pauli matrix rotated by the specified angle. This tensor has shape (1, 1, 2, 2) since no other sites are linked.
+
+    2. **Multi-Qubit Chain**:
+       In the case of multiple qubits, the MPO follows a chain-like pattern:
+       - **First Qubit**:
+         ```
+         [O, I]
+         ```
+         where `O` is the Pauli matrix and `I` is the identity matrix. The tensor shape is (1, 2, 2, 2), connecting this qubit to the next one.
+       - **Intermediate Qubits**:
+         ```
+         [O, 0;
+          0, I]
+         ```
+         This tensor has shape (2, 2, 2, 2), maintaining connectivity with both the previous and next qubits. The diagonal blocks represent the Pauli operator and identity matrix, ensuring proper linkage.
+       - **Last Qubit**:
+         ```
+         [O;
+          I]
+         ```
+         where the tensor has shape (2, 1, 2, 2). This structure links the last qubit back to the previous one.
+
+    The MPO construction ensures that each site in the chain is correctly connected, forming an efficient tensor network
+    representation of the operator. The tensors are collected into a list and assembled into an MPO object using
+    `qtn.MatrixProductOperator`. This object is then applied to the circuit's state vector, utilizing Quimb’s capabilities
+    for contraction and evolution.
+
+    Parameters:
+        ops (qml.PauliRot): The operation containing the Pauli rotation parameters and qubits involved.
+        device: The quantum device that contains the state vector and settings for bond dimensions and cutoff values.
+
+    Returns:
+        None: The function modifies the quantum circuit's state directly.
+
+    Notes:
+        This implementation adheres to the MPO formalism for efficient computation within the Quimb framework,
+        respecting the bond dimensions and physical dimensions of the tensor network.
+    """
     theta = ops.parameters[0]
     pauli_string = ops._hyperparameters["pauli_word"]
 
