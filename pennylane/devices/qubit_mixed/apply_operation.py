@@ -209,7 +209,6 @@ def apply_operation_einsum(
 
     num_ch_wires = len(op.wires)
 
-    # This could be pulled into separate function if tensordot is added
     if isinstance(op, Channel):
         kraus = op.kraus_matrices()
     else:
@@ -233,11 +232,11 @@ def apply_operation_einsum(
     kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
     kraus_dagger = math.reshape(kraus_dagger, kraus_shape)
 
-    #! Note that there the state should be a density matrix
+    #! Check the def of helper func for details
     einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
-    res = math.einsum(einsum_indices, kraus, state, kraus_dagger)
+
     # Cast back to the same as state
-    return res
+    return math.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
 def apply_operation_tensordot(
@@ -254,10 +253,6 @@ def apply_operation_tensordot(
     Returns:
         array[complex]: output_state
     """
-    # We use this implicit casting strategy as autograd raises ComplexWarnings
-    # when backpropagating if casting explicitly. Some type of casting is needed
-    # to prevent ComplexWarnings with backpropagation with other interfaces
-
     channel_wires = op.wires
     num_ch_wires = len(channel_wires)
 
