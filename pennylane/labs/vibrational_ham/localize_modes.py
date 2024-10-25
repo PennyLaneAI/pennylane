@@ -6,7 +6,7 @@ hbar = 6.022*1.055e12 # (amu)*(angstrom^2/s)
 c_light = 3*10**8 # m/s
 
 
-def pm_cost(q):
+def _pm_cost(q):
 	nnuc, _, nmodes = q.shape
 
 	xi_pm = 0.0
@@ -19,12 +19,12 @@ def pm_cost(q):
 
 	return -xi_pm
 
-def mat_transform(u, qmat):
+def _mat_transform(u, qmat):
 	qloc = np.einsum('qp,iaq->iap', u, qmat)
 
 	return qloc
 
-def params_to_unitary(params, nmodes):
+def _params_to_unitary(params, nmodes):
         ugen = np.zeros((nmodes,nmodes))
 	
         idx = 0
@@ -36,13 +36,12 @@ def params_to_unitary(params, nmodes):
 
         return scipy.linalg.expm(ugen)
 
-def params_cost(params, qmat, nmodes):
-	uparams = params_to_unitary(params, nmodes)
-	qrot = mat_transform(uparams, qmat)
+def _params_cost(params, qmat, nmodes):
+        uparams = _params_to_unitary(params, nmodes)
+        qrot = _mat_transform(uparams, qmat)
+        return _pm_cost(qrot)
 
-	return pm_cost(qrot)
-
-def q_normalizer(qmat):
+def _q_normalizer(qmat):
 	qnormalized = np.zeros_like(qmat)
 	natoms,_,nmodes = qmat.shape
 	norms_arr = np.zeros(nmodes)
@@ -54,7 +53,7 @@ def q_normalizer(qmat):
 
 	return qnormalized, norms_arr
 
-def localization_unitary(qmat, verbose=False, rand_start=True):
+def _localization_unitary(qmat, verbose=False, rand_start=True):
 	natoms,_,nmodes = qmat.shape
 	num_params = int(nmodes*(nmodes-1)/2)
 
@@ -63,21 +62,21 @@ def localization_unitary(qmat, verbose=False, rand_start=True):
 	else:
 		params = np.zeros(num_params)
 
-	qnormalized, norms_arr = q_normalizer(qmat)
+	qnormalized, norms_arr = _q_normalizer(qmat)
 
-	ini_cost = pm_cost(qnormalized)
+	ini_cost = _pm_cost(qnormalized)
 	if verbose:
 		print(f"Initial cost is {ini_cost}")
 
-	optimization_res = scipy.optimize.minimize(params_cost, params, args=(qnormalized, nmodes))
+	optimization_res = scipy.optimize.minimize(_params_cost, params, args=(qnormalized, nmodes))
 	if optimization_res.success is False:
 		print("WARNING: mode localization finished unsuccessfully, returning normal modes...")
-		return params_to_unitary(0*params, nmodes), qmat
+		return _params_to_unitary(0*params, nmodes), qmat
 
 	params_opt = optimization_res.x
-	uloc = params_to_unitary(params_opt, nmodes)
+	uloc = _params_to_unitary(params_opt, nmodes)
 
-	qloc = mat_transform(uloc, qmat)
+	qloc = _mat_transform(uloc, qmat)
 
 	if verbose:
 		print(f"Final cost is {optimization_res.fun}")
@@ -95,7 +94,7 @@ def localization_unitary(qmat, verbose=False, rand_start=True):
 
 	return uloc, qloc
 
-def localize_modes(freqs, disp_vecs, verbose=False, order=True):
+def _localize_modes(freqs, disp_vecs, verbose=False, order=True):
 	nmodes = len(freqs)
 	hess_normal = np.zeros((nmodes,nmodes))
 	for m in range(nmodes):
@@ -110,7 +109,7 @@ def localize_modes(freqs, disp_vecs, verbose=False, order=True):
 			for alpha in range(3):
 				qmat[i,alpha,m] = dvec[i,alpha]
 
-	uloc, qloc = localization_unitary(qmat, verbose=verbose)
+	uloc, qloc = _localization_unitary(qmat, verbose=verbose)
 	hess_loc = uloc.transpose() @ hess_normal @ uloc
 	loc_freqs = np.sqrt(np.array([hess_loc[m,m] for m in range(nmodes)]))
 
@@ -130,7 +129,7 @@ def localize_modes(freqs, disp_vecs, verbose=False, order=True):
 	return loc_freqs, qloc, uloc
 
 
-def pm_custom_separate_localization(results, verbose=True, freq_separation=[2600]):
+def localize_normal_modes(results, verbose=True, freq_separation=[2600]):
         '''
         Arguments: results dictionary obtained from harmonic_analysis
         separates frequencies at each point in freq_separation array
@@ -178,7 +177,7 @@ def pm_custom_separate_localization(results, verbose=True, freq_separation=[2600
         for idx in range(num_seps+1):
                 num_freqs = len(freqs_arr[idx])
                 if num_freqs > 1:
-                        loc_freqs, qloc, uloc = localize_modes(freqs_arr[idx], disps_arr[idx])
+                        loc_freqs, qloc, uloc = _localize_modes(freqs_arr[idx], disps_arr[idx])
                 elif num_freqs == 1:
                         loc_freqs = freqs_arr[idx]
                         qloc = np.zeros((natoms, 3, 1))

@@ -1,8 +1,8 @@
 import pennylane as qml
 import pes_generator
 import numpy as np
-from christiansenForm import christiansen_ham, christiansen_dipole
-from real_space_ham import realspace_ham_coeff, realspace_dipole_coeff
+from christiansenForm import christiansen_integrals, christiansen_integrals_dipole
+from taylorForm import taylor_integrals, taylor_integrals_dipole
 from vib_observables import *
 from bosonic_mapping import *
 from mpi4py import MPI 
@@ -18,15 +18,15 @@ geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 #sym = ["C", "O"]
 #geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
-#sym = ["H", "H", "S"]
-#geometry = np.array([[0.0,-1.0,-1.0], [0.0,1.0,-1.0], [0.0,0.0,0.0]])
+sym = ["H", "H", "S"]
+geometry = np.array([[0.0,-1.0,-1.0], [0.0,1.0,-1.0], [0.0,0.0,0.0]])
 load_data = True
 localize = True
 
 
 ## Generate PES object
 molecule = qml.qchem.Molecule(sym, geometry, basis_name="6-31g", unit="Angstrom", load_data=load_data)
-pes = pes_generator.vibrational(molecule, quad_order=9, localize=localize, do_cubic=True, get_anh_dipole=2)
+pes = pes_generator.vibrational_pes(molecule, quad_order=9, localize=localize, do_cubic=True, get_anh_dipole=3)
 
 if rank == 0:
     print("onebody: ", pes.pes_onebody, pes.dipole_onebody)
@@ -40,14 +40,14 @@ if rank == 0:
         min_deg = 2
     else:
         min_deg = 3
-    t_ham = realspace_ham_coeff(pes, min_deg=min_deg)
-    t_dipole = realspace_dipole_coeff(pes, min_deg=min_deg)
+    t_ham = taylor_integrals(pes, min_deg=min_deg)
+    t_dipole = taylor_integrals_dipole(pes, min_deg=min_deg)
 
 
-exit()
+#exit()
 ## Generate Christiansen Hamiltonian and dipole
-c_ham = christiansen_ham(pes, nbos=4, do_cubic=False)
-c_dipole = christiansen_dipole(pes, nbos=4)
+c_ham = christiansen_integrals(pes, nbos=4, do_cubic=True)
+c_dipole = christiansen_integrals_dipole(pes, nbos=4)
 
 ## Generate vibrational Hamiltonian
 _, ham = vib_obs(one=c_ham[0], two=c_ham[1])

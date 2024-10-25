@@ -6,7 +6,6 @@ from pyscf.geomopt.geometric_solver import optimize
 from utils import *
 import h5py
 import sys, os, subprocess
-from localize_modes import pm_custom_separate_localization
 from time import time
 from mpi4py import MPI 
 from dataclasses import dataclass
@@ -16,7 +15,7 @@ orig_stdout = sys.stdout
 
 
 @dataclass
-class PES():
+class VibrationalPES():
     r"""Data class to save the PES information to an object"""
     def __init__(self, freqs, gauss_grid, gauss_weights, uloc, pes_arr, dipole_arr, localized=True, get_anh_dipole=2):
         self.freqs = freqs
@@ -60,7 +59,7 @@ def harmonic_analysis(scf_result, method):
     return harmonic_res
 
 
-def run_electronic_structure(molecule, method="rhf"):
+def single_point(molecule, method="rhf"):
     r"""Runs electronic structure calculation.
     Args:
       molecule: Molecule object.
@@ -88,7 +87,7 @@ def run_electronic_structure(molecule, method="rhf"):
         return pyscf.scf.UHF(mol).run(verbose=0)
 
 
-def build_equilibrium_geom(molecule, method):
+def optimize_geometry(molecule, method):
     r"""Obtains equilibrium geometry for the molecule.
 
     Args:
@@ -101,13 +100,13 @@ def build_equilibrium_geom(molecule, method):
       
     """
     
-    scf_res = run_electronic_structure(molecule, method)
+    scf_res = single_point(molecule, method)
     geom_eq = optimize(scf_res, maxsteps=100)
     print("Geometry after optimization: ", geom_eq.atom_coords(unit='A'))
 
     mol_eq = qml.qchem.Molecule(molecule.symbols, geom_eq.atom_coords(unit='A'), unit="angstrom", basis_name=molecule.basis_name, charge=molecule.charge, mult=molecule.mult, load_data=molecule.load_data)
 
-    scf_result = run_electronic_structure(mol_eq, method)
+    scf_result = single_point(mol_eq, method)
     return mol_eq, scf_result
 
 

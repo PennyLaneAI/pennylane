@@ -6,7 +6,7 @@ from pyscf.geomopt.geometric_solver import optimize
 from utils import *
 import h5py
 import sys, os, subprocess
-from localize_modes import pm_custom_separate_localization
+from localize_modes import localize_normal_modes
 from time import time
 from mpi4py import MPI 
 from vibrational_class import *
@@ -20,7 +20,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
     
-def get_pes_onebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False):
+def pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False):
     r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
@@ -66,7 +66,7 @@ def get_pes_onebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, meth
                                           unit="angstrom",
                                           load_data=True)
             
-            disp_hf = run_electronic_structure(disp_mol)
+            disp_hf = single_point(disp_mol, method=method)
             
             omega = freqs_au[ii]
             ho_const = omega / 2
@@ -93,7 +93,7 @@ def get_pes_onebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, meth
     else:
         return final_pes_onebody, None
 
-def get_pes_twobody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, dipole_onebody, method="rhf", do_dipole=False):
+def pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, dipole_onebody, method="rhf", do_dipole=False):
     r"""Computes the two-mode potential energy surface on a grid in real space,
     along the normal coordinate directions (or any directions set by the 
     displ_vecs)."""
@@ -143,7 +143,7 @@ def get_pes_twobody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_
                                       scaling_b * pt2 * displ_vec_b[ll,:] \
                                       for ll in range(len(molecule.symbols))])
                 disp_mol = qml.qchem.Molecule(molecule.symbols, positions, basis_name=molecule.basis_name, charge=molecule.charge, mult=molecule.mult, unit="angstrom", load_data=True)
-                disp_hf = run_electronic_structure(disp_mol)
+                disp_hf = single_point(disp_mol, method=method)
                 local_pes_twobody[ii, jj] = disp_hf.e_tot - pes_onebody[aa, ii] - pes_onebody[bb, jj] - scf_result.e_tot
                     
                 if do_dipole:
@@ -166,7 +166,7 @@ def get_pes_twobody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_
         return final_pes_twobody, None
 
 
-def get_local_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method="rhf", do_dipole=False):
+def _local_pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method="rhf", do_dipole=False):
     r"""
     Computes the three-mode potential energy surface on a grid in real space,
     along the normal coordinate directions (or any directions set by the 
@@ -230,7 +230,7 @@ def get_local_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_gr
                             scaling_c * pt3 * displ_vec_c[ll,:]
                                    for ll in range(scf_result.mol.natm)])
             disp_mol = qml.qchem.Molecule(molecule.symbols, positions, basis_name=molecule.basis_name, charge=molecule.charge, mult=molecule.mult, unit="angstrom", load_data=True)
-            disp_hf = run_electronic_structure(disp_mol)
+            disp_hf = single_point(disp_mol, method=method)
 
             ind = ll*len(boscombos_on_rank) + mm
             local_pes_threebody[ind] = disp_hf.e_tot - pes_twobody[aa,bb,ii,jj] - pes_twobody[aa,cc,ii,kk] -\
@@ -248,7 +248,7 @@ def get_local_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_gr
     else:
         return local_pes_threebody, None
 
-def _load_pes_threebody(num_pieces, nmodes, ngridpoints):
+def _load_pes_threemode(num_pieces, nmodes, ngridpoints):
     """
     Loader to combine results from multiple ranks.
     """
@@ -281,7 +281,7 @@ def _load_pes_threebody(num_pieces, nmodes, ngridpoints):
     return pes_threebody
 
 
-def _load_dipole_threebody(num_pieces, nmodes, ngridpoints):
+def _load_dipole_threemode(num_pieces, nmodes, ngridpoints):
     """
     Loader to combine results from multiple ranks.
     """
@@ -314,10 +314,10 @@ def _load_dipole_threebody(num_pieces, nmodes, ngridpoints):
 
     return dipole_threebody
     
-def get_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method="rhf", do_dipole=False):
+def pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method="rhf", do_dipole=False):
     r"""Function for calculating threebody PES."""
     
-    local_pes_threebody, local_dipole_threebody = get_local_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method=method, do_dipole=do_dipole)
+    local_pes_threebody, local_dipole_threebody = _local_pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method=method, do_dipole=do_dipole)
     comm.Barrier()
 
     f = h5py.File("v3data" + f"_{rank}" + '.hdf5', 'w')
@@ -330,9 +330,9 @@ def get_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pe
 
     pes_threebody = None
     if rank==0:
-        pes_threebody = _load_pes_threebody(comm.Get_size(), len(freqs_au), len(gauss_grid))
+        pes_threebody = _load_pes_threemode(comm.Get_size(), len(freqs_au), len(gauss_grid))
         if do_dipole:
-            dipole_threebody = _load_dipole_threebody(comm.Get_size(), len(freqs_au), len(gauss_grid))
+            dipole_threebody = _load_dipole_threemode(comm.Get_size(), len(freqs_au), len(gauss_grid))
                 
         process = subprocess.Popen('rm ' + 'v3data*', stdout=subprocess.PIPE, shell=True)
         output, error = process.communicate()
@@ -345,7 +345,7 @@ def get_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pe
         return pes_threebody, None
     
     
-def vibrational(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[2600], do_cubic=True, get_anh_dipole=2):
+def vibrational_pes(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[2600], do_cubic=True, get_anh_dipole=2):
 
     r"""Builds potential energy surfaces over the normal modes.
 
@@ -359,9 +359,9 @@ def vibrational(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[
        get_anh_dipole: True for also obtaining anharmonic matrix elements for molecular dipole, takes considerable time. If integer then gets up to that degree of anharmonic dipole
 
     Returns:
-       PES object.
+       VibrationalPES object.
     """
-    molecule, scf_result = build_equilibrium_geom(molecule, method)
+    molecule, scf_result = optimize_geometry(molecule, method)
     
     harmonic_res = None
     loc_res = None
@@ -371,7 +371,7 @@ def vibrational(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[
         harmonic_res = harmonic_analysis(scf_result, method)   
         displ_vecs = harmonic_res["norm_mode"]
         if localize:
-            loc_res, uloc, displ_vecs = pm_custom_separate_localization(harmonic_res, freq_separation=loc_freqs)
+            loc_res, uloc, displ_vecs = localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
 
     # Broadcast data to all threads
     harmonic_res = comm.bcast(harmonic_res, root=0)
@@ -384,7 +384,7 @@ def vibrational(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[
     freqs_au = loc_res['freq_wavenumber'] / au_to_cm    
     gauss_grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
 
-    pes_onebody, dipole_onebody = get_pes_onebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method=method, do_dipole=True)
+    pes_onebody, dipole_onebody = pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method=method, do_dipole=True)
     comm.Barrier()
 
     # build PES -- two-body
@@ -393,7 +393,7 @@ def vibrational(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[
     elif get_anh_dipole > 1 or get_anh_dipole is True:
         do_dip_2 = True
 
-    pes_twobody, dipole_twobody = get_pes_twobody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, dipole_onebody, method=method, do_dipole=do_dip_2)
+    pes_twobody, dipole_twobody = pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, dipole_onebody, method=method, do_dipole=do_dip_2)
     comm.Barrier()
 
     pes_arr = [pes_onebody, pes_twobody]
@@ -405,9 +405,9 @@ def vibrational(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[
         elif get_anh_dipole > 2 or get_anh_dipole is True:
             do_dip_3 = True
 
-        pes_threebody, dipole_threebody = get_pes_threebody(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method=method, do_dipole=do_dip_3)
+        pes_threebody, dipole_threebody = pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method=method, do_dipole=do_dip_3)
         comm.Barrier()
         pes_arr = [pes_onebody, pes_twobody, pes_threebody]
         dipole_arr = [dipole_onebody, dipole_twobody, dipole_threebody]
 
-    return PES(freqs_au, gauss_grid, gauss_weights, uloc, pes_arr, dipole_arr, localize, get_anh_dipole)
+    return VibrationalPES(freqs_au, gauss_grid, gauss_weights, uloc, pes_arr, dipole_arr, localize, get_anh_dipole)
