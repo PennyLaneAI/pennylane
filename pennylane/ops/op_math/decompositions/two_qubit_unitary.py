@@ -49,7 +49,7 @@ def _check_differentiability_warning(U):
     """Check conditions that may lead to non-differentiability and raise appropriate warnings.
 
     Args:
-        U (tensor): Input unitary matrix to check
+        U (tensor_like): Input unitary matrix to check.
     """
 
     if qml.math.requires_grad(U):
