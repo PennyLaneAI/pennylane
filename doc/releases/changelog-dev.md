@@ -24,6 +24,59 @@
   [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
+* A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
+  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
+  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
+<h3>Improvements 🛠</h3>
+
+* RTD support for `qml.labs` added to API.
+  [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
+
+* Module-level sandboxing added to `qml.labs` via pre-commit hooks.
+  [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
+
+* `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
+  not call operations, single operators with empty decompositions).
+  [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
+  
+* PennyLane is now compatible with NumPy 2.0.
+  [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
+  [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
+  [(#6342)](https://github.com/PennyLaneAI/pennylane/pull/6342)
+
+* PennyLane is now compatible with Jax 0.4.28.
+  [(#6255)](https://github.com/PennyLaneAI/pennylane/pull/6255)
+
+* `qml.qchem.excitations` now optionally returns fermionic operators.
+  [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
+
+* The `diagonalize_measurements` transform now uses a more efficient method of diagonalization
+  when possible, based on the `pauli_rep` of the relevant observables.
+  [(#6113)](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+
+* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and 
+  `trainable_params` as keyword arguments. If any of these are passed when copying a 
+  tape, the specified attributes will replace the copied attributes on the new tape.
+  [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
+  [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
+
+* Datasets are now downloaded via Dataset API.
+  [(#6126)](https://github.com/PennyLaneAI/pennylane/pull/6126)
+
+* The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* All PL templates are now unit tested to ensure JIT compatibility.
+  [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
+
+* `qml.QutritBasisStatePreparation` is now JIT compatible.
+  [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
+
+* `qml.AmplitudeAmplification` is now compatible with QJIT.
+  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
+
 <h4>Calculating Polynomials 🔢</h4>
 
 <h4>Readout Noise 📠</h4>
@@ -426,6 +479,7 @@ Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Anthony Hayes,
 Austin Huang,
 Soran Jahangiri,
 Jacob Kitchen,
