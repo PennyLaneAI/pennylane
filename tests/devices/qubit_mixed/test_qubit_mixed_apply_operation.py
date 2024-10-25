@@ -406,6 +406,18 @@ class TestApplyMultiControlledX:
             (7, "autograd", "tensordot"),
             (8, "autograd", "tensordot"),
             (9, "autograd", "custom"),
+            (3, "jax", "einsum"),
+            (7, "jax", "einsum"),
+            (8, "jax", "tensordot"),
+            (9, "jax", "custom"),
+            (3, "tensorflow", "einsum"),
+            (7, "tensorflow", "einsum"),
+            (8, "tensorflow", "tensordot"),
+            (9, "tensorflow", "custom"),
+            (3, "torch", "einsum"),
+            (7, "torch", "einsum"),
+            (8, "torch", "tensordot"),
+            (9, "torch", "custom"),
         ],
     )
     def test_dispatch_method(self, num_wires, expected_method, interface, mocker):
