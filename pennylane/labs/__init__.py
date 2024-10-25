@@ -32,12 +32,22 @@ Resource Estimation
 
     ~Resources
     ~CompressedResourceOp
+    ~ResourceConstructor
 
+Errors
+~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
 """
 
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
+    ResourceConstructor,
+    ResourcesNotDefined,
 )
 
 __all__ = ["Resources", "CompressedResourceOp"]
