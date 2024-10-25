@@ -23,6 +23,9 @@
 
 <h4>Calculating Polynomials 🔢</h4>
 
+* `qml.OutPoly` template is added to implement polynomial arithmetic.
+  [(#6320)](https://github.com/PennyLaneAI/pennylane/pull/6320)
+
 <h4>Readout Noise 📠</h4>
 
 * Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class
@@ -34,9 +37,6 @@
 
 * `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
   [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
-
-* `qml.OutPoly` template is added to implement polynomial arithmetic.
-  [(#6320)](https://github.com/PennyLaneAI/pennylane/pull/6320)
 
 <h3>Improvements 🛠</h3>
 
