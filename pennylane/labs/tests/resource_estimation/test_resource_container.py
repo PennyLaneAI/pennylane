@@ -14,7 +14,7 @@
 """
 Test base Resource class and its associated methods
 """
-
+# pylint:disable=protected-access, no-self-use
 import copy
 from collections import defaultdict
 
@@ -34,6 +34,7 @@ from pennylane.labs.resource_estimation.resource_container import (
 
 
 class TestCompressedResourceOp:
+    """Testing the methods and attributes of the CompressedResourceOp class"""
 
     hamiltonian_arg = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
     compressed_op_args_lst = (
@@ -81,7 +82,6 @@ class TestCompressedResourceOp:
         CmprssedQSVT3 = CompressedResourceOp(qml.QSVT, {"num_angles": 5, "num_wires": 3})
         Other = CompressedResourceOp(qml.QFT, {"num_wires": 3})
 
-        assert CmprssedQSVT1 == CmprssedQSVT1  # compare same object
         assert CmprssedQSVT1 == CmprssedQSVT2  # compare identical instance
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
         assert CmprssedQSVT1 != Other
