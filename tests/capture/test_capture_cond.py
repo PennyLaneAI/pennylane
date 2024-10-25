@@ -653,6 +653,7 @@ class TestCondCircuits:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("shots", [None, 20])
@@ -682,7 +683,7 @@ class TestCondCircuits:
 
         assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
 
-    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("shots", [None, 300])
     @pytest.mark.parametrize(
         "params, expected",
         # The parameters used here will essentially apply a PauliX just before mid-circuit

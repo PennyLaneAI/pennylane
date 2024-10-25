@@ -831,7 +831,7 @@ class TestNewVQE:
         expected = "0: ──H─┤ ╭<𝓗(1.00,1.00,1.00)>\n2: ────┤ ╰<𝓗(1.00,1.00,1.00)>"
         assert res == expected
 
-    def test_multiple_expvals(self, PARAMS, seed):
+    def test_multiple_expvals(self):
         """Tests that more than one Hamiltonian expval can be evaluated."""
 
         coeffs = [1.0, 1.0, 1.0]
@@ -860,7 +860,7 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit2()
 
-    def test_multiple_expvals_same_wires(self, PARAMS, seed):
+    def test_multiple_expvals_same_wires(self):
         """Tests that more than one Hamiltonian expval can be evaluated."""
 
         coeffs = [1.0, 1.0, 1.0]
