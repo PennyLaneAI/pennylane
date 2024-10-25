@@ -138,7 +138,7 @@ class Device(abc.ABC):
                 cls.capabilities = DeviceCapabilities.from_toml_file(cls.config)
             except AssertionError as e:
                 if "Unsupported config TOML schema" not in str(e):
-                    raise e
+                    raise e  # pragma: no cover
                 warnings.warn(str(e))
         super().__init_subclass__(**kwargs)
 
