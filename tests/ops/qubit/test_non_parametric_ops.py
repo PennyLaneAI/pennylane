@@ -1293,3 +1293,23 @@ class TestPauliAlias:
 
         assert qml.Z(0).name == "PauliZ"
         assert qml.PauliZ(0).name == "PauliZ"
+
+
+class TestHadamardAlias:
+    def test_H_class_name(self):
+        """Test the class name of H is by default correct"""
+        assert qml.H.__name__ == "Hadamard"
+        assert qml.Hadamard.__name__ == "Hadamard"
+
+        assert qml.H(0).name == "Hadamard"
+        assert qml.Hadamard(0).name == "Hadamard"
+
+    def test_hadamard_alias(self):
+        """Test that qml.H is an alias for qml.Hadamard."""
+        # Verify that qml.H is the same as qml.Hadamard
+        assert qml.H is qml.Hadamard, "qml.H should be an alias for qml.Hadamard"
+
+        # Verify that an instance of qml.H is treated as qml.Hadamard
+        assert isinstance(
+            qml.H(0), qml.Hadamard
+        ), "qml.H(0) should create an instance of qml.Hadamard"
