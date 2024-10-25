@@ -94,6 +94,30 @@ jobs:
       default_runner: ubuntu-latest
       force_large_runner: ${{ inputs.use_large_runner }}
 
+  disable-fail-fast-wae:
+    steps:
+      - name: Set fail-fast for WAE
+        id: mat_fail_fast
+        run: |
+          if [ "${{ inputs.python_warning_level }}" == "true" ];
+          then
+            cat >python_warning_level.json <<-EOF
+          {
+            "matrix-fail-fast": "default"
+          }
+          EOF
+          else
+            cat >python_warning_level.json <<-EOF
+          {
+            "matrix-fail-fast": "error"
+          }
+          EOF
+          fi
+          echo "fail_fast=$(jq -r tostring python_warning_level.json)" >> $GITHUB_OUTPUT
+
+    outputs:
+      matrix-fail-fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
+
   setup-ci-load:
     needs:
       - determine_runner
@@ -243,7 +267,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).torch-tests
@@ -279,7 +308,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).autograd-tests
@@ -312,7 +346,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).tf-tests
@@ -325,6 +364,7 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).tf-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
+        fail-fast: ${{ inputs.python_warning_level != 'default' && 'false' || 'true' }}
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'tf-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -349,7 +389,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
@@ -387,8 +432,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
-      max-parallel: >-
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}      max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).core-tests
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
@@ -423,7 +472,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).all-interfaces-tests
@@ -461,7 +515,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).external-libraries-tests
@@ -506,7 +565,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qcut-tests
@@ -545,7 +609,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qchem-tests
@@ -580,7 +649,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).gradients-tests
@@ -620,7 +694,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).data-tests
@@ -655,7 +734,12 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: >-
+        ${{
+           fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast) == "default" && "true" || "false"
+         }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).device-tests
