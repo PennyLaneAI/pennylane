@@ -121,11 +121,11 @@ class TestVar:
             res = func(phi, shots=shots)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
-    def test_eigvals_instead_of_observable(self):
+    def test_eigvals_instead_of_observable(self, seed):
         """Tests process samples with eigvals instead of observables"""
 
         shots = 100
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         expected = qml.var(qml.PauliZ(0)).process_samples(samples, [0, 1])
         assert VarianceMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
