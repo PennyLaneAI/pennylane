@@ -342,7 +342,8 @@ def apply_operation(
         This function assumes that the wires of the operator correspond to indices
         of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-        The shape of state should be ``[2]*(num_wires * 2)`` (the original tensor form) or ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where ``2`` is
+        The shape of state should be ``[2]*(num_wires * 2)`` (the original tensor form) or
+        ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where `2`` is
         the dimension of the system.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
