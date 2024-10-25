@@ -15,7 +15,6 @@
 
 import numpy as np
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane.measurements import Variance, VarianceMP

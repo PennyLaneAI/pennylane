@@ -18,7 +18,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices import DefaultQubit
 
 pytestmark = pytest.mark.tf
 
