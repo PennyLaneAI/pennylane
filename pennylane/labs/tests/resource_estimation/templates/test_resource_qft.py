@@ -1,8 +1,7 @@
 import pytest
 
 import pennylane as qml
-import pennylane.labs.resource_estimation.ops as ops
-from pennylane.labs.resource_estimation import CompressedResourceOp
+from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceQFT
 
 class TestQFT:
     """Test the ResourceQFT class"""
@@ -27,14 +26,14 @@ class TestQFT:
             ctrl_phase_shift: num_ctrl_phase_shift
         }
 
-        assert ops.ResourceQFT.resources(num_wires) == expected
+        assert ResourceQFT.resources(num_wires) == expected
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4])
     def test_resource_rep(self, num_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
         expected = CompressedResourceOp(qml.QFT, {"num_wires": num_wires})
-        op = ops.ResourceQFT(wires=range(num_wires))
+        op = ResourceQFT(wires=range(num_wires))
 
         assert op.resource_rep() == expected
 
@@ -59,8 +58,8 @@ class TestQFT:
             ctrl_phase_shift: num_ctrl_phase_shift
         }
 
-        rep = ops.ResourceQFT(wires=range(num_wires)).resource_rep()
-        actual = ops.ResourceQFT.resources(**rep.params)
+        rep = ResourceQFT(wires=range(num_wires)).resource_rep()
+        actual = ResourceQFT.resources(**rep.params)
 
         assert actual == expected
 
@@ -68,10 +67,10 @@ class TestQFT:
     def test_type_error(self, num_wires):
         """Test that resources correctly raises a TypeError"""
         with pytest.raises(TypeError, match="num_wires must be an int."):
-            ops.ResourceQFT.resources(num_wires)
+            ResourceQFT.resources(num_wires)
 
     @pytest.mark.parametrize("num_wires", [0, -1])
     def test_value_error(self, num_wires):
         """Test that resources correctly raises a ValueError"""
         with pytest.raises(ValueError, match="num_wires must be greater than 0."):
-            ops.ResourceQFT.resources(num_wires)
+            ResourceQFT.resources(num_wires)
