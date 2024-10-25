@@ -272,7 +272,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -313,7 +313,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -351,7 +351,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -394,7 +394,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -437,7 +437,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}    
       max-parallel: >-
         ${{
@@ -478,7 +478,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -521,7 +521,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -571,7 +571,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -615,7 +615,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -655,7 +655,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -700,7 +700,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
@@ -740,7 +740,7 @@ jobs:
     strategy:
       fail-fast: >-
         ${{
-           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && "true" || "false"
+           contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') && true || false
          }}
       max-parallel: >-
         ${{
