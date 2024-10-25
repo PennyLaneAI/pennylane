@@ -20,7 +20,12 @@ from collections import defaultdict
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import CompressedResourceOp, Resources
+from pennylane.labs.resource_estimation.resource_container import (
+    CompressedResourceOp,
+    Resources,
+    _combine_dict,
+    _scale_dict,
+)
 
 
 class TestCompressedResourceOp:
@@ -115,6 +120,34 @@ class TestResources:
         assert r.num_gates == num_gates
         assert r.gate_types == gate_types
 
+    # @pytest.mark.parametrize("in_place", (False, True))
+    # @pytest.mark.parametrize("resource_obj", resource_quantities)
+    # def test_add_in_series(self, resource_obj, in_place):
+    #     """Test the add_in_series function works with Resoruces"""
+    #     other_obj = Resources(
+    #         num_wires=2,
+    #         num_gates=6,
+    #         gate_types=defaultdict(int, {"RZ":2, "CNOT":1, "RY":2, "Hadamard":1})
+    #     )
+
+    #     resultant_obj = resource_obj.add_in_series(other_obj, in_place=in_place)
+    #     expected_res_obj = Resources(
+    #         num_wires = other_obj.num_wires
+    #     )
+    #     assert True
+
+    def test_add_in_parallel(self):
+        """Test the add_in_parallel function works with Resoruces"""
+        assert True
+
+    def test_mul_in_series(self):
+        """Test the mul_in_series function works with Resoruces"""
+        assert True
+
+    def test_mul_in_parallel(self):
+        """Test the mul_in_parallel function works with Resoruces"""
+        assert True
+
     test_str_data = (
         ("wires: 0\n" + "gates: 0\n" + "gate_types:\n" + "{}"),
         ("wires: 5\n" + "gates: 0\n" + "gate_types:\n" + "{}"),
@@ -133,3 +166,37 @@ class TestResources:
         r._ipython_display_()  # pylint: disable=protected-access
         captured = capsys.readouterr()
         assert rep in captured.out
+
+
+@pytest.mark.parametrize("in_place", [False, True])
+def test_combine_dict(in_place):
+    """Test that we can combine dictionaries as expected."""
+    d1 = defaultdict(int, {"a": 2, "b": 4, "c": 6})
+    d2 = defaultdict(int, {"a": 1, "b": 2, "d": 3})
+
+    result = _combine_dict(d1, d2, in_place=in_place)
+    expected = defaultdict(int, {"a": 3, "b": 6, "c": 6, "d": 3})
+
+    assert result == expected
+
+    if in_place:
+        assert result is d1
+    else:
+        assert result is not d1
+
+
+@pytest.mark.parametrize("scaler", (1, 2, 3))
+@pytest.mark.parametrize("in_place", (False, True))
+def test_scale_dict(scaler, in_place):
+    """Test that we can scale the values of a dictionary as expected."""
+    d1 = defaultdict(int, {"a": 2, "b": 4, "c": 6})
+
+    expected = defaultdict(int, {k: scaler * v for k, v in d1.items()})
+    result = _scale_dict(d1, scaler, in_place=in_place)
+
+    assert result == expected
+
+    if in_place:
+        assert result is d1
+    else:
+        assert result is not d1
