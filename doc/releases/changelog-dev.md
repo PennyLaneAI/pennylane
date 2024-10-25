@@ -409,6 +409,9 @@
 * Fixes a bug where `mitigate_with_zne` loses the `shots` information of the original tape.
   [(#6444)](https://github.com/PennyLaneAI/pennylane/pull/6444)
 
+* Fixes a bug where `default.tensor` raises an error when applying `Identity`/`GlobalPhase` on no wires, and `PauliRot`/`MultiRZ` on a single wire.
+  [(#6448)](https://github.com/PennyLaneAI/pennylane/pull/6448)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
