@@ -136,10 +136,10 @@ class OutPoly(Operation):
         \text{OutPoly}_{f, mod} |x_1 \rangle \dots |x_m \rangle |0 \rangle
         = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m)\, \text{mod} \; mod\rangle,
 
-    where the integer inputs :math:`x_i` are embedded in the `input` registers. The result of the
+    where the integer inputs :math:`x_i` are embedded in the ``input_registers``. The result of the
     polynomial function :math:`f(x_1, \dots, x_m)` is computed modulo :math:`mod` in the computational
-    basis and stored in the `output` wires. If the output wires are not initialized to zero, the evaluated
-    result :math:`f(x_1, \dots, x_m)\ \text{%}\ mod` will be added to the value initialized in the output register.
+    basis and stored in the ``output_wires``. If the output wires are not initialized to zero, the evaluated
+    result :math:`f(x_1, \dots, x_m)\ \text{mod}\ mod` will be added to the value initialized in the output register.
     This implementation is based on the Section II-B of `arXiv:2112.10537 <https://arxiv.org/abs/2112.10537>`_.
 
 
@@ -156,8 +156,8 @@ class OutPoly(Operation):
         output_wires (Union[Wires, Sequence[int]]): The wires (or wire indices) used to store the output of the operation.
         mod (int, optional): The integer for performing the modulo on the result of the polynomial operation. If not provided, it defaults
                              to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
-        work_wires (Sequence[int], optional): The auxiliary wires to use for performing the polynomial operation. The
-                    work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
+        work_wires (Union[Wires, Sequence[int]], optional): The auxiliary wires to use for performing the polynomial operation. The
+                    work wires are not needed if :math:`mod=2^{\text{length(output_wires)}}`, otherwise two work wires
                     should be provided. Default is ``None``.
 
     Raises:
