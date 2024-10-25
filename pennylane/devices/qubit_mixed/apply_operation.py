@@ -274,12 +274,14 @@ def apply_operation_tensordot(
         mat = op.matrix() + 0j
         kraus = [mat]
     kraus = [math.reshape(k, kraus_shape) for k in kraus]
+    kraus = math.array(kraus)  # Necessary for Jax
     # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
     row_wires_list = [w + is_state_batched for w in channel_wires.tolist()]
     col_wires_list = [w + num_wires for w in row_wires_list]
     channel_col_ids = list(range(-num_ch_wires, 0))
+    new_channel_col_ids = [-num_wires + w for w in channel_wires]
     axes_left = [channel_col_ids, row_wires_list]
-    axes_right = [col_wires_list, channel_col_ids]
+    axes_right = [[0] + new_channel_col_ids, [0] + channel_col_ids]
 
     # Apply the Kraus operators, and sum over all Kraus operators afterwards
     def _conjugate_state_with(k, state=state):
@@ -293,23 +295,15 @@ def apply_operation_tensordot(
             axes_right,
         )
 
-    def _tensordot_single_kraus(kraus, state=state):
-        if len(kraus) == 1:
-            _state = _conjugate_state_with(kraus[0], state)
+    _state = _conjugate_state_with(kraus, state)
+    source_left = list(range(num_ch_wires))
+    dest_left = row_wires_list
+    source_right = list(range(-num_ch_wires, 0))
+    dest_right = col_wires_list
 
-        else:
-            _state = math.sum(math.stack([_conjugate_state_with(k, state) for k in kraus]), axis=0)
+    result = math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
-        source_left = list(range(num_ch_wires))
-        dest_left = row_wires_list
-        source_right = list(range(-num_ch_wires, 0))
-        dest_right = col_wires_list
-
-        result = math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
-
-        return result
-
-    return _tensordot_single_kraus(kraus)
+    return result
 
 
 @singledispatch
