@@ -45,7 +45,7 @@ requirements which must be installed manually:
 
 * **PyTorch interface**: ``pytorch``
 
-* **TensorFlow interface**: ``tensorflow < 2.17``
+* **TensorFlow interface**: ``tensorflow`` < 2.17
 
 
 Installation
