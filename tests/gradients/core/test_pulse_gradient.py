@@ -1207,7 +1207,7 @@ class TestStochPulseGrad:
         num_split_times = 5
         qnode.tape.trainable_params = [0, 1, 2]
 
-        # TODO: This test case is not updated to use the pytest-rng generated seed because I'm
+        # FIXME: This test case is not updated to use the pytest-rng generated seed because I'm
         #       unable to find a local salt that actually allows this test to pass. The 7123 here
         #       is basically a magic number. Every other seed I tried fails. I believe this test
         #       should be rewritten to use a better testing strategy because this currently goes
