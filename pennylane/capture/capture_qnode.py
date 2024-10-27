@@ -14,11 +14,11 @@
 """
 This submodule defines a capture compatible call to QNodes.
 """
-import numbers
-import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
+from numbers import Number
+from warnings import warn
 
 import pennylane as qml
 from pennylane.typing import TensorLike
@@ -37,7 +37,7 @@ except ImportError:
 def _is_scalar_tensor(arg) -> bool:
     """Check if an argument is a scalar tensor-like object or a numeric scalar."""
 
-    if isinstance(arg, numbers.Number):
+    if isinstance(arg, Number):
         return True
 
     if isinstance(arg, TensorLike):
@@ -164,7 +164,7 @@ def _get_qnode_prim():
             # To resolve this, we need to add more properties to the AbstractOperator
             # class to indicate which operators support batching and check them here
             if arg.size > 1 and batch_dim is None:
-                warnings.warn(
+                warn(
                     f"Argument at index {i} has more than 1 element but is not batched. "
                     "This may lead to unintended behavior or wrong results if the argument is provided "
                     "using parameter broadcasting to a quantum operation that supports batching.",

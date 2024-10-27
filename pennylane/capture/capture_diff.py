@@ -39,8 +39,8 @@ def create_non_interpreted_prim():
         when evaluating JVPTracers and BatchTracers."""
 
         def bind_with_trace(self, trace, args, params):
-            """Bind the ``NonInterpPrimitive`` with a trace. 
-            
+            """Bind the ``NonInterpPrimitive`` with a trace.
+
             If the trace is a ``JVPTrace``or a ``BatchTrace``, binding falls back to a standard Python function call.
             Otherwise, the bind call of JAX's standard Primitive is used."""
             if isinstance(
