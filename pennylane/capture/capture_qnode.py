@@ -103,7 +103,7 @@ def _get_qnode_prim():
     qnode_prim = jax.core.Primitive("qnode")
     qnode_prim.multiple_results = True
 
-    # pylint: disable=too-many-arguments, unused-argument
+    # pylint: disable=too-many-arguments
     @qnode_prim.def_impl
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
         consts = args[:n_consts]
