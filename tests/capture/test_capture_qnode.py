@@ -506,7 +506,7 @@ class TestQNodeVmapIntegration:
         jax.config.update("jax_enable_x64", initial_mode)
 
     def test_qnode_vmap_closure_error(self):
-        """Test that an error is raised when trying to vmap over a batched closure variable."""
+        """Test that an error is raised when trying to vmap over a batched non-scalar closure variable."""
         dev = qml.device("default.qubit", wires=2)
 
         const = jax.numpy.array([2.0, 6.6])
@@ -518,7 +518,7 @@ class TestQNodeVmapIntegration:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            ValueError, match="Batched constant cannot currently be captured with jax.vmap."
+            ValueError, match="Only scalar constants are currently supported with jax.vmap."
         ):
             jax.make_jaxpr(jax.vmap(circuit))(jax.numpy.array([0.1, 0.2]))
 

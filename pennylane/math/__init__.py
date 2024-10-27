@@ -95,7 +95,6 @@ from .utils import (
     in_backprop,
     is_abstract,
     requires_grad,
-    is_non_scalar_tensor,
 )
 
 sum = ar.numpy.sum
