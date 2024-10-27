@@ -322,7 +322,7 @@ class TestCircuitGraph:
             circuit_w_wires.print_contents()
         out = f.getvalue().strip()
 
-        expected = """Operations\n==========\nHadamard(wires=[0])\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
+        expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
         assert out == expected
 
     tape_depth = (
