@@ -368,10 +368,12 @@ class TestQNode:
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
     @pytest.mark.parametrize("shots", [None, 1000])
     @pytest.mark.parametrize("phi", np.linspace(np.pi / 2, 7 * np.pi / 2, 6))
-    def test_some_postselection_qnode(self, phi, shots, reduce_postselected, tol, tol_stochastic):
+    def test_some_postselection_qnode(
+        self, phi, shots, reduce_postselected, tol, tol_stochastic, seed
+    ):
         """Test that a qnode with some mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
-        dev = DefaultQubit(seed=822)
+        dev = DefaultQubit(seed=seed)
 
         dm_transform = qml.defer_measurements
         if reduce_postselected is not None:
@@ -491,10 +493,10 @@ class TestQNode:
             qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
-    def test_measurement_statistics_single_wire(self, shots):
+    def test_measurement_statistics_single_wire(self, shots, seed):
         """Test that users can collect measurement statistics on
         a single mid-circuit measurement."""
-        dev = DefaultQubit(seed=10)
+        dev = DefaultQubit(seed=seed)
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -503,7 +505,7 @@ class TestQNode:
             m0 = qml.measure(0)
             return qml.probs(op=m0)
 
-        dev = DefaultQubit(seed=10)
+        dev = DefaultQubit(seed=seed)
 
         @qml.qnode(dev)
         def circ2(x):
@@ -548,11 +550,11 @@ class TestQNode:
         assert mp.mv.wires == qml.wires.Wires([1])
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
-    def test_terminal_measurements(self, shots):
+    def test_terminal_measurements(self, shots, seed):
         """Test that mid-circuit measurement statistics and terminal measurements
         can be made together."""
         # Using DefaultQubit to allow non-commuting measurements
-        dev = DefaultQubit(seed=10)
+        dev = DefaultQubit(seed=seed)
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -562,7 +564,7 @@ class TestQNode:
             qml.RY(y, 1)
             return qml.expval(qml.PauliX(1)), qml.probs(op=m0)
 
-        dev = DefaultQubit(seed=10)
+        dev = DefaultQubit(seed=seed)
 
         @qml.qnode(dev)
         def circ2(x, y):
