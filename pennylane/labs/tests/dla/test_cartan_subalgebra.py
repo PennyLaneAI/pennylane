@@ -22,6 +22,7 @@ from pennylane.labs.dla import (
     cartan_subalgebra,
     check_cartan_decomp,
     even_odd_involution,
+    op_to_adjvec,
 )
 
 
@@ -46,3 +47,11 @@ def test_Ising2():
     new_adj_re = qml.structure_constants(newg)
 
     assert np.allclose(new_adj_re, new_adj)
+
+
+def test_op_to_adjvec_dense():
+    """Basic test of op_to_adjvec with dense matrices"""
+    basis = [qml.matrix(op, wire_order=range(2)) for op in [X(0), X(1)]]
+    ops = [X(0), X(1)]
+    res = op_to_adjvec(ops, basis)
+    assert np.allclose(res, np.eye(2))

@@ -327,7 +327,7 @@ def op_to_adjvec(
 
         basis = np.array(basis)
         res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
-        norm = np.einsum("bij,bji->b", basis, basis)
+        norm = np.einsum("bij,bji->b", basis, basis)  # TODO: gram matrix for non-orthonormal bases
 
         return res / norm
 
