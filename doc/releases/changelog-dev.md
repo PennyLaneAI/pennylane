@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added functions `get_best_diff_method` to `qml.workflow`.
+  [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
+
 * Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
   [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
 
@@ -21,7 +24,63 @@
   [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
+* A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
+  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
+  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
+<h3>Improvements 🛠</h3>
+
+* RTD support for `qml.labs` added to API.
+  [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
+
+* Module-level sandboxing added to `qml.labs` via pre-commit hooks.
+  [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
+
+* `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
+  not call operations, single operators with empty decompositions).
+  [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
+  
+* PennyLane is now compatible with NumPy 2.0.
+  [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
+  [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
+  [(#6342)](https://github.com/PennyLaneAI/pennylane/pull/6342)
+
+* PennyLane is now compatible with Jax 0.4.28.
+  [(#6255)](https://github.com/PennyLaneAI/pennylane/pull/6255)
+
+* `qml.qchem.excitations` now optionally returns fermionic operators.
+  [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
+
+* The `diagonalize_measurements` transform now uses a more efficient method of diagonalization
+  when possible, based on the `pauli_rep` of the relevant observables.
+  [(#6113)](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+
+* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and 
+  `trainable_params` as keyword arguments. If any of these are passed when copying a 
+  tape, the specified attributes will replace the copied attributes on the new tape.
+  [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
+  [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
+
+* Datasets are now downloaded via Dataset API.
+  [(#6126)](https://github.com/PennyLaneAI/pennylane/pull/6126)
+
+* The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* All PL templates are now unit tested to ensure JIT compatibility.
+  [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
+
+* `qml.QutritBasisStatePreparation` is now JIT compatible.
+  [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
+
+* `qml.AmplitudeAmplification` is now compatible with QJIT.
+  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
+
 <h4>Calculating Polynomials 🔢</h4>
+
+* `qml.OutPoly` template is added to implement polynomial arithmetic.
+  [(#6320)](https://github.com/PennyLaneAI/pennylane/pull/6320)
 
 <h4>Readout Noise 📠</h4>
 
@@ -90,10 +149,16 @@
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
+* `mitigate_with_zne` now gives clearer error message when being used with circuits with channel noise.
+  [(#6346)](https://github.com/PennyLaneAI/pennylane/pull/6346)
+
 * The `make_plxpr` function is added, to take a function and create a `Callable` that,
   when called, will return a PLxPR representation of the input function.
   [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
+* `FermiWord` and `FermiSentence` are now compatible with JAX arrays.
+  [(#6324)](https://github.com/PennyLaneAI/pennylane/pull/6324)
+  
 <h4>Quantum information measurements</h4>
 
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
@@ -136,6 +201,9 @@
       - Grover operators
   [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
   
+* Added `qml.H` as an alias for the Hadamard operator.
+  [(#6450)](https://github.com/PennyLaneAI/pennylane/pull/6450)
+
 * Added `show_wire_labels` option to `draw` and `draw_mpl`, which hides wire labels when set to `False`.
   Defaults to `True`.
   [(#6410)](https://github.com/PennyLaneAI/pennylane/pull/6410)
@@ -307,6 +375,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated `qml.spin` documentation.
+  [(#6387)](https://github.com/PennyLaneAI/pennylane/pull/6387)
+
 * Updated links to PennyLane.ai in the documentation to use the latest URL format, which excludes the `.html` prefix.
   [(#6412)](https://github.com/PennyLaneAI/pennylane/pull/6412)
 
@@ -334,6 +405,9 @@
   [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable module is used.
+  [(#6437)](https://github.com/PennyLaneAI/pennylane/pull/6437)
 
 * Patches the `math` module to function with autoray 0.7.0.
   [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
@@ -406,6 +480,12 @@
 * Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
   [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
 
+* Fixes a bug where `mitigate_with_zne` loses the `shots` information of the original tape.
+  [(#6444)](https://github.com/PennyLaneAI/pennylane/pull/6444)
+
+* Fixes a bug where `default.tensor` raises an error when applying `Identity`/`GlobalPhase` on no wires, and `PauliRot`/`MultiRZ` on a single wire.
+  [(#6448)](https://github.com/PennyLaneAI/pennylane/pull/6448)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -420,7 +500,9 @@ Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Anthony Hayes,
 Austin Huang,
+Soran Jahangiri,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
@@ -429,5 +511,6 @@ Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
+Alex Preciado,
 Ashish Kanwar Singh,
 David Wierichs,

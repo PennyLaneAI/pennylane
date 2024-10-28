@@ -38,7 +38,7 @@ ops = (
 )
 
 ops_rep = (
-    "X(0) # Z(0) # Hadamard(wires=[0])",
+    "X(0) # Z(0) # H(0)",
     "(CNOT(wires=[0, 1])) # RX(1.23, wires=[1]) # I(0)",
     "IsingXX(4.56, wires=[2, 3]) # (Toffoli(wires=[1, 2, 3])) # Rot(0.34, 1.0, 0, wires=[0])",
 )
