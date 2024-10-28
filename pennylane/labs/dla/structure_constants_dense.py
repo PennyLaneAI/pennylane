@@ -87,6 +87,9 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     Gram matrix as well.
     """
 
+    if isinstance(g, list):
+        g = np.array(g)
+
     assert g.shape[2] == g.shape[1]
     # Assert Hermiticity of the input. Otherwise we'll get the sign wrong
     assert np.allclose(g.conj().transpose((0, 2, 1)), g)
