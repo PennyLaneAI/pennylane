@@ -38,6 +38,7 @@ pytestmark = pytest.mark.skip_unsupported
 obs = {
     "Identity": qml.Identity(wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
+    "H": qml.H(wires=[0]),
     "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
     "PauliX": qml.PauliX(0),
     "PauliY": qml.PauliY(0),
