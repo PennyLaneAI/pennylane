@@ -24,7 +24,7 @@ from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
-from .utils import get_einsum_mapping, get_new_state_einsum_indices
+from .einsum_manpulation import get_einsum_mapping, get_new_state_einsum_indices
 
 alphabet_array = np.array(list(alphabet))
 
