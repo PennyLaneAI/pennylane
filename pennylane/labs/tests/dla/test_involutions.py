@@ -17,15 +17,50 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import AI
+from pennylane.labs.dla import AI, AII
 
 
-@pytest.mark.parametrize(
-    "op",
-    [
-        X(0) @ Y(1) @ Z(2),
-    ],
-)
-def test_AI_dispatch(op):
-    """Test singledispatch for AI involution"""
-    assert all([AI(op), AI(op.pauli_rep), AI(qml.matrix(op))])
+class TestMatrixConstructors:
+    """Tests for the matrix constructing methods used in Cartan involutions."""
+
+
+class TestInvolutions:
+    """Test the involutions themselves."""
+
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (X(0) @ Y(1) @ Z(2), True),
+            (X(0) @ Y(1) @ Z(2) - Z(0) @ X(1) @ Y(2), True),
+            (X(0) @ Y(1) @ Z(2) - Y(0) @ Y(1) @ Y(2), True),
+            (Y(0) @ Y(1) @ Z(2), False),
+            (X(0) @ X(1) @ Z(2) + X(0) @ Y(1) @ Y(2), False),
+        ],
+    )
+    def test_AI(self, op, expected):
+        """Test singledispatch for AI involution"""
+        inputs = [op, op.pauli_rep, qml.matrix(op, wire_order=[0, 1, 2])]
+        outputs = [AI(_input) for _input in inputs]
+        if expected:
+            assert all(outputs)
+        else:
+            assert not any(outputs)
+
+    @pytest.mark.parametrize(
+        "op, expected",
+        [  # (#_Y is odd, I/Y on first wire)
+            (X(0) @ Y(1) @ Z(2), False),  # (True, False) -> -1
+            (X(0) @ Y(1) @ Z(2) - Z(0) @ X(1) @ Y(2), False),  # (True, False) -> -1
+            (Y(0) @ X(1) @ Z(2) - Y(0) @ Y(1) @ Y(2), True),  # (True, True) -> 1
+            (Y(0) @ Y(1) @ Z(2), False),  # (False, True) -> -1
+            (X(0) @ X(1) @ Z(2) + X(0) @ Y(1) @ Y(2), True),  # (False, False) -> 1
+        ],
+    )
+    def test_AII(self, op, expected):
+        """Test singledispatch for AI involution"""
+        inputs = [op, op.pauli_rep, qml.matrix(op, wire_order=[0, 1, 2])]
+        outputs = [AII(_input) for _input in inputs]
+        if expected:
+            assert all(outputs)
+        else:
+            assert not any(outputs)

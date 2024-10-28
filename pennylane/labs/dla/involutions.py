@@ -15,7 +15,7 @@
 from functools import singledispatch
 
 # pylint: disable=missing-function-docstring
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -90,15 +90,17 @@ def int_log2(x):
 
 def J(n, wire=None):
     """This is the standard choice for the symplectic transformation operator.
-    For an :math:`N`-qubit system (:math:`n=2^N`), it equals :math:`iY_0`."""
+    For an :math:`N`-qubit system (:math:`n=2^N`), it equals :math:`Y_0`."""
     N = int_log2(n)
     if 2**N == n:
         if wire is None:
             wire = 0
-        return 1j * Y(wire).matrix(wire_order=range(N + 1))
+        return Y(wire).matrix(wire_order=range(N + 1))
     if wire is not None:
-        raise ValueError("The wire argument is only supported for n=2**N for some N." "")
-    return np.block([[np.zeros((n, n)), np.eye(n)], [-np.eye(n), np.zeros((n, n))]])
+        raise ValueError("The wire argument is only supported for n=2**N for some integer N.")
+    zeros = np.zeros((n, n))
+    eye = np.eye(n)
+    return np.block([[zeros, -1j * eye], [1j * eye, zeros]])
 
 
 def Ipq(p, q, wire=None):
@@ -137,52 +139,124 @@ def Kpq(p, q, wire=None):
     return KKm
 
 
-def AI(op):
-    """Involution for AI Cartan decomposition.
-    Note that we work with Hermitian matrices internally, so that we need to multiply by
-    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
+    r"""Canonical form of the involution for the Cartan decomposition of type AI,
+    which is given by :math:`\theta: x \mapsto x^\ast`. Note that we work with Hermitian
+    operators internally, so that the input will be multiplied by :math:`i` before
+    evaluating the involution.
+
+    Args:
+        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+        evaluated and for which the parity under the involution is returned.
+
+    Returns:
+        bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
+        involution :math:`\theta` with eigenvalue :math:`+1`.
     """
     return _AI(op)
 
 
 @singledispatch
 def _AI(op):  # pylint:disable=unused-argument
-    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
+    r"""Default implementation of the canonical form of the AI involution
+    :math:`\theta: x \mapsto x^\ast`.
+    """
+    return NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
 
 
 @_AI.register(np.ndarray)
-def _AI_matrix(op: np.ndarray):
-    op = 1j * op
+def _AI_matrix(op: np.ndarray) -> bool:
+    r"""Matrix implementation of the canonical form of the AI involution
+    :math:`\theta: x \mapsto x^\ast`.
+    """
+    op *= 1j
     return np.allclose(op, op.conj())
 
 
 @_AI.register(PauliSentence)
-def _AI_ps(op: PauliSentence):
+def _AI_ps(op: PauliSentence) -> bool:
+    r"""PauliSentence implementation of the canonical form of the AI involution
+    :math:`\theta: x \mapsto x^\ast`.
+    """
     parity = []
-    for pw in op.keys():
-        result = sum(1 if el == "Y" else 0 for el in pw.values())
-        parity.append(result % 2)
+    for pw in op:
+        result = sum(el == "Y" for el in pw.values())
+        parity.append(bool(result % 2))
 
     # only makes sense if parity is the same for all terms, e.g. Heisenberg model
-    assert all(
-        parity[0] == p for p in parity
-    ), f"The concurrence canonical decomposition is not well-defined for operator {op} as individual terms have different parity"
-    return bool(parity[0])
+    assert all(parity) or not any(parity)
+    return parity[0]
 
 
 @_AI.register(Operator)
-def _AI_op(op: Operator):
+def _AI_op(op: Operator) -> bool:
+    r"""Operator implementation of the canonical form of the AI involution
+    :math:`\theta: x \mapsto x^\ast`.
+    """
     return _AI_ps(op.pauli_rep)
 
 
-def AII(op, wire=None):
-    """Involution for AII Cartan decomposition.
-    Note that we work with Hermitian matrices internally, so that we need to multiply by
-    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+def AII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
+    r"""Canonical form of the involution for the Cartan decomposition of type AII,
+    which is given by :math:`\theta: x \mapsto Y_0 x^\ast Y_0`. Note that we work with Hermitian
+    operators internally, so that the input will be multiplied by :math:`i` before
+    evaluating the involution.
+
+    Args:
+        op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
+            evaluated and for which the parity under the involution is returned.
+        wire (int): The wire on which the Pauli-:math:`Y` operator acts to implement the
+            involution. Will default to ``0`` if ``None``.
+
+    Returns:
+        bool: Whether or not the input operator (times :math:`i`) is in the eigenspace of the
+        involution :math:`\theta` with eigenvalue :math:`+1`.
     """
-    op = 1j * op
-    JJ = J(op.shape[-1] // 2, wire=wire)
-    return np.allclose(op, JJ @ op.conj() @ JJ.T)
+    return _AII(op, wire)
+
+
+@singledispatch
+def _AII(op, wire=None):  # pylint:disable=unused-argument
+    r"""Default implementation of the canonical form of the AII involution
+    :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
+    """
+    return NotImplementedError(f"Involution not implemented for operator {op} of type {type(op)}")
+
+
+@_AII.register(np.ndarray)
+def _AII_matrix(op: np.ndarray, wire: Optional[int] = None) -> bool:
+    r"""Matrix implementation of the canonical form of the AII involution
+    :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
+    """
+    op *= 1j
+
+    y = J(op.shape[-1] // 2, wire=wire)
+    return np.allclose(op, y @ op.conj() @ y)
+
+
+@_AII.register(PauliSentence)
+def _AII_ps(op: PauliSentence, wire: Optional[int] = None) -> bool:
+    r"""PauliSentence implementation of the canonical form of the AII involution
+    :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
+    """
+    if wire is None:
+        wire = 0
+    parity = []
+    for pw in op:
+        result = sum(el == "Y" for el in pw.values()) + (pw.get(wire, "I") in "XZ")
+        parity.append(bool(result % 2))
+
+    # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    assert all(parity) or not any(parity)
+    return parity[0]
+
+
+@_AII.register(Operator)
+def _AII_op(op: Operator, wire: Optional[int] = None) -> bool:
+    r"""Operator implementation of the canonical form of the AII involution
+    :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
+    """
+    return _AII_ps(op.pauli_rep)
 
 
 def AIII(op, p=None, q=None, wire=None):
