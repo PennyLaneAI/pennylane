@@ -159,7 +159,9 @@ def _get_dagger_op(op, num_wires):
     return qml.map_wires(op, {w: w + num_wires for w in op.wires})
 
 
-def _map_indices_apply_channel(*, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices):
+def _map_indices_apply_channel(
+    *, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices
+):
     """Map indices to einsum string
     Args:
         **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
@@ -167,18 +169,16 @@ def _map_indices_apply_channel(*, state_indices, kraus_index, new_row_indices, r
     Returns:
         String of einsum indices to complete einsum calculations
     """
-    op_1_indices = f"{kwargs['kraus_index']}{kwargs['new_row_indices']}{kwargs['row_indices']}"
-    op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
+    op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
+    op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
 
     new_state_indices = get_new_state_einsum_indices(
-        old_indices=kwargs["col_indices"] + kwargs["row_indices"],
-        new_indices=kwargs["new_col_indices"] + kwargs["new_row_indices"],
-        state_indices=kwargs["state_indices"],
+        old_indices=col_indices + row_indices,
+        new_indices=new_col_indices + new_row_indices,
+        state_indices=state_indices,
     )
     # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
-    return (
-        f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
-    )
+    return f"...{op_1_indices},...{state_indices},...{op_2_indices}->...{new_state_indices}"
 
 
 def _get_num_wires(state, is_state_batched):
