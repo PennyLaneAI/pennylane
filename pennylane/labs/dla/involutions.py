@@ -24,15 +24,12 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 
-def khaneja_glaser_involution(op: Union[PauliSentence, Operator], wire=None):
-    r"""Khaneja-Glaser involution
-
-    .. warning:: This involution currently only works with Pauli words, either presented as
-    PennyLane operators or :class:`~PauliSentence` instances.
+def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wire: int = None):
+    r"""Khaneja-Glaser involution, which is a type-AIII Cartan involution with p=q.
 
     Args:
-        op (PauliSentence): Input operator
-        wire (int): Qubit wire on which to perform KG decomposition
+        op (Union[np.ndarray, PauliSentence, Operator]): Input operator
+        wire (int): Qubit wire on which to perform Khaneja-Glaser decomposition
 
     Returns:
         bool: Accordingly to whether ``op`` should go to the even or odd subspace of the
@@ -72,15 +69,16 @@ def khaneja_glaser_involution(op: Union[PauliSentence, Operator], wire=None):
     """
     if wire is None:
         raise ValueError(
-            "Please specify the ``wire`` for the Khaneja-Glaser involution via "
+            "Please specify the wire for the Khaneja-Glaser involution via "
             "functools.partial(khaneja_glaser_involution, wire=wire)"
         )
-    if isinstance(op, Operator):
-        op = op.pauli_rep
-
-    assert len(op) == 1  # no PauliSentences allowed atm
-    [pw] = op  # get PauliWord
-    return pw[wire] in ["I", "Z"]
+    if isinstance(op, np.ndarray):
+        p = q = op.shape[0] // 2
+    elif isinstance(op, (PauliSentence, Operator)):
+        p = q = 2 ** (len(op.wires) - 1)
+    else:
+        raise ValueError(f"Can't infer p and q from operator of type {type(op)}.")
+    return AIII(op, p, q, wire)
 
 
 # Canonical involutions
