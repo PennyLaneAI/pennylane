@@ -196,7 +196,7 @@ class TestMitigateWithZNE:
         assert args[0][0] == scale_factors
         assert np.allclose(args[0][1], np.mean(np.reshape(random_results, (3, 2)), axis=1))
 
-    def test_broadcasting(self):
+    def test_broadcasting(self, seed):
         """Tests that mitigate_with_zne supports batch arguments"""
 
         batch_size = 2
@@ -214,7 +214,7 @@ class TestMitigateWithZNE:
         mitigated_qnode_expanded = qml.transforms.mitigate_with_zne(
             expanded_qnode, [1, 2, 3], fold_global, richardson_extrapolate
         )
-        rng = np.random.default_rng(seed=18954959)
+        rng = np.random.default_rng(seed=seed)
         inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
         result_orig = mitigated_qnode_orig(inputs)
         result_expanded = mitigated_qnode_expanded(inputs)

@@ -176,7 +176,7 @@ class TestDifferentiability:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (False, True))
     @pytest.mark.parametrize("shots", (None, 50000))
-    def test_qnode_jax(self, shots, use_jit):
+    def test_qnode_jax(self, shots, use_jit, seed):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
@@ -191,7 +191,7 @@ class TestDifferentiability:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
@@ -210,7 +210,7 @@ class TestDifferentiability:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_torch(self, shots):
+    def test_qnode_torch(self, shots, seed):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
@@ -219,7 +219,7 @@ class TestDifferentiability:
         if shots is not None:
             pytest.xfail()
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -231,12 +231,12 @@ class TestDifferentiability:
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
     @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots):
+    def test_qnode_tf(self, shots, seed):
         """ "Test that the QNode executes and is differentiable with TensorFlow. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
