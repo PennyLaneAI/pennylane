@@ -99,4 +99,4 @@ from .involutions import (
 
 from .cartan_subalgebra import cartan_subalgebra, adjvec_to_op, op_to_adjvec
 
-from .variational_kak import validate_khk, variational_kak
+from .variational_kak import validate_kak, variational_kak

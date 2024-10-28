@@ -80,7 +80,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
         for i in range(dim_k):
             res @= jax.scipy.linalg.expm(theta[i] * adj[i])
 
-        return gammavec @ res @ vec_H
+        return (gammavec @ res @ vec_H).real
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
@@ -115,9 +115,13 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     return vec_h, theta_opt
 
 
-def validate_khk(H, k, m, khk_res, n, error_tol):
+def validate_kak(H, k, m, khk_res, n, error_tol):
     """Helper function to validate a khk decomposition"""
     # validate h_elem is Hermitian
+    _is_dense = all(isinstance(op, np.ndarray) for op in k) and all(
+        isinstance(op, np.ndarray) for op in k
+    )
+
     vec_h, theta_opt = khk_res
     [h_elem] = adjvec_to_op([vec_h], m)  # sum(c * op for c, op in zip(vec_h, m))
 
@@ -134,9 +138,11 @@ def validate_khk(H, k, m, khk_res, n, error_tol):
     Km = jnp.eye(2**n)
     assert len(theta_opt) == len(k)
     for th, op in zip(theta_opt[:], k[:]):
-        Km @= jax.scipy.linalg.expm(1j * th * qml.matrix(op.operation(), wire_order=range(n)))
+        opm = qml.matrix(op, wire_order=range(n)) if not _is_dense else op
+        Km @= jax.scipy.linalg.expm(1j * th * opm)
 
-    H_reconstructed = Km @ qml.matrix(h_elem, wire_order=range(n)) @ Km.conj().T
+    # h_elem_m = qml.matrix(h_elem, wire_order=range(n)) if not _is_dense else h_elem
+    H_reconstructed = Km @ h_elem_m @ Km.conj().T
     assert np.allclose(
         H_reconstructed, H_reconstructed.conj().T
     ), "Reconstructed Hamiltonian not Hermitian"
