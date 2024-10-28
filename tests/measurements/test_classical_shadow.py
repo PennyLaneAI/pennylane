@@ -460,10 +460,10 @@ class TestExpvalMeasurement:
         with pytest.raises(qml.DeviceError, match=msg):
             _ = circuit(H, k=10)
 
-    def test_multi_measurement_allowed(self):
+    def test_multi_measurement_allowed(self, seed):
         """Test that no error is raised when classical shadows is returned
         with other measurement processes"""
-        dev = qml.device("default.qubit", wires=2, shots=10000)
+        dev = qml.device("default.qubit", wires=2, shots=10000, seed=seed)
 
         @qml.qnode(dev)
         def circuit():
