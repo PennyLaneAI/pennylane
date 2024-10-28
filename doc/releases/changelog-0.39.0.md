@@ -394,6 +394,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The wire order for `Snapshot`'s now matches the wire order of the device, rather than the simulation.
+  [(#6461)](https://github.com/PennyLaneAI/pennylane/pull/6461)
+
 * Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable module is used.
   [(#6437)](https://github.com/PennyLaneAI/pennylane/pull/6437)
 
