@@ -43,7 +43,7 @@ requirements which must be installed manually:
 
 * **JAX interface**: ``jax`` and ``jaxlib`` <= 0.4.28
 
-* **PyTorch interface**: ``pytorch`` <= 2.3.0
+* **PyTorch interface**: ``pytorch``
 
 * **TensorFlow interface**: ``tensorflow`` < 2.17
 
