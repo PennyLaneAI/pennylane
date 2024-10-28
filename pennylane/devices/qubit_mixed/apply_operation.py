@@ -159,7 +159,7 @@ def _get_dagger_op(op, num_wires):
     return qml.map_wires(op, {w: w + num_wires for w in op.wires})
 
 
-def _map_indices_apply_channel(**kwargs):
+def _map_indices_apply_channel(*, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices):
     """Map indices to einsum string
     Args:
         **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
