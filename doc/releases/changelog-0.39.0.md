@@ -180,10 +180,68 @@
 
 <h4>Readout Noise 📠</h4>
 
-* Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class
-  and `add_noise` transform. One can specify conditions on measurement processes for this purpose via
-  `qml.noise.meas_eq(mps)`.
+* Readout errors can now be included in `qml.NoiseModel` and `qml.add_noise` with the new `qml.noise.meas_eq`
+  function.
   [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
+
+  Measurement/readout errors can be specified in a similar fashion to regular gate noise in PennyLane: 
+  a condition called `qml.noise.meas_eq` that accepts a measurement function 
+  (e.g., `qml.expval`, `qml.sample`, or any other function that can be returned from a QNode) that, when satisfied, 
+  inserts a noisy operation via `qml.noise.partial_wires` or a custom noise function. Readout noise 
+  in PennyLane also follows the insertion convention, where the specified noise is inserted *before*
+  the measurement.
+
+  Here is an example of adding `qml.PhaseFlip` noise to any `qml.expval` measurement:
+
+  ```python
+  c0 = qml.noise.meas_eq(qml.expval)
+  n0 = qml.noise.partial_wires(qml.PhaseFlip, 0.2)
+  ```
+
+  To include this in a `qml.NoiseModel`, use the `meas_map` keyword argument:
+
+  ```python
+  # gate-based noise
+  c1 = qml.noise.wires_in([0, 2]) 
+  n1 = qml.noise.partial_wires(qml.RY, -0.42)
+
+  noise_model = qml.NoiseModel({c1: n1}, meas_map={c0: n0})
+  ```
+
+  ```pycon
+  >>> noise_model
+  NoiseModel({
+    WiresIn([0, 2]): RY(phi=-0.42)
+  },
+  meas_map = {
+      MeasEq(expval): PhaseFlip(p=0.2)
+  })
+  ```
+
+  `qml.noise.meas_eq` can also be combined with other Boolean functions in `qml.noise` via bitwise operators
+  for more versatility.
+
+  To add this `noise_model` to a circuit, use the `qml.add_noise` transform as per usual. For example, 
+
+  ```python
+  @qml.qnode(qml.device("default.mixed", wires=3))
+  def circuit():
+      qml.RX(0.1967, wires=0)
+      for i in range(3):
+          qml.Hadamard(i)
+
+      return qml.expval(qml.X(0) @ qml.X(1))
+  ```
+
+  ```pycon
+  >>> noisy_circuit = qml.add_noise(circuit, noise_model)
+  >>> print(qml.draw(noisy_circuit)())
+  0: ──RX(0.20)──RY(-0.42)────────H──RY(-0.42)──PhaseFlip(0.20)─┤ ╭<X@X>
+  1: ──H─────────PhaseFlip(0.20)────────────────────────────────┤ ╰<X@X>
+  2: ──H─────────RY(-0.42)──────────────────────────────────────┤    
+  >>> print(circuit(), noisy_circuit())
+  0.9807168489852615 0.35305806563469433
+  ```
 
 <h4>User-friendly decompositions 📠</h4>
 
