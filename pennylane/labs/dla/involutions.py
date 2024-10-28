@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Cartan involutions"""
+from functools import singledispatch
+
 # pylint: disable=missing-function-docstring
 from typing import Union
 
@@ -140,8 +142,37 @@ def AI(op):
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
+    return _AI(op)
+
+
+@singledispatch
+def _AI(op):  # pylint:disable=unused-argument
+    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
+
+
+@_AI.register(np.ndarray)
+def _AI_matrix(op: np.ndarray):
     op = 1j * op
     return np.allclose(op, op.conj())
+
+
+@_AI.register(PauliSentence)
+def _AI_ps(op: PauliSentence):
+    parity = []
+    for pw in op.keys():
+        result = sum(1 if el == "Y" else 0 for el in pw.values())
+        parity.append(result % 2)
+
+    # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    assert all(
+        parity[0] == p for p in parity
+    ), f"The concurrence canonical decomposition is not well-defined for operator {op} as individual terms have different parity"
+    return bool(parity[0])
+
+
+@_AI.register(Operator)
+def _AI_op(op: Operator):
+    return _AI_ps(op.pauli_rep)
 
 
 def AII(op, wire=None):
