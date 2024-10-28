@@ -136,7 +136,7 @@
 
 <h4>Calculating Polynomials 🔢</h4>
 
-* Polynomial functions can be easily encoded into quantum circuit with `qml.OutPoly`.
+* Polynomial functions can now be easily encoded into quantum circuits with `qml.OutPoly`.
   [(#6320)](https://github.com/PennyLaneAI/pennylane/pull/6320)
 
   A new template called `qml.OutPoly` is available, which provides the ability to encode a polynomial
