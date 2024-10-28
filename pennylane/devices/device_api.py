@@ -30,8 +30,8 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .capabilities import DeviceCapabilities
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
 
 
 # pylint: disable=unused-argument, no-self-use
