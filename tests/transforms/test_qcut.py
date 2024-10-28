@@ -28,7 +28,6 @@ from pathlib import Path
 
 import numpy as onp
 import pytest
-from flaky import flaky
 from networkx import MultiDiGraph
 from networkx import __version__ as networkx_version
 from networkx import number_of_selfloops
@@ -3877,9 +3876,8 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
-    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):
+    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots, seed):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
@@ -3887,7 +3885,7 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -4422,9 +4420,8 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
-    def test_standard_circuit(self, mocker, use_opt_einsum, shots):
+    def test_standard_circuit(self, mocker, use_opt_einsum, shots, seed):
         """
         Tests that the full circuit cutting pipeline returns the correct value for a typical
         scenario. The circuit is drawn below:
@@ -4437,7 +4434,7 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        dev_original = qml.device("default.qubit", wires=4)
+        dev_original = qml.device("default.qubit", wires=4, seed=seed)
 
         # We need a 3-qubit device
         dev_cut = qml.device("default.qubit", wires=3, shots=shots)
