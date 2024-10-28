@@ -796,12 +796,11 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="stoch_pulse_grad does not support differentiating"):
             stoch_pulse_grad(tape)
 
-    @pytest.mark.skip(reason="This test fails because broadcasted tapes are not allowed at all.")
     def test_raises_use_broadcasting_with_broadcasted_tape(self):
         """Test that an error is raised if the option `use_broadcasting` is activated
         for a tape that already is broadcasted."""
         ham = qml.dot([qml.pulse.constant], [qml.PauliX(0)])
-        ops = [qml.evolve(ham, return_intermediate=True)([0.152], 0.3)]
+        ops = [qml.RX(0.5, wires=0), qml.evolve(ham, return_intermediate=True)([0.152], 0.3)]
         tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.PauliZ(0))])
         tape.trainable_params = [0]
         with pytest.raises(ValueError, match="Broadcasting is not supported for tapes that"):
