@@ -57,17 +57,21 @@ def _is_scalar_tensor(arg) -> bool:
     return False
 
 
-def _get_batch_shape(args, n_consts, batch_dims):
-    """Function to calculate the batch shape for the given arguments."""
+def _get_batch_shape(args, batch_dims):
+    """Calculate the batch shape for the given arguments and batch dimensions."""
 
     if batch_dims is None:
         return ()
 
-    return jax.lax.broadcast_shapes(*(arg.shape for arg in args[n_consts:]))
+    input_shapes = [
+        (arg.shape[batch_dim],) for arg, batch_dim in zip(args, batch_dims) if batch_dim is not None
+    ]
+
+    return jax.lax.broadcast_shapes(*input_shapes)
 
 
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
-    """Function to calculate the abstract output shapes for the given measurements."""
+    """Calculate the abstract output shapes for the given measurements."""
 
     if jax.config.jax_enable_x64:  # pylint: disable=no-member
         dtype_map = {
@@ -131,7 +135,7 @@ def _get_qnode_prim():
             *mps,
             shots=shots,
             num_device_wires=len(device.wires),
-            batch_shape=_get_batch_shape(args, n_consts, batch_dims),
+            batch_shape=_get_batch_shape(args[n_consts:], batch_dims),
         )
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
