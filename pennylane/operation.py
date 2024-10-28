@@ -2935,6 +2935,34 @@ class StatePrepBase(Operation):
         return "|Ψ⟩"
 
 
+class DensityMatrixPrepBase(Operation):
+    """An interface for state-prep operations."""
+
+    grad_method = None
+
+    # pylint:disable=too-few-public-methods
+    @abc.abstractmethod
+    def density_matrix(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
+        """
+        Returns the initial density matrix for a circuit given a state preparation.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels
+                from the operator's wires
+
+        Returns:
+            array: A state vector for all wires in a circuit
+        """
+
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
+        return "ρ"
+
+
 def operation_derivative(operation: Operation) -> TensorLike:
     r"""Calculate the derivative of an operation.
 
