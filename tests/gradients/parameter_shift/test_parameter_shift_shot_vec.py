@@ -1424,7 +1424,7 @@ class TestParameterShiftRule:
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable."""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec, seed=seed)
         a = 0.54
 
         with qml.queuing.AnnotatedQueue() as q:
