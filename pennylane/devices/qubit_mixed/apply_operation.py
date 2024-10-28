@@ -395,11 +395,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger, **_):
     interface = math.get_interface(state)
 
     # Add another layer of condition to rule out batched op (not channel) for tensordot calling
-    mat = op.matrix() + 0j
-    dim = 2**num_op_wires
-    batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
-
-    if (batch_size is None) and (
+    if (op.batch_size is None) and (
         (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7
     ):
         return apply_operation_tensordot(op, state, is_state_batched, debugger, **_)
