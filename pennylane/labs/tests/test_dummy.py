@@ -14,8 +14,7 @@
 """
 Module test files for validation of qml.labs import
 """
-# pylint: disable=import-outside-toplevel
-# pylint: disable=unused-import
+# pylint: disable=import-outside-toplevel, unused-import
 import pytest
 
 
