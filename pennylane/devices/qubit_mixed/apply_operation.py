@@ -551,32 +551,43 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     return state
 
 
-@apply_operation.register
-def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None, **_):
-    """Apply cnot gate to state."""
-    n_dim = math.ndim(state)
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
-    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
-
-    op_dagger = _get_dagger_op(op, num_wires)
-    state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
-    state = qml.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
-    return state
-
-
-@apply_operation.register
+@apply_operation.register(qml.CNOT)
+@apply_operation.register(qml.MultiControlledX)
+@apply_operation.register(qml.Toffoli)
+@apply_operation.register(qml.SWAP)
+@apply_operation.register(qml.CSWAP)
+@apply_operation.register(qml.CZ)
+@apply_operation.register(qml.CH)
 def apply_multicontrolledx(
-    op: qml.MultiControlledX,
+    op,
     state,
     is_state_batched: bool = False,
     debugger=None,
     **_,
 ):
-    r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
-    for 8 operation wires or less. Otherwise, apply a custom kernel based on
-    composing transpositions, rolling of control axes and the CNOT logic above."""
+    r"""Apply MultiControlledX gate (and related controlled-X variants) to a density matrix state.
+
+    This function handles CNOT, Toffoli, and general MultiControlledX operations using the same underlying
+    implementation, as they share the properties of being real and symmetric. For operations with 8 or fewer wires,
+    it uses the default einsum contraction. For larger operations, it leverages a custom kernel that
+    exploits the fact that for real, symmetric operators, the adjoint operation can be implemented
+    by shifting wires by `num_wires`.
+
+    Args:
+        op (.Operation): A CNOT, Toffoli, or MultiControlledX operation
+        state (tensor_like): The density matrix state to apply the operation to
+        is_state_batched (bool): Whether the state has a batch dimension. Rather than checking
+            matrix dimensions, we use op.batch_size for efficiency
+        debugger (optional): A debugger instance for operation validation
+
+    Returns:
+        tensor_like: The transformed density matrix state
+
+    Note:
+        This implementation could potentially be extended to other real self-inverse operations
+        like SWAP, CSWAP, CZ, CH, but not to complex operations like CY which has imaginary components.
+    """
+
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     if len(op.wires) < TENSORDOT_STATE_NDIM_PERF_THRESHOLD:
         return _apply_operation_default(op, state, is_state_batched, debugger)

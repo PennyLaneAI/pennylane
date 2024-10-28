@@ -164,6 +164,12 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         qml.PhaseShift(np.pi / 7, wires=1),
         qml.CNOT(wires=[0, 1]),
         qml.MultiControlledX(wires=(0, 1, 2), control_values=[1, 0]),
+        qml.SWAP(wires=[0, 1]),
+        qml.CSWAP(wires=[0, 1, 2]),
+        qml.Toffoli(wires=[0, 1, 2]),
+        qml.CZ(wires=[0, 1]),
+        qml.CY(wires=[0, 1]),
+        qml.CH(wires=[0, 1]),
         qml.GroverOperator(wires=[0, 1, 2]),
         qml.GroverOperator(wires=[1, 2]),
     ]
