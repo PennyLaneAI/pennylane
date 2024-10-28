@@ -25,32 +25,31 @@ except ImportError:
 
 
 @lru_cache
-def create_non_jvp_primitive():
-    """Create a primitive type ``NonJVPPrimitive``, which binds to JAX's JVPTrace
-    like a standard Python function and otherwise behaves like jax.core.Primitive.
+def create_non_interpreted_prim():
+    """Create a primitive type ``NonInterpPrimitive``, which binds to JAX's JVPTrace
+    and BatchTrace objects like a standard Python function and otherwise behaves like jax.core.Primitive.
     """
 
     if not has_jax:  # pragma: no cover
         return None
 
     # pylint: disable=too-few-public-methods
-    class NonJVPPrimitive(jax.core.Primitive):
+    class NonInterpPrimitive(jax.core.Primitive):
         """A subclass to JAX's Primitive that works like a Python function
-        when evaluating JVPTracers."""
+        when evaluating JVPTracers and BatchTracers."""
 
         def bind_with_trace(self, trace, args, params):
-            """Bind the ``NonJVPPrimitive`` with a trace. If the trace is a ``JVPTrace``,
-            binding falls back to a standard Python function call. Otherwise, the
-            bind call of JAX's standard Primitive is used."""
+            """Bind the ``NonInterpPrimitive`` with a trace.
 
-            if isinstance(trace, (jax.interpreters.ad.JVPTrace, jax.interpreters.batching.BatchTrace)):
-
-                print("trace is a JVPTrace")
-
+            If the trace is a ``JVPTrace``or a ``BatchTrace``, binding falls back to a standard Python function call.
+            Otherwise, the bind call of JAX's standard Primitive is used."""
+            if isinstance(
+                trace, (jax.interpreters.ad.JVPTrace, jax.interpreters.batching.BatchTrace)
+            ):
                 return self.impl(*args, **params)
             return super().bind_with_trace(trace, args, params)
 
-    return NonJVPPrimitive
+    return NonInterpPrimitive
 
 
 @lru_cache
@@ -61,7 +60,7 @@ def _get_grad_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    grad_prim = create_non_jvp_primitive()("grad")
+    grad_prim = create_non_interpreted_prim()("grad")
     grad_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
 
     # pylint: disable=too-many-arguments
@@ -92,7 +91,7 @@ def _get_jacobian_prim():
     """Create a primitive for Jacobian computations.
     This primitive is used when capturing ``qml.jacobian``.
     """
-    jacobian_prim = create_non_jvp_primitive()("jacobian")
+    jacobian_prim = create_non_interpreted_prim()("jacobian")
     jacobian_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
 
     # pylint: disable=too-many-arguments
