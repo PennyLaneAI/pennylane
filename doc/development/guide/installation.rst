@@ -11,13 +11,18 @@ PennyLane requires the following libraries be installed:
 The following Python packages are hard dependencies, and will automatically
 be installed alongside PennyLane:
 
-* `numpy <http://numpy.org/>`_ >= 1.13.3
-* `scipy <http://scipy.org/>`_ >= 1.0.0
-* `NetworkX <https://networkx.github.io/>`_ >= 1.0.0
+* `numpy <http://numpy.org/>`_ < 2.1
+* `scipy <http://scipy.org/>`_
+* `NetworkX <https://networkx.github.io/>`_
+* `rustworkx <https://github.com/Qiskit/rustworkx>`_ >= 0.14.0
 * `autograd <https://github.com/HIPS/autograd>`_
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.11
+* `cachetools <https://github.com/tkem/cachetools>`_
+* `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.38
+* `requests <https://github.com/psf/requests>`_
+* `typing_extensions <https://github.com/python/typing_extensions>`_
 * `packaging <https://github.com/pypa/packaging>`_
 
 The following Python packages are optional:
@@ -36,11 +41,11 @@ Interface dependencies
 For development of the TensorFlow, PyTorch, and JAX interfaces, there are additional
 requirements which must be installed manually:
 
-* **JAX interface**: ``jax > 0.2.0`` and ``jaxlib``
+* **JAX interface**: ``jax`` and ``jaxlib`` <= 0.4.28
 
-* **PyTorch interface**: ``pytorch >= 1.1``
+* **PyTorch interface**: ``pytorch``
 
-* **TensorFlow interface**: ``tensorflow >= 2.3``
+* **TensorFlow interface**: ``tensorflow`` < 2.17
 
 
 Installation
