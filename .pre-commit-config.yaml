@@ -48,7 +48,7 @@ repos:
           "-sn", # Don't display the score
           "--rcfile=.pylintrc", # Link to your config file
         ]
-      exclude: ^(doc/|tests/)
+      exclude: ^(doc/|tests/|labs/tests/)
     - id: pylint-test
       name: pylint-test
       entry: pylint
@@ -60,4 +60,4 @@ repos:
           "-sn", # Don't display the score
           "--rcfile=tests/.pylintrc", # Link to your config file
         ]
-      files: ^tests/
+      files: ^(tests/|labs/tests/)
