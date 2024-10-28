@@ -136,8 +136,47 @@
 
 <h4>Calculating Polynomials 🔢</h4>
 
-* `qml.OutPoly` template is added to implement polynomial arithmetic.
+* Polynomial functions can be easily encoded into quantum circuit with `qml.OutPoly`.
   [(#6320)](https://github.com/PennyLaneAI/pennylane/pull/6320)
+
+  A new template called `qml.OutPoly` is available, which provides the ability to encode a polynomial
+  function in a quantum circuit. Given a polynomial function :math:`f(x_1, x_2, \cdots, x_N) = \sum_{j = 0}^N c_i x^j`,
+  `qml.OutPoly` requires:
+
+  * `f`: a standard Python function that represents :math:`f(x_1, x_2, \cdots, x_N)`,
+  * `input_registers` (:math:`\vert x_1 \rangle`, :math:`\vert x_2 \rangle`, ..., :math:`\vert x_N \rangle`): a list/tuple containing `Wires` objects that correspond to the embedded numeric values of :math:`x_1, x_2, \cdots, x_N`,
+  * `output_wires`: the `Wires` for which the numeric value of :math:`f(x_1, x_2, \cdots, x_N)` is stored.
+
+  Here is an example of using `qml.OutPoly` to calculate :math:`f(x_1, x_2) = 3x_1^2 - x_2` for :math:`f(1, 2) = 1`.
+
+  ```python
+  wires = qml.registers({"x1": 1, "x2": 2, "output": 2})
+
+  def f(x1, x2):
+      return 3 * x1 ** 2 - x2
+
+  @qml.qnode(qml.device("default.qubit", shots = 1))
+  def circuit():
+      # load values of x1 and x2
+      qml.BasisEmbedding(1, wires=wires["x1"])
+      qml.BasisEmbedding(2, wires=wires["x2"])
+
+      # apply the polynomial
+      qml.OutPoly(
+          f,
+          input_registers = [wires["x1"], wires["x2"]],
+          output_wires = wires["output"])
+
+      return qml.sample(wires=wires["output"])
+  ```
+
+  ```pycon
+  >>> circuit()
+  [0 1]
+  ```
+
+  The result, `[0 1]`, is the binary representation of :math:`1`. By default, the result is calculated
+  modulo :math:`2^\text{len(output_wires)}` but can be overridden with the `mod` keyword argument.
 
 <h4>Readout Noise 📠</h4>
 
