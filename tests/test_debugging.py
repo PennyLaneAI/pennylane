@@ -630,6 +630,19 @@ class TestSnapshotUnsupportedQNode:
 
             qml.snapshots(circuit)()
 
+    def test_state_wire_order_preservation(self):
+        """Test that the snapshots wire order reflects the wire order on the device."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.X(1)
+            qml.Snapshot()
+            return qml.state()
+
+        out = qml.snapshots(circuit)()
+
+        assert qml.math.allclose(out[0], out["execution_results"])
+
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_qutrit(self, method):

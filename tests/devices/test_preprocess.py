@@ -221,6 +221,16 @@ class TestValidateDeviceWires:
         ):
             jax.jit(jit_wires_dev)([0, 1])
 
+    def test_fill_in_wires_on_snapshots(self):
+        """Test that validate_device_wires also fills in the wires on snapshots."""
+
+        tape = qml.tape.QuantumScript([qml.Snapshot(), qml.Snapshot(measurement=qml.probs())])
+
+        (output,), _ = validate_device_wires(tape, wires=qml.wires.Wires((0, 1, 2)))
+        mp0 = qml.measurements.StateMP(wires=qml.wires.Wires((0, 1, 2)))
+        qml.assert_equal(output[0], qml.Snapshot(measurement=mp0))
+        qml.assert_equal(output[1], qml.Snapshot(measurement=qml.probs(wires=(0, 1, 2))))
+
 
 class TestDecomposeValidation:
     """Unit tests for helper functions in qml.devices.qubit.preprocess"""

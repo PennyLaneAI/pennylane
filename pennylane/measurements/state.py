@@ -174,28 +174,25 @@ class StateMP(StateMeasurement):
             floating_single = "float32" in dtype or "complex64" in dtype
             return qml.math.cast(state, "complex64" if floating_single else "complex128")
 
-        print("mp wires: ", self.wires)
-        print("wire_order: ", wire_order)
         if not self.wires or wire_order == self.wires:
             return cast_to_complex(state)
+
+        if not all(w in self.wires for w in wire_order):
+            bad_wires = [w for w in wire_order if w not in self.wires]
+            raise WireError(
+                f"State wire order has wires {bad_wires} not present in "
+                f"measurement with wires {self.wires}. StateMP.process_state cannot trace out wires."
+            )
 
         shape = (2,) * len(wire_order)
         batch_size = None if qml.math.ndim(state) == 1 else qml.math.shape(state)[0]
         shape = (batch_size,) + shape if batch_size else shape
         state = qml.math.reshape(state, shape)
 
-        if len(wire_order) < len(self.wires):
-
-            wires_to_add = Wires(set(self.wires) - set(wire_order))
+        if wires_to_add := Wires(set(self.wires) - set(wire_order)):
             for _ in wires_to_add:
                 state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
             wire_order = wire_order + wires_to_add
-
-        elif len(wire_order) > len(self.wires):
-            raise WireError(
-                f"Unexpected unique wires {Wires.unique_wires([self.wires, wire_order])} found. "
-                f"Expected wire order {wire_order} to be a rearrangement of {self.wires}"
-            )
 
         desired_axes = [wire_order.index(w) for w in self.wires]
         if batch_size:

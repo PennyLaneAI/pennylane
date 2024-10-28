@@ -612,12 +612,11 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 def apply_snapshot(
     op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
-    """Take a snapshot of the state"""
+    """Take a snapshot of the state."""
     if debugger is not None and debugger.active:
         measurement = op.hyperparameters["measurement"]
 
         shots = execution_kwargs.get("tape_shots")
-        print(measurement.wires)
 
         if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
