@@ -327,7 +327,8 @@ def op_to_adjvec(
 
         basis = np.array(basis)
         res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
+        norm = np.einsum("bij,bji->b", basis, basis)
 
-        return res
+        return res / norm
 
     return NotImplemented
