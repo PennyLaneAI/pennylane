@@ -111,25 +111,33 @@ def _to_qfunc_output_type(
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
     qfunc_output_leaves, qfunc_output_structure = qml.pytrees.flatten(
-        qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
     )
     results_leaves, _ = qml.pytrees.flatten(results)
 
-    if len(results_leaves) != len(qfunc_output_leaves):
-        return results
+    if len(results_leaves) != len(qfunc_output_leaves) or any(
+        [
+            qml.typing._is_jax(results),
+            qml.typing._is_torch(results),
+            qml.typing._is_tensorflow(results),
+        ]
+    ):
+
+        # # Special case of single Measurement in a list
+        if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
+            results = [results]
+
+        # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+        if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+            return results
+
+        return type(qfunc_output)(results)
 
     # add dimension back in if measurement dim is squeezed out
     if len(qfunc_output_leaves) == 1:
         results = [results]
 
-    # If the return type is tuple (Autograd and TF backprop removed)
-    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
-        # FIXME: squeeze out dim for results with tensors
-        if len(results_leaves) == 1:
-            return results[0]
-        return qml.pytrees.unflatten(results, qfunc_output_structure)
-
-    return type(qfunc_output)(qml.pytrees.unflatten(results, qfunc_output_structure))
+    return qml.pytrees.unflatten(results, qfunc_output_structure)
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
