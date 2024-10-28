@@ -225,7 +225,7 @@ by your device, i.e., what your of :meth:`~pennylane.devices.Device.execute` met
     class MyDevice(Device):
         """My Documentation."""
 
-        config = path.join(path.dirname(__file__), "relative/path/to/config.toml")
+        config_filepath = path.join(path.dirname(__file__), "relative/path/to/config.toml")
 
 This configuration file will be loaded into another class variable :attr:`~pennylane.devices.Device.capabilities`
 that is used in the default implementation of :meth:`~pennylane.devices.Device.preprocess` if you

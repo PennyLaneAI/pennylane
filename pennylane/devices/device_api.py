@@ -123,7 +123,7 @@ class Device(abc.ABC):
 
     """
 
-    config: Optional[str] = None
+    config_filepath: Optional[str] = None
     """A device can use a `toml` file to specify the capabilities of the backend device. If this
     is provided, the file will be loaded into a :class:`~.DeviceCapabilities` object assigned to
     the :attr:`capabilities` attribute."""
