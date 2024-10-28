@@ -48,22 +48,20 @@ def _is_scalar_tensor(arg) -> bool:
         if arg.shape == ():
             return True
 
-        if len(arg.shape) > 1:
-            raise ValueError(
-                "One argument has more than one dimension. "
-                "Currently, only single-dimension batching is supported."
-            )
-
     return False
 
 
-def _get_batch_shape(args, n_consts, batch_dims):
-    """Function to calculate the batch shape for the given arguments."""
-
+def _get_batch_shape(args, batch_dims):
+    """Calculate the batch shape for given arguments with specified batch dimensions."""
+    
     if batch_dims is None:
         return ()
 
-    return jax.lax.broadcast_shapes(*(arg.shape for arg in args[n_consts:]))
+    input_shapes = [
+        (arg.shape[batch_dim],) for arg, batch_dim in zip(args, batch_dims) if batch_dim is not None
+    ]
+
+    return jax.lax.broadcast_shapes(*input_shapes)
 
 
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
@@ -132,7 +130,7 @@ def _get_qnode_prim():
             *mps,
             shots=shots,
             num_device_wires=len(device.wires),
-            batch_shape=_get_batch_shape(args, n_consts, batch_dims),
+            batch_shape=_get_batch_shape(args[n_consts:], batch_dims),
         )
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -202,8 +200,55 @@ def _get_qnode_prim():
 
 
 def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
+    """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
-    print(f"qnode_call")
+    Args:
+        qnode (QNode): a QNode
+        args: the arguments the QNode is called with
+
+    Keyword Args:
+        kwargs (Any): Any keyword arguments accepted by the quantum function
+    Returns:
+        qml.typing.Result: the result of a qnode execution
+    **Example:**
+    .. code-block:: python
+        qml.capture.enable()
+        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.Z(0)), qml.probs()
+        def f(x):
+            expval_z, probs = circuit(np.pi * x, shots=50000)
+            return 2 * expval_z + probs
+        jaxpr = jax.make_jaxpr(f)(0.1)
+        print("jaxpr:")
+        print(jaxpr)
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
+        print()
+        print("result:")
+        print(res)
+    .. code-block:: none
+        jaxpr:
+        { lambda ; a:f32[]. let
+            b:f32[] = mul 3.141592653589793 a
+            c:f32[] d:f32[2] = qnode[
+              device=<lightning.qubit device (wires=1) at 0x10557a070>
+              qfunc_jaxpr={ lambda ; e:f32[]. let
+                  _:AbstractOperator() = RX[n_wires=1] e 0
+                  f:AbstractOperator() = PauliZ[n_wires=1] 0
+                  g:AbstractMeasurement(n_wires=None) = expval_obs f
+                  h:AbstractMeasurement(n_wires=0) = probs_wires
+                in (g, h) }
+              qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x10557a070>', interface='auto', diff_method='best'>
+              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
+              shots=Shots(total=50000)
+            ] b
+            i:f32[] = mul 2.0 c
+            j:f32[2] = add i d
+          in (j,) }
+        result:
+        [Array([-0.96939224, -0.38207346], dtype=float32)]
+    """
 
     if "shots" in kwargs:
         shots = qml.measurements.Shots(kwargs.pop("shots"))
