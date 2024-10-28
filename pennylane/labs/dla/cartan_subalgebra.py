@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functionality to compute the Cartan subalgebra"""
 # pylint: disable=too-many-arguments
+from typing import Union
 
 import numpy as np
 from scipy.linalg import null_space
@@ -283,21 +284,27 @@ def adjvec_to_op(adj_vecs, basis):
     return NotImplementedError
 
 
-def op_to_adjvec(ops, basis):
-    """Project a batch of ops onto a given basis"""
+def op_to_adjvec(
+    ops: Union[PauliSentence, Operator, np.ndarray],
+    basis: Union[PauliSentence, Operator, np.ndarray],
+):
+    """Project a batch of ops onto a given basis
+
+    The format of the resulting operators is determined by the ``type`` in ``basis``.
+    """
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
 
-    if all(isinstance(op, Operator) for op in ops) and all(
-        isinstance(op, Operator) for op in basis
-    ):
+    if all(isinstance(op, Operator) for op in basis):
+
         ops = [op.pauli_rep for op in ops]
         basis = [op.pauli_rep for op in basis]
 
     # PauliSentence branch
-    if all(isinstance(op, PauliSentence) for op in ops) and all(
-        isinstance(op, PauliSentence) for op in basis
-    ):
+    if all(isinstance(op, PauliSentence) for op in basis):
+        if not all(isinstance(op, PauliSentence) for op in ops):
+            ops = [op.pauli_rep for op in ops]
+
         res = []
         for op in ops:
             rep = np.zeros((len(basis),))
@@ -313,14 +320,15 @@ def op_to_adjvec(ops, basis):
         return np.array(res)
 
     # dense branch
-    if all(isinstance(op, TensorLike) for op in ops) and all(
-        isinstance(op, TensorLike) for op in basis
-    ):
-        basis = np.array(basis)
-        # if len(ops.shape) == 2:
-        #     ops = np.array([ops])
-        res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
+    if all(isinstance(op, TensorLike) for op in basis):
+        if not all(isinstance(op, TensorLike) for op in ops):
+            _n = int(np.round(np.log2(basis[0].shape[-1])))
+            ops = np.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
 
-        return res
+        basis = np.array(basis)
+        res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
+        norm = np.einsum("bij,bji->b", basis, basis)  # TODO: gram matrix for non-orthonormal bases
+
+        return res / norm
 
     return NotImplemented
