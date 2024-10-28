@@ -137,7 +137,11 @@ def _to_qfunc_output_type(
     if len(qfunc_output_leaves) == 1:
         results = [results]
 
-    return qml.pytrees.unflatten(results, qfunc_output_structure)
+    # If the return type is tuple (Autograd and TF backprop removed)
+    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+        return qml.pytrees.unflatten(results, qfunc_output_structure)
+
+    return type(qfunc_output)(qml.pytrees.unflatten(results, qfunc_output_structure))
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
