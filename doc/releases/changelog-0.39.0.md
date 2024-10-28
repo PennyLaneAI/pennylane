@@ -10,23 +10,129 @@
 * Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
   [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
 
-<h4>Spin Hamiltonians 💞</h4>
- 
-* Function is added for generating the spin Hamiltonian for the
-  [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
-  [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
+<h4>Creating spin Hamiltonians on lattices 💞</h4>
 
-* Function is added for generating the spin Hamiltonians for custom lattices.
+* Functionality for creating custom Hamiltonians on arbitrary lattices has been added.
   [(#6226)](https://github.com/PennyLaneAI/pennylane/pull/6226)
 
-* Functions are added for generating spin Hamiltonians for [Emery]
-  (https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794) and
-  [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
+  Hamiltonians beyond the available boiler-plate ones in the `qml.spin` module can be created with the 
+  addition of three new functions:
+
+  * `qml.spin.Lattice`: a new object for instantiating customized lattices via primitive translation vectors and unit cell parameters,
+  * `qml.spin.generate_lattice`: a utility function for creating standard `Lattice` objects, including `'chain'`, `'square'`, `'rectangle'`, `'triangle'`, `'honeycomb'`, `'kagome'`, `'lieb'`, `'cubic'`, `'bcc'`, `'fcc'`, and `'diamond'`,
+  * `qml.spin.spin_hamiltonian`: generates a spin `Hamiltonian` object given a `Lattice` object with custom edges/nodes.
+
+  An example is shown below for a :math:`3 \times 3` triangular lattice with open boundary conditions.
+
+  ```python
+  lattice = qml.spin.Lattice(
+      n_cells=[3, 3],
+      vectors=[[1, 0], [np.cos(np.pi/3), np.sin(np.pi/3)]],
+      positions=[[0, 0]],
+      boundary_condition=False
+  )
+  ```
+
+  ```pycon
+  >>> lp = lattice.lattice_points
+  >>> triangular_lattice = qml.spin.generate_lattice('triangle', n_cells=[3, 3])
+  >>> np.allclose(lp, triangular_lattice.lattice_points)
+  True
+  ```
+
+  The `edges` of the `Lattice` object are nearest-neighbour by default, where we can add edges by using
+  `add_edge`. 
+  
+  With nearest-neighbour interactions, we can construct a transverse-field Ising model on the lattice, 
+  for example:
+
+  ```python
+  hamiltonian = 0.0
+  J = 1.0
+  h = 0.5
+
+  for edge in lattice.edges:
+      i, j = edge[0], edge[1]
+      hamiltonian -= J * qml.Z(i) @ qml.Z(j)
+
+  for node in range(lattice.n_sites):
+      hamiltonian -= h * qml.X(node)
+  ```
+
+  This is equivalent to using `qml.spin.transverse_ising` in the following way:
+
+  ```pycon
+  >>> hamiltonian == qml.spin.transverse_ising('triangle', n_cells=[3, 3], coupling=J, h=h)
+  True
+  ```
+
+  Optionally, a `Lattice` object can have interactions and fields endowed to it by specifying values 
+  for `custom_edges` and `custom_nodes`. An example is shown below for the same transverse-field Ising 
+  model Hamiltonian on a :math:`3 \times 3` triangular lattice.
+
+  ```python
+  edges = [
+      (0, 1), (0, 3), (1, 3)
+  ]
+
+  lattice = qml.spin.Lattice(
+      n_cells=[3, 3],
+      vectors=[[1, 0], [np.cos(np.pi/3), np.sin(np.pi/3)]],
+      positions=[[0, 0]],
+      boundary_condition=False,
+      custom_edges=[[edge, ("ZZ", -J)] for edge in edges],
+      custom_nodes=[[i, ("X", -h)] for i in range(3*3)],
+  )
+  ```
+
+  ```pycon
+  >>> hamiltonian == qml.spin.spin_hamiltonian(lattice=lattice)
+  True
+  ```
+
+* More industry-standard spin Hamiltonians have been added in the `qml.spin` module.
+  [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
-* A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
-  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
-  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+  Three new industry-standard spin Hamiltonians are now available with PennyLane v0.39.
+
+  * `qml.spin.emery`: the [Emery model](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794)
+  * `qml.spin.haldane`: the [Haldane model](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015)
+  * `qml.spin.kitaev`: the [Kitaev model](https://arxiv.org/abs/cond-mat/0506438)
+
+  These additions accompany `qml.spin.heisenberg`, `qml.spin.transverse_ising`, and `qml.spin.fermi_hubbard`, 
+  which were introduced in v0.38. 
+
+  Each Hamiltonian can be instantiated by specifying a `lattice`, the number of [unit cells](https://en.wikipedia.org/wiki/Unit_cell), 
+  `n_cells`, and the Hamiltonian parameters as keyword arguments. The returned object can be used in 
+  a circuit like any other `Hamiltonian` object in PennyLane. Here is an example with the Haldane 
+  model on a `"square"` lattice:
+
+  ```python
+  n_cells = [2, 2]
+  h1 = 0.5
+  h2 = 1.0
+  phi = 0.1
+
+  spin_ham = qml.spin.haldane("square", n_cells, hopping=h1, hopping_next=h2, phi=phi)
+  n_qubits = spin_ham.num_wires
+
+  dev = qml.device("lightning.qubit", wires=n_qubits)
+
+  @qml.qnode(dev)
+  def circuit(params):
+      for i in range(params.shape[0] - 1):
+          qml.CNOT(wires=[i, i + 1])
+          qml.RY(params[i], wires=i)
+
+      return qml.expval(spin_ham)
+  ```
+
+  ```pycon
+  >>> params = pnp.array([1.967]*n_qubits)
+  >>> circuit(params)
+  array(0.61344534)
+  ```
 
 <h4>Calculating Polynomials 🔢</h4>
 
@@ -36,8 +142,8 @@
 <h4>Readout Noise 📠</h4>
 
 * Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class
-  and ``add_noise`` transform. One can specify conditions on measurement processes for this purpose via
-  ``qml.noise.meas_eq(mps)``.
+  and `add_noise` transform. One can specify conditions on measurement processes for this purpose via
+  `qml.noise.meas_eq(mps)`.
   [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
 
 <h4>User-friendly decompositions 📠</h4>
