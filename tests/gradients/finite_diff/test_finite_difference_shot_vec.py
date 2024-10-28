@@ -548,11 +548,11 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=0.15, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -590,7 +590,7 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=0.15, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -598,7 +598,7 @@ class TestFiniteDiffIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        dev = qml.device("default.qubit", wires=2, seed=1967, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, seed=seed, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
