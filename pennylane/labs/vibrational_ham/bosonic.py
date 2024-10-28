@@ -603,10 +603,10 @@ def taylor_to_bosonic(coeffs):
     nmodes, deg = np.shape(coeffs[0])
     deg += 2
 
-    degs_2d = _find_2d_degs(deg)  # Missing for now
+    degs_2d = _find_2d_degs(deg)
     degs_3d = _find_3d_degs(deg)
 
-    b_op = BoseSentence()  # Should use BoseSentence.
+    b_op = BoseSentence()
     for nc in range(num_coups):
         f_eff = coeffs[nc]
 
@@ -633,7 +633,21 @@ def taylor_to_bosonic(coeffs):
                             b_op += f_eff[i1, i2, i3, deg_idx] * position_to_boson(idx)
 
         if nc > 2:
-            print("Warning, enter   ed array for more than 3-mode couplings, not implemented!")
+            print("Warning, entered array for more than 3-mode couplings, not implemented!")
             print("Returning up to three-mode couplings")
 
-    return normal_order(b_op)  # Should use BoseSentence equivalent
+    return normal_order(b_op)
+
+def taylor_ham_to_bosonic(taylor_arr, freqs, is_loc = True, Uloc = None, verbose=True):
+    if is_loc:
+        start_deg = 2
+    else:
+        start_deg = 3
+
+    harm_pot = []
+
+    ham = taylor_to_bosonic(taylor_arr, start_deg, verbose) + BoseSentence(harm_pot)
+
+    harmonic_osc = harmonic_oscillators(freqs)
+
+    return ham, harmonic_osc
