@@ -90,10 +90,10 @@ class TestRademacherSampler:
         "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
     )
     @pytest.mark.parametrize("N", [10, 10000])
-    def test_mean_and_var(self, ids, num, N):
+    def test_mean_and_var(self, ids, num, N, seed):
         """Test that the mean and variance of many produced samples are
         close to the theoretical values."""
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
         outputs = [_rademacher_sampler(ids, num, rng=rng) for _ in range(N)]
@@ -110,7 +110,7 @@ class TestRademacherSampler:
 class TestSpsaGradient:
     """Tests for the SPSA gradient transform"""
 
-    def test_sampler_argument(self):
+    def test_sampler_argument(self, seed):
         """Make sure that custom samplers can be created as defined in the docs of spsa_grad."""
 
         def sampler_required_kwarg(
@@ -141,7 +141,7 @@ class TestSpsaGradient:
 
         results = []
         for sampler in [sampler_required_arg_or_kwarg, sampler_required_kwarg]:
-            sampler_rng = np.random.default_rng(42)
+            sampler_rng = np.random.default_rng(seed)
             tapes, proc_fn = spsa_grad(
                 tape, sampler=sampler, num_directions=100, sampler_rng=sampler_rng
             )
@@ -446,10 +446,10 @@ class TestSpsaGradient:
         # one tape per direction, the unshifted one already was evaluated above
         assert len(tapes) == n
 
-    def test_independent_parameters(self):
+    def test_independent_parameters(self, seed):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
         dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q1:
@@ -987,12 +987,12 @@ class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    def test_autograd(self, sampler, num_directions, atol):
+    def test_autograd(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2)
         params = pnp.array([0.543, -0.654], requires_grad=True)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1023,12 +1023,12 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res, expected, atol=atol, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd_ragged(self, sampler, num_directions, atol):
+    def test_autograd_ragged(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2)
         params = pnp.array([0.543, -0.654], requires_grad=True)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1055,14 +1055,14 @@ class TestSpsaGradientDifferentiation:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf(self, sampler, num_directions, atol):
+    def test_tf(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         with tf.GradientTape(persistent=True) as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -1096,14 +1096,14 @@ class TestSpsaGradientDifferentiation:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf_ragged(self, sampler, num_directions, atol):
+    def test_tf_ragged(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         with tf.GradientTape(persistent=True) as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -1132,14 +1132,14 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res_01[0], expected, atol=atol, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, sampler, num_directions, atol):
+    def test_torch(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
         dev = qml.device("default.qubit", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         def cost_fn(params):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1172,7 +1172,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=atol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, sampler, num_directions, atol):
+    def test_jax(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
@@ -1180,7 +1180,7 @@ class TestSpsaGradientDifferentiation:
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.543, -0.654])
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:

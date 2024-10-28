@@ -1312,11 +1312,10 @@ class TestParameterShiftRule:
             assert gradF.shape == ()
             assert qml.math.allclose(gradF, expected, atol=2 * _herm_shot_vec_tol)
 
-    @flaky(max_runs=5)
-    def test_non_involutory_variance_multi_param(self, broadcast):
+    def test_non_involutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=1, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=1, shots=shot_vec, seed=seed)
         a = 0.34
         b = 0.20
 
@@ -1721,11 +1720,11 @@ class TestParameterShiftRule:
             assert isinstance(gradF, tuple)
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
-    def test_expval_and_variance_multi_param(self, broadcast):
+    def test_expval_and_variance_multi_param(self, broadcast, seed):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
         multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec, seed=12393)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec, seed=seed)
 
         a = 0.54
         b = -0.423
