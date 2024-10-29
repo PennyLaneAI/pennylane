@@ -32,21 +32,18 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     We are grateful to David Wierichs for his generous help with the multi-argument variant of the ``MomentumQNGOptimizer`` class.
 
-    ``MomentumQNGOptimizer`` is a subclass of the ``QNGOptimizer`` class and requires one additional
+    ``MomentumQNGOptimizer`` is a subclass of ``QNGOptimizer`` that requires one additional
     hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG
     reduces to the basic QNG.
     In this way, the parameter update rule in Momentum-QNG reads:
 
     .. math::
-        x^{(t+1)} = x^{(t)} + \rho (x^{(t)} - x^{(t-1)}) - \eta g(f(x^{(t)}))^{-1} \nabla f(x^{(t)}),
+        x^{(t+1)} = x^{(t)} + \rho \left(x^{(t)} - x^{(t-1)}\right) - \eta g\left(f\left(x^{(t)}\right)\right)^{-1} \nabla f\left(x^{(t)}\right),
 
-    where :math:`\eta` is a stepsize (learning rate) value, :math:`g(f(x^{(t)}))^{-1}` is the pseudo-inverse
-    of the Fubini-Study metric tensor and :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
+    where :math:`\eta` is the stepsize (learning rate), :math:`g\left(f\left(x^{(t)}\right)\right)^{-1}` is the pseudo-inverse
+    of the Fubini-Study metric tensor and :math:`f\left(x^{(t)}\right) = \langle 0 | U\left(x^{(t)}\right)^\dagger \hat{B} U\left(x^{(t)}\right) | 0 \rangle`
     is an expectation value of some observable measured on the variational
-    quantum circuit :math:`U(x^{(t)})`.
-
-    For details on quantum natural gradient, see :class:`~.pennylane.QNGOptimizer`.
-    Also, see :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
+    quantum circuit :math:`U\left(x^{(t)}\right)`.
 
     **Examples:**
 
@@ -78,8 +75,11 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     .. seealso::
 
+        For details on quantum natural gradient, see :class:`~.pennylane.QNGOptimizer`.
+        See :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
         Also see the examples from the reference above, benchmarking the Momentum-QNG optimizer
         against the basic QNG, Momentum and Adam:
+
         - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
@@ -112,7 +112,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
         Args:
             grad (array): The gradient of the objective
-                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
+                function at point :math:`x^{(t)}`: :math:`\nabla f\left(x^{(t)}\right)`
             args (array): the current value of the variables :math:`x^{(t)}`
 
         Returns:
