@@ -23,6 +23,7 @@ from .ops import(
         ResourceRX,
         ResourceRZ,
         ResourceRY,
+        ResourceS,
         ResourceT,
         )
 

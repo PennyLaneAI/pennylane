@@ -3,6 +3,7 @@ from .qubit import(
         ResourceRX,
         ResourceRY,
         ResourceRZ,
+        ResourceS,
         ResourceT,
 )
 
