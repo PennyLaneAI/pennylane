@@ -214,6 +214,7 @@
 
 * A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
   [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
+  [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
 
 * A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
