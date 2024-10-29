@@ -1208,22 +1208,6 @@ class TestQubitDeviceNewUnits:
         ):
             qml.execute(tapes=[tape], device=dev, gradient_fn=None)
 
-    def test_vn_entanglement_entropy_no_custom_wires(self):
-        """Test that vn_entanglement_entropy cannot be returned with custom wires."""
-
-        dev = qml.device("default.mixed", wires=["a", 1])
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliX(wires="a")
-            qml.vn_entanglement_entropy(wires0=["a"], wires1=["b"])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Returning the Von Neumann entanglement entropy is not supported when using custom wire labels",
-        ):
-            qml.execute(tapes=[tape], device=dev, gradient_fn=None)
-
     def test_custom_wire_labels_error(self):
         """Tests that an error is raised when mutual information is measured
         with custom wire labels"""

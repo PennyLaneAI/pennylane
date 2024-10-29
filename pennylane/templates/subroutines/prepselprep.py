@@ -38,6 +38,9 @@ def _get_new_terms(lcu):
 class PrepSelPrep(Operation):
     """Implements a block-encoding of a linear combination of unitaries.
 
+    .. warning::
+        Derivatives of this operator are not always guaranteed to exist.
+
     Args:
         lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
             written as a linear combination of unitaries.
@@ -67,6 +70,8 @@ class PrepSelPrep(Operation):
     [[-0.25  0.75]
      [ 0.75  0.25]]
     """
+
+    grad_method = None
 
     def __init__(self, lcu, control=None, id=None):
 
