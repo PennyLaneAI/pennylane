@@ -18,10 +18,8 @@ Contains the implementation of the angle solver for QSP and QSVT.
 import pennylane as qml
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
-from functools import partial
 
-
-def get_complementary_poly(P):
+def complementary_poly(P):
     """
     Computes the complementary polynomial Q given a polynomial P.
 
@@ -43,7 +41,7 @@ def get_complementary_poly(P):
     """
     poly_degree = len(P) - 1
 
-    # Build the polynomial R(z) = z^degree * (1 - conj(P(z)) * P(z))
+    # Build the polynomial R(z) = z^degree * (1 - conj(P(z)) * P(z)), deduced from (eq.33) anad (eq.34)
     R = Polynomial.basis(poly_degree) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
     r_roots = R.roots()
 
@@ -60,7 +58,7 @@ def get_complementary_poly(P):
     return Q_poly.coef
 
 
-def get_QSP_angles(F):
+def QSP_angles(F):
     """
     Computes the Quantum Signal Processing (QSP) angles given a polynomial F.
 
@@ -75,7 +73,7 @@ def get_QSP_angles(F):
 
     # Construct the auxiliary polynomial P and its complementary Q based on appendix A in [arXiv:2406.04246]
     P = np.concatenate([np.zeros(len(F) // 2), chebyshev.poly2cheb(F)[parity::2]])
-    Q = np.array(get_complementary_poly(P))
+    Q = np.array(complementary_poly(P))
 
     S = np.array([P, Q])
     n = S.shape[1]
@@ -85,16 +83,13 @@ def get_QSP_angles(F):
         # Extract real parts of the current entries in S for the current column
         a, b = S[:, d]
 
-        theta[d] = np.arctan(b.real / a.real)
+        theta[d] = np.arctan2(b.real, a.real)
 
         # Although the paper works with an RX gate as a reference, RY is used here to simplify
         # the calculations by working only with real numbers.
         matrix = qml.matrix(qml.RY(-2*theta[d], wires = 0))
         S =  matrix @ S
         S = np.array([S[0][1: d + 1], S[1][0:d]])
-
-    if P[-1] < 0:
-        theta[0] += np.pi
 
     return theta
 
@@ -138,10 +133,14 @@ def transform_angles(angles, routine1, routine2):
 
 def poly_to_angles(P, routine):
 
+    parity = (len(P) - 1) % 2
+    assert np.allclose(P[1 - parity::2], 0), "Polynomial must have defined parity"
+    assert np.allclose(np.array(P, dtype = np.complex128).imag, 0), "Array must not have an imaginary part"
+
     if routine == "QSP":
-        return get_QSP_angles(P)
+        return QSP_angles(P)
 
     if routine == "QSVT":
-        return transform_angles(get_QSP_angles(P), "QSP", "QSVT")
+        return transform_angles(QSP_angles(P), "QSP", "QSVT")
 
 

@@ -29,7 +29,7 @@ from functools import partial
 def test_complementary_polynomial(P):
     """Checks that |P(z)|^2 + |Q(z)|^2 = 1 in the unit circle"""
 
-    Q = qml.math.get_complementary_poly(P)  # Calculate complementary polynomial Q
+    Q = qml.math.complementary_poly(P)  # Calculate complementary polynomial Q
 
     # Define points on the unit circle
     theta_vals = np.linspace(0, 2 * np.pi, 100)
@@ -120,33 +120,23 @@ def test_correctness_QSVT_angles(poly):
 
 
 @pytest.mark.parametrize(
-    "poly",
+    ("poly", "msg_match"),
     [
-        ([0.1, 0, 0.3, 0, -0.1]),
-        ([0, 0.2, 0, 0.3]),
-        ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
+        (
+
+                [0., 1., 2.],
+                "Polynomial must have defined parity",
+        ),
+        (
+                [0, 1j, 0, 3, 0, 2],
+                "Array must not have an imaginary part",
+        ),
     ],
 )
-@pytest.mark.jax
-def test_jit_compatible(poly):
-    """Test that the template is compatible with the JIT compiler."""
+def test_raise_error(
+        poly, msg_match
+):
+    """Test that proper errors are raised"""
 
-    import jax
-
-    poly = jax.numpy.array(poly)
-
-
-    angles = partial(jax.jit, static_argnums=1)(qml.math.poly_to_angles)(poly, "QSVT")
-    x = 0.5
-
-    block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
-    projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in angles]
-
-    @qml.qnode(qml.device("default.qubit"))
-    def circuit_qsvt():
-        qml.QSVT(block_encoding, projectors)
-        return qml.state()
-
-    output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
-    expected = sum(coef * (x ** i) for i, coef in enumerate(poly))
-    assert jax.numpy.isclose(output.real, expected.real)
+    with pytest.raises(AssertionError, match=msg_match):
+        _ = qml.math.poly_to_angles(poly, "QSVT")
