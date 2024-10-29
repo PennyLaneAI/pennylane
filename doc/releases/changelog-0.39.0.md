@@ -272,34 +272,6 @@
   compatiblity with qjit workflows.
   [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
 
-<h4>Capturing and representing hybrid programs</h4>
-
-* `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised 
-  in `JAX 0.4.30+` when providing JAX tracers as input to `qml.wires.Wires`.
-  [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
-
-* A new function called `qml.capture.make_plxpr` has been added to take a function and create a `Callable` 
-  that, when called, will return a PLxPR representation of the input function.
-  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
-
-* Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured with PLxPR. 
-  When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will dispatch to `jax.grad` 
-  (`jax.jacobian`), which differs from the Autograd implementation without capture. Pytree inputs and 
-  outputs are supported.
-  [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
-  [(#6127)](https://github.com/PennyLaneAI/pennylane/pull/6127)
-  [(#6134)](https://github.com/PennyLaneAI/pennylane/pull/6134)
-
-* Unit testing for capturing nested control flow has been improved.
-  [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
-
-* Some custom primitives for the capture project can now be imported via `from pennylane.capture.primitives import *`.
-  [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
-
-* All higher order primitives now use `jax.core.Jaxpr` as metadata instead of sometimes using `jax.core.ClosedJaxpr` 
-  or `jax.core.Jaxpr`.
-  [(#6319)](https://github.com/PennyLaneAI/pennylane/pull/6319)
-
 <h4>Improvements to fermionic operators</h4>
 
 * `qml.fermi.FermiWord` and `qml.fermi.FermiSentence` are now compatible with JAX arrays.
@@ -421,6 +393,35 @@
 
 * The performance of the decomposition of `qml.QFT` has been improved.
   [(#6434)](https://github.com/PennyLaneAI/pennylane/pull/6434)
+
+<h4>Capturing and representing hybrid programs</h4>
+
+* `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised 
+  in `JAX 0.4.30+` when providing JAX tracers as input to `qml.wires.Wires`.
+  [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
+
+* A new function called `qml.capture.make_plxpr` has been added to take a function and create a `Callable` 
+  that, when called, will return a PLxPR representation of the input function.
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
+
+* Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured with PLxPR. 
+  When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will dispatch to `jax.grad` 
+  (`jax.jacobian`), which differs from the Autograd implementation without capture. Pytree inputs and 
+  outputs are supported.
+  [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
+  [(#6127)](https://github.com/PennyLaneAI/pennylane/pull/6127)
+  [(#6134)](https://github.com/PennyLaneAI/pennylane/pull/6134)
+
+* Unit testing for capturing nested control flow has been improved.
+  [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
+
+* Some custom primitives for the capture project can now be imported via `from pennylane.capture.primitives import *`.
+  [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
+
+* All higher order primitives now use `jax.core.Jaxpr` as metadata instead of sometimes using `jax.core.ClosedJaxpr` 
+  or `jax.core.Jaxpr`.
+  [(#6319)](https://github.com/PennyLaneAI/pennylane/pull/6319)
+
 
 <h3>Breaking changes 💔</h3>
 
