@@ -13,6 +13,26 @@ def _rotation_resources(epsilon=10e-3):
 
     return gate_types
 
+class ResourceRX(qml.RX, ResourceConstructor):
+    """Resource class for RX"""
+
+    @staticmethod
+    def _resource_decomp(epsilon=10e-3) -> Dict[CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=epsilon)
+
+    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
+        return CompressedResourceOp(qml.RX, {"epsilon": epsilon})
+
+class ResourceRY(qml.RY, ResourceConstructor):
+    """Resource class for RY"""
+
+    @staticmethod
+    def _resource_decomp(epsilon=10e-3) -> Dict[CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=epsilon)
+
+    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
+        return CompressedResourceOp(qml.RY, {"epsilon": epsilon})
+
 class ResourceRZ(qml.RZ, ResourceConstructor):
     """Resource class for RZ"""
 
