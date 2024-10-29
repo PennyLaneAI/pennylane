@@ -98,6 +98,7 @@ Whether you're exploring quantum machine learning (QML), quantum computing, or q
 * [Key concepts](https://pennylane.ai/qml/glossary.html)
 * [Videos](https://pennylane.ai/qml/videos.html)
 
+
 You can also check out our [documentation](https://pennylane.readthedocs.io) for [quickstart
 guides](https://pennylane.readthedocs.io/en/stable/introduction/pennylane.html) to using PennyLane,
 and detailed developer guides on [how to write your
@@ -108,12 +109,12 @@ quantum device.
 
 Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations.html).
 
-<a href="https://pennylane.ai/qml/demonstrations.html">
+<a href="https://pennylane.ai/qml/demonstrations">
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
 </a>
 
 If you would like to contribute your own demo, see our [demo submission
-guide](https://pennylane.ai/qml/demos_submission.html).
+guide](https://pennylane.ai/qml/demos_submission).
 
 ## Research Applications
 
@@ -131,6 +132,7 @@ PennyLane is at the forefront of research in quantum computing, quantum machine 
   - *Example Paper*: [Accelerating Quantum Computations of Chemistry Through Regularized Compressed Double Factorization](https://quantum-journal.org/papers/q-2024-06-13-1371/)
 
 Impactful research drives PennyLane. Submit your feature ideas to tailor our roadmap to your research needs[LINK TO RESEARCH PAGE - UNRELEASED]
+
 
 ## Contributing to PennyLane
 
