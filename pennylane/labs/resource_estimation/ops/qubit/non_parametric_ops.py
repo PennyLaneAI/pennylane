@@ -39,6 +39,10 @@ class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
 
         return gate_types
 
+    @staticmethod
+    def resource_rep() -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(qml.SWAP, {})
+
 
 class ResourceT(qml.T, re.ResourceConstructor):
     """Resource class for T"""
