@@ -539,12 +539,13 @@ def _(bose_operator: BoseWord):
 @_normal_order_dispatch.register
 def _(bose_operator: BoseSentence):
 
-    bose_sen_ordered = BoseSentence()  # Empty PS as 0 operator to add Pws to
+    ordered_dict = {}  # Empty PS as 0 operator to add Pws to
 
     for bw, coeff in bose_operator.items():
         bose_word_ordered = normal_order(bw)
+        for bw_ordered in bose_word_ordered:
+            ordered_dict[bw_ordered] = coeff
 
-        bose_sen_ordered[bose_word_ordered] = coeff
-
+    bose_sen_ordered = BoseSentence(ordered_dict)
     return bose_sen_ordered
 
