@@ -1,34 +1,36 @@
 from typing import Dict
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor, ResourcesNotDefined
+import pennylane.labs.resource_estimation as re
 
 #pylint: disable=too-many-ancestors
 
-class ResourceControlledPhaseShift(qml.ControlledPhaseShift, ResourceConstructor):
+class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstructor):
     """Resource class for ControlledPhaseShift"""
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
 
-        cnot = CompressedResourceOp(qml.CNOT, {})
-        rz = CompressedResourceOp(qml.RZ, {})
+        cnot = re.ResourceCNOT.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
 
         gate_types[cnot] = 2
         gate_types[rz] = 3
 
         return gate_types
 
-    def resource_rep(self) -> CompressedResourceOp:
-        return CompressedResourceOp(qml.ControlledPhaseShift, {})
+    @staticmethod
+    def resource_rep() -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(qml.ControlledPhaseShift, {})
 
-class ResourceCNOT(qml.CNOT, ResourceConstructor):
+class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
     """Resource class for CNOT"""
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        raise ResourcesNotDefined
+    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        raise re.ResourcesNotDefined
 
-    def resource_rep(self) -> CompressedResourceOp:
-        return CompressedResourceOp(qml.CNOT, {})
+    @staticmethod
+    def resource_rep() -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(qml.CNOT, {})

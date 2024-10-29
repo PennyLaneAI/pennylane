@@ -1,7 +1,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceQFT
+import pennylane.labs.resource_estimation as re
 
 class TestQFT:
     """Test the ResourceQFT class"""
@@ -16,9 +16,9 @@ class TestQFT:
     )
     def test_resources(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
         """Test the resources method returns the correct dictionary"""
-        hadamard = CompressedResourceOp(qml.Hadamard, {})
-        swap = CompressedResourceOp(qml.SWAP, {})
-        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
+        hadamard = re.CompressedResourceOp(qml.Hadamard, {})
+        swap = re.CompressedResourceOp(qml.SWAP, {})
+        ctrl_phase_shift = re.CompressedResourceOp(qml.ControlledPhaseShift, {})
 
         expected = {
             hadamard: num_hadamard,
@@ -26,16 +26,14 @@ class TestQFT:
             ctrl_phase_shift: num_ctrl_phase_shift
         }
 
-        assert ResourceQFT.resources(num_wires) == expected
+        assert re.ResourceQFT.resources(num_wires) == expected
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4])
     def test_resource_rep(self, num_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
-        expected = CompressedResourceOp(qml.QFT, {"num_wires": num_wires})
-        op = ResourceQFT(wires=range(num_wires))
-
-        assert op.resource_rep() == expected
+        expected = re.CompressedResourceOp(qml.QFT, {"num_wires": num_wires})
+        assert re.ResourceQFT.resource_rep(num_wires) == expected
 
     @pytest.mark.parametrize("num_wires, num_hadamard, num_swap, num_ctrl_phase_shift",
         [
@@ -48,9 +46,9 @@ class TestQFT:
     def test_resources_from_rep(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
         """Test that computing the resources from a compressed representation works"""
 
-        hadamard = CompressedResourceOp(qml.Hadamard, {})
-        swap = CompressedResourceOp(qml.SWAP, {})
-        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
+        hadamard = re.CompressedResourceOp(qml.Hadamard, {})
+        swap = re.CompressedResourceOp(qml.SWAP, {})
+        ctrl_phase_shift = re.CompressedResourceOp(qml.ControlledPhaseShift, {})
 
         expected = {
             hadamard: num_hadamard,
@@ -58,8 +56,8 @@ class TestQFT:
             ctrl_phase_shift: num_ctrl_phase_shift
         }
 
-        rep = ResourceQFT(wires=range(num_wires)).resource_rep()
-        actual = ResourceQFT.resources(**rep.params)
+        rep = re.ResourceQFT.resource_rep(num_wires)
+        actual = re.ResourceQFT.resources(**rep.params)
 
         assert actual == expected
 
@@ -67,10 +65,10 @@ class TestQFT:
     def test_type_error(self, num_wires):
         """Test that resources correctly raises a TypeError"""
         with pytest.raises(TypeError, match="num_wires must be an int."):
-            ResourceQFT.resources(num_wires)
+            re.ResourceQFT.resources(num_wires)
 
     @pytest.mark.parametrize("num_wires", [0, -1])
     def test_value_error(self, num_wires):
         """Test that resources correctly raises a ValueError"""
         with pytest.raises(ValueError, match="num_wires must be greater than 0."):
-            ResourceQFT.resources(num_wires)
+            re.ResourceQFT.resources(num_wires)

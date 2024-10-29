@@ -1,6 +1,7 @@
 from .non_parametric_ops import(
         ResourceHadamard,
         ResourceS,
+        ResourceSWAP,
         ResourceT,
         )
 

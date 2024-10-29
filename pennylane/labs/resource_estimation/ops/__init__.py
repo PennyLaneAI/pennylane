@@ -4,6 +4,7 @@ from .qubit import(
         ResourceRY,
         ResourceRZ,
         ResourceS,
+        ResourceSWAP,
         ResourceT,
 )
 

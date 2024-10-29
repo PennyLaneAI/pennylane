@@ -1,7 +1,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceCNOT, ResourceControlledPhaseShift, ResourcesNotDefined
+import pennylane.labs.resource_estimation as re
 
 class TestControlledPhaseShift:
     """Test ResourceControlledPhaseShift"""
@@ -13,11 +13,11 @@ class TestControlledPhaseShift:
         ])
     def test_resources(self, phi, wires):
         """Test the resources method"""
-        op = ResourceControlledPhaseShift(phi, wires)
+        op = re.ResourceControlledPhaseShift(phi, wires)
 
         expected = {
-                CompressedResourceOp(qml.CNOT, {}): 2,
-                CompressedResourceOp(qml.RZ, {}): 3,
+                re.CompressedResourceOp(qml.CNOT, {}): 2,
+                re.CompressedResourceOp(qml.RZ, {"epsilon": 10e-3}): 3,
         }
 
         assert op.resources() == expected
@@ -29,8 +29,8 @@ class TestControlledPhaseShift:
         ])
     def test_resource_rep(self, phi, wires):
         """Test the compressed representation"""
-        op = ResourceControlledPhaseShift(phi, wires)
-        expected = CompressedResourceOp(qml.ControlledPhaseShift, {})
+        op = re.ResourceControlledPhaseShift(phi, wires)
+        expected = re.CompressedResourceOp(qml.ControlledPhaseShift, {})
 
         assert op.resource_rep() == expected
 
@@ -42,11 +42,11 @@ class TestControlledPhaseShift:
         ])
     def test_resources_from_rep(self, phi, wires):
         """Compute the resources from the compressed representation"""
-        op = ResourceControlledPhaseShift(phi, wires)
+        op = re.ResourceControlledPhaseShift(phi, wires)
 
         expected = {
-                CompressedResourceOp(qml.CNOT, {}): 2,
-                CompressedResourceOp(qml.RZ, {}): 3,
+                re.CompressedResourceOp(qml.CNOT, {}): 2,
+                re.CompressedResourceOp(qml.RZ, {"epsilon": 10e-3}): 3,
         }
 
         assert op.resources(*op.resource_rep().params) == expected
@@ -56,12 +56,12 @@ class TestCNOT:
 
     def test_resources(self):
         """Test that the resources method is not implemented"""
-        op = ResourceCNOT([0, 1])
-        with pytest.raises(ResourcesNotDefined):
+        op = re.ResourceCNOT([0, 1])
+        with pytest.raises(re.ResourcesNotDefined):
             op.resources()
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        op = ResourceCNOT([0, 1])
-        expected = CompressedResourceOp(qml.CNOT, {})
+        op = re.ResourceCNOT([0, 1])
+        expected = re.CompressedResourceOp(qml.CNOT, {})
         assert op.resource_rep() == expected

@@ -1,12 +1,14 @@
+from typing import Dict
+
 import pennylane as qml
 
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor
+from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor, ResourceHadamard, ResourceSWAP, ResourceControlledPhaseShift
 
 class ResourceQFT(qml.QFT, ResourceConstructor):
     """Resource class for QFT"""
 
     @staticmethod
-    def _resource_decomp(num_wires) -> dict:
+    def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
         if not isinstance(num_wires, int):
             raise TypeError("num_wires must be an int.")
 
@@ -15,9 +17,9 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
 
         gate_types = {}
 
-        hadamard = CompressedResourceOp(qml.Hadamard, {})
-        swap = CompressedResourceOp(qml.SWAP, {})
-        ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
+        hadamard = ResourceHadamard.resource_rep()
+        swap = ResourceSWAP.resource_rep()
+        ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
 
         gate_types[hadamard] = num_wires
         gate_types[swap] = num_wires // 2
@@ -25,6 +27,7 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
 
         return gate_types
 
-    def resource_rep(self) -> CompressedResourceOp:
-        params = {"num_wires": len(self.wires)}
+    @staticmethod
+    def resource_rep(num_wires) -> CompressedResourceOp:
+        params = {"num_wires": num_wires}
         return CompressedResourceOp(qml.QFT, params)

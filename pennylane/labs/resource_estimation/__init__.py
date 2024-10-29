@@ -24,6 +24,7 @@ from .ops import(
         ResourceRZ,
         ResourceRY,
         ResourceS,
+        ResourceSWAP,
         ResourceT,
         )
 
