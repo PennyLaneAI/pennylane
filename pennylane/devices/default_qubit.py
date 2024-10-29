@@ -26,7 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
-from pennylane.measurements import ShadowExpvalMP, ClassicalShadowMP
+from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
