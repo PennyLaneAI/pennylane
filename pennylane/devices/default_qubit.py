@@ -26,7 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
-from pennylane.measurements import ShadowExpvalMP
+from pennylane.measurements import ShadowExpvalMP, ClassicalShadowMP
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
@@ -164,9 +164,11 @@ def all_state_postprocessing(results, measurements, wire_order):
 
 
 @qml.transform
-def conditional_broastcast_expand(tape):
+def _conditional_broastcast_expand(tape):
     """Apply conditional broadcast expansion to the tape if needed."""
-    if any(isinstance(mp, (ShadowExpvalMP)) for mp in tape.measurements):
+    # Currently, default.qubit does not support native parameter broadcasting with
+    # shadow operations. We need to expand the tape to include the broadcasted parameters.
+    if any(isinstance(mp, (ShadowExpvalMP, ClassicalShadowMP)) for mp in tape.measurements):
         return qml.transforms.broadcast_expand(tape)
     return (tape,), null_postprocessing
 
@@ -561,7 +563,7 @@ class DefaultQubit(Device):
             sample_measurements=accepted_sample_measurement,
             name=self.name,
         )
-        transform_program.add_transform(conditional_broastcast_expand)
+        transform_program.add_transform(_conditional_broastcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
             transform_program.add_transform(qml.transforms.broadcast_expand)
         # Validate multi processing

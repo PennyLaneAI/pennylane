@@ -394,6 +394,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.classical_shadow` and `qml.shadow_expval` now support parameter broadcasting.
+  [(#6301)](https://github.com/PennyLaneAI/pennylane/pull/6301)
+
 * Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable module is used.
   [(#6437)](https://github.com/PennyLaneAI/pennylane/pull/6437)
 
