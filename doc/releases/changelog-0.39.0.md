@@ -477,6 +477,9 @@
 * Fixes a bug where `default.tensor` raises an error when applying `Identity`/`GlobalPhase` on no wires, and `PauliRot`/`MultiRZ` on a single wire.
   [(#6448)](https://github.com/PennyLaneAI/pennylane/pull/6448)
 
+* Fixes a bug where `qml.ctrl` and `qml.adjoint` queued extra operators if they were defined as the arguments.
+  [(#6284)](https://github.com/PennyLaneAI/pennylane/pull/6284)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
