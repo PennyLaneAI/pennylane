@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.metric_tensor` can now be JIT compiled.
+  [(#6465)](https://github.com/PennyLaneAI/pennylane/pull/6465)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -17,3 +20,4 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+David Wierichs,
