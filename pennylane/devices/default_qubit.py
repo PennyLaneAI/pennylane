@@ -26,6 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.measurements import ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
@@ -160,6 +161,14 @@ def all_state_postprocessing(results, measurements, wire_order):
     """Process a state measurement back into the original measurements."""
     result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
     return result[0] if len(measurements) == 1 else result
+
+
+@qml.transform
+def conditional_broastcast_expand(tape):
+    if any(isinstance(mp, (ShadowExpvalMP)) for mp in tape.measurements):
+        return qml.transforms.broadcast_expand(tape)
+
+    return (tape,), null_postprocessing
 
 
 @qml.transform
@@ -552,6 +561,7 @@ class DefaultQubit(Device):
             sample_measurements=accepted_sample_measurement,
             name=self.name,
         )
+        transform_program.add_transform(conditional_broastcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
             transform_program.add_transform(qml.transforms.broadcast_expand)
         # Validate multi processing
