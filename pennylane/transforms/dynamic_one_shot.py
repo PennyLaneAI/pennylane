@@ -93,8 +93,6 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     few-shots several-mid-circuit-measurement limit, whereas ``qml.defer_measurements`` is favorable
     in the opposite limit.
     """
-    if not any(is_mcm(o) for o in tape.operations):
-        return (tape,), null_postprocessing
 
     for m in tape.measurements:
         if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
@@ -159,9 +157,22 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
             results = [
                 reshape_data(tuple(res[i] for res in results)) for i, _ in enumerate(results[0])
             ]
-        return parse_native_mid_circuit_measurements(
-            tape, aux_tapes, results, postselect_mode=postselect_mode
-        )
+
+        if any(is_mcm(o) for o in tape.operations):
+            return parse_native_mid_circuit_measurements(
+                tape, aux_tapes, results, postselect_mode=postselect_mode
+            )
+
+        out = []
+        for m_count, m in enumerate(tape.measurements):
+            # Without MCMs and postselection, all samples are valid for use in MP computation.
+            cur_result = results[m_count]
+            is_valid = qml.math.array([True] * len(cur_result))
+            out.append(
+                gather_non_mcm(m, cur_result, is_valid, postselect_mode="pad-invalid-samples")
+            )
+        out = out[0] if len(tape.measurements) == 1 else tuple(out)
+        return out
 
     return aux_tapes, processing_fn
 
