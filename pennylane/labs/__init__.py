@@ -19,8 +19,8 @@ advanced quantum computing research.
 
 .. warning::
 
-    This module is experimental. Frequent changes will occcur, and no API stability is guaranteed.
-    Use at your own risk.
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
 
 .. currentmodule:: pennylane.labs
 

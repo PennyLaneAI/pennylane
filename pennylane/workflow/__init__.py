@@ -24,6 +24,7 @@ Execution functions and utilities
 
     ~execute
     ~workflow.set_shots
+    ~workflow.construct_tape
     ~workflow.construct_batch
     ~workflow.get_transform_program
 
@@ -50,12 +51,12 @@ Jacobian Product Calculation
     ~workflow.jacobian_products.TransformJacobianProducts
     ~workflow.jacobian_products.DeviceDerivatives
     ~workflow.jacobian_products.DeviceJacobianProducts
-    ~workflow.jacobian_products.LightningVJPs
 
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 
 """
 from .construct_batch import construct_batch, get_transform_program
+from .construct_tape import construct_tape
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, execute
 from .qnode import QNode, qnode
 from .set_shots import set_shots

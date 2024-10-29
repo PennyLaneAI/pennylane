@@ -34,6 +34,7 @@ Utility functions
 .. autosummary::
     :toctree: api
 
+    ~pauli_coefficients
     ~pauli_decompose
     ~pauli_coefficients
     ~check_cartan_decomp
