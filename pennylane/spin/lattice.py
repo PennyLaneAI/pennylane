@@ -35,8 +35,9 @@ class Lattice:
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin sites. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
-       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
-           default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
            Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
        custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
@@ -58,8 +59,11 @@ class Lattice:
           if ``n_cells`` contains numbers other than positive integers.
        ValueError:
           if ``positions`` doesn't have a dimension of 2.
+       ValueError:
           if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
-          if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
+       ValueError:
+          if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors.
+       ValueError:
           if ``custom_nodes`` contains nodes with negative indices or indices greater than number of sites
 
     Returns:
