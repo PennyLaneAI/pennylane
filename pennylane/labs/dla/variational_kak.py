@@ -61,12 +61,13 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
 
     dim_k, dim_mtilde, dim_h = dims
     dim_m = dim_mtilde + dim_h
+    dim_g = dim_k + dim_m
 
-    adj_cropped = adj[:dim_k][:, -dim_m:][:, :, -dim_m:]
+    adj_cropped = adj  # [:dim_k][:, -dim_m:][:, :, -dim_m:]
 
     ## creating the gamma vector expanded on the whole m
     gammas = [np.pi**i for i in range(dim_h)]
-    gammavec = np.zeros(dim_m)
+    gammavec = np.zeros(dim_g)
     gammavec[-dim_h:] = gammas
     gammavec = jnp.array(gammavec)
 
@@ -75,7 +76,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
         # Making use of adjoint representation
         # should be faster, and most importantly allow for treatment of sums of paulis
 
-        res = jnp.eye(dim_m)
+        res = jnp.eye(dim_g)
 
         for i in range(dim_k):
             res @= jax.scipy.linalg.expm(theta[i] * adj[i])
@@ -84,9 +85,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
-    [vec_H] = op_to_adjvec(
-        [H], g[-dim_m:]
-    )  # TODO update to also allow for dense representations using vstack
+    [vec_H] = op_to_adjvec([H], g)
 
     theta0 = opt_kwargs.pop("theta0", None)
     if theta0 is None:
@@ -97,17 +96,17 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     )
 
     if verbose >= 1:
-        plt.plot(energy)  # - np.min(energy))
+        plt.plot(energy - np.min(energy))
         plt.xlabel("epochs")
         plt.ylabel("loss")
-        # plt.yscale("log")
+        plt.yscale("log")
         plt.show()
 
     theta_opt = thetas[-1]
 
-    M = jnp.eye(dim_m)
+    M = jnp.eye(dim_g)
 
-    for i in range(dim_k):
+    for i in range(dim_k):  # TODO make matrix-vector multiplications instead
         M @= jax.scipy.linalg.expm(theta_opt[i] * adj_cropped[i])
 
     vec_h = M @ vec_H
@@ -115,7 +114,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     return vec_h, theta_opt
 
 
-def validate_kak(H, k, m, khk_res, n, error_tol, verbose=False):
+def validate_kak(H, g, k, khk_res, n, error_tol, verbose=False):
     """Helper function to validate a khk decomposition"""
     # validate h_elem is Hermitian
     _is_dense = all(isinstance(op, np.ndarray) for op in k) and all(
@@ -123,7 +122,7 @@ def validate_kak(H, k, m, khk_res, n, error_tol, verbose=False):
     )
 
     vec_h, theta_opt = khk_res
-    [h_elem] = adjvec_to_op([vec_h], m)  # sum(c * op for c, op in zip(vec_h, m))
+    [h_elem] = adjvec_to_op([vec_h], g)  # sum(c * op for c, op in zip(vec_h, m))
 
     if isinstance(h_elem, Operator):
         h_elem_m = qml.matrix(h_elem, wire_order=range(n))
