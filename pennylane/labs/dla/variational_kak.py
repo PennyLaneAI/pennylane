@@ -54,6 +54,96 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
         np.ndarray: The optimal coefficients :math:`\theta` of the decomposition :math:`K = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}` for the basis :math:`k_j \in`
 
 
+    **Example**
+
+    Let us perform a KAK decomposition for the transverse field Ising model Hamiltonian, exemplarily for :math:`n=3` qubits on a chain.
+    We start with some boilerplate code to perform a Cartan decomposition using the :func:`~concurrence_involution`, which places the Hamiltonian
+    in the horizontal subspace :math:`\mathfrak{m}`. From this we re-order :math:`\mathfrak{g} = \mathfrak{k} + \mathfrak{m}` and finally compute a
+    :func:`~cartan_subalgebra` :math:`\mathfrak{a}` in :math:`\mathfrak{m} = \tilde{\mathfrak{m}} \oplus \mathfrak{a}`.
+
+    .. code-block:: python
+        from pennylane.labs.dla import (
+            cartan_decomposition,
+            cartan_subalgebra,
+            check_cartan_decomp,
+            concurrence_involution,
+            validate_kak,
+            variational_kak,
+        )
+
+        n = 3
+
+        gens = [X(i) @ X(i + 1) for i in range(n - 1)]
+        gens += [Z(i) for i in range(n)]
+        H = qml.sum(*gens)
+
+        g = qml.lie_closure(gens)
+        g = [op.pauli_rep for op in g]
+
+        involution = concurrence_involution
+
+        assert not involution(H)
+        k, m = cartan_decomposition(g, involution=involution)
+        assert check_cartan_decomp(k, m)
+
+        g = k + m
+        adj = qml.structure_constants(g)
+
+        g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
+
+    Due to the canonical ordering of all constituents, it suffices to tell ``variational_kak`` the dimensions of ``dims = (len(k), len(mtilde), len(a))``,
+    alongside the Hamiltonian ``H``, the Lie algebra ``g`` and its adjoint representation ``adj``. Internally, the function is performing a variational
+    optimization to find a local extremum of a suitably constructed loss function that finds as its extremum the decomposition
+
+    .. math:: K_c = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}
+
+    in form of the optimal parameters :math:`\{\theta_j\}` for the respective :math:`k_j \in \mathfrak{k}`.
+    The resulting :math:`K` then informs the CSA element ``a``
+    of the KaK decomposition via :math:`a = K_c^\dagger H K_c`. This is detailed in `2104.00728 <https://arxiv.org/abs/2104.00728>`__.
+
+
+    >>> dims = (len(k), len(mtilde), len(a))
+    >>> adjvec_a, theta_opt = variational_kak(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
+
+    As a result, we are provided the adjoint representation vector of the CSA element
+    :math:`a \in \mathfrak{a}` and the optimal parameters of dimension :math:`|\mathfrak{k}|`
+
+    Let us perform some sanity checks to better understand the resulting outputs.
+    We can turn that element back to an operator using :func:`adjvec_to_op` and from that to a matrix for which we can check Hermiticity.
+    .. code-block:: python
+
+        [a] = adjvec_to_op([adjvec_a], g)
+        a_m = qml.matrix(a, wire_order=range(n))
+        assert np.allclose(a_m, a_m.conj().T)
+
+    Let us now confirm that we get back the original Hamiltonian from the resulting :math:`K_c` and :math:`a`.
+    In particular, we want to confirm :math:`H = K_c a K_c^\dagger`
+
+    .. code-block:: python
+
+        Km = jnp.eye(2**n)
+        assert len(theta_opt) == len(k)
+        for th, op in zip(theta_opt[::-1], k[::-1]):
+            opm = qml.matrix(op.operation(), wire_order=range(n))
+            Km @= jax.scipy.linalg.expm(1j * th * opm)
+
+        assert np.allclose(Km.conj().T @ Km, np.eye(2**n))
+
+        H_reconstructed = Km @ a_m @ Km.conj().T
+
+        H_m = qml.matrix(H, wire_order=range(len(H.wires)))
+
+        assert np.allclose(
+            H_reconstructed, H_reconstructed.conj().T
+        ), "Reconstructed Hamiltonian not Hermitian"
+
+        success = np.allclose(H_m, H_reconstructed, atol=1e-6)
+
+
+    Instead of performing these checks by hand, we can use the helper function :func:`~validat_kak`.
+
+    >>> assert validate_kak(H, g, k, (adjvec_a, theta_opt), n, 1e-6)
+
 
     """
     if opt_kwargs is None:
@@ -65,7 +155,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     dim_m = dim_mtilde + dim_h
     dim_g = dim_k + dim_m
 
-    adj_cropped = adj  # [:dim_k][:, -dim_m:][:, :, -dim_m:]
+    adj_cropped = adj[:dim_k]  # [:, -dim_m:][:, :, -dim_m:]
 
     ## creating the gamma vector expanded on the whole m
     gammas = [np.pi**i for i in range(dim_h)]
@@ -78,12 +168,13 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
         # Making use of adjoint representation
         # should be faster, and most importantly allow for treatment of sums of paulis
 
-        res = jnp.eye(dim_g)
+        # gammavec @ (K_|k| .. K_1) @ vec_H
+        res = gammavec
 
         for i in range(dim_k):
-            res @= jax.scipy.linalg.expm(theta[i] * adj[i])
+            res = jax.scipy.linalg.expm(theta[i] * adj[i]) @ res
 
-        return (gammavec @ res @ vec_H).real
+        return res @ vec_H
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
@@ -138,11 +229,11 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     # validate KhK reproduces H
     Km = jnp.eye(2**n)
     assert len(theta_opt) == len(k)
-    for th, op in zip(theta_opt[::-1], k[::-1]):
+    for th, op in zip(theta_opt, k):
         opm = qml.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
-        Km @= jax.scipy.linalg.expm(1j * th * opm)
+        Km @= jax.scipy.linalg.expm(-1j * th * opm)
 
-    assert np.allclose(Km.conj().T @ Km, np.eye(2**n))
+    assert np.allclose(Km @ Km.conj().T, np.eye(2**n))
 
     H_reconstructed = Km @ h_elem_m @ Km.conj().T
 
