@@ -31,7 +31,7 @@
 <h3>Improvements 🛠</h3>
 
 * `qml.metric_tensor` can now be JIT compiled.
-  [(#6465)](https://github.com/PennyLaneAI/pennylane/pull/6465)
+  [(#6468)](https://github.com/PennyLaneAI/pennylane/pull/6468)
 
 * RTD support for `qml.labs` added to API.
   [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
