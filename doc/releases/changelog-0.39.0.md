@@ -303,7 +303,7 @@
 * The `decomp_depth` keyword argument to `qml.device` is removed.
   [(#6234)](https://github.com/PennyLaneAI/pennylane/pull/6234)
 
-* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
 * Native folding method `qml.transforms.fold_global` for `qml.transforms.mitiagte_with_zne`
