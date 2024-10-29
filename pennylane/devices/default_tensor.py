@@ -15,6 +15,7 @@
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
 # pylint: disable=protected-access
+import os
 import copy
 import warnings
 from collections.abc import Callable
@@ -55,6 +56,8 @@ warnings.filterwarnings("ignore", message=".*kahypar")
 
 try:
     import quimb.tensor as qtn
+    openblas_threads = os.environ.get('OPENBLAS_NUM_THREADS')
+    openblas_threads = int(openblas_threads) if openblas_threads else None 
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_quimb = False
 
@@ -412,6 +415,10 @@ class DefaultTensor(Device):
 
         # The `quimb` circuit is a class attribute so that we can implement methods
         # that access it as soon as the device is created before running a circuit.
+        # if self.wires:
+        if (self.wires) and (len(self.wires) > 10) and (not openblas_threads or openblas_threads != 1):
+            warnings.warn("\nThe environment variable OPENBLAS_NUM_THREADS is different from one and the system has wires > 10. To avoid a slowdown in performance we recommend you set OPENBLAS_NUM_THREADS=1")
+            
         self._quimb_circuit = self._initial_quimb_circuit(self.wires)
 
         shots = kwargs.pop("shots", None)
