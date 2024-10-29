@@ -4,12 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Added functions `get_best_diff_method` to `qml.workflow`.
-  [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
-
-* Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
-  [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
-
 <h4>Creating spin Hamiltonians on lattices 💞</h4>
 
 * Functionality for creating custom Hamiltonians on arbitrary lattices has been added.
@@ -33,6 +27,9 @@
   )
   ```
 
+  We can validate this `lattice` against `qml.spin.generate_lattice('triangle', ...)` by checking the 
+  `lattice_points` (the :math:`(x, y)` coordinates of all sites in the lattice):
+
   ```pycon
   >>> lp = lattice.lattice_points
   >>> triangular_lattice = qml.spin.generate_lattice('triangle', n_cells=[3, 3])
@@ -41,10 +38,8 @@
   ```
 
   The `edges` of the `Lattice` object are nearest-neighbour by default, where we can add edges by using
-  `add_edge`. 
-  
-  With nearest-neighbour interactions, we can construct a transverse-field Ising model on the lattice, 
-  for example:
+  its `add_edge` method. With nearest-neighbour interactions, we can construct a transverse-field Ising 
+  model on the lattice, for example:
 
   ```python
   hamiltonian = 0.0
@@ -67,8 +62,10 @@
   ```
 
   Optionally, a `Lattice` object can have interactions and fields endowed to it by specifying values 
-  for `custom_edges` and `custom_nodes`. An example is shown below for the same transverse-field Ising 
-  model Hamiltonian on a :math:`3 \times 3` triangular lattice.
+  for its `custom_edges` and `custom_nodes` keyword arguments. The Hamiltonian can then be extracted
+  with the `qml.spin.spin_hamiltonian` function. An example is shown below for the same transverse-field 
+  Ising model Hamiltonian on a :math:`3 \times 3` triangular lattice. Note that the `custom_edges` and 
+  `custom_nodes` keyword arguments only need to be defined for one unit cell repetition.
 
   ```python
   edges = [
@@ -94,7 +91,7 @@
   [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
-  Three new industry-standard spin Hamiltonians are now available with PennyLane v0.39.
+  Three new industry-standard spin Hamiltonians are now available with PennyLane v0.39:
 
   * `qml.spin.emery`: the [Emery model](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794)
   * `qml.spin.haldane`: the [Haldane model](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015)
@@ -140,20 +137,20 @@
   [(#6320)](https://github.com/PennyLaneAI/pennylane/pull/6320)
 
   A new template called `qml.OutPoly` is available, which provides the ability to encode a polynomial
-  function in a quantum circuit. Given a polynomial function :math:`f(x_1, x_2, \cdots, x_N) = \sum_{j = 0}^N c_i x^j`,
-  `qml.OutPoly` requires:
+  function in a quantum circuit. Given a polynomial function :math:`f(x_1, x_2, \cdots, x_N)`, `qml.OutPoly` 
+  requires:
 
   * `f`: a standard Python function that represents :math:`f(x_1, x_2, \cdots, x_N)`,
   * `input_registers` (:math:`\vert x_1 \rangle`, :math:`\vert x_2 \rangle`, ..., :math:`\vert x_N \rangle`): a list/tuple containing `Wires` objects that correspond to the embedded numeric values of :math:`x_1, x_2, \cdots, x_N`,
   * `output_wires`: the `Wires` for which the numeric value of :math:`f(x_1, x_2, \cdots, x_N)` is stored.
 
-  Here is an example of using `qml.OutPoly` to calculate :math:`f(x_1, x_2) = 3x_1^2 - x_2` for :math:`f(1, 2) = 1`.
+  Here is an example of using `qml.OutPoly` to calculate :math:`f(x_1, x_2) = 3x_1^2 - x_1x_2` for :math:`f(1, 2) = 1`.
 
   ```python
   wires = qml.registers({"x1": 1, "x2": 2, "output": 2})
 
   def f(x1, x2):
-      return 3 * x1 ** 2 - x2
+      return 3 * x1 ** 2 - x1 * x2
 
   @qml.qnode(qml.device("default.qubit", shots = 1))
   def circuit():
@@ -185,11 +182,11 @@
   [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
 
   Measurement/readout errors can be specified in a similar fashion to regular gate noise in PennyLane: 
-  a condition called `qml.noise.meas_eq` that accepts a measurement function 
-  (e.g., `qml.expval`, `qml.sample`, or any other function that can be returned from a QNode) that, when satisfied, 
-  inserts a noisy operation via `qml.noise.partial_wires` or a custom noise function. Readout noise 
-  in PennyLane also follows the insertion convention, where the specified noise is inserted *before*
-  the measurement.
+  a newly added Boolean function called `qml.noise.meas_eq` that accepts a measurement function 
+  (e.g., `qml.expval`, `qml.sample`, or any other function that can be returned from a QNode) that, 
+  when present in the QNode, inserts a noisy operation via `qml.noise.partial_wires` or a custom noise 
+  function. Readout noise in PennyLane also follows the insertion convention, where the specified noise 
+  is inserted *before* the measurement.
 
   Here is an example of adding `qml.PhaseFlip` noise to any `qml.expval` measurement:
 
@@ -198,7 +195,7 @@
   n0 = qml.noise.partial_wires(qml.PhaseFlip, 0.2)
   ```
 
-  To include this in a `qml.NoiseModel`, use the `meas_map` keyword argument:
+  To include this in a `qml.NoiseModel`, use its `meas_map` keyword argument:
 
   ```python
   # gate-based noise
@@ -342,6 +339,12 @@
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
 <h4>Other Improvements</h4>
+
+* Added functions `get_best_diff_method` to `qml.workflow`.
+  [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
+
+* Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
+  [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
 
 * Datasets are now downloaded via Dataset API.
   [(#6126)](https://github.com/PennyLaneAI/pennylane/pull/6126)
