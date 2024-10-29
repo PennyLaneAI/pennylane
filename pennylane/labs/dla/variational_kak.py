@@ -62,6 +62,13 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     :func:`~cartan_subalgebra` :math:`\mathfrak{a}` in :math:`\mathfrak{m} = \tilde{\mathfrak{m}} \oplus \mathfrak{a}`.
 
     .. code-block:: python
+
+        import pennylane as qml
+        import numpy as np
+        import jax.numpy as jnp
+        import jax
+
+        from pennylane import X, Z
         from pennylane.labs.dla import (
             cartan_decomposition,
             cartan_subalgebra,
@@ -69,6 +76,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
             concurrence_involution,
             validate_kak,
             variational_kak,
+            adjvec_to_op,
         )
 
         n = 3
@@ -99,7 +107,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
 
     in form of the optimal parameters :math:`\{\theta_j\}` for the respective :math:`k_j \in \mathfrak{k}`.
     The resulting :math:`K` then informs the CSA element ``a``
-    of the KaK decomposition via :math:`a = K_c^\dagger H K_c`. This is detailed in `2104.00728 <https://arxiv.org/abs/2104.00728>`__.
+    of the KaK decomposition via :math:`a = K_c H K_c^\dagger`. This is detailed in `2104.00728 <https://arxiv.org/abs/2104.00728>`__.
 
 
     >>> dims = (len(k), len(mtilde), len(a))
@@ -117,28 +125,31 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
         assert np.allclose(a_m, a_m.conj().T)
 
     Let us now confirm that we get back the original Hamiltonian from the resulting :math:`K_c` and :math:`a`.
-    In particular, we want to confirm :math:`H = K_c a K_c^\dagger`
+    In particular, we want to confirm :math:`H = K_c^\dagger a K_c` for :math:`K_c = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}`.
 
     .. code-block:: python
 
-        Km = jnp.eye(2**n)
+        Kc_m = jnp.eye(2**n)
+
         assert len(theta_opt) == len(k)
-        for th, op in zip(theta_opt[::-1], k[::-1]):
+        for th, op in zip(theta_opt, k):
             opm = qml.matrix(op.operation(), wire_order=range(n))
-            Km @= jax.scipy.linalg.expm(1j * th * opm)
+            Kc_m @= jax.scipy.linalg.expm(-1j * th * opm)
 
-        assert np.allclose(Km.conj().T @ Km, np.eye(2**n))
+        # check Unitary property of Kc
+        assert np.allclose(Kc_m.conj().T @ Kc_m, np.eye(2**n))
 
-        H_reconstructed = Km @ a_m @ Km.conj().T
+        H_reconstructed = Kc_m.conj().T @ a_m @ Kc_m
 
         H_m = qml.matrix(H, wire_order=range(len(H.wires)))
 
+        # check Hermitian property of reconstructed Hamiltonian
         assert np.allclose(
             H_reconstructed, H_reconstructed.conj().T
-        ), "Reconstructed Hamiltonian not Hermitian"
+        )
 
-        success = np.allclose(H_m, H_reconstructed, atol=1e-6)
-
+        # confirm reconstruction was successful to some given numerical tolerance
+        assert np.allclose(H_m, H_reconstructed, atol=1e-6)
 
     Instead of performing these checks by hand, we can use the helper function :func:`~validat_kak`.
 
@@ -169,12 +180,12 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
         # should be faster, and most importantly allow for treatment of sums of paulis
 
         # gammavec @ (K_|k| .. K_1) @ vec_H
-        res = gammavec
+        res = jnp.eye(adj.shape[-1])
 
         for i in range(dim_k):
-            res = jax.scipy.linalg.expm(theta[i] * adj[i]) @ res
+            res = jax.scipy.linalg.expm(theta[i] * adj[i])
 
-        return res @ vec_H
+        return (gammavec @ res @ vec_H).real
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
@@ -235,7 +246,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
 
     assert np.allclose(Km @ Km.conj().T, np.eye(2**n))
 
-    H_reconstructed = Km @ h_elem_m @ Km.conj().T
+    H_reconstructed = Km.conj().T @ h_elem_m @ Km
 
     H_m = qml.matrix(H, wire_order=range(len(H.wires)))
 
