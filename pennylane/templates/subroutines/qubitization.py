@@ -141,7 +141,12 @@ class Qubitization(Operation):
 
         **Example:**
 
-        >>> print(qml.Qubitization.compute_decomposition(hamiltonian = 0.1 * qml.Z(0), control = 1)
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.wires import Wires
+
+        >>> print(qml.Qubitization.compute_decomposition(hamiltonian=0.1 * qml.Z(0), control=Wires(1)))
         [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(coeffs=(0.1,), ops=(Z(0),), control=Wires([1]))]
         """
 
