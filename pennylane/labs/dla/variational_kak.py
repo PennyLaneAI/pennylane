@@ -114,14 +114,14 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     return vec_h, theta_opt
 
 
-def validate_kak(H, g, k, khk_res, n, error_tol, verbose=False):
+def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     """Helper function to validate a khk decomposition"""
     # validate h_elem is Hermitian
     _is_dense = all(isinstance(op, np.ndarray) for op in k) and all(
         isinstance(op, np.ndarray) for op in k
     )
 
-    vec_h, theta_opt = khk_res
+    vec_h, theta_opt = kak_res
     [h_elem] = adjvec_to_op([vec_h], g)  # sum(c * op for c, op in zip(vec_h, m))
 
     if isinstance(h_elem, Operator):
