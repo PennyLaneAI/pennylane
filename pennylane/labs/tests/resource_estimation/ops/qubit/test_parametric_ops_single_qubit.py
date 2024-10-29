@@ -46,3 +46,6 @@ class TestPauliRotation:
         expected = _rotation_resources(epsilon=epsilon)
 
         assert resource_class.resources(**op.resource_rep(epsilon=epsilon).params) == expected
+
+class TestRot:
+    """Test ResourceRot"""

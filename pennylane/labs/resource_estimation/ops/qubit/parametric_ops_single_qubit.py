@@ -20,8 +20,12 @@ class ResourceRX(qml.RX, ResourceConstructor):
     def _resource_decomp(epsilon=10e-3) -> Dict[CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
 
-    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
+    @staticmethod
+    def compute_resource_rep(epsilon=10e-3) -> CompressedResourceOp:
         return CompressedResourceOp(qml.RX, {"epsilon": epsilon})
+
+    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
+        return ResourceRX.compute_resource_rep(epsilon=epsilon)
 
 class ResourceRY(qml.RY, ResourceConstructor):
     """Resource class for RY"""
@@ -30,8 +34,12 @@ class ResourceRY(qml.RY, ResourceConstructor):
     def _resource_decomp(epsilon=10e-3) -> Dict[CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
 
-    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
+    @staticmethod
+    def compute_resource_rep(epsilon=10e-3) -> CompressedResourceOp:
         return CompressedResourceOp(qml.RY, {"epsilon": epsilon})
+
+    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
+        return ResourceRY.compute_resource_rep(epsilon=epsilon)
 
 class ResourceRZ(qml.RZ, ResourceConstructor):
     """Resource class for RZ"""
@@ -40,5 +48,28 @@ class ResourceRZ(qml.RZ, ResourceConstructor):
     def _resource_decomp(epsilon=10e-3) -> Dict[CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
 
-    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
+    @staticmethod
+    def compute_resource_rep(epsilon=10e-3) -> CompressedResourceOp:
         return CompressedResourceOp(qml.RZ, {"epsilon": epsilon})
+
+    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
+        return ResourceRZ.compute_resource_rep(epsilon=epsilon)
+
+class ResourceRot(qml.Rot, ResourceConstructor):
+    """Resource class for Rot"""
+
+    @staticmethod
+    def _resource_decomp() -> Dict[CompressedResourceOp, int]:
+        rx = ResourceRX.compute_resource_rep()
+        ry = ResourceRY.compute_resource_rep()
+        rz = ResourceRZ.compute_resource_rep()
+
+        gate_types = {rx: 1, ry: 1, rz: 1}
+        return gate_types
+
+    @staticmethod
+    def compute_resource_rep() -> CompressedResourceOp:
+        return CompressedResourceOp(qml.Rot, {})
+
+    def resource_rep(self) -> CompressedResourceOp:
+        return ResourceRot.compute_resource_rep()
