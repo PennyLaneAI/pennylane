@@ -3,13 +3,13 @@ import pennylane as qml
 import pyscf
 from pyscf import scf
 from pyscf.geomopt.geometric_solver import optimize
-from utils import *
+from .dipole import *
 import h5py
 import sys, os, subprocess
-from localize_modes import localize_normal_modes
+from .localize_modes import localize_normal_modes
 from time import time
 from mpi4py import MPI 
-from vibrational_class import *
+from .vibrational_class import *
 
 #constants
 au_to_cm = 219475
@@ -42,7 +42,7 @@ def pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="
         local_dipole_onebody = np.zeros((quad_order, 3), dtype=float)
         ref_dipole = get_dipole(scf_result, method)
     
-    for ii in tqdm(range(len(displ_vecs)), desc='Loop one-body pes'):
+    for ii in range(len(displ_vecs)):
         displ_vec = displ_vecs[ii]
         # imaginary frequency check
         if (freqs[ii].imag) > 1e-6:
@@ -112,11 +112,11 @@ def pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_oneb
         local_dipole_twobody = np.zeros((quad_order, quad_order, 3), dtype=float)
         ref_dipole = get_dipole(scf_result, method)
 
-    for aa in tqdm(range(len(displ_vecs)), desc='Outer Loop two-body pes'):
+    for aa in range(len(displ_vecs)):
         displ_vec_a = displ_vecs[aa]
         scaling_a = np.sqrt( hbar / (2 * np.pi * freqs[aa] * 100 * c_light))
 
-        for bb in tqdm(range(len(displ_vecs)), desc='Inner Loop two-body pes'):
+        for bb in range(len(displ_vecs)):
             # skip the pieces that are not part of the Hamiltonian
             if bb >= aa:
                 continue
@@ -197,7 +197,7 @@ def _local_pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid,
         ref_dipole = get_dipole(scf_result, method)
 
     ll = 0
-    for [aa, bb, cc] in tqdm(all_mode_combos, desc = "Outer loop three-body pes"):
+    for [aa, bb, cc] in all_mode_combos:
 
         aa, bb, cc = int(aa), int(bb), int(cc)
         # skip the ones that are not needed
@@ -220,7 +220,7 @@ def _local_pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid,
         scaling_c = np.sqrt( hbar / (2 * np.pi * freqs[cc] * 100 * c_light))
 
         mm = 0
-        for [ii, pt1, jj, pt2, kk, pt3] in tqdm(boscombos_on_rank, desc="Inner loop three-body pes"):
+        for [ii, pt1, jj, pt2, kk, pt3] in boscombos_on_rank:
 
             ii, jj, kk = int(ii), int(jj), int(kk)
 
@@ -371,7 +371,8 @@ def vibrational_pes(molecule, quad_order=9, method="rhf", localize=True, loc_fre
         harmonic_res = harmonic_analysis(scf_result, method)   
         displ_vecs = harmonic_res["norm_mode"]
         if localize:
-            loc_res, uloc, displ_vecs = localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
+            loc_res, uloc = localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
+            displ_vecs = loc_res["norm_mode"]
 
     # Broadcast data to all threads
     harmonic_res = comm.bcast(harmonic_res, root=0)

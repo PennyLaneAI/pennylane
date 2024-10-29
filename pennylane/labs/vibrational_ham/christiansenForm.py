@@ -2,7 +2,6 @@ import numpy as np
 import h5py
 from scipy.special import factorial
 import itertools
-from tqdm.auto import tqdm
 import subprocess
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -68,7 +67,7 @@ def _cform_twomode_kinetic(pes_gen, nbos):
                                          *chunksize)
 
     nn = 0
-    for [ii, jj] in tqdm(all_mode_combos, desc="C-form two-body: mode combinations"):
+    for [ii, jj] in all_mode_combos:
 
         ii, jj = int(ii), int(jj)
         # skip through the things that are not needed
@@ -80,7 +79,7 @@ def _cform_twomode_kinetic(pes_gen, nbos):
         m_const = Usum * np.sqrt(pes_gen.freqs[ii]*pes_gen.freqs[jj]) / 4
 
         mm = 0
-        for [ki, kj, hi, hj] in tqdm(boscombos_on_rank, desc="C-form two-body: boson combinations"):
+        for [ki, kj, hi, hj] in boscombos_on_rank:
             ind = nn*len(boscombos_on_rank) + mm
             ki, kj, hi, hj = int(ki), int(kj), int(hi), int(hj)
 
@@ -120,12 +119,12 @@ def _cform_onemode(pes_gen, nbos):
                                          *chunksize)
 
     nn = 0
-    for [ii] in tqdm(all_mode_combos, desc="C-form one-body: mode combinations"):
+    for [ii] in all_mode_combos:
 
         ii = int(ii)
 
         mm = 0
-        for [ki, hi] in tqdm(boscombos_on_rank, desc="C-form one-body: boson combinations"):
+        for [ki, hi] in boscombos_on_rank:
 
             sqrt = (2**(ki+hi)*factorial(ki)*factorial(hi)*np.pi)**(-0.5)
             order_k = np.zeros(nbos)
@@ -167,12 +166,12 @@ def _cform_onemode_dipole(pes, nbos):
                                          *chunksize, 3))
 
     nn = 0
-    for [ii] in tqdm(all_mode_combos, desc="C-form dipole one-body: mode combinations"):
+    for [ii] in all_mode_combos:
 
         ii = int(ii)
 
         mm = 0
-        for [ki, hi] in tqdm(boscombos_on_rank, desc="C-form dipole one-body: boson combinations"):
+        for [ki, hi] in boscombos_on_rank:
 
             ki, hi = int(ki), int(hi)
             sqrt = (2**(ki+hi)*factorial(ki)*factorial(hi)*np.pi)**(-0.5)
@@ -220,7 +219,7 @@ def _cform_twomode(pes_gen, nbos):
                                          *chunksize)
 
     nn = 0
-    for [ii, jj] in tqdm(all_mode_combos, desc="C-form two-body: mode combinations"):
+    for [ii, jj] in all_mode_combos:
 
         ii, jj = int(ii), int(jj)
         # skip through the things that are not needed
@@ -229,7 +228,7 @@ def _cform_twomode(pes_gen, nbos):
             continue
 
         mm = 0
-        for [ki, kj, hi, hj] in tqdm(boscombos_on_rank, desc="C-form two-body: boson combinations"):
+        for [ki, kj, hi, hj] in boscombos_on_rank:
 
             ki, kj, hi, hj = int(ki), int(kj), int(hi), int(hj)
 
@@ -288,7 +287,7 @@ def _cform_twomode_dipole(pes, nbos):
                                          *chunksize, 3))
 
     nn = 0
-    for [ii, jj] in tqdm(all_mode_combos, desc="C-form dipole two-body: mode combinations"):
+    for [ii, jj] in all_mode_combos:
 
         ii, jj = int(ii), int(jj)
         # skip through the things that are not needed
@@ -297,7 +296,7 @@ def _cform_twomode_dipole(pes, nbos):
             continue
 
         mm = 0
-        for [ki, kj, hi, hj] in tqdm(boscombos_on_rank, desc="C-form dipole two-body: boson combinations"):
+        for [ki, kj, hi, hj] in boscombos_on_rank:
 
             ki, kj, hi, hj = int(ki), int(kj), int(hi), int(hj)
 
@@ -358,7 +357,7 @@ def _cform_threemode(pes_gen, nbos):
                                          *chunksize)
 
     nn = 0
-    for [ii1, ii2, ii3] in tqdm(all_mode_combos, desc="C-form three-body: mode combinations"):
+    for [ii1, ii2, ii3] in all_mode_combos:
 
         ii1, ii2, ii3 = int(ii1), int(ii2), int(ii3)
         # skip the objects that are not needed
@@ -367,7 +366,7 @@ def _cform_threemode(pes_gen, nbos):
             continue
 
         mm = 0
-        for [k1, k2, k3, h1, h2, h3] in tqdm(boscombos_on_rank, desc="C-form three-body: boson combinations"):
+        for [k1, k2, k3, h1, h2, h3] in boscombos_on_rank:
 
             k1, k2, k3, h1, h2, h3 = int(k1), int(k2), int(k3), \
                                             int(h1), int(h2), int(h3)
@@ -434,7 +433,7 @@ def _cform_threemode_dipole(pes, nbos):
                                          *chunksize, 3))
 
     nn = 0
-    for [ii1, ii2, ii3] in tqdm(all_mode_combos, desc="C-form dipole three-body: mode combinations"):
+    for [ii1, ii2, ii3] in all_mode_combos:
 
         ii1, ii2, ii3 = int(ii1), int(ii2), int(ii3)
         # skip the objects that are not needed
@@ -443,7 +442,7 @@ def _cform_threemode_dipole(pes, nbos):
             continue
 
         mm = 0
-        for [k1, k2, k3, h1, h2, h3] in tqdm(boscombos_on_rank, desc="C-form dipole three-body: boson combinations"):
+        for [k1, k2, k3, h1, h2, h3] in boscombos_on_rank:
 
             k1, k2, k3, h1, h2, h3 = int(k1), int(k2), int(k3), \
                                             int(h1), int(h2), int(h3)
@@ -687,7 +686,7 @@ def _load_cform_threemode_dipole(num_pieces, nmodes, ngridpoints):
 
 
 def christiansen_integrals(pes, nbos=16, do_cubic=False):
-    r"""Generates the vibrational Hamiltonian in Christiansen form
+    r"""Generates the vibrational Hamiltonian integrals in Christiansen form
 
     Args:
       pes: Build_pes object.
@@ -754,8 +753,8 @@ def christiansen_integrals(pes, nbos=16, do_cubic=False):
     return H_arr
 
 
-def christiansen_integrals_dipole(pes, nbos=16):
-    r"""Generates the vibrational Hamiltonian in Christiansen form
+def christiansen_integrals_dipole(pes, nbos=16, do_cubic=False):
+    r"""Generates the vibrational dipole integrals in Christiansen form
 
     Args:
       pes: Build_pes object.

@@ -7,7 +7,7 @@ from pennylane import I, X, Y, Z
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
-from bosonic import BoseSentence, BoseWord
+from .bosonic import BoseSentence, BoseWord
 
 def get_pauli_op(i,j,qub_id):
 

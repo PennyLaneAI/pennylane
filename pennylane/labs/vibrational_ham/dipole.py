@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm.auto import tqdm
 
 from pyscf import gto, scf
 from pyscf import lib
@@ -11,7 +10,7 @@ hbar = 6.022*1.055e12 # (amu)*(angstrom^2/s)
 c_light = 3*10**8 # m/s
 au_to_cm = 219475
 
-def get_rhf_dipole(disp_hf):
+def _get_rhf_dipole(disp_hf):
     """
     Given an restricted Hartree-Fock object, evaluate the dipole moment 
     in the restricted Hartree-Fock state.
@@ -43,7 +42,7 @@ def get_rhf_dipole(disp_hf):
     dipole = -dipole_e + dipole_n
     return dipole
 
-def get_uhf_dipole(disp_hf):
+def _get_uhf_dipole(disp_hf):
     """
     Given an unrestricted Hartree-Fock object, evaluate the dipole moment 
     in the unrestricted Hartree-Fock state.
@@ -76,8 +75,8 @@ def get_uhf_dipole(disp_hf):
 
 def get_dipole(hf, method):
     if method == 'rhf':
-        return get_rhf_dipole(hf)
+        return _get_rhf_dipole(hf)
     elif method == 'uhf':
-        return get_uhf_dipole(hf)
+        return _get_uhf_dipole(hf)
 
 

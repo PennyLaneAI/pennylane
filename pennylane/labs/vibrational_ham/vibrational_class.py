@@ -3,7 +3,6 @@ import pennylane as qml
 import pyscf
 from pyscf import scf
 from pyscf.geomopt.geometric_solver import optimize
-from utils import *
 import h5py
 import sys, os, subprocess
 from time import time
@@ -102,7 +101,7 @@ def optimize_geometry(molecule, method):
     
     scf_res = single_point(molecule, method)
     geom_eq = optimize(scf_res, maxsteps=100)
-    print("Geometry after optimization: ", geom_eq.atom_coords(unit='A'))
+
 
     mol_eq = qml.qchem.Molecule(molecule.symbols, geom_eq.atom_coords(unit='A'), unit="angstrom", basis_name=molecule.basis_name, charge=molecule.charge, mult=molecule.mult, load_data=molecule.load_data)
 

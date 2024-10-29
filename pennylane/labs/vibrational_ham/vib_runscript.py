@@ -1,10 +1,6 @@
 import pennylane as qml
-import pes_generator
+from pennylane.labs import vibrational_ham
 import numpy as np
-from christiansenForm import christiansen_integrals, christiansen_integrals_dipole
-from taylorForm import taylor_integrals, taylor_integrals_dipole
-from vib_observables import *
-from bosonic_mapping import *
 from mpi4py import MPI 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -26,7 +22,7 @@ localize = True
 
 ## Generate PES object
 molecule = qml.qchem.Molecule(sym, geometry, basis_name="6-31g", unit="Angstrom", load_data=load_data)
-pes = pes_generator.vibrational_pes(molecule, quad_order=9, localize=localize, do_cubic=True, get_anh_dipole=3)
+pes = vibrational_ham.vibrational_pes(molecule, quad_order=9, localize=localize, do_cubic=True, get_anh_dipole=3)
 
 if rank == 0:
     print("onebody: ", pes.pes_onebody, pes.dipole_onebody)
@@ -40,20 +36,19 @@ if rank == 0:
         min_deg = 2
     else:
         min_deg = 3
-    t_ham = taylor_integrals(pes, min_deg=min_deg)
-    t_dipole = taylor_integrals_dipole(pes, min_deg=min_deg)
+    t_ham = vibrational_ham.taylor_integrals(pes, min_deg=min_deg)
+    t_dipole = vibrational_ham.taylor_integrals_dipole(pes, min_deg=min_deg)
 
 
 #exit()
 ## Generate Christiansen Hamiltonian and dipole
-c_ham = christiansen_integrals(pes, nbos=4, do_cubic=True)
-c_dipole = christiansen_integrals_dipole(pes, nbos=4)
-
+c_ham = vibrational_ham.christiansen_integrals(pes, nbos=4, do_cubic=True)
+c_dipole = vibrational_ham.christiansen_integrals_dipole(pes, nbos=4)
 ## Generate vibrational Hamiltonian
-_, ham = vib_obs(one=c_ham[0], two=c_ham[1])
+ham = vibrational_ham.christiansen_bosonic(one=c_ham[0], two=c_ham[1])
 
 ## Jordan-Wigner transformed Hamiltonian
-ham_jw = jordan_wigner(ham)
+ham_jw = vibrational_ham.christiansen_mapping(ham)
 print(ham_jw)
 
 

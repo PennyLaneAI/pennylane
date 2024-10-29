@@ -44,11 +44,6 @@ def _fit_onebody(anh_pes, deg, verbose=True, min_deg = 3):
                 fs[i1,:] = poly1D_reg_model.coef_
                 predicted_1D[i1,:] = poly1D_reg_model.predict(poly1D_features)
 
-        if verbose:
-                for i1 in range(nmodes):
-                        for my_deg in range(deg-min_deg+1):
-                                print(f"Fit coefficient for q{i1+1}^{my_deg+min_deg} = {fs[i1,my_deg]}")
-
         return fs, predicted_1D
 
 def _twobody_degs(deg, min_deg=3):
@@ -183,13 +178,6 @@ def _fit_threebody(pes_threebody, deg, verbose=False, min_deg=3):
 					idx_q3 = idx3[idx]
 					predicted_3D[i1,i2,i3,idx_q1,idx_q2,idx_q3] = predicted[idx]
 
-	if verbose:
-		for i1 in range(nmodes):
-			for i2 in range(i1):
-				for i3 in range(i2):
-					for fit_num in range(num_fs):
-						q1deg, q2deg, q3deg = fit_degs[fit_num]
-						print(f"Fit coefficient for q{i1+1}^{q1deg} q{i2+1}^{q2deg} q{i3+1}^{q3deg} = {fs[i1,i2,i3,fit_num]}")
 
 	return fs, predicted_3D
 
@@ -202,34 +190,27 @@ def taylor_integrals(pes, deg=4, min_deg=3):
           min_deg:
         """
 
-        print("Starting one-mode fitting...")
         nmodes, quad_order, anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onebody)
         coeff_1D,predicted_1D = _fit_onebody(anh_pes, deg, min_deg = min_deg)
         predicted_1D += harmonic_pes
         coeff_arr = [coeff_1D]
         predicted_arr = [predicted_1D]
-        print("coeff1d: ", coeff_1D, "predicted: ", predicted_1D)
 
         if pes.pes_twobody is not None:
-                print("Starting two-mode fitting...")
                 coeff_2D,predicted_2D = _fit_twobody(pes.pes_twobody, deg, min_deg = min_deg)
                 coeff_arr.append(coeff_2D)
                 predicted_arr.append(predicted_2D)
-                print("coeff2d: ", coeff_2D, "predicted: ", predicted_2D)
 
         if pes.pes_threebody is not None:
-                print("Starting three-mode fitting...")
                 coeff_3D,predicted_3D = _fit_threebody(pes.pes_threebody, deg, min_deg = min_deg)
                 coeff_arr.append(coeff_3D)
                 predicted_arr.append(predicted_3D)
-                print("coeff3d: ", coeff_2D, "predicted: ", predicted_2D)
 
         return coeff_arr
 
 
 def taylor_integrals_dipole(pes, deg=4, min_deg=1):
 
-	print("Starting one-mode fitting...")
 	nmodes,quad_order,_ = pes.dipole_onebody.shape
 
 	f_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onebody[:,:,0], deg, min_deg = min_deg)
@@ -245,7 +226,6 @@ def taylor_integrals_dipole(pes, deg=4, min_deg=1):
 	predicted_z_arr = [predicted_z_1D]
 
 	if pes.dipole_twobody is not None:
-		print("Starting two-mode fitting...")
 		f_x_2D, predicted_x_2D = _fit_twobody(pes.dipole_twobody[:,:,:,:,0], deg, min_deg = min_deg)
 		f_x_arr.append(f_x_2D)
 		predicted_x_arr.append(predicted_x_2D)
@@ -259,7 +239,6 @@ def taylor_integrals_dipole(pes, deg=4, min_deg=1):
 		predicted_z_arr.append(predicted_z_2D)
 
 	if pes.dipole_threebody is not None:
-		print("Starting three-mode fitting...")
 		f_x_3D, predicted_x_3D = _fit_threebody(pes.dipole_threebody[:,:,:,:,:,:,0], deg, min_deg = min_deg)
 		f_x_arr.append(f_x_3D)
 		predicted_x_arr.append(predicted_x_3D)
