@@ -25,7 +25,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
@@ -45,9 +45,6 @@ from .qutrit_mixed.simulate import simulate
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 
 observables = {
@@ -293,7 +290,7 @@ class DefaultQutritMixed(Device):
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -388,9 +385,9 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_ResultBatch:
+    ) -> Union[Result, ResultBatch]:
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

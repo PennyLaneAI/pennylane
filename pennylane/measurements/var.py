@@ -90,11 +90,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device, shots):
-        if not shots.has_partitioned_shots:
-            return ()
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return ()
 
     def process_samples(
         self,
@@ -127,6 +124,18 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # already applied to the state
         with qml.queuing.QueuingManager.stop_recording():
             prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
+        # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
+        return self._calculate_variance(prob)
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        # This also covers statistics for mid-circuit measurements manipulated using
+        # arithmetic operators
+        # we use ``wires`` instead of ``op`` because the observable was
+        # already applied to the state
+        with qml.queuing.QueuingManager.stop_recording():
+            prob = qml.probs(wires=self.wires).process_density_matrix(
+                density_matrix=density_matrix, wire_order=wire_order
+            )
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return self._calculate_variance(prob)
 

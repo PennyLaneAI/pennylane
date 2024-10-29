@@ -341,30 +341,30 @@ class TestObservableReturn:
     """Tests for format="observable". This format preserves the initial generator
     encoded in the operator."""
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_observable(self):
-        """Test a generator that returns a single observable is correct"""
+    @pytest.mark.usefixtures("legacy_opmath_only")
+    def test_observable_legacy_opmath(self):
+        """Test a generator that returns a single observable is correct with opmath disabled"""
         gen = qml.generator(ObservableOp, format="observable")(0.5, wires=0)
         assert gen.name == "Hamiltonian"
         assert gen.compare(ObservableOp(0.5, wires=0).generator())
 
-    @pytest.mark.usefixtures("use_new_opmath")
-    def test_observable_opmath(self):
-        """Test a generator that returns a single observable is correct with opmath enabled"""
+    @pytest.mark.usefixtures("new_opmath_only")
+    def test_observable(self):
+        """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="observable")(0.5, wires=0)
         assert gen.name == "SProd"
         qml.assert_equal(gen, ObservableOp(0.5, wires=0).generator())
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_tensor_observable(self):
-        """Test a generator that returns a tensor observable is correct"""
+    @pytest.mark.usefixtures("legacy_opmath_only")
+    def test_tensor_observable_legacy_opmath(self):
+        """Test a generator that returns a tensor observable is correct with opmath disabled"""
         gen = qml.generator(TensorOp, format="observable")(0.5, wires=[0, 1])
         assert gen.name == "Hamiltonian"
         assert gen.compare(TensorOp(0.5, wires=[0, 1]).generator())
 
-    @pytest.mark.usefixtures("use_new_opmath")
-    def test_tensor_observable_opmath(self):
-        """Test a generator that returns a tensor observable is correct with opmath enabled"""
+    @pytest.mark.usefixtures("new_opmath_only")
+    def test_tensor_observable(self):
+        """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="observable")(0.5, wires=[0, 1])
         assert gen.name == "Prod"
         qml.assert_equal(gen, TensorOp(0.5, wires=[0, 1]).generator())
@@ -402,14 +402,13 @@ class TestHamiltonianReturn:
         assert isinstance(gen, qml.Hamiltonian)
         assert gen.compare(qml.Hamiltonian([1.0], [qml.PhaseShift(0.5, wires=0).generator()]))
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="hamiltonian")(0.5, wires=0)
         assert isinstance(gen, qml.Hamiltonian)
         assert gen.compare(ObservableOp(0.5, wires=0).generator())
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="hamiltonian")(0.5, wires=[0, 1])

@@ -16,15 +16,15 @@ Tests for the gradients.finite_difference module using shot vectors.
 """
 import numpy
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import finite_diff
 from pennylane.measurements import Shots
 from pennylane.operation import AnyWires, Observable
 
-# pylint:disable = use-implicit-booleaness-not-comparison
+# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
 h_val = 0.1
 
@@ -548,11 +548,11 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=0.15, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -590,7 +590,7 @@ class TestFiniteDiffIntegration:
 
             assert np.allclose(res, expected, atol=0.15, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -598,7 +598,7 @@ class TestFiniteDiffIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        dev = qml.device("default.qubit", wires=2, seed=1967, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, seed=seed, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
@@ -844,12 +844,10 @@ class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, approx_order, strategy):
+    def test_autograd(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -868,8 +866,7 @@ class TestFiniteDiffGradients:
                 strategy=strategy,
                 h=h_val,
             )
-            jac = np.array(fn(execute_fn(tapes)))
-            return jac
+            return np.array(fn(dev.execute(tapes)))
 
         all_res = qml.jacobian(cost_fn)(params)
 
@@ -888,12 +885,10 @@ class TestFiniteDiffGradients:
             assert np.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd_ragged(self, dev_name, approx_order, strategy):
+    def test_autograd_ragged(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -913,7 +908,7 @@ class TestFiniteDiffGradients:
                 strategy=strategy,
                 h=h_val,
             )
-            jac = fn(execute_fn(tapes))
+            jac = fn(dev.execute(tapes))
             return jac[1][0]
 
         x, y = params
@@ -928,14 +923,12 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
-    def test_tf(self, dev_name, approx_order, strategy):
+    def test_tf(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
@@ -954,7 +947,7 @@ class TestFiniteDiffGradients:
                 strategy=strategy,
                 h=h_val,
             )
-            jac_0, jac_1 = fn(execute_fn(tapes))
+            jac_0, jac_1 = fn(dev.execute(tapes))
 
         x, y = 1.0 * params
 
@@ -970,14 +963,12 @@ class TestFiniteDiffGradients:
         assert np.allclose([res_0, res_1], expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
-    def test_tf_ragged(self, dev_name, approx_order, strategy):
+    def test_tf_ragged(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
@@ -998,7 +989,7 @@ class TestFiniteDiffGradients:
                 h=h_val,
             )
 
-            jac_01 = fn(execute_fn(tapes))[1][0]
+            jac_01 = fn(dev.execute(tapes))[1][0]
 
         x, y = 1.0 * params
 
@@ -1009,14 +1000,12 @@ class TestFiniteDiffGradients:
         assert np.allclose(res_01[0], expected, atol=0.3, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
-    def test_torch(self, dev_name, approx_order, strategy):
+    def test_torch(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         def cost_fn(params):
@@ -1034,8 +1023,7 @@ class TestFiniteDiffGradients:
                 strategy=strategy,
                 h=h_val,
             )
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         hess = torch.autograd.functional.jacobian(cost_fn, params)
 
@@ -1052,15 +1040,13 @@ class TestFiniteDiffGradients:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=0.3, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-    def test_jax(self, dev_name, approx_order, strategy):
+    def test_jax(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
@@ -1079,8 +1065,7 @@ class TestFiniteDiffGradients:
                 strategy=strategy,
                 h=h_val,
             )
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         all_res = jax.jacobian(cost_fn)(params)
 

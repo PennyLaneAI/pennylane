@@ -19,6 +19,8 @@ To add a new pattern:
   ``details`` section,
 * add tests to parametrizations in :func:`test_templates_broadcast`.
 """
+from warnings import warn
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.wires import Wires
@@ -211,6 +213,10 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     argument.
 
     For more details, see *Usage Details* below.
+
+    .. warning::
+
+        ``qml.broadcast`` has been deprecated. Please use ``for`` loops instead.
 
     Args:
         unitary (func): quantum gate or template
@@ -553,6 +559,12 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     # We deliberately disable iterating using enumerate here, since
     # it causes a slowdown when iterating over TensorFlow variables.
     # pylint: disable=consider-using-enumerate
+
+    warn(
+        "qml.broadcast is deprecated. Please use a for loop instead",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     wires = Wires(wires)
     if kwargs is None:
         kwargs = {}

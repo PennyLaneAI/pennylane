@@ -16,21 +16,29 @@ Contains functions for querying available datasets and downloading
 them.
 """
 
+import sys
 import urllib.parse
-from collections.abc import Mapping, Iterable
-from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
+from concurrent import futures
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import Optional, Union
+from typing import Any, Iterable, Mapping, Optional, Union
 
-from requests import get
+from requests import get, head
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
+from pennylane.data.data_manager import progress
 
+from .graphql import (
+    get_dataset_urls,
+    _get_parameter_tree,
+    list_data_names,
+    list_attributes,
+)
 from .foldermap import DataPath, FolderMapView, ParamArg
-from .params import DEFAULT, FULL, format_params
+from .params import DEFAULT, FULL, format_params, provide_defaults
+
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
@@ -52,15 +60,17 @@ def _get_data_struct():
     response = get(DATA_STRUCT_URL, timeout=5.0)
     response.raise_for_status()
 
-    return response.json()
+
+S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 
 
-def _download_partial(
+def _download_partial(  # pylint: disable=too-many-arguments
     s3_url: str,
     dest: Path,
     attributes: Optional[Iterable[str]],
     overwrite: bool,
     block_size: int,
+    pbar_task: Optional[progress.Task],
 ) -> None:
     """Download the requested attributes of the Dataset at ``s3_path`` into ``dest``.
 
@@ -98,50 +108,120 @@ def _download_partial(
     del remote_dataset
     del dest_dataset
 
+    if pbar_task:
+        file_size = dest.stat().st_size
+        pbar_task.update(completed=file_size, total=file_size)
 
-def _download_full(s3_url: str, dest: Path):
+
+def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional[progress.Task]):
     """Download the full dataset file at ``s3_url`` to ``path``."""
+    resp = get(s3_url, timeout=5.0, stream=True)
+    resp.raise_for_status()
 
     with open(dest, "wb") as f:
-        resp = get(s3_url, timeout=5.0)
-        resp.raise_for_status()
+        if pbar_task is not None:
+            for block in resp.iter_content(chunk_size=block_size):
+                f.write(block)
+                pbar_task.update(advance=len(block))
+        else:
+            for block in resp.iter_content(chunk_size=block_size):
+                f.write(block)
 
-        f.write(resp.content)
 
-
-def _download_dataset(
-    data_path: DataPath,
+def _download_dataset(  # pylint: disable=too-many-arguments
+    dataset_url: str,
     dest: Path,
     attributes: Optional[Iterable[str]],
     block_size: int,
-    force: bool = False,
+    force: bool,
+    pbar_task: Optional[progress.Task],
 ) -> None:
-    """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
+    """Downloads the dataset at ``dataset_url`` to ``dest``, optionally downloading
     only requested attributes. If ``attributes`` is not provided, every attribute
     will be requested.
 
     If any of the attributes of the remote dataset are already downloaded locally,
     they will not be overwritten unless ``force`` is True.
-    """
 
-    # URL-escape special characters like '+', '$', and '%' in the data path
-    url_safe_datapath = urllib.parse.quote(str(data_path))
-    s3_url = f"{S3_URL}/{url_safe_datapath}"
+    If ``pbar_task`` is provided, it will be updated with the download progress.
+    """
 
     if attributes is not None or dest.exists():
         _download_partial(
-            s3_url, dest=dest, attributes=attributes, overwrite=force, block_size=block_size
+            dataset_url,
+            dest=dest,
+            attributes=attributes,
+            overwrite=force,
+            block_size=block_size,
+            pbar_task=pbar_task,
         )
     else:
-        _download_full(s3_url, dest=dest)
+        _download_full(dataset_url, dest=dest, block_size=block_size, pbar_task=pbar_task)
 
 
-def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
+def _download_datasets(  # pylint: disable=too-many-arguments
+    data_name: str,
+    folder_path: Path,
+    dataset_urls: list[str],
+    dataset_ids: list[str],
+    attributes: Optional[Iterable[str]],
+    force: bool,
+    block_size: int,
+    num_threads: int,
+    pbar: Optional[progress.Progress],
+) -> list[Path]:
+    """Downloads the datasets with given ``dataset_urls`` to ``folder_path``.
+
+    If ``pbar`` is provided, a progress task will be added for each requested dataset.
+
+    Returns:
+        list[Path]: List of downloaded dataset paths
+    """
+    file_names = [dataset_id + ".h5" for dataset_id in dataset_ids]
+    dest_paths = [folder_path / data_name / data_id for data_id in file_names]
+
+    for path_parents in set(path.parent for path in dest_paths):
+        path_parents.mkdir(parents=True, exist_ok=True)
+
+    if pbar is not None:
+        if attributes is None:
+            file_sizes = [int(head(url).headers["Content-Length"]) for url in dataset_urls]
+        else:
+            # Can't get file sizes for partial downloads
+            file_sizes = (None for _ in dataset_urls)
+
+        pbar_tasks = [
+            pbar.add_task(str(dest_path.relative_to(folder_path)), total=file_size)
+            for dest_path, file_size in zip(dest_paths, file_sizes)
+        ]
+    else:
+        pbar_tasks = (None for _ in dest_paths)
+
+    with futures.ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
+        for url, dest_path, pbar_task in zip(dataset_urls, dest_paths, pbar_tasks):
+            futs = [
+                pool.submit(
+                    _download_dataset,
+                    url,
+                    dest_path,
+                    attributes=attributes,
+                    force=force,
+                    block_size=block_size,
+                    pbar_task=pbar_task,
+                )
+            ]
+            for result in futures.wait(futs, return_when=futures.FIRST_EXCEPTION).done:
+                if result.exception() is not None:
+                    raise result.exception()
+
+    return dest_paths
+
+
+def _validate_attributes(data_name: str, attributes: Iterable[str]):
     """Checks that ``attributes`` contains only valid attributes for the given
     ``data_name``. If any attributes do not exist, raise a ValueError."""
-    invalid_attributes = [
-        attr for attr in attributes if attr not in data_struct[data_name]["attributes"]
-    ]
+    valid_attributes = list_attributes(data_name)
+    invalid_attributes = [attr for attr in attributes if attr not in valid_attributes]
     if not invalid_attributes:
         return
 
@@ -150,7 +230,7 @@ def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable
     else:
         values_err = f"{invalid_attributes} are invalid attributes for '{data_name}'"
 
-    raise ValueError(f"{values_err}. Valid attributes are: {data_struct[data_name]['attributes']}")
+    raise ValueError(f"{values_err}. Valid attributes are: {valid_attributes}")
 
 
 def load(  # pylint: disable=too-many-arguments
@@ -160,6 +240,7 @@ def load(  # pylint: disable=too-many-arguments
     force: bool = False,
     num_threads: int = 50,
     block_size: int = 8388608,
+    progress_bar: Optional[bool] = None,
     **params: Union[ParamArg, str, list[str]],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
@@ -175,13 +256,15 @@ def load(  # pylint: disable=too-many-arguments
         block_size (int)  : The number of bytes to fetch per read operation when fetching datasets from S3.
             Larger values may improve performance for large datasets, but will slow down small reads. Defaults
             to 8MB
+        progress_bar (bool) : Whether to show a progress bars for downloads. Defaults to True if running
+            in an interactive terminal, False otherwise.
         params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
             Note that these are not optional
 
     Returns:
         list[:class:`~pennylane.data.Dataset`]
 
-    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.list_datasets`.
+    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.list_data_names`.
 
     **Example**
 
@@ -244,41 +327,60 @@ def load(  # pylint: disable=too-many-arguments
     >>> print(circuit())
     -1.0791430411076344
     """
-    foldermap = _get_foldermap()
-    data_struct = _get_data_struct()
-
     params = format_params(**params)
 
     if attributes:
-        _validate_attributes(data_struct, data_name, attributes)
+        _validate_attributes(data_name, attributes)
 
     folder_path = Path(folder_path)
 
-    data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
+    if data_name == "other":
+        data_name = params[0]["values"][0]
+        params = []
 
-    dest_paths = [folder_path / data_path for data_path in data_paths]
+    params = provide_defaults(data_name, params)
+    params = [param for param in params if ("values", ParamArg.FULL) not in list(param.items())]
 
-    for path_parents in set(path.parent for path in dest_paths):
-        path_parents.mkdir(parents=True, exist_ok=True)
+    dataset_ids_and_urls = get_dataset_urls(data_name, params)
+    if dataset_ids_and_urls == []:
+        raise ValueError(
+            "No datasets exist for the provided configuration.\n"
+            "Please check the available datasets by using the ``qml.data.list_datasets()`` function."
+        )
 
-    with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
-        futures = [
-            pool.submit(
-                _download_dataset,
-                data_path,
-                dest_path,
+    dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]
+    dataset_ids = [dataset_id for dataset_id, _ in dataset_ids_and_urls]
+
+    progress_bar = progress_bar if progress_bar is not None else sys.stdout.isatty()
+
+    if progress_bar:
+        with progress.Progress() as pbar:
+            download_paths = _download_datasets(
+                data_name,
+                folder_path,
+                dataset_urls,
+                dataset_ids,
                 attributes,
                 force=force,
                 block_size=block_size,
+                num_threads=num_threads,
+                pbar=pbar,
             )
-            for data_path, dest_path in zip(data_paths, dest_paths)
-        ]
-        results = wait(futures, return_when=FIRST_EXCEPTION)
-        for result in results.done:
-            if result.exception() is not None:
-                raise result.exception()
 
-    return [Dataset.open(Path(dest_path), "a") for dest_path in dest_paths]
+    else:
+        download_paths = _download_datasets(
+            data_name,
+            folder_path,
+            dataset_urls,
+            dataset_ids,
+            attributes,
+            force=force,
+            block_size=block_size,
+            num_threads=num_threads,
+            pbar=None,
+        )
+
+    return [Dataset.open(path, "a") for path in download_paths]
 
 
 def list_datasets() -> dict:
@@ -322,69 +424,55 @@ def list_datasets() -> dict:
     return remove_paths(_get_foldermap())
 
 
-def list_attributes(data_name):
-    r"""List the attributes that exist for a specific ``data_name``.
-
-    Args:
-        data_name (str): The type of the desired data
-
-    Returns:
-        list (str): A list of accepted attributes for a given data name
-
-    .. seealso:: :func:`~.load_interactive`, :func:`~.list_datasets`, :func:`~.load`.
-
-    **Example**
-
-    >>> qml.data.list_attributes(data_name="qchem")
-    ['molname',
-     'basis',
-     'bondlength',
-     ...
-     'vqe_params',
-     'vqe_energy']
-    """
-    data_struct = _get_data_struct()
-    if data_name not in data_struct:
-        raise ValueError(
-            f"Currently the hosted datasets are of types: {list(data_struct)}, but got {data_name}."
-        )
-    return data_struct[data_name]["attributes"]
+def _interactive_request_data_name(data_names):
+    """Prompt the user to select a data name."""
+    print("Please select the data name from the following:")
+    for i, option in enumerate(data_names):
+        print(f"{i + 1}: {option}")
+    choice = input("Choice of data name: ").strip()
+    if choice not in data_names:
+        raise ValueError(f"Must select a single data name from {data_names}")
+    return choice
 
 
-def _interactive_request_attributes(options):
+def _interactive_request_attributes(attribute_options):
     """Prompt the user to select a list of attributes."""
-    prompt = "Please select attributes:"
-    for i, option in enumerate(options):
-        if option == "full":
-            option = "full (all attributes)"
-        prompt += f"\n\t{i+1}) {option}"
-    print(prompt)
-    choices = input(f"Choice (comma-separated list of options) [1-{len(options)}]: ").split(",")
-    try:
-        choices = list(map(int, choices))
-    except ValueError as e:
-        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}") from e
-    if any(choice < 1 or choice > len(options) for choice in choices):
-        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}")
-    return [options[choice - 1] for choice in choices]
+    print(
+        'Please select a list of attributes from the following available attributes or "full" for all attributes.'
+    )
+    for i, option in enumerate(attribute_options):
+        print(f"{i + 1}: {option}")
+
+    choice_input = input("Comma-separated list of attributes: ")
+    choices = [str(choice).strip() for choice in choice_input.strip("[]").split(",")]
+    if "full" in choices:
+        return attribute_options
+    if not (choices and set(choices).issubset(set(attribute_options))):
+        raise ValueError(f"Must select a list of attributes from {attribute_options}")
+
+    return choices
 
 
-def _interactive_request_single(node, param):
-    """Prompt the user to select a single option from a list."""
-    options = list(node)
-    if len(options) == 1:
-        print(f"Using {options[0]} as it is the only {param} available.")
-        sleep(1)
-        return options[0]
-    print(f"Please select a {param}:")
-    print("\n".join(f"\t{i+1}) {option}" for i, option in enumerate(options)))
-    try:
-        choice = int(input(f"Choice [1-{len(options)}]: "))
-    except ValueError as e:
-        raise ValueError(f"Must enter an integer between 1 and {len(options)}") from e
-    if choice < 1 or choice > len(options):
-        raise ValueError(f"Must enter an integer between 1 and {len(options)}")
-    return options[choice - 1]
+def _interactive_requests(parameters, parameter_tree):
+    """Prompts the user to select parameters for datasets one at a time."""
+
+    branch = parameter_tree
+    for param in parameters:
+
+        if len(branch["next"]) == 1:
+            branch = next(iter(branch["next"].values()))
+            continue
+
+        print(f"Available options for {param}:")
+        for i, option in enumerate(branch["next"].keys()):
+            print(f"{i + 1}: {option}")
+        user_value = input(f"Please select a {param}:").strip()
+        try:
+            branch = branch["next"][user_value]
+        except KeyError as e:
+            raise ValueError(f"Must enter a valid {param}:") from e
+
+    return branch
 
 
 def load_interactive():
@@ -395,14 +483,15 @@ def load_interactive():
 
     **Example**
 
-    .. seealso:: :func:`~.load`, :func:`~.list_attributes`, :func:`~.list_datasets`.
+    .. seealso:: :func:`~.load`, :func:`~.list_attributes`, :func:`~.list_data_names`.
 
     .. code-block :: pycon
 
         >>> qml.data.load_interactive()
-        Please select a data name:
-            1) qspin
-            2) qchem
+        Please select the data name from the following:
+            1: qspin
+            2: qchem
+            3: other
         Choice [1-2]: 1
         Please select a sysname:
             ...
@@ -423,37 +512,24 @@ def load_interactive():
         force: False
         dest folder: /Users/jovyan/Downloads/datasets
         Would you like to continue? (Default is yes) [Y/n]:
-        <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
     """
 
-    foldermap = _get_foldermap()
-    data_struct = _get_data_struct()
+    data_names = list_data_names()
+    data_name = _interactive_request_data_name(data_names)
 
-    node = foldermap
-    data_name = _interactive_request_single(node, "data name")
+    parameters, attribute_options, parameter_tree = _get_parameter_tree(data_name)
 
-    description = {}
-    value = data_name
-
-    params = data_struct[data_name]["params"]
-    for param in params:
-        node = node[value]
-        value = _interactive_request_single(node, param)
-        description[param] = value
-
-    attributes = _interactive_request_attributes(
-        [attribute for attribute in data_struct[data_name]["attributes"] if attribute not in params]
-    )
+    dataset_id = _interactive_requests(parameters, parameter_tree)
+    attributes = _interactive_request_attributes(attribute_options)
     force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
     dest_folder = Path(
         input("Folder to download to? (Default is pwd, will download to /datasets subdirectory): ")
     )
-
     print("\nPlease confirm your choices:")
-    print("dataset:", "/".join([data_name] + [description[param] for param in params]))
     print("attributes:", attributes)
     print("force:", force)
     print("dest folder:", dest_folder / "datasets")
+    print("dataset:", dataset_id)
 
     approve = input("Would you like to continue? (Default is yes) [Y/n]: ")
     if approve not in ["Y", "", "y"]:
@@ -461,14 +537,17 @@ def load_interactive():
         return None
 
     return load(
-        data_name, attributes=attributes, folder_path=dest_folder, force=force, **description
+        data_name,
+        attributes=attributes,
+        folder_path=dest_folder,
+        force=force,
     )[0]
 
 
 __all__ = (
     "load",
     "load_interactive",
-    "list_datasets",
+    "list_data_names",
     "list_attributes",
     "FULL",
     "DEFAULT",

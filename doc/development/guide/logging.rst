@@ -298,7 +298,7 @@ process, and surrounding operations:
 
    # Get logger for use by this script only.
    logger = logging.getLogger(__name__)
-   dev_name = "default.qubit.jax"
+   dev_name = "default.qubit"
    num_wires = 2
    num_shots = None
 

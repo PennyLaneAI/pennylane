@@ -176,7 +176,7 @@ class TestSnapshotGeneral:
             if "mixed" in dev.name:
                 qml.Snapshot(measurement=qml.density_matrix(wires=[0, 1]))
 
-            if isinstance(dev, qml.QutritDevice):
+            if isinstance(dev, qml.devices.QutritDevice):
                 return qml.expval(qml.GellMann(0, 1))
 
             return qml.expval(qml.PauliZ(0))
@@ -191,7 +191,7 @@ class TestSnapshotGeneral:
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
         """Test that the correct measurement snapshots are returned for different measurement types."""
-        if isinstance(dev, (qml.devices.default_mixed.DefaultMixed, qml.QutritDevice)):
+        if isinstance(dev, (qml.devices.default_mixed.DefaultMixed, qml.devices.QutritDevice)):
             pytest.skip()
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -230,7 +230,7 @@ class TestSnapshotGeneral:
 
         @qml.qnode(dev)
         def circuit():
-            if isinstance(dev, qml.QutritDevice):
+            if isinstance(dev, qml.devices.QutritDevice):
                 qml.THadamard(wires=0)
                 return qml.expval(qml.GellMann(0, index=6))
 
@@ -238,7 +238,7 @@ class TestSnapshotGeneral:
             return qml.expval(qml.PauliX(0))
 
         result = qml.snapshots(circuit)()
-        if isinstance(dev, qml.QutritDevice):
+        if isinstance(dev, qml.devices.QutritDevice):
             expected = {"execution_results": np.array(0.66666667)}
         else:
             expected = {"execution_results": np.array(1.0)}
@@ -277,49 +277,6 @@ class TestSnapshotSupportedQNode:
         }
 
         _compare_numpy_dicts(result, expected)
-
-    @pytest.mark.parametrize("diff_method", [None, "backprop", "parameter-shift", "adjoint"])
-    def test_default_qubit_legacy_only_supports_state(self, diff_method):
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of 'default.qubit"):
-            dev = qml.device("default.qubit.legacy", wires=2)
-
-        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def circuit_faulty():
-            qml.Hadamard(wires=0)
-            qml.Snapshot("important_expval", measurement=qml.expval(qml.PauliX(0)))
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
-            return qml.expval(qml.PauliX(0))
-
-        circuit_faulty()
-        assert dev._debugger is None
-        if diff_method is not None:
-            assert circuit_faulty.interface == "auto"
-
-        with pytest.raises(NotImplementedError, match="only supports `qml.state` measurements"):
-            qml.snapshots(circuit_faulty)()
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
-            return qml.expval(qml.PauliX(0))
-
-        expected = {
-            0: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
-            "execution_results": np.array(0),
-        }
-
-        result = qml.snapshots(circuit)()
-        _compare_numpy_dicts(result, expected)
-
-        if diff_method not in ("backprop", "adjoint"):
-            result_shots = qml.snapshots(circuit)(shots=200)
-            expected["execution_results"] = np.array(-0.04)
-            _compare_numpy_dicts(result_shots, expected)
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
@@ -407,6 +364,10 @@ class TestSnapshotSupportedQNode:
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_default_qutrit_mixed_finite_shot(self, diff_method):
         """Test that multiple snapshots are returned correctly on the qutrit density-matrix simulator."""
+
+        # TODO: not sure what to do with this test so leaving this here for now.
+        np.random.seed(9872653)
+
         dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
 
         assert qml.debugging.snapshot._is_snapshot_compatible(dev)
@@ -525,6 +486,10 @@ class TestSnapshotSupportedQNode:
 
     def test_adjoint_circuit(self):
         """Test that snapshots are returned correctly when adjointed."""
+
+        # TODO: not sure what to do with this test so leaving this here for now.
+        np.random.seed(9872653)
+
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(params, wire):
@@ -551,6 +516,10 @@ class TestSnapshotSupportedQNode:
 
     def test_all_sample_measurement_snapshot(self):
         """Test that the correct measurement snapshots are returned for different measurement types."""
+
+        # TODO: The fact that this entire test depends on a global seed is not good
+        np.random.seed(9872653)
+
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qml.qnode(dev)
@@ -700,7 +669,7 @@ class TestSnapshotUnsupportedQNode:
 
         assert np.allclose(result["execution_results"], expected["execution_results"])
 
-        del result["execution_results"]
+        del result["execution_results"]  # pylint: disable=unsupported-delete-operation
         del expected["execution_results"]
 
         _compare_numpy_dicts(result, expected)

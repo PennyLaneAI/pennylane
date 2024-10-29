@@ -17,7 +17,6 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
-import functools
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import Enum
@@ -29,8 +28,6 @@ from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedErr
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-from .shots import Shots
 
 # =============================================================================
 # ObservableReturnTypes types
@@ -172,8 +169,8 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ):
             return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
-            return cls._mcm_primitive.bind(*obs, **kwargs)  # iterable of mcms
-        return cls._mcm_primitive.bind(obs, **kwargs)  # single mcm
+            return cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
+        return cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
 
     # pylint: disable=unused-argument
     @classmethod
@@ -289,57 +286,34 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, device, shots: Shots) -> tuple:
-        """The expected output shape of the MeasurementProcess.
-
-        Note that the output shape is dependent on the shots or device when:
-
-        * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
-          ``_Sample``;
-        * The shot vector was defined.
-
-        For example, assuming a device with ``shots=None``, expectation values
-        and variances define ``shape=(,)``, whereas probabilities in the qubit
-        model define ``shape=(2**num_wires)`` where ``num_wires`` is the
-        number of wires the measurement acts on.
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, ...]:
+        """Calculate the shape of the result object tensor.
 
         Args:
-            device (pennylane.Device): a PennyLane device to use for determining the shape
-            shots (~.Shots): object defining the number and batches of shots
+            shots (Optional[int]) = None: the number of shots used execute the circuit. ``None``
+               indicates an analytic simulation.  Shot vectors are handled by calling this method
+               multiple times.
+            num_device_wires (int)=0 : The number of wires that will be used if the measurement is
+               broadcasted across all available wires (``len(mp.wires) == 0``). If the device
+               itself doesn't provide a number of wires, the number of tape wires will be provided
+               here instead:
 
         Returns:
-            tuple: the output shape
+            tuple[int,...]: An arbitrary length tuple of ints.  May be an empty tuple.
 
-        Raises:
-            QuantumFunctionError: the return type of the measurement process is
-                unrecognized and cannot deduce the numeric type
+        >>> qml.probs(wires=(0,1)).shape()
+        (4,)
+        >>> qml.sample(wires=(0,1)).shape(shots=50)
+        (50, 2)
+        >>> qml.state().shape(num_device_wires=4)
+        (16,)
+        >>> qml.expval(qml.Z(0)).shape()
+        ()
+
         """
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
-
-    @staticmethod
-    @functools.lru_cache()
-    def _get_num_basis_states(num_wires, device):
-        """Auxiliary function to determine the number of basis states given the
-        number of systems and a quantum device.
-
-        This function is meant to be used with the Probability measurement to
-        determine how many outcomes there will be. With qubit based devices
-        we'll have two outcomes for each subsystem. With continuous variable
-        devices that impose a Fock cutoff the number of basis states per
-        subsystem equals the cutoff value.
-
-        Args:
-            num_wires (int): the number of qubits/qumodes
-            device (pennylane.Device): a PennyLane device
-
-        Returns:
-            int: the number of basis states
-        """
-        cutoff = getattr(device, "cutoff", None)
-        base = 2 if cutoff is None else cutoff
-        return base**num_wires
 
     @qml.QueuingManager.stop_recording()
     def diagonalizing_gates(self):

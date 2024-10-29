@@ -17,7 +17,7 @@ import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -25,7 +25,7 @@ from pennylane.wires import Wires
 # pylint: disable=too-many-branches, protected-access, too-many-statements
 
 
-def _check_tape_validity(tape: QuantumTape):
+def _check_tape_validity(tape: QuantumScript):
     """Helper function to check that the tape is valid."""
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) and op.name != "Identity" for op in tape.operations)
@@ -39,7 +39,7 @@ def _check_tape_validity(tape: QuantumTape):
 
     for mp in tape.measurements:
         if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
-            mp.obs or mp._wires or mp.mv
+            mp.obs or mp._wires or mp.mv is not None
         ):
             raise ValueError(
                 f"Cannot use {mp.__class__.__name__} as a measurement without specifying wires "
@@ -66,7 +66,7 @@ def _check_tape_validity(tape: QuantumTape):
         )
 
 
-def _collect_mid_measure_info(tape: QuantumTape):
+def _collect_mid_measure_info(tape: QuantumScript):
     """Helper function to collect information related to mid-circuit measurements in the tape."""
 
     # Find wires that are reused after measurement
@@ -103,8 +103,8 @@ def null_postprocessing(results):
 
 @transform
 def defer_measurements(
-    tape: QuantumTape, reduce_postselected: bool = True, **kwargs
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, reduce_postselected: bool = True, **kwargs
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -199,7 +199,7 @@ def defer_measurements(
     >>> qml.grad(qnode)(par)
     tensor(-0.49622252, requires_grad=True)
 
-    Reusing and reseting measured wires will work as expected with the
+    Reusing and resetting measured wires will work as expected with the
     ``defer_measurements`` transform:
 
     .. code-block:: python3
@@ -268,7 +268,6 @@ def defer_measurements(
 
         There is only one controlled gate with only one control wire.
     """
-
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
@@ -405,15 +404,10 @@ def _add_control_gate(op, control_wires, reduce_postselected):
     for branch, value in items:
         if value:
             # Empty sampling branches can occur when using _postselected_items
-            if branch == ():
-                new_ops.append(op.base)
-                continue
-            qscript = qml.tape.make_qscript(
-                ctrl(
-                    lambda: qml.apply(op.base),  # pylint: disable=cell-var-from-loop
-                    control=Wires(control),
-                    control_values=branch,
-                )
-            )()
-            new_ops.extend(qscript.circuit)
+            new_op = (
+                op.base
+                if branch == ()
+                else ctrl(op.base, control=Wires(control), control_values=branch)
+            )
+            new_ops.append(new_op)
     return new_ops

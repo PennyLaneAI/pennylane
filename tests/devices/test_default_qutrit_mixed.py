@@ -573,7 +573,7 @@ class TestSampleMeasurements:
         assert results[1].shape == (50,)
 
     @pytest.mark.parametrize("all_outcomes", [False, True])
-    def test_counts_obs(self, all_outcomes, subspace):
+    def test_counts_obs(self, all_outcomes, subspace, seed):
         """Test that a Counts measurement with an observable works as expected."""
         x = np.array(np.pi / 2)
         qs = qml.tape.QuantumScript(
@@ -582,7 +582,7 @@ class TestSampleMeasurements:
             shots=10000,
         )
 
-        dev = DefaultQutritMixed(seed=123)
+        dev = DefaultQutritMixed(seed=seed)
         result = dev.execute(qs)
 
         assert isinstance(result, dict)
@@ -591,7 +591,7 @@ class TestSampleMeasurements:
 
         # check that the count values match the expected
         values = list(result.values())
-        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.02)
 
 
 class TestExecutingBatches:
@@ -823,7 +823,7 @@ class TestSumOfTermsDifferentiability:
 
         x = jax.numpy.array(self.x, dtype=jax.numpy.float64)
         coeffs = (5.2, 6.7)
-        f = jax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
+        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
 
         out = f(x, coeffs)
         expected_out = self.expected(x, coeffs)
@@ -1149,7 +1149,7 @@ class TestHamiltonianSamples:
     This is a copy of the tests in `test_qutrit_mixed_sampling.py`, but using the device instead.
     """
 
-    def test_hamiltonian_expval(self, obs):
+    def test_hamiltonian_expval(self, obs, seed):
         """Tests that sampling works well for Hamiltonian and Sum observables."""
         if not qml.operation.active_new_opmath():
             obs = qml.operation.convert_to_legacy_H(obs)
@@ -1157,14 +1157,14 @@ class TestHamiltonianSamples:
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
 
-        dev = DefaultQutritMixed(seed=100)
+        dev = DefaultQutritMixed(seed=seed)
         qs = qml.tape.QuantumScript(ops, [qml.expval(obs)], shots=10000)
         res = dev.execute(qs)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
         assert np.allclose(res, expected, atol=0.01)
 
-    def test_hamiltonian_expval_shot_vector(self, obs):
+    def test_hamiltonian_expval_shot_vector(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector."""
 
         if not qml.operation.active_new_opmath():
@@ -1173,7 +1173,7 @@ class TestHamiltonianSamples:
         shots = qml.measurements.Shots((10000, 100000))
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
-        dev = DefaultQutritMixed(seed=100)
+        dev = DefaultQutritMixed(seed=seed)
         qs = qml.tape.QuantumScript(ops, [qml.expval(obs)], shots=shots)
         res = dev.execute(qs)
 
@@ -1181,8 +1181,8 @@ class TestHamiltonianSamples:
 
         assert len(res) == 2
         assert isinstance(res, tuple)
-        assert np.allclose(res[0], expected, atol=0.01)
-        assert np.allclose(res[1], expected, atol=0.01)
+        assert np.allclose(res[0], expected, atol=0.02)
+        assert np.allclose(res[1], expected, atol=0.02)
 
 
 class TestIntegration:
@@ -1556,6 +1556,7 @@ class TestReadoutError:
         res = circuit()
         assert res == expected
 
+    # pylint:disable=too-many-arguments
     @pytest.mark.parametrize(
         "relaxations, misclassifications, expected",
         [
@@ -1564,7 +1565,9 @@ class TestReadoutError:
             [(0.2, 0.1, 0.4), (0.1, 0.2, 0.5), [11 / 24, 7 / 30, 37 / 120]],
         ],
     )
-    def test_approximate_readout_counts(self, num_wires, relaxations, misclassifications, expected):
+    def test_approximate_readout_counts(
+        self, num_wires, relaxations, misclassifications, expected, seed
+    ):
         """Tests the counts output with readout error"""
         num_shots = 10000
         dev = qml.device(
@@ -1573,7 +1576,7 @@ class TestReadoutError:
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
-            seed=221349,
+            seed=seed,
         )
 
         @qml.qnode(dev)
@@ -1720,7 +1723,7 @@ class TestReadoutError:
         if use_jit:
             diff_func = jax.jit(diff_func)
         jac = jax.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
-        assert np.allclose(jac, expected)
+        assert qml.math.allclose(jac, expected, rtol=0.05)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)

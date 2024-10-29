@@ -17,5 +17,5 @@ functionality used in measurement optimization.
 """
 
 from . import graph_colouring
-from .group_observables import PauliGroupingStrategy, group_observables
+from .group_observables import PauliGroupingStrategy, group_observables, compute_partition_indices
 from .optimize_measurements import optimize_measurements

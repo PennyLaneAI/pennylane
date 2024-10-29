@@ -30,7 +30,7 @@ typically encountered in PennyLane. It requires separate installation, see
 `jax.readthedocs.io <https://jax.readthedocs.io/en/latest/>`_.
 
 For a demonstration of the basic pulse functionality in PennyLane and running a ctrl-VQE example, see our demo on
-`differentiable pulse programming <https://pennylane.ai/qml/demos/tutorial_pulse_programming101.html>`_.
+`differentiable pulse programming <https://pennylane.ai/qml/demos/tutorial_pulse_programming101>`_.
 
 Overview
 --------
@@ -85,7 +85,7 @@ with constant operators :math:`H_j` and scalar functions :math:`f_j(v_j, t)` tha
 parameters :math:`p` and time :math:`t`.
 
 Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators, where some of the coefficients
-are callables. The callables defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
+are callables. The callables defining the parametrized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
 ``list`` or ``jnp.array``. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
 
 .. code-block:: python

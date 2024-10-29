@@ -18,13 +18,13 @@ import inspect
 from collections.abc import Callable
 from contextlib import nullcontext
 from functools import wraps
-from typing import Literal, Optional, Union
+from typing import Literal, Union
 
 import pennylane as qml
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-from .qnode import QNode, _get_device_shots, _make_execution_config
+from .qnode import QNode, _make_execution_config
 
 
 def null_postprocessing(results):
@@ -43,7 +43,7 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
         .TransformDispatcher: Returns a transform dispatcher object that that can transform any
         circuit-like object in PennyLane.
 
-    >>> device = qml.device('default.qubit.legacy', wires=2)
+    >>> device = qml.device('default.mixed', wires=2)
     >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
     >>> my_transform
     <transform: expand_fn>
@@ -56,26 +56,24 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
     return qml.transform(wrapped_expand_fn)
 
 
-def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformProgram":
+def _get_full_transform_program(
+    qnode: QNode, gradient_fn
+) -> "qml.transforms.core.TransformProgram":
     program = qml.transforms.core.TransformProgram(qnode.transform_program)
 
-    if getattr(qnode.gradient_fn, "expand_transform", False):
+    if getattr(gradient_fn, "expand_transform", False):
         program.add_transform(
-            qml.transform(qnode.gradient_fn.expand_transform),
+            qml.transform(gradient_fn.expand_transform),
             **qnode.gradient_kwargs,
         )
 
-    if isinstance(qnode.device, qml.devices.Device):
-        config = _make_execution_config(qnode, qnode.gradient_fn)
-        return program + qnode.device.preprocess(config)[0]
-
-    program.add_transform(qml.transform(qnode.device.batch_transform))
-    program.add_transform(expand_fn_transform(qnode.device.expand_fn))
-
-    return program
+    config = _make_execution_config(qnode, gradient_fn)
+    return program + qnode.device.preprocess(config)[0]
 
 
-def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.TransformProgram":
+def get_transform_program(
+    qnode: "QNode", level=None, gradient_fn="unset"
+) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.
 
     Args:
@@ -86,6 +84,8 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
             * ``str``: Acceptable keys are ``"user"``, ``"device"``, ``"top"`` and ``"gradient"``
             * ``int``: How many transforms to include, starting from the front of the program
             * ``slice``: a slice to select out components of the transform program.
+
+        gradient_fn (None, str, TransformDispatcher): The processed gradient fn for the workflow.
 
     Returns:
         TransformProgram: the transform program corresponding to the requested level.
@@ -180,7 +180,10 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
         TransformProgram(validate_device_wires, mid_circuit_measurements, decompose, validate_measurements, validate_observables)
 
     """
-    full_transform_program = _get_full_transform_program(qnode)
+    if gradient_fn == "unset":
+        gradient_fn = QNode.get_gradient_fn(qnode.device, qnode.interface, qnode.diff_method)[0]
+
+    full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
     num_user = len(qnode.transform_program)
     if qnode.transform_program.has_final_transform:
@@ -199,7 +202,7 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
     elif level == "gradient":
         readd_final_transform = True
 
-        level = num_user + 1 if getattr(qnode.gradient_fn, "expand_transform", False) else num_user
+        level = num_user + 1 if getattr(gradient_fn, "expand_transform", False) else num_user
     elif isinstance(level, str):
         raise ValueError(
             f"level {level} not recognized. Acceptable strings are 'device', 'top', 'user', and 'gradient'."
@@ -217,8 +220,8 @@ def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.Tr
 
 
 def construct_batch(
-    qnode: QNode,
-    level: Optional[Union[Literal["top", "user", "device", "gradient"], int, slice]] = "user",
+    qnode: Union[QNode, "qml.qnn.KerasLayer", "qml.qnn.TorchLayer"],
+    level: Union[Literal["top", "user", "device", "gradient"], int, slice, None] = "user",
 ) -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
@@ -319,12 +322,12 @@ def construct_batch(
     """
 
     # pylint: disable=protected-access
-    def batch_constructor(*args, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
-            shots = _get_device_shots(qnode.device)
+            shots = qnode.device.shots
         else:
-            shots = kwargs.pop("shots", _get_device_shots(qnode.device))
+            shots = kwargs.pop("shots", qnode.device.shots)
 
         context_fn = nullcontext
 
@@ -356,8 +359,10 @@ def construct_batch(
             params = initial_tape.get_parameters(trainable_only=False)
             initial_tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        qnode._update_gradient_fn(tape=initial_tape)
-        program = get_transform_program(qnode, level=level)
+        gradient_fn = QNode.get_gradient_fn(
+            qnode.device, qnode.interface, qnode.diff_method, tape=initial_tape
+        )[0]
+        program = get_transform_program(qnode, level=level, gradient_fn=gradient_fn)
 
         return program((initial_tape,))
 

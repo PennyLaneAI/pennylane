@@ -23,7 +23,7 @@ import pennylane as qml
 
 # pylint: disable=too-many-statements,unused-argument
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -59,8 +59,8 @@ def _group_operations(tape):
 
 
 def _expand_trainable_multipar(
-    tape: qml.tape.QuantumTape,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand trainable multi-parameter operations in a quantum tape."""
 
     interface = qml.math.get_interface(*tape.get_parameters())
@@ -79,8 +79,8 @@ def _expand_trainable_multipar(
     use_argnum_in_expand=True,
 )
 def adjoint_metric_tensor(
-    tape: qml.tape.QuantumTape,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
@@ -184,7 +184,7 @@ def adjoint_metric_tensor(
         L = qml.math.convert_like(qml.math.zeros((tape.num_params, tape.num_params)), like_real)
         T = qml.math.convert_like(qml.math.zeros((tape.num_params,)), like_real)
 
-        for op in group_after_trainable_op[-1]:
+        for op in group_after_trainable_op[-1][int(prep is not None) :]:
             psi = qml.devices.qubit.apply_operation(op, psi)
 
         for j, outer_op in enumerate(trainable_operations):

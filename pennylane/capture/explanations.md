@@ -156,6 +156,71 @@ Some notes here about how read this. `a:i32[]` is the global integer variable `a
 a constant.  The arguments to the `repeat` primitive are `n (const a) x (hardcoded 2.0=y)`.
 You can also see the const variable `a` as argument `e:i32[]` to the inner nested jaxpr as well.
 
+### Pytree handling
+
+Evaluating a jaxpr requires accepting and returning a flat list of tensor-like inputs and outputs.
+These long lists can be hard to manage and are very restrictive on the allowed functions, but we
+can take advantage of pytrees to allow handling arbitrary functions.
+
+To start, we import the `FlatFn` helper. This class converts a function to one that caches
+the result pytree into `flat_fn.out_tree` when executed. This can be used to repack the
+results into the correct shape. It also returns flattened results. This does not particularly
+matter for program capture, as we will only be producing jaxpr from the function, not calling
+it directly.
+
+The following demonstrates how the tree utilities and the `FlatFn` class
+can be used together to unpack and repack the variables:
+
+```pycon
+>>> from pennylane.capture.flatfn import FlatFn
+>>> def f(x): # define a function with pytree inputs and outputs
+...     return {"a": x[0], "b": x[1]+1}
+>>> args = ([0.1, 0.2],) # the arguments to the function
+>>> flatfn = FlatFn(f)
+>>> flatfn.out_tree is None # initialized to None
+True
+>>> results = flatfn(*args)
+>>> results
+[0.1, 1.2]
+>>> flatfn.out_tree # set once function is called
+PyTreeDef({'a': *, 'b': *})
+>>> jax.tree_util.tree_unflatten(flatfn.out_tree, results)
+{'a': 0.1, 'b': 1.2}
+```
+
+Using these tools, we can now redefine our wrapper around the `repeat` primitive. This
+code just extends what we did with the `repeat` primitive above.
+
+```python
+def repeat(func, n: int):
+    def new_func(*args, **kwargs):
+
+        func_bound_kwargs = partial(func, **kwargs)
+        flat_fn = FlatFn(func_bound_kwargs)
+
+        jaxpr = jax.make_jaxpr(flat_fn)(*args)
+        flat_args, _ = jax.tree_util.tree_flatten(args)
+        n_consts = len(jaxpr.consts)
+        results = repeat_prim.bind(n, *jaxpr.consts, *flat_args, jaxpr=jaxpr.jaxpr, n_consts=n_consts)
+
+        # repack the results back into the cached pytree
+        assert flat_fn.out_tree is not None
+        return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
+    return new_func
+```
+
+And now the workflow supports arbitrary inputs and outputs.
+
+```pycon
+>>> a = {"x": jax.numpy.array(1), "y": 2.0}
+>>> def func(arg, y_coeff=1):
+...     return {"x": arg['x'] + 2.0, "y": y_coeff * arg['y']}
+>>> def workflow(arg):
+...     return repeat(func, 2)(arg, y_coeff=2.0)
+>>> workflow(a)
+{'x': Array(5., dtype=float32, weak_type=True),
+ 'y': Array(8., dtype=float32, weak_type=True)}
+```
 
 ## Metaprogramming
 

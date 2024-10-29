@@ -61,44 +61,23 @@ class TestOptimize:
             qml.RY(params[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        var = np.array([0.011, 0.012])
-        opt = qml.QNGOptimizer(stepsize=0.01)
+        var = np.array([0.31, 0.842])
+        opt = qml.QNGOptimizer(stepsize=0.05)
+
+        expected_mt_diag = np.array([0.25, (np.cos(var[0]) ** 2) / 4])
+        expected_res = circuit(var)
+        expected_step = var - opt.stepsize * qml.grad(circuit)(var) / expected_mt_diag
 
         step1, res = opt.step_and_cost(circuit, var)
+        assert np.allclose(opt.metric_tensor, np.diag(expected_mt_diag))
         step2 = opt.step(circuit, var)
+        assert np.allclose(opt.metric_tensor, np.diag(expected_mt_diag))
 
-        expected = circuit(var)
-        expected_step = var - opt.stepsize * 4 * qml.grad(circuit)(var)
-        assert np.all(res == expected)
+        assert np.allclose(res, expected_res)
         assert np.allclose(step1, expected_step)
         assert np.allclose(step2, expected_step)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_step_and_cost_autograd_with_gen_hamiltonian_legacy_opmath(self):
-        """Test that the correct cost and step is returned via the
-        step_and_cost method for the QNG optimizer when the generator
-        of an operator is a Hamiltonian"""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        var = np.array([0.011, 0.012])
-        opt = qml.QNGOptimizer(stepsize=0.01)
-
-        step1, res = opt.step_and_cost(circuit, var)
-        step2 = opt.step(circuit, var)
-
-        expected = circuit(var)
-        expected_step = var - opt.stepsize * 4 * qml.grad(circuit)(var)
-        assert np.all(res == expected)
-        assert np.allclose(step1, expected_step)
-        assert np.allclose(step2, expected_step)
-
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_step_and_cost_autograd_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned via the
         step_and_cost method for the QNG optimizer when the generator
@@ -112,93 +91,137 @@ class TestOptimize:
             qml.RY(params[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        var = np.array([0.011, 0.012])
-        opt = qml.QNGOptimizer(stepsize=0.01)
+        var = np.array([0.311, -0.52])
+        opt = qml.QNGOptimizer(stepsize=0.05)
+
+        expected_mt = np.diag([1 / 16, 1 / 4])
+        expected_res = circuit(var)
+        expected_step = var - opt.stepsize * np.linalg.pinv(expected_mt) @ qml.grad(circuit)(var)
 
         step1, res = opt.step_and_cost(circuit, var)
+        assert np.allclose(opt.metric_tensor, expected_mt)
         step2 = opt.step(circuit, var)
+        assert np.allclose(opt.metric_tensor, expected_mt)
 
-        expected = circuit(var)
-        expected_step = var - opt.stepsize * 4 * qml.grad(circuit)(var)
-        assert np.all(res == expected)
+        assert np.allclose(res, expected_res)
         assert np.allclose(step1, expected_step)
         assert np.allclose(step2, expected_step)
 
-    def test_step_and_cost_with_grad_fn_grouped_input(self):
+    @pytest.mark.parametrize("split_input", [False, True])
+    def test_step_and_cost_with_grad_fn_grouped_and_split(self, split_input):
         """Test that the correct cost and update is returned via the step_and_cost
-        method for the QNG optimizer when providing an explicit grad_fn.
-        Using a circuit with a single input containing all parameters."""
+        method for the QNG optimizer when providing an explicit grad_fn."""
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+        var = np.array([0.911, 0.512])
+        if split_input:
 
-        var = np.array([0.011, 0.012])
-        opt = qml.QNGOptimizer(stepsize=0.01)
+            @qml.qnode(dev)
+            def circuit(params_0, params_1):
+                qml.RX(params_0, wires=0)
+                qml.RY(params_1, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            args = var
+        else:
+
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                qml.RY(params[1], wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            args = (var,)
+
+        opt = qml.QNGOptimizer(stepsize=0.04)
 
         # With autograd gradient function
         grad_fn1 = qml.grad(circuit)
-        step1, cost1 = opt.step_and_cost(circuit, var, grad_fn=grad_fn1)
-        step2 = opt.step(circuit, var, grad_fn=grad_fn1)
+        step1, cost1 = opt.step_and_cost(circuit, *args, grad_fn=grad_fn1)
+        mt1 = opt.metric_tensor
+        step2 = opt.step(circuit, *args, grad_fn=grad_fn1)
+        mt2 = opt.metric_tensor
 
         # With more custom gradient function, forward has to be computed explicitly.
-        def grad_fn2(param):
-            return np.array(qml.grad(circuit)(param))
+        def grad_fn2(*args):
+            return np.array(qml.grad(circuit)(*args))
 
-        # grad_fn = lambda param: np.array(qml.grad(circuit)(param))
-        step3, cost2 = opt.step_and_cost(circuit, var, grad_fn=grad_fn2)
-        opt.step(circuit, var, grad_fn=grad_fn2)
-        expected_step = var - opt.stepsize * 4 * grad_fn2(var)
-        expected_cost = circuit(var)
+        step3, cost2 = opt.step_and_cost(circuit, *args, grad_fn=grad_fn2)
+        mt3 = opt.metric_tensor
+        step4 = opt.step(circuit, *args, grad_fn=grad_fn2)
+        mt4 = opt.metric_tensor
 
-        for step in [step1, step2, step3, step3]:
+        expected_mt_diag = np.array([0.25, (np.cos(var[0]) ** 2) / 4])
+        expected_step = var - opt.stepsize * grad_fn2(*args) / expected_mt_diag
+        expected_mt = np.diag(expected_mt_diag)
+        if split_input:
+            expected_mt = (expected_mt[:1, :1], expected_mt[1:, 1:])
+        expected_cost = circuit(*args)
+
+        for step in [step1, step2, step3, step4]:
+            assert np.allclose(step, expected_step)
+        for mt in [mt1, mt2, mt3, mt4]:
+            assert np.allclose(mt, expected_mt)
+        assert np.isclose(cost1, expected_cost)
+        assert np.isclose(cost2, expected_cost)
+
+    @pytest.mark.parametrize("trainable_idx", [0, 1])
+    def test_step_and_cost_split_input_one_trainable(self, trainable_idx):
+        """Test that the correct cost and update is returned via the step_and_cost
+        method for the QNG optimizer when providing an explicit grad_fn or not.
+        Using a circuit with multiple inputs, one of which is trainable."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            """A cost function with two arguments."""
+            qml.RX(x, 0)
+            qml.RY(-y, 0)
+            return qml.expval(qml.Z(0))
+
+        grad_fn = qml.grad(circuit)
+        mt_fn = qml.metric_tensor(circuit)
+
+        params = np.array(0.2, requires_grad=False), np.array(-0.8, requires_grad=False)
+        params[trainable_idx].requires_grad = True
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        # Without manually provided functions
+        step1, cost1 = opt.step_and_cost(circuit, *params)
+        step2 = opt.step(circuit, *params)
+
+        # With modified autograd gradient function
+        fake_grad_fn = lambda *args, **kwargs: grad_fn(*args, **kwargs) * 2
+        step3, cost2 = opt.step_and_cost(circuit, *params, grad_fn=fake_grad_fn)
+        step4 = opt.step(circuit, *params, grad_fn=fake_grad_fn)
+
+        # With modified metric tensor function
+        fake_mt_fn = lambda *args, **kwargs: mt_fn(*args, **kwargs) * 4
+        step5 = opt.step(circuit, *params, metric_tensor_fn=fake_mt_fn)
+
+        # Expectations
+        if trainable_idx == 1:
+            mt_inv = 1 / (np.cos(2 * params[0]) + 1) * 8
+        else:
+            mt_inv = 4
+        exact_update = -opt.stepsize * grad_fn(*params) * mt_inv
+        factors = [1.0, 1.0, 2.0, 2.0, 0.25]
+        expected_cost = circuit(*params)
+
+        for factor, step in zip(factors, [step1, step2, step3, step4, step5]):
+            expected_step = tuple(
+                par + exact_update * factor if i == trainable_idx else par
+                for i, par in enumerate(params)
+            )
             assert np.allclose(step, expected_step)
         assert np.isclose(cost1, expected_cost)
         assert np.isclose(cost2, expected_cost)
 
-    @pytest.mark.skip("QNGOptimizer is not yet implemented for split inputs.")
-    def test_step_and_cost_with_grad_fn_split_input(self):
-        """Test that the correct cost and update is returned via the step_and_cost
-        method for the QNG optimizer when providing an explicit grad_fn.
-        Using a circuit with multiple inputs containing the parameters."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(params_0, params_1):
-            qml.RX(params_0, wires=0)
-            qml.RY(params_1, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        var = np.array([0.011, 0.012])
-        opt = qml.QNGOptimizer(stepsize=0.01)
-
-        # With autograd gradient function
-        grad_fn1 = qml.grad(circuit)
-        step1, cost1 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn1)
-        step2 = opt.step(circuit, *var, grad_fn=grad_fn1)
-
-        # With more custom gradient function, forward has to be computed explicitly.
-        def grad_fn2(params_0, params_1):
-            return np.array(qml.grad(circuit)(params_0, params_1))
-
-        step3, cost2 = opt.step_and_cost(circuit, *var, grad_fn=grad_fn2)
-        opt.step(circuit, *var, grad_fn=grad_fn2)
-        expected_step = var - opt.stepsize * 4 * grad_fn2(*var)
-        expected_cost = circuit(*var)
-
-        for step in [step1, step2, step3, step3]:
-            assert np.allclose(step, expected_step)
-        assert np.isclose(cost1, expected_cost)
-        assert np.isclose(cost2, expected_cost)
-
-    @pytest.mark.slow
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct QNG value
         every step, the correct parameter updates,
-        and correct cost after 200 steps"""
+        and correct cost after a few steps"""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -213,14 +236,13 @@ class TestOptimize:
             db = -np.cos(params[0]) * np.sin(params[1])
             return np.array([da, db])
 
-        eta = 0.01
+        eta = 0.2
         init_params = np.array([0.011, 0.012])
-        num_steps = 200
+        num_steps = 15
 
         opt = qml.QNGOptimizer(eta)
         theta = init_params
 
-        # optimization for 200 steps total
         for _ in range(num_steps):
             theta_new = opt.step(circuit, theta)
 
@@ -236,13 +258,12 @@ class TestOptimize:
             theta = theta_new
 
         # check final cost
-        assert np.allclose(circuit(theta), -0.9963791, atol=tol, rtol=0)
+        assert np.allclose(circuit(theta), -1)
 
-    @pytest.mark.skip("QNGOptimizer is not yet implemented for split inputs.")
     def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct QNG value every step, the correct parameter updates, and
-        correct cost after 200 steps"""
+        correct cost after a few steps"""
         dev = qml.device("default.qubit", wires=1)
         coeffs = [1, 1]
         obs_list = [qml.PauliX(0), qml.PauliZ(0)]
@@ -265,26 +286,27 @@ class TestOptimize:
             db = np.cos(params[0]) * (np.cos(params[1]) - np.sin(params[1]))
             return np.array([da, db])
 
-        eta = 0.01
-        num_steps = 200
+        eta = 0.2
+        num_steps = 10
 
         opt = qml.QNGOptimizer(eta)
 
-        # optimization for 200 steps total
         for _ in range(num_steps):
             theta = np.array([x, y])
             x, y = opt.step(circuit, x, y)
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(x) ** 2) / 4])
-            assert np.allclose(res, exp, atol=0.00001, rtol=0)
+            exp = (np.array([[0.25]]), np.array([[(np.cos(2 * theta[0]) + 1) / 8]]))
+            assert np.allclose(res, exp)
 
             # check parameter update
-            theta_new = np.array([x, y])
-            dtheta = eta * sp.linalg.pinvh(exp) @ gradient(theta)
-            assert np.allclose(dtheta, theta - theta_new, atol=0.000001, rtol=0)
+            theta_new = (x, y)
+            grad = gradient(theta)
+            dtheta = tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
+            assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost
-        assert np.allclose(circuit(x, y), -1.41421356, atol=tol, rtol=0)
-        assert len(recwarn) == 0
+        assert np.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)
+        if qml.operation.active_new_opmath():
+            assert len(recwarn) == 0

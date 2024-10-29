@@ -18,6 +18,7 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
+from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
@@ -192,7 +193,7 @@ def _get_adjoint_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    adjoint_prim = jax.core.Primitive("adjoint_transform")
+    adjoint_prim = create_non_jvp_primitive()("adjoint_transform")
     adjoint_prim.multiple_results = True
 
     @adjoint_prim.def_impl
@@ -365,6 +366,11 @@ class Adjoint(SymbolicOp):
             base_matrix = self.base.matrix(wire_order=wire_order)
 
         return moveaxis(conj(base_matrix), -2, -1)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        return self.base.has_sparse_matrix
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):

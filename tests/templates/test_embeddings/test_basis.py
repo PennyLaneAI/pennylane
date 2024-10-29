@@ -25,7 +25,7 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
     wires = qml.wires.Wires((0, 1, 2))
     op = qml.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 # pylint: disable=protected-access
@@ -34,9 +34,8 @@ def test_flatten_unflatten():
     wires = qml.wires.Wires((0, 1, 2))
     op = qml.BasisEmbedding(features=[1, 1, 1], wires=wires)
     data, metadata = op._flatten()
-    assert data == tuple()
+    assert np.allclose(data[0], [1, 1, 1])
     assert metadata[0] == wires
-    assert metadata[1] == (1, 1, 1)
 
     # make sure metadata hashable
     assert hash(metadata)
@@ -111,13 +110,17 @@ class TestInputs:
         """checks conversion from features as int to a list of binary digits
         with length = len(wires)"""
 
-        assert (
-            qml.BasisEmbedding(features=feat, wires=wires).hyperparameters["basis_state"]
-            == expected
-        )
+        assert np.allclose(qml.BasisEmbedding(features=feat, wires=wires).parameters[0], expected)
 
-    @pytest.mark.parametrize("x", [[0], [0, 1, 1], 4])
-    def test_wrong_input_bits_exception(self, x):
+    @pytest.mark.parametrize(
+        "x, msg",
+        [
+            ([0], "State must be of length"),
+            ([0, 1, 1], "State must be of length"),
+            (4, "Integer state must be"),
+        ],
+    )
+    def test_wrong_input_bits_exception(self, x, msg):
         """Checks exception if number of features is not same as number of qubits."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -127,7 +130,7 @@ class TestInputs:
             qml.BasisEmbedding(features=x, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be of length"):
+        with pytest.raises(ValueError, match=msg):
             circuit()
 
     def test_input_not_binary_exception(self):
@@ -153,7 +156,7 @@ class TestInputs:
             qml.BasisEmbedding(features=x, wires=2)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be one-dimensional"):
+        with pytest.raises(ValueError, match="State must be one-dimensional"):
             circuit(x=[[1], [0]])
 
     def test_id(self):
@@ -169,7 +172,7 @@ def circuit_template(features):
 
 def circuit_decomposed(features):
     # convert tensor to list
-    feats = list(qml.math.toarray(features))
+    feats = list(qml.math.array(features))
     _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
     return qml.state()
@@ -238,7 +241,7 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jax_jit(self, tol):
-        """Tests the jax-jit interface."""
+        """Tests compilation with JAX JIT."""
 
         import jax
         import jax.numpy as jnp
@@ -248,15 +251,14 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit2 = jax.jit(qml.QNode(circuit_template, dev))
 
         res = circuit(features)
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        circuit = jax.jit(circuit)
-
-        res = circuit(jnp.array(2))
+        res = circuit(2)
+        res2 = circuit2(2)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf

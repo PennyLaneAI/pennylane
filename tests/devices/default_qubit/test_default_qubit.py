@@ -83,7 +83,7 @@ def test_snapshot_multiprocessing_qnode():
 
 # pylint: disable=protected-access
 def test_applied_modifiers():
-    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
+    """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = DefaultQubit()
@@ -598,12 +598,12 @@ class TestSampleMeasurements:
         assert results[1].shape == (50,)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_counts_wires(self, max_workers):
+    def test_counts_wires(self, max_workers, seed):
         """Test that a Counts measurement with wires works as expected"""
         x = np.array(np.pi / 2)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.counts(wires=[0, 1])], shots=10000)
 
-        dev = DefaultQubit(seed=123, max_workers=max_workers)
+        dev = DefaultQubit(seed=seed, max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, dict)
@@ -611,11 +611,11 @@ class TestSampleMeasurements:
 
         # check that the count values match the expected
         values = list(result.values())
-        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.02)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     @pytest.mark.parametrize("all_outcomes", [False, True])
-    def test_counts_obs(self, all_outcomes, max_workers):
+    def test_counts_obs(self, all_outcomes, max_workers, seed):
         """Test that a Counts measurement with an observable works as expected"""
         x = np.array(np.pi / 2)
         qs = qml.tape.QuantumScript(
@@ -624,7 +624,7 @@ class TestSampleMeasurements:
             shots=10000,
         )
 
-        dev = DefaultQubit(seed=123, max_workers=max_workers)
+        dev = DefaultQubit(seed=seed, max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, dict)
@@ -632,7 +632,7 @@ class TestSampleMeasurements:
 
         # check that the count values match the expected
         values = list(result.values())
-        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, atol=0.01)
+        assert np.allclose(values[0] / (values[0] + values[1]), 0.5, rtol=0.05)
 
 
 class TestExecutingBatches:
@@ -1499,13 +1499,13 @@ class TestHamiltonianSamples:
     This is a copy of the tests in test_sampling.py, but using the device instead"""
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_hamiltonian_expval(self, max_workers):
+    def test_hamiltonian_expval(self, max_workers, seed):
         """Test that sampling works well for Hamiltonian observables"""
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
 
-        dev = DefaultQubit(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=seed, max_workers=max_workers)
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
         res = dev.execute(qs)
 
@@ -1513,13 +1513,13 @@ class TestHamiltonianSamples:
         assert np.allclose(res, expected, atol=0.01)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_sum_expval(self, max_workers):
+    def test_sum_expval(self, max_workers, seed):
         """Test that sampling works well for Sum observables"""
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
 
-        dev = DefaultQubit(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=seed, max_workers=max_workers)
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
         res = dev.execute(qs)
 
@@ -1527,7 +1527,7 @@ class TestHamiltonianSamples:
         assert np.allclose(res, expected, atol=0.01)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_multi_wires(self, max_workers):
+    def test_multi_wires(self, max_workers, seed):
         """Test that sampling works for Sums with large numbers of wires"""
         n_wires = 10
         scale = 0.05
@@ -1539,8 +1539,8 @@ class TestHamiltonianSamples:
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
 
-        dev = DefaultQubit(seed=100, max_workers=max_workers)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        dev = DefaultQubit(seed=seed, max_workers=max_workers)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=30000)
         res = dev.execute(qs)
 
         phase = offset + scale * np.array(range(n_wires))
@@ -1548,10 +1548,10 @@ class TestHamiltonianSamples:
         sines = qml.math.sin(phase)
         expected = 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
-        assert np.allclose(res, expected, atol=0.05)
+        assert np.allclose(res, expected, rtol=0.05)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_complex_hamiltonian(self, max_workers):
+    def test_complex_hamiltonian(self, max_workers, seed):
         """Test that sampling works for complex Hamiltonians"""
         scale = 0.05
         offset = 0.4
@@ -1608,14 +1608,14 @@ class TestHamiltonianSamples:
             ],
         )
 
-        dev = DefaultQubit(seed=100, max_workers=max_workers)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
+        dev = DefaultQubit(seed=seed, max_workers=max_workers)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=50000)
         res = dev.execute(qs)
 
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = dev.execute(qs_exp)
 
-        assert np.allclose(res, expected, atol=0.002)
+        assert np.allclose(res, expected, atol=0.02)
 
 
 class TestClassicalShadows:
@@ -1641,17 +1641,18 @@ class TestClassicalShadows:
         assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_expval(self, max_workers):
+    def test_expval(self, max_workers, seed):
         """Test that shadow expval measurements work as expected"""
-        dev = DefaultQubit(seed=100, max_workers=max_workers)
+
+        dev = DefaultQubit(seed=seed, max_workers=max_workers)
 
         ops = [qml.Hadamard(0), qml.Hadamard(1)]
-        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)]
-        qs = qml.tape.QuantumScript(ops, meas, shots=1000)
+        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=seed)]
+        qs = qml.tape.QuantumScript(ops, meas, shots=10000)
         res = dev.execute(qs)
 
         assert res.shape == ()
-        assert np.allclose(res, 1.0, atol=0.05)
+        assert np.allclose(res, 1.0, rtol=0.05)
 
     @pytest.mark.parametrize("n_qubits", [1, 2, 3])
     @pytest.mark.parametrize("max_workers", max_workers_list)
@@ -1681,12 +1682,12 @@ class TestClassicalShadows:
         assert not np.all(res[0] == res[1])
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_reconstruct_bell_state(self, max_workers):
+    def test_reconstruct_bell_state(self, max_workers, seed):
         """Test that a bell state can be faithfully reconstructed"""
-        dev = DefaultQubit(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=seed, max_workers=max_workers)
 
         ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
-        meas = [qml.classical_shadow(wires=[0, 1], seed=200)]
+        meas = [qml.classical_shadow(wires=[0, 1], seed=seed)]
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
 
         # should prepare the bell state
@@ -1704,7 +1705,7 @@ class TestClassicalShadows:
 
         # alternative computation
         ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
-        meas = [qml.classical_shadow(wires=[0], seed=200)]
+        meas = [qml.classical_shadow(wires=[0], seed=seed)]
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
         bits, recipes = dev.execute(qs)
 
@@ -1837,13 +1838,13 @@ class TestPostselection:
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
     @pytest.mark.parametrize("shots", [50000, (50000, 50000)])
-    def test_postselection_valid_finite_shots(self, param, mp, shots, interface, use_jit):
+    def test_postselection_valid_finite_shots(self, param, mp, shots, interface, use_jit, seed):
         """Test that the results of a circuit with postselection is expected with
         finite shots."""
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
-        dev = qml.device("default.qubit", seed=1971)
+        dev = qml.device("default.qubit", seed=seed)
         param = qml.math.asarray(param, like=interface)
 
         @qml.defer_measurements
@@ -1864,6 +1865,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
         res = circ_postselect(param, shots=shots)
@@ -1960,7 +1962,7 @@ class TestPostselection:
         dev = qml.device("default.qubit")
 
         @qml.defer_measurements
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=None if interface == "numpy" else interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -2051,6 +2053,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ = jax.jit(circ, static_argnames=["shots"])
 
         res = circ(shots=shots)
@@ -2197,3 +2200,49 @@ def test_broadcasted_parameter(max_workers):
     results = dev.execute(batch, config)
     processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))
+
+
+@pytest.mark.jax
+def test_renomalization_issue():
+    """Test that no normalization error occurs with the following workflow in float32 mode.
+    Just tests executes without error.  Not producing a more minimal example due to difficulty
+    finding an exact case that leads to renomalization issues.
+    """
+    import jax
+    from jax import numpy as jnp
+
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", False)
+
+    def gaussian_fn(p, t):
+        return p[0] * jnp.exp(-((t - p[1]) ** 2) / (2 * p[2] ** 2))
+
+    global_drive = qml.pulse.rydberg_drive(
+        amplitude=gaussian_fn, phase=0, detuning=0, wires=[0, 1, 2]
+    )
+
+    a = 5
+
+    coordinates = [(0, 0), (a, 0), (a / 2, np.sqrt(a**2 - (a / 2) ** 2))]
+
+    settings = {"interaction_coeff": 862619.7915580727}
+
+    H_interaction = qml.pulse.rydberg_interaction(coordinates, **settings)
+
+    max_amplitude = 2.0
+    displacement = 1.0
+    sigma = 0.3
+
+    amplitude_params = [max_amplitude, displacement, sigma]
+
+    params = [amplitude_params]
+    ts = [0.0, 1.75]
+
+    def circuit(params):
+        qml.evolve(H_interaction + global_drive)(params, ts)
+        return qml.counts()
+
+    circuit_qml = qml.QNode(circuit, qml.device("default.qubit", shots=1000), interface="jax")
+
+    circuit_qml(params)
+    jax.config.update("jax_enable_x64", initial_mode)

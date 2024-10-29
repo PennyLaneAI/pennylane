@@ -69,7 +69,7 @@ class TestLogging:
                 return qml.expval(qml.PauliZ(0))
 
             circuit(params)
-        assert len(caplog.records) == 8
+        assert len(caplog.records) == 9
         log_records_expected = [
             (
                 "pennylane.workflow.qnode",
@@ -78,6 +78,10 @@ class TestLogging:
             (
                 "pennylane.workflow.qnode",
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
+            ),
+            (
+                "pennylane.workflow.qnode",
+                ["Calling <get_gradient_fn(device=<default.qubit"],
             ),
             (
                 "pennylane.devices.default_qubit",
@@ -92,7 +96,9 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:3]):
+        for expected, actual in zip(log_records_expected, caplog.records[:4]):
+            print(expected)
+            print(actual, "\n")
             assert expected[0] in actual.name
             assert all(msg in actual.getMessage() for msg in expected[1])
 
@@ -100,7 +106,7 @@ class TestLogging:
         "diff_method,num_records", [("parameter-shift", 23), ("backprop", 14), ("adjoint", 18)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
-        "Test logging of QNode with parameterised gradients"
+        "Test logging of QNode with parametrized gradients"
 
         dev = qml.device("default.qubit", wires=2)
         params = qml.numpy.array(0.1234)
@@ -123,7 +129,7 @@ class TestLogging:
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<default.qubit device (wires=2)",
-                    f"interface=auto, diff_method={diff_method}, expansion_strategy=None, max_expansion=10, grad_on_execution=best,",
+                    f"interface=auto, diff_method={diff_method}, grad_on_execution=best,",
                 ],
             ),
             (
@@ -143,7 +149,8 @@ class TestLogging:
 
         for expected, actual in zip(log_records_expected, caplog.records[:2]):
             assert expected[0] in actual.name
-            assert all(msg in actual.getMessage() for msg in expected[1])
+            for exp_msg in expected[1]:
+                assert exp_msg in actual.getMessage()
 
     def test_execution_debugging_qutrit_mixed(self, caplog):
         """Test logging of QNode forward pass from default qutrit mixed."""
@@ -159,7 +166,7 @@ class TestLogging:
 
             circuit(params)
 
-        assert len(caplog.records) == 6
+        assert len(caplog.records) == 7
 
         log_records_expected = [
             (

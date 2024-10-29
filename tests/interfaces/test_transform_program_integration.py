@@ -22,15 +22,13 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-with pytest.warns(qml.PennyLaneDeprecationWarning):
-    device_suite = (
-        qml.device("default.qubit.legacy", wires=5),
-        qml.devices.DefaultQubit(),
-        qml.device("lightning.qubit", wires=5),
-    )
+device_suite = (
+    qml.device("default.qubit"),
+    qml.device("lightning.qubit", wires=5),
+)
 
 
 @pytest.mark.all_interfaces
@@ -67,8 +65,8 @@ class TestTransformProgram:
             return results[0]
 
         def just_pauli_x_out(
-            tape: qml.tape.QuantumTape,
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -176,15 +174,15 @@ class TestTransformProgram:
             return results[0]
 
         def just_pauli_x_out(
-            tape: qml.tape.QuantumTape,
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
         def repeat_operations(
-            tape: qml.tape.QuantumTape,
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -224,11 +222,11 @@ class TestTransformProgram:
         def scale_two(results):
             return results[0] * 2.0
 
-        def transform_add(tape: qml.tape.QuantumTape):
+        def transform_add(tape: QuantumScript):
             """A valid transform."""
             return (tape,), add_one
 
-        def transform_mul(tape: qml.tape.QuantumTape):
+        def transform_mul(tape: QuantumScript):
             return (tape,), scale_two
 
         add_container = qml.transforms.core.TransformContainer(transform_add)

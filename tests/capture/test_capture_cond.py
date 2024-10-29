@@ -15,18 +15,21 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, too-many-arguments
 # pylint: disable=no-self-use
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import _capture_cond
+from pennylane.ops.op_math.condition import CondCallable, ConditionalTransformError
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
+
+# must be below jax importorskip
+from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
 
 
 @pytest.fixture(autouse=True)
@@ -62,6 +65,7 @@ def testing_functions():
     return true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4
 
 
+@pytest.mark.parametrize("decorator", [True, False])
 class TestCond:
     """Tests for conditional functions using qml.cond."""
 
@@ -76,11 +80,20 @@ class TestCond:
             (0, 10, 30),  # False condition
         ],
     )
-    def test_cond_true_elifs_false(self, testing_functions, selector, arg, expected):
+    def test_cond_true_elifs_false(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true, elifs, and false branches."""
         true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4 = testing_functions
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.else_if(pred == -1)(elif_fn1)
+                conditional.else_if(pred == -2)(elif_fn2)
+                conditional.else_if(pred == -3)(elif_fn3)
+                conditional.else_if(pred == -4)(elif_fn4)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
@@ -97,6 +110,7 @@ class TestCond:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(test_func(selector))(arg)
+        assert jaxpr.eqns[0].primitive == cond_prim
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
@@ -111,18 +125,27 @@ class TestCond:
             (-3, 10, ()),  # No condition met
         ],
     )
-    def test_cond_true_elifs(self, testing_functions, selector, arg, expected):
+    def test_cond_true_elifs(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true and elifs branches."""
         true_fn, _, elif_fn1, elif_fn2, _, _ = testing_functions
 
-        result = qml.cond(
-            selector > 0,
-            true_fn,
-            elifs=(
-                (selector == -1, elif_fn1),
-                (selector == -2, elif_fn2),
-            ),
-        )(arg)
+        def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.else_if(pred == -1)(elif_fn1)
+                conditional.else_if(pred == -2)(elif_fn2)
+                return conditional
+
+            return qml.cond(
+                pred > 0,
+                true_fn,
+                elifs=(
+                    (pred == -1, elif_fn1),
+                    (pred == -2, elif_fn2),
+                ),
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
     @pytest.mark.parametrize(
@@ -132,11 +155,16 @@ class TestCond:
             (0, 10, 30),
         ],
     )
-    def test_cond_true_false(self, testing_functions, selector, arg, expected):
+    def test_cond_true_false(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true and false branches."""
         true_fn, false_fn, _, _, _, _ = testing_functions
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
@@ -159,15 +187,59 @@ class TestCond:
             (0, 10, ()),
         ],
     )
-    def test_cond_true(self, testing_functions, selector, arg, expected):
+    def test_cond_true(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with only the true branch."""
         true_fn, _, _, _, _, _ = testing_functions
 
-        result = qml.cond(
-            selector > 0,
-            true_fn,
-        )(arg)
+        def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                return conditional
+
+            return qml.cond(
+                pred > 0,
+                true_fn,
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+    @pytest.mark.parametrize(
+        "selector, arg, expected",
+        [
+            (1, 10.0, 2),
+            (0, 10.0, 3),
+        ],
+    )
+    def test_gradient(self, testing_functions, selector, arg, expected, decorator):
+        """Test the gradient of the conditional."""
+        from pennylane.capture.primitives import grad_prim
+
+        true_fn, false_fn, _, _, _, _ = testing_functions
+
+        def func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.otherwise(false_fn)
+                return conditional
+
+            return qml.cond(
+                pred > 0,
+                true_fn,
+                false_fn,
+            )
+
+        test_func = qml.grad(func(selector))
+        correct_func = jax.grad(func(selector))
+        assert np.allclose(correct_func(arg), expected)
+        assert np.allclose(test_func(arg), correct_func(arg))
+
+        jaxpr = jax.make_jaxpr(test_func)(arg)
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == grad_prim
+
+        manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        assert np.allclose(manual_res, correct_func(arg))
 
     @pytest.mark.parametrize(
         "selector, arg, expected",
@@ -176,7 +248,7 @@ class TestCond:
             (0, jax.numpy.array([2, 3]), 15),
         ],
     )
-    def test_cond_with_jax_array(self, selector, arg, expected):
+    def test_cond_with_jax_array(self, selector, arg, expected, decorator):
         """Test the conditional with array arguments."""
 
         def true_fn(jax_array):
@@ -186,6 +258,11 @@ class TestCond:
             return jax_array[0] * jax_array[1] * 2.5
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
@@ -198,6 +275,65 @@ class TestCond:
         jaxpr = jax.make_jaxpr(test_func(selector))(arg)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    def test_mcm_return_error(self, decorator):
+        """Test that an error is raised if executing a quantum function that uses qml.cond with
+        mid-circuit measurement predicates where the conditional functions return something."""
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+            return 0
+
+        def false_fn(arg):
+            qml.RY(arg, 0)
+            return 1
+
+        def f(x):
+            m1 = qml.measure(0)
+            if decorator:
+                conditional = qml.cond(m1)(true_fn)
+                conditional.otherwise(false_fn)
+                conditional(x)
+            else:
+                qml.cond(m1, true_fn, false_fn)(x)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.23)
+        with pytest.raises(
+            ConditionalTransformError, match="Only quantum functions without return values"
+        ):
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
+
+    def test_mcm_mixed_conds_error(self, decorator):
+        """Test that an error is raised if executing a quantum function that uses qml.cond with
+        a combination of mid-circuit measurement and other predicates."""
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+
+        def elif_fn(arg):
+            qml.RZ(arg, 0)
+
+        def false_fn(arg):
+            qml.RY(arg, 0)
+
+        def f(x):
+            m1 = qml.measure(0)
+            if decorator:
+                conditional = qml.cond(m1)(true_fn)
+                conditional.else_if(x > 1.5)(elif_fn)
+                conditional.otherwise(false_fn)
+                conditional(x)
+            else:
+                qml.cond(m1, true_fn, false_fn, elifs=(x > 1.5, elif_fn))(x)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.23)
+        with pytest.raises(
+            ConditionalTransformError,
+            match="Cannot use qml.cond with a combination of mid-circuit measurements",
+        ):
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
 
 class TestCondReturns:
@@ -229,7 +365,7 @@ class TestCondReturns:
     def test_validate_mismatches(self, true_fn, false_fn, expected_error, match):
         """Test mismatch in number and type of output variables."""
         with pytest.raises(expected_error, match=match):
-            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+            jax.make_jaxpr(CondCallable(True, true_fn, false_fn))(jax.numpy.array(1))
 
     def test_validate_number_of_output_variables(self):
         """Test mismatch in number of output variables."""
@@ -241,7 +377,7 @@ class TestCondReturns:
             return x + 1
 
         with pytest.raises(ValueError, match=r"Mismatch in number of output variables"):
-            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+            jax.make_jaxpr(CondCallable(True, true_fn, false_fn))(jax.numpy.array(1))
 
     def test_validate_output_variable_types(self):
         """Test mismatch in output variable types."""
@@ -253,7 +389,7 @@ class TestCondReturns:
             return x + 1, x + 2.0
 
         with pytest.raises(ValueError, match=r"Mismatch in output abstract values"):
-            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+            jax.make_jaxpr(CondCallable(True, true_fn, false_fn))(jax.numpy.array(1))
 
     def test_validate_no_false_branch_with_return(self):
         """Test no false branch provided with return variables."""
@@ -265,7 +401,7 @@ class TestCondReturns:
             ValueError,
             match=r"The false branch must be provided if the true branch returns any variables",
         ):
-            jax.make_jaxpr(_capture_cond(True, true_fn))(jax.numpy.array(1))
+            jax.make_jaxpr(CondCallable(True, true_fn))(jax.numpy.array(1))
 
     def test_validate_no_false_branch_with_return_2(self):
         """Test no false branch provided with return variables."""
@@ -280,9 +416,7 @@ class TestCondReturns:
             ValueError,
             match=r"The false branch must be provided if the true branch returns any variables",
         ):
-            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn=None, elifs=(False, elif_fn)))(
-                jax.numpy.array(1)
-            )
+            jax.make_jaxpr(CondCallable(True, true_fn, elifs=[(True, elif_fn)]))(jax.numpy.array(1))
 
     def test_validate_elif_branches(self):
         """Test elif branch mismatches."""
@@ -306,13 +440,13 @@ class TestCondReturns:
             ValueError, match=r"Mismatch in output abstract values in elif branch #1"
         ):
             jax.make_jaxpr(
-                _capture_cond(False, true_fn, false_fn, [(True, elif_fn1), (False, elif_fn2)])
+                CondCallable(True, true_fn, false_fn, [(True, elif_fn1), (False, elif_fn2)])
             )(jax.numpy.array(1))
 
         with pytest.raises(
             ValueError, match=r"Mismatch in number of output variables in elif branch #0"
         ):
-            jax.make_jaxpr(_capture_cond(False, true_fn, false_fn, [(True, elif_fn3)]))(
+            jax.make_jaxpr(CondCallable(True, true_fn, false_fn, elifs=[(True, elif_fn3)]))(
                 jax.numpy.array(1)
             )
 
@@ -328,7 +462,7 @@ def circuit(pred):
         qml.RX(0.1, wires=0)
 
     qml.cond(pred > 0, true_fn)()
-    return qml.expval(qml.PauliZ(wires=0))
+    return qml.expval(qml.Z(wires=0))
 
 
 @qml.qnode(dev)
@@ -352,7 +486,7 @@ def circuit_branches(pred, arg1, arg2):
 
     qml.cond(pred > 0, true_fn, false_fn, elifs=(pred == -1, elif_fn1))(arg1, arg2)
     qml.RX(0.10, wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
+    return qml.expval(qml.Z(wires=0))
 
 
 @qml.qnode(dev)
@@ -371,7 +505,7 @@ def circuit_with_returned_operator(pred, arg1, arg2):
 
     qml.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
     qml.RX(0.10, wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
+    return qml.expval(qml.Z(wires=0))
 
 
 @qml.qnode(dev)
@@ -518,3 +652,201 @@ class TestCondCircuits:
         jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.local_salt(1)
+    @pytest.mark.parametrize("reset", [True, False])
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    @pytest.mark.parametrize("shots", [None, 20])
+    def test_mcm_predicate_execution(self, reset, postselect, shots, seed):
+        """Test that QNodes executed with mid-circuit measurement predicates for
+        qml.cond give correct results."""
+        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+
+        def false_fn(arg):
+            qml.RY(3 * arg, 0)
+
+        @qml.qnode(device)
+        def f(x, y):
+            qml.RX(x, 0)
+            m = qml.measure(0, reset=reset, postselect=postselect)
+
+            qml.cond(m, true_fn, false_fn)(y)
+            return qml.expval(qml.Z(0))
+
+        params = [2.5, 4.0]
+        res = f(*params)
+        qml.capture.disable()
+        expected = f(*params)
+
+        assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
+
+    @pytest.mark.parametrize("shots", [None, 300])
+    @pytest.mark.parametrize(
+        "params, expected",
+        # The parameters used here will essentially apply a PauliX just before mid-circuit
+        # measurements, each of which will trigger a different conditional block. Each
+        # conditional block prepares basis states in different bases, so the expectation value
+        # for the measured observables will vary accordingly.
+        [
+            ([np.pi, 0, 0], (1, 1 / np.sqrt(2), 0, 1 / np.sqrt(2))),  # true_fn, Hadamard basis
+            ([0, np.pi, 0], (1 / np.sqrt(2), 1, 0, 0)),  # elif_fn1, PauliX basis
+            ([0, 0, np.pi], (0, 0, 1, 0)),  # elif_fn2, PauliY basis
+            ([0, 0, 0, 0], (1 / np.sqrt(2), 0, 0, 1)),  # false_fn, PauliZ basis
+        ],
+    )
+    def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol, seed):
+        """Test that QNodes executed with mid-circuit measurement predicates for
+        qml.cond give correct results when there are also elifs present."""
+        # pylint: disable=expression-not-assigned
+        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(seed))
+
+        def true_fn():
+            # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
+            [qml.adjoint(op) for op in qml.Hadamard.compute_diagonalizing_gates(0)[::-1]]
+
+        def elif_fn1():
+            # Adjoint PauliX diagonalizing gates to get X basis state
+            [qml.adjoint(op) for op in qml.X.compute_diagonalizing_gates(0)[::-1]]
+
+        def elif_fn2():
+            # Adjoint PauliY diagonalizing gates to get Y basis state
+            [qml.adjoint(op) for op in qml.Y.compute_diagonalizing_gates(0)[::-1]]
+
+        def false_fn():
+            # Adjoint PauliZ diagonalizing gates to get Z basis state
+            return
+
+        @qml.qnode(device)
+        def f(*x):
+            qml.RX(x[0], 0)
+            m1 = qml.measure(0, reset=True)
+            qml.RX(x[1], 0)
+            m2 = qml.measure(0, reset=True)
+            qml.RX(x[2], 0)
+            m3 = qml.measure(0, reset=True)
+
+            qml.cond(m1, true_fn, false_fn, elifs=((m2, elif_fn1), (m3, elif_fn2)))()
+            return (
+                qml.expval(qml.Hadamard(0)),
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Y(0)),
+                qml.expval(qml.Z(0)),
+            )
+
+        res = f(*params)
+        atol = tol if shots is None else 0.1
+
+        assert np.allclose(res, expected, atol=atol, rtol=0), f"Expected {expected}, but got {res}"
+
+    @pytest.mark.parametrize("upper_bound, arg", [(3, [0.1, 0.3, 0.5]), (2, [2, 7, 12])])
+    def test_nested_cond_for_while_loop(self, upper_bound, arg):
+        """Test that a nested control flows are correctly captured into a jaxpr."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        # Control flow for qml.conds
+        def true_fn(_):
+            @qml.for_loop(0, upper_bound, 1)
+            def loop_fn(i):
+                qml.Hadamard(wires=i)
+
+            loop_fn()
+
+        def elif_fn(arg):
+            qml.RY(arg**2, wires=[2])
+
+        def false_fn(arg):
+            qml.RY(-arg, wires=[2])
+
+        @qml.qnode(dev)
+        def circuit(upper_bound, arg):
+            qml.RY(-np.pi / 2, wires=[2])
+            m_0 = qml.measure(2)
+
+            # NOTE: qml.cond(m_0, qml.RX)(arg[1], wires=1) doesn't work
+            def rx_fn():
+                qml.RX(arg[1], wires=1)
+
+            qml.cond(m_0, rx_fn)()
+
+            def ry_fn():
+                qml.RY(arg[1] ** 3, wires=1)
+
+            # nested for loops.
+            # outer for loop updates x
+            @qml.for_loop(0, upper_bound, 1)
+            def loop_fn_returns(i, x):
+                qml.RX(x, wires=i)
+                m_1 = qml.measure(0)
+                # NOTE: qml.cond(m_0, qml.RY)(arg[1], wires=1) doesn't work
+                qml.cond(m_1, ry_fn)()
+
+                # inner while loop
+                @qml.while_loop(lambda j: j < upper_bound)
+                def inner(j):
+                    qml.RZ(j, wires=0)
+                    qml.RY(x**2, wires=0)
+                    m_2 = qml.measure(0)
+                    qml.cond(m_2, true_fn=true_fn, false_fn=false_fn, elifs=((m_1, elif_fn)))(
+                        arg[0]
+                    )
+                    return j + 1
+
+                inner(i + 1)
+                return x + 0.1
+
+            loop_fn_returns(arg[2])
+
+            return qml.expval(qml.Z(0))
+
+        args = [upper_bound, arg]
+        result = circuit(*args)
+        jaxpr = jax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, upper_bound, *arg)
+        assert np.allclose(result, res_ev_jxpr), f"Expected {result}, but got {res_ev_jxpr}"
+
+
+class TestPytree:
+    """Test pytree support for cond."""
+
+    def test_pytree_input_output(self):
+        """Test that cond can handle pytree inputs and outputs."""
+
+        def f(x):
+            return {"val": x["1"]}
+
+        def g(x):
+            return {"val": x["2"]}
+
+        def h(x):
+            return {"val": x["h"]}
+
+        res_true = qml.cond(True, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
+        assert res_true == {"val": 1}
+
+        res_elif = qml.cond(False, f, false_fn=g, elifs=(True, h))({"1": 1, "2": 2, "h": 3})
+        assert res_elif == {"val": 3}
+
+        res_false = qml.cond(False, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
+        assert res_false == {"val": 2}
+
+    def test_pytree_measurment_value(self):
+        """Test that pytree args can be used when the condition is on a measurement value."""
+
+        def g(x):
+            qml.RX(x["x"], x["wire"])
+
+        def f(x):
+            m0 = qml.measure(0)
+            qml.cond(m0, g)(x)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            f({"x": 0.5, "wire": 0})
+
+        assert len(q) == 2
+        assert isinstance(q.queue[0], qml.measurements.MidMeasureMP)
+        assert isinstance(q.queue[1], qml.ops.Conditional)
+        qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))

@@ -17,7 +17,7 @@ The :code:`default.gaussian` device is a simulator for Gaussian continuous-varia
 quantum computations, and can be used as a template for writing PennyLane
 devices for new CV backends.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
+It implements the necessary :class:`~pennylane.devices._legacy_device.Device` methods as well as all built-in
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
 """
@@ -30,10 +30,10 @@ import numpy as np
 from scipy.special import factorial as fac
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.ops import Identity
 
 from .._version import __version__
+from ._legacy_device import Device
 
 # tolerance for numerical errors
 tolerance = 1e-10

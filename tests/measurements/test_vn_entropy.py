@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Shots, VnEntropy
+from pennylane.measurements import VnEntropy
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 
@@ -109,13 +109,54 @@ class TestInitialization:
         assert meas.numeric_type == float
         assert meas.return_type == VnEntropy
 
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ())])
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
         meas = qml.vn_entropy(wires=0)
-        dev = qml.device("default.qubit", wires=1, shots=shots)
 
-        assert meas.shape(dev, Shots(shots)) == shape
+        assert meas.shape(shots, 1) == shape
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize(
+        "subset_wires, log_base, expected_entropy",
+        [
+            ([0], None, 0.6931471805599453),  # Mixed state on first qubit (ln(2))
+            ([1], None, 0.6931471805599453),  # Mixed state on second qubit (ln(2))
+            ([0, 1], None, 0.0),  # Pure state |00>+|11> on both qubits
+            ([0], 2, 1.0),
+            ([1], 2, 1.0),
+            ([0, 1], 2, 0.0),
+        ],
+    )
+    def test_process_density_matrix_vn_entropy(
+        self, interface, subset_wires, log_base, expected_entropy
+    ):
+        """Test von Neumann entropy calculation for different subsystems and log bases."""
+        # Define a non-trivial two-qubit density matrix
+        dm = qml.math.array(
+            [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
+            like=interface,
+        )
+
+        if interface == "tensorflow":
+            dm = qml.math.cast(dm, "float64")
+
+        vn_entropy = qml.vn_entropy(wires=subset_wires, log_base=log_base).process_density_matrix(
+            dm, subset_wires
+        )
+
+        # Set tolerance based on interface
+        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+
+        assert qml.math.allclose(
+            vn_entropy, expected_entropy, atol=atol
+        ), f"Subset wires: {subset_wires}, Log base: {log_base}, VN Entropy doesn't match expected value. Got {vn_entropy}, expected {expected_entropy}"
+
+        # Test if the result is real
+        assert qml.math.allclose(
+            qml.math.imag(vn_entropy), 0, atol=atol
+        ), f"VN Entropy should be real, but got imaginary part: {qml.math.imag(vn_entropy)}"
 
 
 class TestIntegration:

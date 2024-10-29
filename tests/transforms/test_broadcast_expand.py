@@ -23,7 +23,8 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-def get_device(name="default.qubit", wires=2, seed=123):
+def get_device(name="default.qubit", wires=2, seed=None):
+    assert seed is not None, "Please use the pytest-rng provided seed"
     return qml.device(name, wires=wires, seed=seed)
 
 
@@ -56,13 +57,11 @@ H0 = qml.Hamiltonian(qml.math.array(coeffs0), [qml.PauliZ(0), qml.PauliY(1)])
 
 # Here we exploit the product structure of our circuit
 def exp_fn_Z0(x, y, z):
-    out = -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
-    return out[0] if len(out) == 1 else out
+    return -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
 
 
 def exp_fn_Y1(x, y, z):
-    out = qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
-    return out[0] if len(out) == 1 else out
+    return qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
 
 
 def exp_fn_Z0Y1(x, y, z):
@@ -92,7 +91,7 @@ class TestBroadcastExpand:
 
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_expansion(self, params, size, obs, exp_fn):
+    def test_expansion(self, params, size, obs, exp_fn, seed):
         """Test that the expansion works as expected."""
         ops = make_ops(*params)
         expvals = [qml.expval(ob) for ob in obs]
@@ -103,18 +102,18 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(), None))
+        result = fn(qml.execute(tapes, get_device(seed=seed), None))
         expected = exp_fn(*params)
 
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_expansion_qnode(self, params, obs, exp_fn):
+    def test_expansion_qnode(self, params, obs, exp_fn, seed):
         """Test that the transform integrates correctly with the transform program"""
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(get_device())
+        @qml.qnode(get_device(seed=seed))
         def circuit(x, y, z, obs):
             qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
             _ = make_ops(x, y, z)
@@ -127,7 +126,7 @@ class TestBroadcastExpand:
 
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic):
+    def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
         expvals = [qml.expval(ob) for ob in obs]
@@ -139,7 +138,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(seed=1), None))
+        result = fn(qml.execute(tapes, get_device(seed=seed), None))
         expected = exp_fn(*params)
 
         assert len(result) == len(shots)
@@ -155,7 +154,7 @@ class TestBroadcastExpand:
             ([{"op": qml.PauliZ(0)}, {"wires": [0, 1]}], [2, 4]),
         ],
     )
-    def test_shot_vector_probs(self, params, size, args, shapes):
+    def test_shot_vector_probs(self, params, size, args, shapes, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
         mps = [qml.probs(**a) for a in args]
@@ -167,7 +166,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(), None))
+        result = fn(qml.execute(tapes, get_device(seed=seed), None))
         assert len(result) == len(shots)
         for r in result:
             for i, _r in enumerate(r):
@@ -182,7 +181,7 @@ class TestBroadcastExpand:
             ([{"op": qml.PauliZ(0)}, {"wires": [0, 1]}], [(), (2,)]),
         ],
     )
-    def test_shot_vector_sample(self, params, size, args, shapes):
+    def test_shot_vector_sample(self, params, size, args, shapes, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
         mps = [qml.sample(**a) for a in args]
@@ -194,7 +193,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(), None))
+        result = fn(qml.execute(tapes, get_device(seed=seed), None))
         assert len(result) == len(shots)
         for i, r in enumerate(result):
             for j, _r in enumerate(r):
@@ -213,7 +212,7 @@ class TestBroadcastExpand:
             [{"op": qml.PauliZ(0)}, {"wires": [0, 1]}],
         ],
     )
-    def test_shot_vector_counts(self, params, size, args):
+    def test_shot_vector_counts(self, params, size, args, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
         mps = [qml.counts(**a) for a in args]
@@ -225,7 +224,7 @@ class TestBroadcastExpand:
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(), None))
+        result = fn(qml.execute(tapes, get_device(seed=seed), None))
         assert len(result) == len(shots)
         for r in result:
             for _r in r:
@@ -236,7 +235,7 @@ class TestBroadcastExpand:
                     # TODO: Update broadcast_expand to unwrap counts dictionaries from 0-D numpy arrays
                     assert isinstance(_r.item(), dict)
 
-    def test_state_prep(self):
+    def test_state_prep(self, seed):
         """Test that expansion works for state preparations"""
         ops = [qml.CNOT([0, 1])]
         meas = [qml.expval(qml.PauliZ(1))]
@@ -247,7 +246,7 @@ class TestBroadcastExpand:
         assert len(tapes) == 4
         assert all(t.batch_size is None for t in tapes)
 
-        result = fn(qml.execute(tapes, get_device(), None))
+        result = fn(qml.execute(tapes, get_device(seed=seed), None))
         expected = np.array([1, -1, -1, 1])
 
         assert qml.math.allclose(result, expected)
@@ -277,12 +276,12 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_autograd(self, params, obs, exp_fn, diff_method):
+    def test_autograd(self, params, obs, exp_fn, diff_method, seed):
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(), interface="autograd", diff_method=diff_method)
+        @qml.qnode(get_device(seed=seed), interface="autograd", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
             return qml.math.stack([qml.expval(ob) for ob in obs])
@@ -301,7 +300,7 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("use_jit", [True, False])
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_jax(self, params, obs, exp_fn, use_jit, diff_method):
+    def test_jax(self, params, obs, exp_fn, use_jit, diff_method, seed):
         """Test that the expansion works with jax and is differentiable."""
         # pylint: disable=too-many-arguments
         import jax
@@ -311,7 +310,7 @@ class TestBroadcastExpand:
         params = tuple(jax.numpy.array(p) for p in params)
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(), interface="jax", diff_method=diff_method)
+        @qml.qnode(get_device(seed=seed), interface="jax", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)
@@ -337,14 +336,14 @@ class TestBroadcastExpand:
     @pytest.mark.tf
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_tf(self, params, obs, exp_fn):
+    def test_tf(self, params, obs, exp_fn, seed):
         """Test that the expansion works with TensorFlow and is differentiable."""
         import tensorflow as tf
 
         params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(), interface="tensorflow")
+        @qml.qnode(get_device(seed=seed), interface="tensorflow")
         def cost(*params):
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)
@@ -367,7 +366,7 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_torch(self, params, obs, exp_fn, diff_method):
+    def test_torch(self, params, obs, exp_fn, diff_method, seed):
         """Test that the expansion works with torch and is differentiable."""
         import torch
 
@@ -377,7 +376,7 @@ class TestBroadcastExpand:
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(), interface="torch", diff_method=diff_method)
+        @qml.qnode(get_device(seed=seed), interface="torch", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)

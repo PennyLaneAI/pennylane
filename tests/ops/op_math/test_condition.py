@@ -493,5 +493,179 @@ class TestMethods:
         adj_op = op.adjoint()
 
         assert isinstance(adj_op, Conditional)
-        assert adj_op.meas_val == op.meas_val
+        assert adj_op.meas_val is op.meas_val
         assert adj_op.base == base.adjoint()
+
+
+class TestPythonFallback:
+    """Test python fallback"""
+
+    def test_simple_if(self):
+        """Test a simple if statement"""
+
+        def f(x):
+            c = qml.cond(x > 1, np.sin)
+            assert c.true_fn is np.sin
+            assert c.condition is (x > 1)
+            return c(x)
+
+        assert np.allclose(f(1.5), np.sin(1.5))
+        assert f(0.5) is None
+
+    def test_simple_if_else(self):
+        """Test a simple if-else statement"""
+
+        def f(x):
+            c = qml.cond(x > 1, np.sin, np.cos)
+            assert c.false_fn is np.cos
+            return c(x)
+
+        assert np.allclose(f(1.5), np.sin(1.5))
+        assert np.allclose(f(0.5), np.cos(0.5))
+
+    def test_simple_if_elif_else(self):
+        """Test a simple if-elif-else statement"""
+
+        def f(x):
+            elifs = [(x >= -1, lambda y: y**2), (x > -10, lambda y: y**3)]
+            c = qml.cond(x > 1, np.sin, np.cos, elifs)
+            return c(x)
+
+        assert np.allclose(f(1.5), np.sin(1.5))
+        assert np.allclose(f(-0.5), (-0.5) ** 2)
+        assert np.allclose(f(-5), (-5) ** 3)
+        assert np.allclose(f(-10.5), np.cos(-10.5))
+
+    def test_simple_if_elif_else_order(self):
+        """Test a simple if-elif-else statement where the order of the elif
+        statements matter"""
+
+        def f(x):
+            elifs = [(x > -10, lambda y: y**3), (x >= -1, lambda y: y**2)]
+            c = qml.cond(x > 1, np.sin, np.cos, elifs)
+
+            for i, j in zip(c.elifs, elifs):
+                assert i[0] is j[0]
+                assert i[1] is j[1]
+
+            return c(x)
+
+        assert np.allclose(f(1.5), np.sin(1.5))
+        assert np.allclose(f(-0.5), (-0.5) ** 3)
+        assert np.allclose(f(-5), (-5) ** 3)
+        assert np.allclose(f(-10.5), np.cos(-10.5))
+
+    def test_decorator_syntax_if(self):
+        """test a decorator if statement"""
+
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional(y):
+                return y**2
+
+            return conditional(x + 1)
+
+        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert f(-0.5) is None
+
+    def test_decorator_syntax_if_else(self):
+        """test a decorator if-else statement"""
+
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional(y):
+                return y**2
+
+            @conditional.otherwise
+            def conditional_false_fn(y):  # pylint: disable=unused-variable
+                return -y
+
+            return conditional(x + 1)
+
+        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert np.allclose(f(-0.5), -(-0.5 + 1))
+
+    def test_decorator_syntax_if_elif_else(self):
+        """test a decorator if-elif-else statement"""
+
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional(y):
+                return y**2
+
+            @conditional.else_if(x < -2)
+            def conditional_elif(y):  # pylint: disable=unused-variable
+                return y
+
+            @conditional.otherwise
+            def conditional_false_fn(y):  # pylint: disable=unused-variable
+                return -y
+
+            return conditional(x + 1)
+
+        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert np.allclose(f(-0.5), -(-0.5 + 1))
+        assert np.allclose(f(-2.5), (-2.5 + 1))
+
+    def test_error_mcms_elif(self):
+        """Test that an error is raised if elifs are provided
+        when the conditional includes an MCM"""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.RX, elifs=[(~m, qml.RY)])
+            return qml.probs
+
+        with pytest.raises(ConditionalTransformError, match="'elif' branches are not supported"):
+            circuit(0.5)
+
+    def test_error_no_true_fn(self):
+        """Test that an error is raised if no true_fn is provided
+        when the conditional includes an MCM"""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            m = qml.measure(0)
+
+            @qml.cond(m)
+            def conditional():
+                qml.RZ(x**2)
+
+            conditional()
+            return qml.probs
+
+        with pytest.raises(TypeError, match="cannot be used as a decorator"):
+            circuit(0.5)
+
+    def test_qnode(self):
+        """Test that qml.cond fallsback to Python when used
+        within a QNode"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            elifs = [(x > 1.4, lambda y, wires: qml.RY(y**2, wires=wires))]
+            c = qml.cond(x > 2.7, qml.RX, qml.RZ, elifs)
+            c(x, wires=0)
+            return qml.probs(wires=0)
+
+        circuit(3)
+        ops = circuit.tape.operations
+        assert len(ops) == 1
+        assert ops[0].name == "RX"
+
+        circuit(2)
+        ops = circuit.tape.operations
+        assert len(ops) == 1
+        assert ops[0].name == "RY"
+        assert np.allclose(ops[0].parameters[0], 2**2)
+
+        circuit(1)
+        ops = circuit.tape.operations
+        assert len(ops) == 1
+        assert ops[0].name == "RZ"

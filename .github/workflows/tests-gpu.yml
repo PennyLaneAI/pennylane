@@ -7,15 +7,15 @@ on:
     types:
       - opened
       - reopened
-      - labeled
       - synchronize
+      - ready_for_review
 
 concurrency:
   group: gpu-test-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  TORCH_VERSION: 2.2.0
+  TORCH_VERSION: 2.3.0
 
 jobs:
   gpu-tests:
@@ -29,6 +29,7 @@ jobs:
         github.event_name == 'push' ||
         (
           github.event_name == 'pull_request' &&
+          github.event.pull_request.draft == false &&
           contains(github.event.pull_request.labels.*.name, 'gpu') &&
           github.event.pull_request.state == 'open'
         )
@@ -38,9 +39,9 @@ jobs:
       max-parallel: 2
       matrix:
         python-version:
-          - 3.9
           - '3.10'
           - '3.11'
+          - '3.12'
 
     env:
       SUITE: gpu

@@ -61,7 +61,7 @@ class QNSPSAOptimizer:
 
     where :math:`F(\mathbf{x}', \mathbf{x}) = \bigr\rvert\langle \phi(\mathbf{x}') | \phi(\mathbf{x}) \rangle \bigr\rvert ^ 2`
     measures the state overlap between :math:`\phi(\mathbf{x}')` and :math:`\phi(\mathbf{x})`,
-    where :math:`\phi` is the parameterized ansatz. The finite difference :math:`\delta F` is
+    where :math:`\phi` is the parametrized ansatz. The finite difference :math:`\delta F` is
     computed from the two perturbations:
 
     .. math::
@@ -77,7 +77,7 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa.html>`_.
+    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa>`_.
 
     **Examples:**
 
@@ -94,8 +94,8 @@ class QNSPSAOptimizer:
     Once constructed, the qnode can be passed directly to the ``step`` or ``step_and_cost``
     function of the optimizer.
 
-    >>> from pennylane import numpy as pnp
-    >>> params = pnp.random.rand(2)
+    >>> from pennylane import numpy as np
+    >>> params = np.random.rand(2)
     >>> opt = QNSPSAOptimizer(stepsize=5e-2)
     >>> for i in range(51):
     >>>     params, loss = opt.step_and_cost(cost, params)
@@ -110,7 +110,7 @@ class QNSPSAOptimizer:
 
     Keyword Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default: 1e-3)
-        regularization (float): regularitzation term :math:`\beta` to the Fubini-Study metric tensor
+        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
             for numerical stability (default: 1e-3)
         finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
             gradient and the Fubini-Study metric tensor (default: 1e-2)
@@ -159,7 +159,7 @@ class QNSPSAOptimizer:
             kwargs : variable length of keyword arguments for the qnode
 
         Returns:
-            pnp.array: the new variable values after step-wise update :math:`x^{(t+1)}`
+            pnp.ndarray: the new variable values after step-wise update :math:`x^{(t+1)}`
         """
         if self.blocking:
             warnings.warn(
@@ -204,7 +204,7 @@ class QNSPSAOptimizer:
             kwargs : variable length of keyword arguments for the qnode
 
         Returns:
-            pnp.array: the new variable values :math:`x^{(t+1)}` before the blocking condition
+            pnp.ndarray: the new variable values :math:`x^{(t+1)}` before the blocking condition
             is applied.
         """
         all_grad_tapes = []
@@ -442,15 +442,11 @@ class QNSPSAOptimizer:
         cost.construct(params_next, kwargs)
         tape_loss_next = cost.tape.copy(copy_operations=True)
 
-        if isinstance(cost.device, qml.devices.Device):
-            program, _ = cost.device.preprocess()
+        program, _ = cost.device.preprocess()
 
-            loss_curr, loss_next = qml.execute(
-                [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
-            )
-
-        else:
-            loss_curr, loss_next = qml.execute([tape_loss_curr, tape_loss_next], cost.device, None)
+        loss_curr, loss_next = qml.execute(
+            [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
+        )
 
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size

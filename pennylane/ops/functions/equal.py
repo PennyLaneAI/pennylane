@@ -40,8 +40,8 @@ from pennylane.ops import (
     SProd,
 )
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
-from pennylane.tape import QuantumTape
-from pennylane.templates.subroutines import ControlledSequence
+from pennylane.tape import QuantumScript
+from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -49,8 +49,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumTape],
-    op2: Union[Operator, MeasurementProcess, QuantumTape],
+    op1: Union[Operator, MeasurementProcess, QuantumScript],
+    op2: Union[Operator, MeasurementProcess, QuantumScript],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -169,8 +169,8 @@ def equal(
 
 
 def assert_equal(
-    op1: Union[Operator, MeasurementProcess, QuantumTape],
-    op2: Union[Operator, MeasurementProcess, QuantumTape],
+    op1: Union[Operator, MeasurementProcess, QuantumScript],
+    op2: Union[Operator, MeasurementProcess, QuantumScript],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -806,4 +806,18 @@ def _equal_hilbert_schmidt(
     if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
         return False
 
+    return True
+
+
+@_equal_dispatch.register
+def _equal_prep_sel_prep(
+    op1: PrepSelPrep, op2: PrepSelPrep, **kwargs
+):  # pylint: disable=unused-argument
+    """Determine whether two PrepSelPrep are equal"""
+    if op1.control != op2.control:
+        return f"op1 and op2 have different control wires. Got {op1.control} and {op2.control}."
+    if op1.wires != op2.wires:
+        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
+    if not qml.equal(op1.lcu, op2.lcu):
+        return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
     return True

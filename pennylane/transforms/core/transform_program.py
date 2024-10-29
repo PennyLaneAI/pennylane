@@ -19,7 +19,7 @@ from functools import partial
 from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
@@ -489,7 +489,9 @@ class TransformProgram:
 
         qnode.construct(args, kwargs)
 
-    def __call__(self, tapes: QuantumTapeBatch) -> tuple[QuantumTapeBatch, BatchPostprocessingFn]:
+    def __call__(
+        self, tapes: QuantumScriptBatch
+    ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]:
         if not self:
             return tapes, null_postprocessing
 

@@ -1,0 +1,100 @@
+name: Trigger Benchmarks
+on:
+  issue_comment:
+    types:
+      - created
+
+env:
+  BENCHMARK_TRIGGER_COMMAND: /benchmark
+
+jobs:
+  trigger_benchmark_webhook:
+    runs-on: ubuntu-latest
+
+    # Only run for pull request comments (newly created)
+    if: github.event.issue.pull_request
+
+    steps:
+      - name: Check Comment Body
+        id: comment_body
+        run: echo "triggers_benchmark=${{ github.event.comment.body == env.BENCHMARK_TRIGGER_COMMAND }}" >> $GITHUB_OUTPUT
+
+      - name: Set Repository Info
+        id: repo_info
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          echo "REPO_OWNER=$REPO_OWNER" >> $GITHUB_OUTPUT
+          echo "REPO_NAME=${GITHUB_REPOSITORY#$REPO_OWNER/}" >> $GITHUB_OUTPUT
+
+      - name: Check if commenter has write access
+        id: comment_user
+        if: steps.comment_body.outputs.triggers_benchmark == 'true'
+        uses: actions/github-script@v7
+        env:
+          REPO_OWNER: ${{ steps.repo_info.outputs.REPO_OWNER }}
+          REPO_NAME: ${{ steps.repo_info.outputs.REPO_NAME }}
+        with:
+          retries: 3
+          result-encoding: string
+          script: |
+            const user = context.payload.sender.login;
+            console.log(`Checking permissions for '${user}' on repository ${process.env.REPO_OWNER}/${process.env.REPO_NAME}}`);
+
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: process.env.REPO_OWNER,
+              repo: process.env.REPO_NAME,
+              username: user
+            });
+            const userPermissions = data.user.permissions;
+            const permission = userPermissions.admin || userPermissions.maintain;
+
+            console.log(`User '${user}' has admin/maintain access => ${permission}`);
+
+            return permission;
+      
+      - name: Trigger Benchmark Webhook
+        if: steps.comment_body.outputs.triggers_benchmark == 'true' && steps.comment_user.outputs.result == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        env:
+          # The repo that is triggering the source webhook
+          WEBHOOK_METADATA_SOURCE_REPO: ${{ steps.repo_info.outputs.REPO_OWNER }}/${{ steps.repo_info.outputs.REPO_NAME }}
+          
+          # The URL of the actual actions run that triggered the webhook
+          WEBHOOK_METADATA_ACTIONS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          # The username of the person who commented the trigger command on the pull request
+          WEBHOOK_METADATA_GITHUB_ACTOR: ${{ github.event.comment.user.login }}
+          WEBHOOK_METADATA_COMMENT_LINK: ${{ github.event.comment.html_url }}
+          
+          # Information regarding the pull request
+          WEBHOOK_METADATA_PULL_REQUEST_NUMBER: ${{ github.event.issue.number }}
+          WEBHOOK_METADATA_PULL_REQUEST_URL: ${{ github.event.issue.html_url }}
+        with:
+          token: ${{ secrets.PENNYLANE_BENCHMARKS_WEBHOOK_TOKEN }}
+          repository: PennyLaneAI/${{ secrets.PENNYLANE_BENCHMARKS_REPOSITORY_NAME }}
+          event-type: pull-request-benchmark
+          client-payload: |
+            {
+              "source_repo": "${{ env.WEBHOOK_METADATA_SOURCE_REPO }}",
+              "actions_run_url": "${{ env.WEBHOOK_METADATA_ACTIONS_RUN_URL }}",
+              "github_actor": "${{ env.WEBHOOK_METADATA_GITHUB_ACTOR }}",
+              "pull_request_number": ${{ env.WEBHOOK_METADATA_PULL_REQUEST_NUMBER }},
+              "pull_request_url": "${{ env.WEBHOOK_METADATA_PULL_REQUEST_URL }}",
+              "comment_link": "${{ env.WEBHOOK_METADATA_COMMENT_LINK }}"
+            }
+          
+      - name: React to original comment indicating webhook sent
+        if: steps.comment_user.outputs.result == 'true' 
+        uses: actions/github-script@v7
+        env:
+          REPO_OWNER: ${{ steps.repo_info.outputs.REPO_OWNER }}
+          REPO_NAME: ${{ steps.repo_info.outputs.REPO_NAME }}
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: process.env.REPO_OWNER,
+              repo: process.env.REPO_NAME,
+              comment_id: context.payload.comment.id,
+              content: '+1'
+            });

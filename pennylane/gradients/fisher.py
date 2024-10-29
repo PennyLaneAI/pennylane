@@ -13,13 +13,14 @@
 # limitations under the License.
 """Contains functions for computing classical and quantum fisher information matrices."""
 # pylint: disable=import-outside-toplevel, not-callable
-from collections.abc import Callable, Sequence
 from functools import partial
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
+from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
+from pennylane.typing import PostprocessingFn
 
 
 # TODO: create qml.math.jacobian and replace it here
@@ -72,7 +73,9 @@ def _compute_cfim(p, dp):
 
 
 @transform
-def _make_probs(tape: qml.tape.QuantumTape) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+def _make_probs(
+    tape: qml.tape.QuantumScript,
+) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:
     """Ignores the return types of the provided circuit and creates a new one
     that outputs probabilities"""
     qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(tape.wires)], shots=tape.shots)
@@ -121,7 +124,7 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        import pennylane.numpy as pnp
+        import pennylane.numpy as np
 
         dev = qml.device("default.qubit")
 
@@ -135,18 +138,18 @@ def classical_fisher(qnode, argnums=0):
 
     Executing this circuit yields the ``2**2=4`` elements of :math:`p_\ell(\bm{\theta})`
 
-    >>> pnp.random.seed(25)
-    >>> params = pnp.random.random(2)
+    >>> np.random.seed(25)
+    >>> params = np.random.random(2)
     >>> circ(params)
-    [0.41850088 0.41850088 0.08149912 0.08149912]
+    tensor([0.41850088, 0.41850088, 0.08149912, 0.08149912], requires_grad=True)
 
     We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
     by ``classical_fisher()``:
 
-    >>> cfim_func = qml.gradient.classical_fisher(circ)
+    >>> cfim_func = qml.gradients.classical_fisher(circ)
     >>> cfim_func(params)
-    [[ 0.901561 -0.125558]
-     [-0.125558  0.017486]]
+    tensor([[ 0.90156094, -0.12555804],
+            [-0.12555804,  0.01748614]], requires_grad=True)
 
     This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
@@ -156,13 +159,14 @@ def classical_fisher(qnode, argnums=0):
         def circ(x, y):
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
-            return qml.probs(wires=range(n_wires))
+            return qml.probs(wires=range(1))
 
-    >>> x, y = pnp.array([0.5, 0.6], requires_grad=True)
+    >>> x, y = np.array([0.5, 0.6], requires_grad=True)
     >>> circ(x, y)
-    [0.86215007 0.         0.13784993 0.        ]
-    >>> qml.gradient.classical_fisher(circ)(x, y)
-    [array([[0.32934729]]), array([[0.51650396]])]
+    tensor([0.86215007, 0.13784993], requires_grad=True)
+    >>> qml.gradients.classical_fisher(circ)(x, y)
+    [tensor([[0.32934729]], requires_grad=True),
+    tensor([[0.51650396]], requires_grad=True)]
 
     Note how in the case of multiple variables we get a list of matrices with sizes
     ``[(n_params0, n_params0), (n_params1, n_params1)]``, which in this case is simply two ``(1, 1)`` matrices.
@@ -186,13 +190,13 @@ def classical_fisher(qnode, argnums=0):
             qml.CNOT(wires=(0,1))
             return qml.expval(H)
 
-        params = pnp.random.random(4)
+        params = np.random.random(4)
 
     We can compute both the gradient of :math:`\langle H \rangle` and the CFIM with the same :class:`.QNode` ``circ``
     in this example since ``classical_fisher()`` ignores the return types and assumes ``qml.probs()`` for all wires.
 
     >>> grad = qml.grad(circ)(params)
-    >>> cfim = qml.gradient.classical_fisher(circ)(params)
+    >>> cfim = qml.gradients.classical_fisher(circ)(params)
     >>> print(grad.shape, cfim.shape)
     (4,) (4, 4)
 
@@ -215,16 +219,16 @@ def classical_fisher(qnode, argnums=0):
             qml.RX(qml.math.cos(params[1]), wires=1)
             return qml.probs(wires=range(2))
 
-        params = pnp.random.random(2)
+        params = np.random.random(2)
 
-    >>> qml.gradient.classical_fisher(circ)(params)
-    [[4.18575068e-06 2.34443943e-03]
-     [2.34443943e-03 1.31312079e+00]]
-    >>> qml.jacobian(qml.gradient.classical_fisher(circ))(params)
-    array([[[9.98030491e-01, 3.46944695e-18],
-            [1.36541817e-01, 5.15248592e-01]],
-           [[1.36541817e-01, 5.15248592e-01],
-            [2.16840434e-18, 2.81967252e-01]]]))
+    >>> qml.gradients.classical_fisher(circ)(params)
+    tensor([[0.86929514, 0.76134441],
+            [0.76134441, 0.6667992 ]], requires_grad=True)
+    >>> qml.jacobian(qml.gradients.classical_fisher(circ))(params)
+    array([[[ 1.98284265e+00, -1.60461922e-16],
+            [ 8.68304725e-01,  1.07654307e+00]],
+           [[ 8.68304725e-01,  1.07654307e+00],
+            [ 7.30752264e-17,  1.88571178e+00]]])
 
     """
     new_qnode = _make_probs(qnode)
@@ -242,14 +246,18 @@ def classical_fisher(qnode, argnums=0):
 
             jac = jax.jacobian(new_qnode, argnums=argnums)
 
-        if interface == "torch":
+        elif interface == "torch":
             jac = _torch_jac(new_qnode)
 
-        if interface == "autograd":
+        elif interface == "autograd":
             jac = qml.jacobian(new_qnode)
 
-        if interface == "tf":
+        elif interface == "tf":
             jac = _tf_jac(new_qnode)
+        else:
+            raise ValueError(
+                f"Interface {interface} not supported for jacobian calculations."
+            )  # pragma: no cover
 
         j = jac(*args, **kwargs)
         p = new_qnode(*args, **kwargs)
@@ -273,10 +281,10 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-@partial(transform, is_informative=True)
+@partial(transform, classical_cotransform=_contract_metric_tensor_with_cjac, is_informative=True)
 def quantum_fisher(
-    tape: qml.tape.QuantumTape, device, *args, **kwargs
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    tape: qml.tape.QuantumScript, device, *args, **kwargs
+) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -305,9 +313,12 @@ def quantum_fisher(
 
     .. note::
 
-        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on a device with
-        exact expectations (``shots=None``) that inherits from ``"default.qubit"``. In all other cases, i.e. if a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
-        Please refer to their respective documentations for details on the arguments.
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`.
+        Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on ``"default.qubit"``
+        with exact expectations (``shots=None``). In all other cases, e.g. if a device with finite shots
+        is used, the hardware-compatible transform :func:`~.pennylane.metric_tensor` is used, which
+        may require an additional wire on the device.
+        Please refer to the respective documentations for details.
 
     **Example**
 
@@ -315,6 +326,8 @@ def quantum_fisher(
     A typical scenario is optimizing the expectation value of a Hamiltonian:
 
     .. code-block:: python
+
+        from pennylane import numpy as np
 
         n_wires = 2
 
@@ -330,18 +343,18 @@ def quantum_fisher(
             qml.RZ(params[2], wires=1)
             return qml.expval(H)
 
-        params = pnp.array([0.5, 1., 0.2], requires_grad=True)
+        params = np.array([0.5, 1., 0.2], requires_grad=True)
 
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
     >>> grad = qml.grad(circ)(params)
     >>> grad
-    [ 0.59422561 -0.02615095 -0.05146226]
-    >>> qfim = qml.gradient.quantum_fisher(circ)(params)
+    array([ 0.59422561, -0.02615095, -0.05146226])
+    >>> qfim = qml.gradients.quantum_fisher(circ)(params)
     >>> qfim
-    [[1.         0.         0.        ]
-     [0.         1.         0.        ]
-     [0.         0.         0.77517241]]
+    tensor([[1.        , 0.        , 0.        ],
+            [0.        , 1.        , 0.        ],
+            [0.        , 0.        , 0.77517241]], requires_grad=True)
     >>> qfim @ grad
     tensor([ 0.59422561, -0.02615095, -0.03989212], requires_grad=True)
 
@@ -356,15 +369,15 @@ def quantum_fisher(
     ...     qml.RY(params[1], wires=1)
     ...     qml.RZ(params[2], wires=1)
     ...     return qml.expval(H)
-    >>> qfim = qml.gradient.quantum_fisher(circ)(params)
+    >>> qfim = qml.gradients.quantum_fisher(circ)(params)
 
     Alternatively, we can fall back on the block-diagonal QFIM without the additional wire.
 
-    >>> qfim = qml.gradient.quantum_fisher(circ, approx="block-diag")(params)
+    >>> qfim = qml.gradients.quantum_fisher(circ, approx="block-diag")(params)
 
     """
 
-    if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
+    if device.shots or not isinstance(device, DefaultQubit):
         tapes, processing_fn = qml.gradients.metric_tensor(tape, *args, **kwargs)
 
         def processing_fn_multiply(res):

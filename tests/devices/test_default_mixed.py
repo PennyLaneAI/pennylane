@@ -162,7 +162,7 @@ class TestReset:
     def test_reset_basis(self, nr_wires, tol):
         """Test the reset after creating a basis state."""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = dev._create_basis_state(1)
+        dev.target_device._state = dev._create_basis_state(1)
         dev.reset()
 
         assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
@@ -215,7 +215,7 @@ class TestAnalyticProb:
     def test_prob_basis_state(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the basis state |1...1><1...1|"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = dev._create_basis_state(2**nr_wires - 1)
+        dev.target_device._state = dev._create_basis_state(2**nr_wires - 1)
         probs = np.zeros(2**nr_wires)
         probs[-1] = 1
 
@@ -224,7 +224,7 @@ class TestAnalyticProb:
     def test_prob_hadamard(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the equal superposition state"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = hadamard_state(nr_wires)
+        dev.target_device._state = hadamard_state(nr_wires)
         probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
@@ -232,7 +232,7 @@ class TestAnalyticProb:
     def test_prob_mixed(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the maximally mixed state"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = max_mixed_state(nr_wires)
+        dev.target_device._state = max_mixed_state(nr_wires)
         probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
@@ -240,7 +240,7 @@ class TestAnalyticProb:
     def test_prob_root(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the root state"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = root_state(nr_wires)
+        dev.target_device._state = root_state(nr_wires)
         probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
@@ -248,7 +248,7 @@ class TestAnalyticProb:
     def test_none_state(self, nr_wires):
         """Tests that return is `None` when the state is `None`"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = None
+        dev.target_device._state = None
 
         assert dev.analytic_probability() is None
 
@@ -408,7 +408,7 @@ class TestApplyChannel:
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         max_mixed = np.reshape(max_mixed_state(nr_wires), [2] * 2 * nr_wires)
-        dev._state = max_mixed
+        dev.target_device._state = max_mixed
         kraus = dev._get_kraus(op)
         getattr(dev, apply_method)(kraus, wires=op.wires)
 
@@ -483,7 +483,7 @@ class TestApplyChannel:
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
-        dev._state = root
+        dev.target_device._state = root
         kraus = dev._get_kraus(op)
         getattr(dev, apply_method)(kraus, wires=op.wires)
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
@@ -514,7 +514,7 @@ class TestApplyChannel:
 
         dev = qml.device("default.mixed", wires=num_dev_wires)
         init_state = random_state(num_dev_wires)
-        dev._state = qml.math.reshape(init_state, [2] * (2 * num_dev_wires))
+        dev.target_device._state = qml.math.reshape(init_state, [2] * (2 * num_dev_wires))
 
         kraus = dev._get_kraus(op)
         full_kraus = [qml.math.expand_matrix(k, op.wires, wire_order=dev.wires) for k in kraus]
@@ -596,7 +596,7 @@ class TestApplyDiagonal:
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
-        dev._state = root
+        dev.target_device._state = root
         kraus = dev._get_kraus(op)
         if op.name == "CZ":
             dev._apply_diagonal_unitary(kraus, wires=Wires([0, 1]))
@@ -1074,7 +1074,7 @@ class TestApply:
         state = np.array([0])
         ops = [PauliX(0), BasisState(state, wires=0)]
 
-        with pytest.raises(DeviceError, match="Operation"):
+        with pytest.raises(qml.DeviceError, match="Operation"):
             dev.apply(ops)
 
     def test_raise_order_error_qubit_state(self):
@@ -1084,7 +1084,7 @@ class TestApply:
         state = np.array([1, 0])
         ops = [PauliX(0), StatePrep(state, wires=0)]
 
-        with pytest.raises(DeviceError, match="Operation"):
+        with pytest.raises(qml.DeviceError, match="Operation"):
             dev.apply(ops)
 
     def test_apply_toffoli(self, tol):
@@ -1203,13 +1203,15 @@ class TestReadoutError:
     @pytest.mark.parametrize("prob", [0, 0.5, 1])
     @pytest.mark.parametrize("nr_wires", [2, 3])
     def test_readout_vnentropy_and_mutualinfo(self, nr_wires, prob):
-        """Tests the output of qml.vn_entropy and qml.mutual_info is not affected by readout error"""
+        """Tests the output of qml.vn_entropy and qml.mutual_info
+        are not affected by readout error"""
         dev = qml.device("default.mixed", wires=nr_wires, readout_prob=prob)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.vn_entropy(wires=0, log_base=2), qml.mutual_info(
-                wires0=[0], wires1=[1], log_base=2
+            return (
+                qml.vn_entropy(wires=0, log_base=2),
+                qml.mutual_info(wires0=[0], wires1=[1], log_base=2),
             )
 
         res = circuit()

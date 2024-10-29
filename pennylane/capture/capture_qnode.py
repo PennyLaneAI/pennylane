@@ -15,16 +15,19 @@
 This submodule defines a capture compatible call to QNodes.
 """
 
-import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
 
 import pennylane as qml
 
+from .flatfn import FlatFn
+
 has_jax = True
 try:
     import jax
+    from jax.interpreters import ad
+
 except ImportError:
     has_jax = False
 
@@ -70,13 +73,7 @@ def _get_qnode_prim():
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r"The max_expansion argument is deprecated and will be removed in version 0.39.",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            qnode = qml.QNode(qfunc, device, **qnode_kwargs)
+        qnode = qml.QNode(qfunc, device, **qnode_kwargs)
         return qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
 
     # pylint: disable=unused-argument
@@ -85,16 +82,16 @@ def _get_qnode_prim():
         mps = qfunc_jaxpr.outvars
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
 
+    def make_zero(tan, arg):
+        return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
+
+    def _qnode_jvp(args, tangents, **impl_kwargs):
+        tangents = tuple(map(make_zero, tangents, args))
+        return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
+
+    ad.primitive_jvps[qnode_prim] = _qnode_jvp
+
     return qnode_prim
-
-
-# pylint: disable=protected-access
-def _get_device_shots(device) -> "qml.measurements.Shots":
-    if isinstance(device, qml.devices.LegacyDevice):
-        if device._shot_vector:
-            return qml.measurements.Shots(device._raw_shot_sequence)
-        return qml.measurements.Shots(device.shots)
-    return device.shots
 
 
 def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
@@ -149,7 +146,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
                   h:AbstractMeasurement(n_wires=0) = probs_wires
                 in (g, h) }
               qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x10557a070>', interface='auto', diff_method='best'>
-              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'max_expansion': 10, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
+              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
               shots=Shots(total=50000)
             ] b
             i:f32[] = mul 2.0 c
@@ -164,7 +161,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if "shots" in kwargs:
         shots = qml.measurements.Shots(kwargs.pop("shots"))
     else:
-        shots = _get_device_shots(qnode.device)
+        shots = qnode.device.shots
     if shots.has_partitioned_shots:
         # Questions over the pytrees and the nested result object shape
         raise NotImplementedError("shot vectors are not yet supported with plxpr capture.")
@@ -174,15 +171,17 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
-    qfunc_jaxpr = jax.make_jaxpr(qfunc)(*args)
+    flat_fn = FlatFn(qfunc)
+    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
+    flat_args = jax.tree_util.tree_leaves(args)
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
-        *args,
+        *flat_args,
         shots=shots,
         qnode=qnode,
         device=qnode.device,
@@ -190,4 +189,5 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         qfunc_jaxpr=qfunc_jaxpr.jaxpr,
         n_consts=len(qfunc_jaxpr.consts),
     )
-    return res[0] if len(res) == 1 else res
+    assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
+    return jax.tree_util.tree_unflatten(flat_fn.out_tree, res)

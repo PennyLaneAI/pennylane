@@ -38,10 +38,10 @@ qubit_device_and_diff_method = [
     [qml.device("lightning.qubit", wires=4), "adjoint", False, False],
     [qml.device("lightning.qubit", wires=4), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=4), "adjoint", True, False],
+    [qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 TOL_FOR_SPSA = 1.0
-SEED_FOR_SPSA = 32651
 H_FOR_SPSA = 0.01
 
 interface_and_qubit_device_and_diff_method = [
@@ -162,7 +162,7 @@ class TestQNode:
         expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  <Z>\n1: ──RY(0.06)───────────╰X─┤  <Z>"
         assert result == expected
 
-    def test_jacobian(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface):
+    def test_jacobian(self, dev, diff_method, grad_on_execution, device_vjp, tol, interface, seed):
         """Test jacobian calculation"""
         kwargs = {
             "diff_method": diff_method,
@@ -171,7 +171,7 @@ class TestQNode:
             "device_vjp": device_vjp,
         }
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -390,7 +390,7 @@ class TestQNode:
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
     def test_differentiable_expand(
-        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface, seed
     ):
         """Test that operation and nested tapes expansion
         is differentiable"""
@@ -401,7 +401,7 @@ class TestQNode:
             "device_vjp": device_vjp,
         }
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -540,12 +540,18 @@ class TestShotsIntegration:
         circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert circuit.gradient_fn == qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
-        assert circuit.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
@@ -557,7 +563,7 @@ class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
     def test_probability_differentiation(
-        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface, seed
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple probs outputs"""
@@ -572,7 +578,7 @@ class TestQubitIntegration:
             "device_vjp": device_vjp,
         }
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -614,7 +620,7 @@ class TestQubitIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_ragged_differentiation(
-        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, tol, interface, seed
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
@@ -629,7 +635,7 @@ class TestQubitIntegration:
             "device_vjp": device_vjp,
         }
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -957,7 +963,7 @@ class TestQubitIntegration:
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
     @pytest.mark.parametrize("dtype", ("int32", "int64"))
     def test_projector(
-        self, state, dev, diff_method, grad_on_execution, device_vjp, tol, interface, dtype
+        self, state, dev, diff_method, grad_on_execution, device_vjp, tol, interface, dtype, seed
     ):
         """Test that the variance of a projector is correctly returned"""
         kwargs = {
@@ -971,9 +977,11 @@ class TestQubitIntegration:
         if diff_method == "hadamard":
             pytest.skip("Variance not implemented yet.")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
 
         P = tf.constant(state, dtype=dtype)
 
@@ -1007,6 +1015,9 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+
+        if dev.name == "reference.qubit":
+            pytest.skip("reference.qubit does not support postselection.")
 
         @qml.qnode(
             dev,
@@ -1136,7 +1147,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(
-        self, dev, diff_method, grad_on_execution, device_vjp, max_diff, tol, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, max_diff, tol, interface, seed
     ):
         """Test that if there are non-commuting groups and the number of shots is None
         the first and second order gradients are correctly evaluated"""
@@ -1150,7 +1161,7 @@ class TestTapeExpansion:
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The adjoint/hadamard method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -1201,7 +1212,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_finite_shots(
-        self, dev, diff_method, grad_on_execution, device_vjp, max_diff, interface
+        self, dev, diff_method, grad_on_execution, device_vjp, max_diff, interface, seed
     ):
         """Test that the Hamiltonian is correctly measured if there
         are non-commuting groups and the number of shots is finite
@@ -1213,7 +1224,7 @@ class TestTapeExpansion:
         elif diff_method == "spsa":
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
-                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+                "sampler_rng": np.random.default_rng(seed),
                 "num_directions": 20,
             }
             tol = TOL_FOR_SPSA

@@ -60,6 +60,11 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
+    @classmethod
+    def _primitive_bind_call(cls, wires=None, **kwargs):  # pylint: disable=arguments-differ
+        wires = [] if wires is None else wires
+        return super()._primitive_bind_call(wires=wires, **kwargs)
+
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
@@ -300,6 +305,11 @@ class GlobalPhase(Operation):
 
     grad_method = None
 
+    @classmethod
+    def _primitive_bind_call(cls, phi, wires=None, **kwargs):  # pylint: disable=arguments-differ
+        wires = [] if wires is None else wires
+        return super()._primitive_bind_call(phi, wires=wires, **kwargs)
+
     def __init__(self, phi, wires=None, id=None):
         super().__init__(phi, wires=[] if wires is None else wires, id=id)
 
@@ -326,10 +336,10 @@ class GlobalPhase(Operation):
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17+1.j, 6.123234e-17+1.j])
         """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
         exp = qml.math.exp(-1j * phi)
         ones = qml.math.ones(2**n_wires, like=phi)
-        if qml.math.get_interface(phi) == "tensorflow":
-            ones = qml.math.cast_like(ones, 1j)
 
         if qml.math.ndim(phi) == 0:
             return exp * ones

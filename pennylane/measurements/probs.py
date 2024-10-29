@@ -163,16 +163,9 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
-        len_wires = len(self.wires)
-        if len_wires == 0:
-            len_wires = len(device.wires) if device.wires else 0
-        dim = self._get_num_basis_states(len_wires, device)
-
-        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int]:
+        len_wires = len(self.wires) if self.wires else num_device_wires
+        return (2**len_wires,)
 
     def process_samples(
         self,
@@ -271,7 +264,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
-        p_state = np.sqrt(prob)
+        p_state = qml.math.sqrt(prob)
         return self.process_state(p_state, wire_order)
 
     @staticmethod

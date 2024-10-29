@@ -18,7 +18,7 @@ during execution.
 
 import pennylane as qml
 from pennylane import math
-from pennylane.tape import QuantumScript, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -48,7 +48,7 @@ def _convert_measurement_to_numpy_data(
 
 # pylint: disable=protected-access
 @transform
-def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transforms a circuit to one with purely numpy parameters.
 
     Args:

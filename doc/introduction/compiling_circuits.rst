@@ -121,6 +121,7 @@ quantum functions of optimized circuits:
     ~pennylane.transforms.remove_barrier
     ~pennylane.transforms.single_qubit_fusion
     ~pennylane.transforms.undo_swaps
+    ~pennylane.transforms.decompose
 
 :html:`</div>`
 
@@ -173,6 +174,8 @@ controlled gates and cancel adjacent inverses, we could do:
 .. code-block:: python
 
     from pennylane.transforms import commute_controlled, cancel_inverses
+    from functools import partial
+
     pipeline = [commute_controlled, cancel_inverses]
 
     @partial(qml.compile, pipeline=pipeline)
@@ -208,8 +211,8 @@ For more details on :func:`~.pennylane.compile` and the available compilation tr
 `the compilation documentation
 <../code/qml_transforms.html#transforms-for-circuit-compilation>`_.
 
-Custom decompositions
----------------------
+Custom Operator Decomposition
+-----------------------------
 
 PennyLane decomposes gates unknown to the device into other, "lower-level" gates. As a user, you may want to fine-tune this mechanism. For example, you may wish your circuit to use different fundamental gates.
 
@@ -225,7 +228,7 @@ For example, suppose we would like to implement the following QNode:
     original_qnode = qml.QNode(circuit, original_dev)
 
 >>> weights = np.array([[0.4, 0.5, 0.6]])
->>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+>>> print(qml.draw(original_qnode, level="device")(weights))
 0: ──RX(0.40)─╭●────╭X─┤  <Z>
 1: ──RX(0.50)─╰X─╭●─│──┤     
 2: ──RX(0.60)────╰X─╰●─┤     
@@ -253,7 +256,7 @@ Note that custom decomposition functions should accept keyword arguments even wh
 Now when we draw or run a QNode on this device, the gates will be expanded
 according to our specifications:
 
->>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
+>>> print(qml.draw(decomp_qnode, level="device")(weights))
 0: ──RX(0.40)────╭●──H───────╭Z──H─┤  <Z>
 1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤     
 2: ──RX(0.60)──H───────╰Z──H─╰●────┤     
@@ -261,6 +264,115 @@ according to our specifications:
 .. note::
     If the custom decomposition is only supposed to be used in a specific code context,
     a separate context manager :func:`~.pennylane.transforms.set_decomposition` can be used.
+
+Circuit Decomposition
+---------------------
+
+When compiling a circuit it is often beneficial to decompose the circuit into a set of basis gates.  
+To do this, we can use the :func:`~.pennylane.transforms.decompose` function, which allows the decomposition of 
+circuits into a set of gates defined either by their name, type, or by a set of rules they must follow.
+
+Using a gate set
+****************
+
+The example below demonstrates how a three-wire circuit can be decomposed using a pre-defined set of gates: 
+
+.. code-block:: python
+    
+    from pennylane.transforms import decompose
+    from functools import partial
+
+    dev = qml.device('default.qubit')
+    allowed_gates = {qml.Toffoli, qml.RX, qml.RZ}
+
+    @partial(decompose, gate_set=allowed_gates)
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=[0])
+        qml.Toffoli(wires=[0,1,2])
+        return qml.expval(qml.Z(0))
+    
+With the Hadamard gate not in our gate set, it will be decomposed into the respective rotation gate operators.
+
+>>> print(qml.draw(circuit)())
+0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+1: ───────────────────────────────├●─┤     
+2: ───────────────────────────────╰X─┤ 
+
+Using a gate rule
+*****************
+
+The example below demonstrates how a three-wire circuit can be decomposed using a rule that decomposes the circuit down into single or two-qubit gates: 
+
+.. code-block:: python
+
+    @partial(decompose, gate_set=lambda op: len(op.wires)<=2) 
+    @qml.qnode(dev)
+
+    def circuit():
+        qml.Toffoli(wires=[0,1,2])
+        return qml.expval(qml.Z(0)) 
+
+>>> print(qml.draw(circuit)())
+0: ───────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
+1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤     
+2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤ 
+
+Decomposition in stages
+***********************
+
+You can use the ``max_expansion`` kwarg to have control over the number 
+of decomposition stages applied to the circuit. By default, the function will decompose
+the circuit until the desired gate set is reached. 
+
+The example below shows how the user can visualize the decomposition. 
+We begin with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit: 
+
+.. code-block:: python
+
+    phase = 1 
+    target_wires = [0]
+    unitary = qml.RX(phase, wires=0).matrix()
+    n_estimation_wires = 3
+    estimation_wires = range(1, n_estimation_wires + 1)
+
+    @qml.qnode(qml.device('default.qubit'))
+    def circuit():
+        # Start in the |+> eigenstate of the unitary
+        qml.Hadamard(wires=target_wires)
+        qml.QuantumPhaseEstimation(
+            unitary,
+            target_wires=target_wires,
+            estimation_wires=estimation_wires,
+        ) 
+
+From here, we can iterate through the stages of decomposition:
+
+>>> print(qml.draw(decompose(circuit, max_expansion=0))())
+0: ──H─╭QuantumPhaseEstimation─┤  
+1: ────├QuantumPhaseEstimation─┤  
+2: ────├QuantumPhaseEstimation─┤  
+3: ────╰QuantumPhaseEstimation─┤  
+
+>>> print(qml.draw(decompose(circuit, max_expansion=1))())
+0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤  
+1: ──H─╰●──────│───────│───────╭QFT†─┤  
+2: ──H─────────╰●──────│───────├QFT†─┤  
+3: ──H─────────────────╰●──────╰QFT†─┤  
+
+>>> print(qml.draw(decompose(circuit, max_expansion=2))())
+0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)
+1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────
+2: ──H─────────────────────────────────────────────────────────────────────────────────╰●───────────
+3: ──H──────────────────────────────────────────────────────────────────────────────────────────────
+───RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X──RZ(4.71)─────────────────
+─────────────│────────────────────────────────│────────────────────────│──╭SWAP†────────────────────
+─────────────╰●───────────────────────────────│────────────────────────│──│─────────────╭(Rϕ(1.57))†
+──────────────────────────────────────────────╰●───────────────────────╰●─╰SWAP†─────H†─╰●──────────
+────────────────────────────────────┤  
+──────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤  
+───H†─│────────────╰●───────────────┤  
+──────╰●────────────────────────────┤  
 
 Circuit cutting
 ---------------

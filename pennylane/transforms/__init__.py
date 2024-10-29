@@ -51,6 +51,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.undo_swaps
     ~transforms.pattern_matching_optimization
     ~transforms.transpile
+    ~transforms.decompose
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -110,12 +111,11 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.insert
     ~transforms.add_noise
     ~defer_measurements
+    ~transforms.diagonalize_measurements
     ~transforms.split_non_commuting
     ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
-    ~transforms.hamiltonian_expand
     ~transforms.sign_expand
-    ~transforms.sum_expand
     ~transforms.convert_to_numpy_parameters
     ~apply_controlled_Q
     ~quantum_monte_carlo
@@ -200,10 +200,10 @@ function in this scenario, we include a function that simply returns the first a
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumTape, QuantumTapeBatch
+    from pennylane.tape import QuantumScript, QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
-    def remove_rx(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    def remove_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
         operations = filter(lambda op: op.name != "RX", tape.operations)
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
@@ -227,11 +227,11 @@ function into a quantum transform.
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumTape, QuantumTapeBatch
+    from pennylane.tape import QuantumScript, QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     @qml.transform
-    def sum_circuit_and_adjoint(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    def sum_circuit_and_adjoint(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
         operations = [qml.adjoint(op) for op in tape.operation]
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
@@ -316,9 +316,9 @@ from .add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
+from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
-from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
@@ -362,3 +362,4 @@ from .tape_expand import (
 from .transpile import transpile
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
+from .decompose import decompose

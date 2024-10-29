@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import VarianceMP
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff
@@ -767,14 +767,14 @@ def _param_shift_stopping_condition(op) -> bool:
 
 
 def _expand_transform_param_shift(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     shifts=None,
     gradient_recipes=None,
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift."""
     [new_tape], postprocessing = qml.devices.preprocess.decompose(
         tape,
@@ -797,14 +797,14 @@ def _expand_transform_param_shift(
     final_transform=True,
 )
 def param_shift(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     shifts=None,
     gradient_recipes=None,
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 
@@ -909,7 +909,7 @@ def param_shift(
 
     .. code-block:: python
 
-        from pennylane import numpy as pnp
+        from pennylane import numpy as np
 
         dev = qml.device("default.qubit")
         @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
@@ -919,7 +919,7 @@ def param_shift(
             qml.RX(params[2], wires=0)
             return qml.expval(qml.Z(0))
 
-    >>> params = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.jacobian(circuit)(params)
     array([-0.3875172 , -0.18884787, -0.38355704])
 
@@ -1051,7 +1051,7 @@ def param_shift(
                 qml.RX(params[2], wires=0)
                 return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
 
-        >>> params = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.param_shift(circuit)(params)
         ((array([-0.2, -0.1, -0.4]), array([0.4, 0.2, 0.8])),
          (array([-0.4 , -0.24, -0.43]), array([0.672 , 0.4032, 0.7224])),
@@ -1063,7 +1063,7 @@ def param_shift(
         circuit evaluations for each operation are batched together, resulting in
         broadcasted tapes:
 
-        >>> params = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
         >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)

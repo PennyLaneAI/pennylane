@@ -341,7 +341,6 @@ class TestExpvalEstimation:
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_non_pauli_error(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
@@ -350,7 +349,11 @@ class TestExpvalEstimation:
 
         H = qml.Hadamard(0) @ qml.Hadamard(2)
 
-        msg = "Observable must be a linear combination of Pauli observables"
+        msg = (
+            "Observable must have a valid pauli representation"
+            if qml.operation.active_new_opmath()
+            else "Observable must be a linear combination of Pauli observables"
+        )
         with pytest.raises(ValueError, match=msg):
             shadow.expval(H, k=10)
 

@@ -24,7 +24,6 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import DeviceError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -40,7 +39,7 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.ops.qubit.observables import BasisStateProjector
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -498,7 +497,7 @@ class DefaultClifford(Device):
 
     def execute(
         self,
-        circuits: Union[QuantumTape, QuantumTapeBatch],
+        circuits: Union[QuantumScript, QuantumScriptBatch],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -630,7 +629,7 @@ class DefaultClifford(Device):
             measurement_func = self._analytical_measurement_map.get(type(meas), None)
 
             if measurement_func is None:  # pragma: no cover
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Snapshots of {type(meas)} are not yet supported on default.clifford."
                 )
 

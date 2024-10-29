@@ -54,7 +54,7 @@ a JAX-capable QNode in PennyLane. Simply specify the ``interface='jax'`` keyword
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit.jax', wires=2)
+    dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='jax')
     def circuit1(phi, theta):
@@ -85,7 +85,7 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit.jax', wires=2)
+    dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='jax')
     def circuit3(phi, theta):
@@ -119,7 +119,7 @@ the ``@jax.jit`` decorator can be directly applied to the QNode.
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit.jax', wires=2)
+    dev = qml.device('default.qubit', wires=2)
 
     @jax.jit  # QNode calls will now be jitted, and should run faster.
     @qml.qnode(dev, interface='jax')
@@ -176,7 +176,7 @@ Example:
 
         # Device construction should happen inside a `jax.jit` decorated
         # method when using a PRNGKey.
-        dev = qml.device('default.qubit.jax', wires=2, prng_key=key, shots=100)
+        dev = qml.device('default.qubit', wires=2, prng_key=key, shots=100)
 
 
         @qml.qnode(dev, interface='jax', diff_method=None)

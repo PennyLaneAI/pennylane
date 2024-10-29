@@ -18,6 +18,10 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:qml.qinfo.fidelity is deprecated:pennylane.PennyLaneDeprecationWarning"
+)
+
 
 def expected_fidelity_rx_pauliz(param):
     """Return the analytical fidelity for the RX and PauliZ."""
@@ -33,6 +37,21 @@ class TestFidelityQnode:
     """Tests for Fidelity function between two QNodes."""
 
     devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+
+    def test_qinfo_transform_deprecated(self):
+        """Test that qinfo.fidelity is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="qml.qinfo.fidelity is deprecated",
+        ):
+            _ = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[1])()
 
     @pytest.mark.parametrize("device", devices)
     def test_not_same_number_wires(self, device):
@@ -120,7 +139,7 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=(np.pi))
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=np.pi)
         assert qml.math.allclose(fid, 0.0)
 
     @pytest.mark.parametrize("device", devices)
@@ -266,6 +285,7 @@ class TestFidelityQnode:
             (qml.numpy.array(param, requires_grad=True)),
             (qml.numpy.array(2 * param, requires_grad=True)),
         )
+
         expected = expected_grad_fidelity_rx_pauliz(param)
         expected_fid = [-expected, expected]
         assert qml.math.allclose(fid_grad, expected_fid)
@@ -319,6 +339,7 @@ class TestFidelityQnode:
 
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
+
         fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
         fid.backward()
         fid_grad = param.grad
@@ -347,6 +368,7 @@ class TestFidelityQnode:
 
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
+
         fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(None, (param))
         fid.backward()
         fid_grad = param.grad
@@ -374,6 +396,7 @@ class TestFidelityQnode:
             torch.tensor(param, dtype=torch.float64, requires_grad=True),
             torch.tensor(2 * param, dtype=torch.float64, requires_grad=True),
         )
+
         fid = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
         fid.backward()
         fid_grad = [p.grad for p in params]
@@ -428,9 +451,9 @@ class TestFidelityQnode:
 
         expected_grad_fid = expected_grad_fidelity_rx_pauliz(param)
         param = tf.Variable(param)
+
         with tf.GradientTape() as tape:
             entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
-
         fid_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(fid_grad, expected_grad_fid)
 
@@ -456,9 +479,9 @@ class TestFidelityQnode:
 
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         param = tf.Variable(param)
+
         with tf.GradientTape() as tape:
             entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(None, (param))
-
         fid_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
@@ -480,9 +503,9 @@ class TestFidelityQnode:
         expected = expected_grad_fidelity_rx_pauliz(param)
         expected_fid = [-expected, expected]
         params = (tf.Variable(param), tf.Variable(2 * param))
+
         with tf.GradientTape() as tape:
             fid = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
-
         fid_grad = tape.gradient(fid, params)
         assert qml.math.allclose(fid_grad, expected_fid)
 
@@ -712,7 +735,8 @@ class TestFidelityQnode:
             return qml.state()
 
         fid_grad = qml.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
-            (qml.numpy.array(param, requires_grad=True)), (qml.numpy.array(2.0, requires_grad=True))
+            (qml.numpy.array(param, requires_grad=True)),
+            (qml.numpy.array(2.0, requires_grad=True)),
         )
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
@@ -744,6 +768,7 @@ class TestFidelityQnode:
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
         param2 = torch.tensor(0, dtype=torch.float64, requires_grad=True)
+
         fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param), (param2))
         fid.backward()
         fid_grad = (param.grad, param2.grad)
@@ -777,11 +802,11 @@ class TestFidelityQnode:
 
         param1 = tf.Variable(param)
         params2 = tf.Variable(0.0)
+
         with tf.GradientTape() as tape:
             entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
                 (param1), (params2)
             )
-
         fid_grad = tape.gradient(entropy, [param1, params2])
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
@@ -858,7 +883,7 @@ def test_broadcasting(device):
 
     x = np.array([0.4, 0.6, 0.8])
     y = np.array([0.6, 0.8, 1.0])
-    fid = qml.qinfo.fidelity(circuit_state, circuit_state, wires0=[0], wires1=[1])(x, y)
 
+    fid = qml.qinfo.fidelity(circuit_state, circuit_state, wires0=[0], wires1=[1])(x, y)
     expected = 0.5 * (np.sin(x) * np.sin(y) + np.cos(x) * np.cos(y) + 1)
     assert qml.math.allclose(fid, expected)

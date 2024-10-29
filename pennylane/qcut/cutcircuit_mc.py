@@ -25,7 +25,7 @@ from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane.measurements import SampleMP
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -50,14 +50,14 @@ from .utils import (
 
 
 def _cut_circuit_mc_expand(
-    tape: QuantumTape,
+    tape: QuantumScript,
     classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     auto_cutter: Union[bool, Callable] = False,
     **kwargs,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument, too-many-arguments
@@ -70,14 +70,14 @@ def _cut_circuit_mc_expand(
 
 @partial(transform, expand_transform=_cut_circuit_mc_expand)
 def cut_circuit_mc(
-    tape: QuantumTape,
+    tape: QuantumScript,
     classical_processing_fn: Optional[callable] = None,
     auto_cutter: Union[bool, Callable] = False,
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     **kwargs,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
     Monte Carlo method.
@@ -593,8 +593,8 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: QuantumTapeBatch, communication_graph: MultiDiGraph, shots: int
-) -> tuple[QuantumTapeBatch, np.ndarray]:
+    tapes: QuantumScriptBatch, communication_graph: MultiDiGraph, shots: int
+) -> tuple[QuantumScriptBatch, np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.

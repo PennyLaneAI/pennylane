@@ -18,7 +18,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.all_interfaces
+pytestmark = [
+    pytest.mark.all_interfaces,
+    pytest.mark.filterwarnings(
+        "ignore:The qml.qinfo.reduced_dm transform is deprecated:pennylane.PennyLaneDeprecationWarning"
+    ),
+]
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
@@ -41,6 +46,21 @@ wires_list = [[0], [1], [0, 1], [1, 0]]
 
 class TestDensityMatrixQNode:
     """Tests for the (reduced) density matrix for QNodes returning states."""
+
+    def test_qinfo_transform_deprecated(self):
+        """Test that qinfo.reduced_dm is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The qml.qinfo.reduced_dm transform is deprecated",
+        ):
+            _ = qml.qinfo.reduced_dm(circuit, [0])()
 
     def test_reduced_dm_cannot_specify_device(self):
         """Test that an error is raised if a device or device wires are given
@@ -165,6 +185,7 @@ class TestDensityMatrixQNode:
             jit_compile=True,
             input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
         )
+
         density_matrix = density_matrix(tf.Variable(0.0, dtype=tf.float32))
         assert np.allclose(density_matrix, [[1, 0], [0, 0]])
 
@@ -175,7 +196,7 @@ class TestDensityMatrixQNode:
     def test_density_matrix_c_dtype(self, wires, c_dtype):
         """Test different complex dtype."""
 
-        dev = qml.device("default.qubit.legacy", wires=2, c_dtype=c_dtype)
+        dev = qml.device("default.mixed", wires=2, c_dtype=c_dtype)
 
         @qml.qnode(dev, diff_method=None)
         def circuit(x):

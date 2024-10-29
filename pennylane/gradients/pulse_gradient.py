@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -272,13 +272,6 @@ def _parshift_and_integrate(
         # Single measurement without shot vector
         return _psr_and_contract(results, cjacs, int_prefactor)
 
-    # Multiple measurements with shot vector. Not supported with broadcasting yet.
-    if use_broadcasting:
-        # TODO: Remove once #2690 is resolved
-        raise NotImplementedError(
-            "Broadcasting, multiple measurements and shot vectors are currently not "
-            "supported all simultaneously by stoch_pulse_grad."
-        )
     return tuple(
         tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
     )
@@ -287,12 +280,12 @@ def _parshift_and_integrate(
 # pylint: disable=too-many-arguments
 @partial(transform, final_transform=True)
 def stoch_pulse_grad(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     num_split_times=1,
     sampler_seed=None,
     use_broadcasting=False,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 

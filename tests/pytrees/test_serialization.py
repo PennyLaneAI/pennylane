@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.measurements import Shots
 from pennylane.ops import PauliX, Prod, Sum
 from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
 from pennylane.pytrees.pytrees import (
@@ -118,6 +119,23 @@ def test_pytree_structure_dump(decode):
     ]
 
 
+@pytest.mark.parametrize(
+    "shots, expect_metadata",
+    [
+        (Shots(), None),
+        (Shots(1), [[1, 1]]),
+        (Shots([1, 2]), [[1, 1], [2, 1]]),
+    ],
+)
+def test_pytree_structure_dump_shots(shots, expect_metadata):
+    """Test that ``pytree_structure_dump`` handles all forms of shots."""
+    _, struct = flatten(CustomNode([], {"shots": shots}))
+
+    flattened = pytree_structure_dump(struct)
+
+    assert json.loads(flattened) == ["test.CustomNode", {"shots": expect_metadata}, []]
+
+
 def test_pytree_structure_dump_unserializable_metadata():
     """Test that a ``TypeError`` is raised if a Pytree has unserializable metadata."""
     _, struct = flatten(CustomNode([1, 2, 4], {"operator": qml.PauliX(0)}))
@@ -190,9 +208,37 @@ H_TWO_QUBITS = np.array(
     ],
 )
 def test_pennylane_pytree_roundtrip(obj_in: Any):
-    """Test that Pennylane Pytree objects are requal to themselves after
+    """Test that Pennylane Pytree objects are equal to themselves after
     a serialization roundtrip."""
     data, struct = flatten(obj_in)
     obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
 
     assert qml.equal(obj_in, obj_out)
+
+
+@pytest.mark.parametrize(
+    "obj_in",
+    [
+        [
+            qml.tape.QuantumScript(
+                [qml.adjoint(qml.RX(0.1, wires=0))],
+                [qml.expval(2 * qml.X(0))],
+                trainable_params=[0, 1],
+            ),
+            Prod(qml.X(0), qml.RX(0.1, wires=0), qml.X(1), id="id"),
+            Sum(
+                qml.Hermitian(H_ONE_QUBIT, 2),
+                qml.Hermitian(H_TWO_QUBITS, [0, 1]),
+                qml.PauliX(1),
+                qml.Identity("a"),
+            ),
+        ]
+    ],
+)
+def test_pennylane_pytree_roundtrip_list(obj_in: Any):
+    """Test that lists Pennylane Pytree objects are equal to themselves after
+    a serialization roundtrip."""
+    data, struct = flatten(obj_in)
+    obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
+
+    assert all(qml.equal(in_, out) for in_, out in zip(obj_in, obj_out))

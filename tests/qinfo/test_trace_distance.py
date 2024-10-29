@@ -18,7 +18,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.all_interfaces
+pytestmark = [
+    pytest.mark.all_interfaces,
+    pytest.mark.filterwarnings(
+        "ignore:qml.qinfo.trace_distance is deprecated:pennylane.PennyLaneDeprecationWarning"
+    ),
+]
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
@@ -40,6 +45,21 @@ class TestTraceDistanceQnode:
     """Tests for the Trace Distance function between two QNodes."""
 
     devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+
+    def test_qinfo_transform_deprecated(self):
+        """Test that qinfo.trace_distance is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="qml.qinfo.trace_distance is deprecated",
+        ):
+            _ = qml.qinfo.trace_distance(circuit, circuit, wires0=[0], wires1=[1])()
 
     @pytest.mark.parametrize("device", devices)
     def test_not_same_number_wires(self, device):

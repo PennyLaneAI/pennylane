@@ -181,7 +181,6 @@ class Exp(ScalarSymbolicOp, Operation):
         super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
-
         self.hyperparameters["num_steps"] = num_steps
 
     def __repr__(self):
@@ -251,7 +250,6 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return d
 
-    # pylint:disable=too-many-branches
     def _recursive_decomposition(self, base: Operator, coeff: complex):
         """Decompose the exponential of ``base`` multiplied by ``coeff``.
 
@@ -284,6 +282,28 @@ class Exp(ScalarSymbolicOp, Operation):
             coeffs = [c * coeff for c in coeffs]
             return self._trotter_decomposition(ops, coeffs)
 
+        if not qml.math.is_abstract(coeff) and qml.math.real(coeff):
+
+            error_msg = f"The decomposition of the {self} operator is not defined."
+
+            if not self.num_steps:  # if num_steps was not set
+                error_msg += (
+                    " Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+                    "if a Suzuki-Trotter decomposition is required."
+                )
+
+            if self.base.is_hermitian:
+                error_msg += (
+                    " Decomposition is not defined for real coefficients of hermitian operators."
+                )
+
+            raise DecompositionUndefinedError(error_msg)
+
+        return self._smart_decomposition(coeff, base)
+
+    def _smart_decomposition(self, coeff, base):
+        """Decompose to an operator to an operator with a generator or a PauliRot if possible."""
+
         # Store operator classes with generators
         has_generator_types = []
         has_generator_types_anywires = []
@@ -304,34 +324,29 @@ class Exp(ScalarSymbolicOp, Operation):
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
                 mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
-                if qml.equal(mapped_wires_g, base) and math.real(coeff) == 0:
-                    coeff = math.real(
-                        -1j / c * coeff
-                    )  # cancel the coefficients added by the generator
+                if qml.equal(mapped_wires_g, base):
+                    # Cancel the coefficients added by the generator
+                    coeff = math.real(-1j / c * coeff)
                     return [op_class(coeff, g.wires)]
 
                 # could have absorbed the coefficient.
                 simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
 
-                if qml.equal(simplified_g, base) and math.real(coeff) == 0:
-                    coeff = math.real(-1j * coeff)  # cancel the coefficients added by the generator
+                if qml.equal(simplified_g, base):
+                    # Cancel the coefficients added by the generator
+                    coeff = math.real(-1j * coeff)
                     return [op_class(coeff, g.wires)]
 
-        if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
+        if qml.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
-        error_msg = f"The decomposition of the {self} operator is not defined. "
+        error_msg = f"The decomposition of the {self} operator is not defined."
 
         if not self.num_steps:  # if num_steps was not set
             error_msg += (
-                "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+                " Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
                 "if a Suzuki-Trotter decomposition is required. "
-            )
-
-        if math.real(self.coeff) != 0 and self.base.is_hermitian:
-            error_msg += (
-                "Decomposition is not defined for real coefficients of hermitian operators."
             )
 
         raise DecompositionUndefinedError(error_msg)
@@ -347,9 +362,8 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: list containing the PauliRot operator
         """
-        coeff = math.real(
-            2j * coeff
-        )  # need to cancel the coefficients added by PauliRot and Ising gates
+        # Cancel the coefficients added by PauliRot and Ising gates
+        coeff = math.real(2j * coeff)
         pauli_word = qml.pauli.pauli_word_to_string(base)
         if pauli_word == "I" * base.num_wires:
             return []
@@ -469,6 +483,8 @@ class Exp(ScalarSymbolicOp, Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
+        if qml.math.is_abstract(self.coeff):
+            return self.base.is_hermitian
         return self.base.is_hermitian and not np.real(self.coeff)
 
     def generator(self):
@@ -486,7 +502,7 @@ class Exp(ScalarSymbolicOp, Operation):
           0.5 * Y(0) + Z(0) @ X(1)
 
         """
-        if self.base.is_hermitian and not np.real(self.coeff):
+        if self.has_generator:
             return self.base
 
         raise GeneratorUndefinedError(

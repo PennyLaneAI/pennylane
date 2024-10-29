@@ -23,12 +23,14 @@ import pennylane as qml
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.queuing import QueuingManager
 
+from .composite import handle_recursion_error
+
 
 class SymbolicOp(Operator):
     """Developer-facing base class for single-operator symbolic operators.
 
     Args:
-        base (~.operation.Operator): the base operation that is modified symbolicly
+        base (~.operation.Operator): the base operation that is modified symbolically
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -53,6 +55,7 @@ class SymbolicOp(Operator):
         return cls._primitive.bind(*args, **kwargs)
 
     # pylint: disable=attribute-defined-outside-init
+    @handle_recursion_error
     def __copy__(self):
         # this method needs to be overwritten because the base must be copied too.
         copied_op = object.__new__(type(self))
@@ -98,11 +101,13 @@ class SymbolicOp(Operator):
         return self.base.num_params
 
     @property
+    @handle_recursion_error
     def wires(self):
         return self.base.wires
 
     # pylint:disable = missing-function-docstring
     @property
+    @handle_recursion_error
     def basis(self):
         return self.base.basis
 
@@ -130,6 +135,7 @@ class SymbolicOp(Operator):
         return self
 
     @property
+    @handle_recursion_error
     def arithmetic_depth(self) -> int:
         return 1 + self.base.arithmetic_depth
 
@@ -142,6 +148,7 @@ class SymbolicOp(Operator):
             )
         )
 
+    @handle_recursion_error
     def map_wires(self, wire_map: dict):
         new_op = copy(self)
         new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
@@ -155,7 +162,7 @@ class ScalarSymbolicOp(SymbolicOp):
     scalar coefficient.
 
     Args:
-        base (~.operation.Operator): the base operation that is modified symbolicly
+        base (~.operation.Operator): the base operation that is modified symbolically
         scalar (float): the scalar coefficient
         id (str): custom label given to an operator instance, can be useful for some applications
             where the instance has to be identified
@@ -172,6 +179,7 @@ class ScalarSymbolicOp(SymbolicOp):
         self._batch_size = _UNSET_BATCH_SIZE
 
     @property
+    @handle_recursion_error
     def batch_size(self):
         if self._batch_size is _UNSET_BATCH_SIZE:
             base_batch_size = self.base.batch_size
@@ -190,6 +198,7 @@ class ScalarSymbolicOp(SymbolicOp):
         return self._batch_size
 
     @property
+    @handle_recursion_error
     def data(self):
         return (self.scalar, *self.base.data)
 
@@ -199,10 +208,12 @@ class ScalarSymbolicOp(SymbolicOp):
         self.base.data = new_data[1:]
 
     @property
+    @handle_recursion_error
     def has_matrix(self):
         return self.base.has_matrix or isinstance(self.base, qml.ops.Hamiltonian)
 
     @property
+    @handle_recursion_error
     def hash(self):
         return hash(
             (
@@ -225,6 +236,7 @@ class ScalarSymbolicOp(SymbolicOp):
             mat (ndarray): non-broadcasted matrix
         """
 
+    @handle_recursion_error
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 

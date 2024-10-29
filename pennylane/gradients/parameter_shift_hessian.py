@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -440,8 +440,12 @@ def _contract_qjac_with_cjac(qhess, cjac, tape):
 
 @partial(transform, classical_cotransform=_contract_qjac_with_cjac, final_transform=True)
 def param_shift_hessian(
-    tape: qml.tape.QuantumTape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript,
+    argnum=None,
+    diagonal_shifts=None,
+    off_diagonal_shifts=None,
+    f0=None,
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 
@@ -486,7 +490,7 @@ def param_shift_hessian(
         in the QNode execution.
 
 
-        Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
+        Note: By default a QNode with the keyword ``hybrid=True`` computes derivatives with respect to
         QNode arguments, which can include classical computations on those arguments before they are
         passed to quantum operations. The "purely quantum" Hessian can instead be obtained with
         ``hybrid=False``, which is then computed with respect to the gate arguments and produces a

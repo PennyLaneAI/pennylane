@@ -21,7 +21,7 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture import AbstractOperator  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
 pytestmark = pytest.mark.jax
 
@@ -193,27 +193,86 @@ def test_parametrized_op():
     qml.assert_equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
 
 
-def test_pauli_rot():
-    """Test a special operation that has positional metadata and overrides binding."""
+def test_parametrized_op_jvp_tracer():
+    """Test that passing a JVP tracer to a parametrized op just creates
+    the op with the tracer as argument(s)."""
+    from pennylane.capture.primitives import grad_prim
 
-    def qfunc(a, wire0, wire1):
-        qml.PauliRot(a, "XY", (wire0, wire1))
+    def func(x):
+        qml.RX(x, 0)
+        return x
 
-    jaxpr = jax.make_jaxpr(qfunc)(0.5, 2, 3)
+    jaxpr = jax.make_jaxpr(qml.grad(func))(0.5)
     assert len(jaxpr.eqns) == 1
-    eqn = jaxpr.eqns[0]
-
-    assert eqn.primitive == qml.PauliRot._primitive
-    assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
-
-    assert len(eqn.invars) == 3  # The rotation parameter and the two wires
-    assert jaxpr.jaxpr.invars == eqn.invars
+    assert jaxpr.eqns[0].primitive == grad_prim
 
     with qml.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
 
     assert len(q) == 1
-    qml.assert_equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
+    op = q.queue[0]
+    assert isinstance(op, qml.RX)
+    assert isinstance(op.data[0], jax._src.interpreters.ad.JVPTracer)
+
+
+class TestSpecialOps:
+
+    def test_pauli_rot(self):
+        """Test a special operation that has positional metadata and overrides binding."""
+
+        def qfunc(a, wire0, wire1):
+            qml.PauliRot(a, "XY", (wire0, wire1))
+
+        jaxpr = jax.make_jaxpr(qfunc)(0.5, 2, 3)
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+
+        assert eqn.primitive == qml.PauliRot._primitive
+        assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
+
+        assert len(eqn.invars) == 3  # The rotation parameter and the two wires
+        assert jaxpr.jaxpr.invars == eqn.invars
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
+
+    def test_GlobalPhase(self):
+        """Test that a global phase on no wires can be captured."""
+
+        def qfunc(phi):
+            return qml.GlobalPhase(phi)
+
+        jaxpr = jax.make_jaxpr(qfunc)(0.5)
+        assert len(jaxpr.eqns) == 1
+
+        assert jaxpr.eqns[0].primitive == qml.GlobalPhase._primitive
+        assert len(jaxpr.eqns[0].invars) == 1
+        assert jaxpr.eqns[0].params == {"n_wires": 0}
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.2)
+
+        assert len(q.queue) == 1
+        qml.assert_equal(q.queue[0], qml.GlobalPhase(1.2))
+
+    def test_identity_no_wires(self):
+        """Test that an identity on no wires can be captured."""
+
+        jaxpr = jax.make_jaxpr(qml.I)()
+        assert len(jaxpr.eqns) == 1
+
+        assert jaxpr.eqns[0].primitive == qml.I._primitive
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"n_wires": 0}
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q.queue) == 1
+        qml.assert_equal(q.queue[0], qml.I())
 
 
 class TestTemplates:

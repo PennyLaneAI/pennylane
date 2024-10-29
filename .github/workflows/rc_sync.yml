@@ -31,7 +31,7 @@ jobs:
       - name: Check for rc branch
         run: |
           VERSION=$(python setup.py --version)
-          IFS=. read MAJ MIN PAT <<< "${VERSION%.dev0}"
+          IFS=. read MAJ MIN PAT <<< "${VERSION%.dev[0-9]*}"
           RC_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-rc0"
           if git ls-remote --exit-code origin "refs/heads/$RC_BRANCH"; then
             echo "branch_exists=true" >> $GITHUB_ENV
@@ -65,13 +65,9 @@ jobs:
       # Create PR to master
       - name: Create pull request
         if: ${{ env.new_changes == 'true' }}
-        uses: repo-sync/pull-request@v2
-        with:
-          source_branch: "${{ env.tmp_branch }}"
-          destination_branch: "master"
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
-          pr_title: "Daily rc sync to master"
-          pr_body: "Automatic sync from the release candidate to master during a feature freeze."
-          pr_allow_empty: false
-          pr_draft: false
-          pr_reviewer: "astralcai,albi3ro"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git checkout ${{ env.tmp_branch }}
+          gh_pr_up() { gh pr create $* || gh pr edit $* }
+          gh_pr_up --title "Daily rc sync to master" --body "Automatic sync from the release candidate to master during a feature freeze." --reviewer "mudit2812,albi3ro"

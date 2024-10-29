@@ -17,10 +17,9 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 # pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
 # pylint: disable=arguments-differ, arguments-renamed,
 
-import warnings
-
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -68,7 +67,7 @@ class TestCreateExpandFn:
         """Test that passing a device alongside a stopping condition ensures
         that all operations are expanded to match the devices default gate
         set"""
-        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = DefaultQubitLegacy(wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -84,7 +83,7 @@ class TestCreateExpandFn:
     def test_device_only_expansion(self):
         """Test that passing a device ensures that all operations are expanded
         to match the devices default gate set"""
-        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = DefaultQubitLegacy(wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -420,7 +419,18 @@ def custom_rot(phi, theta, omega, wires):
 # Decompose a template into another template
 def custom_basic_entangler_layers(weights, wires, **kwargs):
     # pylint: disable=unused-argument
-    cnot_broadcast = qml.tape.make_qscript(qml.broadcast)(qml.CNOT, pattern="ring", wires=wires)
+    def cnot_circuit(wires):
+        n_wires = len(wires)
+
+        if n_wires == 2:
+            qml.CNOT(wires)
+            return
+
+        for wire in wires:
+            op_wires = [wire % n_wires, (wire + 1) % n_wires]
+            qml.CNOT(op_wires)
+
+    cnot_broadcast = qml.tape.make_qscript(cnot_circuit)(wires)
     return [
         qml.AngleEmbedding(weights[0], wires=wires),
         *cnot_broadcast,
@@ -430,43 +440,28 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
 class TestCreateCustomDecompExpandFn:
     """Tests for the custom_decomps argument for devices"""
 
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self):
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-        ) as record:
-            yield
-
-            assert any(
-                "'expansion_strategy' attribute is deprecated" in str(w.message) for w in record
-            )
-
-        for w in record:
-            if "'expansion_strategy' attribute is deprecated" not in str(w.message):
-                warnings.warn(w.message, w.category)
-
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_string_and_operator_allowed(self, device_name):
         """Test that the custom_decomps dictionary accepts both strings and operator classes as keys."""
 
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
         decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
-        @qml.qnode(decomp_dev, expansion_strategy="device")
+        @qml.qnode(decomp_dev)
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        _ = circuit()
-        decomp_ops = circuit.tape.operations
+        tape = qml.workflow.construct_batch(circuit, level=None)()[0][0]
+        decomp_ops = tape.operations
 
         assert len(decomp_ops) == 7
         for op in decomp_ops:
             assert op.name != "Hadamard"
             assert op.name != "CNOT"
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_no_custom_decomp(self, device_name):
         """Test that sending an empty dictionary results in no decompositions."""
 
@@ -478,21 +473,21 @@ class TestCreateCustomDecompExpandFn:
         original_dev = qml.device(device_name, wires=3)
         decomp_dev = qml.device(device_name, wires=3, custom_decomps={})
 
-        original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
-        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        original_qnode = qml.QNode(circuit, original_dev)
+        decomp_qnode = qml.QNode(circuit, decomp_dev)
 
         original_res = original_qnode()
         decomp_res = decomp_qnode()
 
+        original_ops = qml.workflow.construct_batch(original_qnode, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level=None)()[0][0].operations
+
         assert np.isclose(original_res, decomp_res)
         assert [
-            orig_op.name == decomp_op.name
-            for orig_op, decomp_op in zip(
-                original_qnode.qtape.operations, decomp_qnode.qtape.operations
-            )
+            orig_op.name == decomp_op.name for orig_op, decomp_op in zip(original_ops, decomp_ops)
         ]
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_no_custom_decomp_template(self, device_name):
         """Test that sending an empty dictionary results in no decomposition
         when a template is involved, except the decomposition expected from the device."""
@@ -504,37 +499,34 @@ class TestCreateCustomDecompExpandFn:
         original_dev = qml.device(device_name, wires=3)
         decomp_dev = qml.device(device_name, wires=3, custom_decomps={})
 
-        original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
-        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        original_qnode = qml.QNode(circuit, original_dev)
+        decomp_qnode = qml.QNode(circuit, decomp_dev)
+
+        original_ops = qml.workflow.construct_batch(original_qnode, level=None)()[0][0].operations
+        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level=None)()[0][0].operations
 
         original_res = original_qnode()
         decomp_res = decomp_qnode()
 
         assert np.isclose(original_res, decomp_res)
         assert [
-            orig_op.name == decomp_op.name
-            for orig_op, decomp_op in zip(
-                original_qnode.qtape.operations, decomp_qnode.qtape.operations
-            )
+            orig_op.name == decomp_op.name for orig_op, decomp_op in zip(original_ops, decomp_ops)
         ]
 
-    @pytest.mark.parametrize(
-        "device_name", ["default.qubit", "default.qubit.legacy", "lightning.qubit"]
-    )
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_one_custom_decomp(self, device_name):
         """Test that specifying a single custom decomposition works as expected."""
 
         custom_decomps = {"Hadamard": custom_hadamard}
         decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
-        @qml.qnode(decomp_dev, expansion_strategy="device")
+        @qml.qnode(decomp_dev)
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        _ = circuit()
-        decomp_ops = circuit.tape.operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
         assert len(decomp_ops) == 3
 
@@ -546,32 +538,7 @@ class TestCreateCustomDecompExpandFn:
 
         assert decomp_ops[2].name == "CNOT"
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
-    def test_no_decomp_with_depth_zero(self, device_name):
-        """Test that specifying a single custom decomposition works as expected."""
-
-        custom_decomps = {"Hadamard": custom_hadamard, "CNOT": custom_cnot}
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The decomp_depth argument is deprecated"
-        ):
-            decomp_dev = qml.device(
-                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=0
-            )
-
-        @qml.qnode(decomp_dev, expansion_strategy="device")
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        _ = circuit()
-        decomp_ops = circuit.tape.operations
-
-        assert len(decomp_ops) == 2
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[1].name == "CNOT"
-
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_one_custom_decomp_gradient(self, device_name):
         """Test that gradients are still correctly computed after a decomposition
         that performs transpilation."""
@@ -585,8 +552,8 @@ class TestCreateCustomDecompExpandFn:
         original_dev = qml.device(device_name, wires=3)
         decomp_dev = qml.device(device_name, wires=3, custom_decomps={"Rot": custom_rot})
 
-        original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
-        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        original_qnode = qml.QNode(circuit, original_dev)
+        decomp_qnode = qml.QNode(circuit, decomp_dev)
 
         x = qml.numpy.array([0.2, 0.3, 0.4], requires_grad=True)
 
@@ -599,9 +566,10 @@ class TestCreateCustomDecompExpandFn:
         assert np.allclose(original_grad, decomp_grad)
 
         expected_ops = ["Hadamard", "RZ", "PauliX", "RY", "PauliX", "RZ", "Hadamard"]
-        assert all(op.name == name for op, name in zip(decomp_qnode.qtape.operations, expected_ops))
+        decomp_ops = qml.workflow.construct_batch(decomp_qnode, level=None)(x)[0][0].operations
+        assert all(op.name == name for op, name in zip(decomp_ops, expected_ops))
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_nested_custom_decomp(self, device_name):
         """Test that specifying two custom decompositions that have interdependence
         works as expected."""
@@ -609,14 +577,13 @@ class TestCreateCustomDecompExpandFn:
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
         decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
-        @qml.qnode(decomp_dev, expansion_strategy="device")
+        @qml.qnode(decomp_dev)
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        _ = circuit()
-        decomp_ops = circuit.tape.operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
         assert len(decomp_ops) == 7
 
@@ -640,7 +607,7 @@ class TestCreateCustomDecompExpandFn:
 
         assert decomp_ops[4].name == "CZ"
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_nested_custom_decomp_with_template(self, device_name):
         """Test that specifying two custom decompositions that have interdependence
         works as expected even when there is a template."""
@@ -648,15 +615,14 @@ class TestCreateCustomDecompExpandFn:
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
         decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
-        @qml.qnode(decomp_dev, expansion_strategy="device")
+        @qml.qnode(decomp_dev)
         def circuit():
             # -RX(0.1)-C- -> -RX(0.1)---C--- -> -RX(0.1)-----------------C----------------
             # -RX(0.2)-X- -> -RX(0.2)-H-Z-H- -> -RX(0.2)-RZ(pi)-RY(pi/2)-Z-RY(pi/2)-RZ(pi)-
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        _ = circuit()
-        decomp_ops = circuit.tape.operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
         assert len(decomp_ops) == 7
 
@@ -687,7 +653,7 @@ class TestCreateCustomDecompExpandFn:
         assert np.isclose(decomp_ops[6].parameters[0], np.pi / 2)
         assert decomp_ops[6].wires == Wires(1)
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_custom_decomp_template_to_template(self, device_name):
         """Test that decomposing a template into another template and some
         gates yields the correct results."""
@@ -696,13 +662,12 @@ class TestCreateCustomDecompExpandFn:
         custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
         decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
-        @qml.qnode(decomp_dev, expansion_strategy="device")
+        @qml.qnode(decomp_dev)
         def circuit():
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        _ = circuit()
-        decomp_ops = circuit.tape.operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
         assert len(decomp_ops) == 5
 
@@ -723,56 +688,7 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([0, 1])
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
-    def test_custom_decomp_different_depth(self, device_name):
-        """Test that alternative expansion depths can be specified."""
-
-        # BasicEntanglerLayers custom decomposition involves AngleEmbedding. If
-        # expansion depth is 2, the AngleEmbedding will still be decomposed into
-        # RX (since it's not a supported operation on the device), but the RX will
-        # not be further decomposed even though the custom decomposition is specified.
-        custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The decomp_depth argument is deprecated"
-        ):
-            decomp_dev_2 = qml.device(
-                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=2
-            )
-
-            decomp_dev_3 = qml.device(
-                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=3
-            )
-
-        def circuit():
-            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        circuit2 = qml.QNode(circuit, decomp_dev_2, expansion_strategy="device")
-        circuit3 = qml.QNode(circuit, decomp_dev_3, expansion_strategy="device")
-
-        _ = circuit2()
-        _ = circuit3()
-
-        decomp_ops = circuit2.tape.operations
-
-        assert len(decomp_ops) == 3
-
-        assert decomp_ops[0].name == "RX"
-        assert np.isclose(decomp_ops[0].parameters[0], 0.1)
-        assert decomp_ops[0].wires == Wires(0)
-
-        assert decomp_ops[1].name == "RX"
-        assert np.isclose(decomp_ops[1].parameters[0], 0.2)
-        assert decomp_ops[1].wires == Wires(1)
-
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == Wires([0, 1])
-
-        decomp_ops = circuit3.tape.operations
-        assert len(decomp_ops) == 5
-
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_custom_decomp_with_adjoint(self, device_name):
         """Test that applying an adjoint in the circuit results in the adjoint
         undergoing the custom decomposition."""
@@ -780,14 +696,13 @@ class TestCreateCustomDecompExpandFn:
         custom_decomps = {qml.RX: custom_rx}
         decomp_dev = qml.device(device_name, wires="a", custom_decomps=custom_decomps)
 
-        @qml.qnode(decomp_dev, expansion_strategy="device")
+        @qml.qnode(decomp_dev)
         def circuit():
             # Adjoint is RX(-0.2), so expect RY(-0.2) H
             qml.adjoint(qml.RX, lazy=False)(0.2, wires="a")
             return qml.expval(qml.PauliZ("a"))
 
-        _ = circuit()
-        decomp_ops = circuit.tape.operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
         assert len(decomp_ops) == 2
 
@@ -813,15 +728,19 @@ class TestCreateCustomDecompExpandFn:
         original_decomp = CustomOp(0).decomposition()
 
         custom_decomps = {CustomOp: lambda wires: [qml.T(wires), qml.T(wires)]}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+        if device_name == "default.qubit.legacy":
+            decomp_dev = DefaultQubitLegacy(wires=2)
+            expand_fn = qml.transforms.create_decomp_expand_fn(custom_decomps, decomp_dev)
+            decomp_dev.custom_expand(expand_fn)
+        else:
+            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
-        @qml.qnode(decomp_dev, expansion_strategy="device")
+        @qml.qnode(decomp_dev)
         def circuit():
             qml.ctrl(CustomOp, control=1)(0)
             return qml.expval(qml.PauliZ(0))
 
-        circuit.construct(tuple(), {})
-        decomp_ops = circuit.tape.operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
         assert len(decomp_ops) == 2
 
@@ -835,24 +754,23 @@ class TestCreateCustomDecompExpandFn:
     def test_custom_decomp_in_separate_context_legacy_opmath(self):
         """Test that the set_decomposition context manager works."""
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, expansion_strategy="device")
+        @qml.qnode(dev)
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=0))
 
         # Initial test
-        _ = circuit()
+        ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
-        assert len(circuit.qtape.operations) == 1
-        assert circuit.qtape.operations[0].name == "CNOT"
+        assert len(ops) == 1
+        assert ops[0].name == "CNOT"
         assert dev.custom_expand_fn is None
 
         # Test within the context manager
         with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev):
-            _ = circuit()
-            ops_in_context = circuit.qtape.operations
+            ops_in_context = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
             assert dev.custom_expand_fn is not None
 
@@ -862,10 +780,10 @@ class TestCreateCustomDecompExpandFn:
         assert ops_in_context[2].name == "Hadamard"
 
         # Check that afterwards, the device has gone back to normal
-        _ = circuit()
+        ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
-        assert len(circuit.qtape.operations) == 1
-        assert circuit.qtape.operations[0].name == "CNOT"
+        assert len(ops) == 1
+        assert ops[0].name == "CNOT"
         assert dev.custom_expand_fn is None
 
     def test_custom_decomp_in_separate_context(self, mocker):
@@ -876,7 +794,7 @@ class TestCreateCustomDecompExpandFn:
         dev = qml.device("default.qubit", wires=2)
         spy = mocker.spy(dev, "execute")
 
-        @qml.qnode(dev, expansion_strategy="device")
+        @qml.qnode(dev)
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=0))
@@ -925,7 +843,7 @@ class TestCreateCustomDecompExpandFn:
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 
-            @qml.qnode(dev, diff_method="adjoint", expansion_strategy="gradient")
+            @qml.qnode(dev, diff_method="adjoint")
             def cost(theta):
                 qml.Hadamard(wires=0)
                 qml.Hadamard(wires=1)
@@ -944,7 +862,7 @@ class TestCreateCustomDecompExpandFn:
         custom_decomps = {"Hadamard": custom_hadamard}
         decomp_dev = qml.device("default.qubit", shots=shots, custom_decomps=custom_decomps)
 
-        @qml.qnode(decomp_dev, expansion_strategy="device")
+        @qml.qnode(decomp_dev)
         def circuit():
             qml.Hadamard(wires=0)
             _ = qml.measure(0)
@@ -952,8 +870,7 @@ class TestCreateCustomDecompExpandFn:
             _ = qml.measure(1)
             return qml.expval(qml.PauliZ(0))
 
-        _ = circuit()
-        decomp_ops = circuit.tape.operations
+        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
 
         assert len(decomp_ops) == 4 if shots is None else 5
 

@@ -68,7 +68,6 @@ details and resource information:
  'depth': 4,
  'num_device_wires': 4,
  'device_name': 'default.qubit',
- 'expansion_strategy': 'gradient',
  'gradient_options': {},
  'interface': 'auto',
  'diff_method': 'parameter-shift',
@@ -223,7 +222,7 @@ the circuit in execution:
 
     [pldb] qml.debug_state()
     array([0.81677345+0.j        , 0.        +0.j        ,
-           0.        -0.57695852j, 0.        +0.j        ])
+           1.        -0.57695852j, 0.        +0.j        ])
     [pldb] continue
     > /Users/your/path/to/script.py(13)circuit()
     -> qml.CNOT(wires=[0, 1])

@@ -85,6 +85,17 @@ class TestLabelling:
         assert split_str[0][:2] == "0:"
         assert split_str[1][:2] == "a:"
 
+    def test_hiding_labels(self):
+        """Test that printing wire labels can be skipped with show_wire_labels=False."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circ():
+            return qml.expval(qml.Z(0) @ qml.X(1))
+
+        split_str = draw(circ, show_wire_labels=False)().split("\n")
+        assert split_str[0].startswith("─")
+        assert split_str[1].startswith("─")
+
 
 class TestDecimals:
     """Test the decimals keyword argument."""
@@ -951,34 +962,14 @@ class TestLevelExpansionStrategy:
         )
         assert out == expected
 
-    def test_draw_with_qfunc_warns_with_expansion_strategy_or_level(self):
-        """Test that draw warns the user about expansion_strategy and level being ignored."""
+    def test_draw_with_qfunc_warns_with_level(self):
+        """Test that draw warns the user about level being ignored."""
 
         def qfunc():
             qml.PauliZ(0)
 
-        with pytest.warns(
-            UserWarning, match="the expansion_strategy and level arguments are ignored"
-        ):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
-            ):
-                qml.draw(qfunc, expansion_strategy="gradient")
-
-        with pytest.warns(
-            UserWarning, match="the expansion_strategy and level arguments are ignored"
-        ):
-            qml.draw(qfunc, level="gradient")
-
-    def test_providing_both_level_and_expansion_raises_error(self, transforms_circuit):
-        with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
-            qml.draw(transforms_circuit, level=0, expansion_strategy="device")
-
-    def test_deprecation_warning_when_expansion_strategy_provided(self, transforms_circuit):
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
-        ):
-            qml.draw(transforms_circuit, expansion_strategy="device")
+        with pytest.warns(UserWarning, match="the level argument is ignored"):
+            qml.draw(qfunc, level=None)
 
 
 def test_draw_batch_transform():

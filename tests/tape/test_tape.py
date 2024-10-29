@@ -132,7 +132,7 @@ class TestConstruction:
     def test_tensor_observables_rmatmul(self):
         """Test that tensor observables are correctly processed from the annotated
         queue. Here, we test multiple tensor observables constructed via matmul
-        with the observable occuring on the left hand side."""
+        with the observable occurring on the left hand side."""
 
         with QuantumTape() as tape:
             op_ = qml.RX(1.0, wires=0)
@@ -145,7 +145,7 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_tensor_observables_tensor_init(self):
         """Test that tensor observables are correctly processed from the annotated
         queue. Here, we test multiple tensor observables constructed via explicit
@@ -806,7 +806,7 @@ class TestParameters:
         assert tape.num_params == len(params)
         assert tape.get_parameters() == params
 
-        b = np.array([0, 1, 0, 0])
+        b = np.array([0.0, 1.0, 0.0, 0.0])
         new_params = [b, 0.543, 0.654, 0.123]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
         assert new_tape.get_parameters() == new_params
@@ -896,8 +896,7 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.BasisState(np.array([1]), wires=0)
 
-        # since expansion calls `BasisStatePreparation` we have to expand twice
-        new_tape = tape.expand(depth=2)
+        new_tape = tape.expand(depth=1)
 
         assert len(new_tape.operations) == 1
         assert new_tape.operations[0].name == "PauliX"
@@ -958,7 +957,8 @@ class TestExpand:
             qml.probs(wires="a")
 
         new_tape = tape.expand()
-        assert len(new_tape.operations) == 4
+
+        assert len(new_tape.operations) == 5
         assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
@@ -991,7 +991,7 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=3)
+        new_tape = tape.expand(depth=2)
         assert len(new_tape.operations) == 11
 
     @pytest.mark.parametrize("skip_first", (True, False))
@@ -1005,9 +1005,9 @@ class TestExpand:
                 qml.PauliZ(0),
             ],
             [
-                qml.BasisStatePreparation([1, 0], wires=[0, 1]),
+                qml.PauliX(0),
                 qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
-                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),  # still a StatePrepBase :/
+                qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
                 qml.PauliZ(0),
             ],
         ),
@@ -1034,7 +1034,6 @@ class TestExpand:
         true_decomposition += [
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
-            qml.BasisStatePreparation([0], wires=[1]),
             qml.MottonenStatePreparation([0, 1], wires=[0]),
         ]
 
@@ -1079,7 +1078,7 @@ class TestExpand:
 
         new_tape = tape.expand(expand_measurements=True)
 
-        assert len(new_tape.operations) == 5
+        assert len(new_tape.operations) == 6
 
         expected = [
             qml.measurements.Probability,
@@ -1892,54 +1891,6 @@ class TestOutputShape:
 
         res_shape = res_shape if res_shape != tuple() else ()
         assert tape.shape(dev) == res_shape
-
-    def test_output_shapes_single_qnode_check_cutoff(self):
-        """Test that the tape output shape is correct when computing
-        probabilities with a dummy device that defines a cutoff value."""
-
-        class CustomDevice(qml.QubitDevice):
-            """A dummy device that has a cutoff value specified and returns
-            analytic probabilities in a fashion similar to the
-            strawberryfields.fock device.
-
-            Note: this device definition is used as PennyLane-SF is not a
-            dependency of PennyLane core and there are no CV device in
-            PennyLane core using a cutoff value.
-            """
-
-            name = "Device with cutoff"
-            short_name = "dummy.device"
-            pennylane_requires = "0.1.0"
-            version = "0.0.1"
-            author = "CV quantum"
-
-            operations = {}
-            observables = {"Identity"}
-
-            def __init__(self, shots=None, wires=None, cutoff=None):
-                super().__init__(wires=wires, shots=shots)
-                self.cutoff = cutoff
-
-            def apply(self, operations, **kwargs):
-                pass
-
-            def analytic_probability(self, wires=None):
-                if wires is None:
-                    wires = self.wires
-                return np.zeros(self.cutoff ** len(wires))
-
-        dev = CustomDevice(wires=2, cutoff=13)
-
-        # If PennyLane-SF is installed, the following can be checked e.g., locally:
-        # dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=13)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.probs(wires=[0])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        res_shape = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift_cv)[0]
-        assert tape.shape(dev) == res_shape.shape
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)

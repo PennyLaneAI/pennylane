@@ -26,6 +26,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.fermi import FermiWord
 from pennylane.templates.subroutines import UCCSD
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
@@ -77,39 +78,124 @@ def test_reading_xyz_file(tmpdir):
         "delta_sz",
         "singles_exp",
         "doubles_exp",
+        "fermionic_singles_exp",
+        "fermionic_doubles_exp",
     ),
     [
-        (1, 5, 0, [[0, 2], [0, 4]], []),
-        (1, 5, 1, [], []),
-        (1, 5, -1, [[0, 1], [0, 3]], []),
-        (2, 5, 0, [[0, 2], [0, 4], [1, 3]], [[0, 1, 2, 3], [0, 1, 3, 4]]),
-        (2, 5, 1, [[1, 2], [1, 4]], [[0, 1, 2, 4]]),
-        (2, 5, -1, [[0, 3]], []),
-        (2, 5, 2, [], []),
-        (3, 6, 1, [[1, 4]], []),
+        (
+            1,
+            5,
+            0,
+            [[0, 2], [0, 4]],
+            [],
+            [FermiWord({(0, 0): "+", (1, 2): "-"}), FermiWord({(0, 0): "+", (1, 4): "-"})],
+            [],
+        ),
+        (1, 5, 1, [], [], [], []),
+        (
+            1,
+            5,
+            -1,
+            [[0, 1], [0, 3]],
+            [],
+            [FermiWord({(0, 0): "+", (1, 1): "-"}), FermiWord({(0, 0): "+", (1, 3): "-"})],
+            [],
+        ),
+        (
+            2,
+            5,
+            0,
+            [[0, 2], [0, 4], [1, 3]],
+            [[0, 1, 2, 3], [0, 1, 3, 4]],
+            [
+                FermiWord({(0, 0): "+", (1, 2): "-"}),
+                FermiWord({(0, 0): "+", (1, 4): "-"}),
+                FermiWord({(0, 1): "+", (1, 3): "-"}),
+            ],
+            [
+                FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 3): "-"}),
+                FermiWord({(0, 0): "+", (1, 1): "+", (2, 3): "-", (3, 4): "-"}),
+            ],
+        ),
+        (
+            2,
+            5,
+            1,
+            [[1, 2], [1, 4]],
+            [[0, 1, 2, 4]],
+            [FermiWord({(0, 1): "+", (1, 2): "-"}), FermiWord({(0, 1): "+", (1, 4): "-"})],
+            [FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 4): "-"})],
+        ),
+        (2, 5, -1, [[0, 3]], [], [FermiWord({(0, 0): "+", (1, 3): "-"})], []),
+        (2, 5, 2, [], [], [], []),
+        (3, 6, 1, [[1, 4]], [], [FermiWord({(0, 1): "+", (1, 4): "-"})], []),
         (
             3,
             6,
             -1,
             [[0, 3], [0, 5], [2, 3], [2, 5]],
             [[0, 1, 3, 5], [0, 2, 3, 4], [0, 2, 4, 5], [1, 2, 3, 5]],
+            [
+                FermiWord({(0, 0): "+", (1, 3): "-"}),
+                FermiWord({(0, 0): "+", (1, 5): "-"}),
+                FermiWord({(0, 2): "+", (1, 3): "-"}),
+                FermiWord({(0, 2): "+", (1, 5): "-"}),
+            ],
+            [
+                FermiWord({(0, 0): "+", (1, 1): "+", (2, 3): "-", (3, 5): "-"}),
+                FermiWord({(0, 0): "+", (1, 2): "+", (2, 3): "-", (3, 4): "-"}),
+                FermiWord({(0, 0): "+", (1, 2): "+", (2, 4): "-", (3, 5): "-"}),
+                FermiWord({(0, 1): "+", (1, 2): "+", (2, 3): "-", (3, 5): "-"}),
+            ],
         ),
-        (3, 6, -2, [], [[0, 2, 3, 5]]),
-        (3, 4, 0, [[1, 3]], []),
-        (3, 4, 1, [], []),
-        (3, 4, -1, [[0, 3], [2, 3]], []),
-        (3, 4, 2, [], []),
+        (
+            3,
+            6,
+            -2,
+            [],
+            [[0, 2, 3, 5]],
+            [],
+            [FermiWord({(0, 0): "+", (1, 2): "+", (2, 3): "-", (3, 5): "-"})],
+        ),
+        (3, 4, 0, [[1, 3]], [], [FermiWord({(0, 1): "+", (1, 3): "-"})], []),
+        (3, 4, 1, [], [], [], []),
+        (
+            3,
+            4,
+            -1,
+            [[0, 3], [2, 3]],
+            [],
+            [FermiWord({(0, 0): "+", (1, 3): "-"}), FermiWord({(0, 2): "+", (1, 3): "-"})],
+            [],
+        ),
+        (3, 4, 2, [], [], [], []),
     ],
 )
-def test_excitations(electrons, orbitals, delta_sz, singles_exp, doubles_exp):
+def test_excitations(
+    electrons,
+    orbitals,
+    delta_sz,
+    singles_exp,
+    doubles_exp,
+    fermionic_singles_exp,
+    fermionic_doubles_exp,
+):
     r"""Test the correctness of the generated configurations"""
 
     singles, doubles = qchem.excitations(electrons, orbitals, delta_sz)
+    fermionic_singles, fermionic_doubles = qchem.excitations(
+        electrons, orbitals, delta_sz, fermionic=True
+    )
 
     assert len(singles) == len(singles_exp)
     assert len(doubles) == len(doubles_exp)
     assert singles == singles_exp
     assert doubles == doubles_exp
+
+    assert len(fermionic_singles) == len(fermionic_singles_exp)
+    assert len(fermionic_doubles) == len(fermionic_doubles_exp)
+    assert fermionic_singles == fermionic_singles_exp
+    assert fermionic_doubles == fermionic_doubles_exp
 
 
 @pytest.mark.parametrize(

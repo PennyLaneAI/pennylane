@@ -159,12 +159,9 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
-        dim = 2 ** len(self.wires) if self.wires else 2 ** len(device.wires)
-        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int]:
+        num_wires = len(self.wires) if self.wires else num_device_wires
+        return (2**num_wires,)
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
@@ -232,17 +229,9 @@ class DensityMatrixMP(StateMP):
         shape = (2**n_wires, 2**n_wires)
         return shape, complex
 
-    def shape(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
-
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int]:
         dim = 2 ** len(self.wires)
-        return (
-            (dim, dim)
-            if num_shot_elements == 1
-            else tuple((dim, dim) for _ in range(num_shot_elements))
-        )
+        return (dim, dim)
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name

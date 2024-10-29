@@ -18,6 +18,7 @@ accept a hermitian or an unitary matrix as a parameter.
 # pylint:disable=arguments-differ
 import warnings
 from itertools import product
+from typing import Optional, Union
 
 import numpy as np
 from scipy.linalg import fractional_matrix_power
@@ -25,13 +26,14 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
-from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
-from pennylane.wires import Wires
+from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 
 
-def _walsh_hadamard_transform(D, n=None):
+def _walsh_hadamard_transform(D: TensorLike, n: Optional[int] = None):
     r"""Compute the Walsh–Hadamard Transform of a one-dimensional array.
 
     Args:
@@ -118,7 +120,11 @@ class QubitUnitary(Operation):
     """Gradient computation method."""
 
     def __init__(
-        self, U, wires, id=None, unitary_check=False
+        self,
+        U: TensorLike,
+        wires: WiresLike,
+        id: Optional[str] = None,
+        unitary_check: bool = False,
     ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
@@ -151,7 +157,7 @@ class QubitUnitary(Operation):
         super().__init__(U, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(U):  # pylint: disable=arguments-differ
+    def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -175,7 +181,7 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_decomposition(U, wires):
+    def compute_decomposition(U: TensorLike, wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -225,14 +231,14 @@ class QubitUnitary(Operation):
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_decomposition(self):
+    def has_decomposition(self) -> bool:
         return len(self.wires) < 3
 
-    def adjoint(self):
+    def adjoint(self) -> "QubitUnitary":
         U = self.matrix()
         return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]):
         mat = self.matrix()
         if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             pow_mat = qml.math.linalg.matrix_power(mat, z)
@@ -245,7 +251,12 @@ class QubitUnitary(Operation):
     def _controlled(self, wire):
         return qml.ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
@@ -278,7 +289,7 @@ class DiagonalQubitUnitary(Operation):
     """Gradient computation method."""
 
     @staticmethod
-    def compute_matrix(D):  # pylint: disable=arguments-differ
+    def compute_matrix(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -312,7 +323,7 @@ class DiagonalQubitUnitary(Operation):
         return qml.math.diag(D)
 
     @staticmethod
-    def compute_eigvals(D):  # pylint: disable=arguments-differ
+    def compute_eigvals(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -348,7 +359,7 @@ class DiagonalQubitUnitary(Operation):
         return D
 
     @staticmethod
-    def compute_decomposition(D, wires):
+    def compute_decomposition(D: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -414,20 +425,25 @@ class DiagonalQubitUnitary(Operation):
         )
         return ops
 
-    def adjoint(self):
+    def adjoint(self) -> "DiagonalQubitUnitary":
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z) -> list["DiagonalQubitUnitary"]:
         cast_data = qml.math.cast(self.data[0], np.complex128)
         return [DiagonalQubitUnitary(cast_data**z, wires=self.wires)]
 
-    def _controlled(self, control):
+    def _controlled(self, control: WiresLike):
         return DiagonalQubitUnitary(
             qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=control + self.wires,
         )
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
@@ -516,7 +532,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A, wires, id=None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
         wires = Wires(wires)
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
@@ -550,7 +566,7 @@ class BlockEncode(Operation):
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
-    def _flatten(self):
+    def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, ())
 
     @staticmethod
@@ -621,9 +637,14 @@ class BlockEncode(Operation):
 
         return u
 
-    def adjoint(self):
+    def adjoint(self) -> "BlockEncode":
         A = self.parameters[0]
         return BlockEncode(qml.math.transpose(qml.math.conj(A)), wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)

@@ -14,6 +14,8 @@
 """
 Unit tests for the composite operator class of qubit operations
 """
+import inspect
+
 # pylint:disable=protected-access
 from copy import copy
 
@@ -36,7 +38,7 @@ ops = (
 )
 
 ops_rep = (
-    "X(0) # Z(0) # Hadamard(wires=[0])",
+    "X(0) # Z(0) # H(0)",
     "(CNOT(wires=[0, 1])) # RX(1.23, wires=[1]) # I(0)",
     "IsingXX(4.56, wires=[2, 3]) # (Toffoli(wires=[1, 2, 3])) # Rot(0.34, 1.0, 0, wires=[0])",
 )
@@ -233,6 +235,68 @@ class TestConstruction:
         )
 
 
+@pytest.mark.parametrize("math_op", [qml.prod, qml.sum])
+def test_no_recursion_error_raised(math_op):
+    """Tests that no RecursionError is raised from any property of method of a nested op."""
+
+    op = qml.RX(np.random.uniform(0, 2 * np.pi), wires=1)
+    for _ in range(2000):
+        op = math_op(op, qml.RY(np.random.uniform(0, 2 * np.pi), wires=1))
+    _assert_method_and_property_no_recursion_error(op)
+
+
+def test_no_recursion_error_raised_sprod():
+    """Tests that no RecursionError is raised from any property of method of a nested SProd."""
+
+    op = qml.RX(np.random.uniform(0, 2 * np.pi), wires=1)
+    for _ in range(5000):
+        op = qml.s_prod(1, op)
+    _assert_method_and_property_no_recursion_error(op)
+
+
+def _assert_method_and_property_no_recursion_error(instance):
+    """Checks that all methods and properties do not raise a RecursionError when accessed."""
+
+    for name, attr in inspect.getmembers(instance.__class__):
+
+        if inspect.isfunction(attr) and _is_method_with_no_argument(attr):
+            _assert_method_no_recursion_error(instance, name)
+
+        if isinstance(attr, property):
+            _assert_property_no_recursion_error(instance, name)
+
+
+def _assert_method_no_recursion_error(instance, method_name):
+    """Checks that the method does not raise a RecursionError when called."""
+    try:
+        getattr(instance, method_name)()
+    except Exception as e:  # pylint: disable=broad-except
+        assert not isinstance(e, RecursionError)
+        if isinstance(e, RuntimeError):
+            assert "This is likely due to nesting too many levels" in str(e)
+
+
+def _assert_property_no_recursion_error(instance, property_name):
+    """Checks that the property does not raise a RecursionError when accessed."""
+    try:
+        getattr(instance, property_name)
+    except Exception as e:  # pylint: disable=broad-except
+        assert not isinstance(e, RecursionError)
+        if isinstance(e, RuntimeError):
+            assert "This is likely due to nesting too many levels" in str(e)
+
+
+def _is_method_with_no_argument(method):
+    """Checks if a method has no argument other than self."""
+    parameters = list(inspect.signature(method).parameters.values())
+    if not (parameters and parameters[0].name == "self"):
+        return False
+    for param in parameters[1:]:
+        if param.kind is not param.POSITIONAL_OR_KEYWORD or param.default == param.empty:
+            return False
+    return True
+
+
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
 
@@ -357,8 +421,8 @@ class TestProperties:
             [
                 qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
                 qml.prod(qml.PauliX(10), qml.PauliY(2)),
-                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
                 qml.PauliY(7),
+                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
             ],
             [
                 qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),

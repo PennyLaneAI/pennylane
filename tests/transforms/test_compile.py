@@ -33,6 +33,19 @@ from pennylane.transforms.optimization.optimization_utils import _fuse_global_ph
 from pennylane.wires import Wires
 
 
+def test_expand_depth_is_deprecated():
+    """Tests that expand_depth is deprecated"""
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="The expand_depth argument is deprecated",
+    ):
+        ops = (qml.RX(0.1, 0), qml.RX(0.2, 0), qml.Barrier(only_visual=True), qml.X(0), qml.X(0))
+        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
+        tape = qml.tape.QuantumScript(ops, ms, shots=50)
+
+        _, _ = qml.compile(tape, expand_depth=2)
+
+
 def build_qfunc(wires):
     def qfunc(x, y, z):
         qml.Hadamard(wires=wires[0])
@@ -230,6 +243,25 @@ class TestCompileIntegration:
         ]
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+
+    def test_compile_decomposes_state_prep(self):
+        """Test that compile decomposes state prep operations"""
+
+        class DummyStatePrep(qml.operation.StatePrepBase):
+            """Dummy state prep operation for unit testing"""
+
+            def decomposition(self):
+                return [qml.Hadamard(i) for i in self.wires]
+
+            def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
+                return self.parameters[0]
+
+        state_prep_op = DummyStatePrep([1, 1], wires=[0, 1])
+        tape = qml.tape.QuantumScript([state_prep_op])
+
+        [compiled_tape], _ = qml.compile(tape)
+        expected = qml.tape.QuantumScript(state_prep_op.decomposition())
+        qml.assert_equal(compiled_tape, expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_multiple_passes(self, wires):

@@ -16,6 +16,7 @@ This submodule defines functions to decompose controlled operations
 """
 
 from copy import copy
+from typing import Optional
 
 import numpy as np
 import numpy.linalg as npl
@@ -54,7 +55,7 @@ def _convert_to_su2(U, return_global_phase=False):
     with np.errstate(divide="ignore", invalid="ignore"):
         dets = math.linalg.det(U)
 
-    global_phase = math.cast_like(math.angle(dets), 1j) / 2
+    global_phase = math.cast_like(math.angle(dets), 1.0) / 2
     U_SU2 = math.cast_like(U, dets) * math.exp(-1j * global_phase)
     return (U_SU2, global_phase) if return_global_phase else U_SU2
 
@@ -134,12 +135,95 @@ def _bisect_compute_b(u: np.ndarray):
     return _param_su2(c, d, b, 0)
 
 
-def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
+def _multi_controlled_zyz(
+    rot_angles,
+    global_phase,
+    target_wire: Wires,
+    control_wires: Wires,
+    work_wires: Optional[Wires] = None,
+) -> list[Operator]:
+    # The decomposition of zyz for special unitaries with multiple control wires
+    # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
+
+    if not qml.math.allclose(0.0, global_phase, atol=1e-6, rtol=0):
+        raise ValueError(f"The global_phase should be zero, instead got: {global_phase}.")
+
+    # Unpack the rotation angles
+    phi, theta, omega = rot_angles
+
+    # We use the conditional statements to account when decomposition is ran within a queue
+    decomp = []
+
+    cop_wires = (control_wires[-1], target_wire[0])
+
+    # Add A operator
+    if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
+        decomp.append(qml.CRZ(phi, wires=cop_wires))
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.CRY(theta / 2, wires=cop_wires))
+
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires[:-1], work_wires=work_wires))
+
+    # Add B operator
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.CRY(-theta / 2, wires=cop_wires))
+    if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
+        decomp.append(qml.CRZ(-(phi + omega) / 2, wires=cop_wires))
+
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires[:-1], work_wires=work_wires))
+
+    # Add C operator
+    if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.CRZ((omega - phi) / 2, wires=cop_wires))
+
+    return decomp
+
+
+def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wires):
+    # The zyz decomposition of a general unitary with single control wire
+    # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
+
+    # Unpack the rotation angles
+    phi, theta, omega = rot_angles
+    # We use the conditional statements to account when decomposition is ran within a queue
+    decomp = []
+    # Add negative of global phase. Compare definition of qml.GlobalPhase and Ph(delta) from section 4.1 of Barenco et al.
+    if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
+        decomp.append(
+            qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
+        )
+    # Add A operator
+    if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
+        decomp.append(qml.RZ(phi, wires=target_wire))
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RY(theta / 2, wires=target_wire))
+
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
+
+    # Add B operator
+    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RY(-theta / 2, wires=target_wire))
+    if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
+        decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
+
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
+
+    # Add C operator
+    if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
+        decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
+
+    return decomp
+
+
+def ctrl_decomp_zyz(
+    target_operation: Operator, control_wires: Wires, work_wires: Optional[Wires] = None
+) -> list[Operator]:
     """Decompose the controlled version of a target single-qubit operation
 
-    This function decomposes a controlled single-qubit target operation with one
-    single control using the decomposition defined in Lemma 4.3 and Lemma 5.1 of
-    `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+    This function decomposes both single and multiple controlled single-qubit
+    target operations using the decomposition defined in Lemma 4.3 and Lemma 5.1
+    for single `controlled_wires`, and Lemma 7.9 for multiple `controlled_wires`
+    from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
@@ -190,53 +274,24 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
             f"got {target_operation.__class__.__name__}."
         )
     control_wires = Wires(control_wires)
-    if len(control_wires) > 1:
-        raise ValueError(
-            f"The control_wires should be a single wire, instead got: {len(control_wires)} wires."
-        )
 
     target_wire = target_operation.wires
 
     if isinstance(target_operation, Operation):
         try:
-            phi, theta, omega = target_operation.single_qubit_rot_angles()
+            rot_angles = target_operation.single_qubit_rot_angles()
         except NotImplementedError:
-            phi, theta, omega = _get_single_qubit_rot_angles_via_matrix(
-                qml.matrix(target_operation)
-            )
+            rot_angles = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
     else:
-        phi, theta, omega = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
+        rot_angles = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
 
     _, global_phase = _convert_to_su2(qml.matrix(target_operation), return_global_phase=True)
 
-    # We use the conditional statements to account when decomposition is ran within a queue
-    decomp = []
-    # Add negative of global phase. Compare definition of qml.GlobalPhase and Ph(delta) from section 4.1 of Barenco et al.
-    if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
-        decomp.append(
-            qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
-        )
-    # Add A operator
-    if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
-        decomp.append(qml.RZ(phi, wires=target_wire))
-    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
-        decomp.append(qml.RY(theta / 2, wires=target_wire))
-
-    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
-
-    # Add B operator
-    if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
-        decomp.append(qml.RY(-theta / 2, wires=target_wire))
-    if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
-        decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
-
-    decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
-
-    # Add C operator
-    if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
-        decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
-
-    return decomp
+    return (
+        _multi_controlled_zyz(rot_angles, global_phase, target_wire, control_wires, work_wires)
+        if len(control_wires) > 1
+        else _single_control_zyz(rot_angles, global_phase, target_wire, control_wires)
+    )
 
 
 def _ctrl_decomp_bisect_od(

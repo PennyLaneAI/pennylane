@@ -18,6 +18,7 @@ from collections.abc import Callable
 
 from scipy.sparse import csr_matrix
 
+import pennylane as qml
 from pennylane import math
 from pennylane.measurements import (
     ExpectationMP,
@@ -168,7 +169,7 @@ def sum_of_terms_method(
     )
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements,too-many-branches
 def get_measurement_function(
     measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
@@ -195,13 +196,31 @@ def get_measurement_function(
 
             backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
             if isinstance(measurementprocess.obs, (Hamiltonian, LinearCombination)):
-                # need to work out thresholds for when its faster to use "backprop mode" measurements
-                return sum_of_terms_method if backprop_mode else csr_dot_products
+
+                # need to work out thresholds for when it's faster to use "backprop mode"
+                if backprop_mode:
+                    return sum_of_terms_method
+
+                if not all(obs.has_sparse_matrix for obs in measurementprocess.obs.terms()[1]):
+                    return sum_of_terms_method
+
+                # Hamiltonian.sparse_matrix raises a ValueError for this scenario.
+                if isinstance(measurementprocess.obs, Hamiltonian) and any(
+                    any(len(o.wires) > 1 for o in qml.operation.Tensor(op).obs)
+                    for op in measurementprocess.obs.ops
+                ):
+                    return sum_of_terms_method
+
+                return csr_dot_products
 
             if isinstance(measurementprocess.obs, Sum):
                 if backprop_mode:
                     # always use sum_of_terms_method for Sum observables in backprop mode
                     return sum_of_terms_method
+
+                if not all(obs.has_sparse_matrix for obs in measurementprocess.obs):
+                    return sum_of_terms_method
+
                 if (
                     measurementprocess.obs.has_overlapping_wires
                     and len(measurementprocess.obs.wires) > 7

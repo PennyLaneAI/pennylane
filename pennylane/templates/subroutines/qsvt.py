@@ -143,7 +143,7 @@ def qsvt(A, angles, wires, convention=None):
 
     projectors = projectors[::-1]  # reverse order to match equation
 
-    if convention == "Wx":
+    if convention == "Wx" and global_phase:
         return qml.prod(global_phase_op, QSVT(UA, projectors))
     return QSVT(UA, projectors)
 
@@ -285,9 +285,9 @@ class QSVT(Operation):
             "projectors": projectors,
         }
 
-        total_wires = qml.wires.Wires(UA.wires) + qml.wires.Wires.all_wires(
+        total_wires = qml.wires.Wires.all_wires(
             [proj.wires for proj in projectors]
-        )
+        ) + qml.wires.Wires(UA.wires)
 
         super().__init__(wires=total_wires, id=id)
 

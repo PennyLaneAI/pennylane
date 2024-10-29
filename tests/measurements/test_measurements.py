@@ -609,7 +609,7 @@ class TestSampleMeasurement:
 
 
 class TestStateMeasurement:
-    """Tests for the SampleMeasurement class."""
+    """Tests for the StateMeasurement class."""
 
     def test_custom_state_measurement(self):
         """Test the execution of a custom state measurement."""
@@ -617,6 +617,13 @@ class TestStateMeasurement:
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
+
+            @property
+            def return_type(self):
+                return State
+
+            def shape(self):
+                return ()
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -636,6 +643,9 @@ class TestStateMeasurement:
             @property
             def return_type(self):
                 return State
+
+            def shape(self):
+                return ()
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
@@ -687,3 +697,50 @@ class TestMeasurementTransform:
             return CountTapesMP(wires=[0])
 
         assert circuit() == 1
+
+
+class TestMeasurementProcess:
+    """Tests for the shape and numeric type of a measurement process"""
+
+    measurements_no_shots = [
+        (qml.expval(qml.PauliZ(0)), ()),
+        (qml.var(qml.PauliZ(0)), ()),
+        (qml.probs(wires=[0, 1]), (4,)),
+        (qml.state(), (8,)),
+        (qml.density_matrix(wires=[0, 1]), (4, 4)),
+        (qml.mutual_info(wires0=[0], wires1=[1]), ()),
+        (qml.vn_entropy(wires=[0, 1]), ()),
+    ]
+
+    measurements_finite_shots = [
+        (qml.expval(qml.PauliZ(0)), ()),
+        (qml.var(qml.PauliZ(0)), ()),
+        (qml.probs(wires=[0, 1]), (4,)),
+        (qml.state(), (8,)),
+        (qml.density_matrix(wires=[0, 1]), (4, 4)),
+        (qml.sample(qml.PauliZ(0)), (10,)),
+        (qml.sample(), (10, 3)),
+        (qml.mutual_info(wires0=0, wires1=1), ()),
+        (qml.vn_entropy(wires=[0, 1]), ()),
+    ]
+
+    @pytest.mark.parametrize("measurement, expected_shape", measurements_no_shots)
+    def test_output_shapes_no_shots(self, measurement, expected_shape):
+        """Test that the output shape of the measurement process is expected
+        when shots=None"""
+
+        assert measurement.shape(shots=None, num_device_wires=3) == expected_shape
+
+    @pytest.mark.parametrize("measurement, expected_shape", measurements_finite_shots)
+    def test_output_shapes_finite_shots(self, measurement, expected_shape):
+        """Test that the output shape of the measurement process is expected
+        when shots is finite"""
+        assert measurement.shape(shots=10, num_device_wires=3) == expected_shape
+
+    def test_undefined_shape_error(self):
+        """Test that an error is raised for a measurement with an undefined shape"""
+        measurement = qml.counts(wires=[0, 1])
+        msg = "The shape of the measurement CountsMP is not defined"
+
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            measurement.shape(shots=None, num_device_wires=2)

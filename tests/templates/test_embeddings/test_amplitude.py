@@ -49,7 +49,8 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
     op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
-    qml.ops.functions.assert_valid(op)
+
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
@@ -62,7 +63,7 @@ class TestDecomposition:
         tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 1
-        assert tape.operations[0].name == "StatePrep"
+        assert tape.operations[0].name == "MottonenStatePreparation"
         assert tape.batch_size is None
 
     def test_expansion_broadcasted(self):
@@ -73,7 +74,7 @@ class TestDecomposition:
         tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 1
-        assert tape.operations[0].name == "StatePrep"
+        assert tape.operations[0].name == "MottonenStatePreparation"
         assert tape.batch_size == 3
 
     @pytest.mark.parametrize("normalize", (True, False))
@@ -185,7 +186,7 @@ class TestInputs:
             )
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        with pytest.raises(ValueError, match="Features must be a vector of norm"):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
             circuit(x=not_nrmlzd)
 
     def test_throws_exception_if_features_wrong_shape(self):
@@ -199,7 +200,10 @@ class TestInputs:
             qml.AmplitudeEmbedding(features=x, wires=range(n_qubits))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
+        with pytest.raises(
+            ValueError,
+            match="State must be a one-dimensional tensor, or two-dimensional with batching;",
+        ):
             circuit(x=[[[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]])
 
     @pytest.mark.parametrize(
@@ -223,7 +227,7 @@ class TestInputs:
             )
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be of length"):
+        with pytest.raises(ValueError, match="State must be of length"):
             circuit(x=inpt)
 
     @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES + TOO_MANY_BROADCASTED_FEATURES)
@@ -239,7 +243,7 @@ class TestInputs:
             qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=0.0, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be of length"):
+        with pytest.raises(ValueError, match="Input state must be of length"):
             circuit(x=inpt)
 
     def test_amplitude_embedding_tolerance_value(self):
@@ -398,10 +402,10 @@ class TestInterfaces:
         dev = qml.device("default.qubit")
 
         circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
+        circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(features, pad_with, normalize)
-        res2 = circuit2(features, pad_with)
+        res2 = circuit2(features, pad_with, normalize)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
@@ -588,12 +592,12 @@ class TestInterfaceDtypes:
 
 @pytest.mark.jax
 @pytest.mark.parametrize("shots, atol", [(10000, 0.05), (None, 1e-8)])
-def test_jacobian_with_and_without_jit_has_same_output(shots, atol):
+def test_jacobian_with_and_without_jit_has_same_output(shots, atol, seed):
     """Test that the jacobian of AmplitudeEmbedding is the same with and without jit."""
 
     import jax
 
-    dev = qml.device("default.qubit", shots=shots, seed=7890234)
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
 
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(coeffs):

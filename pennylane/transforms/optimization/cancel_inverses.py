@@ -20,7 +20,7 @@ from pennylane.ops.qubit.attributes import (
     symmetric_over_all_wires,
     symmetric_over_control_wires,
 )
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -64,7 +64,7 @@ def _are_inverses(op1, op2):
 
 
 @transform
-def cancel_inverses(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def cancel_inverses(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform to remove any operations that are applied next to their
     (self-)inverses or adjoint.
 

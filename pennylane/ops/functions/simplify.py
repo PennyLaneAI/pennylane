@@ -22,12 +22,12 @@ import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
 
 
-def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):
+def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable]):
     """Simplifies an operator, tape, qnode or quantum function by reducing its arithmetic depth
     or number of rotation parameters.
 
@@ -100,7 +100,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
 
 
 @qml.transform
-def _simplify_transform(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def _simplify_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     with qml.QueuingManager.stop_recording():
         new_operations = [op.simplify() for op in tape.operations]
         new_measurements = [m.simplify() for m in tape.measurements]

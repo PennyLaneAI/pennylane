@@ -640,7 +640,7 @@ class InterferometerUnitary(CVOperation):
         This operation implements a **fixed** linear interferometer given a known
         unitary matrix.
 
-        If you instead wish to parameterize the interferometer,
+        If you instead wish to parametrize the interferometer,
         and calculate the gradient/optimize with respect to these parameters,
         consider instead the :func:`pennylane.template.Interferometer` template,
         which constructs an interferometer from a combination of beamsplitters

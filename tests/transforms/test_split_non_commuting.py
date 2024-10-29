@@ -96,8 +96,8 @@ def complex_no_grouping_processing_fn(results):
 
 complex_qwc_groups = [
     [qml.X(0), qml.X(0) @ qml.Y(1)],
-    [qml.Y(0), qml.X(1)],
-    [qml.Y(0) @ qml.Z(1), qml.Z(1)],
+    [qml.Y(0), qml.Y(0) @ qml.Z(1), qml.Z(1)],
+    [qml.X(1)],
 ]
 
 
@@ -107,8 +107,8 @@ def complex_qwc_processing_fn(results):
     return (
         group0[0],
         0.5 * group1[0],
-        group0[0] + group2[0] + 2.0 * group1[1] + 1.0,
-        0.1 * group2[1] + 0.2 * group0[1] + 0.3 * group2[0] + 0.4,
+        group0[0] + group1[1] + 2.0 * group2[0] + 1.0,
+        0.1 * group1[2] + 0.2 * group0[1] + 0.3 * group1[1] + 0.4,
         1.5,
     )
 
@@ -488,7 +488,7 @@ class TestUnits:
                     for group in complex_qwc_groups
                 ],
                 complex_qwc_processing_fn,
-                [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]],
+                [[0.1, 0.2], [0.3, 0.5, 0.6], [0.4]],
             ),
         ],
     )
@@ -1056,7 +1056,7 @@ class TestDifferentiability:
             qml.RX(x, 0)
             c1 = qml.numpy.array(0.1, requires_grad=False)
             c2 = qml.numpy.array(0.2, requires_grad=False)
-            H = c1 * qml.Z(0) + c2 * qml.X(0)
+            H = c1 * qml.Z(0) + c2 * qml.X(0) + c2 * qml.I(0)
             return qml.expval(H)
 
         x = qml.numpy.array(0.5)

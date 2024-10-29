@@ -15,17 +15,17 @@
 Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
-import warnings
 
-# pylint: disable=not-callable
+# pylint: disable=not-callable, unused-argument
 from contextlib import contextmanager
+from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
-from pennylane.measurements import Shots
+from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
+from pennylane.workflow.execution import INTERFACE_MAP
 
-from .default_qubit import adjoint_observables, adjoint_ops
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
 from .modifiers import single_tape_support
@@ -34,8 +34,14 @@ from .preprocess import (
     no_sampling,
     validate_adjoint_trainable_params,
     validate_measurements,
-    validate_observables,
 )
+
+
+def _requests_adjoint(execution_config):
+    return execution_config.gradient_method == "adjoint" or (
+        execution_config.gradient_method == "device"
+        and execution_config.gradient_keyword_arguments.get("method", None) == "adjoint_jacobian"
+    )
 
 
 @contextmanager
@@ -47,7 +53,6 @@ def _set_shots(device, shots):
 
     As a standard context manager:
 
-    >>> dev = qml.device("default.qubit.legacy", wires=2, shots=None)
     >>> with _set_shots(dev, shots=100):
     ...     print(dev.shots)
     100
@@ -98,6 +103,15 @@ def legacy_device_batch_transform(tape, device):
     return _set_shots(device, tape.shots)(device.batch_transform)(tape)
 
 
+def adjoint_ops(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator is supported by adjoint differentiation."""
+    if isinstance(op, qml.QubitUnitary) and not qml.operation.is_trainable(op):
+        return True
+    return not isinstance(op, MidMeasureMP) and (
+        op.num_params == 0 or (op.num_params == 1 and op.has_generator)
+    )
+
+
 def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
     """Add the adjoint specific transforms to the transform program."""
     program.add_transform(no_sampling, name=name)
@@ -106,9 +120,13 @@ def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
         stopping_condition=adjoint_ops,
         name=name,
     )
-    program.add_transform(validate_observables, adjoint_observables, name=name)
+
+    def accepted_adjoint_measurements(mp):
+        return isinstance(mp, qml.measurements.ExpectationMP)
+
     program.add_transform(
         validate_measurements,
+        analytic_measurements=accepted_adjoint_measurements,
         name=name,
     )
     program.add_transform(qml.transforms.broadcast_expand)
@@ -141,10 +159,14 @@ class LegacyDeviceFacade(Device):
 
     # pylint: disable=super-init-not-called
     def __init__(self, device: "qml.devices.LegacyDevice"):
+        if isinstance(device, type(self)):
+            raise RuntimeError("An already-facaded device can not be wrapped in a facade again.")
+
         if not isinstance(device, qml.devices.LegacyDevice):
             raise ValueError(
                 "The LegacyDeviceFacade only accepts a device of type qml.devices.LegacyDevice."
             )
+
         self._device = device
 
     @property
@@ -168,8 +190,15 @@ class LegacyDeviceFacade(Device):
     def __getattr__(self, name):
         return getattr(self._device, name)
 
+    # These custom copy methods are needed for Catalyst
+    def __copy__(self):
+        return type(self)(copy(self.target_device))
+
+    def __deepcopy__(self, memo):
+        return type(self)(deepcopy(self.target_device, memo))
+
     @property
-    def target_device(self) -> "qml._device.Device":
+    def target_device(self) -> "qml.devices.LegacyDevice":
         """The device wrapped by the facade."""
         return self._device
 
@@ -195,13 +224,20 @@ class LegacyDeviceFacade(Device):
     def preprocess(self, execution_config=DefaultExecutionConfig):
         execution_config = self._setup_execution_config(execution_config)
         program = qml.transforms.core.TransformProgram()
-        # note: need to wrap these methods with a set_shots modifier
+
         program.add_transform(legacy_device_batch_transform, device=self._device)
         program.add_transform(legacy_device_expand_fn, device=self._device)
-        if execution_config.gradient_method == "adjoint":
+
+        if _requests_adjoint(execution_config):
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
-        if not self._device.capabilities().get("supports_mid_measure", False):
+        if self._device.capabilities().get("supports_mid_measure", False):
+            program.add_transform(
+                qml.devices.preprocess.mid_circuit_measurements,
+                device=self,
+                mcm_config=execution_config.mcm_config,
+            )
+        else:
             program.add_transform(qml.defer_measurements, device=self)
 
         return program, execution_config
@@ -230,8 +266,10 @@ class LegacyDeviceFacade(Device):
 
     def _setup_device_config(self, execution_config):
         tape = qml.tape.QuantumScript([], [])
+
         if not self._validate_device_method(tape):
             raise qml.DeviceError("device does not support device derivatives")
+
         updated_values = {}
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = True
@@ -243,19 +281,17 @@ class LegacyDeviceFacade(Device):
     def _setup_execution_config(self, execution_config):
         if execution_config.gradient_method == "best":
             tape = qml.tape.QuantumScript([], [])
-            if self._validate_backprop_method(tape):
-                config = replace(execution_config, gradient_method="backprop")
-                return self._setup_backprop_config(config)
-            if self._validate_adjoint_method(tape):
-                config = replace(execution_config, gradient_method="adjoint")
-                return self._setup_adjoint_config(config)
             if self._validate_device_method(tape):
                 config = replace(execution_config, gradient_method="device")
                 return self._setup_execution_config(config)
 
+            if self._validate_backprop_method(tape):
+                config = replace(execution_config, gradient_method="backprop")
+                return self._setup_backprop_config(config)
+
         if execution_config.gradient_method == "backprop":
             return self._setup_backprop_config(execution_config)
-        if execution_config.gradient_method == "adjoint":
+        if _requests_adjoint(execution_config):
             return self._setup_adjoint_config(execution_config)
         if execution_config.gradient_method == "device":
             return self._setup_device_config(execution_config)
@@ -268,115 +304,42 @@ class LegacyDeviceFacade(Device):
         if execution_config is None or execution_config.gradient_method == "best":
             validation_methods = (
                 self._validate_backprop_method,
-                self._validate_adjoint_method,
                 self._validate_device_method,
             )
             return any(validate(circuit) for validate in validation_methods)
 
         if execution_config.gradient_method == "backprop":
             return self._validate_backprop_method(circuit)
-        if execution_config.gradient_method == "adjoint":
+        if _requests_adjoint(execution_config):
             return self._validate_adjoint_method(circuit)
         if execution_config.gradient_method == "device":
             return self._validate_device_method(circuit)
+
         return False
-
-    # pylint: disable=protected-access
-    def _create_temp_device(self, batch):
-        """Create a temporary device for use in a backprop execution."""
-        params = []
-        for t in batch:
-            params.extend(t.get_parameters(trainable_only=False))
-        interface = qml.math.get_interface(*params)
-        if interface == "numpy":
-            return self._device
-
-        mapped_interface = qml.workflow.execution.INTERFACE_MAP.get(interface, interface)
-
-        backprop_interface = self._device.capabilities().get("passthru_interface", None)
-        if mapped_interface == backprop_interface:
-            return self._device
-
-        backprop_devices = self._device.capabilities().get("passthru_devices", None)
-
-        if backprop_devices is None:
-            raise qml.DeviceError(f"Device {self} does not support backpropagation.")
-
-        if backprop_devices[mapped_interface] == self._device.short_name:
-            return self._device
-
-        if self.target_device.short_name != "default.qubit.legacy":
-            warnings.warn(
-                "The switching of devices for backpropagation is now deprecated in v0.38 and "
-                "will be removed in v0.39, as this behavior was developed purely for the "
-                "deprecated default.qubit.legacy.",
-                qml.PennyLaneDeprecationWarning,
-            )
-
-        # create new backprop device
-        expand_fn = self._device.expand_fn
-        batch_transform = self._device.batch_transform
-        if hasattr(self._device, "_debugger"):
-            debugger = self._device._debugger
-        else:
-            debugger = "No debugger"
-        tracker = self._device.tracker
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                category=qml.PennyLaneDeprecationWarning,
-                message=r"use 'default.qubit'",
-            )
-            # we already warned about backprop device switching
-            new_device = qml.device(
-                backprop_devices[mapped_interface],
-                wires=self._device.wires,
-                shots=self._device.shots,
-            )
-
-        new_device.expand_fn = expand_fn
-        new_device.batch_transform = batch_transform
-        if debugger != "No debugger":
-            new_device._debugger = debugger
-        new_device.tracker = tracker
-
-        return new_device
-
-    # pylint: disable=protected-access
-    def _update_original_device(self, temp_device):
-        """After performing an execution with a backprop device, update the state of the original device."""
-        # Update for state vector simulators that have the _pre_rotated_state attribute
-        if hasattr(self._device, "_pre_rotated_state"):
-            self._device._pre_rotated_state = temp_device._pre_rotated_state
-
-        # Update for state vector simulators that have the _state attribute
-        if hasattr(self._device, "_state"):
-            self._device._state = temp_device._state
 
     def _validate_backprop_method(self, tape):
         if tape.shots:
             return False
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
+        if interface != "numpy":
+            interface = INTERFACE_MAP.get(interface, interface)
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
             return False
-        if interface == "numpy":
-            interface = None
-        mapped_interface = qml.workflow.execution.INTERFACE_MAP.get(interface, interface)
 
         # determine if the device supports backpropagation
         backprop_interface = self._device.capabilities().get("passthru_interface", None)
+
         if backprop_interface is not None:
             # device supports backpropagation natively
-            return mapped_interface in [backprop_interface, "Numpy"]
+            return interface in [backprop_interface, "numpy"]
         # determine if the device has any child devices that support backpropagation
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
 
         if backprop_devices is None:
             return False
-        return mapped_interface in backprop_devices or mapped_interface == "Numpy"
+        return interface in backprop_devices or interface == "numpy"
 
     def _validate_adjoint_method(self, tape):
         # The conditions below provide a minimal set of requirements that we can likely improve upon in
@@ -388,20 +351,22 @@ class LegacyDeviceFacade(Device):
         supported_device = all(hasattr(self._device, attr) for attr in required_attrs)
         supported_device = supported_device and self._device.capabilities().get("returns_state")
 
-        if not supported_device:
+        if not supported_device or bool(tape.shots):
             return False
-        return not bool(tape.shots)
+        program = TransformProgram()
+        _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
+        try:
+            program((tape,))
+        except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
+            return False
+        return True
 
     def _validate_device_method(self, _):
         # determine if the device provides its own jacobian method
         return self._device.capabilities().get("provides_jacobian", False)
 
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
-        dev = (
-            self._create_temp_device(circuits)
-            if execution_config.gradient_method == "backprop"
-            else self._device
-        )
+        dev = self.target_device
 
         kwargs = {}
         if dev.capabilities().get("supports_mid_measure", False):
@@ -409,16 +374,10 @@ class LegacyDeviceFacade(Device):
 
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
-            results = _set_shots(dev, first_shot)(dev.batch_execute)(circuits, **kwargs)
-        else:
-            results = tuple(
-                _set_shots(dev, t.shots)(dev.batch_execute)((t,), **kwargs)[0] for t in circuits
-            )
-
-        if dev is not self._device:
-            self._update_original_device(dev)
-
-        return results
+            return _set_shots(dev, first_shot)(dev.batch_execute)(circuits, **kwargs)
+        return tuple(
+            _set_shots(dev, t.shots)(dev.batch_execute)((t,), **kwargs)[0] for t in circuits
+        )
 
     def execute_and_compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
         first_shot = circuits[0].shots

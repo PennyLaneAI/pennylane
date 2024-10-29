@@ -15,7 +15,9 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, Hashable, Optional, TypeVar, Union
+from collections.abc import Hashable
+from functools import lru_cache
+from typing import Generic, Optional, TypeVar, Union
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -209,20 +211,54 @@ def measure(
               samples, leading to unexpected or incorrect results.
 
     """
-    wire = Wires(wires)
-    if len(wire) > 1:
+    if qml.capture.enabled():
+        primitive = _create_mid_measure_primitive()
+        return primitive.bind(wires, reset=reset, postselect=postselect)
+
+    return _measure_impl(wires, reset=reset, postselect=postselect)
+
+
+def _measure_impl(
+    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
+):
+    """Concrete implementation of qml.measure"""
+    wires = Wires(wires)
+    if len(wires) > 1:
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
-    if qml.capture.enabled():
-        raise NotImplementedError(
-            "Capture cannot currently handle classical output from mid circuit measurements."
-        )
+    mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
+
+
+@lru_cache
+def _create_mid_measure_primitive():
+    """Create a primitive corresponding to an mid-circuit measurement type.
+
+    Called when using :func:`~pennylane.measure`.
+
+    Returns:
+        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        measurement.
+
+    """
+    import jax  # pylint: disable=import-outside-toplevel
+
+    mid_measure_p = jax.core.Primitive("measure")
+
+    @mid_measure_p.def_impl
+    def _(wires, reset=False, postselect=None):
+        return _measure_impl(wires, reset=reset, postselect=postselect)
+
+    @mid_measure_p.def_abstract_eval
+    def _(*_, **__):
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        return jax.core.ShapedArray((), dtype)
+
+    return mid_measure_p
 
 
 T = TypeVar("T")
@@ -266,7 +302,7 @@ class MidMeasureMP(MeasurementProcess):
     @classmethod
     def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
         wires = () if wires is None else wires
-        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect)
+        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect, id=id)
 
     @classmethod
     def _abstract_eval(
@@ -421,6 +457,11 @@ class MeasurementValue(Generic[T]):
         value."""
         return self._apply(qml.math.logical_not)
 
+    def __bool__(self) -> bool:
+        raise ValueError(
+            "The truth value of a MeasurementValue is undefined. To condition on a MeasurementValue, please use qml.cond instead."
+        )
+
     def __eq__(self, other):
         return self._transform_bin_op(lambda a, b: a == b, other)
 
@@ -516,3 +557,23 @@ class MeasurementValue(Generic[T]):
 
     def __repr__(self):
         return f"MeasurementValue(wires={self.wires.tolist()})"
+
+
+def find_post_processed_mcms(circuit):
+    """Return the subset of mid-circuit measurements which are required for post-processing.
+
+    This includes any mid-circuit measurement that is post-selected or the object of a terminal
+    measurement.
+    """
+    post_processed_mcms = set(
+        op
+        for op in circuit.operations
+        if isinstance(op, MidMeasureMP) and op.postselect is not None
+    )
+    for m in circuit.measurements:
+        if isinstance(m.mv, list):
+            for mv in m.mv:
+                post_processed_mcms = post_processed_mcms | set(mv.measurements)
+        elif m.mv is not None:
+            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
+    return post_processed_mcms

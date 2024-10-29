@@ -495,33 +495,6 @@ class TestControlledMiscMethods:
             expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
         )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_generator_legacy_opmath(self):
-        """Test that the generator is a tensor product of projectors and the base's generator."""
-
-        base = qml.RZ(-0.123, wires="a")
-        control_values = [0, 1]
-        op = Controlled(base, ("b", "c"), control_values=control_values)
-
-        base_gen, base_gen_coeff = qml.generator(base, format="prefactor")
-        gen_tensor, gen_coeff = qml.generator(op, format="prefactor")
-
-        assert base_gen_coeff == gen_coeff
-
-        for wire, val in zip(op.control_wires, control_values):
-            ob = list(op for op in gen_tensor.operands if op.wires == qml.wires.Wires(wire))
-            assert len(ob) == 1
-            assert ob[0].data == ([val],)
-
-        ob = list(op for op in gen_tensor.operands if op.wires == base.wires)
-        assert len(ob) == 1
-        assert ob[0].__class__ is base_gen.__class__
-
-        expected = qml.exp(op.generator(), 1j * op.data[0])
-        assert qml.math.allclose(
-            expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
-        )
-
     def test_diagonalizing_gates(self):
         """Test that the Controlled diagonalizing gates is the same as the base diagonalizing gates."""
         base = qml.PauliX(0)
@@ -1050,16 +1023,35 @@ class TestDecomposition:
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
 
-    def test_differentiable_one_qubit_special_unitary(self):
-        """Assert that a differentiable qubit special unitary uses the zyz decomposition."""
+    def test_differentiable_one_qubit_special_unitary_single_ctrl(self):
+        """
+        Assert that a differentiable qubit special unitary uses the zyz decomposition with a single controlled wire.
+        """
 
-        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1))
+        theta = 1.2
+        op = qml.ctrl(qml.RZ(qml.numpy.array(theta), 0), (1))
         decomp = op.decomposition()
 
-        qml.assert_equal(decomp[0], qml.PhaseShift(qml.numpy.array(1.2 / 2), 0))
+        qml.assert_equal(decomp[0], qml.PhaseShift(qml.numpy.array(theta / 2), 0))
         qml.assert_equal(decomp[1], qml.CNOT(wires=(1, 0)))
-        qml.assert_equal(decomp[2], qml.PhaseShift(qml.numpy.array(-1.2 / 2), 0))
+        qml.assert_equal(decomp[2], qml.PhaseShift(qml.numpy.array(-theta / 2), 0))
         qml.assert_equal(decomp[3], qml.CNOT(wires=(1, 0)))
+
+        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
+        assert qml.math.allclose(op.matrix(), decomp_mat)
+
+    def test_differentiable_one_qubit_special_unitary_multiple_ctrl(self):
+        """Assert that a differentiable qubit special unitary uses the zyz decomposition with multiple controlled wires."""
+
+        theta = 1.2
+        op = qml.ctrl(qml.RZ(qml.numpy.array(theta), 0), (1, 2, 3, 4))
+        decomp = op.decomposition()
+
+        assert qml.equal(decomp[0], qml.CRZ(qml.numpy.array(theta), [4, 0]))
+        assert qml.equal(decomp[1], qml.MultiControlledX(wires=[1, 2, 3, 0]))
+        assert qml.equal(decomp[2], qml.CRZ(qml.numpy.array(-theta / 2), wires=[4, 0]))
+        assert qml.equal(decomp[3], qml.MultiControlledX(wires=[1, 2, 3, 0]))
+        assert qml.equal(decomp[4], qml.CRZ(qml.numpy.array(-theta / 2), wires=[4, 0]))
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
@@ -1730,7 +1722,6 @@ class TestCtrl:
 
         if isinstance(op, qml.QubitUnitary):
             pytest.skip("ControlledQubitUnitary can accept any number of control wires.")
-            expected = None  # to pass pylint(possibly-used-before-assignment) error
         elif isinstance(op, Controlled):
             expected = Controlled(
                 op.base,

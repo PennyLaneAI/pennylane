@@ -71,7 +71,8 @@ Broadcasting
 Parameter broadcasting adds a leading dimension to the numeric array itself.
 
 If the corresponding tape has a ``batch_size`` and the result object is numeric, then the numeric object should
-gain a leading dimension.
+gain a leading dimension.  Note that a batch size of ``1`` is still a batch size,
+and still should correspond to a leading dimension.
 
 >>> op = qml.RX((0, np.pi/4, np.pi/2), wires=0)
 >>> tape = qml.tape.QuantumScript((op,), [qml.probs(wires=0)])
@@ -133,7 +134,7 @@ tuple where each entry corresponds to a different shot value.
 ({'0': 1}, {'0': 10}, {'0': 100})
 
 Let's look at an example with all forms of nesting.  Here, we have a tape with a batch size of ``3``, three
-diferent measurements with different fundamental shapes, and a shot vector with three different values.
+different measurements with different fundamental shapes, and a shot vector with three different values.
 
 >>> op = qml.RX((1.2, 2.3, 3.4), 0)
 >>> ms = (qml.expval(qml.Z(0)), qml.probs(wires=0), qml.counts())

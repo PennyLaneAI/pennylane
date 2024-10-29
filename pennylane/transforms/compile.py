@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
+import warnings
+
 # pylint: disable=too-many-branches
 from functools import partial
 
 import pennylane as qml
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -33,8 +35,8 @@ default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove
 
 @transform
 def compile(
-    tape: QuantumTape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1, expand_depth=None
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
@@ -45,6 +47,9 @@ def compile(
       (:func:`~pennylane.transforms.cancel_inverses`)
     - merging adjacent rotations of the same type
       (:func:`~pennylane.transforms.merge_rotations`)
+
+    .. warning::
+        The ``expand_depth`` argument is deprecated and will be removed in version 0.40.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -162,6 +167,14 @@ def compile(
         ───RY(-1.57)─╰X─┤
 
     """
+    if expand_depth is not None:
+        warnings.warn(
+            "The expand_depth argument is deprecated and will be removed in version v0.40.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        expand_depth = 5
+
     # Ensure that everything in the pipeline is a valid qfunc or tape transform
     if pipeline is None:
         pipeline = default_pipeline
@@ -195,6 +208,7 @@ def compile(
             max_expansion=expand_depth,
             name="compile",
             error=qml.operation.DecompositionUndefinedError,
+            skip_initial_state_prep=False,
         )
 
         # Apply the full set of compilation transforms num_passes times

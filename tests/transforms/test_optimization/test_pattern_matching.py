@@ -57,11 +57,11 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
         cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
@@ -72,6 +72,7 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 7
         assert cnots_optimized_qnode == 3
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_simple_quantum_function_pattern_matching_qnode(self):
@@ -128,14 +129,14 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         quantum_cost = {"CNOT": 10}
         optimized_qfunc = pattern_matching_optimization(
             circuit, pattern_tapes=[template], custom_quantum_cost=quantum_cost
         )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
         cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
@@ -146,6 +147,7 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 7
         assert cnots_optimized_qnode == 3
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_no_match_not_optimized(self):
@@ -170,11 +172,11 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
         cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
@@ -185,6 +187,7 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 8
         assert cnots_optimized_qnode == 4
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_adjoint_s(self):
@@ -208,11 +211,11 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         s_qnode = qml.specs(qnode)()["resources"].gate_types["S"]
         s_adjoint_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types[
@@ -224,6 +227,9 @@ class TestPatternMatchingOptimization:
 
         assert len(optimized_qnode.qtape.operations) == 5
         assert s_adjoint_optimized_qnode == 1
+
+        assert qnode_res == optimized_qnode_res
+        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_template_with_toffoli(self):
         """Test pattern matching algorithm for circuit optimization with a template having Toffoli gates."""
@@ -253,11 +259,11 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         toffolis_qnode = qml.specs(qnode)()["resources"].gate_types["Toffoli"]
         toffolis_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["Toffoli"]
@@ -268,6 +274,7 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 10
         assert toffolis_optimized_qnode == 0
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_template_with_swap(self):
@@ -294,14 +301,14 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=4)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         quantum_cost = {"SWAP": 10, "CNOT": 1}
         optimized_qfunc = pattern_matching_optimization(
             circuit, pattern_tapes=[template], custom_quantum_cost=quantum_cost
         )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         gate_qnode = qml.specs(qnode)()["resources"].gate_types
         swap_qnode = gate_qnode["SWAP"]
@@ -319,6 +326,7 @@ class TestPatternMatchingOptimization:
         assert swap_optimized_qnode == 0
         assert cnot_optimized_qnode == 4
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_template_with_multiple_swap(self):
@@ -346,11 +354,11 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=4)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         gate_qnode = qml.specs(qnode)()["resources"].gate_types
         swap_qnode = gate_qnode["SWAP"]
@@ -368,6 +376,7 @@ class TestPatternMatchingOptimization:
         assert swap_optimized_qnode == 0
         assert cnot_optimized_qnode == 1
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_template_with_multiple_control_swap(self):
@@ -395,11 +404,11 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=4)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         gate_qnode = qml.specs(qnode)()["resources"].gate_types
         cswap_qnode = gate_qnode["CSWAP"]
@@ -417,6 +426,7 @@ class TestPatternMatchingOptimization:
         assert cswap_optimized_qnode == 0
         assert cnot_optimized_qnode == 1
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_parametrized_pattern_matching(self):
@@ -452,13 +462,13 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
-        qnode(0.1, 0.2)
+        qnode_res = qnode(0.1, 0.2)
 
         optimized_qfunc = pattern_matching_optimization(
             circuit, pattern_tapes=[template_rx, template_rz]
         )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode(0.1, 0.2)
+        optimized_qnode_res = optimized_qnode(0.1, 0.2)
 
         rx_qnode = qml.specs(qnode)(0.1, 0.2)["resources"].gate_types["RX"]
         rx_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["resources"].gate_types["RX"]
@@ -474,6 +484,7 @@ class TestPatternMatchingOptimization:
         assert rx_optimized_qnode == 0
         assert rz_optimized_qnode == 0
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(0.1, 0.2), qml.matrix(qnode)(0.1, 0.2))
 
     def test_multiple_patterns(self):
@@ -507,13 +518,13 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(
             circuit, pattern_tapes=[template_x, template_z, template_cnot]
         )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
         cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
@@ -524,6 +535,7 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 1
         assert cnots_optimized_qnode == 1
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_mod_5_4_pattern_matching(self):
@@ -594,11 +606,11 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(mod_5_4, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(mod_5_4, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
         cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
@@ -609,6 +621,7 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 49
         assert cnots_optimized_qnode == 26
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     @pytest.mark.slow
@@ -718,11 +731,11 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=10)
 
         qnode = qml.QNode(vbe_adder_3, dev)
-        qnode()
+        qnode_res = qnode()
 
         optimized_qfunc = pattern_matching_optimization(vbe_adder_3, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_qnode()
+        optimized_qnode_res = optimized_qnode()
 
         cnots_qnode = qml.specs(qnode)()["resources"].gate_types["CNOT"]
         cnots_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
@@ -733,7 +746,47 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 84
         assert cnots_optimized_qnode == 45
 
+        assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+
+    def test_transform_tape(self):
+        """Test that the transform works as expected with a tape."""
+
+        operations = [
+            qml.S(0),
+            qml.Z(0),
+            qml.S(1),
+            qml.CZ([0, 1]),
+            qml.S(1),
+            qml.S(2),
+            qml.CZ([1, 2]),
+            qml.S(2),
+        ]
+        measurement = [qml.expval(qml.X(0))]
+        tape = qml.tape.QuantumScript(operations, measurement)
+
+        pattern = qml.tape.QuantumScript([qml.S(0), qml.S(0), qml.Z(0)])
+
+        batch, postprocessing_fn = qml.transforms.pattern_matching_optimization(
+            tape, pattern_tapes=[pattern]
+        )
+
+        dev = qml.device("default.qubit")
+        result = dev.execute(batch)
+
+        assert batch[0].measurements == measurement
+        assert batch[0].operations == [
+            qml.adjoint(qml.S(0)),
+            qml.Z(1),
+            qml.Z(2),
+            qml.CZ([0, 1]),
+            qml.CZ([1, 2]),
+        ]
+
+        assert np.allclose(result, 0.0)
+
+        # pattern_matching_optimization returns a null postprocessing function
+        assert postprocessing_fn(result) == result[0]
 
     def test_wrong_pattern_type(self):
         """Test that we cannot give a quantum function as pattern."""

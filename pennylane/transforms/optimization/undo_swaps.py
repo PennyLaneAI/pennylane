@@ -15,7 +15,7 @@
 """Transform that eliminates the swap operators by reordering the wires."""
 # pylint: disable=too-many-branches
 
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -28,7 +28,7 @@ def null_postprocessing(results):
 
 
 @transform
-def undo_swaps(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform to remove SWAP gates by running from right
     to left through the circuit changing the position of the qubits accordingly.
 

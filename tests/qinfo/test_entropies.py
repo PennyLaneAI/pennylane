@@ -19,6 +19,15 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+pytestmark = [
+    pytest.mark.filterwarnings(
+        r"ignore:The qml\.qinfo\.(vn_entropy|mutual_info|reduced_dm) transform:pennylane.PennyLaneDeprecationWarning"
+    ),
+    pytest.mark.filterwarnings(
+        "ignore:qml.qinfo.relative_entropy is deprecated:pennylane.PennyLaneDeprecationWarning"
+    ),
+]
+
 
 def expected_entropy_ising_xx(param):
     """
@@ -70,6 +79,21 @@ class TestVonNeumannEntropy:
     parameters = np.linspace(0, 2 * np.pi, 10)
     devices = ["default.qubit", "default.mixed", "lightning.qubit"]
 
+    def test_qinfo_vn_entropy_deprecated(self):
+        """Test that qinfo.vn_entropy is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The qml.qinfo.vn_entropy transform is deprecated",
+        ):
+            _ = qml.qinfo.vn_entropy(circuit, [0])()
+
     def test_vn_entropy_cannot_specify_device(self):
         """Test that an error is raised if a device or device wires are given
         to the vn_entropy transform manually."""
@@ -102,7 +126,6 @@ class TestVonNeumannEntropy:
             return qml.state()
 
         entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
-
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
         assert qml.math.allclose(entropy, expected_entropy)
 
@@ -124,7 +147,6 @@ class TestVonNeumannEntropy:
             return qml.state()
 
         grad_entropy = qml.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(param)
-
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
@@ -148,7 +170,6 @@ class TestVonNeumannEntropy:
             return qml.state()
 
         entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(torch.tensor(param))
-
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
         assert qml.math.allclose(entropy, expected_entropy)
 
@@ -176,8 +197,8 @@ class TestVonNeumannEntropy:
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
-        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
 
+        entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
         entropy.backward()
         grad_entropy = param.grad
 
@@ -203,7 +224,6 @@ class TestVonNeumannEntropy:
             return qml.state()
 
         entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(tf.Variable(param))
-
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(entropy, expected_entropy)
@@ -229,7 +249,6 @@ class TestVonNeumannEntropy:
             entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
 
         grad_entropy = tape.gradient(entropy, param)
-
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
@@ -254,7 +273,6 @@ class TestVonNeumannEntropy:
             return qml.state()
 
         entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(jnp.array(param))
-
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(entropy, expected_entropy)
@@ -278,7 +296,6 @@ class TestVonNeumannEntropy:
         grad_entropy = jax.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
             jax.numpy.array(param)
         )
-
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
@@ -305,7 +322,6 @@ class TestVonNeumannEntropy:
         entropy = jax.jit(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))(
             jnp.array(param)
         )
-
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(entropy, expected_entropy)
@@ -329,7 +345,6 @@ class TestVonNeumannEntropy:
         grad_entropy = jax.jit(
             jax.grad(qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base))
         )(jax.numpy.array(param))
-
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
@@ -361,7 +376,6 @@ class TestVonNeumannEntropy:
             return qml.state()
 
         entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
-
         expected_entropy = 0.0
         assert qml.math.allclose(entropy, expected_entropy)
 
@@ -377,7 +391,6 @@ class TestVonNeumannEntropy:
 
         entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
         expected_entropy = 0.0
-
         assert qml.math.allclose(entropy, expected_entropy)
 
     @pytest.mark.parametrize("device", devices)
@@ -394,10 +407,12 @@ class TestVonNeumannEntropy:
             return qml.state()
 
         entropy0 = qml.qinfo.vn_entropy(circuit, wires=[wires[0]])(param)
+
         eigs0 = [np.sin(param / 2) ** 2, np.cos(param / 2) ** 2]
         exp0 = -np.sum(eigs0 * np.log(eigs0))
 
         entropy1 = qml.qinfo.vn_entropy(circuit, wires=[wires[1]])(param)
+
         eigs1 = [np.cos(param / 2) ** 2, np.sin(param / 2) ** 2]
         exp1 = -np.sum(eigs1 * np.log(eigs1))
 
@@ -406,7 +421,7 @@ class TestVonNeumannEntropy:
 
 
 class TestRelativeEntropy:
-    """Tests for the mutual information functions"""
+    """Tests for the relative entropy information functions"""
 
     diff_methods = ["backprop", "finite-diff"]
 
@@ -414,6 +429,25 @@ class TestRelativeEntropy:
 
     # to avoid nan values in the gradient for relative entropy
     grad_params = [[0.123, 0.456], [0.789, 1.618]]
+
+    def test_qinfo_relative_entropy_deprecated(self):
+        """Test that qinfo.relative_entropy is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        x, y = 0.4, 0.6
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="qml.qinfo.relative_entropy is deprecated",
+        ):
+            _ = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])((x,), (y,))
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
@@ -464,7 +498,7 @@ class TestRelativeEntropy:
     @pytest.mark.parametrize("param", params)
     @pytest.mark.parametrize("interface", interfaces)
     def test_qnode_relative_entropy_jax_jit(self, param, interface):
-        """Test that the mutual information transform works for QNodes by comparing
+        """Test that the relative entropy transform works for QNodes by comparing
         against analytic values, for the JAX-jit interface"""
         import jax
         import jax.numpy as jnp
@@ -660,6 +694,7 @@ class TestRelativeEntropy:
         ]
 
         param0, param1 = tf.Variable(param[0]), tf.Variable(param[1])
+
         with tf.GradientTape() as tape:
             out = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])((param0,), (param1,))
 
@@ -701,9 +736,9 @@ class TestRelativeEntropy:
 
         param0 = torch.tensor(param[0], requires_grad=True)
         param1 = torch.tensor(param[1], requires_grad=True)
+
         out = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])((param0,), (param1,))
         out.backward()
-
         actual = [param0.grad, param1.grad]
 
         assert np.allclose(actual, expected, atol=1e-8)
@@ -748,7 +783,6 @@ class TestRelativeEntropy:
             return qml.state()
 
         rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0])
-
         x, y = np.array(0.3), np.array(0.7)
 
         # test that the circuit executes
@@ -878,6 +912,7 @@ class TestBroadcasting:
 
         x = np.array([0.4, 0.6, 0.8])
         y = np.array([0.6, 0.8, 1.0])
+
         entropy = qml.qinfo.relative_entropy(circuit_state, circuit_state, wires0=[0], wires1=[1])(
             x, y
         )

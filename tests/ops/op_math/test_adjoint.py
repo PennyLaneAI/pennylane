@@ -76,7 +76,7 @@ class TestInheritanceMixins:
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_observable(self):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
 
@@ -161,9 +161,9 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires("b")
 
-    def test_template_base(self):
+    def test_template_base(self, seed):
         """Test adjoint initialization for a template."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
@@ -180,7 +180,7 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires((0, 1))
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_base(self):
         """Test adjoint initialization for a hamiltonian."""
         with pytest.warns(UserWarning, match="Tensor object acts on overlapping"):
@@ -320,7 +320,7 @@ class TestProperties:
         op = Adjoint(qml.PauliX(0))
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_queue_category_None(self):
         """Test that the queue category `None` for some observables carries over."""
         op = Adjoint(qml.PauliX(0) @ qml.PauliY(1))
@@ -438,7 +438,7 @@ class TestMiscMethods:
 
         base = qml.S(0) + qml.T(0)
         op = Adjoint(base)
-        assert op.label() == "(S+T)†"
+        assert op.label() == "𝓗†"
 
     def test_adjoint_of_adjoint(self):
         """Test that the adjoint of an adjoint is the original operation."""
@@ -642,9 +642,9 @@ class TestMatrix:
 
         self.check_matrix(tf.Variable(1.2345), "tensorflow")
 
-    def test_no_matrix_defined(self):
+    def test_no_matrix_defined(self, seed):
         """Test that if the base has no matrix defined, then Adjoint.matrix also raises a MatrixUndefinedError."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
@@ -844,7 +844,7 @@ def test_error_adjoint_on_noncallable(obj):
 
 
 class TestAdjointConstructorPreconstructedOp:
-    """Test providing an already initalized operator to the transform."""
+    """Test providing an already initialized operator to the transform."""
 
     @pytest.mark.parametrize(
         "base", (qml.IsingXX(1.23, wires=("c", "d")), qml.QFT(wires=(0, 1, 2)))
@@ -868,7 +868,7 @@ class TestAdjointConstructorPreconstructedOp:
         assert len(q) == 1
         assert q.queue[0] is out
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""
 

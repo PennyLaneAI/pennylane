@@ -17,13 +17,13 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import math
 from pennylane.devices.qutrit_mixed import apply_operation, measure
 from pennylane.operation import Channel
-from tests.dummy_debugger import Debugger
 
 ml_frameworks_list = [
     "numpy",

@@ -16,15 +16,18 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
+import warnings
 from collections.abc import Sequence
 from copy import copy
+from typing import Optional, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 from .matrix_ops import QubitUnitary
 
@@ -68,7 +71,7 @@ class Hermitian(Observable):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A, wires, id=None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -86,7 +89,7 @@ class Hermitian(Observable):
         super().__init__(A, wires=wires, id=id)
 
     @staticmethod
-    def _validate_input(A, expected_mx_shape=None):
+    def _validate_input(A: TensorLike, expected_mx_shape: Optional[int] = None):
         """Validate the input matrix."""
         if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
@@ -100,11 +103,16 @@ class Hermitian(Observable):
         if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
             raise ValueError("Observable must be Hermitian.")
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
     @staticmethod
-    def compute_matrix(A):  # pylint: disable=arguments-differ
+    def compute_matrix(A: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -129,8 +137,12 @@ class Hermitian(Observable):
         Hermitian._validate_input(A)
         return A
 
+    @staticmethod
+    def compute_sparse_matrix(A) -> csr_matrix:  # pylint: disable=arguments-differ
+        return csr_matrix(Hermitian.compute_matrix(A))
+
     @property
-    def eigendecomposition(self):
+    def eigendecomposition(self) -> dict[str, TensorLike]:
         """Return the eigendecomposition of the matrix specified by the Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
@@ -150,7 +162,7 @@ class Hermitian(Observable):
 
         return Hermitian._eigs[Hkey]
 
-    def eigvals(self):
+    def eigvals(self) -> TensorLike:
         """Return the eigenvalues of the specified Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
@@ -162,7 +174,55 @@ class Hermitian(Observable):
         return self.eigendecomposition["eigval"]
 
     @staticmethod
-    def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(A, wires):  # pylint: disable=arguments-differ
+        r"""Decomposes a hermitian matrix as a sum of Pauli operators.
+
+        Args:
+            A (array or Sequence): hermitian matrix
+            wires (Iterable[Any], Wires): wires that the operator acts on
+        Returns:
+            list[.Operator]: decomposition of the hermitian matrix
+
+        **Examples**
+
+        >>> op = qml.X(0) + qml.Y(1) + 2 * qml.X(0) @ qml.Z(3)
+        >>> op_matrix = qml.matrix(op)
+        >>> qml.Hermitian.compute_decomposition(op_matrix, wires=['a', 'b', 'aux'])
+        [(
+              1.0 * (I('a') @ Y('b') @ I('aux'))
+            + 1.0 * (X('a') @ I('b') @ I('aux'))
+            + 2.0 * (X('a') @ I('b') @ Z('aux'))
+        )]
+        >>> op = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        >>> qml.Hermitian.compute_decomposition(op, wires=0)
+        [(
+              0.7071067811865475 * X(0)
+            + 0.7071067811865475 * Z(0)
+        )]
+
+        """
+        A = qml.math.asarray(A)
+
+        if isinstance(wires, (int, str)):
+            wires = Wires(wires)
+
+        if len(wires) == 0:
+            raise ValueError("Hermitian: wrong number of wires. At least one wire has to be given.")
+        Hermitian._validate_input(A, expected_mx_shape=2 ** len(wires))
+
+        # determined heuristically from test_hermitian_decomposition_performance
+        if len(wires) > 7:
+            warnings.warn(
+                "Decomposition may be inefficient for this large of a matrix.",
+                UserWarning,
+            )
+
+        return [qml.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=False)]
+
+    @staticmethod
+    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
+        eigenvectors: TensorLike, wires: WiresLike
+    ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -191,7 +251,7 @@ class Hermitian(Observable):
         """
         return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
 
-    def diagonalizing_gates(self):
+    def diagonalizing_gates(self) -> list["qml.operation.Operator"]:
         """Return the gate set that diagonalizes a circuit according to the
         specified Hermitian observable.
 
@@ -245,7 +305,7 @@ class SparseHamiltonian(Observable):
 
     grad_method = None
 
-    def __init__(self, H, wires=None, id=None):
+    def __init__(self, H: csr_matrix, wires: WiresLike, id: Optional[str] = None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, id=id)
@@ -256,7 +316,7 @@ class SparseHamiltonian(Observable):
                 f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
             )
 
-    def __mul__(self, value):
+    def __mul__(self, value: Union[int, float]) -> "qml.SparseHamiltonian":
         r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
         if not isinstance(value, (int, float)) and qml.math.ndim(value) != 0:
             raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
@@ -265,11 +325,16 @@ class SparseHamiltonian(Observable):
 
     __rmul__ = __mul__
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
     @staticmethod
-    def compute_matrix(H):  # pylint: disable=arguments-differ
+    def compute_matrix(H: csr_matrix) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -302,7 +367,7 @@ class SparseHamiltonian(Observable):
         return H.toarray()
 
     @staticmethod
-    def compute_sparse_matrix(H):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(H: csr_matrix) -> csr_matrix:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -389,7 +454,7 @@ class Projector(Observable):
     ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    def __new__(cls, state, wires, **_):
+    def __new__(cls, state: TensorLike, wires: WiresLike, **_):
         """Changes parents based on the state representation.
 
         Though all the types will be named "Projector", their *identity* and location in memory
@@ -426,7 +491,7 @@ class Projector(Observable):
             f"{len(wires)}, respectively."
         )
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
@@ -439,7 +504,7 @@ class BasisStateProjector(Projector, Operation):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state, wires, id=None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
         wires = Wires(wires)
 
         if qml.math.get_interface(state) == "jax":
@@ -458,7 +523,12 @@ class BasisStateProjector(Projector, Operation):
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         r"""A customizable string representation of the operator.
 
         Args:
@@ -484,7 +554,7 @@ class BasisStateProjector(Projector, Operation):
         return f"|{basis_string}⟩⟨{basis_string}|"
 
     @staticmethod
-    def compute_matrix(basis_state):  # pylint: disable=arguments-differ
+    def compute_matrix(basis_state: TensorLike) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -520,7 +590,7 @@ class BasisStateProjector(Projector, Operation):
         return m
 
     @staticmethod
-    def compute_eigvals(basis_state):  # pylint: disable=arguments-differ
+    def compute_eigvals(basis_state: TensorLike) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -557,9 +627,10 @@ class BasisStateProjector(Projector, Operation):
         return w
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        basis_state, wires
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument
+        basis_state: TensorLike,
+        wires: WiresLike,
+    ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -585,7 +656,9 @@ class BasisStateProjector(Projector, Operation):
         return []
 
     @staticmethod
-    def compute_sparse_matrix(basis_state):  # pylint: disable=arguments-differ,unused-argument
+    def compute_sparse_matrix(  # pylint: disable=arguments-differ
+        basis_state: TensorLike,
+    ) -> csr_matrix:
         """
         Computes the sparse CSR matrix representation of the projector onto the basis state.
 
@@ -611,14 +684,19 @@ class StateVectorProjector(Projector):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state, wires, id=None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
         wires = Wires(wires)
         super().__init__(state, wires=wires, id=id)
 
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         r"""A customizable string representation of the operator.
 
         Args:
@@ -669,7 +747,9 @@ class StateVectorProjector(Projector):
         return f"P(M{mat_num})"
 
     @staticmethod
-    def compute_matrix(state_vector):  # pylint: disable=arguments-differ,arguments-renamed
+    def compute_matrix(  # pylint: disable=arguments-differ,arguments-renamed
+        state_vector: TensorLike,
+    ) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -696,7 +776,9 @@ class StateVectorProjector(Projector):
         return qml.math.outer(state_vector, qml.math.conj(state_vector))
 
     @staticmethod
-    def compute_eigvals(state_vector):  # pylint: disable=arguments-differ,arguments-renamed
+    def compute_eigvals(  # pylint: disable=arguments-differ,arguments-renamed
+        state_vector: TensorLike,
+    ) -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -728,9 +810,9 @@ class StateVectorProjector(Projector):
         return qml.math.convert_like(w, state_vector)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        state_vector, wires
-    ):  # pylint: disable=arguments-differ,unused-argument,arguments-renamed
+    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument,arguments-renamed
+        state_vector: TensorLike, wires: WiresLike
+    ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where

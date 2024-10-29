@@ -23,6 +23,7 @@ representation of Pauli words and applications, see:
 from functools import lru_cache, singledispatch
 from itertools import product
 from typing import Union
+from warnings import warn
 
 import numpy as np
 
@@ -165,7 +166,9 @@ def are_identical_pauli_words(pauli_1, pauli_2):
 
     **Example**
 
-    >>> are_identical_pauli_words(qml.Z(0) @ qml.Z(1), qml.Z(0) @ qml.Z(1))
+    >>> are_identical_pauli_words(qml.Z(0) @ qml.Z(1), qml.Z(1) @ qml.Z(0))
+    True
+    >>> are_identical_pauli_words(qml.I(0) @ qml.X(1), qml.X(1))
     True
     >>> are_identical_pauli_words(qml.Z(0) @ qml.Z(1), qml.Z(0) @ qml.X(3))
     False
@@ -183,7 +186,7 @@ def are_identical_pauli_words(pauli_1, pauli_2):
 
 def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
     # pylint: disable=isinstance-second-argument-not-valid-type
-    """Converts a Pauli word to the binary vector representation.
+    """Converts a Pauli word to the binary vector (symplectic) representation.
 
     This functions follows convention that the first half of binary vector components specify
     PauliX placements while the last half specify PauliZ placements.
@@ -195,7 +198,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
             unique integer labels as their values
         check_is_pauli_word (bool): If True (default) then a check is run to verify that pauli_word
-            is infact a Pauli word
+            is in fact a Pauli word.
 
     Returns:
         array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word
@@ -731,11 +734,11 @@ def are_pauli_words_qwc(lst_pauli_words):
 
 
 def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
-    """Converts a list of Pauli words to the binary vector representation and yields a row matrix
-    of the binary vectors.
+    """Converts a list of Pauli words into a matrix where each row is the binary vector (symplectic)
+    representation of the ``observables``.
 
-    The dimension of the binary vectors will be implied from the highest wire being acted on
-    non-trivially by the Pauli words in observables.
+    The dimension of the binary vectors (the number of columns) will be implied from the highest wire
+    being acted on non-trivially by the Pauli words in observables.
 
     Args:
         observables (list[Union[Identity, PauliX, PauliY, PauliZ, Tensor, Prod, SProd]]): the list
@@ -746,7 +749,7 @@ def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
 
 
     Returns:
-        array[array[int]]: a matrix whose rows are Pauli words in binary vector representation
+        array[array[int]]: a matrix whose rows are Pauli words in binary vector (symplectic) representation.
 
     **Example**
 
@@ -1209,6 +1212,11 @@ def simplify(h, cutoff=1.0e-12):
     The Hamiltonian terms with identical Pauli words are added together and eliminated if the
     overall coefficient is smaller than a cutoff value.
 
+    .. warning::
+
+        :func:`~pennylane.pauli.simplify` is deprecated. Instead, please use :func:`pennylane.simplify`
+        or :meth:`~pennylane.operation.Operator.simplify`.
+
     Args:
         h (Hamiltonian): PennyLane Hamiltonian
         cutoff (float): cutoff value for discarding the negligible terms
@@ -1223,6 +1231,11 @@ def simplify(h, cutoff=1.0e-12):
     >>> print(simplify(h))
     (1.0) [X0 Y1]
     """
+    warn(
+        "qml.pauli.simplify() has been deprecated. Instead, please use "
+        "qml.simplify(op) or op.simplify().",
+        qml.PennyLaneDeprecationWarning,
+    )
     wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
 
     c, o = [], []

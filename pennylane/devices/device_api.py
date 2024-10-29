@@ -19,18 +19,17 @@ import abc
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
-from typing import Optional, Union
+from typing import Optional, Union, overload
 
 from pennylane import Tracker
 from pennylane.measurements import Shots
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptOrBatch
+from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
-
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -65,7 +64,7 @@ class Device(abc.ABC):
         Shot information is no longer stored on the device, but instead specified on individual input :class:`~.QuantumTape`.
 
         The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characteristics of the devices and controlled various
-        preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
+        preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilities should now be handled by the
         :meth:`~.Device.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
         split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
         measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
@@ -79,7 +78,7 @@ class Device(abc.ABC):
         to certain inputs.
 
         Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
-        then the package requirements should specify the minimium PennyLane version required to work with the device.
+        then the package requirements should specify the minimum PennyLane version required to work with the device.
 
     .. details::
         :title: The relationship between preprocessing and execution
@@ -259,7 +258,7 @@ class Device(abc.ABC):
                 from pennylane.typing import PostprocessingFn
 
                 @transform
-                def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+                def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                     # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
                     def blank_processing_fn(results):
@@ -318,9 +317,21 @@ class Device(abc.ABC):
         return TransformProgram(), execution_config
 
     @abc.abstractmethod
+    @overload
+    def execute(
+        self, circuits: QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
+    ) -> Result: ...
+    @abc.abstractmethod
+    @overload
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptBatch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> ResultBatch: ...
+    @abc.abstractmethod
+    def execute(
+        self,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         """Execute a circuit or a batch of circuits and turn it into results.
@@ -396,7 +407,7 @@ class Device(abc.ABC):
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
 
@@ -486,7 +497,7 @@ class Device(abc.ABC):
 
     def compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         """Calculate the jacobian of either a single or a batch of circuits on the device.
@@ -516,7 +527,7 @@ class Device(abc.ABC):
 
     def execute_and_compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         """Compute the results and jacobians of circuits at the same time.
@@ -542,7 +553,7 @@ class Device(abc.ABC):
 
     def compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -581,7 +592,7 @@ class Device(abc.ABC):
 
     def execute_and_compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -604,7 +615,7 @@ class Device(abc.ABC):
     def supports_jvp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
@@ -619,7 +630,7 @@ class Device(abc.ABC):
 
     def compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -659,7 +670,7 @@ class Device(abc.ABC):
 
     def execute_and_compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -684,7 +695,7 @@ class Device(abc.ABC):
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 

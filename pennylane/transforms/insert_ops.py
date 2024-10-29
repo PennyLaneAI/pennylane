@@ -21,7 +21,7 @@ from typing import Type, Union
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -53,12 +53,12 @@ def _check_position(position):
 
 @transform
 def insert(
-    tape: QuantumTape,
+    tape: QuantumScript,
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
     position: Union[str, list, Type[Operation]] = "all",
     before: bool = False,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Insert an operation into specified points in an input circuit.
 
     Circuits passed through this transform will be updated to have the operation, specified by the

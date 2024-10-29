@@ -98,11 +98,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device, shots):
-        if not shots.has_partitioned_shots:
-            return ()
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return ()
 
     def process_samples(
         self,
@@ -147,6 +144,17 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
         return self._calculate_expectation(probs)
 
+    def process_density_matrix(
+        self, density_matrix: Sequence[complex], wire_order: Wires
+    ):  # pylint: disable=unused-argument
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
+        with qml.queuing.QueuingManager.stop_recording():
+            prob = qml.probs(wires=self.wires).process_density_matrix(
+                density_matrix=density_matrix, wire_order=wire_order
+            )
+        return self._calculate_expectation(prob)
+
     def _calculate_expectation(self, probabilities):
         """
         Calculate the of expectation set of probabilities.
@@ -154,5 +162,5 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         Args:
             probabilities (array): the probabilities of collapsing to eigen states
         """
-        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
+        eigvals = qml.math.cast_like(self.eigvals(), 1.0)
         return qml.math.dot(probabilities, eigvals)

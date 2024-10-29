@@ -33,7 +33,7 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike
 
 from .core import transform
@@ -55,9 +55,7 @@ def null_postprocessing(results):
 
 
 @transform
-def dynamic_one_shot(
-    tape: qml.tape.QuantumTape, **kwargs
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:
@@ -206,7 +204,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     """
     new_measurements = []
     for m in circuit.measurements:
-        if not m.mv:
+        if m.mv is None:
             if isinstance(m, VarianceMP):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
@@ -283,13 +281,13 @@ def parse_native_mid_circuit_measurements(
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
-        if interface != "jax" and m.mv and not has_valid:
+        if interface != "jax" and m.mv is not None and not has_valid:
             meas = measurement_with_no_shots(m)
-        elif m.mv and active_qjit:
+        elif m.mv is not None and active_qjit:
             meas = gather_mcm_qjit(
                 m, mcm_samples, is_valid, postselect_mode=postselect_mode
             )  # pragma: no cover
-        elif m.mv:
+        elif m.mv is not None:
             meas = gather_mcm(m, mcm_samples, is_valid, postselect_mode=postselect_mode)
         elif interface != "jax" and not has_valid:
             meas = measurement_with_no_shots(m)
@@ -374,8 +372,9 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
         tmp = Counter()
         for i, d in enumerate(samples):
             tmp.update(
-                dict((k if isinstance(k, str) else float(k), v * is_valid[i]) for k, v in d.items())
+                {k if isinstance(k, str) else float(k): v * is_valid[i] for k, v in d.items()}
             )
+
         if not measurement.all_outcomes:
             tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
@@ -383,11 +382,11 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
     if isinstance(measurement, SampleMP):
         if postselect_mode == "pad-invalid-samples" and samples.ndim == 2:
             is_valid = qml.math.reshape(is_valid, (-1, 1))
-        return (
-            qml.math.where(is_valid, samples, fill_in_value)
-            if postselect_mode == "pad-invalid-samples"
-            else samples[is_valid]
-        )
+        if postselect_mode == "pad-invalid-samples":
+            return qml.math.where(is_valid, samples, fill_in_value)
+        if qml.math.shape(samples) == ():  # single shot case
+            samples = qml.math.reshape(samples, (-1, 1))
+        return samples[is_valid]
 
     if (interface := qml.math.get_interface(is_valid)) == "tensorflow":
         # Tensorflow requires arrays that are used for arithmetic with each other to have the

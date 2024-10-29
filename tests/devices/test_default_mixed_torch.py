@@ -36,7 +36,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots is None
+        assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["torch"] == "default.mixed"
 
@@ -54,7 +54,6 @@ class TestQNodeIntegration:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -267,16 +266,22 @@ class TestApplyChannelMethodChoice:
         # Manually set the data of the operation to be torch data
         # This is due to an import problem if these tests are skipped.
         op.data = [d if isinstance(d, str) else torch.tensor(d) for d in op.data]
+
         methods = ["_apply_channel", "_apply_channel_tensordot"]
         del methods[methods.index(exp_method)]
+
         unexp_method = methods[0]
+
         spy_exp = mocker.spy(DefaultMixed, exp_method)
         spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+
         dev = qml.device("default.mixed", wires=dev_wires)
+
         state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
-        dev._state = torch.tensor(state).reshape([2] * (2 * dev_wires))
-        dev._apply_operation(op)
+
+        dev.target_device._state = torch.tensor(state).reshape([2] * (2 * dev_wires))
+        dev.target_device._apply_operation(op)
 
         spy_unexp.assert_not_called()
         spy_exp.assert_called_once()
@@ -302,7 +307,6 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.gradient_fn == "backprop"
         res = circuit(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
@@ -374,9 +378,6 @@ class TestPassthruIntegration:
 
         res = circuit1(p_torch)
         assert qml.math.allclose(qml.math.stack(res), circuit2(p), atol=tol, rtol=0)
-
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         grad = torch.autograd.functional.jacobian(circuit1, p_torch)
         grad_expected = torch.autograd.functional.jacobian(circuit2, p_torch_2)
@@ -518,7 +519,7 @@ class TestPassthruIntegration:
         # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
-        msg = "Backpropagation is only supported when shots=None"
+        msg = "does not support backprop with requested circuit"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
 
@@ -601,14 +602,6 @@ class TestPassthruIntegration:
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
         assert torch.allclose(res, torch.tensor(expected_cost), atol=tol, rtol=0)
-
-        # Check that the correct differentiation method is being used.
-        if diff_method == "backprop":
-            assert circuit.gradient_fn == "backprop"
-        elif diff_method == "parameter-shift":
-            assert circuit.gradient_fn is qml.gradients.param_shift
-        else:
-            assert circuit.gradient_fn is qml.gradients.finite_diff
 
         res.backward()
         res = params.grad

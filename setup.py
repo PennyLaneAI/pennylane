@@ -21,16 +21,16 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy<2.0",
+    "numpy<2.1",
     "scipy",
     "networkx",
-    "rustworkx",
+    "rustworkx>=0.14.0",
     "autograd",
     "toml",
     "appdirs",
     "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.37",
+    "pennylane-lightning>=0.38",
     "requests",
     "typing_extensions",
     "packaging",
@@ -49,13 +49,9 @@ info = {
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
             "default.qubit = pennylane.devices:DefaultQubit",
-            "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
-            "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
-            "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",
-            "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
-            "default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax",
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
+            "reference.qubit = pennylane.devices.reference_qubit:ReferenceQubit",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
@@ -86,7 +82,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

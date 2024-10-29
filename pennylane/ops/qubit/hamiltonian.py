@@ -22,19 +22,25 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
+from typing import Hashable, Literal, Optional, Union
 from warnings import warn
 
 import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.operation import Observable, Tensor
-from pennylane.wires import Wires
+from pennylane.operation import FlatPytree, Observable, Tensor
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
 
-def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
+def _compute_grouping_indices(
+    observables: list[Observable],
+    grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
+    method: Literal["lf", "rlf"] = "lf",
+):
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
     observable_groups = qml.pauli.group_observables(
@@ -69,25 +75,20 @@ class Hamiltonian(Observable):
 
     .. warning::
 
-        As of ``v0.36``, ``qml.Hamiltonian`` dispatches to :class:`~.pennylane.ops.op_math.LinearCombination`
-        by default. For further details, see :doc:`Updated Operators </news/new_opmath/>`.
+        As of ``v0.39``, ``qml.ops.Hamiltonian`` is deprecated. When using the new operator arithmetic,
+        ``qml.Hamiltonian`` will dispatch to :class:`~pennylane.ops.op_math.LinearCombination`. See
+        :doc:`Updated Operators </news/new_opmath/>` for more details.
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
-        simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
-                         (like-terms are combined). The default value is `False`. Use of this argument is deprecated.
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this Hamiltonian instance
-
-    .. warning::
-        The ``simplify`` argument is deprecated and will be removed in a future release.
-        Instead, you can call ``qml.simplify`` on the constructed operator.
 
     **Example:**
 
@@ -140,7 +141,7 @@ class Hamiltonian(Observable):
 
         The following code examples show the behaviour of ``qml.Hamiltonian`` using old operator
         arithmetic. See :doc:`Updated Operators </news/new_opmath/>` for more details. The old
-        behaviour can be reactivated by calling
+        behaviour can be reactivated by calling the deprecated
 
         >>> qml.operation.disable_new_opmath()
 
@@ -229,12 +230,14 @@ class Hamiltonian(Observable):
     batch_size = None
     ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
 
-    def _flatten(self):
+    def _flatten(self) -> FlatPytree:
         # note that we are unable to restore grouping type or method without creating new properties
         return (self.data, self._ops), (self.grouping_indices,)
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(
+        cls, data: tuple[tuple[float, ...], list[Observable]], metadata: tuple[list[list[int]]]
+    ):
         return cls(data[0], data[1], _grouping_indices=metadata[0])
 
     # pylint: disable=arguments-differ
@@ -244,21 +247,20 @@ class Hamiltonian(Observable):
 
     def __init__(
         self,
-        coeffs,
-        observables: list[Observable],
-        simplify=False,
-        grouping_type=None,
-        _grouping_indices=None,
-        method="rlf",
-        id=None,
+        coeffs: TensorLike,
+        observables: Iterable[Observable],
+        grouping_type: Literal[None, "qwc", "commuting", "anticommuting"] = None,
+        _grouping_indices: Optional[list[list[int]]] = None,
+        method: Literal["lf", "rlf"] = "rlf",
+        id: str = None,
     ):
-        if qml.operation.active_new_opmath():
-            warn(
-                "Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. "
-                "Instead, use 'qml.Hamiltonian'. "
-                "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
-                qml.PennyLaneDeprecationWarning,
-            )
+        warn(
+            "qml.ops.Hamiltonian uses the old approach to operator arithmetic, which will become "
+            "unavailable in version 0.40 of PennyLane. If you are experiencing issues, visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html or contact the PennyLane "
+            "team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -285,23 +287,6 @@ class Hamiltonian(Observable):
         # commuting observables, since recomputation is costly
         self._grouping_indices = _grouping_indices
 
-        if simplify:
-
-            warn(
-                "The simplify argument in qml.Hamiltonian and qml.ops.LinearCombination is deprecated. "
-                "Instead, you can call qml.simplify on the constructed operator.",
-                qml.PennyLaneDeprecationWarning,
-            )
-
-            # simplify upon initialization changes ops such that they wouldnt be
-            # removed in self.queue() anymore, removing them here manually.
-            if qml.QueuingManager.recording():
-                for o in observables:
-                    qml.QueuingManager.remove(o)
-
-            with qml.QueuingManager.stop_recording():
-                self.simplify()
-
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(
@@ -317,12 +302,12 @@ class Hamiltonian(Observable):
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
         self._pauli_rep = "unset"
 
-    def __len__(self):
+    def __len__(self) -> int:
         """The number of terms in the Hamiltonian."""
         return len(self.ops)
 
     @property
-    def pauli_rep(self):
+    def pauli_rep(self) -> Optional["qml.pauli.PauliSentence"]:
         if self._pauli_rep != "unset":
             return self._pauli_rep
 
@@ -340,29 +325,34 @@ class Hamiltonian(Observable):
     def _check_batching(self):
         """Override for Hamiltonian, batching is not yet supported."""
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ):
         decimals = None if (len(self.parameters) > 3) else decimals
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
     @property
-    def coeffs(self):
+    def coeffs(self) -> TensorLike:
         """Return the coefficients defining the Hamiltonian.
 
         Returns:
-            Iterable[float]): coefficients in the Hamiltonian expression
+            Sequence[float]): coefficients in the Hamiltonian expression
         """
         return self._coeffs
 
     @property
-    def ops(self):
+    def ops(self) -> list[Observable]:
         """Return the operators defining the Hamiltonian.
 
         Returns:
-            Iterable[Observable]): observables in the Hamiltonian expression
+            list[Observable]): observables in the Hamiltonian expression
         """
         return self._ops
 
-    def terms(self):
+    def terms(self) -> tuple[list[TensorLike], list[Observable]]:
         r"""Representation of the operator as a linear combination of other operators.
 
          .. math:: O = \sum_i c_i O_i
@@ -391,7 +381,7 @@ class Hamiltonian(Observable):
         return self.parameters, self.ops
 
     @property
-    def wires(self):
+    def wires(self) -> Wires:
         r"""The sorted union of wires from all operators.
 
         Returns:
@@ -400,11 +390,11 @@ class Hamiltonian(Observable):
         return self._wires
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "Hamiltonian"
 
     @property
-    def grouping_indices(self):
+    def grouping_indices(self) -> Optional[list[list[int]]]:
         """Return the grouping indices attribute.
 
         Returns:
@@ -413,7 +403,7 @@ class Hamiltonian(Observable):
         return self._grouping_indices
 
     @grouping_indices.setter
-    def grouping_indices(self, value):
+    def grouping_indices(self, value: Iterable[Iterable[int]]):
         """Set the grouping indices, if known without explicit computation, or if
         computation was done externally. The groups are not verified.
 
@@ -451,7 +441,11 @@ class Hamiltonian(Observable):
         # make sure all tuples so can be hashable
         self._grouping_indices = tuple(tuple(sublist) for sublist in value)
 
-    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+    def compute_grouping(
+        self,
+        grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
+        method: Literal["lf", "rlf"] = "lf",
+    ):
         """
         Compute groups of indices corresponding to commuting observables of this
         Hamiltonian, and store it in the ``grouping_indices`` attribute.
@@ -459,7 +453,7 @@ class Hamiltonian(Observable):
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute the grouping.
                 Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-            method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+            method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
                 can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
         """
 
@@ -468,7 +462,7 @@ class Hamiltonian(Observable):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> scipy.sparse.csr_matrix:
         r"""Computes the sparse matrix representation of a Hamiltonian in the computational basis.
 
         Args:
@@ -554,7 +548,7 @@ class Hamiltonian(Observable):
         matrix += sum(temp_mats)
         return matrix
 
-    def simplify(self):
+    def simplify(self) -> "Hamiltonian":
         r"""Simplifies the Hamiltonian by combining like-terms.
 
         **Example**
@@ -607,7 +601,7 @@ class Hamiltonian(Observable):
         self._grouping_indices = None
         return self
 
-    def __str__(self):
+    def __str__(self) -> str:
         def wires_print(ob: Observable):
             """Function that formats the wires."""
             return ",".join(map(str, ob.wires.tolist()))
@@ -631,7 +625,7 @@ class Hamiltonian(Observable):
 
         return "  " + "\n+ ".join(terms_ls)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         # Constructor-call-like representation
         return f"<Hamiltonian: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
 
@@ -644,7 +638,7 @@ class Hamiltonian(Observable):
         else:  # pragma: no-cover
             print(repr(self))
 
-    def _obs_data(self):
+    def _obs_data(self) -> set[tuple[TensorLike, frozenset[tuple[str, Wires, list[str]]]]]:
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
 
         This allows for comparison between Hamiltonians that are equivalent, but are defined with terms and tensors
@@ -681,7 +675,7 @@ class Hamiltonian(Observable):
 
         return data
 
-    def compare(self, other):
+    def compare(self, other: Observable) -> bool:
         r"""Determines whether the operator is equivalent to another.
 
         Currently only supported for :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`.
@@ -740,7 +734,7 @@ class Hamiltonian(Observable):
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
-    def __matmul__(self, H):
+    def __matmul__(self, H: Observable) -> Observable:
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
@@ -771,7 +765,7 @@ class Hamiltonian(Observable):
 
         return NotImplemented
 
-    def __rmatmul__(self, H):
+    def __rmatmul__(self, H: Observable):
         r"""The tensor product operation (from the right) between a Hamiltonian and
         a Hamiltonian/Tensor/Observable (ie. Hamiltonian.__rmul__(H) = H @ Hamiltonian).
         """
@@ -789,7 +783,7 @@ class Hamiltonian(Observable):
 
         return NotImplemented
 
-    def __add__(self, H):
+    def __add__(self, H: Observable) -> Observable:
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         ops = self.ops.copy()
         self_coeffs = copy(self.coeffs)
@@ -817,7 +811,7 @@ class Hamiltonian(Observable):
 
     __radd__ = __add__
 
-    def __mul__(self, a):
+    def __mul__(self, a: Union[int, float]):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             self_coeffs = copy(self.coeffs)
@@ -828,13 +822,14 @@ class Hamiltonian(Observable):
 
     __rmul__ = __mul__
 
-    def __sub__(self, H):
+    def __sub__(self, H: Observable) -> Observable:
         r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             return self + (-1 * H)
+
         return NotImplemented
 
-    def __iadd__(self, H):
+    def __iadd__(self, H: Union[Observable, numbers.Number]):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, numbers.Number) and H == 0:
             return self
@@ -855,7 +850,7 @@ class Hamiltonian(Observable):
 
         return NotImplemented
 
-    def __imul__(self, a):
+    def __imul__(self, a: Union[int, float]):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             self._coeffs = qml.math.multiply(a, self._coeffs)
@@ -865,21 +860,24 @@ class Hamiltonian(Observable):
 
         return NotImplemented
 
-    def __isub__(self, H):
+    def __isub__(self, H: Observable):
         r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             self.__iadd__(H.__mul__(-1))
             return self
+
         return NotImplemented
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(
+        self, context: Union[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
+    ):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
             context.remove(o)
         context.append(self)
         return self
 
-    def map_wires(self, wire_map: dict):
+    def map_wires(self, wire_map: dict[Hashable, Hashable]):
         """Returns a copy of the current hamiltonian with its wires changed according to the given
         wire map.
 

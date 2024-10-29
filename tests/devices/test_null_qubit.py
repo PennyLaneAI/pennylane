@@ -247,7 +247,7 @@ class TestBasicCircuit:
             qs = qml.tape.QuantumScript(
                 [qml.RX(x, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
             )
-            return dev.execute(qs, ExecutionConfig(interface="torch"))
+            return dev.execute(qs, ExecutionConfig(interface="torch", gradient_method="backprop"))
 
         expected = np.zeros(2)
         assert np.array_equal(f(phi), expected)
@@ -280,6 +280,8 @@ class TestBasicCircuit:
         """Test that even if no interface parameters are given, result is correct."""
         dev = NullQubit()
 
+        import tensorflow as tf
+
         @qml.qnode(dev, interface="tf")
         def circuit(p):
             op(p, wires=[0])
@@ -287,7 +289,8 @@ class TestBasicCircuit:
 
         res = circuit(param)
         assert qml.math.get_interface(res) == "tensorflow"
-        assert res == qml.math.asarray(0.0, like="tensorflow")
+        # float64 due to float64 input variables
+        assert qml.math.allclose(res, tf.Variable(0.0, dtype=tf.float64))  # input variables float64
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
@@ -466,13 +469,11 @@ class TestSampleMeasurements:
 
         dev = NullQubit()
         result = dev.execute(qs)
-        print(result)
 
-        assert (
-            result == tuple([{"00": s, "01": 0, "10": 0, "11": 0}] * 2 for s in qs.shots)
-            if all_outcomes
-            else tuple([{"00": s}] * 2 for s in qs.shots)
-        )
+        if all_outcomes:
+            assert result == tuple(({"00": s, "01": 0, "10": 0, "11": 0},) * 2 for s in qs.shots)
+        else:
+            assert result == tuple(({"00": s},) * 2 for s in qs.shots)
 
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_obs(self, all_outcomes):
@@ -500,11 +501,10 @@ class TestSampleMeasurements:
 
         dev = NullQubit()
         result = dev.execute(qs)
-        print(result)
         assert (
-            result == tuple([{-1: s, 1: 0}] * 2 for s in qs.shots)
+            result == tuple(({-1: s, 1: 0},) * 2 for s in qs.shots)
             if all_outcomes
-            else tuple([{-1: s}] * 2 for s in qs.shots)
+            else tuple(({-1: s},) * 2 for s in qs.shots)
         )
 
 
@@ -530,7 +530,7 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        config = ExecutionConfig(interface=qml.math.get_interface(phi))
+        config = ExecutionConfig(interface=qml.math.get_interface(phi), gradient_method="backprop")
         return dev.execute((qs1, qs2), config)
 
     @staticmethod
@@ -552,7 +552,10 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        return NullQubit().execute((qs1, qs2))
+        config = qml.devices.ExecutionConfig(
+            gradient_method="backprop", interface=qml.math.get_interface(phi)
+        )
+        return NullQubit().execute((qs1, qs2), execution_config=config)
 
     @staticmethod
     def assert_results(results):
@@ -929,7 +932,6 @@ class TestDeviceDifferentiation:
         cotangents = [(0.456,), (0.789, 0.123)]
 
         actual_grad = dev.compute_vjp([single_meas, multi_meas], cotangents, self.ec)
-        print(actual_grad)
         assert actual_grad == ((0.0,), (0.0,))
 
         actual_val, actual_grad = dev.execute_and_compute_vjp(
@@ -956,7 +958,6 @@ class TestDeviceDifferentiation:
 
         assert new_ec.use_device_gradient
         assert new_ec.grad_on_execution
-        print(actual_grad)
         assert actual_grad == ((0.0,), (0.0,))
 
 
@@ -975,12 +976,12 @@ class TestClassicalShadows:
         assert np.array_equal(res, np.zeros((2, 100, n_qubits)))
         assert res.dtype == np.int8
 
-    def test_expval(self):
+    def test_expval(self, seed):
         """Test that shadow expval measurements work as expected"""
         dev = NullQubit()
 
         ops = [qml.Hadamard(0), qml.Hadamard(1)]
-        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)]
+        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=seed)]
         qs = qml.tape.QuantumScript(ops, meas, shots=1000)
         assert dev.execute(qs) == np.array(0.0)
 
@@ -1134,12 +1135,12 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "diff_method", ["device", "adjoint", "backprop", "finite-diff", "parameter-shift"]
     )
-    def test_expected_shape_all_methods(self, diff_method):
+    def test_expected_shape_all_methods(self, diff_method, seed):
         """Test that the gradient shape is as expected with all diff methods."""
         n_wires = 4
 
         shape = qml.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
-        rng = np.random.default_rng(seed=1239594)
+        rng = np.random.default_rng(seed=seed)
         params = qml.numpy.array(rng.random(shape))
         dev = qml.device("null.qubit")
 

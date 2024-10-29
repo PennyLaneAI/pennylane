@@ -19,14 +19,16 @@ not depend on any parameters.
 import cmath
 from copy import copy
 from functools import lru_cache
+from typing import Optional, Union
 
 import numpy as np
 from scipy import sparse
 
 import pennylane as qml
 from pennylane.operation import Observable, Operation
+from pennylane.typing import TensorLike
 from pennylane.utils import pauli_eigs
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -36,6 +38,8 @@ class Hadamard(Observable, Operation):
     The Hadamard operator
 
     .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
+
+    .. seealso:: The equivalent short-form alias :class:`~H`
 
     **Details:**
 
@@ -54,12 +58,28 @@ class Hadamard(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return base_label or "H"
+
+    def __repr__(self) -> str:
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"H('{wire}')"
+        return f"H({wire})"
+
+    @property
+    def name(self) -> str:
+        return "Hadamard"
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -80,11 +100,11 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix():  # pylint: disable=arguments-differ
+    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -109,7 +129,7 @@ class Hadamard(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -134,7 +154,7 @@ class Hadamard(Observable, Operation):
         return [qml.RY(-np.pi / 4, wires=wires)]
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -161,18 +181,36 @@ class Hadamard(Observable, Operation):
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CH":
         return qml.CH(wires=Wires(wire) + self.wires)
 
-    def adjoint(self):
+    def adjoint(self) -> "Hadamard":
         return Hadamard(wires=self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # H = RZ(\pi) RY(\pi/2) RZ(0)
         return [np.pi, np.pi / 2, 0.0]
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]):
         return super().pow(z % 2)
+
+
+H = Hadamard
+r"""H(wires)
+The Hadamard operator
+
+.. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
+
+.. seealso:: The equivalent long-form alias :class:`~Hadamard`
+
+**Details:**
+
+* Number of wires: 1
+* Number of parameters: 0
+
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
 
 
 class PauliX(Observable, Operation):
@@ -204,14 +242,19 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires=None, id=None):
+    def __init__(self, wires: Optional[WiresLike] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return base_label or "X"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
         if isinstance(wire, str):
@@ -219,12 +262,12 @@ class PauliX(Observable, Operation):
         return f"X({wire})"
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "PauliX"
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -246,11 +289,11 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix():  # pylint: disable=arguments-differ
+    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, 1], [1, 0]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -275,7 +318,7 @@ class PauliX(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -300,7 +343,7 @@ class PauliX(Observable, Operation):
         return [Hadamard(wires=wires)]
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -328,19 +371,19 @@ class PauliX(Observable, Operation):
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
 
-    def adjoint(self):
+    def adjoint(self) -> "PauliX":
         return X(wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
             return [SX(wires=self.wires)]
         return super().pow(z_mod2)
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CNOT":
         return qml.CNOT(wires=Wires(wire) + self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
         return [np.pi / 2, np.pi, -np.pi / 2]
 
@@ -391,27 +434,32 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires=None, id=None):
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
         if isinstance(wire, str):
             return f"Y('{wire}')"
         return f"Y({wire})"
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return base_label or "Y"
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "PauliY"
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -432,11 +480,11 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix():  # pylint: disable=arguments-differ
+    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, -1j], [1j, 0]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -461,7 +509,7 @@ class PauliY(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -490,7 +538,7 @@ class PauliY(Observable, Operation):
         ]
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -517,16 +565,16 @@ class PauliY(Observable, Operation):
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
 
-    def adjoint(self):
+    def adjoint(self) -> "PauliY":
         return Y(wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[float, int]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CY":
         return qml.CY(wires=Wires(wire) + self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # Y = RZ(0) RY(\pi) RZ(0)
         return [0.0, np.pi, 0.0]
 
@@ -575,27 +623,32 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires=None, id=None):
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
         if isinstance(wire, str):
             return f"Z('{wire}')"
         return f"Z({wire})"
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return base_label or "Z"
 
     @property
-    def name(self):
+    def name(self) -> str:
         return "PauliZ"
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -616,11 +669,11 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix():  # pylint: disable=arguments-differ
+    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[1, 0], [0, -1]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -645,7 +698,9 @@ class PauliZ(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(  # pylint: disable=unused-argument
+        wires: WiresLike,
+    ) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -671,7 +726,7 @@ class PauliZ(Observable, Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -692,10 +747,10 @@ class PauliZ(Observable, Operation):
         """
         return [qml.PhaseShift(np.pi, wires=wires)]
 
-    def adjoint(self):
+    def adjoint(self) -> "PauliZ":
         return Z(wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: float) -> list[qml.operation.Operator]:
         z_mod2 = z % 2
         if z_mod2 == 0:
             return []
@@ -709,10 +764,10 @@ class PauliZ(Observable, Operation):
 
         return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CZ":
         return qml.CZ(wires=wire + self.wires)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # Z = RZ(\pi) RY(0) RZ(0)
         return [np.pi, 0.0, 0.0]
 
@@ -762,7 +817,7 @@ class S(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -782,7 +837,7 @@ class S(Operation):
         return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -807,7 +862,7 @@ class S(Operation):
         return np.array([1, 1j])
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -829,7 +884,7 @@ class S(Operation):
         """
         return [qml.PhaseShift(np.pi / 2, wires=wires)]
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         pow_map = {
             0: lambda op: [],
@@ -841,7 +896,7 @@ class S(Operation):
             self
         )
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # S = RZ(\pi/2) RY(0) RZ(0)
         return [np.pi / 2, 0.0, 0.0]
 
@@ -874,7 +929,7 @@ class T(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -894,7 +949,7 @@ class T(Operation):
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -919,7 +974,7 @@ class T(Operation):
         return np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -941,7 +996,7 @@ class T(Operation):
         """
         return [qml.PhaseShift(np.pi / 4, wires=wires)]
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod8 = z % 8
         pow_map = {
             0: lambda op: [],
@@ -953,7 +1008,7 @@ class T(Operation):
             self
         )
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # T = RZ(\pi/4) RY(0) RZ(0)
         return [np.pi / 4, 0.0, 0.0]
 
@@ -984,7 +1039,7 @@ class SX(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1004,7 +1059,7 @@ class SX(Operation):
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1030,7 +1085,7 @@ class SX(Operation):
         return np.array([1, 1j])
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1060,13 +1115,13 @@ class SX(Operation):
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         if z_mod4 == 2:
             return [X(wires=self.wires)]
         return super().pow(z_mod4)
 
-    def single_qubit_rot_angles(self):
+    def single_qubit_rot_angles(self) -> list[TensorLike]:
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
@@ -1099,7 +1154,7 @@ class SWAP(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1121,7 +1176,7 @@ class SWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1147,24 +1202,24 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
-    def adjoint(self):
+    def adjoint(self) -> "SWAP":
         return SWAP(wires=self.wires)
 
-    def _controlled(self, wire):
+    def _controlled(self, wire: WiresLike) -> "qml.CSWAP":
         return qml.CSWAP(wires=wire + self.wires)
 
     @property
-    def is_hermitian(self):
+    def is_hermitian(self) -> bool:
         return True
 
 
 class ECR(Operation):
     r""" ECR(wires)
 
-    An echoed RZX(pi/2) gate.
+    An echoed RZX(:math:`\pi/2`) gate.
 
     .. math:: ECR = {\frac{1}{\sqrt{2}}} \begin{bmatrix}
             0 & 0 & 1 & i \\
@@ -1189,7 +1244,7 @@ class ECR(Operation):
     batch_size = None
 
     @staticmethod
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1219,7 +1274,7 @@ class ECR(Operation):
         )
 
     @staticmethod
-    def compute_eigvals():
+    def compute_eigvals() -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1246,7 +1301,7 @@ class ECR(Operation):
         return np.array([1, -1, 1, -1])
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
            .. math:: O = O_1 O_2 \dots O_n.
@@ -1283,10 +1338,10 @@ class ECR(Operation):
             qml.RX(pi / 2, wires=[wires[0]]),
         ]
 
-    def adjoint(self):
+    def adjoint(self) -> "ECR":
         return ECR(wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
 
@@ -1318,7 +1373,7 @@ class ISWAP(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1340,7 +1395,7 @@ class ISWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1366,7 +1421,7 @@ class ISWAP(Operation):
         return np.array([1j, -1j, 1, 1])
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1400,7 +1455,7 @@ class ISWAP(Operation):
             Hadamard(wires=wires[1]),
         ]
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
             return [SISWAP(wires=self.wires)]
@@ -1435,7 +1490,7 @@ class SISWAP(Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1465,7 +1520,7 @@ class SISWAP(Operation):
         )
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1491,7 +1546,7 @@ class SISWAP(Operation):
         return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1537,7 +1592,7 @@ class SISWAP(Operation):
             SX(wires=wires[1]),
         ]
 
-    def pow(self, z):
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 

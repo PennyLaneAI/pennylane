@@ -15,6 +15,7 @@
 import os
 import re
 import sys
+from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -62,6 +63,10 @@ ogp_image = "_static/header-tall.png"
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
+# Tell Jinja2 templates the build is running on Read the Docs
+if os.environ.get("READTHEDOCS", "") == "True":
+    html_context = {"READTHEDOCS": True}
+
 os.environ["SPHINX_BUILD"] = "1"
 
 autosummary_generate = True
@@ -98,7 +103,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
-copyright = "2023, Xanadu Quantum Technologies"
+copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
 add_module_names = False

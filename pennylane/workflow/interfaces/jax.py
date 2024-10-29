@@ -120,7 +120,7 @@ As we can see here, the tangents are packed into the same pytree structure as th
 
 Currently, :class:`~.QuantumScript` is a valid pytree *most* of the time. Once it is a valid pytree *all* of the
 time and can store tangents in place of the variables, we can use a batch of tapes as our trainable argument. Until then, the tapes
-must be a non-pytree non-differenatible argument that accompanies the tree leaves.
+must be a non-pytree non-differentiable argument that accompanies the tree leaves.
 
 """
 import dataclasses
@@ -133,7 +133,7 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.typing import ResultBatch
 
@@ -143,7 +143,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-ExecuteFn = Callable[[QuantumTapeBatch], qml.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumScriptBatch], qml.typing.ResultBatch]
 
 
 @dataclasses.dataclass
@@ -161,7 +161,7 @@ class _NonPytreeWrapper:
 
     """
 
-    vals: QuantumTapeBatch = None
+    vals: QuantumScriptBatch = None
 
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
@@ -243,7 +243,7 @@ _execute_jvp = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
 _execute_jvp.defjvp(_execute_and_compute_jvp)
 
 
-def jax_jvp_execute(tapes: QuantumTapeBatch, execute_fn: ExecuteFn, jpc, device=None):
+def jax_jvp_execute(tapes: QuantumScriptBatch, execute_fn: ExecuteFn, jpc, device=None):
     """Execute a batch of tapes with JAX parameters using JVP derivatives.
 
     Args:

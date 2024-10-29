@@ -15,21 +15,44 @@
 This module contains the qml.map_wires function.
 """
 from collections.abc import Callable
-from functools import partial
-from typing import Union
+from typing import Union, overload
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
 
 
+@overload
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable],
+    input: Operator, wire_map: dict, queue: bool = False, replace: bool = False
+) -> Operator: ...
+@overload
+def map_wires(
+    input: MeasurementProcess, wire_map: dict, queue: bool = False, replace: bool = False
+) -> MeasurementProcess: ...
+@overload
+def map_wires(
+    input: QuantumScript, wire_map: dict, queue: bool = False, replace: bool = False
+) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
+@overload
+def map_wires(
+    input: QNode, wire_map: dict, queue: bool = False, replace: bool = False
+) -> QNode: ...
+@overload
+def map_wires(
+    input: Callable, wire_map: dict, queue: bool = False, replace: bool = False
+) -> Callable: ...
+@overload
+def map_wires(
+    input: QuantumScriptBatch, wire_map: dict, queue: bool = False, replace: bool = False
+) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
+def map_wires(
+    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable, QuantumScriptBatch],
     wire_map: dict,
     queue=False,
     replace=False,
@@ -101,16 +124,18 @@ def map_wires(
                 qml.apply(new_op)
             return new_op
         return input.map_wires(wire_map=wire_map)
-    if isinstance(input, (QuantumScript, QNode)) or callable(input):
-        return _map_wires_transform(input, wire_map=wire_map, queue=queue)
-
-    raise ValueError(f"Cannot map wires of object {input} of type {type(input)}.")
+    return _map_wires_transform(input, wire_map=wire_map, queue=queue)
 
 
-@partial(transform)
+def processing_fn(res):
+    """An empty postprocessing function that leaves the results unchanged."""
+    return res[0]
+
+
+@transform
 def _map_wires_transform(
-    tape: qml.tape.QuantumTape, wire_map=None, queue=False
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, wire_map=None, queue=False
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     ops = [
         (
             map_wires(op, wire_map, queue=queue)
@@ -125,8 +150,4 @@ def _map_wires_transform(
         ops=ops, measurements=measurements, shots=tape.shots, trainable_params=tape.trainable_params
     )
 
-    def processing_fn(res):
-        """Defines how matrix works if applied to a tape containing multiple operations."""
-        return res[0]
-
-    return [out], processing_fn
+    return (out,), processing_fn

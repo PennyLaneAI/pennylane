@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types."""
-# pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _evaluate_gradient,
@@ -1373,7 +1373,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
-        """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
+        """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         dev = qml.device("default.qubit", wires=1)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -1447,7 +1447,7 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
-        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parametrized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -1603,12 +1603,10 @@ class TestParameterShiftRule:
         # assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_fallback_single_meas(self, dev_name, mocker):
+    def test_fallback_single_meas(self, mocker):
         """Test that fallback gradient functions are correctly used for a single measurement."""
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
@@ -1628,7 +1626,7 @@ class TestParameterShiftRule:
             spy.assert_called()
             assert spy.call_args[1]["argnum"] == {1}
 
-            return fn(execute_fn(tapes))
+            return fn(dev.execute(tapes))
 
         res = cost_fn(params)
 
@@ -1645,12 +1643,10 @@ class TestParameterShiftRule:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX, RY_with_F, 1)])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_fallback_probs(self, dev_name, RX, RY, argnum, mocker):
+    def test_fallback_probs(self, RX, RY, argnum, mocker):
         """Test that fallback gradient functions are correctly used with probs"""
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
@@ -1672,7 +1668,7 @@ class TestParameterShiftRule:
             spy.assert_called()
             assert spy.call_args[1]["argnum"] == {argnum}
 
-            return fn(execute_fn(tapes))
+            return fn(dev.execute(tapes))
 
         res = cost_fn(params)
 
@@ -1729,15 +1725,13 @@ class TestParameterShiftRule:
         assert np.allclose(res[1][1], probs_expected[:, 1])
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_all_fallback(self, dev_name, mocker, tol):
+    def test_all_fallback(self, mocker, tol):
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""
         spy_fd = mocker.spy(qml.gradients, "finite_diff")
         spy_ps = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
@@ -1755,7 +1749,7 @@ class TestParameterShiftRule:
         spy_fd.assert_called()
         spy_ps.assert_not_called()
 
-        res = fn(execute_fn(tapes))
+        res = fn(dev.execute(tapes))
 
         assert isinstance(res, tuple)
         assert res[0].shape == ()
@@ -2068,10 +2062,10 @@ class TestParameterShiftRule:
         assert gradA[1] == pytest.approx(expected, abs=tol)
         assert gradF[1] == pytest.approx(expected, abs=tol)
 
-    def test_involutory_and_noninvolutory_variance_single_param(self, tol):
+    def test_involutory_and_noninvolutory_variance_single_param(self, tol, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
 
@@ -2720,7 +2714,7 @@ class TestParameterShiftRuleBroadcast:
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
-        """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
+        """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         dev = qml.device("default.qubit", wires=1)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -2790,7 +2784,7 @@ class TestParameterShiftRuleBroadcast:
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
-        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parametrized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -2889,16 +2883,14 @@ class TestParameterShiftRuleBroadcast:
                 assert np.allclose(g, grad_F2[idx1][idx2], atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-    def test_fallback(self, dev_name, mocker, tol):
+    def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
 
         import jax
         from jax import numpy as jnp
 
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
@@ -2920,7 +2912,7 @@ class TestParameterShiftRuleBroadcast:
             spy.assert_called()
             assert spy.call_args[1]["argnum"] == {1}
 
-            return fn(execute_fn(tapes))
+            return fn(dev.execute(tapes))
 
         res = cost_fn(params)
         assert len(res) == 2 and isinstance(res, tuple)
@@ -2934,15 +2926,13 @@ class TestParameterShiftRuleBroadcast:
         assert np.allclose(jac[1][1][1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_all_fallback(self, dev_name, mocker, tol):
+    def test_all_fallback(self, mocker, tol):
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""
         spy_fd = mocker.spy(qml.gradients, "finite_diff")
         spy_ps = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
@@ -2960,7 +2950,7 @@ class TestParameterShiftRuleBroadcast:
         spy_fd.assert_called()
         spy_ps.assert_not_called()
 
-        res = fn(execute_fn(tapes))
+        res = fn(dev.execute(tapes))
         assert len(res) == 2
         assert res[0].shape == ()
         assert res[1].shape == ()
@@ -3298,12 +3288,10 @@ class TestParamShiftGradients:
     @pytest.mark.autograd
     # TODO: support Hessian with the new return types
     @pytest.mark.skip
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, tol, broadcast, expected):
+    def test_autograd(self, tol, broadcast, expected):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
         exp_num_tapes, exp_batch_sizes = expected
 
@@ -3319,7 +3307,7 @@ class TestParamShiftGradients:
             tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
             assert len(tapes) == exp_num_tapes
             assert [t.batch_size for t in tapes] == exp_batch_sizes
-            jac = fn(execute_fn(tapes))
+            jac = fn(dev.execute(tapes))
             return jac
 
         res = qml.jacobian(cost_fn)(params)
@@ -3575,8 +3563,7 @@ class TestHamiltonianExpvalGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1, 2, 3, 4, 5}
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        execute_fn = dev.batch_execute if isinstance(dev, qml.Device) else dev.execute
-        jac = fn(execute_fn(tapes))
+        jac = fn(dev.execute(tapes))
         return jac
 
     @staticmethod
@@ -3598,14 +3585,13 @@ class TestHamiltonianExpvalGradients:
         ]
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, tol, broadcast):
+    def test_autograd(self, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using autograd"""
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
@@ -3619,8 +3605,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(res[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
-    def test_tf(self, dev_name, tol, broadcast):
+    def test_tf(self, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using tf"""
         import tensorflow as tf
@@ -3629,15 +3614,8 @@ class TestHamiltonianExpvalGradients:
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)
         weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
-        # Old op math with old device API does not support broadcasting
-        if broadcast and "tf" in dev_name and not qml.operation.active_new_opmath():
-            with pytest.raises(
-                NotImplementedError, match="Hamiltonians .* together with parameter broadcasting"
-            ):
-                _ = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-            return
         with tf.GradientTape() as _:
             jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
 
@@ -3654,8 +3632,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
-    def test_torch(self, dev_name, tol, broadcast):
+    def test_torch(self, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""
         import torch
@@ -3664,15 +3641,8 @@ class TestHamiltonianExpvalGradients:
         coeffs2 = torch.tensor([0.7], dtype=torch.float64, requires_grad=True)
         weights = torch.tensor([0.4, 0.5], dtype=torch.float64, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
-        # Old op math with old device API does not support broadcasting
-        if broadcast and "torch" in dev_name and not qml.operation.active_new_opmath():
-            with pytest.raises(
-                NotImplementedError, match="Hamiltonians .* together with parameter broadcasting"
-            ):
-                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-            return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(
             weights.detach().numpy(), coeffs1.detach().numpy(), coeffs2.detach().numpy()
@@ -3688,8 +3658,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-    def test_jax(self, dev_name, tol, broadcast):
+    def test_jax(self, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""
         import jax
@@ -3699,15 +3668,8 @@ class TestHamiltonianExpvalGradients:
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])
         weights = jnp.array([0.4, 0.5])
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
-        # Old op math with old device API does not support broadcasting
-        if broadcast and "jax" in dev_name and not qml.operation.active_new_opmath():
-            with pytest.raises(
-                NotImplementedError, match="Hamiltonians .* together with parameter broadcasting"
-            ):
-                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
-            return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res, np.array(expected), atol=tol, rtol=0)

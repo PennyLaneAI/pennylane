@@ -246,7 +246,7 @@ class TestCatalyst:
             return qml.expval(qml.PauliZ(0))
 
         mlir_str = str(circuit.mlir)
-        result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
+        result_header = "func.func public @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
     def test_qjit_adjoint(self):
@@ -599,11 +599,31 @@ class TestCatalystControlFlow:
 
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError,
-            match="'elif' branches are not supported in interpreted mode",
-        ):
-            circuit(1.5)
+        assert jnp.allclose(circuit(1.2), 1.0)
+        assert jnp.allclose(circuit(jnp.pi), -1.0)
+
+    def test_cond_with_decorator_syntax(self):
+        """Test condition using the decorator syntax"""
+
+        @qml.qjit
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional():
+                return (x + 1) ** 2
+
+            @conditional.else_if(x < -2)
+            def conditional_elif():  # pylint: disable=unused-variable
+                return x + 1
+
+            @conditional.otherwise
+            def conditional_false_fn():  # pylint: disable=unused-variable
+                return -(x + 1)
+
+            return conditional()
+
+        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert np.allclose(f(-0.5), -(-0.5 + 1))
+        assert np.allclose(f(-2.5), (-2.5 + 1))
 
 
 class TestCatalystGrad:
@@ -739,7 +759,7 @@ class TestCatalystGrad:
 
         with pytest.raises(
             ValueError,
-            match="Invalid values for 'method=fd' and 'h=0.3' in interpreted mode",
+            match="Invalid values 'method='fd'' and 'h=0.3' without QJIT",
         ):
             workflow(np.array([2.0, 1.0]))
 
@@ -844,7 +864,7 @@ class TestCatalystMCMs:
     @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs])
     @pytest.mark.parametrize("meas_obj", [qml.PauliZ(0), [0], "mcm"])
     # pylint: disable=too-many-arguments
-    def test_dynamic_one_shot_simple(self, measure_f, meas_obj):
+    def test_dynamic_one_shot_simple(self, measure_f, meas_obj, seed):
         """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple
         circuit with a mid-circuit measurement."""
         if measure_f in (qml.counts, qml.probs, qml.sample) and (
@@ -859,7 +879,7 @@ class TestCatalystMCMs:
             pytest.xfail("isa<UnrealizedConversionCastOp>")
         shots = 8000
 
-        dq = qml.device("default.qubit", shots=shots, seed=8237945)
+        dq = qml.device("default.qubit", shots=shots, seed=seed)
 
         @qml.defer_measurements
         @qml.qnode(dq)

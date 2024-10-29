@@ -13,7 +13,7 @@
 # limitations under the License.
 """Code for resource estimation"""
 import inspect
-import warnings
+from typing import Any, Callable, Literal, Union
 
 import pennylane as qml
 
@@ -22,37 +22,9 @@ def _get_absolute_import_path(fn):
     return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
-def _determine_spec_level(kwargs, qnode):
-    if "max_expansion" in kwargs:
-        warnings.warn(
-            "'max_expansion' has no effect on the output of 'specs()' and should not be used.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    sentinel = object()
-
-    level = kwargs.get("level", sentinel)
-    expansion_strategy = kwargs.get("expansion_strategy", sentinel)
-
-    if all(val != sentinel for val in (level, expansion_strategy)):
-        raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
-
-    if expansion_strategy != sentinel:
-        warnings.warn(
-            "The 'expansion_strategy' argument is deprecated and will be removed in "
-            "version 0.39. Instead, use the 'level' argument which offers more flexibility "
-            "and options.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    if level == sentinel:
-        if expansion_strategy == sentinel:
-            return qnode.expansion_strategy
-        return expansion_strategy
-    return level
-
-
-def specs(qnode, **kwargs):
+def specs(
+    qnode, level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient"
+) -> Callable[..., Union[list[dict[str, Any]], dict[str, Any]]]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -66,50 +38,21 @@ def specs(qnode, **kwargs):
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
-
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method.
-
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
-
-        max_expansion (int): The number of times the internal circuit should be expanded when
-            calculating the specification. Defaults to ``qnode.max_expansion``.
-
     Returns:
         A function that has the same argument signature as ``qnode``. This function
         returns a dictionary (or a list of dictionaries) of information about qnode structure.
-
-    .. note::
-
-        At most, one of ``level`` or ``expansion_strategy`` needs to be provided. If neither is provided,
-        ``qnode.expansion_strategy`` will be used instead. Users are encouraged to predominantly use ``level``,
-        as it allows for the same values as ``expansion_strategy`` and offers more flexibility in choosing
-        the desired transforms/expansions.
-
-    .. warning::
-
-        ``max_expansion`` and ``qnode.max_expansion`` have no effect on the return of this function and will
-        be ignored.
-
-    .. warning::
-        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39. Use the ``level``
-        argument instead to specify the resulting tape you want.
 
     **Example**
 
     .. code-block:: python3
 
-        from pennylane import numpy as pnp
+        from pennylane import numpy as np
 
-        x = pnp.array([0.1, 0.2])
+        x = np.array([0.1, 0.2])
         hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
 
         dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=pnp.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
@@ -220,9 +163,7 @@ def specs(qnode, **kwargs):
         2
     """
 
-    specs_level = _determine_spec_level(kwargs, qnode)
-
-    def specs_qnode(*args, **kwargs):
+    def specs_qnode(*args, **kwargs) -> Union[list[dict], dict]:
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:
@@ -235,7 +176,6 @@ def specs(qnode, **kwargs):
             * ``"num_device_wires"``: number of wires in device
             * ``"depth"``: longest path in directed acyclic graph representation
             * ``"device_name"``: name of QNode device
-            * ``"expansion_strategy"``: string specifying method for decomposing operations in the circuit
             * ``"gradient_options"``: additional configurations for gradient computations
             * ``"interface"``: autodiff framework to dispatch to for the qnode execution
             * ``"diff_method"``: a string specifying the differntiation method
@@ -251,16 +191,21 @@ def specs(qnode, **kwargs):
         """
 
         infos = []
-        batch, _ = qml.workflow.construct_batch(qnode, level=specs_level)(*args, **kwargs)
+        batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
         for tape in batch:
+
+            program = qml.workflow.get_transform_program(qnode, level=level)
+            (diag_tape,), _ = program((qml.tape.QuantumScript(tape.diagonalizing_gates, []),))
+
             info = tape.specs.copy()
+
+            info["num_diagonalizing_gates"] = len(diag_tape.operations)
 
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
-
-            info["device_name"] = getattr(qnode.device, "short_name", qnode.device.name)
-            info["level"] = specs_level
+            info["device_name"] = qnode.device.name
+            info["level"] = level
             info["gradient_options"] = qnode.gradient_kwargs
             info["interface"] = qnode.interface
             info["diff_method"] = (
@@ -269,18 +214,24 @@ def specs(qnode, **kwargs):
                 else qnode.diff_method
             )
 
-            if isinstance(qnode.gradient_fn, qml.transforms.core.TransformDispatcher):
-                info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
+            gradient_fn = qml.QNode.get_gradient_fn(
+                qnode.device,
+                qnode.interface,
+                qnode.diff_method,
+                tape=tape,
+            )[0]
+            if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
+                info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
 
                 try:
-                    info["num_gradient_executions"] = len(qnode.gradient_fn(tape)[0])
+                    info["num_gradient_executions"] = len(gradient_fn(tape)[0])
                 except Exception as e:  # pylint: disable=broad-except
                     # In the case of a broad exception, we don't want the `qml.specs` transform
                     # to fail. Instead, we simply indicate that the number of gradient executions
                     # is not supported for the reason specified.
                     info["num_gradient_executions"] = f"NotSupported: {str(e)}"
             else:
-                info["gradient_fn"] = qnode.gradient_fn
+                info["gradient_fn"] = gradient_fn
 
             infos.append(info)
 

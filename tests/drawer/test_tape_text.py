@@ -433,6 +433,14 @@ class TestLabeling:
         assert split_str[2][:6] == "    a:"
         assert split_str[3][:6] == "1.234:"
 
+    def test_hiding_labels(self):
+        """Test that printing wire labels can be skipped with show_wire_labels=False."""
+
+        split_str = tape_text(tape, show_wire_labels=False).split("\n")
+        assert split_str[0].startswith("─")
+        assert split_str[1].startswith("─")
+        assert split_str[2].startswith("─")
+
 
 class TestDecimals:
     """Test the decimals keyword argument."""
@@ -584,7 +592,7 @@ single_op_tests_data = [
         qml.expval(
             0.1 * qml.PauliX(0) + 0.2 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) + 0.4 * qml.PauliZ(1)
         ),
-        "0: ───┤ ╭<(0.10*X)+(0.20*Y)+(0.30*Z)+(0.40*Z)>\n1: ───┤ ╰<(0.10*X)+(0.20*Y)+(0.30*Z)+(0.40*Z)>",
+        "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>",
     ),
     # Operations (both regular and controlled) and nested multi-valued controls
     (qml.ctrl(qml.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),

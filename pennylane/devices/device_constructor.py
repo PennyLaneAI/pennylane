@@ -14,7 +14,6 @@
 """
 This module contains code for the main device construction delegation logic.
 """
-import warnings
 from importlib import metadata
 from sys import version_info
 
@@ -22,7 +21,6 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 import pennylane as qml
-from pennylane._device import DeviceError
 
 
 def _get_device_entrypoints():
@@ -58,8 +56,7 @@ def refresh_devices():
 
 # pylint: disable=protected-access
 def device(name, *args, **kwargs):
-    r"""
-    Load a device and return the instance.
+    r"""Load a device and return the instance.
 
     This function is used to load a particular quantum device,
     which can then be used to construct QNodes.
@@ -91,7 +88,7 @@ def device(name, *args, **kwargs):
       of quantum circuits based on tensor networks.
 
     Additional devices are supported through plugins — see
-    the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
+    the  `available plugins <https://pennylane.ai/plugins>`_ for more
     details. To list all currently installed devices, run
     :func:`qml.about <pennylane.about>`.
 
@@ -106,12 +103,6 @@ def device(name, *args, **kwargs):
             that contains global and/or device specific configurations.
         custom_decomps (Dict[Union(str, Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
-        decomp_depth (int): For when custom decompositions are specified,
-            the maximum expansion depth used by the expansion function.
-
-    .. warning::
-
-        The ``decomp_depth`` argument is deprecated and will be removed in version 0.39.
 
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
@@ -123,10 +114,10 @@ def device(name, *args, **kwargs):
         dev = qml.device('default.qubit', wires=5)
 
         def circuit():
-           qml.Hadamard(wires=1)
-           qml.Hadamard(wires=[0])
-           qml.CNOT(wires=[3, 4])
-           ...
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[3, 4])
+            ...
 
     The ``wires`` argument can also be a sequence of unique numbers or strings, specifying custom wire labels
     that the user employs to address the wires:
@@ -136,10 +127,10 @@ def device(name, *args, **kwargs):
         dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
 
         def circuit():
-           qml.Hadamard(wires='q11')
-           qml.Hadamard(wires=['ancilla'])
-           qml.CNOT(wires=['q12', -1])
-           ...
+            qml.Hadamard(wires='q11')
+            qml.Hadamard(wires=['ancilla'])
+            qml.CNOT(wires=['q12', -1])
+            ...
 
     On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
     and instead the wires will be computed when executing a circuit depending on its contents.
@@ -158,8 +149,8 @@ def device(name, *args, **kwargs):
 
         @qml.qnode(dev)
         def circuit(a):
-          qml.RX(a, wires=0)
-          return qml.sample(qml.Z(0))
+            qml.RX(a, wires=0)
+            return qml.sample(qml.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
@@ -204,12 +195,12 @@ def device(name, *args, **kwargs):
             'default.qubit', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
         )
 
-        @qml.qnode(dev, expansion_strategy="device")
+        @qml.qnode(dev)
         def run_cnot():
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.X(1))
 
-    >>> print(qml.draw(run_cnot)())
+    >>> print(qml.draw(run_cnot, level="device")())
     0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
     1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
 
@@ -244,15 +235,6 @@ def device(name, *args, **kwargs):
         # Pop the custom decomposition keyword argument; we will use it here
         # only and not pass it to the device.
         custom_decomps = kwargs.pop("custom_decomps", None)
-        decomp_depth = kwargs.pop("decomp_depth", None)
-
-        if decomp_depth is not None:
-            warnings.warn(
-                "The decomp_depth argument is deprecated and will be removed in version 0.39. ",
-                qml.PennyLaneDeprecationWarning,
-            )
-        else:
-            decomp_depth = 10
 
         kwargs.pop("config", None)
         options.update(kwargs)
@@ -272,7 +254,7 @@ def device(name, *args, **kwargs):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
             current_version = Version(qml.version())
             if current_version not in required_versions:
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"The {name} plugin requires PennyLane versions {required_versions}, "
                     f"however PennyLane version {qml.version()} is installed."
                 )
@@ -282,18 +264,20 @@ def device(name, *args, **kwargs):
 
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
-
         if custom_decomps is not None:
             if isinstance(dev, qml.devices.LegacyDevice):
                 custom_decomp_expand_fn = qml.transforms.create_decomp_expand_fn(
-                    custom_decomps, dev, decomp_depth=decomp_depth
+                    custom_decomps, dev, decomp_depth=10
                 )
                 dev.custom_expand(custom_decomp_expand_fn)
             else:
                 custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev, decomp_depth=decomp_depth
+                    custom_decomps, dev, decomp_depth=10
                 )
                 dev.preprocess = custom_decomp_preprocess
+
+        if isinstance(dev, qml.devices.LegacyDevice):
+            dev = qml.devices.LegacyDeviceFacade(dev)
 
         return dev
 

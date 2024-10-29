@@ -55,17 +55,16 @@ class TestInitialization:
 
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
-    @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_init_correctly(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
-        """Test that all of the attributes are initalized correctly."""
+        """Test that all of the attributes are initialized correctly."""
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
 
         if seed is not None:
             # For seed = None, decomposition and compute_decomposition do not match because
             # compute_decomposition is stochastic
-            qml.ops.functions.assert_valid(op)
+            qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
         assert op.wires == h.wires
         assert op.parameters == [*h.data, time]
@@ -77,7 +76,6 @@ class TestInitialization:
 
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
-    @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_copy(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that we can make copies of QDrift correctly."""
@@ -126,7 +124,6 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
-    @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_private_sample(self, coeffs, ops, time, seed, n):  # pylint: disable=too-many-arguments
         """Test the private function which samples the decomposition"""
@@ -146,15 +143,14 @@ class TestDecomposition:
             assert term.coeff == (s * normalization * time * 1j / n)  # with this exponent
 
     @pytest.mark.parametrize("coeffs", ([0.99, 0.01], [0.5 + 0.49j, -0.01j]))
-    def test_private_sample_statistics(self, coeffs):
+    def test_private_sample_statistics(self, coeffs, seed):
         """Test the private function samples from the right distribution"""
         ops = [qml.PauliX(0), qml.PauliZ(1)]
-        decomp = _sample_decomposition(coeffs, ops, 1.23, n=10, seed=1234)
+        decomp = _sample_decomposition(coeffs, ops, 1.23, n=10, seed=seed)
 
         # High probability we only sample PauliX!
         assert all(isinstance(op.base, qml.PauliX) for op in decomp)
 
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_compute_decomposition(self, seed):
         """Test that the decomposition is computed and queues correctly."""
         coeffs = [1, -0.5, 0.5]
@@ -182,9 +178,9 @@ class TestDecomposition:
 class TestIntegration:
     """Test that the QDrift template integrates well with the rest of PennyLane"""
 
+    @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that the circuit executes as expected"""
@@ -213,8 +209,8 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
+    @pytest.mark.local_salt(8)
     @pytest.mark.autograd
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_autograd(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using autograd"""
@@ -246,7 +242,6 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_torch(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using torch"""
@@ -277,7 +272,6 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_tf(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using tensorflow"""
@@ -308,7 +302,6 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jax(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax"""
@@ -339,7 +332,6 @@ class TestIntegration:
         assert allclose(expected_state, state)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jaxjit(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax jit"""
@@ -462,7 +454,6 @@ class TestIntegration:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("n", (1, 5, 10))
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_autograd_gradient(self, n, seed):
         """Test that the gradient is computed correctly"""
         time = qnp.array(1.5)
@@ -493,7 +484,6 @@ class TestIntegration:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("n", (1, 5, 10))
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_torch_gradient(self, n, seed):
         """Test that the gradient is computed correctly using torch"""
         import torch
@@ -534,7 +524,6 @@ class TestIntegration:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n", (1, 5, 10))
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_tf_gradient(self, n, seed):
         """Test that the gradient is computed correctly using tensorflow"""
         import tensorflow as tf
@@ -573,7 +562,6 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("n", (1, 5, 10))
-    @pytest.mark.parametrize("seed", (1234, 42))
     def test_jax_gradient(self, n, seed):
         """Test that the gradient is computed correctly using jax"""
         import jax
