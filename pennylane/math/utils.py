@@ -310,7 +310,7 @@ def get_deep_interface(value):
         if len(itr) == 0:
             return "builtins"
         itr = itr[0]
-    return ar.infer_backend(itr)
+    return _get_interface_of_single_tensor(itr)
 
 
 def is_abstract(tensor, like=None):

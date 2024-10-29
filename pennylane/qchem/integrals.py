@@ -149,7 +149,7 @@ def _generate_params(params, args):
             basis_params.append(p)
             continue
 
-        interface = qml.math.get_interface(p)
+        interface = qml.math.get_deep_interface(p)
         if interface == "autograd":
             if getattr(p, "requires_grad", False):
                 basis_params.append(args[c])
@@ -297,7 +297,7 @@ def _check_requires_grad(basis_param, normalize, args, index):
         or normalize
         or (
             len(args) > 0
-            and qml.math.get_interface(basis_param) == "jax"
+            and qml.math.get_deep_interface(basis_param) == "jax"
             and qml.math.requires_grad(args[index])
         )
     )

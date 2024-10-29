@@ -511,11 +511,11 @@ def _molecular_hamiltonian(
 
     if len(coordinates) == len(symbols) * 3:
         geometry_dhf = qml.math.array(
-            coordinates.reshape(len(symbols), 3), like=qml.math.get_interface(coordinates)
+            coordinates.reshape(len(symbols), 3), like=qml.math.get_deep_interface(coordinates)
         )
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
-        geometry_dhf = qml.math.array(coordinates, like=qml.math.get_interface(coordinates))
+        geometry_dhf = qml.math.array(coordinates, like=qml.math.get_deep_interface(coordinates))
         geometry_hf = coordinates.flatten()
 
     wires_map = None
@@ -552,7 +552,7 @@ def _molecular_hamiltonian(
         )
 
         requires_grad = args is not None
-        use_jax = any(qml.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
+        use_jax = any(qml.math.get_deep_interface(x) == "jax" for x in [coordinates, alpha, coeff])
         interface_args = [{"like": "autograd", "requires_grad": requires_grad}, {"like": "jax"}][
             use_jax
         ]

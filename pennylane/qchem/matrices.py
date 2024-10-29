@@ -101,7 +101,7 @@ def overlap_matrix(basis_functions):
                 args_ab.extend(
                     (
                         qml.math.array([arg[i], arg[j]], like="jax")
-                        if qml.math.get_interface(arg) == "jax"
+                        if qml.math.get_deep_interface(arg) == "jax"
                         else [arg[i], arg[j]]
                     )
                     for arg in args
@@ -159,7 +159,7 @@ def moment_matrix(basis_functions, order, idx):
                 args_ab.extend(
                     (
                         qml.math.array([arg[i], arg[j]], like="jax")
-                        if qml.math.get_interface(arg) == "jax"
+                        if qml.math.get_deep_interface(arg) == "jax"
                         else [arg[i], arg[j]]
                     )
                     for arg in args
@@ -214,7 +214,7 @@ def kinetic_matrix(basis_functions):
                 args_ab.extend(
                     (
                         qml.math.array([arg[i], arg[j]], like="jax")
-                        if qml.math.get_interface(arg) == "jax"
+                        if qml.math.get_deep_interface(arg) == "jax"
                         else [arg[i], arg[j]]
                     )
                     for arg in args
@@ -274,7 +274,7 @@ def attraction_matrix(basis_functions, charges, r):
                     args_ab.extend(
                         (
                             qml.math.array([arg[i], arg[j]], like="jax")
-                            if qml.math.get_interface(arg) == "jax"
+                            if qml.math.get_deep_interface(arg) == "jax"
                             else [arg[i], arg[j]]
                         )
                         for arg in args[1:]
@@ -283,7 +283,7 @@ def attraction_matrix(basis_functions, charges, r):
                     args_ab.extend(
                         (
                             qml.math.array([arg[i], arg[j]], like="jax")
-                            if qml.math.get_interface(arg) == "jax"
+                            if qml.math.get_deep_interface(arg) == "jax"
                             else [arg[i], arg[j]]
                         )
                         for arg in args
@@ -359,7 +359,7 @@ def repulsion_tensor(basis_functions):
                     args_abcd.extend(
                         (
                             qml.math.array([arg[i], arg[j], arg[k], arg[l]], like="jax")
-                            if qml.math.get_interface(arg) == "jax"
+                            if qml.math.get_deep_interface(arg) == "jax"
                             else [arg[i], arg[j], arg[k], arg[l]]
                         )
                         for arg in args
