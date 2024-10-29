@@ -59,7 +59,7 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused
     if not qml.math.is_abstract(cjac):
         is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
 
-        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+        if is_square and qml.math.allclose(cjac, qml.math.eye(cjac.shape[0])):
             # Classical Jacobian is the identity. No classical processing in the QNode
             return mt
 
