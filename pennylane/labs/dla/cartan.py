@@ -24,10 +24,10 @@ from pennylane.pauli import PauliSentence
 
 
 def cartan_decomposition(g, involution):
-    r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \osum \mathfrak{m}`.
+    r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \plus \mathfrak{m}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
-    :math:`\mathfrak{g} = \mathfrak{k} \osum \mathfrak{m}` into orthogonal complements.
+    :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` into orthogonal complements.
     This is realized by an involution :math:`\Theta(g)` that maps each operator :math:`g \in \mathfrak{g}`
     back to itself after two consecutive applications, i.e., :math:`\Theta(\Theta(g)) = g \forall g \in \mathfrak{g}`.
 
