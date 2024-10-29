@@ -34,7 +34,7 @@ jax.config.update("jax_enable_x64", True)
 
 def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     r"""
-    Variational KAK decomposition of Hermitian ``H``
+    Variational KaK decomposition of Hermitian ``H``
 
     Given a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \tilde{\mathfrak{m}} \oplus \mathfrak{a}`
     and a Hermitian operator :math:`H \in \tilde{\mathfrak{m}} \oplus \mathfrak{a}`, this function computes
@@ -48,6 +48,10 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     .. math:: K_c = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}
 
     for the ordered basis of :math:`\mathfrak{k}` given by the first ``dim_k`` elements of ``g``.
+
+    Internally, this function performs a modified version of `2104.00728 <https://arxiv.org/abs/2104.00728>`__,
+    in particular minimizing the cost function eq. (6) therein. Instead of relying on having Pauli words, we use the adjoint representation
+    for a more general evaluation of the cost function. The rest is the same.
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
@@ -69,7 +73,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
 
     **Example**
 
-    Let us perform a KAK decomposition for the transverse field Ising model Hamiltonian, exemplarily for :math:`n=3` qubits on a chain.
+    Let us perform a KaK decomposition for the transverse field Ising model Hamiltonian, exemplarily for :math:`n=3` qubits on a chain.
     We start with some boilerplate code to perform a Cartan decomposition using the :func:`~concurrence_involution`, which places the Hamiltonian
     in the horizontal subspace :math:`\mathfrak{m}`. From this we re-order :math:`\mathfrak{g} = \mathfrak{k} + \mathfrak{m}` and finally compute a
     :func:`~cartan_subalgebra` :math:`\mathfrak{a}` in :math:`\mathfrak{m} = \tilde{\mathfrak{m}} \oplus \mathfrak{a}`.
