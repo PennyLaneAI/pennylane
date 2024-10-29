@@ -250,9 +250,14 @@
 
 <h4>QJIT/JIT Compatibility and improvements</h4>
 
-* The `SampleMP.process_samples` method has been updated to support using JAX tracers for samples, allowing 
-  compatiblity with QJIT workflows.
-  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
+* `qml.AmplitudeAmplification` is now compatible with QJIT.
+  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
+* The quantum arithmetic templates are now compatible with QJIT.
+  [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
+  
+* The `qml.Qubitization` template is now compatible with QJIT.
+  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
 * All PL templates are now unit tested to ensure JIT compatibility.
   [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
@@ -263,20 +268,19 @@
 * `qml.QutritBasisStatePreparation` is now JIT compatible.
   [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
 
-* `qml.AmplitudeAmplification` is now compatible with QJIT.
-  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
-
-* The quantum arithmetic templates are now compatible with QJIT.
-  [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
-  
-* The `qml.Qubitization` template is now compatible with QJIT.
-  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
+* The `SampleMP.process_samples` method has been updated to support using JAX tracers for samples, allowing 
+  compatiblity with QJIT workflows.
+  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
 
 <h4>Capturing and representing hybrid programs</h4>
 
 * `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised 
   in `JAX 0.4.30+` when providing JAX tracers as input to `qml.wires.Wires`.
   [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
+
+* A new function called `qml.capture.make_plxpr` has been added to take a function and create a `Callable` 
+  that, when called, will return a PLxPR representation of the input function.
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured with PLxPR. 
   When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will dispatch to `jax.grad` 
@@ -295,10 +299,6 @@
 * All higher order primitives now use `jax.core.Jaxpr` as metadata instead of sometimes using `jax.core.ClosedJaxpr` 
   or `jax.core.Jaxpr`.
   [(#6319)](https://github.com/PennyLaneAI/pennylane/pull/6319)
-
-* A new function called `qml.capture.make_plxpr` has been added to take a function and create a `Callable` 
-  that, when called, will return a PLxPR representation of the input function.
-  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
 <h4>Improvements to fermionic operators</h4>
 
@@ -324,7 +324,10 @@
 
 <h4>A new optimizer</h4>
 
-* A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
+* A new optimizer called `qml.MomentumQNGOptimizer` has been added. It inherits from the basic `qml.QNGOptimizer` 
+  optimizer and requires one additional hyperparameter: the momentum coefficient, :math:`0 \leq \rho < 1`, 
+  the default value being :math:`\rho=0.9`. For :math:`\rho=0`, `qml.MomentumQNGOptimizer` reduces down
+  to `qml.QNGOptimizer`.
   [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
 
 <h4>Other Improvements</h4>
