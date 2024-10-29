@@ -102,7 +102,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
-        super().__init__(stepsize)
+        super().__init__(stepsize, approx, lam)
         self.momentum = momentum
         self.accumulation = None
 
