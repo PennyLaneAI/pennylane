@@ -69,5 +69,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git checkout ${{ env.tmp_branch }}
-          gh_pr_up() { gh pr create $* || gh pr edit $* }
-          gh_pr_up --title "Daily rc sync to master" --body "Automatic sync from the release candidate to master during a feature freeze." --reviewer "mudit2812,albi3ro"
+          gh pr create --title "Daily rc sync to master" --reviewer "mudit2812,albi3ro"
