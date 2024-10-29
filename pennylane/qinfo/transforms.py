@@ -489,8 +489,9 @@ def vn_entanglement_entropy(
     :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
 
     .. warning::
-        The ``qml.qinfo.vn_entanglement_entropy`` transform is deprecated and will be removed in v0.40. Instead include
-        the :func:`pennylane.vn_entanglement_entropy` measurement process in the return line of your QNode.
+
+        The ``qml.qinfo.vn_entanglement_entropy`` transform is deprecated and will be removed in v0.40.
+        See the :func:`pennylane.vn_entropy` measurement instead.
 
     The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
     two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
@@ -512,9 +513,9 @@ def vn_entanglement_entropy(
     """
 
     warnings.warn(
-        "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will be removed "
-        "in v0.40. Instead include the qml.vn_entanglement_entropy measurement process in the "
-        "return line of your QNode.",
+        "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will "
+        "be removed in v0.40. Instead include the qml.vn_entropy measurement process "
+        "on one of the subsystems.",
         qml.PennyLaneDeprecationWarning,
     )
 

@@ -459,7 +459,7 @@ class TestGroupObservables:
         _, grouped_coeffs = group_observables(obs, coeffs)
         assert isinstance(grouped_coeffs[0], list)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_return_new_opmath_legacy_opmath(self):
         """Test that using new opmath causes grouped observables to have Prods instead of
         Tensors"""
@@ -473,7 +473,7 @@ class TestGroupObservables:
 
         assert all(isinstance(o, Tensor) for g in old_groups for o in g)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_return_deactive_opmath_prod(self):
         """Test that using new opmath causes grouped observables to have Prods instead of
         Tensors"""

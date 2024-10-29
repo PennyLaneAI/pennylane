@@ -35,6 +35,7 @@ pytestmark = pytest.mark.external
 # gates for which device support is tested
 operations_list = {
     "Identity": qml.Identity(wires=[0]),
+    "Identity()": qml.Identity(),
     "BlockEncode": qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
     "CNOT": qml.CNOT(wires=[0, 1]),
     "CRX": qml.CRX(1.234, wires=[0, 1]),
@@ -49,6 +50,7 @@ operations_list = {
     "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "MultiRZ": qml.MultiRZ(1.234, wires=[0, 1]),
+    "MultiRZ(1)": qml.MultiRZ(1.234, wires=[0]),
     "PauliX": qml.X(0),
     "PauliY": qml.Y(0),
     "PauliZ": qml.Z(0),
@@ -94,6 +96,7 @@ operations_list = {
     "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
     "QubitSum": qml.QubitSum(wires=[0, 1, 2]),
     "PauliRot": qml.PauliRot(1.234, "XXYY", wires=[0, 1, 2, 3]),
+    "PauliRot(1)": qml.PauliRot(1.234, "X", wires=[0]),
     "U1": qml.U1(1.234, wires=0),
     "U2": qml.U2(1.234, 0.2, wires=0),
     "U3": qml.U3(1.234, 0.2, 0.3, wires=0),
@@ -102,6 +105,7 @@ operations_list = {
     "OrbitalRotation": qml.OrbitalRotation(1.234, wires=[0, 1, 2, 3]),
     "FermionicSWAP": qml.FermionicSWAP(1.234, wires=[0, 1]),
     "GlobalPhase": qml.GlobalPhase(1.23423, wires=[0, 1]),
+    "GlobalPhase()": qml.GlobalPhase(1.23423),
 }
 
 all_ops = operations_list.keys()
@@ -268,6 +272,19 @@ def test_kahypar_warning_not_raised(recwarn):
     except ImportError:
         _ = qml.device("default.tensor", wires=1)
         assert len(recwarn) == 0
+
+
+def test_passing_shots_None():
+    """Test that passing shots=None on initialization works without error."""
+    dev = qml.device("default.tensor", shots=None)
+    assert dev.shots == qml.measurements.Shots(None)
+
+
+def test_passing_finite_shots_error():
+    """Test that an error is raised if finite shots are passed on initialization."""
+
+    with pytest.raises(qml.DeviceError, match=r"only supports analytic simulations"):
+        qml.device("default.tensor", shots=10)
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
@@ -509,3 +526,45 @@ def test_wire_order_dense_vector(method, num_orbitals):
     state = circuit()
     assert isinstance(state, TensorLike)
     assert len(state) == 2 ** (2 * num_orbitals + 1)
+
+
+class TestMCMs:
+    """Test that default.tensor can handle mid circuit measurements."""
+
+    @pytest.mark.parametrize("mcm_method", ("one-shot", "tree-traversal"))
+    def test_error_on_unsupported_mcm_method(self, mcm_method):
+        """Test that an error is raised on unsupported mcm methods."""
+
+        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method)
+        config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
+        with pytest.raises(
+            qml.DeviceError, match=r"only supports the deferred measurement principle."
+        ):
+            qml.device("default.tensor").preprocess(config)
+
+    def test_simple_mcm_present(self):
+        """Test that the device can execute a circuit with a mid circuit measurement."""
+
+        dev = qml.device("default.tensor")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.measure(0)
+            return qml.expval(qml.Z(0))
+
+        res = circuit()
+        assert qml.math.allclose(res, 1)
+
+    def test_mcm_conditional(self):
+        """Test that the device execute a circuit with an MCM and a conditional."""
+
+        dev = qml.device("default.tensor")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            m0 = qml.measure(0)
+            qml.cond(~m0, qml.RX)(x, 0)
+            return qml.expval(qml.Z(0))
+
+        res = circuit(0.5)
+        assert qml.math.allclose(res, np.cos(0.5))

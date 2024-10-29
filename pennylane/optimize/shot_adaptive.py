@@ -343,7 +343,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     def compute_grad(
         self, objective_fn, args, kwargs
     ):  # pylint: disable=signature-differs,arguments-differ,arguments-renamed
-        r"""Compute gradient of the objective function, as well as the variance of the gradient,
+        r"""Compute the gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 
         Args:

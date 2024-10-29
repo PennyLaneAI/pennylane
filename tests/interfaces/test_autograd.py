@@ -27,6 +27,12 @@ from pennylane.measurements import Shots
 pytestmark = pytest.mark.autograd
 
 
+def get_device(device_name, seed):
+    if device_name == "param_shift.qubit":
+        return ParamShiftDerivativesDevice(seed=seed)
+    return qml.device(device_name, seed=seed)
+
+
 # pylint: disable=too-few-public-methods
 class TestCaching:
     """Tests for caching behaviour"""
@@ -126,14 +132,14 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, Shots(50000), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots((50000, 50000)), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": param_shift}, Shots(50000), "default.qubit"),
+    ({"gradient_fn": param_shift}, Shots((50000, 50000)), "default.qubit"),
+    ({"gradient_fn": param_shift}, Shots(None), "default.qubit"),
+    ({"gradient_fn": "backprop"}, Shots(None), "default.qubit"),
     (
         {"gradient_fn": "adjoint", "grad_on_execution": True, "device_vjp": False},
         Shots(None),
-        DefaultQubit(),
+        "default.qubit",
     ),
     (
         {
@@ -142,33 +148,33 @@ test_matrix = [
             "device_vjp": False,
         },
         Shots(None),
-        DefaultQubit(),
+        "default.qubit",
     ),
-    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), "default.qubit"),
     (
         {"gradient_fn": "device", "device_vjp": False},
         Shots((50000, 50000)),
-        ParamShiftDerivativesDevice(seed=904747894),
+        "param_shift.qubit",
     ),
     (
         {"gradient_fn": "device", "device_vjp": True},
         Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(seed=10490244),
+        "param_shift.qubit",
     ),
     (
         {"gradient_fn": param_shift},
         Shots(None),
-        qml.device("reference.qubit"),
+        "reference.qubit",
     ),
     (
         {"gradient_fn": param_shift},
         Shots(50000),
-        qml.device("reference.qubit", seed=8743274),
+        "reference.qubit",
     ),
     (
         {"gradient_fn": param_shift},
         Shots((50000, 50000)),
-        qml.device("reference.qubit", seed=8743274),
+        "reference.qubit",
     ),
 ]
 
@@ -178,13 +184,15 @@ def atol_for_shots(shots):
     return 5e-2 if shots else 1e-6
 
 
-@pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
+@pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
 class TestAutogradExecuteIntegration:
     """Test the autograd interface execute function
     integrates well for both forward and backward execution"""
 
-    def test_execution(self, execute_kwargs, shots, device):
+    def test_execution(self, execute_kwargs, shots, device_name, seed):
         """Test execution"""
+
+        device = get_device(device_name, seed=seed)
 
         def cost(a, b):
             ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
@@ -214,8 +222,10 @@ class TestAutogradExecuteIntegration:
         assert qml.math.allclose(res[0], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
         assert qml.math.allclose(res[1], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
 
-    def test_scalar_jacobian(self, execute_kwargs, shots, device):
+    def test_scalar_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test scalar jacobian calculation"""
+
+        device = get_device(device_name, seed=seed)
         a = pnp.array(0.1, requires_grad=True)
 
         def cost(a):
@@ -238,10 +248,12 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
         assert np.allclose(res, -np.sin(a), atol=atol_for_shots(shots))
 
-    def test_jacobian(self, execute_kwargs, shots, device):
+    def test_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test jacobian calculation"""
         a = pnp.array(0.1, requires_grad=True)
         b = pnp.array(0.2, requires_grad=True)
+
+        device = get_device(device_name, seed=seed)
 
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
@@ -276,9 +288,11 @@ class TestAutogradExecuteIntegration:
                 assert np.allclose(_r, _e, atol=atol_for_shots(shots))
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
-    def test_tape_no_parameters(self, execute_kwargs, shots, device):
+    def test_tape_no_parameters(self, execute_kwargs, shots, device_name, seed):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
+
+        device = get_device(device_name, seed=seed)
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -323,11 +337,13 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
-    def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
+    def test_tapes_with_different_return_size(self, execute_kwargs, shots, device_name, seed):
         """Test that tapes wit different can be executed and differentiated."""
 
         if execute_kwargs["gradient_fn"] == "backprop":
             pytest.xfail("backprop is not compatible with something about this situation.")
+
+        device = get_device(device_name, seed=seed)
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -406,8 +422,11 @@ class TestAutogradExecuteIntegration:
             assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
             assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
 
-    def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
+    def test_reusing_quantum_tape(self, execute_kwargs, shots, device_name, seed):
         """Test re-using a quantum tape by passing new parameters"""
+
+        device = get_device(device_name, seed=seed)
+
         a = pnp.array(0.1, requires_grad=True)
         b = pnp.array(0.2, requires_grad=True)
 
@@ -443,11 +462,13 @@ class TestAutogradExecuteIntegration:
         for _j, _e in zip(jac, expected):
             assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
-    def test_classical_processing(self, execute_kwargs, device, shots):
+    def test_classical_processing(self, execute_kwargs, device_name, seed, shots):
         """Test classical processing within the quantum tape"""
         a = pnp.array(0.1, requires_grad=True)
         b = pnp.array(0.2, requires_grad=False)
         c = pnp.array(0.3, requires_grad=True)
+
+        device = get_device(device_name, seed=seed)
 
         def cost(a, b, c):
             ops = [
@@ -471,10 +492,12 @@ class TestAutogradExecuteIntegration:
 
         # I tried getting analytic results for this circuit but I kept being wrong and am giving up
 
-    def test_no_trainable_parameters(self, execute_kwargs, shots, device):
+    def test_no_trainable_parameters(self, execute_kwargs, shots, device_name, seed):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         a = pnp.array(0.1, requires_grad=False)
         b = pnp.array(0.2, requires_grad=False)
+
+        device = get_device(device_name, seed=seed)
 
         def cost(a, b):
             ops = [qml.RY(a, 0), qml.RX(b, 0), qml.CNOT((0, 1))]
@@ -497,9 +520,10 @@ class TestAutogradExecuteIntegration:
 
         assert np.allclose(res, 0)
 
-    def test_matrix_parameter(self, execute_kwargs, device, shots):
+    def test_matrix_parameter(self, execute_kwargs, device_name, seed, shots):
         """Test that the autograd interface works correctly
         with a matrix parameter"""
+        device = get_device(device_name, seed=seed)
         U = pnp.array([[0, 1], [1, 0]], requires_grad=False)
         a = pnp.array(0.1, requires_grad=True)
 
@@ -516,9 +540,11 @@ class TestAutogradExecuteIntegration:
         assert isinstance(jac, np.ndarray)
         assert np.allclose(jac, np.sin(a), atol=atol_for_shots(shots), rtol=0)
 
-    def test_differentiable_expand(self, execute_kwargs, device, shots):
+    def test_differentiable_expand(self, execute_kwargs, device_name, seed, shots):
         """Test that operation and nested tapes expansion
         is differentiable"""
+
+        device = get_device(device_name, seed=seed)
 
         class U3(qml.U3):
             """Dummy operator."""
@@ -574,9 +600,11 @@ class TestAutogradExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_probability_differentiation(self, execute_kwargs, device, shots):
+    def test_probability_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
+
+        device = get_device(device_name, seed=seed)
 
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -627,9 +655,11 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
         assert np.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
-    def test_ragged_differentiation(self, execute_kwargs, device, shots):
+    def test_ragged_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        device = get_device(device_name, seed=seed)
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -739,15 +769,17 @@ class TestHigherOrderDerivatives:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
+@pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
     @pytest.fixture
-    def cost_fn(self, execute_kwargs, shots, device):
+    def cost_fn(self, execute_kwargs, shots, device_name, seed):
         """Cost function for gradient tests"""
+
+        device = get_device(device_name, seed=seed)
 
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]

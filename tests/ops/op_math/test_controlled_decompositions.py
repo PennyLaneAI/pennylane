@@ -158,11 +158,11 @@ class TestControlledDecompositionZYZ:
             decomp_circuit()
 
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
-    def test_decomposition_circuit_gradient(self, control_wires, tol):
+    def test_decomposition_circuit_gradient(self, control_wires, tol, seed):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
         n_qubits = 4
-        rng = np.random.default_rng(1337)
+        rng = np.random.default_rng(seed)
 
         dev = qml.device("default.qubit", wires=n_qubits)
         init_state = rng.random(2**n_qubits) + 1.0j * rng.random(2**n_qubits)

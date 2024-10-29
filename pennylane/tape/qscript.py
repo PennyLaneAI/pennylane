@@ -336,11 +336,54 @@ class QuantumScript:
 
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
+
+        **Examples**
+
+        For a tape with a single observable, we get the diagonalizing gate of that observable:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0))])
+        >>> tape.diagonalizing_gates
+        [Hadamard(wires=[0])]
+
+        If the tape includes multiple observables, they are each diagonalized individually:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(1))])
+        >>> tape.diagonalizing_gates
+        [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
+
+        .. warning::
+            If the tape contains multiple observables acting on the same wire,
+            then ``tape.diagonalizing_gates`` will include multiple conflicting
+            diagonalizations.
+
+            For example:
+
+            >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(0))])
+            >>> tape.diagonalizing_gates
+            [Hadamard(wires=[0]), Z(0), S(wires=[0]), Hadamard(wires=[0])]
+
+            If it is relevant for your application, applying
+            :func:`~.pennylane.transforms.split_non_commuting` to a tape will split it into multiple
+            tapes with only qubit-wise commuting observables.
+
+        Generally, composite operators are handled by diagonalizing their component parts, for example:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)+Y(1))])
+        >>> tape.diagonalizing_gates
+        [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
+
+        However, for operators that contain multiple terms on the same wire, a single diagonalizing
+        operator will be returned that diagonalizes the full operator as a unit:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)+Y(0))])
+        >>> tape.diagonalizing_gates
+        [QubitUnitary(array([[-0.70710678-0.j ,  0.5       -0.5j],
+        [-0.70710678-0.j , -0.5       +0.5j]]), wires=[0])]
         """
         rotation_gates = []
 
         with qml.queuing.QueuingManager.stop_recording():
-            for observable in self.observables:
+            for observable in _get_base_obs(self.observables):
                 # some observables do not have diagonalizing gates,
                 # in which case we just don't append any
                 with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
@@ -834,25 +877,68 @@ class QuantumScript:
     # Transforms: QuantumScript to QuantumScript
     # ========================================================
 
-    def copy(self, copy_operations: bool = False) -> "QuantumScript":
-        """Returns a shallow copy of the quantum script.
+    def copy(self, copy_operations: bool = False, **update) -> "QuantumScript":
+        """Returns a copy of the quantum script. If any attributes are defined via keyword argument,
+        those are used on the new tape - otherwise, all attributes match the original tape. The copy
+        is a shallow copy if `copy_operations` is False and no tape attributes are updated via keyword
+        argument.
 
         Args:
             copy_operations (bool): If True, the operations are also shallow copied.
                 Otherwise, if False, the copied operations will simply be references
                 to the original operations; changing the parameters of one script will likewise
-                change the parameters of all copies.
+                change the parameters of all copies. If any keyword arguments are passed to update,
+                this argument will be treated as True.
+
+        Keyword Args:
+            operations (Iterable[Operator]): An iterable of the operations to be performed. If provided, these
+                operations will replace the copied operations on the new tape.
+            measurements (Iterable[MeasurementProcess]): All the measurements to be performed. If provided, these
+                measurements will replace the copied measurements on the new tape.
+            shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution. If provided, these
+                shots will replace the copied shots on the new tape.
+            trainable_params (None, Sequence[int]): the indices for which parameters are trainable. If provided, these
+                parameter indices will replace the copied parameter indicies on the new tape.
 
         Returns:
-            QuantumScript : a shallow copy of the quantum script
+            QuantumScript : a copy of the quantum script, with modified attributes if specified by keyword argument.
+
+        **Example**
+
+        .. code-block:: python
+
+            tape = qml.tape.QuantumScript(
+                ops= [qml.X(0), qml.Y(1)],
+                measurements=[qml.expval(qml.Z(0))],
+                shots=2000)
+
+            new_tape = tape.copy(measurements=[qml.expval(qml.X(1))])
+
+        >>> tape.measurements
+        [qml.expval(qml.Z(0)]
+
+        >>> new_tape.measurements
+        [qml.expval(qml.X(1))]
+
+        >>> new_tape.shots
+        Shots(total_shots=2000, shot_vector=(ShotCopies(2000 shots x 1),))
         """
 
-        if copy_operations:
+        if update:
+            if "ops" in update:
+                update["operations"] = update["ops"]
+            for k in update:
+                if k not in ["ops", "operations", "measurements", "shots", "trainable_params"]:
+                    raise TypeError(
+                        f"{self.__class__}.copy() got an unexpected key '{k}' in update dict"
+                    )
+
+        if copy_operations or update:
             # Perform a shallow copy of all operations in the operation and measurement
             # queues. The operations will continue to share data with the original script operations
             # unless modified.
-            _ops = [copy.copy(op) for op in self.operations]
-            _measurements = [copy.copy(op) for op in self.measurements]
+            _ops = update.get("operations", [copy.copy(op) for op in self.operations])
+            _measurements = update.get("measurements", [copy.copy(op) for op in self.measurements])
         else:
             # Perform a shallow copy of the operation and measurement queues. The
             # operations within the queues will be references to the original script operations;
@@ -862,18 +948,29 @@ class QuantumScript:
 
             _measurements = self.measurements.copy()
 
+        update_trainable_params = "operations" in update or "measurements" in update
+        # passing trainable_params=None will re-calculate trainable_params
+        default_trainable_params = None if update_trainable_params else self.trainable_params
+
         new_qscript = self.__class__(
             ops=_ops,
             measurements=_measurements,
-            shots=self.shots,
-            trainable_params=list(self.trainable_params),
+            shots=update.get("shots", self.shots),
+            trainable_params=update.get("trainable_params", default_trainable_params),
         )
-        new_qscript._graph = None if copy_operations else self._graph
-        new_qscript._specs = None
-        new_qscript._batch_size = self._batch_size
-        new_qscript._output_dim = self._output_dim
-        new_qscript._obs_sharing_wires = self._obs_sharing_wires
-        new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
+
+        # copy cached properties when relevant
+        new_qscript._graph = None if copy_operations or update else self._graph
+        if not update.get("operations"):
+            # batch size may change if operations were updated
+            new_qscript._batch_size = self._batch_size
+        if not update.get("measurements"):
+            # obs may change if measurements were updated
+            new_qscript._obs_sharing_wires = self._obs_sharing_wires
+            new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
+        if not (update.get("measurements") or update.get("operations")):
+            # output_dim may change if either measurements or operations were updated
+            new_qscript._output_dim = self._output_dim
         return new_qscript
 
     def __copy__(self) -> "QuantumScript":
@@ -1323,3 +1420,29 @@ QuantumScriptBatch = Sequence[QuantumScript]
 QuantumScriptOrBatch = Union[QuantumScript, QuantumScriptBatch]
 
 register_pytree(QuantumScript, QuantumScript._flatten, QuantumScript._unflatten)
+
+
+def _get_base_obs(observables):
+
+    overlapping_ops_observables = []
+
+    while any(isinstance(o, (qml.ops.CompositeOp, qml.ops.SymbolicOp)) for o in observables):
+
+        new_obs = []
+
+        for observable in observables:
+
+            if isinstance(observable, qml.ops.CompositeOp):
+                if any(len(o) > 1 for o in observable.overlapping_ops):
+                    overlapping_ops_observables.append(observable)
+                else:
+                    new_obs.extend(observable.operands)
+            elif isinstance(observable, qml.ops.SymbolicOp):
+                new_obs.append(observable.base)
+            else:
+                new_obs.append(observable)
+
+        observables = new_obs
+
+    # removes duplicates from list without disrupting order - basically an ordered set
+    return list(dict.fromkeys(observables + overlapping_ops_observables))

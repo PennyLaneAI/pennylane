@@ -46,6 +46,7 @@ __ops__ = {
     "Identity",
     "Snapshot",
     "Hadamard",
+    "H",
     "PauliX",
     "X",
     "PauliY",
@@ -106,6 +107,7 @@ __ops__ = {
 
 __obs__ = {
     "Hadamard",
+    "H",
     "PauliX",
     "X",
     "PauliY",

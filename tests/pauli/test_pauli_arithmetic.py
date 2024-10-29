@@ -450,7 +450,7 @@ class TestPauliWord:
         ),
     )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("pw, h", tup_pw_hamiltonian)
     def test_hamiltonian(self, pw, h):
         """Test that a PauliWord can be cast to a Hamiltonian."""
@@ -458,19 +458,24 @@ class TestPauliWord:
         h = qml.operation.convert_to_legacy_H(h)
         assert pw_h.compare(h)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity Hamiltonian."""
         op = PauliWord({}).hamiltonian(wire_order=[0, 1])
         id = qml.Hamiltonian([1], [qml.Identity(wires=[0, 1])])
         assert op.compare(id)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliWord is
         cast to a Hamiltonian."""
         with pytest.raises(ValueError, match="Can't get the Hamiltonian for an empty PauliWord."):
             pw4.hamiltonian()
+
+    def test_hamiltonian_deprecation(self):
+        """Test that the correct deprecation warning is raised when calling hamiltonian()"""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="PauliWord.hamiltonian"):
+            _ = pw1.hamiltonian()
 
     def test_pickling(self):
         """Check that pauliwords can be pickled and unpickled."""
@@ -1039,7 +1044,7 @@ class TestPauliSentence:
         ),
     )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("ps, h", tup_ps_hamiltonian)
     def test_hamiltonian(self, ps, h):
         """Test that a PauliSentence can be cast to a Hamiltonian."""
@@ -1047,14 +1052,14 @@ class TestPauliSentence:
         h = qml.operation.convert_to_legacy_H(h)
         assert ps_h.compare(h)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.hamiltonian(wire_order=[0, 1])
         id = qml.Hamiltonian([], [])
         assert op.compare(id)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a Hamiltonian."""
@@ -1063,13 +1068,18 @@ class TestPauliSentence:
         ):
             ps5.hamiltonian()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
         op = ps5.hamiltonian(wire_order=["a", "b"])
         id = qml.Hamiltonian([], [])
 
         qml.assert_equal(op, id)
+
+    def test_hamiltonian_deprecation(self):
+        """Test that the correct deprecation warning is raised when calling hamiltonian()"""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="PauliSentence.hamiltonian"):
+            _ = ps1.hamiltonian()
 
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""
@@ -1416,7 +1426,9 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
+    def test_pauli_word_comm_different_types(
+        self, op1, op2, true_res, convert1, convert2
+    ):  # pylint: disable=too-many-positional-arguments
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)
@@ -1429,7 +1441,9 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_pauli_to_op])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types_with_ops(self, op1, op2, true_res, convert1, convert2):
+    def test_pauli_word_comm_different_types_with_ops(
+        self, op1, op2, true_res, convert1, convert2
+    ):  # pylint: disable=too-many-positional-arguments
         """Test native comm in between a PauliWord, PauliSentence and Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)

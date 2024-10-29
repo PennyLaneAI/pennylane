@@ -90,13 +90,13 @@ def test_postselect_mode(postselect_mode, mocker):
 @pytest.mark.jax
 @pytest.mark.parametrize("use_jit", [True, False])
 @pytest.mark.parametrize("diff_method", [None, "best"])
-def test_hw_like_with_jax(use_jit, diff_method):
+def test_hw_like_with_jax(use_jit, diff_method, seed):
     """Test that invalid shots are replaced with INTEGER_MIN_VAL if
     postselect_mode="hw-like" with JAX"""
     import jax  # pylint: disable=import-outside-toplevel
 
     shots = 10
-    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(123))
+    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(seed))
 
     @qml.qnode(dev, postselect_mode="hw-like", diff_method=diff_method)
     def f(x):
@@ -280,15 +280,13 @@ class TestInterfaces:
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
     def test_interface_tape_results(
-        self, shots, n_mcms, measure_f, interface, use_interface_for_results
+        self, shots, n_mcms, measure_f, interface, use_interface_for_results, seed
     ):  # pylint: disable=unused-argument
         """Test that the simulation results of a tape are correct with interface parameters"""
         if interface == "jax":
             from jax.random import PRNGKey
 
-            seed = PRNGKey(123)
-        else:
-            seed = 123
+            seed = PRNGKey(seed)
 
         dev = qml.device("default.qubit", wires=4, shots=shots, seed=seed)
         param = qml.math.array(np.pi / 2, like=interface)

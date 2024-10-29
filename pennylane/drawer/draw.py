@@ -38,6 +38,7 @@ def draw(
     decimals=2,
     max_length=100,
     show_matrices=True,
+    show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
     r"""Create a function that draws the given qnode or quantum function.
@@ -52,6 +53,7 @@ def draw(
             ``None`` will omit parameters from operation labels.
         max_length (int): Maximum string width (columns) when printing the circuit
         show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
+        show_wire_labels (bool): Whether or not to show the wire labels.
         level (None, str, int, slice): An indication of what transforms to apply before drawing.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
@@ -167,7 +169,7 @@ def draw(
         .. code-block:: python
 
             from functools import partial
-            from pennylane import numpy as pnp
+            from pennylane import numpy as np
 
             @partial(qml.gradients.param_shift, shifts=[(0.1,)])
             @qml.qnode(qml.device('default.qubit', wires=1))
@@ -175,7 +177,7 @@ def draw(
                 qml.RX(x, wires=0)
                 return qml.expval(qml.Z(0))
 
-        >>> print(qml.draw(transformed_circuit)(pnp.array(1.0, requires_grad=True)))
+        >>> print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
         0: ──RX(1.10)─┤  <Z>
         0: ──RX(0.90)─┤  <Z>
 
@@ -254,6 +256,7 @@ def draw(
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             level=level,
         )
 
@@ -281,6 +284,7 @@ def draw(
             show_all_wires=show_all_wires,
             decimals=decimals,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             max_length=max_length,
         )
 
@@ -294,6 +298,7 @@ def _draw_qnode(
     decimals=2,
     max_length=100,
     show_matrices=True,
+    show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
     @wraps(qnode)
@@ -319,6 +324,7 @@ def _draw_qnode(
                     show_all_wires=show_all_wires,
                     decimals=decimals,
                     show_matrices=False,
+                    show_wire_labels=show_wire_labels,
                     max_length=max_length,
                     cache=cache,
                 )
@@ -341,6 +347,7 @@ def _draw_qnode(
             show_all_wires=show_all_wires,
             decimals=decimals,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             max_length=max_length,
         )
 
@@ -381,6 +388,7 @@ def draw_mpl(
             Default is ``14``.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
+        show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         level (None, str, int, slice): An indication of what transforms to apply before drawing.

@@ -122,11 +122,17 @@ class Adder(Operation):
                 f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
             )
 
+        all_wires = (
+            qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
+            if work_wires
+            else qml.wires.Wires(x_wires)
+        )
+
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
         self.hyperparameters["x_wires"] = x_wires
-        all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
+
         super().__init__(wires=all_wires, id=id)
 
     @property

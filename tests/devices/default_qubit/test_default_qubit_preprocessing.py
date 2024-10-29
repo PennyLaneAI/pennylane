@@ -575,8 +575,10 @@ class TestPreprocessingIntegration:
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
-    with qml.operation.disable_new_opmath_cm():
-        invalid_tape_adjoint_test_cases = [
+    @pytest.mark.usefixtures("legacy_opmath_only")
+    @pytest.mark.parametrize(
+        "ops, measurement, message",
+        [
             (
                 [qml.RX(0.1, wires=0)],
                 [qml.probs(op=qml.PauliX(0))],
@@ -584,15 +586,10 @@ class TestPreprocessingIntegration:
             ),
             (
                 [qml.RX(0.1, wires=0)],
-                [qml.expval(qml.Hamiltonian([1], [qml.PauliZ(0)]))],
+                [qml.expval(qml.ops.Hamiltonian([1], [qml.PauliZ(0)]))],
                 "not supported on adjoint",
             ),
-        ]
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize(
-        "ops, measurement, message",
-        invalid_tape_adjoint_test_cases,
+        ],
     )
     @pytest.mark.filterwarnings("ignore:Differentiating with respect to")
     def test_preprocess_invalid_tape_adjoint_legacy_opmath(self, ops, measurement, message):
@@ -880,7 +877,7 @@ class TestAdjointDiffTapeValidation:
         assert res.trainable_params == [0, 1, 2, 3, 4]
 
     @pytest.mark.usefixtures(
-        "use_legacy_opmath"
+        "legacy_opmath_only"
     )  # this is only an issue for legacy Hamiltonian that does not define a matrix method
     def test_unsupported_obs_legacy_opmath(self):
         """Test that the correct error is raised if a Hamiltonian measurement is differentiated"""

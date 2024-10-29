@@ -127,6 +127,18 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return self._calculate_variance(prob)
 
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        # This also covers statistics for mid-circuit measurements manipulated using
+        # arithmetic operators
+        # we use ``wires`` instead of ``op`` because the observable was
+        # already applied to the state
+        with qml.queuing.QueuingManager.stop_recording():
+            prob = qml.probs(wires=self.wires).process_density_matrix(
+                density_matrix=density_matrix, wire_order=wire_order
+            )
+        # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
+        return self._calculate_variance(prob)
+
     def process_counts(self, counts: dict, wire_order: Wires):
         with qml.QueuingManager.stop_recording():
             probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)

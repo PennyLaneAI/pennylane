@@ -14,6 +14,7 @@
 """Contains shared fixtures for the device tests."""
 import argparse
 import os
+from warnings import warn
 
 import numpy as np
 import pytest
@@ -85,6 +86,8 @@ def skip_if():
 @pytest.fixture
 def validate_diff_method(device, diff_method, device_kwargs):
     """Skip tests if a device does not support a diff_method"""
+    if diff_method in {"parameter-shift", "hadamard"}:
+        return
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
@@ -224,6 +227,12 @@ def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
     # value from yaml file is a string, convert to boolean
     if eval(disable_opmath):
+        warn(
+            "Disabling the new Operator arithmetic system for legacy support. "
+            "If you need help troubleshooting your code, please visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
+            UserWarning,
+        )
         qml.operation.disable_new_opmath(warn=False)
 
 

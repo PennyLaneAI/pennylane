@@ -280,7 +280,7 @@ class TestVQE:
     @pytest.mark.torch
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, shots):
+    def test_optimize_torch(self, shots, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface."""
 
@@ -306,7 +306,7 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        _rng = np.random.default_rng(1234)
+        _rng = np.random.default_rng(seed)
         w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
@@ -328,7 +328,7 @@ class TestVQE:
     @pytest.mark.tf
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_tf(self, shots):
+    def test_optimize_tf(self, shots, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
 
@@ -354,7 +354,7 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        _rng = np.random.default_rng(1234)
+        _rng = np.random.default_rng(seed)
         w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
@@ -374,7 +374,7 @@ class TestVQE:
     @pytest.mark.autograd
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_autograd(self, shots):
+    def test_optimize_autograd(self, shots, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the autograd interface."""
 
@@ -400,7 +400,7 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        _rng = np.random.default_rng(1234)
+        _rng = np.random.default_rng(seed)
         w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
@@ -418,7 +418,7 @@ class TestVQE:
 
     # pylint: disable=protected-access
     @pytest.mark.autograd
-    def test_optimize_multiple_terms_autograd(self):
+    def test_optimize_multiple_terms_autograd(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the autograd interface, even when
         there are non-unique Hamiltonian terms."""
@@ -456,7 +456,7 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        _rng = np.random.default_rng(1234)
+        _rng = np.random.default_rng(seed)
         w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
@@ -474,7 +474,7 @@ class TestVQE:
 
     # pylint: disable=protected-access
     @pytest.mark.torch
-    def test_optimize_multiple_terms_torch(self):
+    def test_optimize_multiple_terms_torch(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface, even when there
         are non-unique Hamiltonian terms."""
@@ -512,7 +512,7 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        _rng = np.random.default_rng(1234)
+        _rng = np.random.default_rng(seed)
         w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
@@ -530,7 +530,7 @@ class TestVQE:
 
     # pylint: disable=protected-access
     @pytest.mark.tf
-    def test_optimize_multiple_terms_tf(self):
+    def test_optimize_multiple_terms_tf(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface, even when
         there are non-unique Hamiltonian terms."""
@@ -568,7 +568,7 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        _rng = np.random.default_rng(1234)
+        _rng = np.random.default_rng(seed)
         w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
@@ -610,6 +610,9 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        # TODO: This is another case of a magic number in the sense that no other number allows
+        #       this test to pass. This is likely because the expected `big_hamiltonian_grad`
+        #       was calculated using this exact seed. This test needs to be revisited.
         _rng = pnp.random.default_rng(1967)
         w = _rng.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
 
@@ -669,6 +672,9 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        # TODO: This is another case of a magic number in the sense that no other number allows
+        #       this test to pass. This is likely because the expected `big_hamiltonian_grad`
+        #       was calculated using this exact seed. This test needs to be revisited.
         _rng = np.random.default_rng(1967)
         w = _rng.uniform(low=0, high=2 * np.pi, size=shape)
         w = torch.tensor(w, requires_grad=True)
@@ -696,6 +702,9 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        # TODO: This is another case of a magic number in the sense that no other number allows
+        #       this test to pass. This is likely because the expected `big_hamiltonian_grad`
+        #       was calculated using this exact seed. This test needs to be revisited.
         _rng = np.random.default_rng(1967)
         w = _rng.uniform(low=0, high=2 * np.pi, size=shape)
         w = tf.Variable(w)
@@ -782,7 +791,7 @@ class TestNewVQE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
-    def test_shot_distribution(self, shots, dim):
+    def test_shot_distribution(self, shots, dim, seed):
         """Tests that distributed shots work with the new VQE design."""
         import jax
 
@@ -798,7 +807,7 @@ class TestNewVQE:
 
         obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]
         coeffs = np.array([0.1, 0.2])
-        key = jax.random.PRNGKey(42)
+        key = jax.random.PRNGKey(seed)
         weights = jax.random.uniform(key, [2, 2, 3])
 
         res = circuit(weights, coeffs)
@@ -1002,27 +1011,6 @@ class TestNewVQE:
 
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_specs_legacy(self):
-        """Test that the specs of a VQE circuit can be computed"""
-        dev = qml.device("default.qubit", wires=2)
-        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(H)
-
-        res = qml.specs(circuit)()
-
-        assert res["num_observables"] == 1
-
-        # currently this returns 1 instead, because diagonalizing gates exist for H,
-        # but they aren't used in executing this qnode
-        # to be revisited in [sc-59117]
-        assert res["num_diagonalizing_gates"] == 0
 
     @pytest.mark.xfail(
         reason="diagonalizing gates defined but not used, should not be included in specs"
