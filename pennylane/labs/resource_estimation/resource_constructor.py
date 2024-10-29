@@ -64,8 +64,9 @@ class ResourceConstructor(ABC):
         """Set a custom resource method."""
         cls.resources = new_func
 
+    @staticmethod
     @abstractmethod
-    def resource_rep(self) -> CompressedResourceOp:
+    def resource_rep() -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 

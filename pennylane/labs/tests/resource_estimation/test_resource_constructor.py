@@ -5,7 +5,8 @@ from pennylane.labs.resource_estimation import ResourceConstructor
 
 def test_abstract_resource_decomp():
     class DummyClass(ResourceConstructor):
-        def resource_rep(self):
+        @staticmethod
+        def resource_rep():
             return
 
     with pytest.raises(
@@ -17,6 +18,7 @@ def test_abstract_resource_decomp():
 
 def test_abstract_resource_rep():
     class DummyClass(ResourceConstructor):
+        @staticmethod
         def _resource_decomp():
             return
 
@@ -29,9 +31,11 @@ def test_abstract_resource_rep():
 
 def test_set_resources():
     class DummyClass(ResourceConstructor):
-        def resource_rep(self):
+        @staticmethod
+        def resource_rep():
             return
 
+        @staticmethod
         def _resource_decomp():
             return
 
