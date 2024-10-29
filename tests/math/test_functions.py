@@ -1994,6 +1994,21 @@ class TestDiag:
         res = fn.diag(t, k=1)
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3], k=1))
 
+    def test_array_to_vector_tensorflow(self):
+        """Test that calling diag on a 2D array returns the diagonal."""
+
+        x = tf.Variable([[1.0, 2.0], [3.0, 4.0]])
+        res = fn.diag(x)
+        assert fn.allclose(res, tf.Variable([1.0, 4.0]))
+
+    def test_error_on_higher_dim_tensorflow(self):
+        """Test that a ValueError is raised if diag is called on a 3D tensor."""
+
+        x = tf.reshape(tf.range(27), (3, 3, 3))
+
+        with pytest.raises(ValueError, match="Input must be 1- or 2-d."):
+            fn.diag(x)
+
     def test_torch(self):
         """Test that a torch tensor is automatically converted into
         a diagonal tensor"""
@@ -2953,3 +2968,11 @@ class TestSetIndex:
 
         assert qml.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
         assert isinstance(array2, jnp.ndarray)
+
+
+def test_unstack_tensorflow():
+    """Test that unstack works with tensorflow variables."""
+    x = tf.Variable([0.1, 0.2])
+    r1, r2 = qml.math.unstack(x)
+    assert qml.math.allclose(r1, tf.Variable(0.1))
+    assert qml.math.allclose(r2, tf.Variable(0.2))

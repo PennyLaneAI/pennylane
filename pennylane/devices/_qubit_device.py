@@ -50,7 +50,6 @@ from pennylane.measurements import (
     StateMeasurement,
     StateMP,
     VarianceMP,
-    VnEntanglementEntropyMP,
     VnEntropyMP,
 )
 from pennylane.operation import Operation, operation_derivative
@@ -721,29 +720,6 @@ class QubitDevice(Device):
                     )
                 result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
 
-            elif isinstance(m, VnEntanglementEntropyMP):
-                if self.wires.labels != tuple(range(self.num_wires)):
-                    raise qml.QuantumFunctionError(
-                        "Returning the Von Neumann entanglement entropy is not supported when using custom wire labels"
-                    )
-
-                if self._shot_vector is not None:
-                    raise NotImplementedError(
-                        "Returning the Von Neumann entanglement entropy is not supported with shot vectors."
-                    )
-
-                if self.shots is not None:
-                    warnings.warn(
-                        "Requested Von Neumann entanglement entropy with finite shots; the returned "
-                        "state information is analytic and is unaffected by sampling. To silence "
-                        "this warning, set shots=None on the device.",
-                        UserWarning,
-                    )
-                wires0, wires1 = obs.raw_wires
-                result = self.vn_entanglement_entropy(
-                    wires0=wires0, wires1=wires1, log_base=obs.log_base
-                )
-
             elif isinstance(m, MutualInfoMP):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
@@ -803,7 +779,6 @@ class QubitDevice(Device):
                     VarianceMP,
                     ProbabilityMP,
                     VnEntropyMP,
-                    VnEntanglementEntropyMP,
                     MutualInfoMP,
                     ShadowExpvalMP,
                 ),
@@ -1042,36 +1017,6 @@ class QubitDevice(Device):
             ) from e
         wires = wires.tolist()
         return qml.math.vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
-
-    def vn_entanglement_entropy(self, wires0, wires1, log_base):
-        r"""Returns the Von Neumann entanglement entropy prior to measurement.
-
-        .. math::
-
-            S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
-
-        Args:
-            wires0 (Sequence[int] or int): the wires of the first subsystem
-            wires1 (Sequence[int] or int): the wires of the second subsystem
-            log_base (float): Base for the logarithm.
-
-        Returns:
-            float: returns the Von Neumann entropy
-        """
-        try:
-            state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
-            raise NotImplementedError(
-                f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
-                f"state. "
-            ) from e
-
-        wires0 = wires0.tolist()
-        wires1 = wires1.tolist()
-
-        return qml.math.vn_entanglement_entropy(
-            state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
-        )
 
     def mutual_info(self, wires0, wires1, log_base):
         r"""Returns the mutual information prior to measurement:
