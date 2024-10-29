@@ -231,6 +231,7 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
 
     np_h = _gram_schmidt(np_h.T).T  # orthogonalize Abelian subalgebra
     np_k = op_to_adjvec(k, g)  # adjoint vectors of k space for re-ordering
+    np_k = _gram_schmidt(np_k.T).T
 
     np_mtilde = _orthogonal_complement_basis(np_h, np_m, tol=tol)  # the "rest" of m without h
     np_newg = np.vstack([np_k, np_mtilde, np_h])
@@ -329,6 +330,6 @@ def op_to_adjvec(
         res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
         norm = np.einsum("bij,bji->b", basis, basis)  # TODO: gram matrix for non-orthonormal bases
 
-        return res / norm
+        return (res / norm).real
 
     return NotImplemented
