@@ -93,8 +93,8 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
 
     if ancilla != "unset":
         warn(
-            "The 'ancilla' argument for qml.iterative_qpe has been deprecated. Please use the "
-            "'aux_wire' argument instead.",
+            "The 'ancilla' argument for qml.iterative_qpe has been deprecated and will be removed in v0.40. "
+            "Please use the 'aux_wire' argument instead.",
             qml.PennyLaneDeprecationWarning,
         )
         if aux_wire == "unset":
