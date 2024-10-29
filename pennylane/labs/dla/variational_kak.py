@@ -136,12 +136,14 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     # validate KhK reproduces H
     Km = jnp.eye(2**n)
     assert len(theta_opt) == len(k)
-    for th, op in zip(theta_opt[:], k[:]):
+    for th, op in zip(theta_opt[::-1], k[::-1]):
         opm = qml.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
         Km @= jax.scipy.linalg.expm(1j * th * opm)
 
-    # h_elem_m = qml.matrix(h_elem, wire_order=range(n)) if not _is_dense else h_elem
+    assert np.allclose(Km.conj().T @ Km, np.eye(2**n))
+
     H_reconstructed = Km @ h_elem_m @ Km.conj().T
+
     H_m = qml.matrix(H, wire_order=range(len(H.wires)))
 
     if verbose:
