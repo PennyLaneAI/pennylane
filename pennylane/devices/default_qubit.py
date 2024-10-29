@@ -165,9 +165,9 @@ def all_state_postprocessing(results, measurements, wire_order):
 
 @qml.transform
 def conditional_broastcast_expand(tape):
+    """Apply conditional broadcast expansion to the tape if needed."""
     if any(isinstance(mp, (ShadowExpvalMP)) for mp in tape.measurements):
         return qml.transforms.broadcast_expand(tape)
-
     return (tape,), null_postprocessing
 
 
