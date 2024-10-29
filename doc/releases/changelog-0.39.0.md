@@ -142,7 +142,7 @@
   can now be generated.
   [(6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
 
-* A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
+* A `ReferenceQubit` device is introduced for testing purposes and as a reference for future plugin development.
   [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
 
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
@@ -162,7 +162,7 @@
 <h4>Quantum information measurements</h4>
 
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
-  `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
+  `ExpectationMP`, `VarianceMP`, `PurityMP`, `MutualInfoMP`, and `VnEntropyMP`.
   This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
   facilitating future support for mixed-state devices and expanded density matrix operations. Also, there is a quick fix for the `np.sqrt` call in the `ProbabilityMP` class to be replaced by `qml.math.sqrt`.
   [(#6330)](https://github.com/PennyLaneAI/pennylane/pull/6330)
