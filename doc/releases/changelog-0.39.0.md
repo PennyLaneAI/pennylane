@@ -248,28 +248,28 @@
 
 <h3>Improvements 🛠</h3>
 
-<h4>QJIT/JIT Compatibility and improvements</h4>
+<h4>qjit/jit Compatibility and improvements</h4>
 
-* `qml.AmplitudeAmplification` is now compatible with QJIT.
+* `qml.AmplitudeAmplification` is now compatible with qjit.
   [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
 
-* The quantum arithmetic templates are now compatible with QJIT.
+* The quantum arithmetic templates are now compatible with qjit.
   [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
   
-* The `qml.Qubitization` template is now compatible with QJIT.
+* The `qml.Qubitization` template is now compatible with qjit.
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
-* All PL templates are now unit tested to ensure JIT compatibility.
+* All PL templates are now unit tested to ensure jit compatibility.
   [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
 
-* The `qml.FABLE` template now returns the correct value when JIT is enabled.
+* The `qml.FABLE` template now returns the correct value when jit is enabled.
   [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
 
-* `qml.QutritBasisStatePreparation` is now JIT compatible.
+* `qml.QutritBasisStatePreparation` is now jit compatible.
   [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
 
 * The `SampleMP.process_samples` method has been updated to support using JAX tracers for samples, allowing 
-  compatiblity with QJIT workflows.
+  compatiblity with qjit workflows.
   [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
 
 <h4>Capturing and representing hybrid programs</h4>
