@@ -318,6 +318,8 @@ def decompose(
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
+    .. seealso:: This transform is intended for device developers. See :func:`qml.transforms.decompose <pennylane.transforms.decompose>` for a more user-friendly interface.
+
     Raises:
         Exception: Type defaults to ``qml.DeviceError`` but can be modified via keyword argument.
             Raised if an operator is not accepted and does not define a decomposition, or if
