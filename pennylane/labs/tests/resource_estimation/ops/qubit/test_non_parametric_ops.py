@@ -53,15 +53,14 @@ class TestS():
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct"""
-        op = re.ResourceS(0)
         expected = re.CompressedResourceOp(qml.S, {})
-        assert op.resource_rep() == expected
+        assert re.ResourceS.resource_rep() == expected
 
     def test_resources_from_rep(self):
         """Test that the compressed representation yields the correct resources"""
         op = re.ResourceS(0)
         expected = {re.CompressedResourceOp(qml.T, {}): 2}
-        assert op.resources(**op.resource_rep().params) == expected
+        assert op.resources(**re.ResourceS.resource_rep().params) == expected
 
 class TestT():
     """Tests for ResourceT"""

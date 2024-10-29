@@ -23,6 +23,8 @@ class ResourceS(qml.S, re.ResourceConstructor):
         t = ResourceT.resource_rep()
         gate_types[t] = 2
 
+        return gate_types
+
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.S, {})
