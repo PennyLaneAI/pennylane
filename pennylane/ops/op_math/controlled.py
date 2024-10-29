@@ -199,28 +199,13 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
     return _ctrl_transform(op, control, control_values, work_wires)
 
 
-def remove_from_queue_args_and_kwargs(item):
-    """function used to recursively remove operators that have been added to the queue in an argument or kwarg."""
-    if isinstance(item, (list, tuple, set)):
-        for elem in item:
-            remove_from_queue_args_and_kwargs(elem)
-    elif isinstance(item, dict):
-        for value in item.values():
-            remove_from_queue_args_and_kwargs(value)
-    elif isinstance(item, Operator):
-        qml.queuing.QueuingManager.remove(item)
-
-
 def _ctrl_transform(op, control, control_values, work_wires):
     @wraps(op)
     def wrapper(*args, **kwargs):
         qscript = qml.tape.make_qscript(op)(*args, **kwargs)
 
-        for arg in args:
-            remove_from_queue_args_and_kwargs(arg)
-
-        for value in kwargs.values():
-            remove_from_queue_args_and_kwargs(value)
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)

@@ -22,7 +22,6 @@ from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
-from pennylane.ops.op_math.controlled import remove_from_queue_args_and_kwargs
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
 
@@ -238,11 +237,8 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     def wrapper(*args, **kwargs):
         qscript = make_qscript(qfunc)(*args, **kwargs)
 
-        for arg in args:
-            remove_from_queue_args_and_kwargs(arg)
-
-        for value in kwargs.values():
-            remove_from_queue_args_and_kwargs(value)
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
