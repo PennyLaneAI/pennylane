@@ -1,6 +1,7 @@
 from .qubit import(
         ResourceHadamard,
         ResourceRZ,
+        ResourceSWAP,
         ResourceT,
 )
 
