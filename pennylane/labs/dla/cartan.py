@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functionality for Cartan decomposition"""
+# pylint: disable= missing-function-docstring
 from functools import partial, singledispatch
 from typing import Union
 
@@ -23,14 +24,14 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 from .dense_util import apply_basis_change, check_cartan_decomp
-from .involutions import AI, AII, AIII, BDI, CI, CII, DIII, int_log2
+from .involutions import int_log2
 
 
 def cartan_decomposition(g, involution):
-    r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \osum \mathfrak{m}`.
+    r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \plus \mathfrak{m}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
-    :math:`\mathfrak{g} = \mathfrak{k} \osum \mathfrak{m}` into orthogonal complements.
+    :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` into orthogonal complements.
     This is realized by an involution :math:`\Theta(g)` that maps each operator :math:`g \in \mathfrak{g}`
     back to itself after two consecutive applications, i.e., :math:`\Theta(\Theta(g)) = g \forall g \in \mathfrak{g}`.
 
@@ -84,7 +85,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
 
 
 @singledispatch
-def _even_odd_involution(op):  # pylint:disable=unused-argument
+def _even_odd_involution(op):  # pylint:disable=unused-argument, missing-function-docstring
     return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
 
 
