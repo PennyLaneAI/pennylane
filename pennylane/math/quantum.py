@@ -64,6 +64,8 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     .. code-block:: python
 
+        from pennylane import numpy as np
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface="autograd")
@@ -77,7 +79,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     We can now compute the covariance matrix:
 
     >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-    >>> weights = pnp.random.random(shape, requires_grad=True)
+    >>> weights = np.random.random(shape, requires_grad=True)
     >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
     >>> cov
     tensor([[0.98125435, 0.4905541 ],

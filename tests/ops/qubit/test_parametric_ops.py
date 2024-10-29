@@ -2995,7 +2995,7 @@ class TestPauliRot:
 
         with pytest.raises(
             ValueError,
-            match="The given Pauli word has length .*, length .* was expected for wires .*",
+            match=r"The number of wires must be equal to the length of the Pauli word\. The Pauli word .* has length .*, and .* wires were given .*\.",
         ):
             qml.PauliRot(0.3, pauli_word, wires=wires)
 
@@ -3054,7 +3054,7 @@ class TestPauliRot:
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
         assert qml.math.allclose(mat, exp)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_pauli_rot_generator_legacy_opmath(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
@@ -3066,7 +3066,7 @@ class TestPauliRot:
         assert gen.operands[0].name == expected.obs[0].name
         assert gen.operands[1].wires == expected.obs[1].wires
 
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""

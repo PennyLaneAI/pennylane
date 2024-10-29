@@ -204,6 +204,11 @@ class TestOutAdder:
         for op1, op2 in zip(adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
+    def test_work_wires_added_correctly(self):
+        """Test that no work wires are added if work_wire = None"""
+        wires = qml.OutAdder(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
+        assert wires == qml.wires.Wires([1, 2, 3, 4, 5, 6])
+
     @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""

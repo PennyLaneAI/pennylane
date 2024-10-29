@@ -54,7 +54,7 @@ class TensorLikeMETA(type):
 class TensorLike(metaclass=TensorLikeMETA):
     """Returns a ``Union`` of all tensor-like types, which includes any scalar or sequence
     that can be interpreted as a pennylane tensor, including lists and tuples. Any argument
-    accepted by ``pnp.array`` is tensor-like.
+    accepted by ``qml.numpy.array`` is tensor-like.
 
     **Examples**
 

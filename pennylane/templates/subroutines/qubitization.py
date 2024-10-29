@@ -29,7 +29,7 @@ class Qubitization(Operation):
     It is implemented with a quantum walk operator that takes a Hamiltonian as input and generates:
 
     .. math::
-        Q = (2|0\rangle\langle 0| - I) \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}.
+        Q =  \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I).
 
 
 
@@ -150,7 +150,9 @@ class Qubitization(Operation):
 
         decomp_ops = []
 
-        decomp_ops.append(qml.Reflection(qml.Identity(control)))
+        identity = qml.prod(*[qml.Identity(wire) for wire in control])
+
+        decomp_ops.append(qml.Reflection(identity))
         decomp_ops.append(qml.PrepSelPrep(hamiltonian, control=control))
 
         return decomp_ops

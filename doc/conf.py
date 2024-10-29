@@ -15,6 +15,7 @@
 import os
 import re
 import sys
+from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -102,7 +103,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
-copyright = "2023, Xanadu Quantum Technologies"
+copyright = f"{datetime.now().year}, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
 add_module_names = False

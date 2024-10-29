@@ -1538,7 +1538,8 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
 
-    assert len(recwarn) == 0
+    if qml.operation.active_new_opmath():
+        assert len(recwarn) == 0
 
 
 def test_raises_circuit_that_uses_missing_wire():

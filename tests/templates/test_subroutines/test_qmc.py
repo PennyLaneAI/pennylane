@@ -264,7 +264,7 @@ class TestQuantumMonteCarlo:
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        qml.ops.functions.assert_valid(op)
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""

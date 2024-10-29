@@ -38,6 +38,7 @@ pytestmark = pytest.mark.skip_unsupported
 obs = {
     "Identity": qml.Identity(wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
+    "H": qml.H(wires=[0]),
     "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
     "PauliX": qml.PauliX(0),
     "PauliY": qml.PauliY(0),
@@ -693,6 +694,25 @@ class TestTensorExpval:
 @flaky(max_runs=10)
 class TestSample:
     """Tests for the sample return type."""
+
+    def test_sample_wires(self, device):
+        """Test that a device can return samples."""
+
+        n_wires = 1
+        dev = device(n_wires)
+
+        if not dev.shots:
+            pytest.skip("Device is in analytic mode, cannot test sampling.")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            return qml.sample(wires=0)
+
+        res = circuit()
+        assert qml.math.allclose(res, 1)  # note, might be violated with a noisy device?
+        assert qml.math.shape(res) == (dev.shots.total_shots,)
+        assert qml.math.get_dtype_name(res)[0:3] == "int"  # either 32 or 64 precision.
 
     def test_sample_values(self, device, tol):
         """Tests if the samples returned by sample have

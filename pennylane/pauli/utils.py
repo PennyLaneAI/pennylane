@@ -23,6 +23,7 @@ representation of Pauli words and applications, see:
 from functools import lru_cache, singledispatch
 from itertools import product
 from typing import Union
+from warnings import warn
 
 import numpy as np
 
@@ -1211,6 +1212,11 @@ def simplify(h, cutoff=1.0e-12):
     The Hamiltonian terms with identical Pauli words are added together and eliminated if the
     overall coefficient is smaller than a cutoff value.
 
+    .. warning::
+
+        :func:`~pennylane.pauli.simplify` is deprecated. Instead, please use :func:`pennylane.simplify`
+        or :meth:`~pennylane.operation.Operator.simplify`.
+
     Args:
         h (Hamiltonian): PennyLane Hamiltonian
         cutoff (float): cutoff value for discarding the negligible terms
@@ -1225,6 +1231,11 @@ def simplify(h, cutoff=1.0e-12):
     >>> print(simplify(h))
     (1.0) [X0 Y1]
     """
+    warn(
+        "qml.pauli.simplify() has been deprecated. Instead, please use "
+        "qml.simplify(op) or op.simplify().",
+        qml.PennyLaneDeprecationWarning,
+    )
     wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
 
     c, o = [], []

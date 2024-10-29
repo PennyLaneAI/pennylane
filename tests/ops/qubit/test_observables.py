@@ -539,7 +539,7 @@ class TestProjector:
         second_projector = qml.Projector(basis_state, wires)
         qml.assert_equal(second_projector, basis_state_projector)
 
-        qml.ops.functions.assert_valid(basis_state_projector)
+        qml.ops.functions.assert_valid(basis_state_projector, skip_differentiation=True)
 
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""

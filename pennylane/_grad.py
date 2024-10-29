@@ -253,7 +253,7 @@ class grad:
 
 def jacobian(func, argnum=None, method=None, h=None):
     """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
-    :func:`~.qjit` and Autograd compatible.
+    This function is compatible with Autograd and :func:`~.qjit`.
 
     .. note::
 
@@ -303,7 +303,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
     passed to the function. The returned function takes the same arguments as the original
-    function and outputs a ``tuple``. The ``i`` th entry of the ``tuple`` has shape
+    function and outputs a ``tuple``. The ``i``-th entry of the ``tuple`` has shape
     ``(*output shape, *shape of args[argnum[i]])``.
 
     If a single trainable argument is inferred, or if a single integer
@@ -315,6 +315,9 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     .. code-block::
 
+        import pennylane as qml
+        from pennylane import numpy as np
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -324,13 +327,11 @@ def jacobian(func, argnum=None, method=None, h=None):
             qml.RZ(weights[1, 0, 2], wires=0)
             return qml.probs()
 
-        weights = np.array(
-            [[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], requires_grad=True
-        )
+        weights = np.array([[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], requires_grad=True)
 
     It has a single array-valued QNode argument with shape ``(2, 1, 3)`` and outputs
     the probability of each 2-wire basis state, of which there are ``2**num_wires`` = 4.
-    Therefore, the Jacobian of this QNode will be a single array with shape ``(2, 2, 1, 3)``:
+    Therefore, the Jacobian of this QNode will be a single array with shape ``(4, 2, 1, 3)``:
 
     >>> qml.jacobian(circuit)(weights).shape
     (4, 2, 1, 3)
@@ -340,14 +341,12 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     .. code-block::
 
-        dev = qml.device("default.qubit", wires=2)
-
         @qml.qnode(dev)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.RZ(z, wires=0)
-            return tuple(qml.expval(qml.Z(w)) for w in dev.wires)
+            return qml.probs()
 
         x = np.array(0.2, requires_grad=True)
         y = np.array(0.9, requires_grad=True)
@@ -377,7 +376,7 @@ def jacobian(func, argnum=None, method=None, h=None):
             qml.RX(x[0], wires=0)
             qml.RY(y[0, 3], wires=1)
             qml.RX(x[1], wires=2)
-            return [qml.expval(qml.Z(w)) for w in [0, 1, 2]]
+            return qml.probs()
 
         x = np.array([0.1, 0.5], requires_grad=True)
         y = np.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]], requires_grad=True)
@@ -398,7 +397,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     of the QNode output shape (``(8,)``) and the shape of ``x`` (``(2,)``).
     Similarly, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(8, 2, 4)``.
 
-    Instead we may choose the output to contain only one of the two
+    Instead, we may choose the output to contain only one of the two
     entries by providing an iterable as ``argnum``:
 
     >>> jac = qml.jacobian(circuit, argnum=[1])(x, y)
@@ -440,8 +439,8 @@ def jacobian(func, argnum=None, method=None, h=None):
             return g(x)
 
     >>> workflow(np.array([2.0, 1.0]))
-    array([[-1.32116540e-07,  1.33781874e-07],
-           [-4.20735506e-01,  4.20735506e-01]])
+    Array([[ 3.48786850e-16, -4.20735492e-01],
+           [-8.71967125e-17,  4.20735492e-01]], dtype=float64)
 
     You can further compute the Jacobian transformation using other supported differentiation
     methods by :func:`catalyst.jacobian`.
@@ -459,9 +458,10 @@ def jacobian(func, argnum=None, method=None, h=None):
             g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
-    >>> qml.qjit(workflow)(np.array([2.0, 1.0]))
-    array([[-0.37120096, -0.45467246],
-            [0.37120096,  0.45467246]])
+    >>> workflow(np.array([2.0, 1.0]))
+    Array([[-0.03996468, -0.42472435],
+           [ 0.03996468,  0.42472435]], dtype=float64)
+
     """
     # pylint: disable=no-value-for-parameter
 
