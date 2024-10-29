@@ -887,16 +887,11 @@ class TestAdjointConstructorPreconstructedOp:
     def test_correct_queued_operators(self):
         """Test that args and kwargs do not add operators to the queue."""
 
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def circuit():
+        with qml.queuing.AnnotatedQueue() as q:
             qml.adjoint(qml.QSVT)(qml.X(1), [qml.Z(1)])
             qml.adjoint(qml.QSVT(qml.X(1), [qml.Z(1)]))
-            return qml.state()
 
-        circuit()
-        for op in circuit.tape.operations:
+        for op in q.queue:
             assert op.name == "Adjoint(QSVT)"
 
 
