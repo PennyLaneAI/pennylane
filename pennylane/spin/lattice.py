@@ -35,7 +35,7 @@ class Lattice:
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin sites. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
-        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+       boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
             boundary conditions for the different lattice axes.  Default is ``False`` indicating
             open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
