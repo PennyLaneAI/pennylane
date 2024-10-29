@@ -5,30 +5,30 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.pauli import PauliSentence, PauliWord
-from bosonic import BoseSentence, BoseWord
+from .bosonic import BoseSentence, BoseWord
+from .christiansenForm import christiansen_integrals, christiansen_integrals_dipole
 
-
-def jordan_wigner(
+def christiansen_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
 ):
-    r"""Convert a bosonic operator to a qubit operator using the Jordan-Wigner mapping.
+    r"""Convert a bosonic operator to a qubit operator using the Christiansen mapping.
 
     The bosonic creation and annihilation operators are mapped to the Pauli operators as
 
     .. math::
 
         a^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
-        a^{\dagger}_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n - iY_n}{2} \right ),
+        a^{\dagger}_n = \frac{X_n - iY_n}{2},
 
     and
 
     .. math::
 
         a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
-        a_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n + iY_n}{2}  \right ),
+        a_n = \frac{X_n + iY_n}{2},
 
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
 
@@ -44,18 +44,18 @@ def jordan_wigner(
     Returns:
         Union[PauliSentence, Operator]: a linear combination of qubit operators
     """
-    return _jordan_wigner_dispatch(bose_operator, ps, wire_map, tol)
+    return _christiansen_mapping_dispatch(bose_operator, ps, wire_map, tol)
 
 
 @singledispatch
-def _jordan_wigner_dispatch(bose_operator, ps, wire_map, tol):
+def _christiansen_mapping_dispatch(bose_operator, ps, wire_map, tol):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
     raise ValueError(
         f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}"
     )
 
 
-@_jordan_wigner_dispatch.register
+@_christiansen_mapping_dispatch.register
 def _(bose_operator: BoseWord, ps=False, wire_map=None, tol=None):
     wires = list(bose_operator.wires) or [0]
     identity_wire = wires[0]
@@ -95,7 +95,7 @@ def _(bose_operator: BoseWord, ps=False, wire_map=None, tol=None):
     return qubit_operator
 
 
-@_jordan_wigner_dispatch.register
+@_christiansen_mapping_dispatch.register
 def _(bose_operator: BoseSentence, ps=False, wire_map=None, tol=None):
     wires = list(bose_operator.wires) or [0]
     identity_wire = wires[0]
@@ -103,7 +103,7 @@ def _(bose_operator: BoseSentence, ps=False, wire_map=None, tol=None):
     qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
 
     for fw, coeff in bose_operator.items():
-        bose_word_as_ps = jordan_wigner(fw, ps=True)
+        bose_word_as_ps = christiansen_mapping(fw, ps=True)
 
         for pw in bose_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
@@ -122,7 +122,7 @@ def _(bose_operator: BoseSentence, ps=False, wire_map=None, tol=None):
     return qubit_operator
 
 
-def vib_obs(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True):
+def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True):
     r"""Build a vibrational observable in the Christiansen form (C-form) and map it
     to the Pauli basis
 
@@ -234,5 +234,19 @@ def vib_obs(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ord
 
     obs_sq = BoseSentence(obs)
 
-    return (np.sum(modals), obs_sq)
+    return obs_sq
+
+
+def christiansen_hamiltonian(pes, nbos=16, do_cubic=False):
+
+    h_arr = christiansen_integrals(pes, nbos=nbos, do_cubic=do_cubic)
+
+    one = h_arr[0]
+    two = h_arr[1]
+    three = h_arr[2] if len(h_arr)==3 else None
+    cform_bosonic = christiansen_bosonic(one=one, two=two, three=three)
+    cform_qubit = christiansen_mapping(cform_bosonic)
+
+    return cform_qubit
+
 
