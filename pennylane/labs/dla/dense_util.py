@@ -13,43 +13,60 @@
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
 
-from itertools import product
+from typing import Optional
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.typing import TensorLike
 
 
-def _make_phase_mat(n):
-    phase_mat = qml.math.ones((2,) * (2 * n), dtype=complex)
-    for idx in range(n):
-        index = [slice(None)] * (2 * n)
-        index[idx] = index[idx + n] = 1
-        phase_mat[tuple(index)] *= 1j
-    phase_mat = qml.math.reshape(phase_mat, (2**n, 2**n))
-    return phase_mat
+def _make_phase_mat(n: int) -> np.ndarray:
+    r"""Create an array with shape ``(2**n, 2**n)`` containing powers of :math:`i`.
+    For the entry at position ``(i, k)``, the entry is ``1j**p(i,k)`` with the
+    power being the Hamming weight of the product of the binary bitstrings of
+    ``i`` and ``k``.
+    """
+    _slice = (slice(None), None, None)
+    # Compute the bitwise and of the row and column index for all matrix entries
+    ids_bit_and = np.bitwise_and(np.arange(2**n)[:, None], np.arange(2**n)[None])
+    # Compute the Hamming weight of the bitwise and. Can be replaced by bitwise_count with np>=2.0
+    hamming_weight = np.sum(
+        np.bitwise_and(ids_bit_and[None] >> np.arange(n + 1)[_slice], 1), axis=0
+    )
+    return 1j**hamming_weight
 
 
-def _make_permutation_indices(dim):
+def _make_permutation_indices(dim: int) -> list[np.ndarray]:
+    r"""Make a list of ``dim`` arrays of length ``dim`` containing the indices
+    ``0`` through ``dim-1`` in a specific permutation order to match the Walsh-Hadamard
+    transform to the Pauli decomposition task."""
     indices = [qml.math.arange(dim)]
     for idx in range(dim - 1):
         indices.append(qml.math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
     return indices
 
 
-def _make_extraction_indices(n):
-    indices = []
-    for pauli_rep in product("IXYZ", repeat=n):
-        bit_array = qml.math.array(
-            [[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int
-        ).T
-        indices.append(tuple(int("".join(map(str, x)), 2) for x in bit_array))
-    return tuple(zip(*indices))
+def _make_extraction_indices(n: int) -> tuple[tuple]:
+    r"""Create a tuple of two tuples of indices to extract Pauli basis coefficients.
+    The first tuple of indices as bit strings encodes the presence of a Pauli Z or Pauli Y
+    on the ``k``\ th wire in the ``k``\ th bit. The second tuple encodes the presence of
+    Pauli X or Pauli Y. That is, for a given position, the four different Pauli operators
+    are encoded as ``(0, 0) = "I"``, ``(0, 1) = "X"``, ``(1, 0) = "Z"`` and ``(1, 1) = "Y"``.
+    """
+    if n == 1:
+        return ((0, 0, 1, 1), (0, 1, 1, 0))
+
+    ids0, ids1 = np.array(_make_extraction_indices(n - 1))
+    return (
+        tuple(np.concatenate([ids0, ids0, ids0 + 2 ** (n - 1), ids0 + 2 ** (n - 1)])),
+        tuple(np.concatenate([ids1, ids1 + 2 ** (n - 1), ids1 + 2 ** (n - 1), ids1])),
+    )
 
 
-def pauli_coefficients(H):
+def pauli_coefficients(H: TensorLike) -> np.ndarray:
     r"""Computes the coefficients of a Hermitian matrix in the Pauli basis.
 
     Args:
@@ -59,6 +76,33 @@ def pauli_coefficients(H):
     Returns:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
         matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
+
+    **Examples**
+
+    Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
+
+    >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
+    >>> mat = H.matrix()
+    array([[ 0.  +0.j,  0.4 +0.j,  0.25+0.j,  0.  +0.j],
+           [ 0.4 +0.j,  0.  +0.j,  0.  +0.j,  0.25+0.j],
+           [ 0.25+0.j,  0.  +0.j,  0.  +0.j, -0.4 +0.j],
+           [ 0.  +0.j,  0.25+0.j, -0.4 +0.j,  0.  +0.j]])
+
+    Then we can obtain the coefficients of :math:`H` in the Pauli basis via
+
+    >>> from pennylane.labs.dla import pauli_coefficients
+    >>> pauli_coefficients(mat)
+    array([ 0.  ,  0.  ,  0.  ,  0.  ,  0.25,  0.  ,  0.  ,  0.  ,  0.  ,
+            0.  , -0.  ,  0.  ,  0.  ,  0.4 ,  0.  ,  0.  ])
+
+    The function can be used on a batch of matrices:
+
+    >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0), 3 / 5 * qml.Y(0)]
+    >>> batch = np.stack([op.matrix() for op in ops])
+    >>> pauli_coefficients(batch)
+    array([[0.  , 0.25, 0.  , 0.  ],
+           [0.  , 0.  , 0.  , 0.5 ],
+           [0.  , 0.  , 0.6 , 0.  ]])
 
 
     **Examples**
@@ -135,7 +179,7 @@ def _idx_to_pw(idx, n):
     return PauliWord(pw)
 
 
-def pauli_decompose(H, tol=None, pauli: bool = False):
+def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
@@ -188,7 +232,7 @@ def pauli_decompose(H, tol=None, pauli: bool = False):
     if tol is None:
         tol = 1e-10
     coeffs = pauli_coefficients(H)
-    if single_H := (qml.math.ndim(coeffs) == 1):
+    if single_H := qml.math.ndim(coeffs) == 1:
         coeffs = [coeffs]
 
     n = int(np.round(np.log2(qml.math.shape(coeffs)[1]))) // 2

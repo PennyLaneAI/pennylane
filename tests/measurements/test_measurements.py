@@ -41,7 +41,6 @@ from pennylane.measurements import (
     StateMP,
     Variance,
     VarianceMP,
-    VnEntanglementEntropyMP,
     VnEntropyMP,
     expval,
     sample,
@@ -185,7 +184,6 @@ valid_meausurements = [
     VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
     VarianceMP(obs=mv),
     VnEntropyMP(wires=Wires("a"), log_base=3),
-    VnEntanglementEntropyMP(wires=(Wires("a"), Wires("b")), log_base=3),
 ]
 
 
@@ -513,7 +511,6 @@ class TestExpansion:
             CountsMP(wires=["a", 1]),
             StateMP(),
             VnEntropyMP(wires=["a", 1]),
-            VnEntanglementEntropyMP(wires=[["a", 1], ["b", 2]]),
             MutualInfoMP(wires=[["a", 1], ["b", 2]]),
             ProbabilityMP(wires=["a", 1]),
         ],
@@ -712,7 +709,6 @@ class TestMeasurementProcess:
         (qml.state(), (8,)),
         (qml.density_matrix(wires=[0, 1]), (4, 4)),
         (qml.mutual_info(wires0=[0], wires1=[1]), ()),
-        (qml.vn_entanglement_entropy(wires0=[0], wires1=[1]), ()),
         (qml.vn_entropy(wires=[0, 1]), ()),
     ]
 
@@ -725,7 +721,6 @@ class TestMeasurementProcess:
         (qml.sample(qml.PauliZ(0)), (10,)),
         (qml.sample(), (10, 3)),
         (qml.mutual_info(wires0=0, wires1=1), ()),
-        (qml.vn_entanglement_entropy(wires0=[0], wires1=[1]), ()),
         (qml.vn_entropy(wires=[0, 1]), ()),
     ]
 
