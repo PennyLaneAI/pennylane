@@ -29,6 +29,8 @@ from pennylane.pauli import PauliSentence
 
 from .cartan_subalgebra import adjvec_to_op, op_to_adjvec
 
+jax.config.update("jax_enable_x64", True)
+
 
 def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     r"""

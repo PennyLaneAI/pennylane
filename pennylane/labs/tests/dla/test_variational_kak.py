@@ -28,7 +28,7 @@ from pennylane.labs.dla import (
 
 
 @pytest.mark.parametrize("n", [2, 3])
-def test_khk_Ising2(n):
+def test_kak_Ising(n):
     """Basic test for khk decomposition on Ising model with two qubits"""
     gens = [X(i) @ X(i + 1) for i in range(n - 1)]
     gens += [Z(i) for i in range(n)]
