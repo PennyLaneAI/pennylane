@@ -34,7 +34,20 @@ jax.config.update("jax_enable_x64", True)
 
 def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
     r"""
-    Variational KHK decomposition function
+    Variational KAK decomposition of Hermitian ``H``
+
+    Given a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \tilde{\mathfrak{m}} \oplus \mathfrak{a}`
+    and a Hermitian operator :math:`H \in \tilde{\mathfrak{m}} \oplus \mathfrak{a}`, this function computes
+    :math:`a \in \mathfrak{a}` and :math:`K_c \in e^{i\mathfrak{k}}` such that
+
+    .. math:: H = K_c^\dagger a K_c
+
+    The result is provided in terms of the adjoint representation vector of :math:`a` (see :func:`adjvec_to_op`) and
+    the optimal parameters :math:`\theta` such that
+
+    .. math:: K_c = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}
+
+    for the ordered basis of :math:`\mathfrak{k}` given by the first ``dim_k`` elements of ``g``.
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
