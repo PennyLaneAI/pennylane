@@ -14,8 +14,7 @@
 """
 Module test files for validation of qml.labs import
 """
-# pylint: disable=import-outside-toplevel
-# pylint: disable=unused-import
+# pylint: disable=import-outside-toplevel, unused-import
 import pytest
 
 
@@ -27,9 +26,8 @@ def test_module_access():
         print(qml.labs)
 
 
-def test_module_import():
+def test_module_import(import_labs):
     "Validate that explicitly importing the module makes it available under the `qml` alias."
     import pennylane as qml
-    from pennylane import labs
 
     print(qml.labs)

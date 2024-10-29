@@ -190,3 +190,13 @@ def pytest_runtest_makereport(item, call):
                 tr.outcome = "skipped"
 
     return tr
+
+
+@pytest.fixture(scope="class")
+def import_labs():
+    """
+    Fixture for a scoped import of qml.labs
+    To be used instead of direct imports allowing `import pennylane as qml` to give access to `qml.labs` in the subsequent tests.
+    """
+    import pennylane.labs  # pylint: disable=import-outside-toplevel, unused-import
+
