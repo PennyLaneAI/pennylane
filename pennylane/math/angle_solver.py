@@ -41,7 +41,7 @@ def complementary_poly(P):
     """
     poly_degree = len(P) - 1
 
-    # Build the polynomial R(z) = z^degree * (1 - conj(P(z)) * P(z)), deduced from (eq.33) anad (eq.34)
+    # Build the polynomial R(z) = z^degree * (1 - conj(P(z)) * P(z)), deduced from (eq.33) and (eq.34)
     R = Polynomial.basis(poly_degree) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
     r_roots = R.roots()
 
@@ -61,6 +61,7 @@ def complementary_poly(P):
 def QSP_angles(F):
     """
     Computes the Quantum Signal Processing (QSP) angles given a polynomial F.
+    Currently works up to polynomials of degree ~1000.
 
     Args:
         F (array-like): Coefficients of the input polynomial F.
@@ -79,14 +80,12 @@ def QSP_angles(F):
     n = S.shape[1]
     theta = np.zeros(n)
 
+    # This subroutine is an adaptation of Algorithm 1 in [arXiv:2308.01501]
+    # in order to work in the context of QSP.
     for d in reversed(range(n)):
-        # Extract real parts of the current entries in S for the current column
+
         a, b = S[:, d]
-
         theta[d] = np.arctan2(b.real, a.real)
-
-        # Although the paper works with an RX gate as a reference, RY is used here to simplify
-        # the calculations by working only with real numbers.
         matrix = qml.matrix(qml.RY(-2*theta[d], wires = 0))
         S =  matrix @ S
         S = np.array([S[0][1: d + 1], S[1][0:d]])
@@ -132,6 +131,19 @@ def transform_angles(angles, routine1, routine2):
         return angles - update_vals
 
 def poly_to_angles(P, routine):
+    """
+    Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP)
+    or quantum singular value transformation (QSVT) routines.
+
+    Args:
+        P (array-like): Coefficients of the polynomial, ordered from lowest to higher degree.
+                        The polynomial must have defined parity and real coefficients.
+
+        routine (str):  Specifies the type of angle transformation required. Must be either: "QSP" or "QSVT".
+
+    Returns:
+        (array-like): Angles corresponding to the specified transformation routine.
+    """
 
     parity = (len(P) - 1) % 2
     assert np.allclose(P[1 - parity::2], 0), "Polynomial must have defined parity"
