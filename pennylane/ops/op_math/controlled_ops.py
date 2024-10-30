@@ -709,20 +709,20 @@ class CCZ(ControlledOp):
 
         >>> qml.CCZ.compute_decomposition((0,1,2))
         [CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
+         T(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
-         T(wires=[1]),
+         T(2),
+         T(1),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2]),
-         T(wires=[0]),
-         Adjoint(T(wires=[1])),
+         H(2),
+         T(0),
+         Adjoint(T(1)),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2])]
+         H(2)]
 
         """
         return [
@@ -962,20 +962,20 @@ class Toffoli(ControlledOp):
         **Example:**
 
         >>> qml.Toffoli.compute_decomposition((0,1,2))
-        [Hadamard(wires=[2]),
+        [H(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
+         T(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
-         T(wires=[1]),
+         T(2),
+         T(1),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2]),
-         T(wires=[0]),
-         Adjoint(T(wires=[1])),
+         H(2),
+         T(0),
+         Adjoint(T(1)),
          CNOT(wires=[0, 1])]
 
         """

@@ -224,22 +224,22 @@ class SingleExcitation(Operation):
         **Example:**
 
         >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        [Adjoint(T(wires=[0])),
-         Hadamard(wires=[0]),
-         S(wires=[0]),
-         Adjoint(T(wires=[1])),
-         Adjoint(S(wires=[1])),
-         Hadamard(wires=[1]),
+        [Adjoint(T(0)),
+         H(0),
+         S(0),
+         Adjoint(T(1)),
+         Adjoint(S(1)),
+         H(1),
          CNOT(wires=[1, 0]),
          RZ(-0.615, wires=[0]),
          RY(0.615, wires=[1]),
          CNOT(wires=[1, 0]),
-         Adjoint(S(wires=[0])),
-         Hadamard(wires=[0]),
-         T(wires=[0]),
-         Hadamard(wires=[1]),
-         S(wires=[1]),
-         T(wires=[1])]
+         Adjoint(S(0)),
+         H(0),
+         T(0),
+         H(1),
+         S(1),
+         T(1)]
 
         """
         # This decomposition was found by plugging the matrix representation
