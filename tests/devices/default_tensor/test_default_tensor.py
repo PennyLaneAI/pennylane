@@ -35,6 +35,7 @@ pytestmark = pytest.mark.external
 # gates for which device support is tested
 operations_list = {
     "Identity": qml.Identity(wires=[0]),
+    "Identity()": qml.Identity(),
     "BlockEncode": qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
     "CNOT": qml.CNOT(wires=[0, 1]),
     "CRX": qml.CRX(1.234, wires=[0, 1]),
@@ -49,6 +50,7 @@ operations_list = {
     "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
     "Hadamard": qml.Hadamard(wires=[0]),
     "MultiRZ": qml.MultiRZ(1.234, wires=[0, 1]),
+    "MultiRZ(1)": qml.MultiRZ(1.234, wires=[0]),
     "PauliX": qml.X(0),
     "PauliY": qml.Y(0),
     "PauliZ": qml.Z(0),
@@ -94,6 +96,7 @@ operations_list = {
     "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
     "QubitSum": qml.QubitSum(wires=[0, 1, 2]),
     "PauliRot": qml.PauliRot(1.234, "XXYY", wires=[0, 1, 2, 3]),
+    "PauliRot(1)": qml.PauliRot(1.234, "X", wires=[0]),
     "U1": qml.U1(1.234, wires=0),
     "U2": qml.U2(1.234, 0.2, wires=0),
     "U3": qml.U3(1.234, 0.2, 0.3, wires=0),
@@ -102,6 +105,7 @@ operations_list = {
     "OrbitalRotation": qml.OrbitalRotation(1.234, wires=[0, 1, 2, 3]),
     "FermionicSWAP": qml.FermionicSWAP(1.234, wires=[0, 1]),
     "GlobalPhase": qml.GlobalPhase(1.23423, wires=[0, 1]),
+    "GlobalPhase()": qml.GlobalPhase(1.23423),
 }
 
 all_ops = operations_list.keys()
