@@ -353,6 +353,16 @@
   not call operations, and single operators with empty decompositions).
   [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
   
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def node():
+      return qml.expval(qml.Z(0))
+
+  qml.matrix(node)()
+  ```
+
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
