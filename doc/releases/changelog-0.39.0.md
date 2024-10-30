@@ -212,7 +212,9 @@
 * Module-level sandboxing added to `qml.labs` via pre-commit hooks.
   [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
 
-* A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
+* A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and
+  requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the
+  default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
   [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
   [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
 
@@ -400,9 +402,6 @@
 
 * Fixes a bug where `QNGOptimizer` and `MomentumQNGOptimizer` calculate invalid parameter updates
   if the metric tensor becomes singular.
-  [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
-
-* Fixes a bug where `lam` and `approx` inputs were not used by `MomentumQNGOptimizer`.
   [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
 
 * Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that
