@@ -152,25 +152,6 @@ def resources_from_tape(
     return clean_resources
 
 
-def get_resources(
-    obj: Union[Callable, QuantumScript, Operation],
-    gate_set: Set = DefaultGateSet,
-    config: Dict = resource_config,
-) -> Resources:
-    ## Instantiate empty 'res' Resources        # TODO (Jay): Try passing the resources object around and appending
-    ## Extract num_wires from object
-    res = Resources()
-
-    ## Iterate over operators:
-    ## a. If in gate_set, add to res  <IDEA: use general gate_set and do fine grain conversion in validation!>
-    ## b. If ResourceConstructor, extract resources from compressed rep [cp_rep --> res function]
-    ## c. Else decompose and repeat  ^^
-
-    ## Validation (convert Resources of CompressedResourceOps to strings!)
-    ## a. Use a more general gate set for tracking above, and perform fine grain conversions here!
-    return res
-
-
 def _resources_from_compressed_res_op(
     cp_rep: CompressedResourceOp, gate_set: Set, config: Dict = resource_config
 ) -> Resources:
