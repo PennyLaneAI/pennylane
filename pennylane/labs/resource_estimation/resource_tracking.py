@@ -49,6 +49,7 @@ DefaultGateSet = {
     "Toffoli",
 }
 
+
 resource_config = {
     "error_rx": 10e-3,
     "error_ry": 10e-3,
@@ -57,7 +58,9 @@ resource_config = {
 
 
 @singledispatch
-def get_resources(obj, gate_set: Set = DefaultGateSet, config: Dict = resource_config) -> Resources:
+def get_resources(
+    obj, gate_set: Set = DefaultGateSet, config: Dict[str] = resource_config
+) -> Resources:
     """Obtain the resources from a quantum circuit or operation in terms of the gates provided
     in the gate_set.
 
@@ -80,16 +83,16 @@ def get_resources(obj, gate_set: Set = DefaultGateSet, config: Dict = resource_c
 
 @get_resources.register
 def resources_from_operation(
-    obj: Operation, gate_set: Set = DefaultGateSet, config: Dict = resource_config
+    obj: Operation, gate_set: Set = DefaultGateSet, config: Dict[str] = resource_config
 ) -> Resources:
     """Get resources from an operation"""
-    res = Resources()
+    res = Resources()  # TODO: Add implementation here!
     return res
 
 
 @get_resources.register
 def resources_from_qfunc(
-    obj: Callable, gate_set: Set = DefaultGateSet, config: Dict = resource_config
+    obj: Callable, gate_set: Set = DefaultGateSet, config: Dict[str] = resource_config
 ) -> Resources:
     """Get resources from a quantum function which queues operations!"""
 
@@ -101,85 +104,84 @@ def resources_from_qfunc(
         operations = (op for op in q.queue if not isinstance(op, MeasurementProcess))
         compressed_res_ops_lst = _operations_to_compressed_reps(operations)
 
-        raw_resources = Resources()
+        gate_counts_dict = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
-            raw_resources += _resources_from_compressed_res_op(
-                cmp_rep_op, gate_set=_StandardGateSet, config=config
+            _counts_from_compressed_res_op(
+                cmp_rep_op, gate_counts_dict, gate_set=_StandardGateSet, config=config
             )
 
         # Validation:
-        condensed_resources = _resources_from_dict_compressed_res_ops(
-            raw_resources.gate_types, gate_set=gate_set, config=config
-        )
-        clean_resources = _clean_resources(condensed_resources)
+        condensed_gate_counts = defaultdict(int)
+        for sub_cmp_rep, counts in gate_counts_dict.items():
+            _counts_from_compressed_res_op(
+                sub_cmp_rep, condensed_gate_counts, scaler=counts, gate_set=gate_set, config=config
+            )
 
-        num_gates = sum(clean_resources.values())
+        clean_gate_counts = _clean_gate_counts(condensed_gate_counts)
+        num_gates = sum(clean_gate_counts.values())
         num_wires = len(set.union((op.wires.toset() for op in operations)))
-
-        clean_resources.num_wires = num_wires
-        clean_resources.num_gates = num_gates
-        return clean_resources
+        return Resources(num_wires=num_wires, num_gates=num_gates, gate_types=clean_gate_counts)
 
     return wrapper
 
 
 @get_resources.register
 def resources_from_tape(
-    obj: QuantumScript, gate_set: Set = DefaultGateSet, config: Dict = resource_config
+    obj: QuantumScript, gate_set: Set = DefaultGateSet, config: Dict[str] = resource_config
 ) -> Resources:
     """Get resources from a quantum tape"""
     num_wires = obj.num_wires
     operations = obj.operations
-
     compressed_res_ops_lst = _operations_to_compressed_reps(operations)
 
-    raw_resources = Resources()
+    gate_counts_dict = defaultdict(int)
     for cmp_rep_op in compressed_res_ops_lst:
-        raw_resources += _resources_from_compressed_res_op(
-            cmp_rep_op, gate_set=_StandardGateSet, config=config
+        _counts_from_compressed_res_op(
+            cmp_rep_op, gate_counts_dict, gate_set=_StandardGateSet, config=config
         )
 
     # Validation:
-    condensed_resources = _resources_from_dict_compressed_res_ops(
-        raw_resources.gate_types, gate_set=gate_set, config=config
-    )
-    clean_resources = _clean_resources(condensed_resources)
+    condensed_gate_counts = defaultdict(int)
+    for sub_cmp_rep, counts in gate_counts_dict.items():
+        _counts_from_compressed_res_op(
+            sub_cmp_rep, condensed_gate_counts, scaler=counts, gate_set=gate_set, config=config
+        )
 
-    num_gates = sum(clean_resources.values())
+    clean_gate_counts = _clean_gate_counts(condensed_gate_counts)
+    num_gates = sum(clean_gate_counts.values())
 
-    clean_resources.num_wires = num_wires
-    clean_resources.num_gates = num_gates
-    return clean_resources
+    return Resources(num_wires=num_wires, num_gates=num_gates, gate_types=clean_gate_counts)
 
 
-def _resources_from_compressed_res_op(
-    cp_rep: CompressedResourceOp, gate_set: Set, config: Dict = resource_config
-) -> Resources:
+def _counts_from_compressed_res_op(
+    cp_rep: CompressedResourceOp,
+    gate_counts_dict,
+    gate_set: Set,
+    scaler: int = 1,
+    config: Dict[str] = resource_config,
+) -> None:
+    """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
+
+    Args:
+        cp_rep (CompressedResourceOp): operation in compressed representation to extract resources from
+        gate_counts_dict (_type_): base dictionary to modify with the resource counts
+        gate_set (Set): the set of operations to track resources with respect too
+        scaler (int, optional): optional scaler to multiply the counts. Defaults to 1.
+        config (Dict[str], optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
+    """
     ## If op in gate_set add to resources
     if cp_rep._name in gate_set:
-        return Resources(gate_types=defaultdict({cp_rep: 1}))
+        gate_counts_dict[cp_rep] += scaler
+        return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
     resource_decomp = cp_rep.op_type.resources(config=config, **cp_rep.params)
-    return _resources_from_dict_compressed_res_ops(
-        resource_decomp, gate_set=gate_set, config=config
-    )
 
-
-def _resources_from_dict_compressed_res_ops(
-    dict_cm_reps: Dict[CompressedResourceOp, int], gate_set: Set, config: Dict = resource_config
-) -> Resources:
-
-    ## For each cm_rep obtain resources and scale according to the relavent counts
-    res = Resources()
-    for cp_rep, counts in dict_cm_reps.items():
-        res += mul_in_series(
-            _resources_from_compressed_res_op(cp_rep, gate_set=gate_set, config=config),
-            counts,
-            in_place=True,
+    for sub_cp_rep, counts in resource_decomp.items():
+        _counts_from_compressed_res_op(
+            sub_cp_rep, gate_counts_dict, scaler=scaler * counts, gate_set=gate_set, config=config
         )
-
-    return res
+    return
 
 
 def _temp_map_func(op: Operation) -> ResourceConstructor:
@@ -187,22 +189,22 @@ def _temp_map_func(op: Operation) -> ResourceConstructor:
     raise NotImplementedError
 
 
-def _clean_resources(res: Resources) -> Resources:
+def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str, int]:
     """Map resources with gate_types made from CompressedResourceOps
     into one which tracks just strings of operations!
 
     Args:
-        res (Resources): _description_
+        gate_counts (Dict[CompressedResourceOp, int]): gate counts in terms of compressed resource ops
 
     Returns:
-        Resources: _description_
+        Dict[str, int]: gate counts in terms of names of operations
     """
-    clean_resources = Resources()
+    clean_gate_counts = defaultdict(int)
 
-    for cmp_res_op, counts in res.gate_types.items():
-        clean_resources.gate_types[cmp_res_op._name] += counts
+    for cmp_res_op, counts in gate_counts.items():
+        clean_gate_counts[cmp_res_op._name] += counts
 
-    return clean_resources
+    return clean_gate_counts
 
 
 @qml.QueuingManager.stop_recording()
