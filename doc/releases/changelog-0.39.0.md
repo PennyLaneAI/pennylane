@@ -400,8 +400,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug where `QNGOptimizer` and `MomentumQNGOptimizer` calculate invalid parameter updates
-  if the metric tensor becomes singular.
+* Fixes a bug where `QNSPSAOptimizer`, `QNGOptimizer` and `MomentumQNGOptimizer` calculate invalid 
+  parameter updates if the metric tensor becomes singular.
   [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
 
 * The `default.qubit` device now supports parameter broadcasting with `qml.classical_shadow` and `qml.shadow_expval`.
