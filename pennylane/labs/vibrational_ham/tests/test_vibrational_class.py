@@ -9,6 +9,8 @@ from pennylane.labs import vibrational_ham
 
 au_to_cm = 219475
 
+# pylint: disable=too-many-arguments
+
 
 def test_es_methoderror():
     r"""Test that an error is raised if wrong method is provided for

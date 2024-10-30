@@ -1,3 +1,5 @@
+"""This module contains functions to localize normal modes."""
+
 import warnings
 import numpy as np
 import scipy
@@ -6,8 +8,11 @@ au_to_cm = 219475
 hbar = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
 c_light = 3 * 10**8  # m/s
 
+# pylint: disable=dangerous-default-value, too-many-statements
+
 
 def _pm_cost(q):
+    r"""Pipek-Mezey cost function whose minimization yields localized displacements."""
     nnuc, _, nmodes = q.shape
 
     xi_pm = 0.0
@@ -23,12 +28,14 @@ def _pm_cost(q):
 
 
 def _mat_transform(u, qmat):
+    r"""Returns the rotated displacement vectors matrix for a given rotation unitary u and displacement vectors matrix qmat."""
     qloc = np.einsum("qp,iaq->iap", u, qmat)
 
     return qloc
 
 
 def _params_to_unitary(params, nmodes):
+    r"""Transforms a one-dimensional vector of parameters specifying a unitary rotation into its associated matrix u."""
     ugen = np.zeros((nmodes, nmodes))
 
     idx = 0
@@ -42,6 +49,7 @@ def _params_to_unitary(params, nmodes):
 
 
 def _params_cost(params, qmat, nmodes):
+    r"""Returns the cost function to be minimized for localized displacements."""
     uparams = _params_to_unitary(params, nmodes)
     qrot = _mat_transform(uparams, qmat)
 
@@ -49,6 +57,7 @@ def _params_cost(params, qmat, nmodes):
 
 
 def _q_normalizer(qmat):
+    r"""Returns the normalized displacement vectors."""
     qnormalized = np.zeros_like(qmat)
     nmodes = qmat.shape[2]
 
@@ -60,7 +69,9 @@ def _q_normalizer(qmat):
 
 
 def _localization_unitary(qmat, rand_start=True):
-    natoms, _, nmodes = qmat.shape
+    r"""Returns the unitary matrix to localize the displacement vectors."""
+
+    nmodes = qmat.shape[2]
     num_params = int(nmodes * (nmodes - 1) / 2)
 
     if rand_start:
@@ -69,8 +80,6 @@ def _localization_unitary(qmat, rand_start=True):
         params = np.zeros(num_params)
 
     qnormalized = _q_normalizer(qmat)
-
-    ini_cost = _pm_cost(qnormalized)
 
     optimization_res = scipy.optimize.minimize(_params_cost, params, args=(qnormalized, nmodes))
     if optimization_res.success is False:
@@ -86,6 +95,9 @@ def _localization_unitary(qmat, rand_start=True):
 
 
 def _localize_modes(freqs, disp_vecs, order=True):
+    r"""Performs the mode localization for a given set of frequencies and displacement vectors as
+    described in this `work <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_
+    """
     nmodes = len(freqs)
     hess_normal = np.zeros((nmodes, nmodes))
     for m in range(nmodes):
