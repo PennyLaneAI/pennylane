@@ -14,7 +14,7 @@
 
 """Tests for the transform ``qml.transform.split_non_commuting`` """
 
-# pylint: disable=import-outside-toplevel,unnecessary-lambda
+# pylint: disable=import-outside-toplevel,unnecessary-lambda,too-many-arguments
 
 import itertools
 from functools import partial
