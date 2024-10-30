@@ -82,7 +82,7 @@ def test_correctness_QSP_angles(poly):
     def circuit_qsp():
 
         qml.RX(2 * angles[0], wires=0)
-        for ind, angle in enumerate(angles[1:]):
+        for angle in angles[1:]:
             qml.RZ(-2 * np.arccos(x), wires=0)
             qml.RX(2 * angle, wires=0)
 

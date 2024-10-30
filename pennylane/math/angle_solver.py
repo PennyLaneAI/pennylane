@@ -102,6 +102,7 @@ def transform_angles(angles, routine1, routine2):
     This function adjusts the angles according to the specified transformation
     between two routines, either from "Quantum Signal Processing" (QSP) to
     "Quantum Singular Value Transformation" (QSVT), or vice versa.
+    By default, transform QSP into QSVT angles.
 
     Args:
         angles (array-like): A list or array of angles to be transformed.
@@ -123,23 +124,21 @@ def transform_angles(angles, routine1, routine2):
 
         return angles + update_vals
 
-    if routine1 == "QSVT" and routine2 == "QSP":
-        num_angles = len(angles)
-        update_vals = np.zeros(num_angles)
+    # if routine1 == "QSVT" and routine2 == "QSP":
+    num_angles = len(angles)
+    update_vals = np.zeros(num_angles)
 
-        update_vals[0] = 3 * np.pi / 4 - (3 + len(angles) % 4) * np.pi / 2
-        update_vals[1:-1] = np.pi / 2
-        update_vals[-1] = -np.pi / 4
+    update_vals[0] = 3 * np.pi / 4 - (3 + len(angles) % 4) * np.pi / 2
+    update_vals[1:-1] = np.pi / 2
+    update_vals[-1] = -np.pi / 4
 
-        return angles - update_vals
-
-    return False
+    return angles - update_vals
 
 
 def poly_to_angles(P, routine):
     r"""
     Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP)
-    or quantum singular value transformation (QSVT) routines.
+    or quantum singular value transformation (QSVT) routines. By default, returns QSP angles.
 
     Args:
         P (array-like): Coefficients of the polynomial, ordered from lowest to higher degree.
@@ -157,10 +156,7 @@ def poly_to_angles(P, routine):
         np.array(P, dtype=np.complex128).imag, 0
     ), "Array must not have an imaginary part"
 
-    if routine == "QSP":
-        return QSP_angles(P)
-
     if routine == "QSVT":
         return transform_angles(QSP_angles(P), "QSP", "QSVT")
 
-    return False
+    return QSP_angles(P)
