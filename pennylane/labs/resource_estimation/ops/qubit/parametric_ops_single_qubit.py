@@ -1,8 +1,10 @@
-import numpy as np
 from typing import Dict
+
+import numpy as np
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
+
 
 def _rotation_resources(epsilon=10e-3):
     gate_types = {}
@@ -12,6 +14,7 @@ def _rotation_resources(epsilon=10e-3):
     gate_types[t] = num_gates
 
     return gate_types
+
 
 class ResourcePhaseShift(qml.PhaseShift, re.ResourceConstructor):
     """Resource class for PhaseShift"""
@@ -47,6 +50,7 @@ class ResourceRX(qml.RX, re.ResourceConstructor):
     def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.RX, {"epsilon": epsilon})
 
+
 class ResourceRY(qml.RY, re.ResourceConstructor):
     """Resource class for RY"""
 
@@ -61,6 +65,7 @@ class ResourceRY(qml.RY, re.ResourceConstructor):
     def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.RY, {"epsilon": epsilon})
 
+
 class ResourceRZ(qml.RZ, re.ResourceConstructor):
     """Resource class for RZ"""
 
@@ -74,6 +79,7 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
     @staticmethod
     def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.RZ, {"epsilon": epsilon})
+
 
 class ResourceRot(qml.Rot, re.ResourceConstructor):
     """Resource class for Rot"""

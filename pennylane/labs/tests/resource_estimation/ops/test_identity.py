@@ -1,7 +1,8 @@
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-#pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=use-implicit-booleaness-not-comparison
+
 
 class TestIdentity:
     """Test ResourceIdentity"""

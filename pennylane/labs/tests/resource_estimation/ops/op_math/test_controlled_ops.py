@@ -3,6 +3,7 @@ import pytest
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
+
 class TestControlledPhaseShift:
     """Test ResourceControlledPhaseShift"""
 
@@ -15,8 +16,8 @@ class TestControlledPhaseShift:
         op = re.ResourceControlledPhaseShift(phi, wires)
 
         expected = {
-                re.CompressedResourceOp(qml.CNOT, {}): 2,
-                re.CompressedResourceOp(qml.RZ, {"epsilon": 10e-3}): 3,
+            re.CompressedResourceOp(qml.CNOT, {}): 2,
+            re.CompressedResourceOp(qml.RZ, {"epsilon": 10e-3}): 3,
         }
 
         assert op.resources() == expected
@@ -26,7 +27,7 @@ class TestControlledPhaseShift:
         """Test the resource parameters"""
 
         op = re.ResourceControlledPhaseShift(phi, wires)
-        assert op.resource_params() == {} #pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.resource_params() == {}  # pylint: disable=use-implicit-booleaness-not-comparison
 
     @pytest.mark.parametrize("phi, wires", params)
     def test_resource_rep(self, phi, wires):
@@ -42,7 +43,9 @@ class TestControlledPhaseShift:
         """Test resource_rep_from_op method"""
 
         op = re.ResourceControlledPhaseShift(phi, wires)
-        assert op.resource_rep_from_op() == re.ResourceControlledPhaseShift.resource_rep(**op.resource_params())
+        assert op.resource_rep_from_op() == re.ResourceControlledPhaseShift.resource_rep(
+            **op.resource_params()
+        )
 
     @pytest.mark.parametrize("phi, wires", params)
     def test_resources_from_rep(self, phi, wires):
@@ -51,11 +54,17 @@ class TestControlledPhaseShift:
         op = re.ResourceControlledPhaseShift(phi, wires)
 
         expected = {
-                re.CompressedResourceOp(qml.CNOT, {}): 2,
-                re.CompressedResourceOp(qml.RZ, {"epsilon": 10e-3}): 3,
+            re.CompressedResourceOp(qml.CNOT, {}): 2,
+            re.CompressedResourceOp(qml.RZ, {"epsilon": 10e-3}): 3,
         }
 
-        assert op.resources(**re.ResourceControlledPhaseShift.resource_rep(**op.resource_params()).params) == expected
+        assert (
+            op.resources(
+                **re.ResourceControlledPhaseShift.resource_rep(**op.resource_params()).params
+            )
+            == expected
+        )
+
 
 class TestCNOT:
     """Test ResourceCNOT"""

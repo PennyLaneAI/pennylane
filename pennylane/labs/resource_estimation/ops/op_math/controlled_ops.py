@@ -3,7 +3,8 @@ from typing import Dict
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-#pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors
+
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstructor):
     """Resource class for ControlledPhaseShift"""
@@ -26,6 +27,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstruc
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.ControlledPhaseShift, {})
+
 
 class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
     """Resource class for CNOT"""

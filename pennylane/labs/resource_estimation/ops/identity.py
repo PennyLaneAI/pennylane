@@ -3,7 +3,8 @@ from typing import Dict
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-#pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors
+
 
 class ResourceIdentity(qml.Identity, re.ResourceConstructor):
     """Resource class for Identity"""
@@ -18,6 +19,7 @@ class ResourceIdentity(qml.Identity, re.ResourceConstructor):
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.Identity, {})
+
 
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceConstructor):
     """Resource class for GlobalPhase"""

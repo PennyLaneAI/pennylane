@@ -2,9 +2,12 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import RX, RY, RZ #pylint: disable=unused-import
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import _rotation_resources
+from pennylane import RX, RY, RZ  # pylint: disable=unused-import
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    _rotation_resources,
+)
+
 
 @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
 def test_rotation_resources(epsilon):
@@ -15,6 +18,7 @@ def test_rotation_resources(epsilon):
     t = re.CompressedResourceOp(qml.T, {})
     gate_types[t] = num_gates
     assert gate_types == _rotation_resources(epsilon=epsilon)
+
 
 class TestPauliRotation:
     """Test ResourceRX, ResourceRY, and ResourceRZ"""
@@ -45,6 +49,7 @@ class TestPauliRotation:
         expected = _rotation_resources(epsilon=epsilon)
         assert resource_class.resources(**op.resource_rep(epsilon=epsilon).params) == expected
 
+
 class TestRot:
     """Test ResourceRot"""
 
@@ -52,8 +57,7 @@ class TestRot:
         """Test the resources method"""
 
         op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
-        config = { "error_rx": 10e-3, "error_ry": 10e-3, "error_rz": 10e-3 }
-
+        config = {"error_rx": 10e-3, "error_ry": 10e-3, "error_rz": 10e-3}
 
     def test_resource_rep(self):
         """Test the compressed representation"""

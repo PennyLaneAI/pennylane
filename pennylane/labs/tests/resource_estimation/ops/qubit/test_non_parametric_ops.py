@@ -3,9 +3,10 @@ import pytest
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-#pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=use-implicit-booleaness-not-comparison
 
-class TestHadamard():
+
+class TestHadamard:
     """Tests for ResourceHadamard"""
 
     def test_resources(self):
@@ -24,7 +25,8 @@ class TestHadamard():
         expected = re.CompressedResourceOp(qml.Hadamard, {})
         assert re.ResourceHadamard.resource_rep() == expected
 
-class TestSWAP():
+
+class TestSWAP:
     """Tests for ResourceSWAP"""
 
     def test_resources(self):
@@ -54,7 +56,8 @@ class TestSWAP():
 
         assert op.resources(**re.ResourceSWAP.resource_rep().params) == expected
 
-class TestS():
+
+class TestS:
     """Tests for ResourceS"""
 
     def test_resources(self):
@@ -74,7 +77,8 @@ class TestS():
         expected = {re.CompressedResourceOp(qml.T, {}): 2}
         assert op.resources(**re.ResourceS.resource_rep().params) == expected
 
-class TestT():
+
+class TestT:
     """Tests for ResourceT"""
 
     def test_resources(self):
