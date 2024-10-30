@@ -76,9 +76,7 @@ python -m pip install pennylane
 
 ## Docker support
 
-**Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA
-11.1+) images. [See a more detailed description
-here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#docker).
+Docker images are found on the [PennyLane Docker Hub page](https://hub.docker.com/u/pennylaneai), where there is also a detailed description about PennyLane Docker support. [See description here](https://docs.pennylane.ai/projects/lightning/en/stable/dev/docker.html) for more information.
 
 ## Getting started
 
