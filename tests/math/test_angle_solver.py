@@ -13,10 +13,10 @@
 # limitations under the License.
 """Unit tests for the angle solver for QSP and QSVT."""
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
-from functools import partial
 
 
 @pytest.mark.parametrize(

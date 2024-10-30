@@ -15,13 +15,14 @@
 Contains the implementation of the angle solver for QSP and QSVT.
 """
 
-import pennylane as qml
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
+import pennylane as qml
+
 
 def complementary_poly(P):
-    """
+    r"""
     Computes the complementary polynomial Q given a polynomial P.
 
     The polynomial Q satisfies the following equation:
@@ -60,7 +61,7 @@ def complementary_poly(P):
 
 
 def QSP_angles(F):
-    """
+    r"""
     Computes the Quantum Signal Processing (QSP) angles given a polynomial F.
     Currently works up to polynomials of degree ~1000.
 
@@ -95,7 +96,7 @@ def QSP_angles(F):
 
 
 def transform_angles(angles, routine1, routine2):
-    """
+    r"""
     Transforms a set of angles from one routine's format to another.
 
     This function adjusts the angles according to the specified transformation
@@ -132,9 +133,11 @@ def transform_angles(angles, routine1, routine2):
 
         return angles - update_vals
 
+    return False
+
 
 def poly_to_angles(P, routine):
-    """
+    r"""
     Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP)
     or quantum singular value transformation (QSVT) routines.
 
@@ -159,3 +162,6 @@ def poly_to_angles(P, routine):
 
     if routine == "QSVT":
         return transform_angles(QSP_angles(P), "QSP", "QSVT")
+
+    return False
+
