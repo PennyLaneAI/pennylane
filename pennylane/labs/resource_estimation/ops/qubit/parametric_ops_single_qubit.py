@@ -3,25 +3,33 @@ from typing import Dict
 import numpy as np
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor
+import pennylane.labs.resource_estimation as re
 
 
 def _rotation_resources(epsilon=10e-3):
     gate_types = {}
 
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
-    t = CompressedResourceOp(qml.T, {})
+    t = re.ResourceT.resource_rep()
     gate_types[t] = num_gates
 
     return gate_types
 
+<<<<<<< HEAD
 
 class ResourceRZ(qml.RZ, ResourceConstructor):
+=======
+class ResourceRZ(qml.RZ, re.ResourceConstructor):
+>>>>>>> resource_qft
     """Resource class for RZ"""
 
     @staticmethod
-    def _resource_decomp(epsilon=10e-3) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
 
-    def resource_rep(self, epsilon=10e-3) -> CompressedResourceOp:
-        return CompressedResourceOp(qml.RZ, {"epsilon": epsilon})
+    def resource_params():
+        return {}
+
+    @staticmethod
+    def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(qml.RZ, {"epsilon": epsilon})

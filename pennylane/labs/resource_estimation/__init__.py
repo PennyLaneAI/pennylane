@@ -16,6 +16,7 @@ r"""This module contains experimental resource estimation functionality. """
 from .resource_constructor import ResourceConstructor, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
 
+<<<<<<< HEAD
 from .ops import (
     ResourceCNOT,
     ResourceControlledPhaseShift,
@@ -23,6 +24,16 @@ from .ops import (
     ResourceRZ,
     ResourceT,
 )
+=======
+from .ops import(
+        ResourceCNOT,
+        ResourceControlledPhaseShift,
+        ResourceHadamard,
+        ResourceRZ,
+        ResourceSWAP,
+        ResourceT,
+        )
+>>>>>>> resource_qft
 
 from .templates import (
     ResourceQFT,
