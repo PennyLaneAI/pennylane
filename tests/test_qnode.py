@@ -1723,7 +1723,7 @@ class TestMCMConfiguration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", [None, "best"])
-    def test_defer_measurements_with_jit(self, diff_method, mocker):
+    def test_defer_measurements_with_jit(self, diff_method, mocker, seed):
         """Test that using mcm_method="deferred" defaults to behaviour like
         postselect_mode="fill-shots" when using jax jit."""
         import jax  # pylint: disable=import-outside-toplevel
@@ -1734,7 +1734,7 @@ class TestMCMConfiguration:
         spy = mocker.spy(qml.defer_measurements, "_transform")
         spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_transform")
 
-        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred")
         def f(x):
@@ -1755,9 +1755,8 @@ class TestMCMConfiguration:
         assert qml.math.allclose(res_jit, postselect)
 
     @pytest.mark.jax
-    # @pytest.mark.parametrize("diff_method", [None, "best"])
-    @pytest.mark.parametrize("diff_method", ["best"])
-    def test_deferred_hw_like_error_with_jit(self, diff_method):
+    @pytest.mark.parametrize("diff_method", [None, "best"])
+    def test_deferred_hw_like_error_with_jit(self, diff_method, seed):
         """Test that an error is raised if attempting to use postselect_mode="hw-like"
         with jax jit with mcm_method="deferred"."""
         import jax  # pylint: disable=import-outside-toplevel
@@ -1766,7 +1765,7 @@ class TestMCMConfiguration:
         postselect = 1
         param = jax.numpy.array(np.pi / 2)
 
-        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred", postselect_mode="hw-like")
         def f(x):
