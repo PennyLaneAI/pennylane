@@ -112,7 +112,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
         Args:
             grad (array): The gradient of the objective
-                function at point :math:`x^{(t)}`: :math:`\nabla f\left(x^{(t)}\right)`
+                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
             args (array): the current value of the variables :math:`x^{(t)}`
 
         Returns:
