@@ -164,4 +164,3 @@ def poly_to_angles(P, routine):
         return transform_angles(QSP_angles(P), "QSP", "QSVT")
 
     return False
-
