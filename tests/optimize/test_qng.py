@@ -61,7 +61,7 @@ class TestAttrsAffectingMetricTensor:
         new_params_no_approx = opt.step(circuit, params)
         opt_with_approx = qml.QNGOptimizer()
         new_params_block_approx = opt_with_approx.step(circuit, params)
-        # Expected result, requires some manual calculation
+        # Expected result, requires some manual calculation, compare analytic test cases page
         x = params[0]
         first_term = np.eye(2) / 4
         vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
@@ -90,7 +90,7 @@ class TestAttrsAffectingMetricTensor:
         new_params_with_lam = opt.step(circuit, params)
         opt_without_lam = qml.QNGOptimizer(stepsize=1.0)
         new_params_without_lam = opt_without_lam.step(circuit, params)
-        # Expected result, requires some manual calculation
+        # Expected result, requires some manual calculation, compare analytic test cases page
         x, y = params
         first_term = np.eye(2) / 4
         vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
