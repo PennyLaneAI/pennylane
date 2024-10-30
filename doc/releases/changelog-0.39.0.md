@@ -398,13 +398,19 @@
   and methods of a nested `CompositeOp` or `SProd`.
   [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
 
+  By default, `qml.sum` and `qml.prod` set `lazy=True`, which keeps its operands nested. Given the recursive 
+  nature of such structures, if there are too many levels of nesting, a `RecursionError` would occur 
+  when accessing many of the properties and methods. 
+
 * The performance of the decomposition of `qml.QFT` has been improved.
   [(#6434)](https://github.com/PennyLaneAI/pennylane/pull/6434)
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised 
-  in `JAX 0.4.30+` when providing JAX tracers as input to `qml.wires.Wires`.
+* `qml.wires.Wires` now accepts JAX arrays as input. In many workflows with JAX, PennyLane may attempt 
+  to assign a JAX array to a `Wires` object, which will cause an error since JAX arrays are not hashable. Now, 
+  JAX arrays are valid `Wires` types. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+` 
+  when providing JAX tracers as input to `qml.wires.Wires`.
   [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
 
 * A new function called `qml.capture.make_plxpr` has been added to take a function and create a `Callable` 
