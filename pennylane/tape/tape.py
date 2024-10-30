@@ -376,7 +376,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> measurements = [qml.state()]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tape.circuit
-    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
+    [BasisState([1, 0], wires=[0]), S(0), T(1), state(wires=[])]
 
     They can also be populated into a recording tape via queuing.
 

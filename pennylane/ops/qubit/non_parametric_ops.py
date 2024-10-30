@@ -338,7 +338,7 @@ class PauliX(Observable, Operation):
         **Example**
 
         >>> print(qml.X.compute_diagonalizing_gates(wires=[0]))
-        [Hadamard(wires=[0])]
+        [H(0)]
         """
         return [Hadamard(wires=wires)]
 
@@ -529,7 +529,7 @@ class PauliY(Observable, Operation):
         **Example**
 
         >>> print(qml.Y.compute_diagonalizing_gates(wires=[0]))
-        [Z(0), S(wires=[0]), Hadamard(wires=[0])]
+        [Z(0), S(0), H(0)]
         """
         return [
             Z(wires=wires),
@@ -1459,12 +1459,12 @@ class ISWAP(Operation):
         **Example:**
 
         >>> print(qml.ISWAP.compute_decomposition((0,1)))
-        [S(wires=[0]),
-        S(wires=[1]),
-        Hadamard(wires=[0]),
+        [S(0),
+        S(1),
+        H(0),
         CNOT(wires=[0, 1]),
         CNOT(wires=[1, 0]),
-        Hadamard(wires=[1])]
+        H(1)]
 
         """
         return [

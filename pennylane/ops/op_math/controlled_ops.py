@@ -384,7 +384,7 @@ class CY(ControlledOp):
         **Example:**
 
         >>> print(qml.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1])), S(wires=[0])]
+        [CRY(3.141592653589793, wires=[0, 1])), S(0)]
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
