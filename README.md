@@ -118,17 +118,13 @@ guide](https://pennylane.ai/qml/demos_submission).
 
 PennyLane is at the forefront of research in quantum computing, quantum machine learning, and quantum chemistry. Discover how researchers are using PennyLane.
 
-- **Quantum Computing**
-  - *Example Paper*: [Variational quantum algorithm for molecular geometry optimization
-](https://arxiv.org/abs/2106.13840)
+- **Quantum Computing**: [Fast quantum circuit cutting with randomized measurements](https://quantum-journal.org/papers/q-2023-03-02-934/)
 
-- **Quantum Machine Learning**
-  - *Example Paper*: [Better than classical? The subtle art of benchmarking quantum machine learning models](https://arxiv.org/abs/2403.07059)
+- **Quantum Machine Learning**: [Better than classical? The subtle art of benchmarking quantum machine learning models](https://arxiv.org/abs/2403.07059)
 
-- **Quantum Chemistry**
-  - *Example Paper*: [Accelerating Quantum Computations of Chemistry Through Regularized Compressed Double Factorization](https://quantum-journal.org/papers/q-2024-06-13-1371/)
+- **Quantum Chemistry**: [Accelerating Quantum Computations of Chemistry Through Regularized Compressed Double Factorization](https://quantum-journal.org/papers/q-2024-06-13-1371/)
 
-Impactful research drives PennyLane. Let us know what features you need for your research on [GitHub](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=enhancement+%3Asparkles%3A&projects=&template=feature_request.yml) on on our [research page](https://pennylane.ai/research).
+Impactful research drives PennyLane. Let us know what features you need for your research on [GitHub](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=enhancement+%3Asparkles%3A&projects=&template=feature_request.yml) on our [research page](https://pennylane.ai/research).
 
 
 
