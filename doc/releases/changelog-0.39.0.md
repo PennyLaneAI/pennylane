@@ -400,6 +400,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The wire order for `Snapshot`'s now matches the wire order of the device, rather than the simulation.
+  [(#6461)](https://github.com/PennyLaneAI/pennylane/pull/6461)
+  
 * Fixes a bug where `QNSPSAOptimizer`, `QNGOptimizer` and `MomentumQNGOptimizer` calculate invalid 
   parameter updates if the metric tensor becomes singular.
   [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
