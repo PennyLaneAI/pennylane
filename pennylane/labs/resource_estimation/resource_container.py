@@ -137,11 +137,11 @@ class Resources:
 
     def __iadd__(self, other: "Resources") -> None:
         """Add two resources objects in series"""
-        add_in_series(self, other, in_place=True)
+        return add_in_series(self, other, in_place=True)
 
     def __imull__(self, scaler: int) -> None:
         """Scale a resources object in series"""
-        mul_in_series(self, scaler, in_place=True)
+        return mul_in_series(self, scaler, in_place=True)
 
     def __str__(self):
         """String representation of the Resources object."""

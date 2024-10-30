@@ -1,6 +1,6 @@
 import pennylane as qml
-
 from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor
+
 
 class ResourceQFT(qml.QFT, ResourceConstructor):
     """Resource class for QFT"""
@@ -21,7 +21,7 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
 
         gate_types[hadamard] = num_wires
         gate_types[swap] = num_wires // 2
-        gate_types[ctrl_phase_shift] = num_wires*(num_wires - 1) // 2
+        gate_types[ctrl_phase_shift] = num_wires * (num_wires - 1) // 2
 
         return gate_types
 

@@ -1,9 +1,15 @@
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceHadamard, ResourceT, ResourcesNotDefined
+from pennylane.labs.resource_estimation import (
+    CompressedResourceOp,
+    ResourceHadamard,
+    ResourcesNotDefined,
+    ResourceT,
+)
 
-class TestHadamard():
+
+class TestHadamard:
     """Tests for ResourceHadamard"""
 
     def test_resources(self):
@@ -18,7 +24,8 @@ class TestHadamard():
         expected = CompressedResourceOp(qml.Hadamard, {})
         assert op.resource_rep() == expected
 
-class TestT():
+
+class TestT:
     """Tests for ResourceT"""
 
     def test_resources(self):

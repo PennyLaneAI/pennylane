@@ -5,7 +5,7 @@ from .resource_container import CompressedResourceOp
 
 
 class ResourceConstructor(ABC):
-    r""" This is an abstract class that defines the methods a PennyLane Operator
+    r"""This is an abstract class that defines the methods a PennyLane Operator
     must implement in order to be used for resource estimation.
 
     .. details::
@@ -42,6 +42,7 @@ class ResourceConstructor(ABC):
     def resource_rep(self) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
+
 
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ResourceConstructor does not implement compute_resources"""

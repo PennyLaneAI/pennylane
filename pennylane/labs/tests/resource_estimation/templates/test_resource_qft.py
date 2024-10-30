@@ -3,16 +3,18 @@ import pytest
 import pennylane as qml
 from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceQFT
 
+
 class TestQFT:
     """Test the ResourceQFT class"""
 
-    @pytest.mark.parametrize("num_wires, num_hadamard, num_swap, num_ctrl_phase_shift",
+    @pytest.mark.parametrize(
+        "num_wires, num_hadamard, num_swap, num_ctrl_phase_shift",
         [
             (1, 1, 0, 0),
             (2, 2, 1, 1),
             (3, 3, 1, 3),
             (4, 4, 2, 6),
-        ]
+        ],
     )
     def test_resources(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
         """Test the resources method returns the correct dictionary"""
@@ -20,11 +22,7 @@ class TestQFT:
         swap = CompressedResourceOp(qml.SWAP, {})
         ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
 
-        expected = {
-            hadamard: num_hadamard,
-            swap: num_swap,
-            ctrl_phase_shift: num_ctrl_phase_shift
-        }
+        expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
 
         assert ResourceQFT.resources(num_wires) == expected
 
@@ -37,13 +35,14 @@ class TestQFT:
 
         assert op.resource_rep() == expected
 
-    @pytest.mark.parametrize("num_wires, num_hadamard, num_swap, num_ctrl_phase_shift",
+    @pytest.mark.parametrize(
+        "num_wires, num_hadamard, num_swap, num_ctrl_phase_shift",
         [
             (1, 1, 0, 0),
             (2, 2, 1, 1),
             (3, 3, 1, 3),
             (4, 4, 2, 6),
-        ]
+        ],
     )
     def test_resources_from_rep(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
         """Test that computing the resources from a compressed representation works"""
@@ -52,11 +51,7 @@ class TestQFT:
         swap = CompressedResourceOp(qml.SWAP, {})
         ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
 
-        expected = {
-            hadamard: num_hadamard,
-            swap: num_swap,
-            ctrl_phase_shift: num_ctrl_phase_shift
-        }
+        expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
 
         rep = ResourceQFT(wires=range(num_wires)).resource_rep()
         actual = ResourceQFT.resources(**rep.params)
