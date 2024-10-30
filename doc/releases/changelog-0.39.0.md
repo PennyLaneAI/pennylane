@@ -39,11 +39,11 @@
   ```
 
   The `edges` of the `Lattice` object are nearest-neighbour by default, where we can add edges by using
-  its `add_edge` method.
+  its `add_edge` method. 
 
   Optionally, a `Lattice` object can have interactions and fields endowed to it by specifying values 
   for its `custom_edges` and `custom_nodes` keyword arguments. The Hamiltonian can then be extracted
-  with the `qml.spin.spin_hamiltonian` function. An example is shown below for the same transverse-field 
+  with the `qml.spin.spin_hamiltonian` function. An example is shown below for the transverse-field 
   Ising model Hamiltonian on a :math:`3 \times 3` triangular lattice. Note that the `custom_edges` and 
   `custom_nodes` keyword arguments only need to be defined for one unit cell repetition.
 
@@ -57,13 +57,14 @@
       vectors=[[1, 0], [np.cos(np.pi/3), np.sin(np.pi/3)]],
       positions=[[0, 0]],
       boundary_condition=False,
-      custom_edges=[[edge, ("ZZ", -J)] for edge in edges],
-      custom_nodes=[[i, ("X", -h)] for i in range(3*3)],
+      custom_edges=[[edge, ("ZZ", -1.0)] for edge in edges], 
+      custom_nodes=[[i, ("X", -0.5)] for i in range(3*3)],
   )
   ```
 
   ```pycon
-  >>> hamiltonian == qml.spin.spin_hamiltonian(lattice=lattice)
+  >>> tfim_ham = qml.spin.transverse_ising('triangle', [3, 3], coupling=1.0, h=0.5)
+  >>> tfim_ham == qml.spin.spin_hamiltonian(lattice=lattice)
   True
   ```
 
@@ -79,37 +80,6 @@
 
   These additions accompany `qml.spin.heisenberg`, `qml.spin.transverse_ising`, and `qml.spin.fermi_hubbard`, 
   which were introduced in v0.38. 
-
-  Each Hamiltonian can be instantiated by specifying a `lattice`, the number of [unit cells](https://en.wikipedia.org/wiki/Unit_cell), 
-  `n_cells`, and the Hamiltonian parameters as keyword arguments. The returned object can be used in 
-  a circuit like any other `Hamiltonian` object in PennyLane. Here is an example with the Haldane 
-  model on a `"square"` lattice:
-
-  ```python
-  n_cells = [2, 2]
-  h1 = 0.5
-  h2 = 1.0
-  phi = 0.1
-
-  spin_ham = qml.spin.haldane("square", n_cells, hopping=h1, hopping_next=h2, phi=phi)
-  n_qubits = spin_ham.num_wires
-
-  dev = qml.device("lightning.qubit", wires=n_qubits)
-
-  @qml.qnode(dev)
-  def circuit(params):
-      for i in range(params.shape[0] - 1):
-          qml.CNOT(wires=[i, i + 1])
-          qml.RY(params[i], wires=i)
-
-      return qml.expval(spin_ham)
-  ```
-
-  ```pycon
-  >>> params = pnp.array([1.967]*n_qubits)
-  >>> circuit(params)
-  array(0.61344534)
-  ```
 
 <h4>Calculating Polynomials 🔢</h4>
 
@@ -149,10 +119,10 @@
 
   ```pycon
   >>> circuit()
-  [0 1]
+  array([0, 1])
   ```
 
-  The result, `[0 1]`, is the binary representation of :math:`1`. By default, the result is calculated
+  The result, `[0, 1]`, is the binary representation of :math:`1`. By default, the result is calculated
   modulo :math:`2^\text{len(output_wires)}` but can be overridden with the `mod` keyword argument.
 
 <h4>Readout Noise 📠</h4>
@@ -227,19 +197,19 @@
 
 <h3>Improvements 🛠</h3>
 
-<h4>qjit/jit Compatibility and improvements</h4>
+<h4>qjit/jit compatibility and improvements</h4>
 
-* `qml.AmplitudeAmplification` is now compatible with qjit.
-  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
-
-* The quantum arithmetic templates are now compatible with qjit.
-  [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
+* Several templates are now compatible with qjit:
+  * `qml.AmplitudeAmplification`
+    [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+  * All quantum arithmetic templates
+    [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
+  * `qml.Qubitization`
+    [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
   
-* The `qml.Qubitization` template is now compatible with qjit.
-  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
-
-* All PennyLane templates are now unit tested to ensure jit compatibility.
-  [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
+* The sample-based measurements now support samples that are JAX tracers, allowing compatiblity with 
+  qjit workflows.
+  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
 
 * The `qml.FABLE` template now returns the correct value when jit is enabled.
   [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
@@ -247,31 +217,79 @@
 * `qml.QutritBasisStatePreparation` is now jit compatible.
   [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
 
-* The `SampleMP.process_samples` method has been updated to support using JAX tracers for samples, allowing 
-  compatiblity with qjit workflows.
-  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
+* All PennyLane templates are now unit tested to ensure jit compatibility.
+  [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
 
-<h4>Improvements to fermionic operators</h4>
+<h4>Various improvements to fermionic operators</h4>
 
 * `qml.fermi.FermiWord` and `qml.fermi.FermiSentence` are now compatible with JAX arrays.
   [(#6324)](https://github.com/PennyLaneAI/pennylane/pull/6324)
 
-* The `qml.fermi.FermiWord` class now has a method to apply anti-commutator relations.
+  Fermionic operators interacting, in some way, with a JAX array will no longer raise an error. For 
+  example:
+
+  ```pycon
+  >>> import jax.numpy as jnp
+  >>> w = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+  >>> jnp.array([3]) * w
+  FermiSentence({FermiWord({(0, 0): '+', (1, 1): '-'}): Array([3], dtype=int32)})
+  ```
+
+* The `qml.fermi.FermiWord` class now has a `shift_operator` method to apply anti-commutator relations.
   [(#6196)](https://github.com/PennyLaneAI/pennylane/pull/6196)
 
-* The `qml.fermi.FermiWord` and `qml.fermi.FermiSentence` classes now have methods to compute adjoints.
+  ```pycon
+  >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+  >>> w
+  FermiWord({(0, 0): '+', (1, 1): '-'})
+  >>> w.shift_operator(0, 1)
+  FermiSentence({FermiWord({(0, 1): '-', (1, 0): '+'}): -1})
+  ```
+
+* The `qml.fermi.FermiWord` and `qml.fermi.FermiSentence` classes now an `adjoint` method.
   [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
 
+  ```pycon
+  >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+  >>> w.adjoint()
+  FermiWord({(0, 1): '+', (1, 0): '-'})
+  ```
+
 * The `to_mat` methods for `qml.fermi.FermiWord` and `qml.fermi.FermiSentence` now optionally return
-  a sparse matrix.
+  a sparse matrix with the `format` keyword argument.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
+
+  ```pycon
+  >>> w = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'}) 
+  >>> w.to_mat(format="dense")
+  array([[0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+        [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+        [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+        [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])
+  >>> w.to_mat(format="csr")
+  <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+    with 1 stored elements in Compressed Sparse Row format>
+  ```
 
 * When printed, `qml.fermi.FermiWord` and `qml.fermi.FermiSentence` now return a unique representation 
   of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
-* `qml.qchem.excitations` now optionally returns fermionic operators.
+  ```pycon
+  >>> w = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+  >>> print(w)
+  a⁺(0) a(1)
+  ```
+
+* `qml.qchem.excitations` now optionally returns fermionic operators with a new `fermionic` keyword 
+  argument (defaults to `False`).
   [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
+
+  ```pycon
+  >>> singles, doubles = excitations(electrons, orbitals, fermionic=True)
+  >>> print(singles)
+  [FermiWord({(0, 0): '+', (1, 2): '-'}), FermiWord({(0, 1): '+', (1, 3): '-'})]
+  ```
 
 <h4>A new optimizer</h4>
 
@@ -381,7 +399,7 @@
 
 * A new function called `qml.capture.make_plxpr` has been added to take a function and create a `Callable` 
   that, when called, will return a PLxPR representation of the input function.
-  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)`
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured with PLxPR. 
   When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will dispatch to `jax.grad` 
