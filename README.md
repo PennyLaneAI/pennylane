@@ -51,7 +51,8 @@
 
 - <strong>*Machine learning with quantum hardware and simulators*</strong>. Integrate with **PyTorch**, **TensorFlow**, **JAX**, **Keras**, or **NumPy** to define and train hybrid models using quantum-aware optimizers and hardware-compatible gradients for advanced research tasks. [Quantum machine learning quickstart](https://docs.pennylane.ai/en/stable/introduction/interfaces.html).
 
-- <strong>*Master quantum algorithms*</strong>. From NISQ applications like VQE to fault-tolerant quantum computing, unlock algorithms for research and application. Analyze performance, visualize circuits, and access tools for [quantum chemistry](https://docs.pennylane.ai/en/stable/introduction/chemistry.html) and [algorithm development](https://pennylane.ai/search/?contentType=DEMO&categories=algorithms&sort=publication_date).
+- <strong>*Master quantum algorithms*</strong>. From NISQ to fault-tolerant quantum computing, unlock algorithms for research and application. Analyze performance, visualize circuits, and access tools for [quantum chemistry](https://docs.pennylane.ai/en/stable/introduction/chemistry.html) and [algorithm development](https://pennylane.ai/search/?contentType=DEMO&categories=algorithms&sort=publication_date).
+
 
 
 - <strong>*Quantum datasets*</strong>. Access high-quality, pre-simulated datasets to decrease time-to-research and accelerate algorithm development. [Browse the datasets](https://pennylane.ai/datasets/) or contribute your own data.
