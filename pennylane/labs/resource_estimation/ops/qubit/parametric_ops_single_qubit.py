@@ -43,12 +43,8 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
         return _rotation_resources(epsilon=epsilon)
 
     @staticmethod
-    def compute_resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.RZ, {"epsilon": epsilon})
-
-    @staticmethod
     def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
-        return ResourceRZ.compute_resource_rep(epsilon=epsilon)
+        return re.CompressedResourceOp(qml.RZ, {"epsilon": epsilon})
 
 class ResourceRot(qml.Rot, re.ResourceConstructor):
     """Resource class for Rot"""

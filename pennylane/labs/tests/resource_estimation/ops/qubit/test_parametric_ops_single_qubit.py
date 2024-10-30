@@ -35,7 +35,6 @@ class TestPauliRotation:
         op = resource_class(1.24, wires=0)
         pl_class = globals()[resource_class.__name__[8:]]
         expected = re.CompressedResourceOp(pl_class, {"epsilon": epsilon})
-
         assert op.resource_rep(epsilon=epsilon) == expected
 
     @pytest.mark.parametrize("resource_class, epsilon", params)
@@ -44,8 +43,20 @@ class TestPauliRotation:
 
         op = resource_class(1.24, wires=0)
         expected = _rotation_resources(epsilon=epsilon)
-
         assert resource_class.resources(**op.resource_rep(epsilon=epsilon).params) == expected
 
 class TestRot:
     """Test ResourceRot"""
+
+    def test_resources(self):
+        """Test the resources method"""
+
+        op = re.ResourceRot(0.1, 0.2, 0.3)
+        config = { "error_rx": 10e-3, "error_ry": 10e-3, "error_rz": 10e-3 }
+
+
+    def test_resource_rep(self):
+        """Test the compressed representation"""
+
+    def test_resources_from_rep(self):
+        """Test that the resources can be obtained from the compact representation"""

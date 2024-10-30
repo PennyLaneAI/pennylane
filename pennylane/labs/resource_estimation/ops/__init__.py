@@ -1,3 +1,5 @@
+from .identity import ResourceIdentity
+
 from .qubit import(
         ResourceHadamard,
         ResourceRX,
