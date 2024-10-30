@@ -435,7 +435,6 @@
   or `jax.core.Jaxpr`.
   [(#6319)](https://github.com/PennyLaneAI/pennylane/pull/6319)
 
-
 <h3>Breaking changes 💔</h3>
 
 * Red-herring validation in `QNode.construct` has been removed, which fixes a bug with `qml.GlobalPhase`.
