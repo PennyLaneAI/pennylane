@@ -102,7 +102,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
-        super().__init__(stepsize)
+        super().__init__(stepsize, approx, lam)
         self.momentum = momentum
         self.accumulation = None
 
@@ -133,7 +133,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
             if getattr(arg, "requires_grad", False):
                 grad_flat = pnp.array(list(_flatten(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                qng_update = pnp.linalg.solve(metric_tensor[trained_index], grad_flat)
+                qng_update = pnp.linalg.pinv(metric_tensor[trained_index]) @ grad_flat
 
                 self.accumulation[trained_index] *= self.momentum
                 self.accumulation[trained_index] += self.stepsize * unflatten(
