@@ -31,26 +31,29 @@ if rank == 0:
 
 
 ## Generate Real-space/Taylor Hamiltonian and dipole
-if rank == 0:
-    if localize:
-        min_deg = 2
-    else:
-        min_deg = 3
-    t_ham = vibrational_ham.taylor_integrals(pes, min_deg=min_deg)
-    t_dipole = vibrational_ham.taylor_integrals_dipole(pes, min_deg=min_deg)
+# if rank == 0:
+#     if localize:
+#         min_deg = 2
+#     else:
+#         min_deg = 3
+#     t_ham = vibrational_ham.taylor_integrals(pes, min_deg=min_deg)
+#     t_dipole = vibrational_ham.taylor_integrals_dipole(pes, min_deg=min_deg)
 
 
 #exit()
 ## Generate Christiansen Hamiltonian and dipole
 c_ham = vibrational_ham.christiansen_integrals(pes, nbos=4, do_cubic=True)
-c_dipole = vibrational_ham.christiansen_integrals_dipole(pes, nbos=4)
+c_dipole = vibrational_ham.christiansen_integrals_dipole(pes, nbos=9)
 ## Generate vibrational Hamiltonian
 ham = vibrational_ham.christiansen_bosonic(one=c_ham[0], two=c_ham[1])
 
+## Generate vibrational Dipole
+dipole_x = vibrational_ham.christiansen_bosonic(one=c_dipole[0][0,:,:,:], two=c_dipole[1][0,:,:,:,:,:,:])
+dipole_y = vibrational_ham.christiansen_bosonic(one=c_dipole[0][1,:,:,:], two=c_dipole[1][1,:,:,:,:,:,:])
+dipole_z = vibrational_ham.christiansen_bosonic(one=c_dipole[0][2,:,:,:], two=c_dipole[1][2,:,:,:,:,:,:])
+
 ## Jordan-Wigner transformed Hamiltonian
 ham_jw = vibrational_ham.christiansen_mapping(ham)
-print(ham_jw)
-
 
 # Bosonic Hamiltonian
 #ham = bosonic_form(pes)

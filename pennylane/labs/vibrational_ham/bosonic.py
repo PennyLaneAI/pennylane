@@ -289,6 +289,41 @@ class BoseWord(dict):
 
         return operator
 
+    def normal_order(self):
+        r""" Convert a BoseWord to its normal-ordered form."""
+        
+        bw_terms = sorted(self)
+        len_op = len(bw_terms)
+        bw_comm = BoseSentence({BoseWord({}): 0.0})
+        for i in range(1, len_op):
+            for j in range(i, 0, -1):
+                key_r = bw_terms[j]
+                key_l = bw_terms[j-1]
+
+                if self[key_l] == "-" and self[key_r] == "+":
+                    bw_terms[j] = key_l
+                    bw_terms[j-1] = key_r
+
+                    # Add the term for commutator
+                    if key_r[1] == key_l[1]:
+                        term_dict_comm = {}
+                        j = 0
+                        for key, value in self.items():
+                            if key not in [key_r, key_l]:
+                                term_dict_comm[(j, key[1])] = value
+                                j += 1
+                        bw_comm += BoseWord(term_dict_comm).normal_order()
+
+        bose_dict = {}
+        for i in range(len_op):
+            bose_dict[(i, bw_terms[i][1])] = self[bw_terms[i]]
+            
+        ordered_op = BoseWord(bose_dict) + bw_comm
+        ordered_op.simplify(tol=1e-8)
+        return ordered_op
+               
+        
+
 # pylint: disable=useless-super-delegation
 class BoseSentence(dict):
     r"""Immutable dictionary used to represent a Bose sentence, a linear combination of Bose words, with the keys
@@ -488,64 +523,14 @@ class BoseSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
+    def normal_order(self):
+        ordered_dict = {}  # Empty PS as 0 operator to add Pws to
 
-def normal_order(bose_operator: Union[BoseWord, BoseSentence]):
-    r"""Convert a bosonic operator to normal-ordered form.
-    Args:
-      bose_operator(BoseWord, BoseSentence): the bosonic operator
+        for bw, coeff in self.items():
+            bose_word_ordered = bw.normal_order()
+            for bw_ord, coeff_ord in bose_word_ordered.items():
+                ordered_dict[bw_ord] = coeff_ord*coeff
 
-    Returns:
-      normal-ordered bosonic operator
-    
-    """
-    return _normal_order_dispatch(bose_operator)
-
-@singledispatch
-def _normal_order_dispatch(bose_operator):
-    """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
-    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
-
-@_normal_order_dispatch.register
-def _(bose_operator: BoseWord):
-
-    bw_terms = sorted(bose_operator)
-    len_op = len(bw_terms)
-    bw_comm = BoseSentence({BoseWord({}): 0.0})
-    for i in range(1, len_op):
-        for j in range(i, 0, -1):
-            key_r = bw_terms[j]
-            key_l = bw_terms[j-1]
-
-            if bose_operator[key_l] == "-" and bose_operator[key_r] == "+":
-                bw_terms[j] = key_l
-                bw_terms[j-1] = key_r
-
-                # Add the term for commutator
-                if key_r[1] == key_l[1]:
-                    term_dict_comm = {key: value for key, value in bose_operator.items()
-                                       if key not in [key_r, key_l]}
-                    bw_comm += normal_order(BoseWord(term_dict_comm))
-
-    bose_dict = {}
-    for i in range(len_op):
-        bose_dict[(i, bw_terms[i][1])] = bose_operator[bw_terms[i]]
-
-    ordered_op = BoseWord(bose_dict) + bw_comm
-    ordered_op.simplify(tol=1e-8)
-
-    return ordered_op
-
-               
-@_normal_order_dispatch.register
-def _(bose_operator: BoseSentence):
-
-    ordered_dict = {}  # Empty PS as 0 operator to add Pws to
-
-    for bw, coeff in bose_operator.items():
-        bose_word_ordered = normal_order(bw)
-        for bw_ordered in bose_word_ordered:
-            ordered_dict[bw_ordered] = coeff
-
-    bose_sen_ordered = BoseSentence(ordered_dict)
-    return bose_sen_ordered
-
+        bose_sen_ordered = BoseSentence(ordered_dict)
+        return bose_sen_ordered
+        

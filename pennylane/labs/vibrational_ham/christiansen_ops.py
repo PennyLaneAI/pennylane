@@ -250,3 +250,30 @@ def christiansen_hamiltonian(pes, nbos=16, do_cubic=False):
     return cform_qubit
 
 
+def christiansen_dipole(pes, nbos=16, do_cubic=False):
+
+    d_arr = christiansen_integrals_dipole(pes, nbos=nbos, do_cubic=do_cubic)
+
+    one_x = d_arr[0][0,:,:,:]
+    two_x = d_arr[1][0,:,:,:,:,:,:] if len(d_arr) > 1 else None
+    three_x = d_arr[2][0,:,:,:,:,:,:,:,:,:] if len(d_arr)==3 else None
+    cform_bosonic_x = christiansen_bosonic(one=one_x, two=two_x, three=three_x)
+    print(cform_bosonic_x)
+    cform_qubit_x = christiansen_mapping(cform_bosonic_x)
+
+    one_y = d_arr[0][1,:,:,:]
+    two_y = d_arr[1][1,:,:,:,:,:,:] if len(d_arr) > 1 else None
+    three_y = d_arr[2][1,:,:,:,:,:,:,:,:,:] if len(d_arr)==3 else None
+    cform_bosonic_y = christiansen_bosonic(one=one_y, two=two_y, three=three_y)
+    cform_qubit_y = christiansen_mapping(cform_bosonic_y)
+
+    one_z = d_arr[0][2,:,:,:]
+    two_z = d_arr[1][2,:,:,:,:,:,:] if len(d_arr) > 1 else None
+    three_z = d_arr[2][2,:,:,:,:,:,:,:,:,:] if len(d_arr)==3 else None
+    cform_bosonic_z = christiansen_bosonic(one=one_z, two=two_z, three=three_z)
+    cform_qubit_z = christiansen_mapping(cform_bosonic_z)
+
+    
+    return cform_qubit_x, cform_qubit_y, cform_qubit_z
+
+
