@@ -120,7 +120,7 @@ Once the transform program has been applied to a batch of circuits, that batch s
 
 These two tasks can be extracted into private methods or helper functions if that improves source code organization.
 
-See the section on the :ref:`**Execution Config** <execution_config>` below for more information on step 2.
+See the section on the :ref:`Execution Config <execution_config>` below for more information on step 2.
 
 Once a program is created, an individual transform can be added to the program with the
 :meth:`~.TransformProgram.add_transform` method.
@@ -219,7 +219,7 @@ the :meth:`~.QuantumScript.map_to_standard_wires` method can be used inside of
 the :meth:`~.devices.Device.execute` method. The :class:`~.map_wires` transform can also 
 map the wires of the submitted circuit to internal labels.
 
-Sometimes hardware qubit labels cannot be arbitrarily mapped without a change in behaviour.
+Sometimes, hardware qubit labels cannot be arbitrarily mapped without a change in behaviour.
 Connectivity, noise, performance, and
 other constraints can make it so that operations on qubit 1 cannot be arbitrarily exchanged with the same operation
 on qubit 2. In such a situation, the device can hard code a list of the only acceptable wire labels. In such a case, it
