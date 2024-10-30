@@ -20,6 +20,90 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+class TestBasics:
+    """Test basic properties of the QNGOptimizer."""
+
+    def test_initialization_default(self):
+        """Test that initializing QNGOptimizer with default values works."""
+        opt = qml.QNGOptimizer()
+        assert opt.stepsize == 0.01
+        assert opt.approx == "block-diag"
+        assert opt.lam == 0
+        assert opt.metric_tensor is None
+
+    def test_initialization_custom_values(self):
+        """Test that initializing QNGOptimizer with custom values works."""
+        opt = qml.QNGOptimizer(stepsize=0.05, approx="diag", lam=1e-9)
+        assert opt.stepsize == 0.05
+        assert opt.approx == "diag"
+        assert opt.lam == 1e-9
+        assert opt.metric_tensor is None
+
+
+class TestAttrsAffectingMetricTensor:
+    """Test that the attributes `approx` and `lam`, which affect the metric tensor
+    and its inversion, are used correctly."""
+
+    def test_no_approx(self):
+        """Test that the full metric tensor is used correctly for ``approx=None``."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(eta, wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        opt = qml.QNGOptimizer(approx=None)
+        eta = 0.7
+        params = np.array([0.11, 0.412])
+        new_params_no_approx = opt.step(circuit, params)
+        opt_with_approx = qml.QNGOptimizer()
+        new_params_block_approx = opt_with_approx.step(circuit, params)
+        # Expected result, requires some manual calculation
+        x = params[0]
+        first_term = np.eye(2) / 4
+        vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
+        second_term = np.real(np.outer(vec_potential.conj(), vec_potential))
+        exp_mt = first_term - second_term
+
+        assert np.allclose(opt.metric_tensor, exp_mt)
+        assert np.allclose(opt_with_approx.metric_tensor, np.diag(np.diag(exp_mt)))
+        assert not np.allclose(new_params_no_approx, new_params_block_approx)
+
+    def test_lam(self):
+        """Test that the regularization ``lam`` is used correctly."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(eta, wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        lam = 1e-9
+        opt = qml.QNGOptimizer(lam=lam, stepsize=1.0)
+        eta = np.pi
+        params = np.array([np.pi / 2, 0.412])
+        new_params_with_lam = opt.step(circuit, params)
+        opt_without_lam = qml.QNGOptimizer(stepsize=1.0)
+        new_params_without_lam = opt_without_lam.step(circuit, params)
+        # Expected result, requires some manual calculation
+        x, y = params
+        first_term = np.eye(2) / 4
+        vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
+        second_term = np.real(np.outer(vec_potential.conj(), vec_potential))
+        exp_mt = first_term - second_term
+
+        assert np.allclose(opt.metric_tensor, exp_mt + np.eye(2) * lam)
+        assert np.allclose(opt_without_lam.metric_tensor, np.diag(np.diag(exp_mt)))
+        # With regularization, y can be updated. Without regularization it can not.
+        assert np.isclose(new_params_without_lam[1], y)
+        assert not np.isclose(new_params_with_lam[1], y, atol=1e-11, rtol=0.0)
+
+
 class TestExceptions:
     """Test exceptions are raised for incorrect usage"""
 
