@@ -1,6 +1,7 @@
 import pytest
 
 import pennylane as qml
+
 <<<<<<< HEAD
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
@@ -11,6 +12,7 @@ from pennylane.labs.resource_estimation import (
 
 =======
 import pennylane.labs.resource_estimation as re
+
 >>>>>>> resource_qft
 
 class TestControlledPhaseShift:

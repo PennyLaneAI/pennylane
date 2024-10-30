@@ -26,6 +26,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstruc
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.ControlledPhaseShift, {})
 
+
 class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
     """Resource class for CNOT"""
 

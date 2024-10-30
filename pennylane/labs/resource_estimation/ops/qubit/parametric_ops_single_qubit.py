@@ -15,6 +15,7 @@ def _rotation_resources(epsilon=10e-3):
 
     return gate_types
 
+
 class ResourceRZ(qml.RZ, re.ResourceConstructor):
     """Resource class for RZ"""
 
