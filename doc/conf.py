@@ -90,10 +90,6 @@ mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
 
-mathjax_config = {
-    "SVG": { "font": "STIX-Web" }
-}
-
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
 
 # Add any paths that contain templates here, relative to this directory.
