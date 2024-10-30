@@ -38,12 +38,12 @@ class MomentumQNGOptimizer(QNGOptimizer):
     In this way, the parameter update rule in Momentum-QNG reads:
 
     .. math::
-        x^{(t+1)} = x^{(t)} + \rho \left(x^{(t)} - x^{(t-1)}\right) - \eta g\left(f\left(x^{(t)}\right)\right)^{-1} \nabla f\left(x^{(t)}\right),
+        x^{(t+1)} = x^{(t)} + \rho (x^{(t)} - x^{(t-1)}) - \eta g(f(x^{(t)}))^{-1} \nabla f(x^{(t)}),
 
-    where :math:`\eta` is the stepsize (learning rate), :math:`g\left(f\left(x^{(t)}\right)\right)^{-1}` is the pseudo-inverse
-    of the Fubini-Study metric tensor and :math:`f\left(x^{(t)}\right) = \langle 0 | U\left(x^{(t)}\right)^\dagger \hat{B} U\left(x^{(t)}\right) | 0 \rangle`
+    where :math:`\eta` is a stepsize (learning rate) value, :math:`g(f(x^{(t)}))^{-1}` is the pseudo-inverse
+    of the Fubini-Study metric tensor and :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
     is an expectation value of some observable measured on the variational
-    quantum circuit :math:`U\left(x^{(t)}\right)`.
+    quantum circuit :math:`U(x^{(t)})`.
 
     **Examples:**
 
