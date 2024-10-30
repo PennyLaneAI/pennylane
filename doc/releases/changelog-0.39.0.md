@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Added functions `get_best_diff_method` to `qml.workflow`.
+* Added function `get_best_diff_method` to `qml.workflow`.
   [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
 
 * Add `qml.workflow.construct_tape` as a method for users to construct single tapes from a `QNode`.
@@ -145,7 +145,7 @@
   can now be generated.
   [(6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
 
-* A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
+* A `ReferenceQubit` device is introduced for testing purposes and as a reference for future plugin development.
   [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
 
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
@@ -165,7 +165,7 @@
 <h4>Quantum information measurements</h4>
 
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
-  `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
+  `ExpectationMP`, `VarianceMP`, `PurityMP`, `MutualInfoMP`, and `VnEntropyMP`.
   This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
   facilitating future support for mixed-state devices and expanded density matrix operations. Also, there is a quick fix for the `np.sqrt` call in the `ProbabilityMP` class to be replaced by `qml.math.sqrt`.
   [(#6330)](https://github.com/PennyLaneAI/pennylane/pull/6330)
@@ -282,12 +282,13 @@
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF`, `DefaultQubitTorch`, `DefaultQubitJax`, and `DefaultQubitAutograd` are removed.
+* `DefaultQubitLegacy`, `DefaultQubitTF`, `DefaultQubitTorch`, `DefaultQubitJax`, and `DefaultQubitAutograd` are removed.
   Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
   [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
   [(#6210)](https://github.com/PennyLaneAI/pennylane/pull/6210)
+  [(#6266)](https://github.com/PennyLaneAI/pennylane/pull/6266)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
