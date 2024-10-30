@@ -894,6 +894,8 @@ class TestAdjointConstructorPreconstructedOp:
         for op in q.queue:
             assert op.name == "Adjoint(QSVT)"
 
+        assert len(q.queue) == 2
+
 
 class TestAdjointConstructorDifferentCallableTypes:
     """Test the adjoint transform on a variety of possible inputs."""

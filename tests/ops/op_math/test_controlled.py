@@ -1881,6 +1881,8 @@ class TestCtrl:
         for op in q.queue:
             assert op.name == "C(QSVT)"
 
+        assert len(q.queue) == 2
+
 
 class _Rot(Operation):
     """A rotation operation that is not an instance of Rot

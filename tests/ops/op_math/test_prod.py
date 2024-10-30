@@ -1435,6 +1435,8 @@ class TestWrapperFunc:
         for op in q.queue:
             assert op.name == "QSVT"
 
+        assert len(q.queue) == 2
+
 
 class TestIntegration:
     """Integration tests for the Prod class."""
