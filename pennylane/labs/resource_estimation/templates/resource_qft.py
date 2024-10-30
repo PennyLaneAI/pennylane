@@ -1,12 +1,8 @@
 from typing import Dict
 
 import pennylane as qml
-<<<<<<< HEAD
-from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor
-=======
 
 from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor, ResourceHadamard, ResourceSWAP, ResourceControlledPhaseShift
->>>>>>> resource_qft
 
 
 class ResourceQFT(qml.QFT, ResourceConstructor):

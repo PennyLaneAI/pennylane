@@ -75,14 +75,11 @@ class ResourceConstructor(ABC):
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-<<<<<<< HEAD
-=======
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
         params = self.resource_params()
         return self.__class__.resource_rep(**params)
 
->>>>>>> resource_qft
 
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ``ResourceConstructor`` does not implement _resource_decomp"""
