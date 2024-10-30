@@ -452,7 +452,42 @@ class TestInitialization:
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qml.ops.functions.assert_valid(op)
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+
+    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
+    def test_differentiation(self, hamiltonian):
+        """Tests the differentiation of the TrotterProduct with parameter-shift"""
+
+        time, n, order = (4.2, 10, 4)
+
+        dev = qml.device("default.qubit")
+        time = qml.numpy.array(time)
+        coeffs, _ = hamiltonian.terms()
+
+        # FIXME: setting private attribute `_coeffs` as work around
+        @qml.qnode(dev, diff_method="backprop")
+        def circ_bp(coeffs, time):
+            hamiltonian._coeffs = coeffs
+            qml.TrotterProduct(hamiltonian, time, n, order)
+            return qml.probs()
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circ_ps(coeffs, time):
+            hamiltonian._coeffs = coeffs
+            qml.TrotterProduct(hamiltonian, time, n, order)
+            return qml.probs()
+
+        expected_bp = qml.jacobian(circ_bp)(coeffs, time)
+        ps = qml.jacobian(circ_ps)(coeffs, time)
+
+        error_msg = (
+            "Parameter-shift does not produce the same Jacobian as with backpropagation. "
+            "This might be a bug, or it might be expected due to the mathematical nature "
+            "of backpropagation, in which case, this test can be skipped for this operator."
+        )
+
+        for actual, expected in zip(ps, expected_bp):
+            assert qml.math.allclose(actual, expected), error_msg
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
