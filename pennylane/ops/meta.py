@@ -15,6 +15,8 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
+from collections.abc import Hashable
+
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 from copy import copy
 from typing import Optional
@@ -216,10 +218,9 @@ class Snapshot(Operation):
 
         if measurement is None:
             measurement = qml.state()
-
+        if isinstance(measurement, qml.measurements.MidMeasureMP):
+            raise ValueError("Mid-circuit measurements can not be used in snapshots.")
         if isinstance(measurement, qml.measurements.MeasurementProcess):
-            if isinstance(measurement, qml.measurements.MidMeasureMP):
-                raise ValueError("Mid-circuit measurements can not be used in snapshots.")
             qml.queuing.QueuingManager.remove(measurement)
         else:
             raise ValueError(
@@ -250,6 +251,10 @@ class Snapshot(Operation):
 
     def adjoint(self):
         return Snapshot(tag=self.tag, measurement=self.hyperparameters["measurement"])
+
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Snapshot":
+        new_measurement = self.hyperparameters["measurement"].map_wires(wire_map)
+        return Snapshot(tag=self.tag, measurement=new_measurement)
 
 
 # Since measurements are captured as variables in plxpr with the capture module,
