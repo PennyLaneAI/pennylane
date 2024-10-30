@@ -103,21 +103,7 @@ jobs:
       - name: Set fail-fast for WAE
         id: mat_fail_fast
         run: |
-          if [ "${{ contains(inputs.python_warning_level, 'default') }}" ];
-          then
-            cat >python_warning_level.json <<-EOF
-          {
-            "matrix-fail-fast": "default"
-          }
-          EOF
-          else
-            cat >python_warning_level.json <<-EOF
-          {
-            "matrix-fail-fast": "error"
-          }
-          EOF
-          fi
-          echo "fail_fast=$(jq -r tostring python_warning_level.json)" >> $GITHUB_OUTPUT
+          echo "fail_fast=${{ contains(inputs.python_warning_level, 'default') && 'default' || 'error' }}" >> $GITHUB_OUTPUT
 
     outputs:
       matrix-fail-fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
