@@ -202,14 +202,14 @@ def excitations(electrons, orbitals, delta_sz=0, fermionic=False):
     .. math::
 
         && \hat{T}_1 = \sum_{r \in \mathrm{occ} \\ p \in \mathrm{unocc}}
-        \hat{c}_p^{\,\dagger} \hat{c}_r \\
+        \hat{c}_p^{\dagger} \hat{c}_r \\
         && \hat{T}_2 = \sum_{r>s \in \mathrm{occ} \\ p>q \in
-        \mathrm{unocc}} \hat{c}_p^{\,\dagger} \hat{c}_q^{\,\dagger} \hat{c}_r \hat{c}_s.
+        \mathrm{unocc}} \hat{c}_p^{\dagger} \hat{c}_q^{\dagger} \hat{c}_r \hat{c}_s.
 
 
     In the equations above the indices :math:`r, s` and :math:`p, q` run over the
     occupied (occ) and unoccupied (unocc) *spin* orbitals and :math:`\hat{c}` and
-    :math:`\hat{c}^{\,\dagger}` are the electron annihilation and creation operators,
+    :math:`\hat{c}^{\dagger}` are the electron annihilation and creation operators,
     respectively.
 
     |
