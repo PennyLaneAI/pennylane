@@ -815,6 +815,13 @@ class S(Operation):
 
     batch_size = None
 
+    def __repr__(self) -> str:
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"S('{wire}')"
+        return f"S({wire})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -927,6 +934,13 @@ class T(Operation):
 
     batch_size = None
 
+    def __repr__(self) -> str:
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"T('{wire}')"
+        return f"T({wire})"
+
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1036,6 +1050,13 @@ class SX(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    def __repr__(self) -> str:
+        """String representation."""
+        wire = self.wires[0]
+        if isinstance(wire, str):
+            return f"SX('{wire}')"
+        return f"SX({wire})"
 
     @staticmethod
     @lru_cache()
@@ -1322,7 +1343,7 @@ class ECR(Operation):
 
         [Z(0),
          CNOT(wires=[0, 1]),
-         SX(wires=[1]),
+         SX(1),
          RX(1.5707963267948966, wires=[0]),
          RY(1.5707963267948966, wires=[0]),
          RX(1.5707963267948966, wires=[0])]
@@ -1563,18 +1584,18 @@ class SISWAP(Operation):
         **Example:**
 
         >>> print(qml.SISWAP.compute_decomposition((0,1)))
-        [SX(wires=[0]),
+        [SX(0),
         RZ(1.5707963267948966, wires=[0]),
         CNOT(wires=[0, 1]),
-        SX(wires=[0]),
+        SX(0),
         RZ(5.497787143782138, wires=[0]),
-        SX(wires=[0]),
+        SX(0),
         RZ(1.5707963267948966, wires=[0]),
-        SX(wires=[1]),
+        SX(1),
         RZ(5.497787143782138, wires=[1]),
         CNOT(wires=[0, 1]),
-        SX(wires=[0]),
-        SX(wires=[1])]
+        SX(0),
+        SX(1)]
 
         """
         return [
