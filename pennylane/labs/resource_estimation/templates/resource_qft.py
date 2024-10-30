@@ -36,7 +36,7 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
     def resource_params(self):
         return {"num_wires": len(self.wires)}
 
-    @staticmethod
-    def resource_rep(num_wires) -> CompressedResourceOp:
+    @classmethod
+    def resource_rep(cls, num_wires) -> CompressedResourceOp:
         params = {"num_wires": num_wires}
-        return CompressedResourceOp(qml.QFT, params)
+        return CompressedResourceOp(cls, params)

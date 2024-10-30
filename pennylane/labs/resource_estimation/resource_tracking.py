@@ -13,13 +13,15 @@
 # limitations under the License.
 r"""Core resource tracking logic."""
 from collections import defaultdict
+from collections.abc import Callable
 from functools import singledispatch, wraps
-from typing import Callable, Dict, Iterable, List, Set, Union
+from typing import Dict, Iterable, List, Set, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operation
-from pennylane.tape import AnnotatedQueue, QuantumScript
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumScript
 
 from .resource_constructor import ResourceConstructor
 from .resource_container import CompressedResourceOp, Resources, mul_in_series
@@ -58,9 +60,7 @@ resource_config = {
 
 
 @singledispatch
-def get_resources(
-    obj, gate_set: Set = DefaultGateSet, config: Dict[str] = resource_config
-) -> Resources:
+def get_resources(obj, gate_set: Set = DefaultGateSet, config: Dict = resource_config) -> Resources:
     """Obtain the resources from a quantum circuit or operation in terms of the gates provided
     in the gate_set.
 
@@ -83,7 +83,7 @@ def get_resources(
 
 @get_resources.register
 def resources_from_operation(
-    obj: Operation, gate_set: Set = DefaultGateSet, config: Dict[str] = resource_config
+    obj: Operation, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Resources:
     """Get resources from an operation"""
     res = Resources()  # TODO: Add implementation here!
@@ -92,7 +92,7 @@ def resources_from_operation(
 
 @get_resources.register
 def resources_from_qfunc(
-    obj: Callable, gate_set: Set = DefaultGateSet, config: Dict[str] = resource_config
+    obj: Callable, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Resources:
     """Get resources from a quantum function which queues operations!"""
 
@@ -127,7 +127,7 @@ def resources_from_qfunc(
 
 @get_resources.register
 def resources_from_tape(
-    obj: QuantumScript, gate_set: Set = DefaultGateSet, config: Dict[str] = resource_config
+    obj: QuantumScript, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Resources:
     """Get resources from a quantum tape"""
     num_wires = obj.num_wires
@@ -158,7 +158,7 @@ def _counts_from_compressed_res_op(
     gate_counts_dict,
     gate_set: Set,
     scaler: int = 1,
-    config: Dict[str] = resource_config,
+    config: Dict = resource_config,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
@@ -167,7 +167,7 @@ def _counts_from_compressed_res_op(
         gate_counts_dict (_type_): base dictionary to modify with the resource counts
         gate_set (Set): the set of operations to track resources with respect too
         scaler (int, optional): optional scaler to multiply the counts. Defaults to 1.
-        config (Dict[str], optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
+        config (Dict, optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
     """
     ## If op in gate_set add to resources
     if cp_rep._name in gate_set:
@@ -175,7 +175,7 @@ def _counts_from_compressed_res_op(
         return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
-    resource_decomp = cp_rep.op_type.resources(config=config, **cp_rep.params)
+    resource_decomp = cp_rep.op_type.resources(**cp_rep.params, config=config)
 
     for sub_cp_rep, counts in resource_decomp.items():
         _counts_from_compressed_res_op(
