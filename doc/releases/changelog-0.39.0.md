@@ -87,9 +87,9 @@
 
 <h4>Readout Noise 📠</h4>
 
-* Support for applying readout errors to a quantum circuit has been added via the ``NoiseModel`` class
-  and ``add_noise`` transform. One can specify conditions on measurement processes for this purpose via
-  ``qml.noise.meas_eq(mps)``.
+* Support for applying readout errors to a quantum circuit has been added via the `NoiseModel` class
+  and `add_noise` transform. One can specify conditions on measurement processes for this purpose via
+  `qml.noise.meas_eq(mps)`.
   [(#6321)](https://github.com/PennyLaneAI/pennylane/pull/6321/)
 
 <h4>User-friendly decompositions 📠</h4>
@@ -325,7 +325,7 @@
 
 * Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
-  Note that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to
+  Note that when new operator arithmetic is enabled, `qml.Hamiltonian` will continue to dispatch to
   `qml.ops.LinearCombination`; this behaviour is not deprecated. For more information, check out the
   [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
