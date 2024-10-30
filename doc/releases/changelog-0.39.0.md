@@ -275,6 +275,9 @@
 * The `qml.FABLE` template now returns the correct value when jit is enabled.
   [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
 
+* `qml.metric_tensor` is now jit compatible.
+  [(#6468)](https://github.com/PennyLaneAI/pennylane/pull/6468)
+
 * `qml.QutritBasisStatePreparation` is now jit compatible.
   [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
 
@@ -445,7 +448,7 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
-* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
+* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the
   diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
   each observable on the tape are included just once.
   [(#6288)](https://github.com/PennyLaneAI/pennylane/pull/6288)
@@ -649,13 +652,25 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable module is used.
+* The wire order for `Snapshot`'s now matches the wire order of the device, rather than the simulation.
+  [(#6461)](https://github.com/PennyLaneAI/pennylane/pull/6461)
+  
+* Fixes a bug where `QNSPSAOptimizer`, `QNGOptimizer` and `MomentumQNGOptimizer` calculate invalid 
+  parameter updates if the metric tensor becomes singular.
+  [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
+
+* The `default.qubit` device now supports parameter broadcasting with `qml.classical_shadow` and `qml.shadow_expval`.
+  [(#6301)](https://github.com/PennyLaneAI/pennylane/pull/6301)
+
+* Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that
+  was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable
+  module is used.
   [(#6437)](https://github.com/PennyLaneAI/pennylane/pull/6437)
 
 * Patches the `math` module to function with autoray 0.7.0.
   [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
 
-* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`. 
+* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`.
   [(#6423)](https://github.com/PennyLaneAI/pennylane/pull/6423)
 
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
