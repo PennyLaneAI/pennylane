@@ -19,7 +19,7 @@ from numpy import ndarray
 import numpy as np
 from pennylane.typing import TensorLike
 import pennylane as qml
-from pennylane.labs.vibrational_ham.real_space_ham import _find_2d_degs, _find_3d_degs
+from pennylane.labs.vibrational_ham.taylorForm import _twobody_degs, _threebody_degs
 from functools import singledispatch
 from typing import Union
 
@@ -518,6 +518,8 @@ def _(bose_operator: BoseWord):
             key_r = bw_terms[j]
             key_l = bw_terms[j-1]
 
+            print(key_r)
+
             if bose_operator[key_l] == "-" and bose_operator[key_r] == "+":
                 bw_terms[j] = key_l
                 bw_terms[j-1] = key_r
@@ -526,6 +528,7 @@ def _(bose_operator: BoseWord):
                 if key_r[1] == key_l[1]:
                     term_dict_comm = {key: value for key, value in bose_operator.items()
                                        if key not in [key_r, key_l]}
+                    print(term_dict_comm)
                     bw_comm += normal_order(BoseWord(term_dict_comm))
 
     bose_dict = {}
@@ -588,6 +591,7 @@ def taylor_to_bosonic(taylor_arr, start_deg = 2, verbose=True):
             if verbose:
                 print(f"q{m}^{deg_i} --> {taylor_1D[m,deg_i-start_deg]}")
             qpow = qm ** deg_i
+            print(qpow)
             op_arr.append(normal_order(taylor_1D[m,deg_i-start_deg] * qpow))
             if verbose:
                 print(f"Added associated operator {op_arr[-1]}")
@@ -596,7 +600,7 @@ def taylor_to_bosonic(taylor_arr, start_deg = 2, verbose=True):
         if verbose:
             print("Printing two-mode expansion coefficients:")
         taylor_2D = taylor_arr[1]
-        degs_2d = _find_2d_degs(taylor_deg, min_deg = start_deg)
+        degs_2d = _twobody_degs(taylor_deg, min_deg = start_deg)
         for m1 in range(M):
             qm1 = _q_to_bos(m1)
             for m2 in range(m1):
@@ -615,7 +619,7 @@ def taylor_to_bosonic(taylor_arr, start_deg = 2, verbose=True):
     if num_coups > 2:
         if verbose:
             print("Printing three-mode expansion coefficients:")
-        degs_3d = _find_3d_degs(taylor_deg, min_deg=start_deg)
+        degs_3d = _threebody_degs(taylor_deg, min_deg=start_deg)
         taylor_3D = taylor_arr[2]
         for m1 in range(M):
             qm1 = _q_to_bos(m1)

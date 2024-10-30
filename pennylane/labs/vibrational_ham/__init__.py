@@ -14,7 +14,7 @@ from .taylorForm import taylor_integrals, taylor_integrals_dipole
 
 from .christiansenForm import christiansen_integrals, christiansen_integrals_dipole
 
-from .christiansen_ops import christiansen_mapping, christiansen_bosonic, christiansen_hamiltonian, christiansen_dipole
+from .christiansen_ops import christiansen_mapping, christiansen_bosonic, christiansen_hamiltonian
 
 from .bosonic import BoseWord, BoseSentence, normal_order
 
