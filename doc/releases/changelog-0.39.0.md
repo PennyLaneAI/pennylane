@@ -8,7 +8,7 @@
 
 * Functionality for creating custom Hamiltonians on arbitrary lattices has been added.
   [(#6226)](https://github.com/PennyLaneAI/pennylane/pull/6226)
-  [(6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
+  [(#6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
 
   Hamiltonians beyond the available boiler-plate ones in the `qml.spin` module can be created with the 
   addition of three new functions:
@@ -39,28 +39,7 @@
   ```
 
   The `edges` of the `Lattice` object are nearest-neighbour by default, where we can add edges by using
-  its `add_edge` method. With nearest-neighbour interactions, we can construct a transverse-field Ising 
-  model on the lattice, for example:
-
-  ```python
-  hamiltonian = 0.0
-  J = 1.0
-  h = 0.5
-
-  for edge in lattice.edges:
-      i, j = edge[0], edge[1]
-      hamiltonian -= J * qml.Z(i) @ qml.Z(j)
-
-  for node in range(lattice.n_sites):
-      hamiltonian -= h * qml.X(node)
-  ```
-
-  This is equivalent to using `qml.spin.transverse_ising` in the following way:
-
-  ```pycon
-  >>> hamiltonian == qml.spin.transverse_ising('triangle', n_cells=[3, 3], coupling=J, h=h)
-  True
-  ```
+  its `add_edge` method.
 
   Optionally, a `Lattice` object can have interactions and fields endowed to it by specifying values 
   for its `custom_edges` and `custom_nodes` keyword arguments. The Hamiltonian can then be extracted
@@ -90,7 +69,7 @@
 
 * More industry-standard spin Hamiltonians have been added in the `qml.spin` module.
   [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
-  [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
+  [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201)
 
   Three new industry-standard spin Hamiltonians are now available with PennyLane v0.39:
 
@@ -259,7 +238,7 @@
 * The `qml.Qubitization` template is now compatible with qjit.
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
-* All PL templates are now unit tested to ensure jit compatibility.
+* All PennyLane templates are now unit tested to ensure jit compatibility.
   [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
 
 * The `qml.FABLE` template now returns the correct value when jit is enabled.
