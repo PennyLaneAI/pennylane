@@ -55,8 +55,8 @@ class Qubitization(Operation):
 
             # apply QPE
             measurements = qml.iterative_qpe(
-                         qml.Qubitization(H, control = [3,4]), aux_wire = 5, iters = 3
-                         )
+                qml.Qubitization(H, control = [3,4]), aux_wire = 5, iters = 3
+            )
             return qml.probs(op = measurements)
 
         output = circuit()
