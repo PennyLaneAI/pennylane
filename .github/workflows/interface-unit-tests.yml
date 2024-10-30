@@ -106,7 +106,7 @@ jobs:
           echo "fail_fast=${{ contains(inputs.python_warning_level, 'default') && 'default' || 'error' }}" >> $GITHUB_OUTPUT
 
     outputs:
-      matrix-fail-fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
+      fail_fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
 
   setup-ci-load:
     needs:
@@ -259,7 +259,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).torch-tests
@@ -297,7 +297,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).autograd-tests
@@ -332,7 +332,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).tf-tests
@@ -371,7 +371,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
@@ -411,7 +411,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).core-tests
@@ -449,7 +449,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).all-interfaces-tests
@@ -489,7 +489,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).external-libraries-tests
@@ -536,7 +536,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qcut-tests
@@ -577,7 +577,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qchem-tests
@@ -614,7 +614,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).gradients-tests
@@ -656,7 +656,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).data-tests
@@ -693,7 +693,7 @@ jobs:
       - default-dependency-versions
       - disable-fail-fast-wae
     strategy:
-      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.matrix-fail-fast),  'default') }}
+      fail-fast: ${{ contains(fromJSON(needs.disable-fail-fast-wae.outputs.fail_fast),  'default') }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).device-tests
