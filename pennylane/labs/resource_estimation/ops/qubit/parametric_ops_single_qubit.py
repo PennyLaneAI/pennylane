@@ -15,12 +15,7 @@ def _rotation_resources(epsilon=10e-3):
 
     return gate_types
 
-<<<<<<< HEAD
-
-class ResourceRZ(qml.RZ, ResourceConstructor):
-=======
 class ResourceRZ(qml.RZ, re.ResourceConstructor):
->>>>>>> resource_qft
     """Resource class for RZ"""
 
     @staticmethod
