@@ -64,11 +64,22 @@ class ResourceConstructor(ABC):
         """Set a custom resource method."""
         cls.resources = new_func
 
+    @abstractmethod
+    def resource_params(self) -> dict:
+        """Returns a dictionary containing the minimal information needed to
+        compute a comparessed representation"""
+
     @staticmethod
     @abstractmethod
-    def resource_rep() -> CompressedResourceOp:
+    def resource_rep(**kwargs) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
+
+    def resource_rep_from_op(self) -> CompressedResourceOp:
+        """Returns a compressed representation directly from the operator"""
+        params = self.resource_params()
+        return self.__class__.resource_rep(**params)
+
 
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ``ResourceConstructor`` does not implement _resource_decomp"""
