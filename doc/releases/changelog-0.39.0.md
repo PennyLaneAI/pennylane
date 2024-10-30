@@ -192,8 +192,69 @@
 
 <h4>User-friendly decompositions 📠</h4>
 
-* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
+* `qml.transforms.decompose` is added for stepping through decompositions into a set of gates defined either by their name, type, or a set of rules they must follow.
   [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
+
+  Here is an example demonstrating how a three-wire circuit can be decomposed using a pre-defined set of gates:
+  ```python
+  dev = qml.device('default.qubit')
+  allowed_gates = {qml.Toffoli, qml.RX, qml.RZ}
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(wires=[0])
+      qml.Toffoli(wires=[0,1,2])
+      return qml.expval(qml.Z(0))
+  ```
+  ```pycon
+  >>> print(qml.draw( qml.transform.decompose(circuit, gate_set=allowed_gates)() )
+  0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+  1: ───────────────────────────────├●─┤
+  2: ───────────────────────────────╰X─┤
+  ```
+  
+  Circuits can also be decomposed into a gate set defined by a rule, ie. only using single and two-qubit gates:
+  ```python
+  @qml.qnode(dev)
+  def circuit():
+      qml.Toffoli(wires=[0,1,2])
+      return qml.expval(qml.Z(0))
+  ```
+  ```pycon
+  >>> print(qml.draw( qml.transform.decompose(circuit, gate_set = lambda op: len(op.wires)<=2 )() )
+  0: ───────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
+  1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+  2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+  ```
+  
+  By default, decomposition occurs recursively until the desired gate set is reached, but the `max_expansion` keyword argument can be used to control the number of passes:
+  ```python
+  phase = 1
+  target_wires = [0]
+  unitary = qml.RX(phase, wires=0).matrix()
+  n_estimation_wires = 3
+  estimation_wires = range(1, n_estimation_wires + 1)
+  @qml.qnode(qml.device('default.qubit'))
+  def circuit():
+      # Start in the |+> eigenstate of the unitary
+      qml.Hadamard(wires=target_wires)
+      qml.QuantumPhaseEstimation(
+          unitary,
+          target_wires=target_wires,
+          estimation_wires=estimation_wires,
+      )
+  ```
+  ```pycon
+  >>> print(qml.draw( qml.transforms.decompose(circuit, max_expansion=0) )())
+  0: ──H─╭QuantumPhaseEstimation─┤
+  1: ────├QuantumPhaseEstimation─┤
+  2: ────├QuantumPhaseEstimation─┤
+  3: ────╰QuantumPhaseEstimation─┤
+  >>> print(qml.draw( qml.transforms.decompose(circuit, max_expansion=1) )())
+  0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
+  1: ──H─╰●──────│───────│───────╭QFT†─┤
+  2: ──H─────────╰●──────│───────├QFT†─┤
+  3: ──H─────────────────╰●──────╰QFT†─┤
+  ```
 
 <h3>Improvements 🛠</h3>
 
