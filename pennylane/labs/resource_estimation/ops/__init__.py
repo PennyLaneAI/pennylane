@@ -1,11 +1,11 @@
-from .qubit import(
-        ResourceHadamard,
-        ResourceRZ,
-        ResourceSWAP,
-        ResourceT,
+from .qubit import (
+    ResourceHadamard,
+    ResourceRZ,
+    ResourceSWAP,
+    ResourceT,
 )
 
-from .op_math import(
-        ResourceCNOT,
-        ResourceControlledPhaseShift,
+from .op_math import (
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
 )

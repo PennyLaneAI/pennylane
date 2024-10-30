@@ -3,6 +3,7 @@ from typing import Dict
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
+
 class ResourceHadamard(qml.Hadamard, re.ResourceConstructor):
     """Resource class for Hadamard"""
 
@@ -16,6 +17,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceConstructor):
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.Hadamard, {})
+
 
 class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
     """Resource class for SWAP"""
@@ -34,6 +36,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.SWAP, {})
+
 
 class ResourceT(qml.T, re.ResourceConstructor):
     """Resource class for T"""

@@ -1,8 +1,10 @@
-import numpy as np
 from typing import Dict
+
+import numpy as np
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
+
 
 def _rotation_resources(epsilon=10e-3):
     gate_types = {}
@@ -12,6 +14,7 @@ def _rotation_resources(epsilon=10e-3):
     gate_types[t] = num_gates
 
     return gate_types
+
 
 class ResourceRZ(qml.RZ, re.ResourceConstructor):
     """Resource class for RZ"""

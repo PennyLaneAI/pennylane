@@ -3,7 +3,10 @@ import pytest
 
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import _rotation_resources
+from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
+    _rotation_resources,
+)
+
 
 @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
 def test_rotation_resources(epsilon):
@@ -14,6 +17,7 @@ def test_rotation_resources(epsilon):
     t = re.CompressedResourceOp(qml.T, {})
     gate_types[t] = num_gates
     assert gate_types == _rotation_resources(epsilon=epsilon)
+
 
 class TestRZ:
     """Test ResourceRZ"""
@@ -37,4 +41,7 @@ class TestRZ:
         """Test the resources can be obtained from the compact representation"""
 
         expected = _rotation_resources(epsilon=epsilon)
-        assert re.ResourceRZ.resources(**re.ResourceRZ.resource_rep(epsilon=epsilon).params) == expected
+        assert (
+            re.ResourceRZ.resources(**re.ResourceRZ.resource_rep(epsilon=epsilon).params)
+            == expected
+        )
