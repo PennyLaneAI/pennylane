@@ -432,8 +432,24 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The `AllWires` validation in `QNode.construct` has been removed. 
+* Red-herring validation in `QNode.construct` has been removed, which fixes a bug with `qml.GlobalPhase`.
   [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6373)
+
+  Removing the `AllWires` validation in `QNode.construct` was addressed as a solution to the following 
+  example not being able to run:
+
+  ```python
+  @qml.qnode(qml.device('default.qubit', wires=2))
+  def circuit(x):
+      qml.GlobalPhase(x, wires=0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit(0.5)
+  array([0.87758256-0.47942554j, 0.        +0.j        ,
+       1.        +0.j        , 0.        +0.j        ])
+  ```
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
   Instead, `qml.simplify()` can be called on the constructed operator.
@@ -447,8 +463,8 @@
 * Python 3.9 is no longer supported. Please update to 3.10 or newer.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF`, `DefaultQubitTorch`, `DefaultQubitJax`, and `DefaultQubitAutograd` have been removed.
-  Please use `default.qubit` for all interfaces.
+* `default.qubit.tf`, `default.qubit.torch`, `default.qubit.jax`, and `default.qubit.autograd` have 
+  been removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
   [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
