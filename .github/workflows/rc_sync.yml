@@ -26,6 +26,8 @@ jobs:
     steps:
       # Checks-out the PennyLane repository
       - uses: actions/checkout@v3
+        with:
+          ref: master
 
       # Check for the existence of an rc branch for the current PennyLane version
       - name: Check for rc branch
