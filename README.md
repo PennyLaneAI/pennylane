@@ -121,15 +121,15 @@ PennyLane is at the forefront of research in quantum computing, quantum machine 
 - **Quantum Computing**
   - *Example Paper*: [Variational quantum algorithm for molecular geometry optimization
 ](https://arxiv.org/abs/2106.13840)
-  - *Collaborative Research*: Research with [lorem ipsum] on optimizing...
 
 - **Quantum Machine Learning**
-  - *Case Study*: [Classical surrogates for quantum learning models](https://arxiv.org/abs/2206.11740)
+  - *Example Paper*: [Better than classical? The subtle art of benchmarking quantum machine learning models](https://arxiv.org/abs/2403.07059)
 
 - **Quantum Chemistry**
   - *Example Paper*: [Accelerating Quantum Computations of Chemistry Through Regularized Compressed Double Factorization](https://quantum-journal.org/papers/q-2024-06-13-1371/)
 
-Impactful research drives PennyLane. Submit your feature ideas to tailor our roadmap to your research needs[LINK TO RESEARCH PAGE - UNRELEASED]
+Impactful research drives PennyLane. Submit your feature ideas on our [research page](https://pennylane.ai/research) to tailor our roadmap to your research needs.
+
 
 
 ## Contributing to PennyLane
