@@ -20,6 +20,9 @@ class ResourceRX(qml.RX, re.ResourceConstructor):
     def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
 
+    def resource_params(self) -> dict:
+        return {}
+
     @staticmethod
     def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.RX, {"epsilon": epsilon})
@@ -30,6 +33,9 @@ class ResourceRY(qml.RY, re.ResourceConstructor):
     @staticmethod
     def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
+
+    def resource_params(self):
+        return {}
 
     @staticmethod
     def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
@@ -42,7 +48,7 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
     def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
 
-    def resource_params():
+    def resource_params(self) -> dict:
         return {}
 
     @staticmethod
@@ -60,6 +66,9 @@ class ResourceRot(qml.Rot, re.ResourceConstructor):
 
         gate_types = {rx: 1, ry: 1, rz: 1}
         return gate_types
+
+    def resource_params(self):
+        return {}
 
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:

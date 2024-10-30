@@ -11,6 +11,9 @@ class ResourceIdentity(qml.Identity, re.ResourceConstructor):
     def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         return {}
 
+    def resource_params(self) -> dict:
+        return {}
+
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.Identity, {})

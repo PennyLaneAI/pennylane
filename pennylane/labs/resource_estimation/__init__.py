@@ -21,6 +21,7 @@ from .ops import(
         ResourceControlledPhaseShift,
         ResourceHadamard,
         ResourceIdentity,
+        ResourceRot,
         ResourceRX,
         ResourceRZ,
         ResourceRY,

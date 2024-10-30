@@ -51,7 +51,7 @@ class TestRot:
     def test_resources(self):
         """Test the resources method"""
 
-        op = re.ResourceRot(0.1, 0.2, 0.3)
+        op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
         config = { "error_rx": 10e-3, "error_ry": 10e-3, "error_rz": 10e-3 }
 
 

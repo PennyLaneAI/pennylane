@@ -28,6 +28,9 @@ class ResourceS(qml.S, re.ResourceConstructor):
 
         return gate_types
 
+    def resource_params(self) -> dict:
+        return {}
+
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.S, {})

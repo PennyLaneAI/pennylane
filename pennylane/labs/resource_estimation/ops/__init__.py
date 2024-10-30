@@ -2,6 +2,7 @@ from .identity import ResourceIdentity
 
 from .qubit import(
         ResourceHadamard,
+        ResourceRot,
         ResourceRX,
         ResourceRY,
         ResourceRZ,
