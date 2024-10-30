@@ -19,6 +19,7 @@ from .resource_container import CompressedResourceOp, Resources
 from .ops import(
         ResourceCNOT,
         ResourceControlledPhaseShift,
+        ResourceGlobalPhase,
         ResourceHadamard,
         ResourceIdentity,
         ResourceRot,

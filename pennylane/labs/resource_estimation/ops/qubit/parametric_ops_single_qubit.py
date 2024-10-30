@@ -13,6 +13,26 @@ def _rotation_resources(epsilon=10e-3):
 
     return gate_types
 
+class ResourcePhaseShift(qml.PhaseShift, re.ResourceConstructor):
+    """Resource class for PhaseShift"""
+
+    @staticmethod
+    def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+        gate_types = {}
+        rz = re.ResourceRZ.resource_rep()
+        global_phase = re.ResourceGlobalPhase.resource_rep()
+        gate_types[rz] = 1
+        gate_types[global_phase] = 1
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    def resource_rep() -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(qml.PhaseShift, {})
+
+
 class ResourceRX(qml.RX, re.ResourceConstructor):
     """Resource class for RX"""
 
@@ -34,7 +54,7 @@ class ResourceRY(qml.RY, re.ResourceConstructor):
     def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
 
-    def resource_params(self):
+    def resource_params(self) -> dict:
         return {}
 
     @staticmethod

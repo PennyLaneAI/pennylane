@@ -1,4 +1,7 @@
-from .identity import ResourceIdentity
+from .identity import(
+        ResourceGlobalPhase,
+        ResourceIdentity,
+)
 
 from .qubit import(
         ResourceHadamard,
