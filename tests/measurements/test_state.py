@@ -872,7 +872,7 @@ class TestDensityMatrix:
             i, j, k = return_wire_order
             exp_statevector = np.kron(np.kron(single_states[i], single_states[j]), single_states[k])
         else:
-            raise ValueError("how did I get here?")
+            exp_statevector = None # should not be reached
 
         expected = np.outer(exp_statevector.conj(), exp_statevector)
         assert np.allclose(expected, density_full)
@@ -905,7 +905,7 @@ class TestDensityMatrix:
             i, j, k = return_wire_order
             exp_statevector = np.kron(np.kron(single_states[i], single_states[j]), single_states[k])
         else:
-            raise ValueError("how did I get here?")
+            exp_statevector = None # should not be reached
 
         expected = np.outer(exp_statevector.conj(), exp_statevector)
         assert np.allclose(expected, density_full)
