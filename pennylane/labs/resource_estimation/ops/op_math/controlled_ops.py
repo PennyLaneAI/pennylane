@@ -20,6 +20,9 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstruc
 
         return gate_types
 
+    def resource_params(self):
+        return {}
+
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.ControlledPhaseShift, {})
@@ -30,6 +33,9 @@ class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
     @staticmethod
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
+
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:

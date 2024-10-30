@@ -3,6 +3,8 @@ import pytest
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
+#pylint: disable=use-implicit-booleaness-not-comparison
+
 class TestHadamard():
     """Tests for ResourceHadamard"""
 
@@ -11,6 +13,11 @@ class TestHadamard():
         op = re.ResourceHadamard(0)
         with pytest.raises(re.ResourcesNotDefined):
             op.resources()
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceHadamard(0)
+        assert op.resource_params() == {}
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
@@ -27,6 +34,11 @@ class TestSWAP():
         expected = {cnot: 3}
 
         assert op.resources() == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceSWAP([0, 1])
+        assert op.resource_params() == {}
 
     def test_resource_rep(self):
         """Test the compact representation"""
@@ -70,6 +82,11 @@ class TestT():
         op = re.ResourceT(0)
         with pytest.raises(re.ResourcesNotDefined):
             op.resources()
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceT(0)
+        assert op.resource_params() == {}
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
