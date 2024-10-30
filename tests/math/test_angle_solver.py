@@ -18,6 +18,7 @@ import numpy as np
 import pennylane as qml
 from functools import partial
 
+
 @pytest.mark.parametrize(
     "P",
     [
@@ -80,17 +81,17 @@ def test_correctness_QSP_angles(poly):
     @qml.qnode(qml.device("default.qubit"))
     def circuit_qsp():
 
-        qml.RX(2*angles[0], wires = 0)
+        qml.RX(2 * angles[0], wires=0)
         for ind, angle in enumerate(angles[1:]):
-            qml.RZ(-2* np.arccos(x), wires = 0)
-            qml.RX(2*angle, wires = 0)
+            qml.RZ(-2 * np.arccos(x), wires=0)
+            qml.RX(2 * angle, wires=0)
 
         return qml.state()
 
-
     output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
-    expected = sum(coef * (x ** i) for i, coef in enumerate(poly))
+    expected = sum(coef * (x**i) for i, coef in enumerate(poly))
     assert np.isclose(output.real, expected.real)
+
 
 @pytest.mark.parametrize(
     "poly",
@@ -115,7 +116,7 @@ def test_correctness_QSVT_angles(poly):
         return qml.state()
 
     output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
-    expected = sum(coef * (x ** i) for i, coef in enumerate(poly))
+    expected = sum(coef * (x**i) for i, coef in enumerate(poly))
     assert np.isclose(output.real, expected.real)
 
 
@@ -123,19 +124,16 @@ def test_correctness_QSVT_angles(poly):
     ("poly", "msg_match"),
     [
         (
-
-                [0., 1., 2.],
-                "Polynomial must have defined parity",
+            [0.0, 1.0, 2.0],
+            "Polynomial must have defined parity",
         ),
         (
-                [0, 1j, 0, 3, 0, 2],
-                "Array must not have an imaginary part",
+            [0, 1j, 0, 3, 0, 2],
+            "Array must not have an imaginary part",
         ),
     ],
 )
-def test_raise_error(
-        poly, msg_match
-):
+def test_raise_error(poly, msg_match):
     """Test that proper errors are raised"""
 
     with pytest.raises(AssertionError, match=msg_match):

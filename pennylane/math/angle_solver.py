@@ -19,6 +19,7 @@ import pennylane as qml
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
+
 def complementary_poly(P):
     """
     Computes the complementary polynomial Q given a polynomial P.
@@ -73,7 +74,7 @@ def QSP_angles(F):
     parity = (len(F) - 1) % 2
 
     # Construct the auxiliary polynomial P and its complementary Q based on appendix A in [arXiv:2406.04246]
-    P = np.concatenate([np.zeros(len(F) // 2), chebyshev.poly2cheb(F)[parity::2]])
+    P = np.concatenate([np.zeros(len(F) // 2), chebyshev.poly2cheb(F)[parity::2]]) * (1 - 1e-12)
     Q = np.array(complementary_poly(P))
 
     S = np.array([P, Q])
@@ -86,11 +87,12 @@ def QSP_angles(F):
 
         a, b = S[:, d]
         theta[d] = np.arctan2(b.real, a.real)
-        matrix = qml.matrix(qml.RY(-2*theta[d], wires = 0))
-        S =  matrix @ S
-        S = np.array([S[0][1: d + 1], S[1][0:d]])
+        matrix = qml.matrix(qml.RY(-2 * theta[d], wires=0))
+        S = matrix @ S
+        S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta
+
 
 def transform_angles(angles, routine1, routine2):
     """
@@ -130,6 +132,7 @@ def transform_angles(angles, routine1, routine2):
 
         return angles - update_vals
 
+
 def poly_to_angles(P, routine):
     """
     Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP)
@@ -146,13 +149,13 @@ def poly_to_angles(P, routine):
     """
 
     parity = (len(P) - 1) % 2
-    assert np.allclose(P[1 - parity::2], 0), "Polynomial must have defined parity"
-    assert np.allclose(np.array(P, dtype = np.complex128).imag, 0), "Array must not have an imaginary part"
+    assert np.allclose(P[1 - parity :: 2], 0), "Polynomial must have defined parity"
+    assert np.allclose(
+        np.array(P, dtype=np.complex128).imag, 0
+    ), "Array must not have an imaginary part"
 
     if routine == "QSP":
         return QSP_angles(P)
 
     if routine == "QSVT":
         return transform_angles(QSP_angles(P), "QSP", "QSVT")
-
-
