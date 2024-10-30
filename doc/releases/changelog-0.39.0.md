@@ -11,7 +11,7 @@
   [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
 
 <h4>Spin Hamiltonians 💞</h4>
- 
+
 * Function is added for generating the spin Hamiltonian for the
   [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
   [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
@@ -42,7 +42,7 @@
 * `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
   not call operations, single operators with empty decompositions).
   [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
-  
+
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
@@ -58,8 +58,8 @@
   when possible, based on the `pauli_rep` of the relevant observables.
   [(#6113)](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
-* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and 
-  `trainable_params` as keyword arguments. If any of these are passed when copying a 
+* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and
+  `trainable_params` as keyword arguments. If any of these are passed when copying a
   tape, the specified attributes will replace the copied attributes on the new tape.
   [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
   [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
@@ -94,7 +94,7 @@
 
 <h4>User-friendly decompositions 📠</h4>
 
-* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
+* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set.
   [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
 
 <h3>Improvements 🛠</h3>
@@ -161,7 +161,7 @@
 
 * `FermiWord` and `FermiSentence` are now compatible with JAX arrays.
   [(#6324)](https://github.com/PennyLaneAI/pennylane/pull/6324)
-  
+
 <h4>Quantum information measurements</h4>
 
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
@@ -186,7 +186,7 @@
 
 * The quantum arithmetic templates are now QJIT compatible.
   [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
-  
+
 * The `qml.Qubitization` template is now QJIT compatible.
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
@@ -223,7 +223,7 @@
 * `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
   not call operations, single operators with empty decompositions).
   [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
-  
+
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
@@ -239,8 +239,8 @@
   when possible, based on the `pauli_rep` of the relevant observables.
   [(#6113)](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
-* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and 
-  `trainable_params` as keyword arguments. If any of these are passed when copying a 
+* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and
+  `trainable_params` as keyword arguments. If any of these are passed when copying a
   tape, the specified attributes will replace the copied attributes on the new tape.
   [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
   [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
@@ -248,13 +248,13 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
-* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
+* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the
   diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
   each observable on the tape are included just once.
   [(#6288)](https://github.com/PennyLaneAI/pennylane/pull/6288)
 
-* The number of diagonalizing gates returned in `qml.specs` now follows the `level` keyword argument 
-  regarding whether the diagonalizing gates are modified by device, instead of always counting 
+* The number of diagonalizing gates returned in `qml.specs` now follows the `level` keyword argument
+  regarding whether the diagonalizing gates are modified by device, instead of always counting
   unprocessed diagonalizing gates.
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
@@ -266,7 +266,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `AllWires` validation in `QNode.construct` has been removed. 
+* `AllWires` validation in `QNode.construct` has been removed.
   [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6373)
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
@@ -398,13 +398,22 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable module is used.
+* Fixes a bug where `QNGOptimizer` and `MomentumQNGOptimizer` calculate invalid parameter updates
+  if the metric tensor becomes singular.
+  [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
+
+* Fixes a bug where `lam` and `approx` inputs were not used by `MomentumQNGOptimizer`.
+  [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
+
+* Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that
+  was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable
+  module is used.
   [(#6437)](https://github.com/PennyLaneAI/pennylane/pull/6437)
 
 * Patches the `math` module to function with autoray 0.7.0.
   [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
 
-* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`. 
+* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`.
   [(#6423)](https://github.com/PennyLaneAI/pennylane/pull/6423)
 
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
