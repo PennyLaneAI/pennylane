@@ -1,20 +1,9 @@
 import pytest
 
 import pennylane as qml
-
-<<<<<<< HEAD
-from pennylane.labs.resource_estimation import (
-    CompressedResourceOp,
-    ResourceHadamard,
-    ResourcesNotDefined,
-    ResourceT,
-)
-
-=======
 import pennylane.labs.resource_estimation as re
 
-#pylint: disable=use-implicit-booleaness-not-comparison
->>>>>>> resource_qft
+# pylint: disable=use-implicit-booleaness-not-comparison
 
 
 class TestHadamard:
@@ -36,7 +25,8 @@ class TestHadamard:
         expected = re.CompressedResourceOp(qml.Hadamard, {})
         assert re.ResourceHadamard.resource_rep() == expected
 
-class TestSWAP():
+
+class TestSWAP:
     """Tests for ResourceSWAP"""
 
     def test_resources(self):
