@@ -10,6 +10,9 @@ class ResourceHadamard(qml.Hadamard, re.ResourceConstructor):
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
+    def resource_params(self) -> dict:
+        return {}
+
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.Hadamard, {})
@@ -25,6 +28,9 @@ class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
 
         return gate_types
 
+    def resource_params(self) -> dict:
+        return {}
+
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.SWAP, {})
@@ -35,6 +41,9 @@ class ResourceT(qml.T, re.ResourceConstructor):
     @staticmethod
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
+
+    def resource_params(self) -> dict:
+        return {}
 
     @staticmethod
     def resource_rep() -> re.CompressedResourceOp:

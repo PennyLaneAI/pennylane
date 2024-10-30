@@ -20,6 +20,9 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
     def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=epsilon)
 
+    def resource_params():
+        return {}
+
     @staticmethod
     def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(qml.RZ, {"epsilon": epsilon})
