@@ -30,6 +30,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.metric_tensor` can now be JIT compiled.
+  [(#6468)](https://github.com/PennyLaneAI/pennylane/pull/6468)
+
 * RTD support for `qml.labs` added to API.
   [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
 
@@ -396,6 +399,9 @@
 
 * The wire order for `Snapshot`'s now matches the wire order of the device, rather than the simulation.
   [(#6461)](https://github.com/PennyLaneAI/pennylane/pull/6461)
+
+* The `default.qubit` device now supports parameter broadcasting with `qml.classical_shadow` and `qml.shadow_expval`.
+  [(#6301)](https://github.com/PennyLaneAI/pennylane/pull/6301)
 
 * Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable module is used.
   [(#6437)](https://github.com/PennyLaneAI/pennylane/pull/6437)
