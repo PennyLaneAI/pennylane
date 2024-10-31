@@ -280,6 +280,11 @@
 
 <h4>qjit/jit compatibility and improvements</h4>
 
+[Quantum just-in-time (qjit) compilation](https://pennylane.ai/qml/glossary/what-is-quantum-just-in-time-qjit-compilation/) 
+is the compilation of hybrid quantum-classical programs during execution of a program, rather than before 
+execution. PennyLane provides just-in-time compilation with its `@qml.qjit` decorator, powered by the 
+[Catalyst](https://docs.pennylane.ai/projects/catalyst/en/stable/index.html) compiler.
+
 * Several templates are now compatible with qjit:
   * `qml.AmplitudeAmplification`
     [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
