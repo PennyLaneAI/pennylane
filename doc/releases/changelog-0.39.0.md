@@ -650,6 +650,9 @@
 * Renamed an incorrectly named test in `test_pow_ops.py`.
   [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
 
+* Removed outdated Docker description from installation page.
+  [(#6487)](https://github.com/PennyLaneAI/pennylane/pull/6487)
+
 <h3>Bug fixes 🐛</h3>
 
 * The wire order for `Snapshot`'s now matches the wire order of the device, rather than the simulation.
