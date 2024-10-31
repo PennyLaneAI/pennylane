@@ -199,8 +199,10 @@ class Lattice:
             edges = self._identify_neighbours(cutoff)
             self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
         else:
-            if neighbour_order != 1:
-                raise ValueError("custom_edges cannot be specified if neighbour_order is not 1.")
+            if neighbour_order > 1:
+                raise ValueError(
+                    "custom_edges cannot be specified if neighbour_order argument is set to greater than 1."
+                )
             lattice_map = dict(zip(lattice_map, self.lattice_points))
             self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
