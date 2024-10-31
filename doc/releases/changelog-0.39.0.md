@@ -90,9 +90,9 @@
   function in a quantum circuit. Given a polynomial function :math:`f(x_1, x_2, \cdots, x_N)`, `qml.OutPoly` 
   requires:
 
-  * `f`: a standard Python function that represents :math:`f(x_1, x_2, \cdots, x_N)`,
+  * `f` : a standard Python function that represents :math:`f(x_1, x_2, \cdots, x_N)`,
   * `input_registers` (:math:`\vert x_1 \rangle`, :math:`\vert x_2 \rangle`, ..., :math:`\vert x_N \rangle`): a list/tuple containing `Wires` objects that correspond to the embedded numeric values of :math:`x_1, x_2, \cdots, x_N`,
-  * `output_wires`: the `Wires` for which the numeric value of :math:`f(x_1, x_2, \cdots, x_N)` is stored.
+  * `output_wires` : the `Wires` for which the numeric value of :math:`f(x_1, x_2, \cdots, x_N)` is stored.
 
   Here is an example of using `qml.OutPoly` to calculate :math:`f(x_1, x_2) = 3x_1^2 - x_1x_2` for :math:`f(1, 2) = 1`.
 
