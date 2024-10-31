@@ -564,6 +564,7 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
   [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
   [(#6210)](https://github.com/PennyLaneAI/pennylane/pull/6210)
+  [(#6266)](https://github.com/PennyLaneAI/pennylane/pull/6266)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` have been removed from 
   the signature of `qml.execute`.
