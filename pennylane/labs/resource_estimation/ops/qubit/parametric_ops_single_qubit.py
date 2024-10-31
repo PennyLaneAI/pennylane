@@ -32,8 +32,9 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    def resource_rep() -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.PhaseShift, {})
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceRX(qml.RX, re.ResourceConstructor):
@@ -46,9 +47,9 @@ class ResourceRX(qml.RX, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
-    def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.RX, {"epsilon": epsilon})
+    @classmethod
+    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
 
 
 class ResourceRY(qml.RY, re.ResourceConstructor):
@@ -61,9 +62,9 @@ class ResourceRY(qml.RY, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
-    def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.RY, {"epsilon": epsilon})
+    @classmethod
+    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
 
 
 class ResourceRZ(qml.RZ, re.ResourceConstructor):
@@ -76,9 +77,9 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
-    def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.RZ, {"epsilon": epsilon})
+    @classmethod
+    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
 
 
 class ResourceRot(qml.Rot, re.ResourceConstructor):
@@ -96,6 +97,6 @@ class ResourceRot(qml.Rot, re.ResourceConstructor):
     def resource_params(self):
         return {}
 
-    @staticmethod
-    def resource_rep() -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.Rot, {})
+    @classmethod
+    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"epsilon": epsilon})

@@ -16,8 +16,8 @@ class TestControlledPhaseShift:
         op = re.ResourceControlledPhaseShift(phi, wires)
 
         expected = {
-            re.CompressedResourceOp(qml.CNOT, {}): 2,
-            re.CompressedResourceOp(qml.RZ, {"epsilon": 10e-3}): 3,
+            re.CompressedResourceOp(re.ResourceCNOT, {}): 2,
+            re.CompressedResourceOp(re.ResourceRZ, {"epsilon": 10e-3}): 3,
         }
 
         assert op.resources() == expected
@@ -34,7 +34,7 @@ class TestControlledPhaseShift:
         """Test the compressed representation"""
 
         op = re.ResourceControlledPhaseShift(phi, wires)
-        expected = re.CompressedResourceOp(qml.ControlledPhaseShift, {})
+        expected = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {})
 
         assert op.resource_rep() == expected
 
@@ -54,8 +54,8 @@ class TestControlledPhaseShift:
         op = re.ResourceControlledPhaseShift(phi, wires)
 
         expected = {
-            re.CompressedResourceOp(qml.CNOT, {}): 2,
-            re.CompressedResourceOp(qml.RZ, {"epsilon": 10e-3}): 3,
+            re.CompressedResourceOp(re.ResourceCNOT, {}): 2,
+            re.CompressedResourceOp(re.ResourceRZ, {"epsilon": 10e-3}): 3,
         }
 
         assert (
@@ -78,5 +78,5 @@ class TestCNOT:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = re.ResourceCNOT([0, 1])
-        expected = re.CompressedResourceOp(qml.CNOT, {})
+        expected = re.CompressedResourceOp(re.ResourceCNOT, {})
         assert op.resource_rep() == expected

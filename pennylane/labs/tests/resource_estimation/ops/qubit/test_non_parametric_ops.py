@@ -63,12 +63,12 @@ class TestS:
     def test_resources(self):
         """Test that S decomposes into two Ts"""
         op = re.ResourceS(0)
-        expected = {re.CompressedResourceOp(qml.T, {}): 2}
+        expected = {re.CompressedResourceOp(re.ResourceT, {}): 2}
         assert op.resources() == expected
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct"""
-        expected = re.CompressedResourceOp(qml.S, {})
+        expected = re.CompressedResourceOp(re.ResourceS, {})
         assert re.ResourceS.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -94,5 +94,5 @@ class TestT:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = re.CompressedResourceOp(qml.T, {})
+        expected = re.CompressedResourceOp(re.ResourceT, {})
         assert re.ResourceT.resource_rep() == expected

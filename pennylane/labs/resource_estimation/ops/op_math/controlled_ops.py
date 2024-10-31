@@ -39,6 +39,6 @@ class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
+    @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
