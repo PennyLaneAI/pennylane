@@ -449,8 +449,9 @@ class TestApplyMultiControlledX:
             (9, "custom"),
         ],
     )
-    def test_dispatch_method_special_cases(self, num_wires, expected_method, interface, mocker):
-        """Test that the correct dispatch method is used based on the number of wires."""
+    def test_dispatch_method_interfaces(self, num_wires, expected_method, interface, mocker):
+        """Test that the correct dispatch method is used based on the number of wires
+        for torch, tensorflow, and jax."""
         state = get_random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)
