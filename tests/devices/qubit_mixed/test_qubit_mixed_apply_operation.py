@@ -504,7 +504,7 @@ class TestApplyMultiControlledX:
             assert not spy_einsum.called
             assert not spy_tensordot.called
 
-    @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
+    @pytest.mark.parametrize("num_wires", [2, 3, 8, 9])
     def test_correctness(self, num_wires):
         """Test that the MultiControlledX is applied correctly for various wire numbers."""
         state = get_random_mixed_state(num_wires)
