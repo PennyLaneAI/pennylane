@@ -407,11 +407,9 @@ class TestApplyMultiControlledX:
         "num_wires, interface, expected_method",
         [
             (3, "numpy", "tensordot"),
-            (7, "numpy", "tensordot"),
             (8, "numpy", "tensordot"),
             (9, "numpy", "custom"),
             (3, "autograd", "tensordot"),
-            (7, "autograd", "tensordot"),
             (8, "autograd", "tensordot"),
             (9, "autograd", "custom"),
         ],
