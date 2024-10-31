@@ -1,4 +1,3 @@
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
 # pylint: disable=use-implicit-booleaness-not-comparison
@@ -14,7 +13,7 @@ class TestIdentity:
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        expected = re.CompressedResourceOp(qml.Identity, {})
+        expected = re.CompressedResourceOp(re.ResourceIdentity, {})
         assert re.ResourceIdentity.resource_rep() == expected
 
     def test_resources_from_rep(self):

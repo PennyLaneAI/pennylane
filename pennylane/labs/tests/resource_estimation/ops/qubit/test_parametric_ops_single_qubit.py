@@ -1,9 +1,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
-from pennylane import RX, RY, RZ  # pylint: disable=unused-import
 from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit import (
     _rotation_resources,
 )
@@ -15,7 +13,7 @@ def test_rotation_resources(epsilon):
     gate_types = {}
 
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
-    t = re.CompressedResourceOp(qml.T, {})
+    t = re.CompressedResourceOp(re.ResourceT, {})
     gate_types[t] = num_gates
     assert gate_types == _rotation_resources(epsilon=epsilon)
 
@@ -35,10 +33,11 @@ class TestPauliRotation:
     @pytest.mark.parametrize("resource_class, epsilon", params)
     def test_resource_rep(self, epsilon, resource_class):
         """Test the compact representation"""
+        op = re.ResourceRZ(1.24, wires=0)
+        expected = re.CompressedResourceOp(re.ResourceRZ, {"epsilon": epsilon})
 
         op = resource_class(1.24, wires=0)
-        pl_class = globals()[resource_class.__name__[8:]]
-        expected = re.CompressedResourceOp(pl_class, {"epsilon": epsilon})
+        expected = re.CompressedResourceOp(resource_class, {"epsilon": epsilon})
         assert op.resource_rep(epsilon=epsilon) == expected
 
     @pytest.mark.parametrize("resource_class, epsilon", params)
