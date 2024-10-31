@@ -639,7 +639,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     neighbouring spins. The parameters :math:`K_X`, :math:`K_Y`, :math:`K_Z` are the coupling
     constants defined for the Hamiltonian, where :math:`X`, :math:`Y`, :math:`Z` represent the set
     of edges in the Honeycomb lattice between spins :math:`i` and :math:`j` with real-space bond
-    directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}], \frac{\sqrt{3}}{2}, -\frac{1}{2}]`,
+    directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}], [\frac{\sqrt{3}}{2}, -\frac{1}{2}]`,
     respectively.
 
     Args:
