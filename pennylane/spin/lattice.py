@@ -39,7 +39,7 @@ class Lattice:
             boundary conditions for the different lattice axes.  Default is ``False`` indicating
             open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-           Default is 1, indicating nearest neighbour. This must be 1 if ``custom_edges`` is defined.
+           Default is 1, indicating nearest neighbour. Must be 1 if ``custom_edges`` is defined.
        custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
            Default value is ``None``, which adds the edges based on ``neighbour_order``.
            Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
@@ -79,9 +79,9 @@ class Lattice:
         from pennylane.spin import Lattice
 
         positions = [[0.2, 0.5],
-                    [0.5, 0.2],
-                    [0.5, 0.8],
-                    [0.8, 0.5]]
+                     [0.5, 0.2],
+                     [0.5, 0.8],
+                     [0.8, 0.5]]
 
         vectors = [[1, 0], [0, 1]]
 
@@ -95,49 +95,56 @@ class Lattice:
     >>> lattice.edges
     [(10, 13, 0), (0, 11, 0), (4, 15, 0), (2, 5, 0), (3, 8, 0), (7, 12, 0)]
 
-    Unless otherwise specified, the edges will be added based on the ``neighbour_order``,
-    which defaults to 1. Increasing ``neighbour_order`` will add additional connections
-    in the lattice.
+    .. details::
+        :title: Usage Details
 
-    >>> lattice = Lattice(n_cells, vectors, positions, neighbour_order=2, boundary_condition=boundary_condition)
-    >>> len(lattice.edges)
-    22
+        Unless otherwise specified, the edges will be added based on the ``neighbour_order``,
+        which defaults to 1. Increasing ``neighbour_order`` will add additional connections
+        in the lattice.
 
-    We can also define edges with custom interactions, as well as adding on-site potentials for the
-    nodes:
+        >>> lattice = Lattice(
+        ...    n_cells, vectors, positions, neighbour_order=2, boundary_condition=boundary_condition
+        ... )
+        >>> len(lattice.edges)
+        22
 
-    .. code-block:: python
+        We can also define edges with custom interactions, as well as adding on-site potentials for the
+        nodes:
 
-        # defining on-site potential at each node in the unit cell
-        custom_nodes = [[(0), ('X', 0.5)],
-                        [(1), ('X', 0.6)],
-                        [(2), ('X', 0.7)],
-                        [(3), ('X', 0.8)]]
+        .. code-block:: python
 
-        # defining custom edges (instead of nearest-neigbour connections) and their interactions
-        custom_edges = [[(0, 1), ('XX', 0.5)],
-                        [(0, 2), ('YY', 0.6)],
-                        [(1, 3), ('ZZ', 0.7)],
-                        [(2, 3), ('ZZ', 0.7)]]
+            # defining on-site potential at each node in the unit cell
+            custom_nodes = [[(0), ('X', 0.5)],
+                            [(1), ('X', 0.6)],
+                            [(2), ('X', 0.7)],
+                            [(3), ('X', 0.8)]]
 
-    >>> lattice = Lattice(n_cells, vectors, positions, custom_edges=custom_edges, custom_nodes=custom_nodes)
-    >>> lattice.edges
-    [(0, 1, ('XX', 0.5)),
-    (4, 5, ('XX', 0.5)),
-    (8, 9, ('XX', 0.5)),
-    (12, 13, ('XX', 0.5)),
-    (0, 2, ('YY', 0.6)),
-    (4, 6, ('YY', 0.6)),
-    (8, 10, ('YY', 0.6)),
-    (12, 14, ('YY', 0.6)),
-    (1, 3, ('ZZ', 0.7)),
-    (5, 7, ('ZZ', 0.7)),
-    (9, 11, ('ZZ', 0.7)),
-    (13, 15, ('ZZ', 0.7)),
-    (2, 3, ('ZZ', 0.7)),
-    (6, 7, ('ZZ', 0.7)),
-    (10, 11, ('ZZ', 0.7)),
-    (14, 15, ('ZZ', 0.7))]
+            # defining custom edges (instead of nearest-neigbour connections) and their interactions
+            custom_edges = [[(0, 1), ('XX', 0.5)],
+                            [(0, 2), ('YY', 0.6)],
+                            [(1, 3), ('ZZ', 0.7)],
+                            [(2, 3), ('ZZ', 0.7)]]
+
+        >>> lattice = Lattice(
+        ...    n_cells, vectors, positions, custom_edges=custom_edges, custom_nodes=custom_nodes
+        ... )
+        >>> lattice.edges
+        [(0, 1, ('XX', 0.5)),
+        (4, 5, ('XX', 0.5)),
+        (8, 9, ('XX', 0.5)),
+        (12, 13, ('XX', 0.5)),
+        (0, 2, ('YY', 0.6)),
+        (4, 6, ('YY', 0.6)),
+        (8, 10, ('YY', 0.6)),
+        (12, 14, ('YY', 0.6)),
+        (1, 3, ('ZZ', 0.7)),
+        (5, 7, ('ZZ', 0.7)),
+        (9, 11, ('ZZ', 0.7)),
+        (13, 15, ('ZZ', 0.7)),
+        (2, 3, ('ZZ', 0.7)),
+        (6, 7, ('ZZ', 0.7)),
+        (10, 11, ('ZZ', 0.7)),
+        (14, 15, ('ZZ', 0.7))]
 
     """
 
