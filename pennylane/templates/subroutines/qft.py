@@ -167,9 +167,9 @@ class QFT(Operation):
         **Example:**
 
         >>> qml.QFT.compute_decomposition(wires=(0,1,2), n_wires=3)
-        [Hadamard(wires=[0]), ControlledPhaseShift(1.5707963267948966, wires=Wires([1, 0])),
-        ControlledPhaseShift(0.7853981633974483, wires=Wires([2, 0])), Hadamard(wires=[1]),
-        ControlledPhaseShift(1.5707963267948966, wires=Wires([2, 1])), Hadamard(wires=[2]),
+        [H(0), ControlledPhaseShift(1.5707963267948966, wires=Wires([1, 0])),
+        ControlledPhaseShift(0.7853981633974483, wires=Wires([2, 0])), H(1),
+        ControlledPhaseShift(1.5707963267948966, wires=Wires([2, 1])), H(2),
         SWAP(wires=[0, 2])]
 
         """
