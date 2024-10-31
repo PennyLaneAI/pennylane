@@ -188,6 +188,18 @@ def _get_num_wires(state, is_state_batched):
     return (math.ndim(state) - is_state_batched) // 2
 
 
+def _conjugate_state_with(k, state, axes_left, axes_right):
+    """Perform the double tensor product k @ state @ k.conj(), with given, single matrix k.
+    The `axes_left` and `axes_right` arguments are taken from the ambient variable space
+    and `axes_right` is assumed to incorporate the tensor product and the transposition
+    of k.conj() simultaneously."""
+    return math.tensordot(
+        math.tensordot(k, state, axes_left),
+        math.conj(k),
+        axes_right,
+    )
+
+
 def apply_operation_einsum(
     op: qml.operation.Operator,
     state,
@@ -278,19 +290,7 @@ def apply_operation_tensordot(
     axes_left = [channel_col_ids, row_wires_list]
     axes_right = [[0] + new_channel_col_ids, [0] + channel_col_ids]
 
-    # Apply the Kraus operators, and sum over all Kraus operators afterwards
-    def _conjugate_state_with(k, state=state):
-        """Perform the double tensor product k @ state @ k.conj(), with given, single matrix k.
-        The `axes_left` and `axes_right` arguments are taken from the ambient variable space
-        and `axes_right` is assumed to incorporate the tensor product and the transposition
-        of k.conj() simultaneously."""
-        return math.tensordot(
-            math.tensordot(k, state, axes_left),
-            math.conj(k),
-            axes_right,
-        )
-
-    _state = _conjugate_state_with(kraus, state)
+    _state = _conjugate_state_with(kraus, state, axes_left, axes_right)
     source_left = list(range(num_ch_wires))
     dest_left = row_wires_list
     source_right = list(range(-num_ch_wires, 0))
