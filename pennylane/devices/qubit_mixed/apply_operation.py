@@ -154,7 +154,7 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
     return math.stack([state[sl_0], state_1], axis=axis)
 
 
-def _get_dagger_op(op, num_wires):
+def _get_dagger_symmetric_real_op(op, num_wires):
     """Get the conjugate transpose of an operation by shifting num_wires. Should only be used for real, symmetric operations."""
     return qml.map_wires(op, {w: w + num_wires for w in op.wires})
 
@@ -557,7 +557,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 @apply_operation.register(qml.CSWAP)
 @apply_operation.register(qml.CZ)
 @apply_operation.register(qml.CH)
-def apply_multicontrolledx(
+def apply_symmetric_real_op(
     op,
     state,
     is_state_batched: bool = False,
@@ -593,7 +593,7 @@ def apply_multicontrolledx(
 
     state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
 
-    op_dagger = _get_dagger_op(op, num_wires)
+    op_dagger = _get_dagger_symmetric_real_op(op, num_wires)
     state = qml.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
     return state
 
