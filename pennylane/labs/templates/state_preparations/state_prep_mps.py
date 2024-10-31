@@ -15,6 +15,7 @@
 Contains the StatePrepMPS template.
 """
 
+import pennylane.math as math
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
@@ -51,15 +52,21 @@ class MPSPrep(Operation):
     """
 
     def __init__(self, mps, wires, id=None):
-        self.mps = mps
-        super().__init__(mps, wires=wires, id=id)
+        self.hyperparameters["mps"] = mps
+        super().__init__(wires=wires, id=id)
+
+    @property
+    def mps(self):
+        return self.hyperparameters["mps"]
 
     def _flatten(self):
-        return tuple(self.data), self.wires
+        hyperparameters = (("mps", tuple(self.hyperparameters["mps"])), ("wires", self.wires))
+        return self.data, hyperparameters
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(data[0], metadata)
+        hyperparams_dict = {key: list(value) if key == "mps" else value for key, value in metadata}
+        return cls(**hyperparams_dict)
 
     def map_wires(self, wire_map):
         new_wires = Wires([wire_map.get(wire, wire) for wire in self.wires])

@@ -26,6 +26,8 @@ def test_standard_validity():
 
 
 def test_access_to_param():
-    mps = [1.0, 2.0, 3.0]
+    mps = [np.ones([2, 2]), np.ones([3, 3]), np.ones([1])]
     op = qml.labs.MPSPrep(mps=mps, wires=[0, 1, 2])
-    assert np.allclose(mps, op.mps)
+
+    for arr1, arr2 in zip(mps, op.mps):
+        assert np.allclose(arr1, arr2)
