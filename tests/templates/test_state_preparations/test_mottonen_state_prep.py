@@ -418,11 +418,11 @@ def test_adjoint_brings_back_to_zero(adj_base_op):
 
 @pytest.mark.jax
 @pytest.mark.parametrize("shots, atol", [(None, 0.005), (1000000, 0.05)])
-def test_jacobians_with_and_without_jit_match(shots, atol):
+def test_jacobians_with_and_without_jit_match(shots, atol, seed):
     """Test that the Jacobian of the circuit is the same with and without jit."""
     import jax
 
-    dev = qml.device("default.qubit", shots=shots, seed=7890234)
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
     dev_no_shots = qml.device("default.qubit", shots=None)
 
     def circuit(coeffs):

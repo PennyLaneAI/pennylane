@@ -627,9 +627,8 @@ class TestOptimization:
         assert np.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
 
-    @flaky(max_runs=3)
     @pytest.mark.slow
-    def test_vqe_optimization(self):
+    def test_vqe_optimization(self, seed):
         """Test that a simple VQE circuit can be optimized"""
         dev = qml.device("default.qubit", wires=2, shots=100)
         coeffs = [0.1, 0.2]
@@ -649,7 +648,7 @@ class TestOptimization:
             ansatz(params)
             return qml.expval(H)
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         params = rng.random((4, 3), requires_grad=True)
         initial_loss = cost(params)
 
