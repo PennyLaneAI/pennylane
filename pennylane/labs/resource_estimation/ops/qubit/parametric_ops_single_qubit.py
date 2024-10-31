@@ -26,6 +26,6 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
     def resource_params():
         return {}
 
-    @staticmethod
-    def resource_rep(epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.RZ, {"epsilon": epsilon})
+    @classmethod
+    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
