@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
+from pennylane.labs.vibrational_ham.bosonic import BoseSentence, BoseWord
 import matplotlib.pyplot as plt
 import itertools
 
@@ -253,3 +254,112 @@ def taylor_integrals_dipole(pes, deg=4, min_deg=1):
 
 	return f_x_arr, f_y_arr, f_z_arr
 
+def _position_to_boson(index, op):
+    bop = BoseWord({(0, index): '-'})
+    bdag = BoseWord({(0, index): '+'})
+
+    if op == "p":
+        return bdag - bop
+    if op == "q":
+        return bdag + bop
+
+def taylor_to_bosonic(taylor_arr, start_deg = 2, verbose=True):
+	num_coups = len(taylor_arr)
+
+	taylor_1D = taylor_arr[0]
+	M, num_1D_coeffs = np.shape(taylor_1D)
+	
+	taylor_deg = num_1D_coeffs + start_deg - 1
+
+	ordered_dict = BoseSentence({})
+	if verbose:
+			print("Printing one-mode expansion coefficients:")
+	for m in range(M):
+		qm = _position_to_boson(m, "q")
+		if verbose:
+			print(f"qm as bosons is {qm}")
+		for deg_i in range(start_deg, taylor_deg+1):
+			if verbose:
+				print(f"q{m}^{deg_i} --> {taylor_1D[m,deg_i-start_deg]}")
+			qpow = qm ** deg_i
+			ordered_dict += (taylor_1D[m,deg_i-start_deg] * qpow).normal_order()
+			# if verbose:
+				# print(f"Added associated operator {ordered_dict[-1]}")
+
+	if num_coups > 1:
+		if verbose:
+			print("Printing two-mode expansion coefficients:")
+		taylor_2D = taylor_arr[1]
+		degs_2d = _twobody_degs(taylor_deg, min_deg = start_deg)
+		for m1 in range(M):
+			qm1 = _position_to_boson(m1, "q")
+			for m2 in range(m1):
+				qm2 = _position_to_boson(m2, "q")
+				for deg_idx, Qs in enumerate(degs_2d):
+					q1deg = Qs[0]
+					q2deg = Qs[1]
+					if verbose:
+						print(f"q{m1}^{q1deg}*q{m2}^{q2deg} --> {taylor_2D[m1,m2,deg_idx]}")
+					qm1pow = qm1 ** q1deg
+					qm2pow = qm2 ** q2deg
+					ordered_dict += (taylor_2D[m1,m2,deg_idx] * qm1pow * qm2pow).normal_order()
+					# if verbose:
+						# print(f"Added associated operator {op_arr[-1]}")
+
+	if num_coups > 2:
+		if verbose:
+			print("Printing three-mode expansion coefficients:")
+		degs_3d = _threebody_degs(taylor_deg, min_deg=start_deg)
+		taylor_3D = taylor_arr[2]
+		for m1 in range(M):
+			qm1 = _position_to_boson(m1, "q")
+			for m2 in range(m1):
+				qm2 = _position_to_boson(m2, "q")
+				for m3 in range(m2):
+					qm3 = _position_to_boson(m3, "q")
+					for deg_idx, Qs in enumerate(degs_3d):
+						q1deg = Qs[0]
+						q2deg = Qs[1]
+						q3deg = Qs[2]
+						qm1pow = qm1 ** q1deg
+						qm2pow = qm2 ** q2deg
+						qm3pow = qm3 ** q3deg
+						if verbose:
+							print(f"q{m1}^{q1deg}*q{m2}^{q2deg}*q{m3}^{q3deg} --> {taylor_3D[m1,m2,m3,deg_idx]}")
+						ordered_dict += (taylor_3D[m1,m2,m3,deg_idx] * qm1pow * qm2pow * qm3pow).normal_order()
+						# if verbose:
+							# print(f"Added associated operator {op_arr[-1]}")
+
+	if num_coups > 3:
+		raise ValueError("Found 4-mode expansion coefficients, not defined!")
+     
+	return BoseSentence(ordered_dict).normal_order()
+
+def taylor_ham_to_bosonic(taylor_arr, freqs, is_loc = True, Uloc = None, verbose=True):
+    taylor_1D = taylor_arr[0]
+    M, num_1D_coeffs = np.shape(taylor_1D)
+    if is_loc:
+        start_deg = 2
+    else:
+        start_deg = 3
+
+    harm_pot = BoseSentence({})
+    #Add Harmonic component
+    for m in range(M):
+        qm2 = (_position_to_boson(m, "q") * _position_to_boson(m, "q")).normal_order()
+        harm_pot += qm2 * freqs[m] * 0.5
+
+    ham = taylor_to_bosonic(taylor_arr, start_deg, verbose) + harm_pot
+
+    #Create kinetic energy operation
+    alphas_arr = np.einsum('ij,ik,j,k->jk', Uloc, Uloc, np.sqrt(freqs), np.sqrt(freqs))
+    kin_energy = BoseSentence({})
+    for m1 in range(M):
+        pm1 = _position_to_boson(m1, "p")
+        if verbose:
+            print(f"p{m1} as bosons is {pm1}")
+        for m2 in range(M):
+            pm2 = _position_to_boson(m2, "p")
+            kin_energy += (0.5 * alphas_arr[m1,m2]) * (pm1 * pm2).normal_order()
+
+    return ham.normal_order(), BoseSentence(kin_energy).normal_order()
