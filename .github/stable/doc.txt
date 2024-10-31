@@ -117,5 +117,5 @@ urllib3==1.26.20
 Werkzeug==3.0.6
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
-yarl==1.17.0
+yarl==1.17.1
 zipp==3.20.2
