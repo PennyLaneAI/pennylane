@@ -638,7 +638,6 @@ def draw_mpl(
 
 
     """
-    #TODO
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
