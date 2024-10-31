@@ -594,6 +594,37 @@ class TestApplyChannel:
 
         assert np.allclose(res, target_state, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("interface", ml_frameworks_list)
+    @pytest.mark.parametrize("x", x_apply_channel_init)
+    def test_channel_init_interface(self, x, tol, apply_method, interface):
+        """Tests that channels are correctly applied to the default initial state with different interfaces"""
+        nr_wires = x[0]
+        op = x[1]
+        shape_state = [2] * 2 * nr_wires
+        init_state = basis_state(0, nr_wires)
+        init_state = np.reshape(init_state, shape_state)
+        init_state = math.asarray(init_state, like=interface)
+        target_state = np.reshape(x[2], shape_state)
+        target_state = math.asarray(target_state, like=interface)
+        res = apply_method(op, init_state)
+
+        assert math.allclose(res, target_state, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("interface", ml_frameworks_list)
+    @pytest.mark.parametrize("x", x_apply_channel_mixed)
+    def test_channel_mixed_interface(self, x, tol, apply_method, interface):
+        """Tests that channels are correctly applied to the maximally mixed state with different interfaces"""
+        nr_wires = x[0]
+        op = x[1]
+        shape_state = [2] * 2 * nr_wires
+        init_state = np.reshape(max_mixed_state(nr_wires), shape_state)
+        init_state = math.asarray(init_state, like=interface)
+        target_state = np.reshape(x[2], shape_state)
+        target_state = math.asarray(target_state, like=interface)
+        res = apply_method(op, init_state)
+
+        assert math.allclose(res, target_state, atol=tol, rtol=0)
+
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestBroadcasting:  # pylint: disable=too-few-public-methods
