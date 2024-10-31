@@ -39,7 +39,7 @@ class Lattice:
             boundary conditions for the different lattice axes.  Default is ``False`` indicating
             open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-           Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
+           Default is 1, indicating nearest neighbour. This must be 1 if ``custom_edges`` is defined.
        custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
            Default value is ``None``, which adds the edges based on ``neighbour_order``.
            Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
@@ -199,10 +199,8 @@ class Lattice:
             edges = self._identify_neighbours(cutoff)
             self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
         else:
-            if neighbour_order > 1:
-                raise ValueError(
-                    "custom_edges cannot be specified if neighbour_order argument is set to greater than 1."
-                )
+            if neighbour_order != 1:
+                raise ValueError("custom_edges cannot be specified if neighbour_order is not 1.")
             lattice_map = dict(zip(lattice_map, self.lattice_points))
             self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
