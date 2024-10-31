@@ -417,7 +417,8 @@ class TestApplyMultiControlledX:
         ],
     )
     def test_dispatch_method(self, num_wires, expected_method, interface, mocker):
-        """Test that the correct dispatch method is used based on the number of wires."""
+        """Test that the correct dispatch method is used based on the number of wires
+        for numpy and autograd."""
         state = get_random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)
