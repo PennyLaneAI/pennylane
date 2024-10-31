@@ -16,6 +16,8 @@ import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from .resource_constructor import ResourceConstructor
+
 
 class CompressedResourceOp:
     r"""Instantiate the light weight class corressponding to the operator type and parameters.
@@ -74,6 +76,9 @@ class CompressedResourceOp:
             >>> print(op_tp)
             QSVT(num_wires=5, num_angles=100)
         """
+        if not issubclass(op_type, ResourceConstructor):
+            raise TypeError("op_type must be of type ResourceConstructor.")
+
         self._name = op_type.__name__
         self.op_type = op_type
         self.params = params
@@ -164,7 +169,7 @@ class Resources:
 
 
 def add_in_series(first: Resources, other: Resources, in_place=False) -> Resources:
-    """Add two resources assuming the circuits are executed in series.
+    r"""Add two resources assuming the circuits are executed in series.
 
     Args:
         first (Resources): first resource object to combine
@@ -187,7 +192,7 @@ def add_in_series(first: Resources, other: Resources, in_place=False) -> Resourc
 
 
 def add_in_parallel(first: Resources, other: Resources, in_place=False) -> Resources:
-    """Add two resources assuming the circuits are executed in parallel.
+    r"""Add two resources assuming the circuits are executed in parallel.
 
     Args:
         first (Resources): first resource object to combine
@@ -210,7 +215,7 @@ def add_in_parallel(first: Resources, other: Resources, in_place=False) -> Resou
 
 
 def mul_in_series(first: Resources, scaler: int, in_place=False) -> Resources:
-    """Multiply two resources assuming the circuits are executed in series.
+    r"""Multiply two resources assuming the circuits are executed in series.
 
     Args:
         first (Resources): first resource object to combine
@@ -230,8 +235,8 @@ def mul_in_series(first: Resources, scaler: int, in_place=False) -> Resources:
     return Resources(first.num_wires, new_gates, new_gate_types)
 
 
-def mul_in_parllel(first: Resources, scaler: int, in_place=False) -> Resources:
-    """Multiply two resources assuming the circuits are executed in parallel.
+def mul_in_parallel(first: Resources, scaler: int, in_place=False) -> Resources:
+    r"""Multiply two resources assuming the circuits are executed in parallel.
 
     Args:
         first (Resources): first resource object to combine
@@ -254,6 +259,7 @@ def mul_in_parllel(first: Resources, scaler: int, in_place=False) -> Resources:
 
 
 def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
+    r"""Private function which combines two dictionaries together."""
     combined_dict = dict1 if in_place else copy.copy(dict1)
 
     for k, v in dict2.items():
@@ -263,6 +269,8 @@ def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
 
 
 def _scale_dict(dict1: defaultdict, scaler: int, in_place=False):
+    r"""Private function which scales the values in a dictionary."""
+
     combined_dict = dict1 if in_place else copy.copy(dict1)
 
     for k in combined_dict:
