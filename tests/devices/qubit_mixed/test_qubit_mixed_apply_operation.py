@@ -332,17 +332,20 @@ class TestApplyGroverOperator:
         op = qml.GroverOperator(wires=range(num_wires))
 
         spy_einsum = mocker.spy(math, "einsum")
-        spy_tensordot = mocker.spy(math, "moveaxis")
+        spy_tensordot = mocker.spy(math, "tensordot")
 
         apply_operation(op, state)
 
         if expected_method == "einsum":
             assert spy_einsum.called
+            assert not spy_tensordot.called
         elif expected_method == "tensordot":
             assert not spy_einsum.called
             assert spy_tensordot.called
         else:  # custom method
             assert not spy_einsum.called
+            # Not assert not spy tensordot since in the method implemented in qubit.apply_operation it is indeed in use
+            # assert not spy_tensordot.called
 
     @pytest.mark.parametrize("num_wires", [2, 3, 7, 8, 9])
     def test_correctness(self, num_wires):
