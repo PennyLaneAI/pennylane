@@ -2,7 +2,7 @@
 
 # Release 0.39.0 (current release)
 
-<h3>New features since last release</h3>
+<h3>New features since last release </h3>
 
 <h4>Creating spin Hamiltonians on lattices 💞</h4>
 
