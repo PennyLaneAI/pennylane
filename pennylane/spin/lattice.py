@@ -91,6 +91,34 @@ class Lattice:
         boundary_condition = [True, False]
 
         lattice = Lattice(n_cells, vectors, positions, boundary_condition=boundary_condition)
+
+    >>> lattice.edges
+    [(10, 13, 0), (0, 11, 0), (4, 15, 0), (2, 5, 0), (3, 8, 0), (7, 12, 0)]
+
+    Unless otherwise specified, the edges will be added based on the ``neighbour_order``,
+    which defaults to 1. Increasing ``neighbour_order`` will add additional connections
+    in the lattice.
+
+    >>> lattice = Lattice(n_cells, vectors, positions, neighbour_order=2, boundary_condition=boundary_condition)
+    >>> len(lattice.edges)
+    22
+
+    We can also define edges with custom interactions, as well as adding on-site potentials for the
+    nodes:
+
+    .. code-block:: python
+
+        # defining on-site potential at each node in the unit cell
+        custom_nodes = [[(0), ('X', 0.5)],
+                        [(1), ('X', 0.6)],
+                        [(2), ('X', 0.7)],
+                        [(3), ('X', 0.8)]]
+
+        # defining custom edges (instead of nearest-neigbour connections) and their interactions
+        custom_edges = [[(0, 1), ('XX', 0.5)],
+                        [(0, 2), ('YY', 0.6)],
+                        [(1, 3), ('ZZ', 0.7)],
+                        [(2, 3), ('ZZ', 0.7)]]
     """
 
     def __init__(
