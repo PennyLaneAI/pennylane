@@ -29,7 +29,7 @@ import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import MidMeasureMP
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
@@ -83,11 +83,8 @@ def _convert_to_interface(res, interface):
 def _make_execution_config(
     circuit: Optional["QNode"], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
-    if diff_method is None or isinstance(diff_method, str):
-        _gradient_method = diff_method
-    else:
-        _gradient_method = "gradient-transform"
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
+    gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
     grad_on_execution = execute_kwargs.get("grad_on_execution")
     if getattr(circuit, "interface", "") == "jax":
         grad_on_execution = False
@@ -96,11 +93,59 @@ def _make_execution_config(
 
     return qml.devices.ExecutionConfig(
         interface=getattr(circuit, "interface", None),
-        gradient_method=_gradient_method,
+        gradient_keyword_arguments=gradient_kwargs,
+        gradient_method=diff_method,
         grad_on_execution=grad_on_execution,
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
         mcm_config=mcm_config or qml.devices.MCMConfig(),
     )
+
+
+def _resolve_execution_config(
+    tapes: QuantumScriptBatch,
+    device: "qml.devices.Device",
+    execution_config: "qml.devices.ExecutionConfig",
+    transform_program: TransformProgram,
+) -> "qml.devices.ExecutionConfig":
+    """Resolves the execution configuration for non-device specific properties.
+
+    Args:
+        tapes (QuantumScriptBatch): a batch of tapes
+        device (qml.devices.Device): a Pennylane device
+        execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
+        transform_program (TransformProgram): a program of transformations to be applied to the tapes
+
+    Returns:
+        qml.devices.ExecutionConfig: resolved execution configuration
+    """
+    if (
+        device.name == "lightning.qubit"
+        and qml.metric_tensor in transform_program
+        and execution_config.gradient_method == "best"
+    ):
+        gradient_fn = qml.gradients.param_shift
+    else:
+        gradient_fn = QNode.get_gradient_fn(
+            device, execution_config.interface, execution_config.gradient_method, tape=tapes[0]
+        )[0]
+
+    if gradient_fn is qml.gradients.param_shift_cv:
+        execution_config.gradient_keyword_arguments["dev"] = device
+
+    execution_config.gradient_method = gradient_fn
+
+    finite_shots = any(tape.shots for tape in tapes)
+    if not finite_shots:
+        execution_config.mcm_config.postselect_mode = None
+        if execution_config.mcm_config.mcm_method == "one-shot":
+            raise ValueError(
+                f"Cannot use the '{execution_config.mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
+            )
+
+    if execution_config.mcm_config.mcm_method == "single-branch-statistics":
+        raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
+
+    return execution_config
 
 
 def _to_qfunc_output_type(
@@ -874,38 +919,18 @@ class QNode:
             Result
 
         """
-        if (
-            self.device.name == "lightning.qubit"
-            and qml.metric_tensor in self.transform_program
-            and self.diff_method == "best"
-        ):
-            gradient_fn = qml.gradients.param_shift
-        else:
-            gradient_fn = QNode.get_gradient_fn(
-                self.device, self.interface, self.diff_method, tape=self.tape
-            )[0]
+
         execute_kwargs = copy.copy(self.execute_kwargs)
-
-        gradient_kwargs = copy.copy(self.gradient_kwargs)
-        if gradient_fn is qml.gradients.param_shift_cv:
-            gradient_kwargs["dev"] = self.device
-
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
-        if not self._tape.shots:
-            mcm_config.postselect_mode = None
-            if mcm_config.mcm_method == "one-shot":
-                raise ValueError(
-                    f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
-                )
 
-        if mcm_config.mcm_method == "single-branch-statistics":
-            raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
+        config = _make_execution_config(self, self.diff_method, mcm_config=mcm_config)
+        config = _resolve_execution_config(
+            (self._tape,), self.device, config, self.transform_program
+        )
+        device_transform_program, config = self.device.preprocess(execution_config=config)
 
         full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         inner_transform_program = qml.transforms.core.TransformProgram()
-
-        config = _make_execution_config(self, gradient_fn, mcm_config)
-        device_transform_program, config = self.device.preprocess(execution_config=config)
 
         if config.use_device_gradient:
             full_transform_program += device_transform_program
@@ -913,17 +938,15 @@ class QNode:
             inner_transform_program += device_transform_program
 
         # Add the gradient expand to the program if necessary
-        if getattr(gradient_fn, "expand_transform", False):
+        if getattr(config.gradient_method, "expand_transform", False):
             full_transform_program.insert_front_transform(
-                qml.transform(gradient_fn.expand_transform),
-                **gradient_kwargs,
+                qml.transform(config.gradient_method.expand_transform),
+                **config.gradient_keyword_arguments,
             )
 
         # Calculate the classical jacobians if necessary
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
-
-        execute_kwargs["mcm_config"] = mcm_config
 
         # Mapping numpy to None here because `qml.execute` will map None back into
         # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
@@ -935,12 +958,12 @@ class QNode:
         res = qml.execute(
             (self._tape,),
             device=self.device,
-            gradient_fn=gradient_fn,
+            gradient_fn=config.gradient_method,
             interface=interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
             config=config,
-            gradient_kwargs=gradient_kwargs,
+            gradient_kwargs=config.gradient_keyword_arguments,
             **execute_kwargs,
         )
         res = res[0]
