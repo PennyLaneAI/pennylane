@@ -87,7 +87,7 @@ class Lattice:
 
         n_cells = [2, 2]
 
-        # periodic boundadry conditions apply along the [1,0] axis only
+        # periodic boundary conditions apply along the [1,0] axis only
         boundary_condition = [True, False]
 
         lattice = Lattice(n_cells, vectors, positions, boundary_condition=boundary_condition)
