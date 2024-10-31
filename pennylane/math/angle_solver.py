@@ -84,13 +84,15 @@ def QSP_angles(F):
 
     # This subroutine is an adaptation of Algorithm 1 in [arXiv:2308.01501]
     # in order to work in the context of QSP.
-    for d in reversed(range(n)):
 
-        a, b = S[:, d]
-        theta[d] = np.arctan2(b.real, a.real)
-        matrix = qml.matrix(qml.RY(-2 * theta[d], wires=0))
-        S = matrix @ S
-        S = np.array([S[0][1 : d + 1], S[1][0:d]])
+    with qml.QueuingManager.stop_recording():
+        for d in reversed(range(n)):
+
+            a, b = S[:, d]
+            theta[d] = np.arctan2(b.real, a.real)
+            matrix = qml.matrix(qml.RY(-2 * theta[d], wires=0))
+            S = matrix @ S
+            S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta
 
