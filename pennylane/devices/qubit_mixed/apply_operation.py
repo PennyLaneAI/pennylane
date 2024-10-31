@@ -24,7 +24,7 @@ from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
-from .einsum_manpulation import get_einsum_mapping, get_new_state_einsum_indices
+from .einsum_manpulation import get_einsum_mapping
 
 alphabet_array = np.array(list(alphabet))
 
@@ -159,28 +159,6 @@ def _get_dagger_symmetric_real_op(op, num_wires):
     return qml.map_wires(op, {w: w + num_wires for w in op.wires})
 
 
-def _map_indices_apply_channel(
-    *, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices
-):
-    """Map indices to einsum string
-    Args:
-        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
-
-    Returns:
-        String of einsum indices to complete einsum calculations
-    """
-    op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
-    op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
-
-    new_state_indices = get_new_state_einsum_indices(
-        old_indices=col_indices + row_indices,
-        new_indices=new_col_indices + new_row_indices,
-        state_indices=state_indices,
-    )
-    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
-    return f"...{op_1_indices},...{state_indices},...{op_2_indices}->...{new_state_indices}"
-
-
 def _get_num_wires(state, is_state_batched):
     """
     For density matrix, we need to infer the number of wires from the state.
@@ -245,7 +223,7 @@ def apply_operation_einsum(
     kraus_dagger = math.reshape(kraus_dagger, kraus_shape)
 
     #! Check the def of helper func for details
-    einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
+    einsum_indices = get_einsum_mapping(op, state, is_state_batched)
 
     # Cast back to the same as state
     return math.einsum(einsum_indices, kraus, state, kraus_dagger)

@@ -25,11 +25,9 @@ alphabet_array = np.array(list(alphabet))
 def get_einsum_mapping(
     op: qml.operation.Operator,
     state,
-    map_indices,
     is_state_batched: bool = False,
 ):
     r"""Finds the indices for einsum to apply kraus operators to a mixed state
-
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
@@ -64,7 +62,7 @@ def get_einsum_mapping(
     kraus_index = alphabet[rho_dim + 2 * num_ch_wires : rho_dim + 2 * num_ch_wires + 1]
 
     # apply mapping function
-    return map_indices(
+    return _map_indices_apply_channel(
         state_indices=state_indices,
         kraus_index=kraus_index,
         row_indices=row_indices,
@@ -74,19 +72,26 @@ def get_einsum_mapping(
     )
 
 
-def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
-    """Retrieves the einsum indices string for the new state
-
+def _map_indices_apply_channel(
+    *, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices
+):
+    """Map indices to einsum string
     Args:
-        old_indices (str): indices that are summed
-        new_indices (str): indices that must be replaced with sums
-        state_indices (str): indices of the original state
+        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
 
     Returns:
-        str: The einsum indices of the new state
+        String of einsum indices to complete einsum calculations
     """
-    return functools.reduce(
+    op_1_indices = f"{kraus_index}{new_row_indices}{row_indices}"
+    op_2_indices = f"{kraus_index}{col_indices}{new_col_indices}"
+
+    old_indices = col_indices + row_indices
+    new_indices = new_col_indices + new_row_indices
+
+    new_state_indices = functools.reduce(
         lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
         zip(old_indices, new_indices),
         state_indices,
     )
+    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
+    return f"...{op_1_indices},...{state_indices},...{op_2_indices}->...{new_state_indices}"
