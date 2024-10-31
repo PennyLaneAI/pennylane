@@ -16,9 +16,9 @@ class ResourceIdentity(qml.Identity, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
-    def resource_rep() -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.Identity, {})
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceConstructor):
@@ -31,6 +31,6 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
-    def resource_rep() -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.GlobalPhase, {})
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
