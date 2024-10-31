@@ -228,7 +228,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
         >>> expand_tape(tape, expand_measurements=True).circuit
-        [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
+        [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
 
     """
