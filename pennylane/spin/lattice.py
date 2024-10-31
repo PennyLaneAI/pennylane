@@ -102,9 +102,11 @@ class Lattice:
         which defaults to 1. Increasing ``neighbour_order`` will add additional connections
         in the lattice.
 
-        >>> lattice = Lattice(
-        ...    n_cells, vectors, positions, neighbour_order=2, boundary_condition=boundary_condition
-        ... )
+        >>> lattice = Lattice(n_cells,
+        ...                   vectors,
+        ...                   positions,
+        ...                   neighbour_order=2,
+        ...                   boundary_condition=boundary_condition)
         >>> len(lattice.edges)
         22
 
@@ -125,9 +127,11 @@ class Lattice:
                             [(1, 3), ('ZZ', 0.7)],
                             [(2, 3), ('ZZ', 0.7)]]
 
-        >>> lattice = Lattice(
-        ...    n_cells, vectors, positions, custom_edges=custom_edges, custom_nodes=custom_nodes
-        ... )
+        >>> lattice = Lattice(n_cells,
+        ...                   vectors,
+        ...                   positions,
+        ...                   custom_edges=custom_edges,
+        ...                   custom_nodes=custom_nodes)
         >>> lattice.edges
         [(0, 1, ('XX', 0.5)),
         (4, 5, ('XX', 0.5)),
