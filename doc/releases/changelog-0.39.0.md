@@ -74,9 +74,9 @@
 
   Three new industry-standard spin Hamiltonians are now available with PennyLane v0.39:
 
-  * `qml.spin.emery`: the [Emery model](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794)
-  * `qml.spin.haldane`: the [Haldane model](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015)
-  * `qml.spin.kitaev`: the [Kitaev model](https://arxiv.org/abs/cond-mat/0506438)
+  * `qml.spin.emery` : the [Emery model](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794)
+  * `qml.spin.haldane` : the [Haldane model](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015)
+  * `qml.spin.kitaev` : the [Kitaev model](https://arxiv.org/abs/cond-mat/0506438)
 
   These additions accompany `qml.spin.heisenberg`, `qml.spin.transverse_ising`, and `qml.spin.fermi_hubbard`, 
   which were introduced in v0.38. 
