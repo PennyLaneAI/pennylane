@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.labs.dla import lie_closure_dense, pauli_coefficients, pauli_decompose, project
+from pennylane.labs.dla import lie_closure_dense, op_to_adjvec, pauli_coefficients, pauli_decompose
 
 # Make an operator matrix on given wire and total wire count
 I_ = lambda w, n: I(w).matrix(wire_order=range(n))
@@ -280,15 +280,15 @@ class TestPauliDecompose:
                 assert qml.equal(_op, e)
 
 
-def test_project_consistent_with_input_types():
-    """Test that project yields the same results independently of the input type"""
+def test_op_to_adjvec_consistent_with_input_types():
+    """Test that op_to_adjvec yields the same results independently of the input type"""
 
     g = list(qml.pauli.pauli_group(3))  # su(8)
     g = lie_closure_dense(g)
 
     m = g[:32]
 
-    res1 = project(m, g)
+    res1 = op_to_adjvec(m, g)
 
     g = list(qml.pauli.pauli_group(3))  # su(8)
     g = qml.lie_closure(g)
@@ -296,6 +296,6 @@ def test_project_consistent_with_input_types():
 
     m = g[:32]
 
-    res2 = np.array(project(m, g))
+    res2 = np.array(op_to_adjvec(m, g))
     assert res1.shape == res2.shape
     assert np.allclose(res1, res2)

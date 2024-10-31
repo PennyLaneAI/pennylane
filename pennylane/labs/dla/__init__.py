@@ -41,7 +41,6 @@ Utility functions
     ~check_cartan_decomp
     ~check_commutation
     ~check_all_commuting
-    ~project
     ~apply_basis_change
     ~validate_khk
 
