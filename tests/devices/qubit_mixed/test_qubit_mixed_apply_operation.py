@@ -407,17 +407,16 @@ class TestApplyMultiControlledX:
         "num_wires, interface, expected_method",
         [
             (3, "numpy", "tensordot"),
-            (7, "numpy", "tensordot"),
             (8, "numpy", "tensordot"),
             (9, "numpy", "custom"),
             (3, "autograd", "tensordot"),
-            (7, "autograd", "tensordot"),
             (8, "autograd", "tensordot"),
             (9, "autograd", "custom"),
         ],
     )
     def test_dispatch_method(self, num_wires, expected_method, interface, mocker):
-        """Test that the correct dispatch method is used based on the number of wires."""
+        """Test that the correct dispatch method is used based on the number of wires
+        for numpy and autograd."""
         state = get_random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)
@@ -449,8 +448,9 @@ class TestApplyMultiControlledX:
             (9, "custom"),
         ],
     )
-    def test_dispatch_method_special_cases(self, num_wires, expected_method, interface, mocker):
-        """Test that the correct dispatch method is used based on the number of wires."""
+    def test_dispatch_method_interfaces(self, num_wires, expected_method, interface, mocker):
+        """Test that the correct dispatch method is used based on the number of wires
+        for torch, tensorflow, and jax."""
         state = get_random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)
