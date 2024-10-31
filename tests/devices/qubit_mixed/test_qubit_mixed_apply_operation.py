@@ -506,23 +506,23 @@ class TestApplyMultiControlledX:
 
         assert np.allclose(result.reshape(flat_shape), expected)
 
-    def test_interface_compatibility(self):
+    @pytest.mark.parametrize("interface", ml_frameworks_list)
+    def test_interface_compatibility(self, interface):
         """Test that the MultiControlledX works with different interfaces."""
         num_wires = 5
         state = get_random_mixed_state(num_wires)
+        state = math.asarray(state, like=interface)
 
         op = qml.MultiControlledX(wires=range(num_wires))
 
-        # Test with numpy interface
-        result_numpy = apply_operation(op, state)
+        result = apply_operation(op, state)
 
-        # Test with autograd interface
-        import autograd.numpy as anp
+        # Test with bruteforce
+        op_mat = op.matrix()
+        op_mat = expand_matrices(op, num_wires)
+        result_bf = get_expected_state(op_mat, state, num_wires)
 
-        state_autograd = anp.array(state)
-        result_autograd = apply_operation(op, state_autograd)
-
-        assert np.allclose(result_numpy, result_autograd)
+        assert np.allclose(result_bf, result)
 
 
 @pytest.mark.parametrize("apply_method", [apply_operation_einsum, apply_operation_tensordot])
