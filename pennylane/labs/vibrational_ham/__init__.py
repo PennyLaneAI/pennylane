@@ -10,12 +10,12 @@ from .dipole import get_dipole
 
 from .pes_generator import pes_onemode, pes_twomode, pes_threemode, vibrational_pes
 
-from .taylorForm import taylor_integrals, taylor_integrals_dipole
+from .taylorForm import taylor_integrals, taylor_integrals_dipole, taylor_to_bosonic, taylor_ham_to_bosonic
 
 from .christiansenForm import christiansen_integrals, christiansen_integrals_dipole
 
 from .christiansen_ops import christiansen_mapping, christiansen_bosonic, christiansen_hamiltonian
 
-from .bosonic import BoseWord, BoseSentence, taylor_ham_to_bosonic, taylor_to_bosonic
+from .bosonic import BoseWord, BoseSentence
 
 from .bosonic_mapping import binary_mapping
