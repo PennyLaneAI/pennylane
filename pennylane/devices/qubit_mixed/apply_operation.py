@@ -413,7 +413,10 @@ def apply_global_phase(
     op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None, **_
 ):
     """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
-    # Note: the global phase is a scalar, so we can just multiply the state by it. For density matrix we suppose that the global phase means a phase factor acting on the basis statevectors, which implies that in the final density matrix there will be no effect. Therefore, we would like to warn users that even though an identity operation is applied, the global phase operation will not have any effect on the density matrix.
+    # Note: the global phase is a scalar, so we can just multiply the
+    # state by it. For density matrix we suppose that the global phase
+    # means a phase factor acting on the basis state vectors, which
+    # implies that in the final density matrix there will be no effect.
     return state
 
 
