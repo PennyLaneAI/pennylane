@@ -14,9 +14,9 @@ class ResourceHadamard(qml.Hadamard, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
-    def resource_rep() -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.Hadamard, {})
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
@@ -33,9 +33,9 @@ class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
-    def resource_rep() -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.SWAP, {})
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceT(qml.T, re.ResourceConstructor):
@@ -48,6 +48,6 @@ class ResourceT(qml.T, re.ResourceConstructor):
     def resource_params(self) -> dict:
         return {}
 
-    @staticmethod
-    def resource_rep() -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(qml.T, {})
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})

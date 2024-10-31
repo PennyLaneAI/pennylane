@@ -22,7 +22,7 @@ class TestHadamard:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = re.CompressedResourceOp(qml.Hadamard, {})
+        expected = re.CompressedResourceOp(re.ResourceHadamard, {})
         assert re.ResourceHadamard.resource_rep() == expected
 
 
@@ -44,7 +44,7 @@ class TestSWAP:
 
     def test_resource_rep(self):
         """Test the compact representation"""
-        expected = re.CompressedResourceOp(qml.SWAP, {})
+        expected = re.CompressedResourceOp(re.ResourceSWAP, {})
         assert re.ResourceSWAP.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -73,5 +73,5 @@ class TestT:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = re.CompressedResourceOp(qml.T, {})
+        expected = re.CompressedResourceOp(re.ResourceT, {})
         assert re.ResourceT.resource_rep() == expected
