@@ -414,7 +414,8 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
   tapes from a `QNode`.
   [(#6419)](https://github.com/PennyLaneAI/pennylane/pull/6419)
 
-* Datasets are now downloaded via Dataset API.
+* An infrastructural improvement was made to PennyLane datasets that allows us to upload datasets more 
+  easily.
   [(#6126)](https://github.com/PennyLaneAI/pennylane/pull/6126)
 
 * `qml.Hadamard` now has a more friendly alias: `qml.H`.
