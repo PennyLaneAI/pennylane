@@ -1002,6 +1002,11 @@ class QNode:
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
 
         config = _make_execution_config(self, self.diff_method, mcm_config=mcm_config)
+
+        # Mapping numpy to None here because `qml.execute` will map None back into
+        # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
+        # If the user specified interface="numpy", it would've already been converted to
+        # "autograd", and it wouldn't be affected.
         _interface_user_input = None if self.interface == "numpy" else self.interface
         config.interface = _interface_user_input
         config = _resolve_execution_config(
