@@ -208,26 +208,37 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     Keyword Args:
         kwargs (Any): Any keyword arguments accepted by the quantum function
+
     Returns:
         qml.typing.Result: the result of a qnode execution
+
     **Example:**
+
     .. code-block:: python
+
         qml.capture.enable()
+
         @qml.qnode(qml.device('lightning.qubit', wires=1))
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0)), qml.probs()
+
         def f(x):
             expval_z, probs = circuit(np.pi * x, shots=50000)
             return 2 * expval_z + probs
+
         jaxpr = jax.make_jaxpr(f)(0.1)
         print("jaxpr:")
         print(jaxpr)
+
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         print()
         print("result:")
         print(res)
+
+
     .. code-block:: none
+
         jaxpr:
         { lambda ; a:f32[]. let
             b:f32[] = mul 3.141592653589793 a
@@ -246,8 +257,11 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
             i:f32[] = mul 2.0 c
             j:f32[2] = add i d
           in (j,) }
+
         result:
         [Array([-0.96939224, -0.38207346], dtype=float32)]
+
+
     """
 
     if "shots" in kwargs:
