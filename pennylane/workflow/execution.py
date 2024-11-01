@@ -104,12 +104,6 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 """str: warning message to display when cached execution is used with finite shots"""
 
 
-def _use_tensorflow_autograph():
-    import tensorflow as tf
-
-    return not tf.executing_eagerly()
-
-
 def _get_ml_boundary_execute(
     interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
@@ -245,68 +239,6 @@ def _cache_transform(tape: QuantumScript, cache: MutableMapping):
     return [tape], cache_miss_postprocessing
 
 
-def _get_interface_name(tapes, interface):
-    """Helper function to get the interface name of a list of tapes
-
-    Args:
-        tapes (list[.QuantumScript]): Quantum tapes
-        interface (Optional[str]): Original interface to use as reference.
-
-    Returns:
-        str: Interface name"""
-
-    if interface not in SUPPORTED_INTERFACE_NAMES:
-        raise qml.QuantumFunctionError(
-            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-        )
-
-    interface = INTERFACE_MAP[interface]
-
-    if interface == "auto":
-        params = []
-        for tape in tapes:
-            params.extend(tape.get_parameters(trainable_only=False))
-        interface = qml.math.get_interface(*params)
-        if interface != "numpy":
-            interface = INTERFACE_MAP[interface]
-    if interface == "tf" and _use_tensorflow_autograph():
-        interface = "tf-autograph"
-    if interface == "jax":
-        try:  # pragma: no cover
-            from .interfaces.jax import get_jax_interface_name
-        except ImportError as e:  # pragma: no cover
-            raise qml.QuantumFunctionError(  # pragma: no cover
-                "jax not found. Please install the latest "  # pragma: no cover
-                "version of jax to enable the 'jax' interface."  # pragma: no cover
-            ) from e  # pragma: no cover
-
-        interface = get_jax_interface_name(tapes)
-
-    return interface
-
-
-def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool):
-    """Helper function to update the mid-circuit measurements configuration based on
-    execution parameters"""
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
-        # This is a current limitation of defer_measurements. "hw-like" behaviour is
-        # not yet accessible.
-        if mcm_config.postselect_mode == "hw-like":
-            raise ValueError(
-                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
-                "mcm_method='deferred'."
-            )
-        mcm_config.postselect_mode = "fill-shots"
-
-    if (
-        finite_shots
-        and "jax" in interface
-        and mcm_config.mcm_method in (None, "one-shot")
-        and mcm_config.postselect_mode in (None, "hw-like")
-    ):
-        mcm_config.postselect_mode = "pad-invalid-samples"
-
-
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
@@ -439,12 +371,11 @@ def execute(
         )
 
     ### Specifying and preprocessing variables ####
-
-    _interface_user_input = interface
-    interface = _get_interface_name(tapes, interface)
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {"jax", "jax-jit"}:
-        grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
+        grad_on_execution = (
+            grad_on_execution if isinstance(config.gradient_method, Callable) else False
+        )
 
     if (
         device_vjp
@@ -460,15 +391,6 @@ def execute(
     config = config or _get_execution_config(
         gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
     )
-
-    # Mid-circuit measurement configuration validation
-    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
-    # workflow still needs to know if jax-jit is used
-    mcm_interface = (
-        _get_interface_name(tapes, "auto") if _interface_user_input is None else interface
-    )
-    finite_shots = any(tape.shots for tape in tapes)
-    _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
     is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
     transform_program, inner_transform = _make_transform_programs(

@@ -15,6 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument
+# pylint: disable=import-outside-toplevel
 import copy
 import functools
 import inspect
@@ -80,6 +81,52 @@ def _convert_to_interface(res, interface):
     return qml.math.asarray(res, like=interface_name)
 
 
+def _use_tensorflow_autograph():
+    import tensorflow as tf
+
+    return not tf.executing_eagerly()
+
+
+def _get_interface_name(tapes, interface):
+    """Helper function to get the interface name of a list of tapes
+
+    Args:
+        tapes (list[.QuantumScript]): Quantum tapes
+        interface (Optional[str]): Original interface to use as reference.
+
+    Returns:
+        str: Interface name"""
+
+    if interface not in SUPPORTED_INTERFACE_NAMES:
+        raise qml.QuantumFunctionError(
+            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
+        )
+
+    interface = INTERFACE_MAP[interface]
+
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = qml.math.get_interface(*params)
+        if interface != "numpy":
+            interface = INTERFACE_MAP[interface]
+    if interface == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
+    if interface == "jax":
+        try:  # pragma: no cover
+            from .interfaces.jax import get_jax_interface_name
+        except ImportError as e:  # pragma: no cover
+            raise qml.QuantumFunctionError(  # pragma: no cover
+                "jax not found. Please install the latest "  # pragma: no cover
+                "version of jax to enable the 'jax' interface."  # pragma: no cover
+            ) from e  # pragma: no cover
+
+        interface = get_jax_interface_name(tapes)
+
+    return interface
+
+
 def _make_execution_config(
     circuit: Optional["QNode"], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
@@ -99,6 +146,28 @@ def _make_execution_config(
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
         mcm_config=mcm_config or qml.devices.MCMConfig(),
     )
+
+
+def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool):
+    """Helper function to update the mid-circuit measurements configuration based on
+    execution parameters"""
+    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
+        # This is a current limitation of defer_measurements. "hw-like" behaviour is
+        # not yet accessible.
+        if mcm_config.postselect_mode == "hw-like":
+            raise ValueError(
+                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
+                "mcm_method='deferred'."
+            )
+        mcm_config.postselect_mode = "fill-shots"
+
+    if (
+        finite_shots
+        and "jax" in interface
+        and mcm_config.mcm_method in (None, "one-shot")
+        and mcm_config.postselect_mode in (None, "hw-like")
+    ):
+        mcm_config.postselect_mode = "pad-invalid-samples"
 
 
 def _resolve_execution_config(
@@ -144,6 +213,15 @@ def _resolve_execution_config(
 
     if execution_config.mcm_config.mcm_method == "single-branch-statistics":
         raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
+
+    # Mid-circuit measurement configuration validation
+    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
+    # workflow still needs to know if jax-jit is used
+    interface = _get_interface_name(tapes, execution_config.interface)
+    mcm_interface = (
+        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
+    )
+    _update_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 
     return execution_config
 
@@ -924,6 +1002,8 @@ class QNode:
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
 
         config = _make_execution_config(self, self.diff_method, mcm_config=mcm_config)
+        _interface_user_input = None if self.interface == "numpy" else self.interface
+        config.interface = _interface_user_input
         config = _resolve_execution_config(
             (self._tape,), self.device, config, self.transform_program
         )
@@ -948,18 +1028,14 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        # Mapping numpy to None here because `qml.execute` will map None back into
-        # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
-        # If the user specified interface="numpy", it would've already been converted to
-        # "autograd", and it wouldn't be affected.
-        interface = None if self.interface == "numpy" else self.interface
+        config.interface = _get_interface_name((self._tape,), config.interface)
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
             gradient_fn=config.gradient_method,
-            interface=interface,
+            interface=config.interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
             config=config,
