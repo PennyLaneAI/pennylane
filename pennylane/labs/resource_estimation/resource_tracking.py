@@ -15,7 +15,7 @@ r"""Core resource tracking logic."""
 from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
-from typing import Dict, Iterable, List, Set, Union
+from typing import Dict, Iterable, List, Set
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
@@ -24,7 +24,9 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 
 from .resource_constructor import ResourceConstructor, ResourcesNotDefined
-from .resource_container import CompressedResourceOp, Resources, mul_in_series
+from .resource_container import CompressedResourceOp, Resources
+
+#pylint: disable=dangerous-default-value
 
 _StandardGateSet = {
     "PauliX",
@@ -86,6 +88,13 @@ def resources_from_operation(
     obj: Operation, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Resources:
     """Get resources from an operation"""
+
+    if isinstance(obj, ResourceConstructor):
+        cp_rep = obj.resource_rep_from_op()
+        gate_counts_dict = defaultdict(int)
+        _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
+        return Resources(gate_types=gate_counts_dict)
+
     res = Resources()  # TODO: Add implementation here!
     return res
 
