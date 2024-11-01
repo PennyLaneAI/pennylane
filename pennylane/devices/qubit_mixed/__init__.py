@@ -23,5 +23,5 @@ at your own discretion.
 
     apply_operation
 """
-# from .apply_operation import apply_operation
+from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
