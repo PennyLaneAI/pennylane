@@ -32,5 +32,8 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
         return {}
 
     @classmethod
-    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
+    def resource_rep(cls, config=None) -> re.CompressedResourceOp:
+        if config is None:
+            config = re.resource_config
+
+        return re.CompressedResourceOp(cls, {})

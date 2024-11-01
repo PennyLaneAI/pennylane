@@ -36,7 +36,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
     """Resource class for CNOT"""
 
     @staticmethod
-    def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(config=None) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
     def resource_params(self) -> dict:

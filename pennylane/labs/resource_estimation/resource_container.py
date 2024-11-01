@@ -78,7 +78,7 @@ class CompressedResourceOp:
         if not issubclass(op_type, rc.ResourceConstructor):
             raise TypeError(f"op_type must be a subclass of ResourceConstructor. Got type {type(op_type)}.")
 
-        self._name = op_type.__name__
+        self._name = op_type.__name__[8:]
         self.op_type = op_type
         self.params = params
         self._hashable_params = tuple(params.items())
