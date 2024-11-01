@@ -1033,7 +1033,7 @@ class QNode:
             (self._tape,),
             device=self.device,
             gradient_fn=config.gradient_method,
-            interface=_interface_user_input,
+            interface=config.interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
             config=config,
