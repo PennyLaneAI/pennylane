@@ -103,7 +103,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None):
     and individual :class:`~.operation.Operator`'s.
 
     >>> qml.ctrl(qml.Hadamard(0), (1,2))
-    Controlled(Hadamard(wires=[0]), control_wires=[1, 2])
+    Controlled(H(0), control_wires=[1, 2])
 
     Controlled operations work with all other forms of operator math and simplification:
 

@@ -68,7 +68,7 @@ These operator functions act on operators to produce new operators.
 >>> op = qml.sum(qml.Hadamard(0), op)
 >>> op = qml.s_prod(1.2, op)
 >>> op
-1.2 * (Hadamard(wires=[0]) + X(0) @ Z(1))
+1.2 * (H(0) + X(0) @ Z(1))
 
 Operator to Other functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

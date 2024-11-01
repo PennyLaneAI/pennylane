@@ -228,7 +228,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
         >>> expand_tape(tape, expand_measurements=True).circuit
-        [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
+        [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
 
     """
@@ -372,11 +372,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     Tapes can be constructed by directly providing operations and measurements:
 
-    >>> ops = [qml.BasisState([1,0], wires=0), qml.S(0), qml.T(1)]
+    >>> ops = [qml.BasisState([1, 0], wires=[0, 1]), qml.S(0), qml.T(1)]
     >>> measurements = [qml.state()]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tape.circuit
-    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
+    [BasisState(array([1, 0]), wires=[0, 1]), S(0), T(1), state(wires=[])]
 
     They can also be populated into a recording tape via queuing.
 

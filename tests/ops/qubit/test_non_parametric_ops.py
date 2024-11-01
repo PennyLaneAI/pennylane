@@ -83,10 +83,16 @@ STRING_REPR = (
     (qml.X("a"), "X('a')"),
     (qml.Y("a"), "Y('a')"),
     (qml.Z("a"), "Z('a')"),
+    (qml.T("a"), "T('a')"),
+    (qml.S("a"), "S('a')"),
+    (qml.SX("a"), "SX('a')"),
     (qml.H(0), "H(0)"),
     (qml.X(1), "X(1)"),
     (qml.Y(2), "Y(2)"),
     (qml.Z(3), "Z(3)"),
+    (qml.T(0), "T(0)"),
+    (qml.S(0), "S(0)"),
+    (qml.SX(0), "SX(0)"),
 )
 
 

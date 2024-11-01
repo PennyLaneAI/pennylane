@@ -79,7 +79,7 @@ def pow(base, z=1, lazy=True, id=None):
     >>> qml.pow(qml.X(0), 0.5)
     X(0)**0.5
     >>> qml.pow(qml.X(0), 0.5, lazy=False)
-    SX(wires=[0])
+    SX(0)
     >>> qml.pow(qml.X(0), 0.1, lazy=False)
     X(0)**0.1
     >>> qml.pow(qml.X(0), 2, lazy=False)
@@ -118,7 +118,7 @@ class Pow(ScalarSymbolicOp):
 
     >>> sqrt_x = Pow(qml.X(0), 0.5)
     >>> sqrt_x.decomposition()
-    [SX(wires=[0])]
+    [SX(0)]
     >>> qml.matrix(sqrt_x)
     array([[0.5+0.5j, 0.5-0.5j],
                 [0.5-0.5j, 0.5+0.5j]])
