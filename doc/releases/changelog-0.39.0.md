@@ -390,6 +390,9 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
 
 <h4>Other Improvements</h4>
 
+* `default.tensor` can now handle mid-circuit measurements via the deferred measurement principle.
+  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
+
 * `process_density_matrix` was implemented in 5 `StateMeasurement` subclasses: `ExpVal`, `Var`, `Purity`, 
   `MutualInformation`, and `VnEntropy`. This facilitates future support for mixed-state devices and 
   expanded density matrix operations. Also, a fix was made in the `ProbabilityMP` class to use `qml.math.sqrt` 
@@ -449,8 +452,12 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
   @qml.qnode(dev)
   def node():
       return qml.expval(qml.Z(0))
+  ```
 
-  qml.matrix(node)()
+  ```pycon
+  >>> qml.matrix(node)()
+  array([[1., 0.],
+         [0., 1.]])
   ```
 
 * PennyLane is now compatible with NumPy 2.0.
@@ -527,7 +534,7 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
 
 <h3>Breaking changes 💔</h3>
 
-* Red-herring validation in `QNode.construct` has been removed, which fixes a bug with `qml.GlobalPhase`.
+* Red-herring validation in `QNode.construct` has been removed, which fixed a bug with `qml.GlobalPhase`.
   [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6373)
 
   Removing the `AllWires` validation in `QNode.construct` was addressed as a solution to the following 
@@ -685,14 +692,14 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
 * The wire order for `Snapshot`'s now matches the wire order of the device, rather than the simulation.
   [(#6461)](https://github.com/PennyLaneAI/pennylane/pull/6461)
   
-* Fixes a bug where `QNSPSAOptimizer`, `QNGOptimizer` and `MomentumQNGOptimizer` calculate invalid 
+* Fixed a bug where `QNSPSAOptimizer`, `QNGOptimizer` and `MomentumQNGOptimizer` calculate invalid 
   parameter updates if the metric tensor becomes singular.
   [(#6471)](https://github.com/PennyLaneAI/pennylane/pull/6471)
 
 * The `default.qubit` device now supports parameter broadcasting with `qml.classical_shadow` and `qml.shadow_expval`.
   [(#6301)](https://github.com/PennyLaneAI/pennylane/pull/6301)
 
-* Fixes unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that
+* Fixed unnecessary call of `eigvals` in `qml.ops.op_math.decompositions.two_qubit_unitary.py` that
   was causing an error in VJP. Raises warnings to users if this essentially nondifferentiable
   module is used.
   [(#6437)](https://github.com/PennyLaneAI/pennylane/pull/6437)
@@ -700,16 +707,13 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
 * Patches the `math` module to function with autoray 0.7.0.
   [(#6429)](https://github.com/PennyLaneAI/pennylane/pull/6429)
 
-* Fixes incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`.
+* Fixed incorrect differentiation of `PrepSelPrep` when using `diff_method="parameter-shift"`.
   [(#6423)](https://github.com/PennyLaneAI/pennylane/pull/6423)
-
-* `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
-  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
 
 * The `validate_device_wires` transform now raises an error if abstract wires are provided.
   [(#6405)](https://github.com/PennyLaneAI/pennylane/pull/6405)
 
-* Fixes `qml.math.expand_matrix` for qutrit and arbitrary qudit operators.
+* Fixed `qml.math.expand_matrix` for qutrit and arbitrary qudit operators.
   [(#6398)](https://github.com/PennyLaneAI/pennylane/pull/6398/)
 
 * `MeasurementValue` now raises an error when it is used as a boolean.
@@ -727,51 +731,60 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
 * `qml.map_wires` can now be applied to a batch of tapes.
   [(#6295)](https://github.com/PennyLaneAI/pennylane/pull/6295)
 
-* Fix float-to-complex casting in various places across PennyLane.
- [(#6260)](https://github.com/PennyLaneAI/pennylane/pull/6260)
- [(#6268)](https://github.com/PennyLaneAI/pennylane/pull/6268)
+* Fixed float-to-complex casting in various places across PennyLane.
+  [(#6260)](https://github.com/PennyLaneAI/pennylane/pull/6260)
+  [(#6268)](https://github.com/PennyLaneAI/pennylane/pull/6268)
 
-* Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
+* Fixed a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
   [(#6219)](https://github.com/PennyLaneAI/pennylane/pull/6219)
 
-* Fix `qml.PrepSelPrep` template to work with `torch`.
+* Fixed `qml.PrepSelPrep` template to work with `torch`.
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
 
-* Now `qml.equal` compares correctly `qml.PrepSelPrep` operators.
+* Fixed a bug where `qml.equal` now correctly compares `qml.PrepSelPrep` operators.
   [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
 
-* The `qml.QSVT` template now orders the `projector` wires first and the `UA` wires second, which is the expected order of the decomposition.
+* The `qml.QSVT` template now orders the `projector` wires first and the `UA` wires second, which is 
+  the expected order of the decomposition.
   [(#6212)](https://github.com/PennyLaneAI/pennylane/pull/6212)
 
-* The `qml.Qubitization` template now orders the `control` wires first and the `hamiltonian` wires second, which is the expected according to other templates.
+* The `qml.Qubitization` template now orders the `control` wires first and the `hamiltonian` wires second, 
+  which is the expected according to other templates.
   [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
 
-* Fixes a bug where a circuit using the `autograd` interface sometimes returns nested values that are not of the `autograd` interface.
+* Fixed a bug where a circuit using the `autograd` interface sometimes returns nested values that are 
+  not of the `autograd` interface.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
-* Fixes a bug where a simple circuit with no parameters or only builtin/numpy arrays as parameters returns autograd tensors.
+* Fixed a bug where a simple circuit with no parameters or only builtin/NumPy arrays as parameters returns 
+  autograd tensors.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
-* `qml.pauli.PauliVSpace` now uses a more stable SVD-based linear independence check to avoid running into `LinAlgError: Singular matrix`. This stabilizes the usage of `qml.lie_closure`. It also introduces normalization of the basis vector's internal representation `_M` to avoid exploding coefficients.
+* `qml.pauli.PauliVSpace` now uses a more stable SVD-based linear independence check to avoid running 
+  into `LinAlgError: Singular matrix`. This stabilizes the usage of `qml.lie_closure`. It also introduces 
+  normalization of the basis vector's internal representation `_M` to avoid exploding coefficients.
   [(#6232)](https://github.com/PennyLaneAI/pennylane/pull/6232)
 
-* Fixes a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains observables that does not define a sparse matrix.
+* Fixed a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains 
+  observables that does not define a sparse matrix.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
-* Fixes a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
+* Fixed a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
   [(#6360)](https://github.com/PennyLaneAI/pennylane/pull/6360)
 
-* Fixes a test after updating to the nightly version of Catalyst.
+* Fixed a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
 
-* Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
+* Fixed a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using 
+  parameter shift.
   [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
 
-* Fixes a bug where `mitigate_with_zne` loses the `shots` information of the original tape.
+* Fixed a bug where `mitigate_with_zne` loses the `shots` information of the original tape.
   [(#6444)](https://github.com/PennyLaneAI/pennylane/pull/6444)
 
-* Fixes a bug where `default.tensor` raises an error when applying `Identity`/`GlobalPhase` on no wires, and `PauliRot`/`MultiRZ` on a single wire.
+* Fixed a bug where `default.tensor` raises an error when applying `Identity`/`GlobalPhase` on no wires, 
+  and `PauliRot`/`MultiRZ` on a single wire.
   [(#6448)](https://github.com/PennyLaneAI/pennylane/pull/6448)
 
 * Fixes a bug where applying `qml.ctrl` and `qml.adjoint` on an operator type instead of an operator instance results in extra operators in the queue.
