@@ -79,7 +79,7 @@ The basic components of operators are the following:
 
      >>> op = qml.PauliX(0)
      >>> op.diagonalizing_gates()
-     [H(0)]
+     [Hadamard(wires=[0])]
      >>> op.eigvals()
      [ 1 -1]
 

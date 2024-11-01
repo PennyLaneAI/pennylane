@@ -428,10 +428,10 @@ def from_zx(graph, decompose_phases=True):
 
     >>> pennylane_tape.operations
     [Z(0),
-     T(0),
+     T(wires=[0]),
      RX(0.1, wires=[1]),
      Z(0),
-     Adjoint(T(0)),
+     Adjoint(T(wires=[0])),
      Z(1),
      RZ(0.3, wires=[0]),
      X(0),
