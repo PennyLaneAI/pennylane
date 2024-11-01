@@ -314,6 +314,7 @@ class BoseWord(dict):
                             if key not in [key_r, key_l]:
                                 term_dict_comm[(j, key[1])] = value
                                 j += 1
+
                         bw_comm += BoseWord(term_dict_comm).normal_order()
 
         bose_dict = {}
@@ -524,12 +525,12 @@ class BoseSentence(dict):
                 del self[fw]
 
     def normal_order(self):
-        ordered_dict = {}  # Empty PS as 0 operator to add Pws to
+        ordered_dict = BoseSentence({})  # Empty PS as 0 operator to add Pws to
 
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()
             for bw_ord, coeff_ord in bose_word_ordered.items():
-                ordered_dict[bw_ord] = coeff_ord*coeff
+                ordered_dict += coeff_ord * coeff * bw_ord
 
         bose_sen_ordered = BoseSentence(ordered_dict)
         return bose_sen_ordered

@@ -282,8 +282,8 @@ def taylor_integrals_dipole(pes, deg=4, min_deg=1):
 
 
 def _position_to_boson(index, op):
-    bop = BoseWord({(0, index): "-"})
-    bdag = BoseWord({(0, index): "+"})
+    bop = 1/np.sqrt(2) * BoseWord({(0, index): "-"})
+    bdag = 1/np.sqrt(2) * BoseWord({(0, index): "+"})
 
     if op == "p":
         return bdag - bop
@@ -291,7 +291,7 @@ def _position_to_boson(index, op):
         return bdag + bop
 
 
-def _taylor_bosonic(taylor_arr, start_deg=2):
+def taylor_harmonic(taylor_arr, start_deg=2):
     """Build Taylor form bosonic observable from provided integrals"""
     num_coups = len(taylor_arr)
 
@@ -310,9 +310,12 @@ def _taylor_bosonic(taylor_arr, start_deg=2):
         bosonized_qm = _position_to_boson(mode, "q")
         for deg_i in range(start_deg, taylor_deg + 1):
             coeff = taylor_1D[mode, deg_i - start_deg]
-            print(f"q{mode}^{deg_i} --> {coeff}")
             qpow = bosonized_qm**deg_i
+            print(coeff*qpow)
+            print("--------------------------")
+            print((coeff * qpow).normal_order())
             ordered_dict += (coeff * qpow).normal_order()
+            print("***************************")
 
     # Two-mode expansion
     if num_coups > 1:
@@ -352,7 +355,7 @@ def _taylor_bosonic(taylor_arr, start_deg=2):
     return BoseSentence(ordered_dict).normal_order()
 
 
-def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None, verbose=True):
+def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None):
     taylor_1D = taylor_arr[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
     if is_loc:
@@ -368,15 +371,13 @@ def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None, verbose=True):
         ).normal_order()
         harm_pot += bosonized_qm2 * freqs[mode] * 0.5
 
-    ham = _taylor_bosonic(taylor_arr, start_deg, verbose) + harm_pot
+    ham = taylor_harmonic(taylor_arr, start_deg) + harm_pot
 
     # Create kinetic energy operation
     alphas_arr = np.einsum("ij,ik,j,k->jk", Uloc, Uloc, np.sqrt(freqs), np.sqrt(freqs))
     kin_energy = BoseSentence({})
     for m1 in range(num_modes):
         pm1 = _position_to_boson(m1, "p")
-        if verbose:
-            print(f"p{m1} as bosons is {pm1}")
         for m2 in range(num_modes):
             pm2 = _position_to_boson(m2, "p")
             kin_energy += (0.5 * alphas_arr[m1, m2]) * (pm1 * pm2).normal_order()

@@ -13,8 +13,8 @@ from .pes_generator import pes_onemode, pes_twomode, pes_threemode, vibrational_
 from .taylorForm import (
     taylor_integrals,
     taylor_integrals_dipole,
-    taylor_to_bosonic,
-    taylor_ham_to_bosonic,
+    taylor_bosonic,
+    taylor_harmonic,
 )
 
 from .christiansenForm import christiansen_integrals, christiansen_integrals_dipole
