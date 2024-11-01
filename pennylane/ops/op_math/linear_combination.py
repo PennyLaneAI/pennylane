@@ -58,7 +58,7 @@ class LinearCombination(Sum):
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.ops.LinearCombination(coeffs, obs)
     >>> print(H)
-    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
 
 
     The coefficients can be a trainable tensor, for example:
@@ -67,7 +67,7 @@ class LinearCombination(Sum):
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.ops.LinearCombination(coeffs, obs)
     >>> print(H)
-    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
 
 
     A ``LinearCombination`` can store information on which commuting observables should be measured together in

@@ -224,22 +224,22 @@ class SingleExcitation(Operation):
         **Example:**
 
         >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        [Adjoint(T(0)),
-         H(0),
-         S(0),
-         Adjoint(T(1)),
-         Adjoint(S(1)),
-         H(1),
+        [Adjoint(T(wires=[0])),
+         Hadamard(wires=[0]),
+         S(wires=[0]),
+         Adjoint(T(wires=[1])),
+         Adjoint(S(wires=[1])),
+         Hadamard(wires=[1]),
          CNOT(wires=[1, 0]),
          RZ(-0.615, wires=[0]),
          RY(0.615, wires=[1]),
          CNOT(wires=[1, 0]),
-         Adjoint(S(0)),
-         H(0),
-         T(0),
-         H(1),
-         S(1),
-         T(1)]
+         Adjoint(S(wires=[0])),
+         Hadamard(wires=[0]),
+         T(wires=[0]),
+         Hadamard(wires=[1]),
+         S(wires=[1]),
+         T(wires=[1])]
 
         """
         # This decomposition was found by plugging the matrix representation
@@ -680,14 +680,14 @@ class DoubleExcitation(Operation):
         >>> qml.DoubleExcitation.compute_decomposition(1.23, wires=(0,1,2,3))
         [CNOT(wires=[2, 3]),
         CNOT(wires=[0, 2]),
-        H(3),
-        H(0),
+        Hadamard(wires=[3]),
+        Hadamard(wires=[0]),
         CNOT(wires=[2, 3]),
         CNOT(wires=[0, 1]),
         RY(0.15375, wires=[1]),
         RY(-0.15375, wires=[0]),
         CNOT(wires=[0, 3]),
-        H(3),
+        Hadamard(wires=[3]),
         CNOT(wires=[3, 1]),
         RY(0.15375, wires=[1]),
         RY(-0.15375, wires=[0]),
@@ -696,14 +696,14 @@ class DoubleExcitation(Operation):
         RY(-0.15375, wires=[1]),
         RY(0.15375, wires=[0]),
         CNOT(wires=[3, 1]),
-        H(3),
+        Hadamard(wires=[3]),
         CNOT(wires=[0, 3]),
         RY(-0.15375, wires=[1]),
         RY(0.15375, wires=[0]),
         CNOT(wires=[0, 1]),
         CNOT(wires=[2, 0]),
-        H(0),
-        H(3),
+        Hadamard(wires=[0]),
+        Hadamard(wires=[3]),
         CNOT(wires=[0, 2]),
         CNOT(wires=[2, 3])]
 
@@ -1268,11 +1268,11 @@ class FermionicSWAP(Operation):
         **Example:**
 
         >>> qml.FermionicSWAP.compute_decomposition(0.2, wires=(0, 1))
-        [H(0),
-         H(1),
+        [Hadamard(wires=[0]),
+         Hadamard(wires=[1]),
          MultiRZ(0.1, wires=[0, 1]),
-         H(0),
-         H(1),
+         Hadamard(wires=[0]),
+         Hadamard(wires=[1]),
          RX(1.5707963267948966, wires=[0]),
          RX(1.5707963267948966, wires=[1]),
          MultiRZ(0.1, wires=[0, 1]),
