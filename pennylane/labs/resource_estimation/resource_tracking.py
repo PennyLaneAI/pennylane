@@ -23,7 +23,7 @@ from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 
-from .resource_constructor import ResourceConstructor
+from .resource_constructor import ResourceConstructor, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources, mul_in_series
 
 _StandardGateSet = {
@@ -175,7 +175,10 @@ def _counts_from_compressed_res_op(
         return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
-    resource_decomp = cp_rep.op_type.resources(**cp_rep.params, config=config)
+    try:
+        resource_decomp = cp_rep.op_type.resources(**cp_rep.params, config=config)
+    except ResourcesNotDefined:
+        return
 
     for sub_cp_rep, counts in resource_decomp.items():
         _counts_from_compressed_res_op(
