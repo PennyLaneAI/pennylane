@@ -527,6 +527,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     state = math.stack([state0, state1], axis=axis)
     return state
 
+
 # !TODO: in the future investigate if there's other missing operations
 # satisfying this condition.
 @apply_operation.register(qml.CNOT)
@@ -545,7 +546,7 @@ def apply_symmetric_real_op(
 ):
     r"""Apply real, symmetric operator (e.g. X, CX and related controlled-X variants) to a density matrix state.
 
-    This function handles CNOT, Toffoli, and general MultiControlledX operations using the same underlying
+    This function handles CZ, CH, CNOT, CSWAP, SWAP, Toffoli, and general MultiControlledX operations using the same underlying
     implementation, as they share the properties of being real and symmetric. For operations with 8 or fewer wires,
     it uses the default einsum contraction. For larger operations, it leverages a custom kernel that
     exploits the fact that for real, symmetric operators, the adjoint operation can be implemented
