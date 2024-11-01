@@ -13,7 +13,6 @@
 # limitations under the License.
 """Functions to prepare a state."""
 
-import warnings
 from collections.abc import Iterable
 from typing import Union
 
@@ -48,7 +47,10 @@ def create_initial_state(
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
-    density_matrix = prep_operation.density_matrix(wire_order=list(wires))
+    # Here, to avoid the extension of the previous class defined in `StatePrepBase`, we directly call the method `state_vector`. However, this requires some levels of abstract translation between state vectors and density matrices.
+    # The concise explanation is that, either state vectors or density matrices, they are always originally just higher-rank tensors. Only diff is that state vectors are originally of ranks num_wires, while density matrices are of ranks 2*num_wires. Therefore, we can always define the density matrices as the same wires, appended by a 'shifted' set of wires by num_wires. Actually, this idea is also used in the wire sewing technique in catalyst package.
+    dm_wires = qml.wires.Wires(wires + [w + num_wires for w in wires])
+    density_matrix = prep_operation.state_vector(wire_order=list(dm_wires))
     density_matrix = np.reshape(density_matrix, (-1,) + (2,) * num_axes)
     dtype = str(density_matrix.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
@@ -57,69 +59,70 @@ def create_initial_state(
     return math.cast(math.asarray(density_matrix, like=like), dtype)
 
 
-def _create_basis_state(num_wires, index, dtype=np.complex128):
-    r"""Return the density matrix representing a computational basis state over all wires.
+# def _create_basis_state(num_wires, index, dtype=np.complex128):
+#     r"""Return the density matrix representing a computational basis state over all wires.
 
-    This function creates a density matrix for a pure computational basis state in a multi-qubit
-    system. The resulting state is a projector onto the basis state specified by the index.
+#     This function creates a density matrix for a pure computational basis state in a multi-qubit
+#     system. The resulting state is a projector onto the basis state specified by the index.
 
-    Args:
-        num_wires (int): Number of qubits/wires in the system. Must be positive.
-        index (int): Index of the computational basis state to create. Must be in range
-            [0, 2^num_wires - 1].
-        dtype (numpy.dtype, optional): Data type of the output array. Defaults to np.complex128.
+#     Args:
+#         num_wires (int): Number of qubits/wires in the system. Must be positive.
+#         index (int): Index of the computational basis state to create. Must be in range
+#             [0, 2^num_wires - 1].
+#         dtype (numpy.dtype, optional): Data type of the output array. Defaults to np.complex128.
 
-    Returns:
-        jax.numpy.ndarray: A reshaped density matrix with dimensions [2, 2, ..., 2] (2*num_wires times),
-            representing the pure state |index⟩⟨index|.
+#     Returns:
+#         jax.numpy.ndarray: A reshaped density matrix with dimensions [2, 2, ..., 2] (2*num_wires times),
+#             representing the pure state |index⟩⟨index|.
 
-    Examples:
-        >>> # Create |0⟩⟨0| state for 1 qubit
-        >>> rho = _create_basis_state(1, 0)
-        >>> print(rho.shape)  # (2, 2)
-        >>> # Create |01⟩⟨01| state for 2 qubits
-        >>> rho = _create_basis_state(2, 1)
-        >>> print(rho.shape)  # (2, 2, 2, 2)
+#     Examples:
+#         >>> # Create |0⟩⟨0| state for 1 qubit
+#         >>> rho = _create_basis_state(1, 0)
+#         >>> print(rho.shape)  # (2, 2)
+#         >>> # Create |01⟩⟨01| state for 2 qubits
+#         >>> rho = _create_basis_state(2, 1)
+#         >>> print(rho.shape)  # (2, 2, 2, 2)
 
-    Notes:
-        - The function first creates a 2^n × 2^n matrix and then reshapes it to the
-          tensor product structure with 2*num_wires dimensions of size 2.
-        - The resulting density matrix has trace 1 and represents a pure state.
-    """
-    rho = np.zeros((2**num_wires, 2**num_wires), dtype=dtype)
-    rho[index, index] = 1
-    return np.reshape(rho, [2] * (2 * num_wires))
+#     Notes:
+#         - The function first creates a 2^n × 2^n matrix and then reshapes it to the
+#           tensor product structure with 2*num_wires dimensions of size 2.
+#         - The resulting density matrix has trace 1 and represents a pure state.
+#     """
+#     rho = np.zeros((2**num_wires, 2**num_wires), dtype=dtype)
+#     rho[index, index] = 1
+#     return np.reshape(rho, [2] * (2 * num_wires))
 
 
-def _apply_state_vector(state, num_wires):
-    r"""Initialize the internal state in a specified pure state.
+# def _apply_state_vector(full_wires, state, num_wires):
+#     r"""Initialize the internal state in a specified pure state.
 
-    Args:
-        state (array[complex]): normalized input state of length
-            ``2**num_wires``, where ``2`` is the dimension of the system.
-        num_wires (int): number of wires that get initialized in the state
+#     Args:
+#         full_wires (Wires): all wires of the device
+#         state (array[complex]): normalized input state of length
+#             ``2**num_wires``, where ``2`` is the dimension of the system.
+#         num_wires (int): number of wires that get initialized in the state
 
-    Returns:
-        array[complex]: complex array of shape ``[2] * (2 * num_wires)``
-        representing the density matrix of this state, where ``2`` is
-        the dimension of the system.
-    """
+#     Returns:
+#         array[complex]: complex array of shape ``[2] * (2 * num_wires)``
+#         representing the density matrix of this state, where ``2`` is
+#         the dimension of the system.
+#     """
 
-    # Check the wires are in the correct order
-    assert math.size(state) == 2**num_wires, "State vector must be of size 2**wires."
+#     # Check the wires are in the correct order
+#     assert math.size(state) == 2**num_wires, "State vector must be of size 2**wires."
 
-    # Check normalization
-    norm = math.norm(state)
-    assert not math.allclose(norm, 0), "Input state must be non-zero."
-    if not math.allclose(norm, 1):
-        # Warn that the state is not normalized
-        warnings.warn(f"Input state is not normalized. Normalizing by {norm}.", UserWarning)
-        state = state / norm
+#     # Check normalization
+#     norm = math.norm(state)
+#     assert not math.allclose(norm, 0), "Input state must be non-zero."
+#     if not math.allclose(norm, 1):
+#         # Warn that the state is not normalized
+#         warnings.warn(f"Input state is not normalized. Normalizing by {norm}.", UserWarning)
+#         state = state / norm
 
-    # Initialize the entire set of wires with the state
-    rho = math.outer(state, math.conj(state))
-    rho = math.reshape(rho, [2] * 2 * num_wires)
-    return math.cast_like(rho, state)
+#     # Initialize the entire set of wires with the state
+#     rho = math.outer(state, math.conj(state))
+#     rho = math.reshape(rho, [2] * 2 * num_wires)
+#     return math.cast_like(rho, state)
 
 
 # def _apply_density_matrix(state, device_wires):
