@@ -336,12 +336,12 @@ class TestWireBehaviour:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
 
-        # Draw the circuit and save the plot
-        _, ax = qml.draw_mpl(wire1)(0.52)
-
         # All wires are orange
         wire_options = {"color": "orange"}
         _, ax = qml.draw_mpl(wire1, wire_options=wire_options)(0.52)
+
+        for w in ax.lines:
+            assert w.get_color() == "orange"
 
         # Wires are orange and cyan
         wire_options = {
@@ -349,6 +349,9 @@ class TestWireBehaviour:
             1: {"color": "cyan"}
         }
         _,ax = qml.draw_mpl(wire1, wire_options=wire_options)(0.52) 
+
+        assert ax.lines[0].get_color() == "orange"
+        assert ax.lines[1].get_color() == "cyan"
 
         @qml.qnode(dev)
         def wire1(x):
@@ -364,6 +367,17 @@ class TestWireBehaviour:
                         6: {"linestyle": "--", "color": "orange"}
                     }
         _,ax  = qml.draw_mpl(wire1, wire_options=wire_options)(0.52)
+
+        for i, w in enumerate(ax.lines):
+            if i == 2:
+                assert w.get_color() == "red"
+                assert w.get_linestyle() == "--"
+            elif i == 6:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+            else:
+                assert w.get_color() == "cyan"
+                assert w.get_linewidth() == 5
 
         plt.close()
 
