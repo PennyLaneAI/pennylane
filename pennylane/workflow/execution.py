@@ -373,9 +373,7 @@ def execute(
     ### Specifying and preprocessing variables ####
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {"jax", "jax-jit"}:
-        grad_on_execution = (
-            grad_on_execution if isinstance(config.gradient_method, Callable) else False
-        )
+        grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
     if (
         device_vjp
@@ -407,13 +405,13 @@ def execute(
         cache = None
 
     # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = interface == "numpy" or config.gradient_method in {
+    no_interface_boundary_required = interface == "numpy" or gradient_fn in {
         None,
         "backprop",
     }
     device_supports_interface_data = no_interface_boundary_required and (
         interface == "numpy"
-        or config.gradient_method == "backprop"
+        or gradient_fn == "backprop"
         or getattr(device, "short_name", "") == "default.mixed"
     )
 
