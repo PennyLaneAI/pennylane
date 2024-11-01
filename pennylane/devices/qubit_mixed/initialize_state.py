@@ -17,8 +17,8 @@ from collections.abc import Iterable
 from typing import Union
 
 import pennylane as qml
-import pennylane.math as math
 import pennylane.numpy as np
+from pennylane import math
 
 
 def create_initial_state(
