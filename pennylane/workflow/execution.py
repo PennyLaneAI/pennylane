@@ -104,6 +104,52 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 """str: warning message to display when cached execution is used with finite shots"""
 
 
+def _use_tensorflow_autograph():
+    import tensorflow as tf
+
+    return not tf.executing_eagerly()
+
+
+def _get_interface_name(tapes, interface):
+    """Helper function to get the interface name of a list of tapes
+
+    Args:
+        tapes (list[.QuantumScript]): Quantum tapes
+        interface (Optional[str]): Original interface to use as reference.
+
+    Returns:
+        str: Interface name"""
+
+    if interface not in SUPPORTED_INTERFACE_NAMES:
+        raise qml.QuantumFunctionError(
+            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
+        )
+
+    interface = INTERFACE_MAP[interface]
+
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = qml.math.get_interface(*params)
+        if interface != "numpy":
+            interface = INTERFACE_MAP[interface]
+    if interface == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
+    if interface == "jax":
+        try:  # pragma: no cover
+            from .interfaces.jax import get_jax_interface_name
+        except ImportError as e:  # pragma: no cover
+            raise qml.QuantumFunctionError(  # pragma: no cover
+                "jax not found. Please install the latest "  # pragma: no cover
+                "version of jax to enable the 'jax' interface."  # pragma: no cover
+            ) from e  # pragma: no cover
+
+        interface = get_jax_interface_name(tapes)
+
+    return interface
+
+
 def _get_ml_boundary_execute(
     interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
@@ -372,6 +418,7 @@ def execute(
 
     ### Specifying and preprocessing variables ####
     # Only need to calculate derivatives with jax when we know it will be executed later.
+    interface = _get_interface_name(tapes, interface)
     if interface in {"jax", "jax-jit"}:
         grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
@@ -575,15 +622,9 @@ def _get_execution_config(
     gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
 ):
     """Helper function to get the execution config."""
-    if gradient_fn is None:
-        _gradient_method = None
-    elif isinstance(gradient_fn, str):
-        _gradient_method = gradient_fn
-    else:
-        _gradient_method = "gradient-transform"
     config = qml.devices.ExecutionConfig(
         interface=interface,
-        gradient_method=_gradient_method,
+        gradient_method=gradient_fn,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
         mcm_config=mcm_config,

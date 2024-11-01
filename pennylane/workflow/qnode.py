@@ -1028,14 +1028,13 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        config.interface = _get_interface_name((self._tape,), config.interface)
-
+        interface = _get_interface_name((self._tape,), _interface_user_input)
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
             gradient_fn=config.gradient_method,
-            interface=config.interface,
+            interface=interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
             config=config,
