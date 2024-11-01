@@ -3,18 +3,21 @@ from typing import Dict
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=too-many-ancestors
+# pylint: disable=arguments-differ,too-many-ancestors
 
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstructor):
     """Resource class for ControlledPhaseShift"""
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(config=None) -> Dict[re.CompressedResourceOp, int]:
+        if config is None:
+            config=re.resource_config
+
         gate_types = {}
 
         cnot = re.ResourceCNOT.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
+        rz = re.ResourceRZ.resource_rep(config=config)
 
         gate_types[cnot] = 2
         gate_types[rz] = 3
@@ -33,7 +36,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
     """Resource class for CNOT"""
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
     def resource_params(self) -> dict:

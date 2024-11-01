@@ -5,6 +5,8 @@ import numpy as np
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
+#pylint: disable=arguments-differ
+
 
 def _rotation_resources(epsilon=10e-3):
     gate_types = {}
@@ -20,10 +22,13 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
     """Resource class for RZ"""
 
     @staticmethod
-    def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=epsilon)
+    def _resource_decomp(config=None) -> Dict[re.CompressedResourceOp, int]:
+        if config is None:
+            config = re.resource_config
 
-    def resource_params():
+        return _rotation_resources(epsilon=config['error_rz'])
+
+    def resource_params(self):
         return {}
 
     @classmethod
