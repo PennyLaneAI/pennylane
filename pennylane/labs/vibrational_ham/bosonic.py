@@ -293,18 +293,18 @@ class BoseWord(dict):
 
     def normal_order(self):
         r"""Convert a BoseWord to its normal-ordered form."""
-
+        
         bw_terms = sorted(self)
         len_op = len(bw_terms)
         bw_comm = BoseSentence({BoseWord({}): 0.0})
         for i in range(1, len_op):
             for j in range(i, 0, -1):
                 key_r = bw_terms[j]
-                key_l = bw_terms[j - 1]
+                key_l = bw_terms[j-1]
 
                 if self[key_l] == "-" and self[key_r] == "+":
                     bw_terms[j] = key_l
-                    bw_terms[j - 1] = key_r
+                    bw_terms[j-1] = key_r
 
                     # Add the term for commutator
                     if key_r[1] == key_l[1]:
@@ -319,11 +319,10 @@ class BoseWord(dict):
         bose_dict = {}
         for i in range(len_op):
             bose_dict[(i, bw_terms[i][1])] = self[bw_terms[i]]
-
         ordered_op = BoseWord(bose_dict) + bw_comm
         ordered_op.simplify(tol=1e-8)
         return ordered_op
-
+           
 
 # pylint: disable=useless-super-delegation
 class BoseSentence(dict):
@@ -530,7 +529,8 @@ class BoseSentence(dict):
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()
             for bw_ord, coeff_ord in bose_word_ordered.items():
-                ordered_dict[bw_ord] = coeff_ord * coeff
+                ordered_dict[bw_ord] = coeff_ord*coeff
 
         bose_sen_ordered = BoseSentence(ordered_dict)
         return bose_sen_ordered
+

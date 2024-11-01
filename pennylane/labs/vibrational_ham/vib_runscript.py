@@ -52,15 +52,10 @@ c_dipole = vibrational_ham.christiansen_integrals_dipole(pes, nbos=9)
 ham = vibrational_ham.christiansen_bosonic(one=c_ham[0], two=c_ham[1])
 
 ## Generate vibrational Dipole
-dipole_x = vibrational_ham.christiansen_bosonic(
-    one=c_dipole[0][0, :, :, :], two=c_dipole[1][0, :, :, :, :, :, :]
-)
-dipole_y = vibrational_ham.christiansen_bosonic(
-    one=c_dipole[0][1, :, :, :], two=c_dipole[1][1, :, :, :, :, :, :]
-)
-dipole_z = vibrational_ham.christiansen_bosonic(
-    one=c_dipole[0][2, :, :, :], two=c_dipole[1][2, :, :, :, :, :, :]
-)
+dipole_x = vibrational_ham.christiansen_bosonic(one=c_dipole[0][0,:,:,:], two=c_dipole[1][0,:,:,:,:,:,:])
+dipole_y = vibrational_ham.christiansen_bosonic(one=c_dipole[0][1,:,:,:], two=c_dipole[1][1,:,:,:,:,:,:])
+dipole_z = vibrational_ham.christiansen_bosonic(one=c_dipole[0][2,:,:,:], two=c_dipole[1][2,:,:,:,:,:,:])
+
 
 ## Jordan-Wigner transformed Hamiltonian
 ham_jw = vibrational_ham.christiansen_mapping(ham)
