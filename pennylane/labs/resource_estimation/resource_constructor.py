@@ -69,9 +69,9 @@ class ResourceConstructor(ABC):
         """Returns a dictionary containing the minimal information needed to
         compute a comparessed representation"""
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def resource_rep(**kwargs) -> CompressedResourceOp:
+    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
