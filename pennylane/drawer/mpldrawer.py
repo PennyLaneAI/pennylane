@@ -294,23 +294,31 @@ class MPLDrawer:
         if wire_options is None:
             wire_options = {}
 
-        # adding wire lines
-        # self._wire_lines = [
-        #     plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
-        #     for wire in range(self.n_wires)
-        # ]
-        
-        default_color = "black"
+        # Separate default options from specific wire options
+        default_options = {k: v for k, v in wire_options.items() if isinstance(k, str)}
+        wire_specific_options = {k: v for k, v in wire_options.items() if isinstance(k, int)}
 
-        # Adding wire lines with individual colors based on wire_options
+        # Define defaults if "color" and "linewidth" aren't specified in default_options
+        default_color = default_options.get("color", "black")
+        default_linewidth = default_options.get("linewidth", 1)
+
+        # Adding wire lines with individual styles based on wire_options
         self._wire_lines = []
         for wire in range(self.n_wires):
-            # Get color for the current wire; use default if not specified
-            wire_color = wire_options.get(wire, {}).get("color", default_color)
-    
-             # Create Line2D with the specific color for this wire
-            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, color=wire_color)
+            specific_options = wire_specific_options.get(wire, {})
+            line_options = {**default_options, **specific_options}
+
+            # Create Line2D with the combined options
+            line = plt.Line2D(
+                (-1, self.n_layers), 
+                (wire, wire), 
+                zorder=1, 
+                color=line_options.get("color", default_color),
+                linewidth=line_options.get("linewidth", default_linewidth),
+                linestyle=line_options.get("linestyle", "-")  
+            )
             self._wire_lines.append(line)
+
 
         for line in self._wire_lines:
             self._ax.add_line(line)
