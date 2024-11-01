@@ -553,7 +553,7 @@ def apply_symmetric_real_op(
     by shifting wires by `num_wires`.
 
     Args:
-        op (.Operation): A CNOT, Toffoli, or MultiControlledX operation
+        op (.Operation): CZ, CH, CNOT, CSWAP, SWAP, Toffoli, and general MultiControlledX operation
         state (tensor_like): The density matrix state to apply the operation to
         is_state_batched (bool): Whether the state has a batch dimension. Rather than checking
             matrix dimensions, we use op.batch_size for efficiency
