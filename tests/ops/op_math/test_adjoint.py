@@ -161,9 +161,9 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires("b")
 
-    def test_template_base(self):
+    def test_template_base(self, seed):
         """Test adjoint initialization for a template."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
@@ -642,9 +642,9 @@ class TestMatrix:
 
         self.check_matrix(tf.Variable(1.2345), "tensorflow")
 
-    def test_no_matrix_defined(self):
+    def test_no_matrix_defined(self, seed):
         """Test that if the base has no matrix defined, then Adjoint.matrix also raises a MatrixUndefinedError."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 

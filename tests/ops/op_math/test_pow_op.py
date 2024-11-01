@@ -236,9 +236,9 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires("b")
         assert op.num_wires == 1
 
-    def test_template_base(self, power_method):
+    def test_template_base(self, power_method, seed):
         """Test pow initialization for a template."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)  # pylint:disable=no-member
 
