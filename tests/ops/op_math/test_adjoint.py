@@ -884,6 +884,18 @@ class TestAdjointConstructorPreconstructedOp:
         qs = qml.tape.QuantumScript.from_queue(q)
         assert len(qs) == 0
 
+    def test_correct_queued_operators(self):
+        """Test that args and kwargs do not add operators to the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.adjoint(qml.QSVT)(qml.X(1), [qml.Z(1)])
+            qml.adjoint(qml.QSVT(qml.X(1), [qml.Z(1)]))
+
+        for op in q.queue:
+            assert op.name == "Adjoint(QSVT)"
+
+        assert len(q.queue) == 2
+
 
 class TestAdjointConstructorDifferentCallableTypes:
     """Test the adjoint transform on a variety of possible inputs."""
