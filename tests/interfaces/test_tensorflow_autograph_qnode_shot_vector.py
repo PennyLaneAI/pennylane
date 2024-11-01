@@ -18,7 +18,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices import DefaultQubit
 
 pytestmark = pytest.mark.tf
 
@@ -34,9 +33,9 @@ kwargs = {
 }
 
 qubit_device_and_diff_method = [
-    [DefaultQubit(seed=123), "finite-diff"],
-    [DefaultQubit(seed=123), "parameter-shift"],
-    [DefaultQubit(seed=123), "spsa"],
+    ["default.qubit", "finite-diff"],
+    ["default.qubit", "parameter-shift"],
+    ["default.qubit", "spsa"],
 ]
 
 TOLS = {
@@ -49,13 +48,14 @@ TOLS = {
 @pytest.fixture
 def gradient_kwargs(request):
     diff_method = request.node.funcargs["diff_method"]
+    seed = request.getfixturevalue("seed")
     return kwargs[diff_method] | (
-        {"sampler_rng": np.random.default_rng(42)} if diff_method == "spsa" else {}
+        {"sampler_rng": np.random.default_rng(seed)} if diff_method == "spsa" else {}
     )
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize("dev,diff_method", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
@@ -64,12 +64,17 @@ class TestReturnWithShotVectors:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shot vectors."""
 
     def test_jac_single_measurement_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For one measurement and one param, the gradient is a float."""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, **_):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
@@ -87,12 +92,17 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies,)
 
     def test_jac_single_measurement_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, b, **_):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
@@ -114,12 +124,17 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies,)
 
     def test_jacobian_single_measurement_multiple_param_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, **_):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -137,13 +152,18 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 2)
 
     def test_jacobian_single_measurement_param_probs(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, **_):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
@@ -161,13 +181,18 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 4)
 
     def test_jacobian_single_measurement_probs_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, b, **_):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
@@ -189,13 +214,18 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 4)
 
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, **_):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -213,14 +243,20 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 4, 2)
 
     def test_jacobian_expval_expval_multiple_params(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The gradient of multiple measurements with multiple params return a tuple of arrays."""
         par_0 = tf.Variable(1.5, dtype=tf.float64)
         par_1 = tf.Variable(0.7, dtype=tf.float64)
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, max_diff=1, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            max_diff=1,
+            **gradient_kwargs,
+        )
         def circuit(x, y, **_):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -240,12 +276,17 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 2)
 
     def test_jacobian_expval_expval_multiple_params_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, **_):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -264,12 +305,17 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 2, 3)
 
     def test_jacobian_multiple_measurement_single_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, **_):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
@@ -287,12 +333,17 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 5)
 
     def test_jacobian_multiple_measurement_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface, seed
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, b, **_):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
@@ -314,12 +365,17 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 5)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(a, **_):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -339,7 +395,7 @@ class TestReturnWithShotVectors:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies_hess)
-@pytest.mark.parametrize("dev,diff_method", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
@@ -348,7 +404,7 @@ class TestReturnShotVectorHessian:
     """Class to test the shape of the Hessian with different return types and shot vectors."""
 
     def test_hessian_expval_multiple_params(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
 
@@ -360,7 +416,13 @@ class TestReturnShotVectorHessian:
         par_1 = tf.Variable(0.7, dtype=tf.float64)
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, max_diff=2, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            max_diff=2,
+            **gradient_kwargs,
+        )
         def circuit(x, y, **_):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -388,7 +450,7 @@ shots_and_num_copies = [((30000, 28000, 26000), 3), ((30000, (28000, 2)), 3)]
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize("dev,diff_method", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
@@ -397,7 +459,7 @@ class TestReturnShotVectorIntegration:
     """Tests for the integration of shots with the TF interface."""
 
     def test_single_expectation_value(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
@@ -405,7 +467,12 @@ class TestReturnShotVectorIntegration:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(x, y, **_):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -430,7 +497,7 @@ class TestReturnShotVectorIntegration:
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_prob_expectation_values(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, seed, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
@@ -438,7 +505,12 @@ class TestReturnShotVectorIntegration:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
+        @qnode(
+            qml.device(dev_name, seed=seed),
+            diff_method=diff_method,
+            interface=interface,
+            **gradient_kwargs,
+        )
         def circuit(x, y, **_):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
