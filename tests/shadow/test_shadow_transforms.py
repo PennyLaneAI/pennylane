@@ -360,7 +360,7 @@ class TestExpvalTransform:
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    def test_basic_entangler_backward(self):
+    def test_basic_entangler_backward(self, seed):
         """Test the gradient of the expval transform"""
 
         obs = [
@@ -377,7 +377,7 @@ class TestExpvalTransform:
         shadow_circuit = qml.shadows.shadow_expval(shadow_circuit, obs)
         exact_circuit = basic_entangler_circuit_exact_expval(3, "autograd")
 
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         x = rng.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
 
         def shadow_cost(x):

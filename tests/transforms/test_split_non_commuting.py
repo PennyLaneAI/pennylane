@@ -14,7 +14,7 @@
 
 """Tests for the transform ``qml.transform.split_non_commuting`` """
 
-# pylint: disable=import-outside-toplevel,unnecessary-lambda
+# pylint: disable=import-outside-toplevel,unnecessary-lambda,too-many-arguments
 
 import itertools
 from functools import partial
@@ -740,10 +740,10 @@ class TestIntegration:
             ),
         ],
     )
-    def test_multiple_expval(self, grouping_strategy, shots, params, expected_results):
+    def test_multiple_expval(self, grouping_strategy, shots, params, expected_results, seed):
         """Tests that a QNode with multiple expval measurements is executed correctly"""
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         obs_list = complex_obs_list
         if not qml.operation.active_new_opmath():
