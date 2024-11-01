@@ -22,6 +22,7 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
+from pennylane.wires import Wires
 
 from .resource_constructor import ResourceConstructor, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
@@ -110,7 +111,7 @@ def resources_from_qfunc(
         with AnnotatedQueue() as q:
             obj(*args, **kwargs)
 
-        operations = (op for op in q.queue if not isinstance(op, MeasurementProcess))
+        operations = tuple(op for op in q.queue if not isinstance(op, MeasurementProcess))
         compressed_res_ops_lst = _operations_to_compressed_reps(operations)
 
         gate_counts_dict = defaultdict(int)
@@ -128,7 +129,7 @@ def resources_from_qfunc(
 
         clean_gate_counts = _clean_gate_counts(condensed_gate_counts)
         num_gates = sum(clean_gate_counts.values())
-        num_wires = len(set.union((op.wires.toset() for op in operations)))
+        num_wires = len(Wires.shared_wires(tuple(op.wires for op in operations)))
         return Resources(num_wires=num_wires, num_gates=num_gates, gate_types=clean_gate_counts)
 
     return wrapper
@@ -184,10 +185,14 @@ def _counts_from_compressed_res_op(
         return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
+<<<<<<< Updated upstream
     try:
         resource_decomp = cp_rep.op_type.resources(**cp_rep.params, config=config)
     except ResourcesNotDefined:
         return
+=======
+    resource_decomp = cp_rep.op_type.resources(config=config, **cp_rep.params)
+>>>>>>> Stashed changes
 
     for sub_cp_rep, counts in resource_decomp.items():
         _counts_from_compressed_res_op(
