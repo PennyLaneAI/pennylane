@@ -52,8 +52,8 @@ def _is_scalar_tensor(arg) -> bool:
 
 
 def _get_batch_shape(args, batch_dims):
-    """Calculate the batch shape for given arguments with specified batch dimensions."""
-    
+    """Calculate the batch shape for the given arguments and batch dimensions."""
+
     if batch_dims is None:
         return ()
 
@@ -65,7 +65,7 @@ def _get_batch_shape(args, batch_dims):
 
 
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
-    """Function to calculate the abstract output shapes for the given measurements."""
+    """Calculate the abstract output shapes for the given measurements."""
 
     if jax.config.jax_enable_x64:  # pylint: disable=no-member
         dtype_map = {
