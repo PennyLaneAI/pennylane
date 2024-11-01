@@ -114,7 +114,7 @@ def resources_from_qfunc(
         condensed_gate_counts = defaultdict(int)
         for sub_cmp_rep, counts in gate_counts_dict.items():
             _counts_from_compressed_res_op(
-                sub_cmp_rep, condensed_gate_counts, scaler=counts, gate_set=gate_set, config=config
+                sub_cmp_rep, condensed_gate_counts, scalar=counts, gate_set=gate_set, config=config
             )
 
         clean_gate_counts = _clean_gate_counts(condensed_gate_counts)
@@ -144,7 +144,7 @@ def resources_from_tape(
     condensed_gate_counts = defaultdict(int)
     for sub_cmp_rep, counts in gate_counts_dict.items():
         _counts_from_compressed_res_op(
-            sub_cmp_rep, condensed_gate_counts, scaler=counts, gate_set=gate_set, config=config
+            sub_cmp_rep, condensed_gate_counts, scalar=counts, gate_set=gate_set, config=config
         )
 
     clean_gate_counts = _clean_gate_counts(condensed_gate_counts)
@@ -157,7 +157,7 @@ def _counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
     gate_counts_dict,
     gate_set: Set,
-    scaler: int = 1,
+    scalar: int = 1,
     config: Dict = resource_config,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
@@ -166,12 +166,12 @@ def _counts_from_compressed_res_op(
         cp_rep (CompressedResourceOp): operation in compressed representation to extract resources from
         gate_counts_dict (_type_): base dictionary to modify with the resource counts
         gate_set (Set): the set of operations to track resources with respect too
-        scaler (int, optional): optional scaler to multiply the counts. Defaults to 1.
+        scalar (int, optional): optional scalar to multiply the counts. Defaults to 1.
         config (Dict, optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
     """
     ## If op in gate_set add to resources
     if cp_rep._name in gate_set:
-        gate_counts_dict[cp_rep] += scaler
+        gate_counts_dict[cp_rep] += scalar
         return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
@@ -179,7 +179,7 @@ def _counts_from_compressed_res_op(
 
     for sub_cp_rep, counts in resource_decomp.items():
         _counts_from_compressed_res_op(
-            sub_cp_rep, gate_counts_dict, scaler=scaler * counts, gate_set=gate_set, config=config
+            sub_cp_rep, gate_counts_dict, scalar=scalar * counts, gate_set=gate_set, config=config
         )
     return
 
