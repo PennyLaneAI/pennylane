@@ -15,7 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel, inconsistent-return-statements
 import copy
 import functools
 import inspect
@@ -859,10 +859,6 @@ class QNode:
 
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
-
-        raise qml.QuantumFunctionError(
-            f"Differentiation method {diff_method} must be a gradient transform or a string."
-        )
 
     @staticmethod
     @debug_logger

@@ -121,8 +121,8 @@ class TestGetGradientFn:
         """Tests whether error is raised if diff_method is not valid."""
         dev = qml.device("default.qubit", wires=1)
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Differentiation method 123 must be a gradient transform or a string.",
+            ValueError,
+            match="Differentiation method 123 must be a str, TransformDispatcher, or None",
         ):
             _get_gradient_fn(dev, diff_method=123)
 

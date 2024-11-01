@@ -26,7 +26,7 @@ from pennylane.workflow.qnode import (
 )
 
 
-# pylint: disable=too-many-return-statements, unsupported-binary-operation
+# pylint: disable=too-many-return-statements, unsupported-binary-operation, inconsistent-return-statements
 def _get_gradient_fn(
     device: SupportedDeviceAPIs,
     diff_method: "TransformDispatcher | SupportedDiffMethods" = "best",
@@ -86,7 +86,3 @@ def _get_gradient_fn(
 
     if isinstance(diff_method, TransformDispatcher):
         return diff_method
-
-    raise qml.QuantumFunctionError(
-        f"Differentiation method {diff_method} must be a gradient transform or a string."
-    )

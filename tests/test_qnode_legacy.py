@@ -256,8 +256,8 @@ class TestValidation:
         dev = qml.device("default.mixed", wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Differentiation method 5 must be a gradient transform or a string",
+            ValueError,
+            match="Differentiation method 5 must be a str, TransformDispatcher, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
