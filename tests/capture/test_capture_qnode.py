@@ -812,3 +812,34 @@ class TestQNodeVmapIntegration:
         assert jax.numpy.allclose(result[1], expected)
         assert jax.numpy.allclose(result[2], expected)
         assert jax.numpy.allclose(result[3], expected)
+
+    def test_vmap_circuit_return_tensor(self):
+        """Test catalyst.vmap of a hybrid workflow inside QJIT returning tensors."""
+
+        def workflow(x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x):
+                qml.RX(jax.numpy.pi * x[0], wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.state()
+
+            res1 = jax.vmap(circuit)(x)
+            res2 = jax.vmap(circuit, out_axes=0)(x)
+            return res1, res2
+
+        x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.out_avals[0].shape == (2, 2)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        expected = jax.numpy.array(
+            [
+                [0.98235508 + 0.00253459j, 0.0198374 - 0.18595308j],
+                [0.10537427 + 0.2120056j, 0.23239136 - 0.94336851j],
+            ]
+        )
+        assert jax.numpy.allclose(result[0], expected)
+        assert jax.numpy.allclose(result[1], expected)

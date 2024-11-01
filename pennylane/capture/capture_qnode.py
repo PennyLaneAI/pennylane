@@ -110,10 +110,13 @@ def _get_qnode_prim():
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
-        # Create a QNode with the given function, device, and additional kwargs
         qnode = qml.QNode(qfunc, device, **qnode_kwargs)
 
         if batch_dims is not None:
+
+            # TODO: explain why we need to do this (test_vmap_pytree_in_axes)
+            non_const_args = jax.tree_util.tree_leaves(non_const_args)
+
             # pylint: disable=protected-access
             return jax.vmap(partial(qnode._impl_call, shots=shots), batch_dims)(*non_const_args)
 
