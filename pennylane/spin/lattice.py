@@ -87,7 +87,7 @@ class Lattice:
 
         n_cells = [2, 2]
 
-        # periodic boundary conditions apply along the [1,0] axis only
+        # periodic boundary conditions applied along the [1,0] axis only
         boundary_condition = [True, False]
 
         lattice = Lattice(n_cells, vectors, positions, boundary_condition=boundary_condition)
@@ -102,11 +102,19 @@ class Lattice:
         which defaults to 1. Increasing ``neighbour_order`` will add additional connections
         in the lattice.
 
-        >>> lattice = Lattice(n_cells,
-        ...                   vectors,
-        ...                   positions,
-        ...                   neighbour_order=2,
-        ...                   boundary_condition=boundary_condition)
+        .. code-block :: python
+
+            positions = [[0.2, 0.5],
+                         [0.5, 0.2],
+                         [0.5, 0.8],
+                         [0.8, 0.5]]
+
+            lattice = Lattice(n_cells=[2, 2],
+                              vectors=[[1, 0], [0, 1]],
+                              positions=positions,
+                              neighbour_order=2,
+                              boundary_condition=[True, False])
+
         >>> len(lattice.edges)
         22
 
