@@ -132,7 +132,7 @@ class ExecutionConfig:
             or self.gradient_method is None
         ):
             raise ValueError(
-                f"gradient_method {self.gradient_method} must be a str, TransformDispatcher, or None. Got {type(self.gradient_method)} instead."
+                f"Differentiation method {self.gradient_method} must be a str, TransformDispatcher, or None. Got {type(self.gradient_method)} instead."
             )
 
         if isinstance(self.mcm_config, dict):
