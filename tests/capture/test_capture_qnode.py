@@ -37,6 +37,25 @@ def enable_disable_plxpr():
     qml.capture.disable()
 
 
+def get_qnode_output_eqns(jaxpr):
+    """Extracts equations related to QNode outputs in the given JAX expression (jaxpr).
+
+    Parameters:
+        jaxpr: A JAX expression with equations, containing QNode-related operations.
+
+    Returns:
+        List of equations containing QNode outputs.
+    """
+
+    qnode_output_eqns = []
+
+    for eqn in jaxpr.eqns:
+        if eqn.primitive.name == "qnode":
+            qnode_output_eqns.append(eqn)
+
+    return qnode_output_eqns
+
+
 def test_error_if_shot_vector():
     """Test that a NotImplementedError is raised if a shot vector is provided."""
 
@@ -688,8 +707,11 @@ class TestQNodeVmapIntegration:
         )
 
         jaxpr = jax.make_jaxpr(workflow)(x)
-        assert len(jaxpr.eqns[0].outvars) == 1
-        assert jaxpr.out_avals[0].shape == (3,)
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 3
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978])
@@ -721,8 +743,11 @@ class TestQNodeVmapIntegration:
         )
 
         jaxpr = jax.make_jaxpr(workflow)(x)
-        assert len(jaxpr.eqns[0].outvars) == 1
-        assert jaxpr.out_avals[0].shape == (2,)
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2,)
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         expected = jax.numpy.array([0.93005586, 0.00498127])
@@ -755,8 +780,11 @@ class TestQNodeVmapIntegration:
         y = jax.numpy.array([1, 2])
 
         jaxpr = jax.make_jaxpr(workflow)(y, x)
-        assert len(jaxpr.eqns[0].outvars) == 1
-        assert jaxpr.out_avals[0].shape == (2,)
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2,)
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, y, x)
         expected = jax.numpy.array([0.93005586, 0.00498127])
@@ -803,8 +831,11 @@ class TestQNodeVmapIntegration:
         }
 
         jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
-        assert len(jaxpr.eqns[0].outvars) == 1
-        assert jaxpr.out_avals[0].shape == (3,)
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 4
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
         expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
@@ -814,7 +845,7 @@ class TestQNodeVmapIntegration:
         assert jax.numpy.allclose(result[3], expected)
 
     def test_vmap_circuit_return_tensor(self):
-        """Test catalyst.vmap of a hybrid workflow inside QJIT returning tensors."""
+        """Test vmapping over a QNode that returns a tensor."""
 
         def workflow(x):
             @qml.qnode(qml.device("default.qubit", wires=1))
@@ -831,8 +862,11 @@ class TestQNodeVmapIntegration:
         x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
 
         jaxpr = jax.make_jaxpr(workflow)(x)
-        assert len(jaxpr.eqns[0].outvars) == 1
-        assert jaxpr.out_avals[0].shape == (2, 2)
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2, 2)
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         expected = jax.numpy.array(
