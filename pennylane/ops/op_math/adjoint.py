@@ -236,6 +236,10 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
         qscript = make_qscript(qfunc)(*args, **kwargs)
+
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:

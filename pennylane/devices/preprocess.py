@@ -149,8 +149,23 @@ def validate_device_wires(
                 f"Cannot run circuit(s) on {name} as they contain wires "
                 f"not found on the device: {extra_wires}"
             )
-        measurements = tape.measurements.copy()
+
         modified = False
+        new_ops = None
+        for i, op in enumerate(tape.operations):
+            if isinstance(op, qml.Snapshot):
+                mp = op.hyperparameters["measurement"]
+                if not mp.wires:
+                    if not new_ops:
+                        new_ops = list(tape.operations)
+                    modified = True
+                    new_mp = copy(mp)
+                    new_mp._wires = wires  # pylint:disable=protected-access
+                    new_ops[i] = qml.Snapshot(measurement=new_mp, tag=op.tag)
+        if not new_ops:
+            new_ops = tape.operations  # no copy in this case
+
+        measurements = tape.measurements.copy()
         for m_idx, mp in enumerate(measurements):
             if not mp.obs and not mp.wires:
                 modified = True
@@ -158,7 +173,7 @@ def validate_device_wires(
                 new_mp._wires = wires  # pylint:disable=protected-access
                 measurements[m_idx] = new_mp
         if modified:
-            tape = type(tape)(tape.operations, measurements, shots=tape.shots)
+            tape = tape.copy(ops=new_ops, measurements=measurements)
 
     return (tape,), null_postprocessing
 
