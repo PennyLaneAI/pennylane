@@ -103,6 +103,6 @@ def test_valid_gradient_method(method):
 def test_invalid_gradient_method():
     """Test that invalid types for gradient_method raise an error."""
     with pytest.raises(
-        ValueError, match=r"gradient_method must be a str, TransformDispatcher, or None"
+        ValueError, match=r"gradient_method 123 must be a str, TransformDispatcher, or None"
     ):
         ExecutionConfig(gradient_method=123)
