@@ -15,3 +15,4 @@ r"""This module contains experimental resource estimation functionality. """
 
 from .resource_constructor import ResourceConstructor, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
+from .resource_tracking import get_resources, DefaultGateSet, _StandardGateSet
