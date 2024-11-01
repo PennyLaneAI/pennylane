@@ -27,7 +27,7 @@ from pennylane.wires import Wires
 from .resource_constructor import ResourceConstructor, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
 
-#pylint: disable=dangerous-default-value
+# pylint: disable=dangerous-default-value
 
 _StandardGateSet = {
     "PauliX",
@@ -185,14 +185,7 @@ def _counts_from_compressed_res_op(
         return
 
     ## Else decompose cp_rep using its resource decomp [cp_rep --> dict[cp_rep: counts]] and extract resources
-<<<<<<< Updated upstream
-    try:
-        resource_decomp = cp_rep.op_type.resources(**cp_rep.params, config=config)
-    except ResourcesNotDefined:
-        return
-=======
     resource_decomp = cp_rep.op_type.resources(config=config, **cp_rep.params)
->>>>>>> Stashed changes
 
     for sub_cp_rep, counts in resource_decomp.items():
         _counts_from_compressed_res_op(
