@@ -192,9 +192,6 @@
 
 <h4>Other Improvements</h4>
 
-* Added string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
-  [(#6493)](https://github.com/PennyLaneAI/pennylane/pull/6493)
-
 * Added `qml.H` as an alias for the Hadamard operator.
   [(#6450)](https://github.com/PennyLaneAI/pennylane/pull/6450)
 

@@ -700,7 +700,7 @@ class Rot(Operation):
         >>> qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0).simplify()
         RX(0.1, wires=[0])
         >>> qml.Rot(np.pi, np.pi/2, 0, 0).simplify()
-        H(0)
+        Hadamard(wires=[0])
 
         """
         p0, p1, p2 = [p % (4 * np.pi) for p in self.data]

@@ -343,13 +343,13 @@ class QuantumScript:
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0))])
         >>> tape.diagonalizing_gates
-        [H(0)]
+        [Hadamard(wires=[0])]
 
         If the tape includes multiple observables, they are each diagonalized individually:
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(1))])
         >>> tape.diagonalizing_gates
-        [H(0), Z(1), S(1), H(1)]
+        [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
 
         .. warning::
             If the tape contains multiple observables acting on the same wire,
@@ -360,7 +360,7 @@ class QuantumScript:
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(0))])
             >>> tape.diagonalizing_gates
-            [H(0), Z(0), S(0), H(0)]
+            [Hadamard(wires=[0]), Z(0), S(wires=[0]), Hadamard(wires=[0])]
 
             If it is relevant for your application, applying
             :func:`~.pennylane.transforms.split_non_commuting` to a tape will split it into multiple
@@ -370,7 +370,7 @@ class QuantumScript:
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)+Y(1))])
         >>> tape.diagonalizing_gates
-        [H(0), Z(1), S(1), H(1)]
+        [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
 
         However, for operators that contain multiple terms on the same wire, a single diagonalizing
         operator will be returned that diagonalizes the full operator as a unit:
@@ -1080,7 +1080,7 @@ class QuantumScript:
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
             >>> tape.expand(expand_measurements=True).circuit
-            [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
+            [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
 
         """
         return qml.tape.tape.expand_tape(
@@ -1399,7 +1399,7 @@ def make_qscript(
     ...     _ = qml.RY(1.0, wires=0)
     ...     qs = make_qscript(qfunc)(0.5)
     >>> qs.operations
-    [H(0), CNOT(wires=[0, 1]), RX(0.5, wires=[0])]
+    [Hadamard(wires=[0]), CNOT(wires=[0, 1]), RX(0.5, wires=[0])]
 
     Note that the currently recording queue did not queue any of these quantum operations:
 
