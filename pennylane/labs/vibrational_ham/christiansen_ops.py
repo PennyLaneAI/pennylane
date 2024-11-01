@@ -8,6 +8,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .bosonic import BoseSentence, BoseWord
 from .christiansenForm import christiansen_integrals, christiansen_integrals_dipole
 
+
 def christiansen_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
     ps: bool = False,
@@ -50,9 +51,7 @@ def christiansen_mapping(
 @singledispatch
 def _christiansen_mapping_dispatch(bose_operator, ps, wire_map, tol):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
-    raise ValueError(
-        f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}"
-    )
+    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
 
 
 @_christiansen_mapping_dispatch.register
@@ -65,9 +64,7 @@ def _(bose_operator: BoseWord, ps=False, wire_map=None, tol=None):
 
     else:
         coeffs = {"+": -0.5j, "-": 0.5j}
-        qubit_operator = PauliSentence(
-            {PauliWord({}): 1.0}
-        )  # Identity PS to multiply PSs with
+        qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
 
         for item in bose_operator.items():
             (_, wire), sign = item
@@ -122,7 +119,9 @@ def _(bose_operator: BoseSentence, ps=False, wire_map=None, tol=None):
     return qubit_operator
 
 
-def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True):
+def christiansen_bosonic(
+    one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True
+):
     r"""Build a vibrational observable in the Christiansen form (C-form) and map it
     to the Pauli basis
 
@@ -228,9 +227,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, cut
                                                     (5, idx[i5]): "-",
                                                 }
                                             )
-                                            obs[w] = three[
-                                                l, m, n, k_l, k_m, k_n, h_l, h_m, h_n
-                                            ]
+                                            obs[w] = three[l, m, n, k_l, k_m, k_n, h_l, h_m, h_n]
 
     obs_sq = BoseSentence(obs)
 
@@ -243,7 +240,7 @@ def christiansen_hamiltonian(pes, nbos=16, do_cubic=False):
 
     one = h_arr[0]
     two = h_arr[1]
-    three = h_arr[2] if len(h_arr)==3 else None
+    three = h_arr[2] if len(h_arr) == 3 else None
     cform_bosonic = christiansen_bosonic(one=one, two=two, three=three)
     cform_qubit = christiansen_mapping(cform_bosonic)
 
@@ -254,26 +251,23 @@ def christiansen_dipole(pes, nbos=16, do_cubic=False):
 
     d_arr = christiansen_integrals_dipole(pes, nbos=nbos, do_cubic=do_cubic)
 
-    one_x = d_arr[0][0,:,:,:]
-    two_x = d_arr[1][0,:,:,:,:,:,:] if len(d_arr) > 1 else None
-    three_x = d_arr[2][0,:,:,:,:,:,:,:,:,:] if len(d_arr)==3 else None
+    one_x = d_arr[0][0, :, :, :]
+    two_x = d_arr[1][0, :, :, :, :, :, :] if len(d_arr) > 1 else None
+    three_x = d_arr[2][0, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
     cform_bosonic_x = christiansen_bosonic(one=one_x, two=two_x, three=three_x)
     print(cform_bosonic_x)
     cform_qubit_x = christiansen_mapping(cform_bosonic_x)
 
-    one_y = d_arr[0][1,:,:,:]
-    two_y = d_arr[1][1,:,:,:,:,:,:] if len(d_arr) > 1 else None
-    three_y = d_arr[2][1,:,:,:,:,:,:,:,:,:] if len(d_arr)==3 else None
+    one_y = d_arr[0][1, :, :, :]
+    two_y = d_arr[1][1, :, :, :, :, :, :] if len(d_arr) > 1 else None
+    three_y = d_arr[2][1, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
     cform_bosonic_y = christiansen_bosonic(one=one_y, two=two_y, three=three_y)
     cform_qubit_y = christiansen_mapping(cform_bosonic_y)
 
-    one_z = d_arr[0][2,:,:,:]
-    two_z = d_arr[1][2,:,:,:,:,:,:] if len(d_arr) > 1 else None
-    three_z = d_arr[2][2,:,:,:,:,:,:,:,:,:] if len(d_arr)==3 else None
+    one_z = d_arr[0][2, :, :, :]
+    two_z = d_arr[1][2, :, :, :, :, :, :] if len(d_arr) > 1 else None
+    three_z = d_arr[2][2, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
     cform_bosonic_z = christiansen_bosonic(one=one_z, two=two_z, three=three_z)
     cform_qubit_z = christiansen_mapping(cform_bosonic_z)
 
-    
     return cform_qubit_x, cform_qubit_y, cform_qubit_z
-
-

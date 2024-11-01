@@ -534,5 +534,3 @@ class BoseSentence(dict):
 
         bose_sen_ordered = BoseSentence(ordered_dict)
         return bose_sen_ordered
-
-

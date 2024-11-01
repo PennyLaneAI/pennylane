@@ -309,7 +309,7 @@ def _taylor_bosonic(taylor_arr, start_deg=2):
     for mode in range(num_modes):
         bosonized_qm = _position_to_boson(mode, "q")
         for deg_i in range(start_deg, taylor_deg + 1):
-            coeff = taylor_1D[mode,deg_i-start_deg]
+            coeff = taylor_1D[mode, deg_i - start_deg]
             print(f"q{mode}^{deg_i} --> {coeff}")
             qpow = bosonized_qm**deg_i
             ordered_dict += (coeff * qpow).normal_order()
@@ -324,7 +324,7 @@ def _taylor_bosonic(taylor_arr, start_deg=2):
                 bosonized_qm2 = _position_to_boson(m2, "q")
                 for deg_idx, Qs in enumerate(degs_2d):
                     q1deg, q2deg = Qs[:2]
-                    coeff = taylor_2D[m1,m2,deg_idx]
+                    coeff = taylor_2D[m1, m2, deg_idx]
                     bosonized_qm1_pow = bosonized_qm1**q1deg
                     bosonized_qm2_pow = bosonized_qm2**q2deg
                     ordered_dict += (coeff * bosonized_qm1_pow * bosonized_qm2_pow).normal_order()
@@ -341,7 +341,7 @@ def _taylor_bosonic(taylor_arr, start_deg=2):
                     bosonized_qm3 = _position_to_boson(m3, "q")
                     for deg_idx, Qs in enumerate(degs_3d):
                         q1deg, q2deg, q3deg = Qs[:3]
-                        coeff = taylor_3D[m1,m2,m3,deg_idx]
+                        coeff = taylor_3D[m1, m2, m3, deg_idx]
                         bosonized_qm1_pow = bosonized_qm1**q1deg
                         bosonized_qm2_pow = bosonized_qm2**q2deg
                         bosonized_qm3_pow = bosonized_qm3**q3deg
@@ -363,7 +363,9 @@ def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None, verbose=True):
     harm_pot = BoseSentence({})
     # Add Harmonic component
     for mode in range(num_modes):
-        bosonized_qm2 = (_position_to_boson(mode, "q") * _position_to_boson(mode, "q")).normal_order()
+        bosonized_qm2 = (
+            _position_to_boson(mode, "q") * _position_to_boson(mode, "q")
+        ).normal_order()
         harm_pot += bosonized_qm2 * freqs[mode] * 0.5
 
     ham = _taylor_bosonic(taylor_arr, start_deg, verbose) + harm_pot
