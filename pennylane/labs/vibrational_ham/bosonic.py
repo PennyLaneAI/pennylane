@@ -535,8 +535,6 @@ class BoseSentence(dict):
 
         bose_sen_ordered = BoseSentence(ordered_dict)
         return bose_sen_ordered
-<<<<<<< HEAD
-=======
     
 def _q_to_bos(index):
     bop = BoseWord({(0, index): '-'})
@@ -651,4 +649,3 @@ def taylor_ham_to_bosonic(taylor_arr, freqs, is_loc = True, Uloc = None, verbose
             kin_arr.append((0.5 * alphas_arr[m1,m2]) * (pm1 * pm2).normal_order())
 
     return ham.normal_order(), BoseSentence(kin_arr).normal_order()
->>>>>>> 01cfd8037 (bring back taylor_to_bosonic)

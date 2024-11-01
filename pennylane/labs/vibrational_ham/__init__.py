@@ -16,6 +16,6 @@ from .christiansenForm import christiansen_integrals, christiansen_integrals_dip
 
 from .christiansen_ops import christiansen_mapping, christiansen_bosonic, christiansen_hamiltonian
 
-from .bosonic import BoseWord, BoseSentence
+from .bosonic import BoseWord, BoseSentence, taylor_ham_to_bosonic, taylor_to_bosonic
 
 from .bosonic_mapping import binary_mapping
