@@ -527,7 +527,8 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     state = math.stack([state0, state1], axis=axis)
     return state
 
-
+# !TODO: in the future investigate if there's other missing operations
+# satisfying this condition.
 @apply_operation.register(qml.CNOT)
 @apply_operation.register(qml.MultiControlledX)
 @apply_operation.register(qml.Toffoli)
@@ -542,7 +543,7 @@ def apply_symmetric_real_op(
     debugger=None,
     **_,
 ):
-    r"""Apply MultiControlledX gate (and related controlled-X variants) to a density matrix state.
+    r"""Apply real, symmetric operator (e.g. X, CX and related controlled-X variants) to a density matrix state.
 
     This function handles CNOT, Toffoli, and general MultiControlledX operations using the same underlying
     implementation, as they share the properties of being real and symmetric. For operations with 8 or fewer wires,
@@ -561,8 +562,10 @@ def apply_symmetric_real_op(
         tensor_like: The transformed density matrix state
 
     Note:
-        This implementation could potentially be extended to other real self-inverse operations
-        like SWAP, CSWAP, CZ, CH, but not to complex operations like CY which has imaginary components.
+        This is not a final version. Two possible improvements are:
+        1. More existing real, symmetric ops to include in this dispatch
+        2. A more general approach to handle other types of ops but following
+        similar logic as in this function.
     """
 
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
