@@ -311,11 +311,7 @@ def taylor_harmonic(taylor_arr, start_deg=2):
         for deg_i in range(start_deg, taylor_deg + 1):
             coeff = taylor_1D[mode, deg_i - start_deg]
             qpow = bosonized_qm**deg_i
-            print(coeff*qpow)
-            print("--------------------------")
-            print((coeff * qpow).normal_order())
             ordered_dict += (coeff * qpow).normal_order()
-            print("***************************")
 
     # Two-mode expansion
     if num_coups > 1:
