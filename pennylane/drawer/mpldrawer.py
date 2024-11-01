@@ -310,12 +310,12 @@ class MPLDrawer:
 
             # Create Line2D with the combined options
             line = plt.Line2D(
-                (-1, self.n_layers), 
-                (wire, wire), 
-                zorder=1, 
+                (-1, self.n_layers),
+                (wire, wire),
+                zorder=1,
                 color=line_options.get("color", default_color),
                 linewidth=line_options.get("linewidth", default_linewidth),
-                linestyle=line_options.get("linestyle", "-")  
+                linestyle=line_options.get("linestyle", "-")
             )
             self._wire_lines.append(line)
 
