@@ -330,31 +330,24 @@ class TestWireBehaviour:
 
         # Define the quantum function with @qml.qnode
         @qml.qnode(dev)
-        def wire1(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
+        def f_circ(x):
+            for w in range(10):
+                qml.Hadamard(w)
             return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
 
         # All wires are orange
         wire_options = {"color": "orange"}
-        _, ax = qml.draw_mpl(wire1, wire_options=wire_options)(0.52)
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
 
         for w in ax.lines:
             assert w.get_color() == "orange"
 
         # Wires are orange and cyan
         wire_options = {0: {"color": "orange"}, 1: {"color": "cyan"}}
-        _, ax = qml.draw_mpl(wire1, wire_options=wire_options)(0.52)
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
 
         assert ax.lines[0].get_color() == "orange"
         assert ax.lines[1].get_color() == "cyan"
-
-        @qml.qnode(dev)
-        def wire2(x):
-            for w in range(10):
-                qml.Hadamard(w)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
 
         # Make all wires cyan and bold,
         # except for wires 2 and 6, which are dashed and another color
@@ -364,7 +357,7 @@ class TestWireBehaviour:
             2: {"linestyle": "--", "color": "red"},
             6: {"linestyle": "--", "color": "orange"},
         }
-        _, ax = qml.draw_mpl(wire2, wire_options=wire_options)(0.52)
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
 
         for i, w in enumerate(ax.lines):
             if i == 2:
