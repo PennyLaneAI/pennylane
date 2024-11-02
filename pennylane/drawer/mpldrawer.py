@@ -315,10 +315,9 @@ class MPLDrawer:
                 zorder=1,
                 color=line_options.get("color", default_color),
                 linewidth=line_options.get("linewidth", default_linewidth),
-                linestyle=line_options.get("linestyle", "-")
+                linestyle=line_options.get("linestyle", "-"),
             )
             self._wire_lines.append(line)
-
 
         for line in self._wire_lines:
             self._ax.add_line(line)
