@@ -328,9 +328,9 @@ class TestWireBehaviour:
             assert w.get_color() == "black"
             assert w.get_linewidth() == 4
 
-        # Define the quantum function with @qml.qnode
         @qml.qnode(dev)
         def f_circ(x):
+            """Circuit on ten qubits."""
             for w in range(10):
                 qml.Hadamard(w)
             return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
