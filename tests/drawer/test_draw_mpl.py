@@ -331,6 +331,7 @@ class TestWireBehaviour:
         @qml.qnode(dev)
         def f_circ(x):
             """Circuit on ten qubits."""
+            qml.RX(x, wires=0)
             for w in range(10):
                 qml.Hadamard(w)
             return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
