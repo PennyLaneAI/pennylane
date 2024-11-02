@@ -351,7 +351,7 @@ class TestWireBehaviour:
         assert ax.lines[1].get_color() == "cyan"
 
         @qml.qnode(dev)
-        def wire1(x):
+        def wire2(x):
             for w in range(10):
                 qml.Hadamard(w)
             return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
@@ -364,7 +364,7 @@ class TestWireBehaviour:
             2: {"linestyle": "--", "color": "red"},
             6: {"linestyle": "--", "color": "orange"},
         }
-        _, ax = qml.draw_mpl(wire1, wire_options=wire_options)(0.52)
+        _, ax = qml.draw_mpl(wire2, wire_options=wire_options)(0.52)
 
         for i, w in enumerate(ax.lines):
             if i == 2:
