@@ -1,7 +1,21 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+r"""Abstract base class for resource operators."""
 from abc import ABC, abstractmethod
 from typing import Callable, Dict
 
-from .resource_container import CompressedResourceOp
+import pennylane.labs.resource_estimation.resource_container as rc
 
 
 class ResourceConstructor(ABC):
@@ -49,7 +63,7 @@ class ResourceConstructor(ABC):
 
     @staticmethod
     @abstractmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[rc.CompressedResourceOp, int]:
         """Returns the Resource object. This method is only to be used inside
         the methods of classes inheriting from ResourceConstructor."""
 
@@ -71,11 +85,11 @@ class ResourceConstructor(ABC):
 
     @classmethod
     @abstractmethod
-    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
+    def resource_rep(cls, **kwargs) -> rc.CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-    def resource_rep_from_op(self) -> CompressedResourceOp:
+    def resource_rep_from_op(self) -> rc.CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
         params = self.resource_params()
         return self.__class__.resource_rep(**params)
