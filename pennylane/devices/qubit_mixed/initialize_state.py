@@ -41,7 +41,7 @@ def create_initial_state(
     num_wires = len(wires)
     num_axes = (
         2 * num_wires
-    )  # we initialize the density matrix as the tensor form to keep compatiblity with the rest of the module
+    )  # we initialize the density matrix as the tensor form to keep compatibility with the rest of the module
     if not prep_operation:
         state = np.zeros((2,) * num_axes, dtype=complex)
         state[(0,) * num_axes] = 1
