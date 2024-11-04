@@ -106,9 +106,9 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 
 def _use_tensorflow_autograph():
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
-    try:
+    try:  # pragma: no cover
         import tensorflow as tf
-    except ImportError as e:
+    except ImportError as e:  # pragma: no cover
         raise qml.QuantumFunctionError(  # pragma: no cover
             "tensorflow not found. Please install the latest "  # pragma: no cover
             "version of tensorflow to enable the 'tensorflow' interface."  # pragma: no cover
