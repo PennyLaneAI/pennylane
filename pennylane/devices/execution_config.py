@@ -17,6 +17,7 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
+from pennylane.transforms.core import TransformDispatcher
 from pennylane.workflow import SUPPORTED_INTERFACE_NAMES
 
 
@@ -86,7 +87,7 @@ class ExecutionConfig:
     ``True`` indicates to either use the device Jacobian products or fail.
     """
 
-    gradient_method: Optional[str] = None
+    gradient_method: Optional[Union[str, TransformDispatcher]] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
     gradient_keyword_arguments: Optional[dict] = None
@@ -125,6 +126,14 @@ class ExecutionConfig:
 
         if self.gradient_keyword_arguments is None:
             self.gradient_keyword_arguments = {}
+
+        if not (
+            isinstance(self.gradient_method, (str, TransformDispatcher))
+            or self.gradient_method is None
+        ):
+            raise ValueError(
+                f"Differentiation method {self.gradient_method} must be a str, TransformDispatcher, or None. Got {type(self.gradient_method)} instead."
+            )
 
         if isinstance(self.mcm_config, dict):
             self.mcm_config = MCMConfig(**self.mcm_config)

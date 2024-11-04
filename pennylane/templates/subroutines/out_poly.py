@@ -161,7 +161,7 @@ class OutPoly(Operation):
                     should be provided. Default is ``None``.
 
     Raises:
-        ValueError: If `mod` is not a power of 2 and insufficient number of work wires are provided.
+        ValueError: If `mod` is not :math:`2^{\text{length(output_wires)}}` and insufficient number of work wires are provided.
         ValueError: If the wires used in the input and output registers overlap.
         ValueError: If the function is not defined with integer coefficients.
 
@@ -206,7 +206,7 @@ class OutPoly(Operation):
     .. details::
         :title: Usage Details
 
-        If the value of `mod` is not a power of two, then two auxiliary qubits must be provided.
+        If the value of `mod` is not :math:`2^{\text{length(output_wires)}}`, then two auxiliary qubits must be provided.
 
         .. code-block:: python
 
