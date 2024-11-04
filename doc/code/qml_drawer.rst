@@ -69,7 +69,7 @@ as `color`, `linestyle`, and `linewidth` allows for per-wire customization.
         qml.CNOT(wires=[0, 1])
         return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
 
-    # Draw the circuit and save the plot
+    # Draw the circuit
     fig, ax = qml.draw_mpl(wire1)(0.52)
 
     # All wires are orange
