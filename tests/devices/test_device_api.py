@@ -15,7 +15,7 @@
 Tests for the basic default behavior of the Device API.
 """
 
-# pylint:disable=unused-argument,too-few-public-methods
+# pylint:disable=unused-argument,too-few-public-methods,unused-variable
 
 import pytest
 
