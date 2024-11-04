@@ -356,8 +356,8 @@ class TestWireBehaviour:
         wire_options = {
             "color": "cyan",
             "linewidth": 5,
-            2: {"linestyle": "--", "color": "red"},
-            6: {"linestyle": "--", "color": "orange"},
+            2: {"linestyle": "--", "color": "red", "linewidth": 1},
+            6: {"linestyle": "--", "color": "orange", "linewidth": 1},
         }
         _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
 
