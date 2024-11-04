@@ -65,12 +65,18 @@ def test_operator_definition_qpe(hamiltonian):
     assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
 
 
-@pytest.mark.xfail(reason="PrepSelPrep does not work with parameter-shift (GitHub issue #6331)")
-def test_standard_validity():
+@pytest.mark.parametrize(
+    ("lcu", "control", "skip_diff"),
+    [
+        (qml.dot([0.1, -0.3], [qml.X(2), qml.Z(3)]), [0], False),
+        (qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]), [3, 4], True),
+    ],
+)
+def test_standard_validity(lcu, control, skip_diff):
     """Check the operation using the assert_valid function."""
-    H = qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)])
-    op = qml.Qubitization(H, control=[3, 4])
-    qml.ops.functions.assert_valid(op)
+    op = qml.Qubitization(lcu, control)
+    # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
+    qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
@@ -170,7 +176,7 @@ class TestDifferentiability:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (False, True))
     @pytest.mark.parametrize("shots", (None, 50000))
-    def test_qnode_jax(self, shots, use_jit):
+    def test_qnode_jax(self, shots, use_jit, seed):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
@@ -185,7 +191,7 @@ class TestDifferentiability:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
@@ -204,7 +210,7 @@ class TestDifferentiability:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_torch(self, shots):
+    def test_qnode_torch(self, shots, seed):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
@@ -213,7 +219,7 @@ class TestDifferentiability:
         if shots is not None:
             pytest.xfail()
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -225,12 +231,12 @@ class TestDifferentiability:
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
     @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots):
+    def test_qnode_tf(self, shots, seed):
         """ "Test that the QNode executes and is differentiable with TensorFlow. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
