@@ -33,7 +33,12 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
+from .execution import (
+    INTERFACE_MAP,
+    SUPPORTED_INTERFACE_NAMES,
+    SupportedInterfaceUserInput,
+    _get_interface_name,
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -79,52 +84,6 @@ def _convert_to_interface(res, interface):
     interface_name = interface_conversion_map[interface]
 
     return qml.math.asarray(res, like=interface_name)
-
-
-def _use_tensorflow_autograph():
-    import tensorflow as tf
-
-    return not tf.executing_eagerly()
-
-
-def _get_interface_name(tapes, interface):
-    """Helper function to get the interface name of a list of tapes
-
-    Args:
-        tapes (list[.QuantumScript]): Quantum tapes
-        interface (Optional[str]): Original interface to use as reference.
-
-    Returns:
-        str: Interface name"""
-
-    if interface not in SUPPORTED_INTERFACE_NAMES:
-        raise qml.QuantumFunctionError(
-            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-        )
-
-    interface = INTERFACE_MAP[interface]
-
-    if interface == "auto":
-        params = []
-        for tape in tapes:
-            params.extend(tape.get_parameters(trainable_only=False))
-        interface = qml.math.get_interface(*params)
-        if interface != "numpy":
-            interface = INTERFACE_MAP[interface]
-    if interface == "tf" and _use_tensorflow_autograph():
-        interface = "tf-autograph"
-    if interface == "jax":
-        try:  # pragma: no cover
-            from .interfaces.jax import get_jax_interface_name
-        except ImportError as e:  # pragma: no cover
-            raise qml.QuantumFunctionError(  # pragma: no cover
-                "jax not found. Please install the latest "  # pragma: no cover
-                "version of jax to enable the 'jax' interface."  # pragma: no cover
-            ) from e  # pragma: no cover
-
-        interface = get_jax_interface_name(tapes)
-
-    return interface
 
 
 def _make_execution_config(
