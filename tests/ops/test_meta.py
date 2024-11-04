@@ -220,32 +220,43 @@ class TestWireCut:
             op.matrix()
 
 
-def test_decomposition():
-    """Test the decomposition of the Snapshot operation."""
+class TestSnapshot:
+    """Unit tests for the snapshot class."""
 
-    assert Snapshot.compute_decomposition() == []
-    assert Snapshot().decomposition() == []
+    def test_decomposition(self):
+        """Test the decomposition of the Snapshot operation."""
 
+        assert Snapshot.compute_decomposition() == []
+        assert Snapshot().decomposition() == []
 
-def test_label_method():
-    """Test the label method for the Snapshot operation."""
-    assert Snapshot().label() == "|Snap|"
-    assert Snapshot("my_label").label() == "|Snap|"
+    def test_label_method(self):
+        """Test the label method for the Snapshot operation."""
+        assert Snapshot().label() == "|Snap|"
+        assert Snapshot("my_label").label() == "|Snap|"
 
+    def test_control(self):
+        """Test the _controlled method for the Snapshot operation."""
+        assert isinstance(Snapshot()._controlled(0), Snapshot)
+        assert Snapshot("my_label")._controlled(0).tag == Snapshot("my_label").tag
 
-def test_control():
-    """Test the _controlled method for the Snapshot operation."""
-    assert isinstance(Snapshot()._controlled(0), Snapshot)
-    assert Snapshot("my_label")._controlled(0).tag == Snapshot("my_label").tag
+    def test_adjoint(self):
+        """Test the adjoint method for the Snapshot operation."""
+        assert isinstance(Snapshot().adjoint(), Snapshot)
+        assert Snapshot("my_label").adjoint().tag == Snapshot("my_label").tag
 
+    def test_snapshot_no_empty_wire_list_error(self):
+        """Test that Snapshot does not raise an empty wire error."""
+        snapshot = qml.Snapshot()
+        assert isinstance(snapshot, qml.Snapshot)
 
-def test_adjoint():
-    """Test the adjoint method for the Snapshot operation."""
-    assert isinstance(Snapshot().adjoint(), Snapshot)
-    assert Snapshot("my_label").adjoint().tag == Snapshot("my_label").tag
-
-
-def test_snapshot_no_empty_wire_list_error():
-    """Test that Snapshot does not raise an empty wire error."""
-    snapshot = qml.Snapshot()
-    assert isinstance(snapshot, qml.Snapshot)
+    @pytest.mark.parametrize(
+        "mp", (qml.expval(qml.Z(0)), qml.measurements.StateMP(wires=(2, 1, 0)))
+    )
+    def test_map_wires(self, mp):
+        """Test that the wires of the measurement are mapped"""
+        op = Snapshot(measurement=mp, tag="my tag")
+        wire_map = {0: "a", 1: "b"}
+        new_op = op.map_wires(wire_map)
+        target_mp = mp.map_wires(wire_map)
+        qml.assert_equal(target_mp, new_op.hyperparameters["measurement"])
+        assert new_op.tag == "my tag"
