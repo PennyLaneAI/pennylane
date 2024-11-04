@@ -1872,6 +1872,17 @@ class TestCtrl:
         expected = qml.MultiControlledX(wires=[3, 2, 1, 0], control_values=[1, 0, 1])
         assert op == expected
 
+    def test_correct_queued_operators(self):
+        """Test that args and kwargs do not add operators to the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.ctrl(qml.QSVT, control=0)(qml.X(1), [qml.Z(1)])
+            qml.ctrl(qml.QSVT(qml.X(1), [qml.Z(1)]), control=0)
+        for op in q.queue:
+            assert op.name == "C(QSVT)"
+
+        assert len(q.queue) == 2
+
 
 class _Rot(Operation):
     """A rotation operation that is not an instance of Rot
