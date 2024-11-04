@@ -84,3 +84,9 @@ class TestIdentity:
         expected = np.eye(int(2 ** len(wires)))
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+    def test_string_representation(self, wires):
+        """Test the operator's string representation"""
+        op = Identity(wires=wires)
+        wires = qml.wires.Wires(wires)
+        assert repr(op) == f"I({wires.tolist()})"
