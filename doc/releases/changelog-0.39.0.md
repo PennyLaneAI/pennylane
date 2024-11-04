@@ -565,8 +565,8 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
 * Python 3.9 is no longer supported. Please update to 3.10 or newer.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `default.qubit.tf`, `default.qubit.torch`, `default.qubit.jax`, and `default.qubit.autograd` have 
-  been removed. Please use `default.qubit` for all interfaces.
+* `default.qubit.legacy`, `default.qubit.tf`, `default.qubit.torch`, `default.qubit.jax`, and 
+  `default.qubit.autograd` have been removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
   [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
