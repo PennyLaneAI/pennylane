@@ -100,10 +100,8 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
 
 @lru_cache()
 def _get_qnode_prim():
-
     if not has_jax:
         return None
-
     qnode_prim = jax.core.Primitive("qnode")
     qnode_prim.multiple_results = True
 
@@ -138,7 +136,6 @@ def _get_qnode_prim():
             batch_shape=_get_batch_shape(args[n_consts:], batch_dims),
         )
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def _qnode_batching_rule(
         batched_args,
         batch_dims,
@@ -163,7 +160,10 @@ def _get_qnode_prim():
             # Regardless of their shape, jax.vmap treats constants as scalars
             # by automatically inserting `None` as the batch dimension.
             if i < n_consts:
-                raise ValueError("Only scalar constants are currently supported with jax.vmap.")
+                raise ValueError(
+                    f"Constant argument at index {i} is not scalar. ",
+                    "Only scalar constants are currently supported with jax.vmap.",
+                )
 
             # To resolve this, we need to add more properties to the AbstractOperator
             # class to indicate which operators support batching and check them here
@@ -282,7 +282,6 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
     flat_fn = FlatFn(qfunc)
-
     qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
 
     execute_kwargs = copy(qnode.execute_kwargs)
