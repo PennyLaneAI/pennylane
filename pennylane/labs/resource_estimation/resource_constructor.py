@@ -95,5 +95,9 @@ class ResourceConstructor(ABC):
         return self.__class__.resource_rep(**params)
 
 
+class ResourceOperatorNotImplemented(Exception):
+    """Exception to be raised when a ResourceConstructor has not been defined for a PennyLane Operator"""
+
+
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ``ResourceConstructor`` does not implement _resource_decomp"""
