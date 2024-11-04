@@ -365,11 +365,14 @@ class TestWireBehaviour:
             if i == 2:
                 assert w.get_color() == "red"
                 assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 1
             elif i == 6:
                 assert w.get_color() == "orange"
                 assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 1
             else:
                 assert w.get_color() == "cyan"
+                assert w.get_linestyle() == "-"
                 assert w.get_linewidth() == 5
 
         plt.close()
