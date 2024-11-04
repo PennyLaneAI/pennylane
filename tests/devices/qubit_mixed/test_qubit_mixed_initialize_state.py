@@ -19,6 +19,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.devices.qubit_mixed import create_initial_state
+from pennylane.devices.qubit_mixed.initialize_state import _apply_state_vector, _create_basis_state
 from pennylane.operation import StatePrepBase
 
 ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
@@ -52,7 +53,7 @@ class TestInitializeState:
                 sv = qml.math.cast(sv, self.dtype)
             return sv
 
-    @pytest.mark.all_interfaces
+    # @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ml_interfaces)
     def test_create_initial_state_no_state_prep(self, interface):
         """Tests that create_initial_state works without a state-prep operation."""
@@ -65,7 +66,7 @@ class TestInitializeState:
         assert math.get_interface(state) == interface
         assert "complex" in str(state.dtype)
 
-    @pytest.mark.all_interfaces
+    # @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ml_interfaces)
     def test_create_initial_state_with_state_prep(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""
@@ -76,3 +77,40 @@ class TestInitializeState:
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
         assert math.allequal(state, state_correct)
         assert math.get_interface(state) == interface
+
+
+class TestHelperFuncs:
+    """Test the helper functions in initialize_state.py"""
+
+    @pytest.mark.parametrize("num_wires", [1, 2, 3])
+    def test_create_basis_state(self, num_wires):
+        """Test that the function _create_basis_state returns the correct basis state."""
+        wires = list(range(num_wires))
+        basis_state = _create_basis_state(wires, num_wires, 0)
+        basis_state_correct = np.zeros([2] * (2 * num_wires), dtype=complex)
+        basis_state_correct[(0,) * (2 * num_wires)] = 1
+        basis_state_correct = math.asarray(basis_state_correct, like="numpy")
+        assert math.allequal(basis_state, basis_state_correct)
+
+    @pytest.mark.parametrize("num_wires", [1, 2, 3])
+    def test_apply_state_vector(self, num_wires):
+        """Test that the function _apply_state_vector correctly applies a state vector."""
+        wires = list(range(num_wires))
+        state = np.array([1, 0, 0, 0], dtype=complex)
+        state = math.asarray(state, like="numpy")
+        basis_state = _create_basis_state(wires, num_wires, 0)
+        state_correct = np.zeros([2] * (2 * num_wires), dtype=complex)
+        state_correct[(0,) * num_wires] = 1
+        state_correct = math.asarray(state_correct, like="numpy")
+        state_applied = _apply_state_vector(basis_state, state)
+        assert math.allequal(state_applied, state_correct)
+
+    @pytest.mark.parametrize("num_wires", [1, 2, 3])
+    def test_apply_state_vector_raises(self, num_wires):
+        """Test that the function _apply_state_vector raises an error if the state vector is the wrong size."""
+        wires = list(range(num_wires))
+        state = np.array([1, 0, 0], dtype=complex)
+        state = math.asarray(state, like="numpy")
+        basis_state = _create_basis_state(wires, num_wires, 0)
+        with pytest.raises(ValueError, match="State vector must be of length 2**num_wires"):
+            _apply_state_vector(basis_state, state)
