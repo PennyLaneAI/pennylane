@@ -22,6 +22,7 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Sequence
+from dataclasses import replace
 from typing import Any, Literal, Optional, Union, get_args
 
 from cachetools import Cache
@@ -110,23 +111,37 @@ def _make_execution_config(
 def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool):
     """Helper function to update the mid-circuit measurements configuration based on
     execution parameters"""
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
-        # This is a current limitation of defer_measurements. "hw-like" behaviour is
-        # not yet accessible.
-        if mcm_config.postselect_mode == "hw-like":
+
+    postselect_mode = mcm_config.postselect_mode
+    mcm_method = mcm_config.mcm_method
+
+    if not finite_shots:
+        postselect_mode = None
+        if mcm_method == "one-shot":
+            raise ValueError(
+                f"Cannot use the '{mcm_method}' method for mid-circuit measurements with analytic mode."
+            )
+
+    if mcm_method == "single-branch-statistics":
+        raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
+
+    if interface == "jax-jit" and mcm_method == "deferred":
+        if postselect_mode == "hw-like":
             raise ValueError(
                 "Using postselect_mode='hw-like' is not supported with jax-jit when using "
                 "mcm_method='deferred'."
             )
-        mcm_config.postselect_mode = "fill-shots"
+        postselect_mode = "fill-shots"
 
     if (
         finite_shots
         and "jax" in interface
-        and mcm_config.mcm_method in (None, "one-shot")
-        and mcm_config.postselect_mode in (None, "hw-like")
+        and mcm_method in (None, "one-shot")
+        and postselect_mode in (None, "hw-like")
     ):
-        mcm_config.postselect_mode = "pad-invalid-samples"
+        postselect_mode = "pad-invalid-samples"
+
+    return replace(mcm_config, postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
 def _resolve_execution_config(
@@ -146,6 +161,9 @@ def _resolve_execution_config(
     Returns:
         qml.devices.ExecutionConfig: resolved execution configuration
     """
+    updated_values = {}
+    updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
+
     if (
         device.name == "lightning.qubit"
         and qml.metric_tensor in transform_program
@@ -158,20 +176,11 @@ def _resolve_execution_config(
         )[0]
 
     if gradient_fn is qml.gradients.param_shift_cv:
-        execution_config.gradient_keyword_arguments["dev"] = device
+        updated_values["gradient_keyword_arguments"]["dev"] = device
 
-    execution_config.gradient_method = gradient_fn
+    updated_values["gradient_method"] = gradient_fn
 
     finite_shots = any(tape.shots for tape in tapes)
-    if not finite_shots:
-        execution_config.mcm_config.postselect_mode = None
-        if execution_config.mcm_config.mcm_method == "one-shot":
-            raise ValueError(
-                f"Cannot use the '{execution_config.mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
-            )
-
-    if execution_config.mcm_config.mcm_method == "single-branch-statistics":
-        raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
@@ -182,7 +191,7 @@ def _resolve_execution_config(
     )
     _update_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 
-    return execution_config
+    return replace(execution_config, **updated_values)
 
 
 def _to_qfunc_output_type(
