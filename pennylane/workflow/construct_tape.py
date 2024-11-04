@@ -36,7 +36,7 @@ def construct_tape(qnode, level="user"):
         tape (QuantumScript): a quantum circuit.
 
     Raises:
-        ValueError: if the `level` argument corresponds to more than one tape.
+        ValueError: if the ``level`` argument corresponds to more than one tape.
 
     .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
 
