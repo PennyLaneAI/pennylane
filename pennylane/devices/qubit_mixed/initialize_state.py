@@ -47,8 +47,8 @@ def create_initial_state(
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
-    # Here, to avoid the extension of the previous class defined in `StatePrepBase`, we directly call the method `state_vector`. However, this requires some levels of abstract translation between state vectors and density matrices.
-    # The concise explanation is that, either state vectors or density matrices, they are always originally just higher-rank tensors. Only diff is that state vectors are originally of ranks num_wires, while density matrices are of ranks 2*num_wires. Therefore, we can always define the density matrices as the same wires, appended by a 'shifted' set of wires by num_wires. Actually, this idea is also used in the wire sewing technique in catalyst package.
+    # Here, to avoid extending the previous class defined in `StatePrepBase`, we directly call the method `state_vector`. However, this requires some levels of abstract translation between state vectors and density matrices.
+    # The concise explanation is that either state vectors or density matrices are always originally just higher-rank tensors. The only diff is that state vectors are originally of rank num_wires, while density matrices are of rank 2*num_wires. Therefore, we can always define the density matrices as the same wires, appended by a 'shifted' set of wires by num_wires. This idea is also used in the wire sewing technique in the catalyst package.
     dm_wires = qml.wires.Wires(wires + [w + num_wires for w in wires])
     density_matrix = prep_operation.state_vector(wire_order=list(dm_wires))
     density_matrix = np.reshape(density_matrix, (-1,) + (2,) * num_axes)
