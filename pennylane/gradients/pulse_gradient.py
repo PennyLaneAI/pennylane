@@ -272,13 +272,6 @@ def _parshift_and_integrate(
         # Single measurement without shot vector
         return _psr_and_contract(results, cjacs, int_prefactor)
 
-    # Multiple measurements with shot vector. Not supported with broadcasting yet.
-    if use_broadcasting:
-        # TODO: Remove once #2690 is resolved
-        raise NotImplementedError(
-            "Broadcasting, multiple measurements and shot vectors are currently not "
-            "supported all simultaneously by stoch_pulse_grad."
-        )
     return tuple(
         tuple(_psr_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
     )

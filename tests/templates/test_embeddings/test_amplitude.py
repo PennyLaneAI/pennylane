@@ -402,10 +402,10 @@ class TestInterfaces:
         dev = qml.device("default.qubit")
 
         circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
+        circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(features, pad_with, normalize)
-        res2 = circuit2(features, pad_with)
+        res2 = circuit2(features, pad_with, normalize)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
@@ -592,12 +592,12 @@ class TestInterfaceDtypes:
 
 @pytest.mark.jax
 @pytest.mark.parametrize("shots, atol", [(10000, 0.05), (None, 1e-8)])
-def test_jacobian_with_and_without_jit_has_same_output(shots, atol):
+def test_jacobian_with_and_without_jit_has_same_output(shots, atol, seed):
     """Test that the jacobian of AmplitudeEmbedding is the same with and without jit."""
 
     import jax
 
-    dev = qml.device("default.qubit", shots=shots, seed=7890234)
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
 
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(coeffs):

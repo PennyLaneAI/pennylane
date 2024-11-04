@@ -77,7 +77,7 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa.html>`_.
+    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa>`_.
 
     **Examples:**
 
@@ -325,8 +325,8 @@ class QNSPSAOptimizer:
         params_vec = pnp.concatenate([param.reshape(-1) for param in params])
         grad_vec = pnp.concatenate([grad.reshape(-1) for grad in gradient])
 
-        new_params_vec = pnp.linalg.solve(
-            self.metric_tensor,
+        new_params_vec = pnp.matmul(
+            pnp.linalg.pinv(self.metric_tensor),
             (-self.stepsize * grad_vec + pnp.matmul(self.metric_tensor, params_vec)),
         )
         # reshape single-vector new_params_vec into new_params, to match the input params
