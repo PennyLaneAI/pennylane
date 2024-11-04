@@ -103,12 +103,12 @@ def list_attributes(data_name) -> list[str]:
     **Example**
 
     >>> qml.data.list_attributes(data_name="qchem")
-    ['molname',
-     'basis',
-     'bondlength',
+    ['basis_rot_groupings',
+     'basis_rot_samples',
+     'dipole_op',
      ...
-     'vqe_params',
-     'vqe_energy']
+     'vqe_gates',
+     'vqe_params']
     """
 
     response = get_graphql(
