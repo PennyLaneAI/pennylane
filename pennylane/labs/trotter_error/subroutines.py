@@ -58,10 +58,13 @@ class PTerrorTensor(PTerror):
         # Identity MPO
         impo = self.driver.get_identity_mpo()
 
+        # Compute the nested commutator
+        kett = self.nested_commutator(nested_commutator, ket)
+
         # Get expected values
-        return self.driver.expectation(bra, nested_commutator, ket) / self.driver.expectation(bra, impo, ket)
+        return self.driver.expectation(bra, impo, kett) / self.driver.expectation(bra, impo, bra)
     
-    def get_nested_commutator(self, right_nested_indices, ket):
+    def nested_commutator(self, right_nested_indices, ket):
         r"""
         Computes a matrix element of the nested commutator.
 
