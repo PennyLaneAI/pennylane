@@ -60,10 +60,32 @@ class PTerrorTensor(PTerror):
 
         # Get expected values
         return self.driver.expectation(bra, nested_commutator, ket) / self.driver.expectation(bra, impo, ket)
+    
+    def get_nested_commutator(self, right_nested_indices, ket):
+        r"""
+        Computes a matrix element of the nested commutator.
+
+        Arguments:
+            right_nested_indices (list): indices of the commutator, nested to the right.
+            ket (MPS): ket state
+        """
+
+        # Multiply i0 * [i1, [i2, [i3, ...]]] * ket / self.driver.expectation(ket, impo, ket)
+        # Use self.H.Hs[i] to get the Hamiltonian terms, 
+        # and recursively call get_nested_commutator(right_nested_indices[1:], ket)
+        ket1 = None
+
+        # Multiply [i1, [i2, [i3, ...]]] * i0 * ket / self.driver.expectation(ket, impo, ket)
+        # Use self.H.Hs[i] to get the Hamiltonian terms, 
+        # and recursively call get_nested_commutator(right_nested_indices[1:], ket)
+        ket2 = None
+
+        return ket1 - ket2
+
 
 
 class H():
-    def __init__(self, ncas, nelec, spin, orb_sym, h1e, eri, ecore):
+    def __init__(self, ncas, nelec, spin, orb_sym, h1e, eri, ecore, Hs):
         self.ncas = ncas
         self.nelec = nelec
         self.spin = spin
@@ -71,3 +93,4 @@ class H():
         self.h1e = h1e
         self.eri = eri
         self.ecore = ecore
+        self.Hs = Hs
