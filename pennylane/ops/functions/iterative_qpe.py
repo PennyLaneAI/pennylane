@@ -28,13 +28,17 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
     Given a unitary :math:`U`, this function applies the circuit for iterative quantum phase
     estimation and returns a list of mid-circuit measurements with qubit reset.
 
+    .. warning::
+
+        The ``ancilla`` argument below is deprecated and will be removed in v0.40. The ``aux_wire`` argument should be used instead. If both arguments
+        are provided, ``aux_wire`` will be used and ``ancilla`` will be ignored.
+
     Args:
       base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
       aux_wire (Union[Wires, int, str]): the wire to be used for the estimation
       iters (int): the number of measurements to be performed
-      ancilla (Union[Wires, int, str]): the wire to be used for the estimation. This argument
-        is deprecated, and the ``aux_wire`` argument should be used instead. If both arguments
-        are provided, ``aux_wire`` will be used and ``ancilla`` will be ignored.
+      ancilla (Union[Wires, int, str]): The wire to be used for the estimation. This argument
+        is deprecated.
 
     Returns:
       list[MidMeasureMP]: the list of measurements performed
@@ -93,8 +97,8 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
 
     if ancilla != "unset":
         warn(
-            "The 'ancilla' argument for qml.iterative_qpe has been deprecated. Please use the "
-            "'aux_wire' argument instead.",
+            "The 'ancilla' argument for qml.iterative_qpe has been deprecated and will be removed in v0.40. "
+            "Please use the 'aux_wire' argument instead.",
             qml.PennyLaneDeprecationWarning,
         )
         if aux_wire == "unset":
