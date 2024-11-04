@@ -26,7 +26,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
-def qsvt(A, poly, block_encoding, encoding_wires):
+def qsvt(A, poly, encoding_wires, block_encoding):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian `A`, using a polynomial
     defined by `poly` and a block encoding specified by `block_encoding`. QSVT applies polynomial
@@ -36,21 +36,20 @@ def qsvt(A, poly, block_encoding, encoding_wires):
 
     Args:
 
-        A (Union[tensor_like, LinearCombination]): array-like or object with Pauli representation
-            The matrix on which the QSVT will be applied. This can be an array or an object that has a Pauli representation.
+        A (Union[tensor_like, LinearCombination]): The matrix on which the QSVT will be applied.
+            This can be an array or an object that has a Pauli representation.
 
-        poly (tensor_like): Polynomial coefficients defining the transformation.
-            This is converted to rotation angles for QSVT.
+        poly (tensor_like): Polynomial coefficients defining the transformation, represented in increasing order of degree.
+            This means the first coefficient corresponds to the constant term, the second to the linear term, and so on.
+
+        encoding_wires (Sequence[int]): The qubit wires used for the block encoding. See Usage Details bellow for
+            more information on `encoding_wires` depending on the block encoding used.
 
         block_encoding (str): Specifies the type of block encoding to use. Options include:
                 - "prepselprep": Embeds the hamiltonian `A` using `PrepSelPrep`.
                 - "qubitization": Embeds the hamiltonian `A` using `Qubitization`.
                 - "embedding": Embeds the matrix `A` using `BlockEncode`.
                 - "fable": Embeds the matrix `A` using `FABLE`.
-
-        encoding_wires (Sequence[int]): The qubit wires used for the block encoding. Please see Usage Details bellow for
-            more information on `encoding_wires` depending on the block encoding used.
-
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix `A` with the specified encoding and projector phases.
@@ -121,10 +120,11 @@ def qsvt(A, poly, block_encoding, encoding_wires):
         Alternatively, if the input ``A`` is a matrix, the valid values for ``block_encoding`` are
         ``"embedding"`` and ``"fable"``. In this case, the ``encoding_wires`` parameter corresponds to
         the ``wires`` attribute in the templates :class:`~pennylane.BlockEncode` and :class:`~pennylane.FABLE`, respectively.
+        Note that for QSVT to work, the imput matrix must be hermitian.
 
         .. code-block:: python
 
-            # P(x) = -0.1 + 0.2 x^2 - 0.3 x^4
+            # P(x) = -0.1 + 0.2 x^2 + 0.5 x^4
             poly = np.array([-0.1, 0, 0.2, 0, 0.5])
 
             A = np.array([[-0.1, 0, 0, 0.3], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.3, 0, -0.2, 0.3]]) / 6
@@ -150,12 +150,15 @@ def qsvt(A, poly, block_encoding, encoding_wires):
 
     angles = qml.math.poly_to_angles(poly, "QSVT")
     projectors = []
-    if hasattr(A, "pauli_rep"):
-        if block_encoding == "prepselprep":
-            encoding = qml.PrepSelPrep(A, control=encoding_wires)
 
-        elif block_encoding == "qubitization":
+    # If the input A is a Hamiltonian
+    if hasattr(A, "pauli_rep"):
+
+        if block_encoding == "qubitization":
             encoding = qml.Qubitization(A, control=encoding_wires)
+
+        else:
+            encoding = qml.PrepSelPrep(A, control=encoding_wires)
 
         projectors = [
             qml.PCPhase(angles[i], dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
@@ -167,6 +170,8 @@ def qsvt(A, poly, block_encoding, encoding_wires):
         if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
             A = qml.math.reshape(A, [1, 1])
 
+        A = qml.math.array(A)
+
         if block_encoding == "embedding":
 
             c, r = qml.math.shape(A)
@@ -177,11 +182,11 @@ def qsvt(A, poly, block_encoding, encoding_wires):
 
             encoding = qml.BlockEncode(A, wires=encoding_wires)
 
-        elif block_encoding == "fable":
+        else:
 
             # It is normalized to ensure that the block encoding is the desired one.
             s = int(np.ceil(np.log2(max(len(A), len(A[0])))))
-            encoding = qml.FABLE(2 ** s * A, wires=encoding_wires)
+            encoding = qml.FABLE(2**s * A, wires=encoding_wires)
 
             projectors = [
                 qml.PCPhase(angles[i], dim=len(A), wires=encoding_wires) for i in range(len(angles))
@@ -493,16 +498,3 @@ class QSVT(Operation):
             mat = qml.matrix(qml.prod(*tuple(op_list[::-1])))
 
         return mat
-
-
-def _qsp_to_qsvt(angles):
-    r"""Converts qsp angles to qsvt angles."""
-    num_angles = len(angles)
-    update_vals = np.empty(num_angles)
-
-    update_vals[0] = 3 * np.pi / 4
-    update_vals[1:-1] = np.pi / 2
-    update_vals[-1] = -np.pi / 4
-    update_vals = qml.math.convert_like(update_vals, angles)
-
-    return angles + update_vals
