@@ -57,7 +57,8 @@ The ``wire_options`` dictionary allows customization of the formatting for the w
 the circuit visualization. This dictionary may contain standard matplotlib options
 for line formatting, as well as entries with wire labels as keys and corresponding
 dictionaries as values for specific wire line styling. For example, using keys such
-as `color`, `linestyle`, and `linewidth` allows for per-wire customization.
+as `color`, `linestyle`, and `linewidth` within these inner dictionaries allows for
+per-wire customization.
 
 .. code-block:: python
 
