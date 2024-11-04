@@ -32,7 +32,7 @@ def reduced_dm(tape: QuantumScript, wires, **kwargs) -> tuple[QuantumScriptBatch
 
     .. warning::
 
-        The ``qml.qinfo.reduced_dm`` transform is deprecated and will be removed in v0.40. Instead include
+        The ``qml.qinfo.reduced_dm`` transform is deprecated and will be removed in v0.40. Instead, include
         the :func:`pennylane.density_matrix` measurement process in the return line of your QNode.
 
     Args:
@@ -85,7 +85,7 @@ def reduced_dm(tape: QuantumScript, wires, **kwargs) -> tuple[QuantumScriptBatch
 
     warnings.warn(
         "The qml.qinfo.reduced_dm transform is deprecated and will be removed "
-        "in v0.40. Instead include the qml.density_matrix measurement process in the "
+        "in v0.40. Instead, include the qml.density_matrix measurement process in the "
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
@@ -151,7 +151,7 @@ def purity(tape: QuantumScript, wires, **kwargs) -> tuple[QuantumScriptBatch, Po
 
     .. warning::
 
-        The ``qml.qinfo.purity transform`` is deprecated and will be removed in v0.40. Instead include
+        The ``qml.qinfo.purity transform`` is deprecated and will be removed in v0.40. Instead, include
         the :func:`pennylane.purity` measurement process in the return line of your QNode.
 
     Args:
@@ -195,7 +195,7 @@ def purity(tape: QuantumScript, wires, **kwargs) -> tuple[QuantumScriptBatch, Po
 
     warnings.warn(
         "The qml.qinfo.purity transform is deprecated and will be removed "
-        "in v0.40. Instead include the qml.purity measurement process in the "
+        "in v0.40. Instead, include the qml.purity measurement process in the "
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
@@ -256,7 +256,7 @@ def vn_entropy(
 
     .. warning::
 
-        The ``qml.qinfo.vn_entropy`` transform is deprecated and will be removed in v0.40. Instead include
+        The ``qml.qinfo.vn_entropy`` transform is deprecated and will be removed in v0.40. Instead, include
         the :func:`pennylane.vn_entropy` measurement process in the return line of your QNode.
 
     Args:
@@ -296,7 +296,7 @@ def vn_entropy(
 
     warnings.warn(
         "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
-        "in v0.40. Instead include the qml.vn_entropy measurement process in the "
+        "in v0.40. Instead, include the qml.vn_entropy measurement process in the "
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
@@ -406,7 +406,7 @@ def mutual_info(
 
     .. warning::
 
-        The ``qml.qinfo.mutual_info`` transform is deprecated and will be removed in v0.40. Instead include
+        The ``qml.qinfo.mutual_info`` transform is deprecated and will be removed in v0.40. Instead, include
         the :func:`pennylane.mutual_info` measurement process in the return line of your QNode.
 
     Args:
@@ -449,7 +449,7 @@ def mutual_info(
 
     warnings.warn(
         "The qml.qinfo.mutual_info transform is deprecated and will be removed "
-        "in v0.40. Instead include the qml.mutual_info measurement process in the "
+        "in v0.40. Instead, include the qml.mutual_info measurement process in the "
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
@@ -514,7 +514,7 @@ def vn_entanglement_entropy(
 
     warnings.warn(
         "The qml.qinfo.vn_entanglement_entropy transform is deprecated and will "
-        "be removed in v0.40. Instead include the qml.vn_entropy measurement process "
+        "be removed in v0.40. Instead, include the qml.vn_entropy measurement process "
         "on one of the subsystems.",
         qml.PennyLaneDeprecationWarning,
     )
