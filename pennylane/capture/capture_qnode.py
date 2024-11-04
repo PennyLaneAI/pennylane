@@ -114,11 +114,10 @@ def _get_qnode_prim():
 
         if batch_dims is not None:
 
-            # TODO: explain why we need to do this (test_vmap_pytree_in_axes)
-            non_const_args = jax.tree_util.tree_leaves(non_const_args)
-
             # pylint: disable=protected-access
-            return jax.vmap(partial(qnode._impl_call, shots=shots), batch_dims)(*non_const_args)
+            return jax.vmap(partial(qnode._impl_call, shots=shots), batch_dims)(
+                *jax.tree_util.tree_leaves(non_const_args)
+            )
 
         # pylint: disable=protected-access
         return qnode._impl_call(*non_const_args, shots=shots)
@@ -136,7 +135,6 @@ def _get_qnode_prim():
             batch_shape=_get_batch_shape(args[n_consts:], batch_dims),
         )
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def _qnode_batching_rule(
         batched_args,
         batch_dims,

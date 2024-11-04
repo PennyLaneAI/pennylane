@@ -792,6 +792,53 @@ class TestQNodeVmapIntegration:
         assert jax.numpy.allclose(result[0], expected)
         assert jax.numpy.allclose(result[1], expected2)
 
+    def test_vmap_tuple_in_axes(self):
+        """Test vmap of a hybrid workflow with tuple in_axes."""
+
+        def workflow(x, y, z):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x, y):
+                qml.RX(jax.numpy.pi * x[0] + y - y, wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            def workflow2(x, y):
+                return circuit(x, y) * y
+
+            def workflow3(y, x):
+                return circuit(x, y) * y
+
+            def workflow4(y, x, z):
+                return circuit(x, y) * y * z
+
+            res1 = jax.vmap(workflow2, in_axes=(0, None))(x, y)
+            res2 = jax.vmap(workflow3, in_axes=(None, 0))(y, x)
+            res3 = jax.vmap(workflow4, in_axes=(None, 0, None))(y, x, z)
+            return res1, res2, res3
+
+        y = jax.numpy.pi
+        x = jax.numpy.array(
+            [
+                [0.1, 0.2, 0.3],
+                [0.4, 0.5, 0.6],
+                [0.7, 0.8, 0.9],
+            ]
+        )
+
+        jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 3
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
+        expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
+        assert jax.numpy.allclose(result[0], expected)
+        assert jax.numpy.allclose(result[1], expected)
+        assert jax.numpy.allclose(result[2], expected)
+
     def test_vmap_pytree_in_axes(self):
         """Test vmap of a hybrid workflow with pytree in_axes."""
 
@@ -877,3 +924,74 @@ class TestQNodeVmapIntegration:
         )
         assert jax.numpy.allclose(result[0], expected)
         assert jax.numpy.allclose(result[1], expected)
+
+    def test_vmap_circuit_return_tensor_pytree(self):
+        """Test vmapping over a QNode that returns a pytree tensor."""
+
+        def workflow(x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x):
+                qml.RX(jax.numpy.pi * x[0], wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.state(), qml.probs(0)
+
+            res1 = jax.vmap(circuit)(x)
+            return res1
+
+        x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        assert len(jaxpr.eqns[0].outvars) == 2
+        assert jaxpr.out_avals[0].shape == (2, 2)
+        assert jaxpr.out_avals[1].shape == (2, 2)
+
+        expected_state = jax.numpy.array(
+            [
+                [0.98235508 + 0.00253459j, 0.0198374 - 0.18595308j],
+                [0.10537427 + 0.2120056j, 0.23239136 - 0.94336851j],
+            ]
+        )
+        expected_probs = jax.numpy.array([[0.96502793, 0.03497207], [0.05605011, 0.94394989]])
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        assert jax.numpy.allclose(result[0], expected_state)
+        assert jax.numpy.allclose(result[1], expected_probs)
+
+    def test_vmap_circuit_return_tensor_out_axes_multiple(self):
+        """Test vmapping over a QNode that returns a tensor with multiple out_axes."""
+
+        def workflow(x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x):
+                qml.RX(jax.numpy.pi * x[0], wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.state(), qml.state()
+
+            res1 = jax.vmap(circuit, out_axes=1)(x)
+            res2 = jax.vmap(circuit, out_axes=(0, 1))(x)
+            return res1, res2
+
+        x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 2
+            assert eqn.outvars[0].aval.shape == (2, 2)
+            assert eqn.outvars[1].aval.shape == (2, 2)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        expected = jax.numpy.array(
+            [
+                [0.98235508 + 0.00253459j, 0.0198374 - 0.18595308j],
+                [0.10537427 + 0.2120056j, 0.23239136 - 0.94336851j],
+            ]
+        )
+        assert jax.numpy.allclose(jax.numpy.transpose(result[0], (1, 0)), expected)
+        assert jax.numpy.allclose(jax.numpy.transpose(result[1], (1, 0)), expected)
+        assert jax.numpy.allclose(result[2], expected)
+        assert jax.numpy.allclose(jax.numpy.transpose(result[3], (1, 0)), expected)
