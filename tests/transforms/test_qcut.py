@@ -2535,7 +2535,7 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        dev = dev_fn(wires=2, shots=20000)
+        dev = dev_fn(wires=2, shots=20000, seed=seed)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
