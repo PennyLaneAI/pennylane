@@ -20,6 +20,9 @@
       - Grover operators
   [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
 
+* `qml.BasisRotation` template is now JIT compatible.
+  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
