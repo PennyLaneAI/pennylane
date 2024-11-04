@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 
 import pennylane.labs.resource_estimation.resource_constructor as rc
 
+
 class CompressedResourceOp:
     r"""Instantiate the light weight class corressponding to the operator type and parameters.
 
