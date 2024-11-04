@@ -380,6 +380,7 @@ def test_qnode_jvp():
     assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
 
+# pylint: disable=too-many-public-methods
 class TestQNodeVmapIntegration:
     """Tests for integrating JAX vmap with the QNode primitive."""
 
@@ -707,6 +708,7 @@ class TestQNodeVmapIntegration:
         )
 
         jaxpr = jax.make_jaxpr(workflow)(x)
+
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 3
         for eqn in qnode_output_eqns:
@@ -743,6 +745,7 @@ class TestQNodeVmapIntegration:
         )
 
         jaxpr = jax.make_jaxpr(workflow)(x)
+
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
@@ -776,10 +779,10 @@ class TestQNodeVmapIntegration:
                 [0.3, 0.6],
             ]
         )
-
         y = jax.numpy.array([1, 2])
 
         jaxpr = jax.make_jaxpr(workflow)(y, x)
+
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
@@ -827,6 +830,7 @@ class TestQNodeVmapIntegration:
         )
 
         jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 3
         for eqn in qnode_output_eqns:
@@ -878,6 +882,7 @@ class TestQNodeVmapIntegration:
         }
 
         jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 4
         for eqn in qnode_output_eqns:
@@ -909,6 +914,7 @@ class TestQNodeVmapIntegration:
         x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
 
         jaxpr = jax.make_jaxpr(workflow)(x)
+
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
@@ -977,6 +983,7 @@ class TestQNodeVmapIntegration:
         x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
 
         jaxpr = jax.make_jaxpr(workflow)(x)
+
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
