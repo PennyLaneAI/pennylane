@@ -1,3 +1,19 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Tests for parametric single qubit resource operators.
+"""
 import numpy as np
 import pytest
 
@@ -53,14 +69,28 @@ class TestPauliRotation:
 class TestRot:
     """Test ResourceRot"""
 
-    def test_resources(self):
+    errors = [10e-3, 10e-4, 10e-5]
+    params = list(zip(errors, errors, errors))
+
+    @pytest.mark.parameterize("error_rx, error_ry, error_rz", params)
+    def test_resources(self, error_rx, error_ry, error_rz):
         """Test the resources method"""
 
         op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
-        config = {"error_rx": 10e-3, "error_ry": 10e-3, "error_rz": 10e-3}
+        config = {"error_rx": error_rx, "error_ry": error_ry, "error_rz": error_rz}
 
     def test_resource_rep(self):
         """Test the compressed representation"""
+        op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
+        rx = re.CompressedResourceOp(re.ResourceRX, {})
+        ry = re.CompressedResourceOp(re.ResourceRY, {})
+        rz = re.CompressedResourceOp(re.ResourceRZ, {})
+        expected = {rx: 1, ry: 1, rz: 1}
+        assert op.resource_rep() == expected
 
+    @pytest.mark.parameterize("error_rx, error_ry, error_rz", params)
     def test_resources_from_rep(self):
         """Test that the resources can be obtained from the compact representation"""
+        op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
+
+        assert re.ResourceRot.resources(config, **op.resource_rep().params) == expected
