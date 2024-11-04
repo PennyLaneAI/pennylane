@@ -25,6 +25,9 @@
 
 <h4>Other Improvements</h4>
 
+* `qml.BasisRotation` template is now JIT compatible.
+  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
