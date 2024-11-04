@@ -33,7 +33,7 @@ from .kupccgsd import kUpCCGSD
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .basis_rotation import BasisRotation
-from .qsvt import QSVT, qsvt
+from .qsvt import QSVT, qsvt, qsvt_auto
 from .select import Select
 from .qdrift import QDrift
 from .controlled_sequence import ControlledSequence
