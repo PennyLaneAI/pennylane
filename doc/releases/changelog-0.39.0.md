@@ -591,10 +591,10 @@ execution. PennyLane provides just-in-time compilation with its `@qml.qjit` deco
 * The `decomp_depth` keyword argument to `qml.device` has been removed.
   [(#6234)](https://github.com/PennyLaneAI/pennylane/pull/6234)
 
-* `Operator.expand` has been removed. Please use `qml.tape.QuantumScript(op.deocomposition())` instead.
+* `Operator.expand` has been removed. Please use `qml.tape.QuantumScript(op.decomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
-* The native folding method `qml.transforms.fold_global` for the `qml.transforms.mitiagte_with_zne`
+* The native folding method `qml.transforms.fold_global` for the `qml.transforms.mitigate_with_zne`
   transform no longer expands the circuit automatically. Instead, the user should apply `qml.transforms.decompose` to
   decompose a circuit into a target gate set before applying `fold_global` or `mitigate_with_zne`.
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
