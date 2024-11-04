@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TF interface with shot vectors and with a QNode"""
-# pylint: disable=too-many-arguments,unexpected-keyword-arg,redefined-outer-name
+# pylint: disable=too-many-arguments,unexpected-keyword-arg,redefined-outer-name,unused-argument
 import pytest
 
 import pennylane as qml
@@ -54,7 +54,9 @@ interface_and_qubit_device_and_diff_method = [
 def gradient_kwargs(request):
     diff_method = request.node.funcargs["diff_method"]
     return kwargs[diff_method] | (
-        {"sampler_rng": np.random.default_rng(42)} if diff_method == "spsa" else {}
+        {"sampler_rng": np.random.default_rng(request.getfixturevalue("seed"))}
+        if diff_method == "spsa"
+        else {}
     )
 
 
@@ -64,7 +66,7 @@ class TestReturnWithShotVectors:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shot vectors."""
 
     def test_jac_single_measurement_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """For one measurement and one param, the gradient is a float."""
 
@@ -86,7 +88,7 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies,)
 
     def test_jac_single_measurement_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
 
@@ -112,7 +114,7 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies,)
 
     def test_jacobian_single_measurement_multiple_param_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
 
@@ -134,7 +136,7 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 2)
 
     def test_jacobian_single_measurement_param_probs(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
@@ -157,7 +159,7 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 4)
 
     def test_jacobian_single_measurement_probs_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
@@ -184,7 +186,7 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 4)
 
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
@@ -207,7 +209,7 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 4, 2)
 
     def test_jacobian_expval_expval_multiple_params(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The gradient of multiple measurements with multiple params return a tuple of arrays."""
 
@@ -234,7 +236,7 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 2)
 
     def test_jacobian_expval_expval_multiple_params_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
@@ -257,7 +259,7 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 2, 3)
 
     def test_jacobian_multiple_measurement_single_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The jacobian of multiple measurements with a single params return an array."""
 
@@ -279,7 +281,7 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 5)
 
     def test_jacobian_multiple_measurement_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
 
@@ -305,7 +307,7 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 5)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
@@ -334,7 +336,7 @@ class TestReturnShotVectorHessian:
     """Class to test the shape of the Hessian with different return types and shot vectors."""
 
     def test_hessian_expval_multiple_params(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
 
@@ -365,7 +367,7 @@ class TestReturnShotVectorHessian:
             assert h.shape == (2, num_copies)
 
     def test_hessian_expval_multiple_param_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
 
@@ -391,7 +393,7 @@ class TestReturnShotVectorHessian:
         assert hess.shape == (num_copies, 2, 2)
 
     def test_hessian_probs_expval_multiple_params(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
 
@@ -422,7 +424,7 @@ class TestReturnShotVectorHessian:
             assert h.shape == (2, num_copies, 3)
 
     def test_hessian_expval_probs_multiple_param_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
 
@@ -457,7 +459,7 @@ class TestReturnShotVectorIntegration:
     """Tests for the integration of shots with the TF interface."""
 
     def test_single_expectation_value(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
@@ -490,7 +492,7 @@ class TestReturnShotVectorIntegration:
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_prob_expectation_values(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface
+        self, dev, diff_method, gradient_kwargs, shots, num_copies, interface, seed
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""

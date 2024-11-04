@@ -248,7 +248,7 @@ class TestSpecsTransform:
         assert specs_list[1]["num_device_wires"] == specs_list[1]["num_tape_wires"] == 3
         assert specs_list[2]["num_device_wires"] == specs_list[1]["num_tape_wires"] == 3
 
-    def make_qnode_and_params(self):
+    def make_qnode_and_params(self, seed):
         """Generates a qnode and params for use in other tests"""
         n_layers = 2
         n_wires = 5
@@ -261,7 +261,7 @@ class TestSpecsTransform:
             return qml.expval(qml.PauliZ(0))
 
         params_shape = qml.BasicEntanglerLayers.shape(n_layers=n_layers, n_wires=n_wires)
-        rng = pnp.random.default_rng(seed=10)
+        rng = pnp.random.default_rng(seed=seed)
         params = rng.standard_normal(params_shape)  # pylint:disable=no-member
 
         return circuit, params
