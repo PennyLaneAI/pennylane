@@ -21,6 +21,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -124,7 +125,7 @@ def qsvt(A, angles, wires, convention=None):
     c, r = qml.math.shape(A)
 
     with qml.QueuingManager.stop_recording():
-        UA = qml.BlockEncode(A, wires=wires)
+        UA = BlockEncode(A, wires=wires)
     projectors = []
 
     if convention == "Wx":
@@ -138,7 +139,7 @@ def qsvt(A, angles, wires, convention=None):
     for idx, phi in enumerate(angles):
         dim = c if idx % 2 else r
         with qml.QueuingManager.stop_recording():
-            projectors.append(qml.PCPhase(phi, dim=dim, wires=wires))
+            projectors.append(PCPhase(phi, dim=dim, wires=wires))
 
     projectors = projectors[::-1]  # reverse order to match equation
 

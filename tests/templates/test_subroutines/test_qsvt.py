@@ -17,9 +17,8 @@ Tests for the QSVT template and qsvt wrapper function.
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
 
-from numpy.linalg import matrix_power
-
 import pytest
+from numpy.linalg import matrix_power
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -792,8 +791,8 @@ class Testqsvt_auto:
     @pytest.mark.jax
     def test_qsvt_grad(self):
         """Test that the qsvt_auto function generates the correct output with qml.grad and jax.grad."""
-        import jax.numpy as jnp
         import jax
+        import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
@@ -815,8 +814,8 @@ class Testqsvt_auto:
         Note that the traceable argument is A.
         """
 
-        import jax.numpy as jnp
         import jax
+        import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
