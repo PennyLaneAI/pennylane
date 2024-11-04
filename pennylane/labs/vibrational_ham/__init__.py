@@ -14,7 +14,7 @@ from .taylorForm import (
     taylor_integrals,
     taylor_integrals_dipole,
     taylor_bosonic,
-    taylor_harmonic,
+    taylor_anharmonic,
 )
 
 from .christiansenForm import christiansen_integrals, christiansen_integrals_dipole

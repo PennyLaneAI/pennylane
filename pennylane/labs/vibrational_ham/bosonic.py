@@ -525,13 +525,13 @@ class BoseSentence(dict):
                 del self[fw]
 
     def normal_order(self):
-        ordered_dict = BoseSentence({})  # Empty PS as 0 operator to add Pws to
+        empty_bose_sentence = BoseSentence({})  # Empty PS as 0 operator to add Pws to
 
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()
             for bw_ord, coeff_ord in bose_word_ordered.items():
-                ordered_dict += coeff_ord * coeff * bw_ord
+                empty_bose_sentence += coeff_ord * coeff * bw_ord
 
-        bose_sen_ordered = BoseSentence(ordered_dict)
+        bose_sen_ordered = empty_bose_sentence
         return bose_sen_ordered
 

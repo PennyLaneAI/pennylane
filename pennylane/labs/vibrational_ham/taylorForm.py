@@ -282,16 +282,13 @@ def taylor_integrals_dipole(pes, deg=4, min_deg=1):
 
 
 def _position_to_boson(index, op):
-    bop = 1/np.sqrt(2) * BoseWord({(0, index): "-"})
-    bdag = 1/np.sqrt(2) * BoseWord({(0, index): "+"})
-
-    if op == "p":
-        return bdag - bop
-    if op == "q":
-        return bdag + bop
+    factor = 1j / np.sqrt(2) if op == "p" else 1 / np.sqrt(2)
+    bop = factor * BoseWord({(0, index): "-"})
+    bdag = factor * BoseWord({(0, index): "+"})
+    return bdag - bop if op == "p" else bdag + bop
 
 
-def taylor_harmonic(taylor_arr, start_deg=2):
+def taylor_anharmonic(taylor_arr, start_deg=2):
     """Build Taylor form bosonic observable from provided integrals"""
     num_coups = len(taylor_arr)
 
@@ -312,7 +309,6 @@ def taylor_harmonic(taylor_arr, start_deg=2):
             coeff = taylor_1D[mode, deg_i - start_deg]
             qpow = bosonized_qm**deg_i
             ordered_dict += (coeff * qpow).normal_order()
-
     # Two-mode expansion
     if num_coups > 1:
         taylor_2D = taylor_arr[1]
@@ -350,6 +346,21 @@ def taylor_harmonic(taylor_arr, start_deg=2):
 
     return BoseSentence(ordered_dict).normal_order()
 
+def taylor_kinetic(taylor_arr, freqs, Uloc):
+    taylor_1D = taylor_arr[0]
+    num_modes, num_1D_coeffs = np.shape(taylor_1D)
+
+    # Create kinetic energy operation
+    alphas_arr = np.einsum("ij,ik,j,k->jk", Uloc, Uloc, np.sqrt(freqs), np.sqrt(freqs))
+    kin_energy = BoseSentence({})
+    for m1 in range(num_modes):
+        pm1 = _position_to_boson(m1, "p")
+        for m2 in range(num_modes):
+            pm2 = _position_to_boson(m2, "p")
+            kin_energy += (0.5 * alphas_arr[m1, m2]) * (pm1 * pm2).normal_order()
+
+    return kin_energy.normal_order()
+
 
 def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None):
     taylor_1D = taylor_arr[0]
@@ -367,18 +378,10 @@ def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None):
         ).normal_order()
         harm_pot += bosonized_qm2 * freqs[mode] * 0.5
 
-    ham = taylor_harmonic(taylor_arr, start_deg) + harm_pot
+    ham = taylor_anharmonic(taylor_arr, start_deg) + harm_pot
+    kin_ham = taylor_kinetic(taylor_arr, freqs, Uloc)
 
-    # Create kinetic energy operation
-    alphas_arr = np.einsum("ij,ik,j,k->jk", Uloc, Uloc, np.sqrt(freqs), np.sqrt(freqs))
-    kin_energy = BoseSentence({})
-    for m1 in range(num_modes):
-        pm1 = _position_to_boson(m1, "p")
-        for m2 in range(num_modes):
-            pm2 = _position_to_boson(m2, "p")
-            kin_energy += (0.5 * alphas_arr[m1, m2]) * (pm1 * pm2).normal_order()
-
-    return ham.normal_order(), BoseSentence(kin_energy).normal_order()
+    return ham.normal_order(), kin_ham
 
 
 def taylor_hamiltonian(pes_object):
