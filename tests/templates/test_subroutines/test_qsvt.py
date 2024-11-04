@@ -493,6 +493,24 @@ class Testqsvt:
 
         assert np.allclose(qml.matrix(circuit)()[: len(A_matrix), : len(A_matrix)].real, expected)
 
+    @pytest.mark.parametrize(
+        ("A", "block_encoding", "encoding_wires", "msg_match"),
+        [
+            ([[0.1, 0], [0, -0.1]], "prepselprep", [0, 1], "block_encoding should take"),
+            (qml.Z(0) - qml.X(0), "fable", [1], "block_encoding should take"),
+        ],
+    )
+    def test_block_encoding_error(
+        self, A, block_encoding, encoding_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
+        """Test that proper errors are raised"""
+
+        with pytest.raises(ValueError, match=msg_match):
+
+            qml.qsvt(
+                A, [0, 0.1, 0, 0.3], encoding_wires=encoding_wires, block_encoding=block_encoding
+            )
+
     @pytest.mark.torch
     def test_qsvt_torch(self):
         """Test that the qsvt function matrix is correct for torch."""
@@ -540,10 +558,56 @@ class Testqsvt:
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
 
         default_op = qml.qsvt(A, poly, [0, 1, 2], "embedding")
-        default_matrix = tf.tensor(qml.matrix(default_op))
+        default_matrix = qml.matrix(default_op)
 
-        tf_op = qml.qsvt(tf.tensor(A), tf.tensor(poly), [0, 1, 2], "embedding")
+        tf_op = qml.qsvt(tf.Variable(A), poly, [0, 1, 2], "embedding")
         tf_matrix = qml.matrix(tf_op)
 
         assert qml.math.allclose(default_matrix, tf_matrix, atol=1e-6)
         assert qml.math.get_interface(tf_matrix) == "tensorflow"
+
+    @pytest.mark.jax
+    def test_qsvt_grad(self):
+        """Test that the qsvt function works with qml.grad and qml.jax."""
+        import jax.numpy as jnp
+        import jax
+
+        poly = [-0.1, 0, 0.2, 0, 0.5]
+        A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(A):
+            qml.qsvt(A, poly, [0, 1, 2], "embedding")
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        assert np.allclose(qml.grad(circuit)(np.array(A)), jax.grad(circuit)(jnp.array(A)))
+        assert not np.allclose(qml.grad(circuit)(np.array(A)), 0.0)
+
+    @pytest.mark.jax
+    def test_qsvt_jit(self):
+        """
+        Test that the qsvt function works with jax.jit.
+        Note that the traceable argument is A.
+        """
+
+        import jax.numpy as jnp
+        import jax
+
+        poly = [-0.1, 0, 0.2, 0, 0.5]
+        A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(A):
+            qml.qsvt(A, poly, [0, 1, 2], "embedding")
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        not_jitted_output = circuit(jnp.array(A))
+
+        jitted_circuit = jax.jit(circuit)
+        jitted_output = jitted_circuit(jnp.array(A))
+
+        assert jnp.allclose(not_jitted_output, jitted_output)
