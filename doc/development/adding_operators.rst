@@ -204,7 +204,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # as the class differs from the standard `__init__` call signature of
             # (*data, wires=wires, **hyperparameters), the _unflatten method that
             # must be defined as well
-            # _unflatten recreates a operation from the serialized data and metadata of ``Operator._flatten``
+            # _unflatten recreates an operation from the serialized data and metadata of ``Operator._flatten``
             # copied_op = type(op)._unflatten(*op._flatten())
             wires = metadata[0]
             hyperparams = dict(metadata[1])
