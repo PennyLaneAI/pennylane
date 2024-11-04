@@ -18,9 +18,6 @@ This module contains unit tests for device capabilities and the TOML module
 # pylint: disable=protected-access,trailing-whitespace
 
 import re
-from os import path
-from tempfile import TemporaryDirectory
-from textwrap import dedent
 
 import pytest
 
@@ -39,18 +36,6 @@ from pennylane.devices.capabilities import (
     parse_toml_document,
     update_device_capabilities,
 )
-
-
-@pytest.fixture(scope="function")
-def create_temporary_toml_file(request) -> str:
-    """Create a temporary TOML file with the given content."""
-    content = request.param
-    with TemporaryDirectory() as temp_dir:
-        toml_file = path.join(temp_dir, "test.toml")
-        with open(toml_file, "w", encoding="utf-8") as f:
-            f.write(dedent(content))
-        request.node.toml_file = toml_file
-        yield
 
 
 @pytest.mark.unit

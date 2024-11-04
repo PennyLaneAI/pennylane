@@ -14,11 +14,14 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-# pylint:disable=unused-argument
+
+# pylint:disable=unused-argument,too-few-public-methods
+
 import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
+from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.wires import Wires
 
 
@@ -33,14 +36,88 @@ def test_execute_method_abstract():
         BadDevice()  # pylint: disable=abstract-class-instantiated
 
 
+EXAMPLE_TOML_FILE = """
+schema = 3
+
+[operators.gates]
+
+[operators.observables]
+
+[pennylane.operators.observables]
+
+[measurement_processes]
+
+[pennylane.measurement_processes]
+
+[compilation]
+
+"""
+
+INVALID_TOML_FILE = """
+schema = 2
+
+[operators.gates.native]
+
+[operators.gates.decomp]
+
+[operators.observables]
+
+[compilation]
+"""
+
+
+class TestDeviceCapabilities:
+    """Tests for the capabilities of a device."""
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_device_capabilities(self, request):
+        """Tests that the device capabilities object is correctly initialized"""
+
+        class DeviceWithCapabilities(Device):
+            """A device with a capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+                return (0,)
+
+        dev = DeviceWithCapabilities()
+        assert isinstance(dev.capabilities, DeviceCapabilities)
+
+    def test_device_invalid_filepath(self):
+        """Tests that the device raises an error when the config file does not exist."""
+
+        with pytest.raises(FileNotFoundError):
+
+            class DeviceWithInvalidCapabilities(Device):
+
+                config_filepath = "nonexistent_file.toml"
+
+                def execute(self, circuits, execution_config=DefaultExecutionConfig):
+                    return (0,)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [INVALID_TOML_FILE], indirect=True)
+    def test_device_invalid_schema(self, request):
+        """Tests that the device raises an error when the schema is invalid"""
+
+        with pytest.warns(UserWarning, match=r"Unsupported config TOML schema"):
+
+            class DeviceWithInvalidSchema(Device):
+
+                config_filepath = request.node.toml_file
+
+                def execute(self, circuits, execution_config=DefaultExecutionConfig):
+                    return (0,)
+
+
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
 
-    # pylint: disable=too-few-public-methods
     class MinimalDevice(Device):
         """A device with only a dummy execute method provided."""
 
-        # pylint:disable=unused-argnument
         def execute(self, circuits, execution_config=DefaultExecutionConfig):
             return (0,)
 
@@ -49,6 +126,10 @@ class TestMinimalDevice:
     def test_device_name(self):
         """Test the default name is the name of the class"""
         assert self.dev.name == "MinimalDevice"
+
+    def test_no_capabilities(self):
+        """Test the default capabilities are empty"""
+        assert self.dev.capabilities is None
 
     @pytest.mark.parametrize(
         "wires,shots,expected",
