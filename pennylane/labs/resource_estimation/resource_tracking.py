@@ -207,7 +207,7 @@ def op_to_resource_con(op: Operation) -> ResourceConstructor:
         cls = lookup[name]
     except KeyError as exc:
         raise ResourceOperatorNotImplemented(
-            f"No resource operator for PennyLane operator {op.__name__} has been implemented."
+            f"No resource operator for PennyLane operator {op._name} has been implemented."
         ) from exc
 
     data, metadata = op._flatten()
