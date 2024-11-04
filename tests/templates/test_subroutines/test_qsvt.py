@@ -17,11 +17,12 @@ Tests for the QSVT template and qsvt wrapper function.
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
 
+from numpy.linalg import matrix_power
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from numpy.linalg import matrix_power
 
 
 def qfunc(A):
