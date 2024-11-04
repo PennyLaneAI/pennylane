@@ -25,22 +25,23 @@ class TestRZ:
     def test_resources(self, epsilon):
         """Test the resources method"""
         op = re.ResourceRZ(1.24, wires=0)
-        assert op.resources(epsilon=epsilon) == _rotation_resources(epsilon=epsilon)
+        config = {"error_rz": epsilon}
+        assert op.resources(config) == _rotation_resources(epsilon=epsilon)
 
     @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
     def test_resource_rep(self, epsilon):
         """Test the compact representation"""
         op = re.ResourceRZ(1.24, wires=0)
-        expected = re.CompressedResourceOp(re.ResourceRZ, {"epsilon": epsilon})
+        expected = re.CompressedResourceOp(re.ResourceRZ, {})
 
-        assert op.resource_rep(epsilon=epsilon) == expected
+        assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
     def test_resources_from_rep(self, epsilon):
         """Test the resources can be obtained from the compact representation"""
-
+        config = {"error_rz": epsilon}
         expected = _rotation_resources(epsilon=epsilon)
         assert (
-            re.ResourceRZ.resources(**re.ResourceRZ.resource_rep(epsilon=epsilon).params)
+            re.ResourceRZ.resources(config, **re.ResourceRZ.resource_rep().params)
             == expected
         )
