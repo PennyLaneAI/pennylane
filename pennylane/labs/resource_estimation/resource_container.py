@@ -76,11 +76,7 @@ class CompressedResourceOp:
             QSVT(num_wires=5, num_angles=100)
         """
         if not issubclass(op_type, rc.ResourceConstructor):
-<<<<<<< HEAD
             raise TypeError(f"op_type must be a subclass of ResourceConstructor. Got type {type(op_type)}.")
-=======
-            raise TypeError("op_type must be of type ResourceConstructor.")
->>>>>>> d4aaf70846b2a15316656039f6fd83a1842e067c
 
         self._name = (op_type.__name__).strip("Resource")
         self.op_type = op_type
