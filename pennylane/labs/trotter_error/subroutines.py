@@ -1,4 +1,8 @@
-from block2 import itg, DMRGDriver, SymmetryTypes
+from block2 import DMRGDriver, SymmetryTypes
+from block2.algebra.io import MPSTools, MPOTools
+import numpy as np
+from scipy.linalg import expm
+import itertools
 
 class PTerror():
     def __init__(self, H):
@@ -9,28 +13,63 @@ class PTerror():
         r""" Computes self.eigenstates."""
         raise NotImplementedError
 
-    def matrix_element(self, bra, nested_commutator, ket):
+    def get_mf_mps(self):
+        r""" Finds some of the simplest possible spin-restricted mean-field states, as a test 
+        for now. Total number of such states is combinatorially large: could use something 
+        like delta_SCF to zero in on key candidates, or simply use CIS / CISD. """
+
+        hf_state = [2] * self.nelectron // 2 + [0] * (self.ncas - self.nelectron // 2)
+        mf_states = list(set(itertools.permutations(hf_state, len(hf_state))))
+
+        self.mf_mps = {}
+        for state in mf_states:
+            ket = self.driver.get_random_mps(tag=str(state), bond_dim=self.bond_dim, \
+                                        occs=state, dot=1)
+            ket = self.driver.adjust_mps(ket, dot=1)[0]
+            pyket = MPSTools.from_block2(ket)
+            self.mf_mps[state] = pyket
+        return self.mf_mps
+
+
+    def matrix_element(self, bra, op, ket):
         raise NotImplementedError
-    
+
+
 class PTerrorTensor(PTerror):
-    def __init__(self, H, driver):
+    def __init__(self, H, driver, name, cdf_loc):
         super().__init__(H)
         if driver is None:
-            self.driver = DMRGDriver(scratch="./tmp", symm_type=SymmetryTypes.SU2, n_threads=4)
+            self.driver = DMRGDriver(scratch=f"./{name}_tmp", \
+                                     symm_type=SymmetryTypes.SZ, \
+                                        n_threads=4, stack_mem=6*1024**3)
         else:
             self.driver = driver
 
-    def get_eigenstates(self, bond_dims, nroots, noises, thrds):
-        r"""Gets the MPS corresponding to the eigenstates of the Hamiltonian."""
-
-        # Get integrals and other information from PySCF mean-field object
-        #ncas, n_elec, spin, ecore, h1e, g2e, orb_sym = itg.get_rhf_integrals(mf,
-        #                                            ncore=0, ncas=None, g2e_symm=8)
-    
-
+        # force spin = 0 and no orbital symmetry -- neither are available in PL for now anyway
+        assert self.H.spin == 0
+        assert self.H.orb_sym == [0] * self.H.ncas
         # Initialize DMRG driver
         self.driver.initialize_system(n_sites=self.H.ncas, n_elec=self.H.nelec, 
                                 spin=self.H.spin, orb_sym=self.H.orb_sym)
+        
+        self.load_cdf_coeffs(cdf_loc)
+
+
+    def load_cdf_coeffs(self, cdf_loc):
+        r"""CDF coefficients are loaded from a location on disk"""
+        # load the one-electron CDF
+        U0, Z0 = np.load(f'{cdf_loc}/CDF_onebody.npy', allow_pickle=True)
+        # load the two-electron CDF
+        X, Z = np.load(f'{cdf_loc}/CDF_twobody.npy', allow_pickle=True)
+        U = expm(X)
+        # set core constant to zero for simplicity, as it does not affect PT results
+        self.ecore = 0
+        self.h1e = np.einsum('pq,qr,rs', U0, Z0, U0)
+        self.cdf_eri = np.einsum('tpk,tqk,tkl,trl,tsl->tpqrs', U, U, Z, U, U)
+
+
+    def get_eigenstates(self, bond_dims, nroots, noises, thrds):
+        r"""Gets the MPS corresponding to the eigenstates of the Hamiltonian."""    
 
         # Compute MPO for the Hamiltonian
         mpo = self.driver.get_qc_mpo(h1e=self.H.h1e, g2e=self.H.eri, ecore=self.H.ecore, iprint=1)
@@ -45,28 +84,61 @@ class PTerrorTensor(PTerror):
         # Store the eigenstates
         self.eigenstates = ket
     
-    def matrix_element(self, bra, nested_commutator, ket):
+    def matrix_element(self, pybra, pyop, pyket):
         r"""
-        Computes matrix element of the nested commutator.
+        Computes matrix element of an operator represented as an MPO.
+        All Block2 objects must be Python-based entities.
 
         Arguments:
             bra (MPS): bra state
-            nested_commutator (MPO): nested commutator
+            pyop (MPO): operator
             ket (MPS): ket state
         """
+        return pybra @ pyop @ pyket
 
-        # Identity MPO
-        impo = self.driver.get_identity_mpo()
 
-        # Compute the nested commutator
-        kett = self.nested_commutator(nested_commutator, ket)
+    def compute_error(self):
 
-        # Get expected values
-        return self.driver.expectation(bra, impo, kett) / self.driver.expectation(bra, impo, bra)
-    
+        error_per_state = {}
+        for jj in range(1, self.max_ncdf+1):
+
+            # create mpo for sum_{i<j} H_i
+            if jj == 1:
+                h1e = self.h1e
+                g2e = self.cdf_eri[0]*0
+                A_mpo = self.driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=self.ecore, \
+                                        iprint=0, add_ident=False)
+            else:
+                h1e = self.h1e
+                g2e = np.sum(self.cdf_eri[:jj], axis=0)
+                A_mpo = self.driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=self.ecore, \
+                                        iprint=0, add_ident=False)
+            A_mpo_py = MPOTools.from_block2(A_mpo.prim_mpo)
+
+            # create mpo for the counterpart, the H_j fragment
+            h1e = self.h1e * 0
+            g2e = self.cdf_eri[jj]
+            Hj_mpo_py = self.driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=self.ecore, \
+                                    iprint=0, add_ident=False)
+            
+            # evaluate all the six commutator expressions
+            for label, mps in self.mf_mps.items():
+                Y3_j = mps @ \
+                    (2. * (A_mpo_py @ Hj_mpo_py @ A_mpo_py) \
+                    - Hj_mpo_py @ A_mpo_py @ A_mpo_py \
+                    - A_mpo_py @ A_mpo_py @ Hj_mpo_py \
+                    - 2. * (Hj_mpo_py @ A_mpo_py @ Hj_mpo_py) \
+                    + A_mpo_py @ Hj_mpo_py @ Hj_mpo_py \
+                    + Hj_mpo_py @ Hj_mpo_py @ A_mpo_py ) @ mps
+                if not label in error_per_state.keys():
+                    error_per_state[label] = Y3_j
+                else:
+                    error_per_state[label] += Y3_j            
+        
+
     def nested_commutator(self, right_nested_indices, ket):
         r"""
-        Computes a matrix element of the nested commutator.
+        (The list of commutator terms will be done at a higher level.)
 
         Arguments:
             right_nested_indices (list): indices of the commutator, nested to the right.
