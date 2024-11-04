@@ -156,7 +156,7 @@ def _multi_controlled_zyz(
 
     cop_wires = (control_wires[-1], target_wire[0])
 
-    # Add A operator
+    # Add operator A
     if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
         decomp.append(qml.CRZ(phi, wires=cop_wires))
     if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
@@ -164,7 +164,7 @@ def _multi_controlled_zyz(
 
     decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires[:-1], work_wires=work_wires))
 
-    # Add B operator
+    # Add operator B
     if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
         decomp.append(qml.CRY(-theta / 2, wires=cop_wires))
     if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
@@ -172,7 +172,7 @@ def _multi_controlled_zyz(
 
     decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires[:-1], work_wires=work_wires))
 
-    # Add C operator
+    # Add operator C
     if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
         decomp.append(qml.CRZ((omega - phi) / 2, wires=cop_wires))
 
@@ -192,7 +192,7 @@ def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wi
         decomp.append(
             qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
         )
-    # Add A operator
+    # Add operator A
     if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
         decomp.append(qml.RZ(phi, wires=target_wire))
     if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
@@ -200,7 +200,7 @@ def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wi
 
     decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
 
-    # Add B operator
+    # Add operator B
     if not qml.math.allclose(0.0, theta / 2, atol=1e-8, rtol=0):
         decomp.append(qml.RY(-theta / 2, wires=target_wire))
     if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
@@ -208,7 +208,7 @@ def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wi
 
     decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
 
-    # Add C operator
+    # Add operator C
     if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):
         decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
 
