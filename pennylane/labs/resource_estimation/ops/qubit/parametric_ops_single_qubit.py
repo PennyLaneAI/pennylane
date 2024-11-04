@@ -22,18 +22,12 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
     """Resource class for RZ"""
 
     @staticmethod
-    def _resource_decomp(config=None) -> Dict[re.CompressedResourceOp, int]:
-        if config is None:
-            config = re.resource_config
-
+    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config['error_rz'])
 
     def resource_params(self):
         return {}
 
     @classmethod
-    def resource_rep(cls, config=None) -> re.CompressedResourceOp:
-        if config is None:
-            config = re.resource_config
-
+    def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
