@@ -1,6 +1,5 @@
 import pytest
 
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
 
@@ -18,9 +17,9 @@ class TestQFT:
     )
     def test_resources(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
         """Test the resources method returns the correct dictionary"""
-        hadamard = re.CompressedResourceOp(qml.Hadamard, {})
-        swap = re.CompressedResourceOp(qml.SWAP, {})
-        ctrl_phase_shift = re.CompressedResourceOp(qml.ControlledPhaseShift, {})
+        hadamard = re.CompressedResourceOp(re.ResourceHadamard, {})
+        swap = re.CompressedResourceOp(re.ResourceSWAP, {})
+        ctrl_phase_shift = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {})
 
         expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
 
@@ -36,7 +35,7 @@ class TestQFT:
     def test_resource_rep(self, num_wires):
         """Test the resource_rep returns the correct CompressedResourceOp"""
 
-        expected = re.CompressedResourceOp(qml.QFT, {"num_wires": num_wires})
+        expected = re.CompressedResourceOp(re.ResourceQFT, {"num_wires": num_wires})
         assert re.ResourceQFT.resource_rep(num_wires) == expected
 
     @pytest.mark.parametrize(
@@ -51,9 +50,9 @@ class TestQFT:
     def test_resources_from_rep(self, num_wires, num_hadamard, num_swap, num_ctrl_phase_shift):
         """Test that computing the resources from a compressed representation works"""
 
-        hadamard = re.CompressedResourceOp(qml.Hadamard, {})
-        swap = re.CompressedResourceOp(qml.SWAP, {})
-        ctrl_phase_shift = re.CompressedResourceOp(qml.ControlledPhaseShift, {})
+        hadamard = re.CompressedResourceOp(re.ResourceHadamard, {})
+        swap = re.CompressedResourceOp(re.ResourceSWAP, {})
+        ctrl_phase_shift = re.CompressedResourceOp(re.ResourceControlledPhaseShift, {})
 
         expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
 
