@@ -118,7 +118,7 @@ jobs:
             "qcut-tests": ["3.10"],
             "qchem-tests": ["3.10"],
             "gradients-tests": ["3.10"],
-            "data-tests": ["3.10"],
+            "data-tests": ["3.10", "3.12"],
             "device-tests": ["3.10"]
           }
           EOF
