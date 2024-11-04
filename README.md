@@ -87,11 +87,11 @@ PennyLane's [quantum machine learning hub](https://pennylane.ai/qml/):
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
 
-* [What is quantum machine learning?](https://pennylane.ai/qml/whatisqml.html)
-* [QML tutorials and demos](https://pennylane.ai/qml/demonstrations.html)
-* [Frequently asked questions](https://pennylane.ai/faq.html)
-* [Key concepts of QML](https://pennylane.ai/qml/glossary.html)
-* [QML videos](https://pennylane.ai/qml/videos.html)
+* [What is quantum machine learning?](https://pennylane.ai/qml/whatisqml)
+* [QML tutorials and demos](https://pennylane.ai/qml/demonstrations)
+* [Frequently asked questions](https://pennylane.ai/faq)
+* [Key concepts of QML](https://pennylane.ai/qml/glossary)
+* [QML videos](https://pennylane.ai/qml/videos)
 
 You can also check out our [documentation](https://pennylane.readthedocs.io) for [quickstart
 guides](https://pennylane.readthedocs.io/en/stable/introduction/pennylane.html) to using PennyLane,
@@ -102,9 +102,9 @@ quantum device.
 ## Tutorials and demonstrations
 
 Take a deeper dive into quantum machine learning by exploring cutting-edge algorithms on our [demonstrations
-page](https://pennylane.ai/qml/demonstrations.html).
+page](https://pennylane.ai/qml/demonstrations).
 
-<a href="https://pennylane.ai/qml/demonstrations.html">
+<a href="https://pennylane.ai/qml/demonstrations">
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
 </a>
 
@@ -112,14 +112,14 @@ All demonstrations are fully executable, and can be downloaded as Jupyter notebo
 scripts.
 
 If you would like to contribute your own demo, see our [demo submission
-guide](https://pennylane.ai/qml/demos_submission.html).
+guide](https://pennylane.ai/qml/demos_submission).
 
 ## Videos
 
-Seeing is believing! Check out [our videos](https://pennylane.ai/qml/videos.html) to learn about
+Seeing is believing! Check out [our videos](https://pennylane.ai/qml/videos) to learn about
 PennyLane, quantum computing concepts, and more. 
 
-<a href="https://pennylane.ai/qml/videos.html">
+<a href="https://pennylane.ai/qml/videos">
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/videos.png" width="900px">
 </a>
 

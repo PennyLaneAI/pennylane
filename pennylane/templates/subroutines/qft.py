@@ -175,11 +175,12 @@ class QFT(Operation):
         """
         shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
+        shift_len = len(shifts)
         decomp_ops = []
         for i, wire in enumerate(wires):
             decomp_ops.append(qml.Hadamard(wire))
 
-            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
+            for shift, control_wire in zip(shifts[: shift_len - i], wires[i + 1 :]):
                 op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
 

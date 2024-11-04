@@ -15,7 +15,6 @@
 
 import numpy as np
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane.measurements import Variance, VarianceMP
@@ -82,15 +81,14 @@ class TestVar:
             res = func(phi)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
-    @flaky(max_runs=5)
     @pytest.mark.parametrize("shots", [None, 5555, [5555, 5555]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(
-        self, shots, phi, tol, tol_stochastic
+        self, shots, phi, tol, tol_stochastic, seed
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=seed)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -122,11 +120,11 @@ class TestVar:
             res = func(phi, shots=shots)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
-    def test_eigvals_instead_of_observable(self):
+    def test_eigvals_instead_of_observable(self, seed):
         """Tests process samples with eigvals instead of observables"""
 
         shots = 100
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         expected = qml.var(qml.PauliZ(0)).process_samples(samples, [0, 1])
         assert VarianceMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
