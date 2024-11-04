@@ -18,8 +18,8 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=unnecessary-lambda-assignment
 
 import warnings
-from collections.abc import Callable, Generator
-from typing import Iterable, Optional
+from collections.abc import Callable, Generator, Iterable
+from typing import Optional
 
 import pennylane as qml
 from pennylane.transforms.core import transform
