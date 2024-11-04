@@ -54,7 +54,6 @@ class ResourceS(qml.S, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-
 class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
     """Resource class for SWAP"""
 

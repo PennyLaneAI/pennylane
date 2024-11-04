@@ -58,7 +58,7 @@ class ResourceRX(qml.RX, re.ResourceConstructor):
 
     @staticmethod
     def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=config['error_rx'])
+        return _rotation_resources(epsilon=config["error_rx"])
 
     def resource_params(self) -> dict:
         return {}
@@ -73,7 +73,7 @@ class ResourceRY(qml.RY, re.ResourceConstructor):
 
     @staticmethod
     def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=config['error_ry'])
+        return _rotation_resources(epsilon=config["error_ry"])
 
     def resource_params(self) -> dict:
         return {}
