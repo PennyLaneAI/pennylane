@@ -112,36 +112,33 @@ def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, fini
     """Helper function to update the mid-circuit measurements configuration based on
     execution parameters"""
 
-    postselect_mode = mcm_config.postselect_mode
-    mcm_method = mcm_config.mcm_method
-
     if not finite_shots:
-        postselect_mode = None
-        if mcm_method == "one-shot":
+        mcm_config.postselect_mode = None
+        if mcm_config.mcm_method == "one-shot":
             raise ValueError(
-                f"Cannot use the '{mcm_method}' method for mid-circuit measurements with analytic mode."
+                f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
             )
 
-    if mcm_method == "single-branch-statistics":
+    if mcm_config.mcm_method == "single-branch-statistics":
         raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
-    if interface == "jax-jit" and mcm_method == "deferred":
-        if postselect_mode == "hw-like":
+    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
+        if mcm_config.postselect_mode == "hw-like":
             raise ValueError(
                 "Using postselect_mode='hw-like' is not supported with jax-jit when using "
                 "mcm_method='deferred'."
             )
-        postselect_mode = "fill-shots"
+        mcm_config.postselect_mode = "fill-shots"
 
     if (
         finite_shots
         and "jax" in interface
-        and mcm_method in (None, "one-shot")
-        and postselect_mode in (None, "hw-like")
+        and mcm_config.mcm_method in (None, "one-shot")
+        and mcm_config.postselect_mode in (None, "hw-like")
     ):
-        postselect_mode = "pad-invalid-samples"
+        mcm_config.postselect_mode = "pad-invalid-samples"
 
-    return replace(mcm_config, postselect_mode=postselect_mode, mcm_method=mcm_method)
+    return mcm_config
 
 
 def _resolve_execution_config(
