@@ -21,7 +21,7 @@ import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
 from itertools import chain
-from typing import Optional, Union
+from typing import Optional, Union, Type
 
 import pennylane as qml
 from pennylane import Snapshot, transform
@@ -48,7 +48,7 @@ def _operator_decomposition_gen(
     max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
-    error: Optional[Exception] = None,
+    error: Optional[Type[Exception]] = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     if error is None:
@@ -302,7 +302,7 @@ def decompose(
     ] = None,
     max_expansion: Union[int, None] = None,
     name: str = "device",
-    error: Optional[Exception] = None,
+    error: Optional[Type[Exception]] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
