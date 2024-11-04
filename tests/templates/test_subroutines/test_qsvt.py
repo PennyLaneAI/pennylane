@@ -217,20 +217,17 @@ class TestQSVT:
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
-        ("input_matrix", "poly", "wires"),
-        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0, 0.2], [0, 1])],
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
     )
-    def test_QSVT_torch(self, input_matrix, poly, wires):
+    def test_QSVT_torch(self, input_matrix, angles, wires):
         """Test that the qsvt function matrix is correct for torch."""
         import torch
 
-        angles = qml.math.poly_to_angles(poly, "QSVT")
-        default_matrix = qml.matrix(
-            qml.qsvt_auto(input_matrix, poly, encoding_wires=wires, block_encoding="embedding")
-        )
+        default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
 
         input_matrix = torch.tensor(input_matrix, dtype=float)
-        angles = torch.tensor(angles, dtype=float)
+        angles = torch.tensor(angles[::-1], dtype=float)
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
@@ -242,20 +239,17 @@ class TestQSVT:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("input_matrix", "poly", "wires"),
-        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0, 0.2], [0, 1])],
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
     )
-    def test_QSVT_jax(self, input_matrix, poly, wires):
+    def test_QSVT_jax(self, input_matrix, angles, wires):
         """Test that the qsvt function matrix is correct for jax."""
         import jax.numpy as jnp
 
-        angles = qml.math.poly_to_angles(poly, "QSVT")
-        default_matrix = qml.matrix(
-            qml.qsvt_auto(input_matrix, poly, encoding_wires=wires, block_encoding="embedding")
-        )
+        default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
 
         input_matrix = jnp.array(input_matrix)
-        angles = jnp.array(angles)
+        angles = jnp.array(angles[::-1])
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
@@ -267,10 +261,10 @@ class TestQSVT:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("input_matrix", "poly", "wires"),
-        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0, 0.2], [0, 1])],
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
     )
-    def test_QSVT_jax_with_identity(self, input_matrix, poly, wires):
+    def test_QSVT_jax_with_identity(self, input_matrix, angles, wires):
         """Test that applying the identity operation before the qsvt function in
         a JIT context does not affect the matrix for jax.
 
@@ -282,38 +276,30 @@ class TestQSVT:
 
         def identity_and_qsvt(angles):
             qml.Identity(wires=wires[0])
-            qml.QSVT(
-                qml.BlockEncode(input_matrix, wires=wires),
-                [
-                    qml.PCPhase(angles[i], dim=len(input_matrix), wires=wires)
-                    for i in range(len(angles))
-                ],
-            )
+            qml.qsvt(input_matrix, angles, wires)
 
         @jax.jit
         def get_matrix_with_identity(angles):
             return qml.matrix(identity_and_qsvt, wire_order=wires)(angles)
 
-        angles = qml.math.poly_to_angles(poly, "QSVT")
-        matrix = qml.matrix(qml.qsvt_auto(input_matrix, poly, wires, "embedding"))
+        matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
         matrix_with_identity = get_matrix_with_identity(angles)
 
         assert np.allclose(matrix, matrix_with_identity)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
-        ("input_matrix", "poly", "wires"),
-        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0, 0.2], [0, 1])],
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
     )
-    def test_QSVT_tensorflow(self, input_matrix, poly, wires):
+    def test_QSVT_tensorflow(self, input_matrix, angles, wires):
         """Test that the qsvt function matrix is correct for tensorflow."""
         import tensorflow as tf
 
-        angles = qml.math.poly_to_angles(poly, "QSVT")
-        default_matrix = qml.matrix(qml.qsvt_auto(input_matrix, poly, wires, "embedding"))
+        default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
 
         input_matrix = tf.Variable(input_matrix)
-        angles = tf.Variable(angles)
+        angles = tf.Variable(angles[::-1])
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
