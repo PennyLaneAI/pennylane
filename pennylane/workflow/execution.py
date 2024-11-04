@@ -117,46 +117,6 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _get_interface_name(tapes, interface):
-    """Helper function to get the interface name of a list of tapes
-
-    Args:
-        tapes (list[.QuantumScript]): Quantum tapes
-        interface (Optional[str]): Original interface to use as reference.
-
-    Returns:
-        str: Interface name"""
-
-    if interface not in SUPPORTED_INTERFACE_NAMES:
-        raise qml.QuantumFunctionError(
-            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-        )
-
-    interface = INTERFACE_MAP[interface]
-
-    if interface == "auto":
-        params = []
-        for tape in tapes:
-            params.extend(tape.get_parameters(trainable_only=False))
-        interface = qml.math.get_interface(*params)
-        if interface != "numpy":
-            interface = INTERFACE_MAP[interface]
-    if interface == "tf" and _use_tensorflow_autograph():
-        interface = "tf-autograph"
-    if interface == "jax":
-        try:  # pragma: no cover
-            from .interfaces.jax import get_jax_interface_name
-        except ImportError as e:  # pragma: no cover
-            raise qml.QuantumFunctionError(  # pragma: no cover
-                "jax not found. Please install the latest "  # pragma: no cover
-                "version of jax to enable the 'jax' interface."  # pragma: no cover
-            ) from e  # pragma: no cover
-
-        interface = get_jax_interface_name(tapes)
-
-    return interface
-
-
 def _get_ml_boundary_execute(
     interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
@@ -290,6 +250,46 @@ def _cache_transform(tape: QuantumScript, cache: MutableMapping):
     # result of the corresponding tape is placed in the cache by ``cache_miss_postprocessing()``.
     cache[tape.hash] = None
     return [tape], cache_miss_postprocessing
+
+
+def _get_interface_name(tapes, interface):
+    """Helper function to get the interface name of a list of tapes
+
+    Args:
+        tapes (list[.QuantumScript]): Quantum tapes
+        interface (Optional[str]): Original interface to use as reference.
+
+    Returns:
+        str: Interface name"""
+
+    if interface not in SUPPORTED_INTERFACE_NAMES:
+        raise qml.QuantumFunctionError(
+            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
+        )
+
+    interface = INTERFACE_MAP[interface]
+
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = qml.math.get_interface(*params)
+        if interface != "numpy":
+            interface = INTERFACE_MAP[interface]
+    if interface == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
+    if interface == "jax":
+        try:  # pragma: no cover
+            from .interfaces.jax import get_jax_interface_name
+        except ImportError as e:  # pragma: no cover
+            raise qml.QuantumFunctionError(  # pragma: no cover
+                "jax not found. Please install the latest "  # pragma: no cover
+                "version of jax to enable the 'jax' interface."  # pragma: no cover
+            ) from e  # pragma: no cover
+
+        interface = get_jax_interface_name(tapes)
+
+    return interface
 
 
 def execute(
