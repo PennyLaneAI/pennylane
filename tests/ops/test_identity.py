@@ -91,7 +91,7 @@ class TestIdentity:
 
 
 @pytest.mark.parametrize("wires, expected_repr", op_params)
-def test_string_representation(wires, expected_repr):
-    """Test the operator's string representation"""
+def test_repr(wires, expected_repr):
+    """Test the operator's repr"""
     op = Identity(wires=wires)
     assert repr(op) == expected_repr
