@@ -497,6 +497,28 @@ class TestTOML:
             update_device_capabilities(capabilities, document, "qjit")
 
 
+def test_operator_properties():
+    """Tests the OperatorProperties class."""
+
+    prop1 = OperatorProperties(
+        controllable=True,
+        invertible=False,
+        differentiable=True,
+        conditions=[ExecutionCondition.ANALYTIC_MODE_ONLY],
+    )
+    prop2 = OperatorProperties(
+        controllable=True,
+        invertible=True,
+        differentiable=False,
+        conditions=[ExecutionCondition.ANALYTIC_MODE_ONLY],
+    )
+    intersection = prop1 & prop2
+    assert intersection.controllable is True
+    assert intersection.invertible is False
+    assert intersection.differentiable is False
+    assert intersection.conditions == [ExecutionCondition.ANALYTIC_MODE_ONLY]
+
+
 EXAMPLE_TOML_FILE = """
 schema = 3
 

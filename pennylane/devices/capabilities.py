@@ -70,6 +70,14 @@ class OperatorProperties:
     differentiable: bool = False
     conditions: list[ExecutionCondition] = field(default_factory=list)
 
+    def __and__(self, other: "OperatorProperties") -> "OperatorProperties":
+        return OperatorProperties(
+            invertible=self.invertible and other.invertible,
+            controllable=self.controllable and other.controllable,
+            differentiable=self.differentiable and other.differentiable,
+            conditions=list(set(self.conditions) & set(other.conditions)),
+        )
+
 
 @dataclass
 class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
