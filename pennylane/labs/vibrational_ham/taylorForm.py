@@ -346,30 +346,29 @@ def taylor_anharmonic(taylor_arr, start_deg=2):
 
     return BoseSentence(ordered_dict).normal_order()
 
-def taylor_kinetic(taylor_arr, freqs, Uloc):
+def taylor_kinetic(taylor_arr, freqs, is_loc=True, Uloc=None):
     taylor_1D = taylor_arr[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
 
-    # Create kinetic energy operation
-    alphas_arr = np.einsum("ij,ik,j,k->jk", Uloc, Uloc, np.sqrt(freqs), np.sqrt(freqs))
-    kin_energy = BoseSentence({})
+    if is_loc:
+        alphas_arr = np.einsum("ij,ik,j,k->jk", Uloc, Uloc, np.sqrt(freqs), np.sqrt(freqs))
+    else:
+        alphas_arr = np.zeros((num_modes,num_modes))
+        for m in range(num_modes):
+            alphas_arr[m,m] = freqs[m]
+
+    kin_ham = BoseSentence({})
     for m1 in range(num_modes):
         pm1 = _position_to_boson(m1, "p")
         for m2 in range(num_modes):
             pm2 = _position_to_boson(m2, "p")
-            kin_energy += (0.5 * alphas_arr[m1, m2]) * (pm1 * pm2).normal_order()
+            kin_ham += (0.5 * alphas_arr[m1, m2]) * (pm1 * pm2).normal_order()
 
-    return kin_energy.normal_order()
+    return kin_ham.normal_order()
 
-
-def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None):
+def taylor_harmonic(taylor_arr, freqs):
     taylor_1D = taylor_arr[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
-    if is_loc:
-        start_deg = 2
-    else:
-        start_deg = 3
-
     harm_pot = BoseSentence({})
     # Add Harmonic component
     for mode in range(num_modes):
@@ -378,8 +377,19 @@ def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None):
         ).normal_order()
         harm_pot += bosonized_qm2 * freqs[mode] * 0.5
 
+    return harm_pot.normal_order()
+
+
+
+def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None):
+    if is_loc:
+        start_deg = 2
+    else:
+        start_deg = 3
+
+    harm_pot = taylor_harmonic(taylor_arr, freqs)
     ham = taylor_anharmonic(taylor_arr, start_deg) + harm_pot
-    kin_ham = taylor_kinetic(taylor_arr, freqs, Uloc)
+    kin_ham = taylor_kinetic(taylor_arr, freqs, is_loc, Uloc)
 
     return ham.normal_order(), kin_ham
 
