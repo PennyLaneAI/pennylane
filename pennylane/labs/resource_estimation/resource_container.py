@@ -16,8 +16,7 @@ import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from .resource_constructor import ResourceConstructor
-
+import pennylane.labs.resource_estimation.resource_constructor as rc
 
 class CompressedResourceOp:
     r"""Instantiate the light weight class corressponding to the operator type and parameters.
@@ -76,7 +75,7 @@ class CompressedResourceOp:
             >>> print(op_tp)
             QSVT(num_wires=5, num_angles=100)
         """
-        if not issubclass(op_type, ResourceConstructor):
+        if not issubclass(op_type, rc.ResourceConstructor):
             raise TypeError("op_type must be of type ResourceConstructor.")
 
         self._name = op_type.__name__

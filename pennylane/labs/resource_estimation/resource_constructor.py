@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Dict
 
-from .resource_container import CompressedResourceOp
-
+import pennylane.labs.resource_estimation.resource_container as rc
 
 class ResourceConstructor(ABC):
     r"""This is an abstract class that defines the methods a PennyLane Operator
@@ -49,7 +48,7 @@ class ResourceConstructor(ABC):
 
     @staticmethod
     @abstractmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[rc.CompressedResourceOp, int]:
         """Returns the Resource object. This method is only to be used inside
         the methods of classes inheriting from ResourceConstructor."""
 
@@ -71,11 +70,11 @@ class ResourceConstructor(ABC):
 
     @classmethod
     @abstractmethod
-    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
+    def resource_rep(cls, **kwargs) -> rc.CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-    def resource_rep_from_op(self) -> CompressedResourceOp:
+    def resource_rep_from_op(self) -> rc.CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
         params = self.resource_params()
         return self.__class__.resource_rep(**params)

@@ -1,10 +1,10 @@
 import pytest
 
-from pennylane.labs.resource_estimation import ResourceConstructor
+import pennylane.labs.resource_estimation as re
 
 
 def test_abstract_resource_decomp():
-    class DummyClass(ResourceConstructor):
+    class DummyClass(re.ResourceConstructor):
         def resource_params():
             return
 
@@ -20,7 +20,7 @@ def test_abstract_resource_decomp():
 
 
 def test_abstract_resource_params():
-    class DummyClass(ResourceConstructor):
+    class DummyClass(re.ResourceConstructor):
         @staticmethod
         def _resource_decomp():
             return
@@ -36,7 +36,7 @@ def test_abstract_resource_params():
 
 
 def test_abstract_resource_rep():
-    class DummyClass(ResourceConstructor):
+    class DummyClass(re.ResourceConstructor):
         @staticmethod
         def _resource_decomp():
             return
@@ -52,7 +52,7 @@ def test_abstract_resource_rep():
 
 
 def test_set_resources():
-    class DummyClass(ResourceConstructor):
+    class DummyClass(re.ResourceConstructor):
         def resource_params():
             return
 
