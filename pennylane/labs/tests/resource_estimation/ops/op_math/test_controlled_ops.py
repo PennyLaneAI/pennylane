@@ -17,7 +17,7 @@ class TestControlledPhaseShift:
 
         expected = {
             re.CompressedResourceOp(re.ResourceCNOT, {}): 2,
-            re.CompressedResourceOp(re.ResourceRZ, {"epsilon": 10e-3}): 3,
+            re.CompressedResourceOp(re.ResourceRZ, {}): 3,
         }
 
         assert op.resources() == expected
@@ -55,7 +55,7 @@ class TestControlledPhaseShift:
 
         expected = {
             re.CompressedResourceOp(re.ResourceCNOT, {}): 2,
-            re.CompressedResourceOp(re.ResourceRZ, {"epsilon": 10e-3}): 3,
+            re.CompressedResourceOp(re.ResourceRZ, {}): 3,
         }
 
         assert (

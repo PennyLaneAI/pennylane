@@ -78,7 +78,7 @@ class CompressedResourceOp:
         if not issubclass(op_type, rc.ResourceConstructor):
             raise TypeError(f"op_type must be a subclass of ResourceConstructor. Got type {type(op_type)}.")
 
-        self._name = op_type.__name__
+        self._name = (op_type.__name__).strip("Resource")
         self.op_type = op_type
         self.params = params
         self._hashable_params = tuple(params.items())
@@ -139,13 +139,13 @@ class Resources:
 
     __rmul__ = __mul__  # same implementation
 
-    def __iadd__(self, other: "Resources") -> None:
+    def __iadd__(self, other: "Resources") -> "Resources":
         """Add two resources objects in series"""
-        add_in_series(self, other, in_place=True)
+        return add_in_series(self, other, in_place=True)
 
-    def __imull__(self, scaler: int) -> None:
+    def __imull__(self, scaler: int) -> "Resources":
         """Scale a resources object in series"""
-        mul_in_series(self, scaler, in_place=True)
+        return mul_in_series(self, scaler, in_place=True)
 
     def __str__(self):
         """String representation of the Resources object."""

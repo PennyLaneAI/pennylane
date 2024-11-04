@@ -5,6 +5,8 @@ import numpy as np
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
+#pylint: disable=arguments-differ
+
 
 def _rotation_resources(epsilon=10e-3):
     gate_types = {}
@@ -41,45 +43,45 @@ class ResourceRX(qml.RX, re.ResourceConstructor):
     """Resource class for RX"""
 
     @staticmethod
-    def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=epsilon)
+    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=config['error_rx'])
 
     def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceRY(qml.RY, re.ResourceConstructor):
     """Resource class for RY"""
 
     @staticmethod
-    def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=epsilon)
+    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=config['error_ry'])
 
     def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceRZ(qml.RZ, re.ResourceConstructor):
     """Resource class for RZ"""
 
     @staticmethod
-    def _resource_decomp(epsilon=10e-3) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=epsilon)
+    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=config['error_rz'])
 
     def resource_params(self) -> dict:
         return {}
 
     @classmethod
-    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceRot(qml.Rot, re.ResourceConstructor):
@@ -98,5 +100,5 @@ class ResourceRot(qml.Rot, re.ResourceConstructor):
         return {}
 
     @classmethod
-    def resource_rep(cls, epsilon=10e-3) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(cls, {"epsilon": epsilon})
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})

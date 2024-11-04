@@ -9,12 +9,13 @@ from pennylane.labs.resource_estimation import (
     ResourceSWAP,
 )
 
+#pylint: disable=arguments-differ
 
 class ResourceQFT(qml.QFT, ResourceConstructor):
     """Resource class for QFT"""
 
     @staticmethod
-    def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(num_wires, config=None) -> Dict[CompressedResourceOp, int]:
         if not isinstance(num_wires, int):
             raise TypeError("num_wires must be an int.")
 
@@ -36,7 +37,7 @@ class ResourceQFT(qml.QFT, ResourceConstructor):
     def resource_params(self):
         return {"num_wires": len(self.wires)}
 
-    @staticmethod
-    def resource_rep(num_wires) -> CompressedResourceOp:
+    @classmethod
+    def resource_rep(cls, num_wires) -> CompressedResourceOp:
         params = {"num_wires": num_wires}
-        return CompressedResourceOp(qml.QFT, params)
+        return CompressedResourceOp(cls, params)

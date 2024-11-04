@@ -24,29 +24,30 @@ class TestPauliRotation:
     params = list(zip([re.ResourceRX, re.ResourceRY, re.ResourceRZ], [10e-3, 10e-4, 10e-5]))
 
     @pytest.mark.parametrize("resource_class, epsilon", params)
-    def test_resources(self, epsilon, resource_class):
+    def test_resources(self, resource_class, epsilon):
         """Test the resources method"""
 
+        label = "error_" + resource_class.__name__.replace("Resource", '').lower()
+        config = {label: epsilon}
         op = resource_class(1.24, wires=0)
-        assert op.resources(epsilon=epsilon) == _rotation_resources(epsilon=epsilon)
+        assert op.resources(config) == _rotation_resources(epsilon=epsilon)
 
     @pytest.mark.parametrize("resource_class, epsilon", params)
-    def test_resource_rep(self, epsilon, resource_class):
+    def test_resource_rep(self, resource_class, epsilon): #pylint: disable=unused-argument
         """Test the compact representation"""
-        op = re.ResourceRZ(1.24, wires=0)
-        expected = re.CompressedResourceOp(re.ResourceRZ, {"epsilon": epsilon})
-
         op = resource_class(1.24, wires=0)
-        expected = re.CompressedResourceOp(resource_class, {"epsilon": epsilon})
-        assert op.resource_rep(epsilon=epsilon) == expected
+        expected = re.CompressedResourceOp(resource_class, {})
+        assert op.resource_rep() == expected
 
     @pytest.mark.parametrize("resource_class, epsilon", params)
-    def test_resources_from_rep(self, epsilon, resource_class):
+    def test_resources_from_rep(self, resource_class, epsilon):
         """Test the resources can be obtained from the compact representation"""
 
+        label = "error_" + resource_class.__name__.replace("Resource", '').lower()
+        config = {label: epsilon}
         op = resource_class(1.24, wires=0)
         expected = _rotation_resources(epsilon=epsilon)
-        assert resource_class.resources(**op.resource_rep(epsilon=epsilon).params) == expected
+        assert resource_class.resources(config, **op.resource_rep().params) == expected
 
 
 class TestRot:
