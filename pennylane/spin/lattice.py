@@ -67,11 +67,10 @@ class Lattice:
 
     **Example**
 
-    >>> n_cells = [2,2]
+    >>> n_cells = [2, 2]
     >>> vectors = [[0, 1], [1, 0]]
     >>> boundary_condition = [True, False]
-    >>> lattice = qml.spin.Lattice(n_cells, vectors,
-    >>>           boundary_condition=boundary_condition)
+    >>> lattice = qml.spin.Lattice(n_cells, vectors, boundary_condition=boundary_condition)
     >>> lattice.edges
     [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
 
@@ -133,9 +132,9 @@ class Lattice:
             edges = self._identify_neighbours(cutoff)
             self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
         else:
-            if neighbour_order > 1:
+            if neighbour_order != 1:
                 raise ValueError(
-                    "custom_edges cannot be specified if neighbour_order argument is set to greater than 1."
+                    "custom_edges cannot be specified if neighbour_order argument is set to a value other than 1."
                 )
             lattice_map = dict(zip(lattice_map, self.lattice_points))
             self.edges = self._get_custom_edges(custom_edges, lattice_map)
@@ -358,21 +357,59 @@ class Lattice:
             self.edges.append(new_edge)
 
 
-def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates the lattice object for a given shape and n_cells.
+def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a :class:`~pennylane.spin.Lattice` object for a given lattice shape and number of
+    cells.
 
     Args:
-        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``, ``'rectangle'``,
-              ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, ``'fcc'``,
-               or ``'diamond'``.
+        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes.
-                               Default is ``False`` indicating open boundary condition.
+            Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-                               Default is 1, indicating nearest neighbour.
+            Default is 1, indicating nearest neighbour.
 
     Returns:
-        lattice object.
+        ~pennylane.spin.Lattice: lattice object.
+
+    **Example**
+
+    >>> shape = 'square'
+    >>> n_cells = [2, 2]
+    >>> boundary_condition = [True, False]
+    >>> lattice = qml.spin.generate_lattice(shape, n_cells, boundary_condition)
+    >>> lattice.edges
+    [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
+
+    .. details::
+        :title: Lattice details
+
+        The following lattice shapes are currently supported.
+
+        * ``'chain'``: linear arrangement of sites in one dimension
+
+        * ``'square'``: square arrangement of sites in two dimensions
+
+        * ``'rectangle'``: rectangular arrangement of sites in two dimensions
+
+        * ``'triangle'``: triangular arrangement of sites in two dimensions [`Phys. Rev. B 7, 5017 (1973) <https://journals.aps.org/pr/abstract/10.1103/PhysRev.79.357>`_]
+
+        * ``'honeycomb'``: `honeycomb <https://en.wikipedia.org/wiki/Hexagonal_lattice#Honeycomb_point_set>`_ arrangement of sites in two dimensions
+
+        * ``'kagome'``: kagome arrangement of sites in two dimensions [`Prog. Theor. Phys. 6, 306 (1951) <https://academic.oup.com/ptp/article/6/3/306/1852171>`_]
+
+        * ``'lieb'``: Lieb arrangement of sites in two dimensions [`arXiv:1004.5172 <https://arxiv.org/abs/1004.5172>`_]
+
+        * ``'cubic'``: `cubic <https://en.wikipedia.org/wiki/Cubic_crystal_system>`_ arrangement of sites in three dimensions
+
+        * ``'bcc'``: `body-centered cubic <https://en.wikipedia.org/wiki/Cubic_crystal_system>`_ arrangement of sites in three dimensions
+
+        * ``'fcc'``: `face-centered cubic <https://en.wikipedia.org/wiki/Cubic_crystal_system>`_ arrangement of sites in three dimensions
+
+        * ``'diamond'``: `diamond <https://en.wikipedia.org/wiki/Diamond_cubic>`_ arrangement of sites in three dimensions
+
     """
 
     lattice_shape = lattice.strip().lower()
