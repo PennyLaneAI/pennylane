@@ -349,6 +349,7 @@ class TestWireBehaviour:
 
         assert ax.lines[0].get_color() == "orange"
         assert ax.lines[1].get_color() == "cyan"
+        assert ax.lines[2].get_color() == "black"
 
         # Make all wires cyan and bold,
         # except for wires 2 and 6, which are dashed and another color
