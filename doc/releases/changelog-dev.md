@@ -7,6 +7,7 @@
 <h4>New API for Qubit Mixed</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
+
   [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379) An `apply_operation` helper function featuring:
 
   * Two density matrix contraction methods using `einsum` and `tensordot`
