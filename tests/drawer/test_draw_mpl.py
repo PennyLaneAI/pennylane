@@ -375,6 +375,28 @@ class TestWireBehaviour:
                 assert w.get_linestyle() == "-"
                 assert w.get_linewidth() == 5
 
+        wire_options = {
+            "linewidth": 5,
+            2: {"linestyle": "--", "color": "red"},
+            6: {"linestyle": "--", "color": "orange"},
+        }
+
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for i, w in enumerate(ax.lines):
+            if i == 2:
+                assert w.get_color() == "red"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            elif i == 6:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            else:
+                assert w.get_color() == "black"
+                assert w.get_linestyle() == "-"
+                assert w.get_linewidth() == 5
+
         plt.close()
 
 
