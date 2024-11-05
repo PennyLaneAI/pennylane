@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The fermionic representation classes and functions."""
+"""The bosonic representation classes and functions."""
 import re
 from copy import copy
 from numbers import Number
@@ -148,31 +148,28 @@ class BoseWord(dict):
         elements into BoseSentences, and uses the BoseSentence __add__
         method"""
 
-        self_fs = BoseSentence({self: 1.0})
+        self_bs = BoseSentence({self: 1.0})
 
         if isinstance(other, BoseSentence):
-            return self_fs + other
+            return self_bs + other
 
         if isinstance(other, BoseWord):
-            return self_fs + BoseSentence({other: 1.0})
+            return self_bs + BoseSentence({other: 1.0})
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            return self_fs + BoseSentence({BoseWord({}): other})
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot add {type(other)} to a BoseWord.")
 
-        raise TypeError(f"Cannot add {type(other)} to a BoseWord.")
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        return self_bs + BoseSentence({BoseWord({}): other})
 
     def __radd__(self, other):
         """Add a BoseWord to a constant, i.e. `2 + BoseWord({...})`"""
-
-        if isinstance(other, (Number, ndarray)):
-            return self.__add__(other)
-
-        raise TypeError(f"Cannot add a BoseWord to {type(other)}.")
+        return self.__add__(other)
 
     def __sub__(self, other):
         """Subtract a BoseSentence, BoseWord or constant from a BoseWord. Converts both
@@ -188,29 +185,27 @@ class BoseWord(dict):
             other_fs = BoseSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_fs + other_fs
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            return self_fs + BoseSentence({BoseWord({}): -1 * other})  # -constant * I
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
 
-        raise TypeError(f"Cannot subtract {type(other)} from a BoseWord.")
+        return self_fs + BoseSentence({BoseWord({}): -1 * other})  # -constant * I
 
     def __rsub__(self, other):
         """Subtract a BoseWord to a constant, i.e. `2 - BoseWord({...})`"""
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            self_fs = BoseSentence({self: -1.0})
-            other_fs = BoseSentence({BoseWord({}): other})
-            return self_fs + other_fs
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract a BoseWord from {type(other)}.")
 
-        raise TypeError(f"Cannot subtract a BoseWord from {type(other)}.")
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+        self_fs = BoseSentence({self: -1.0})
+        other_fs = BoseSentence({BoseWord({}): other})
+        return self_fs + other_fs
 
     def __mul__(self, other):
         r"""Multiply a BoseWord with another BoseWord, a BoseSentence, or a constant.
@@ -245,15 +240,16 @@ class BoseWord(dict):
         if isinstance(other, BoseSentence):
             return BoseSentence({self: 1}) * other
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            return BoseSentence({self: other})
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot multiply BoseWord by {type(other)}.")
 
-        raise TypeError(f"Cannot multiply BoseWord by {type(other)}.")
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        return BoseSentence({self: other})
 
     def __rmul__(self, other):
         r"""Reverse multiply a BoseWord
@@ -263,15 +259,7 @@ class BoseWord(dict):
         ``2 * BoseWord({(0, 0): "+"})``, where the ``__mul__`` operator on an integer
         will fail to multiply with a BoseWord"""
 
-        if isinstance(other, (Number, TensorLike)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            return BoseSentence({self: other})
-
-        raise TypeError(f"Cannot multiply BoseWord by {type(other)}.")
+        return self.__mul__(other)
 
     def __pow__(self, value):
         r"""Exponentiate a Bose word to an integer power.
@@ -380,37 +368,31 @@ class BoseSentence(dict):
         r"""Add a BoseSentence, BoseWord or constant to a BoseSentence by iterating over the
         smaller one and adding its terms to the larger one."""
 
-        # ensure other is BoseSentence
+        if not isinstance(other, (TensorLike, BoseWord, BoseSentence)):
+            raise TypeError(f"Cannot add {type(other)} to a BoseSentence.")
+
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
         if isinstance(other, BoseWord):
             other = BoseSentence({other: 1})
-        if isinstance(other, Number):
-            other = BoseSentence({BoseWord({}): other})
-        if isinstance(other, ndarray):
-            if qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
+        if isinstance(other, TensorLike):
             other = BoseSentence({BoseWord({}): other})
 
-        if isinstance(other, BoseSentence):
-            smaller_fs, larger_fs = (
-                (self, copy(other)) if len(self) < len(other) else (other, copy(self))
-            )
-            for key in smaller_fs:
-                larger_fs[key] += smaller_fs[key]
+        smaller_fs, larger_fs = (
+            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+        )
+        for key in smaller_fs:
+            larger_fs[key] += smaller_fs[key]
 
-            return larger_fs
-
-        raise TypeError(f"Cannot add {type(other)} to a BoseSentence.")
+        return larger_fs
 
     def __radd__(self, other):
         """Add a BoseSentence to a constant, i.e. `2 + BoseSentence({...})`"""
-
-        if isinstance(other, (Number, ndarray)):
-            return self.__add__(other)
-
-        raise TypeError(f"Cannot add a BoseSentence to {type(other)}.")
+        return self.__add__(other)
 
     def __sub__(self, other):
         r"""Subtract a BoseSentence, BoseWord or constant from a BoseSentence"""
@@ -418,24 +400,21 @@ class BoseSentence(dict):
             other = BoseSentence({other: -1})
             return self.__add__(other)
 
-        if isinstance(other, Number):
-            other = BoseSentence({BoseWord({}): -1 * other})  # -constant * I
-            return self.__add__(other)
-
-        if isinstance(other, ndarray):
-            if qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            other = BoseSentence({BoseWord({}): -1 * other})  # -constant * I
-            return self.__add__(other)
-
         if isinstance(other, BoseSentence):
             other = BoseSentence(dict(zip(other.keys(), [-1 * v for v in other.values()])))
             return self.__add__(other)
 
-        raise TypeError(f"Cannot subtract {type(other)} from a BoseSentence.")
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract {type(other)} from a BoseSentence.")
+
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        other = BoseSentence({BoseWord({}): -1 * other})  # -constant * I
+        return self.__add__(other)
 
     def __rsub__(self, other):
         """Subtract a BoseSentence to a constant, i.e.
@@ -443,17 +422,18 @@ class BoseSentence(dict):
         >>> 2 - BoseSentence({...})
         """
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            self_fs = BoseSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
-            other_fs = BoseSentence({BoseWord({}): other})  # constant * I
-            return self_fs + other_fs
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract a BoseSentence from {type(other)}.")
 
-        raise TypeError(f"Cannot subtract a BoseSentence from {type(other)}.")
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        self_fs = BoseSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
+        other_fs = BoseSentence({BoseWord({}): other})  # constant * I
+        return self_fs + other_fs
 
     def __mul__(self, other):
         r"""Multiply two Bose sentences by iterating over each sentence and multiplying the Bose
@@ -474,16 +454,16 @@ class BoseSentence(dict):
 
             return product
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            vals = [i * other for i in self.values()]
-            return BoseSentence(dict(zip(self.keys(), vals)))
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot multiply BoseSentence by {type(other)}.")
 
-        raise TypeError(f"Cannot multiply BoseSentence by {type(other)}.")
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+        vals = [i * other for i in self.values()]
+        return BoseSentence(dict(zip(self.keys(), vals)))
 
     def __rmul__(self, other):
         r"""Reverse multiply a BoseSentence
@@ -493,16 +473,17 @@ class BoseSentence(dict):
         multiplying ``2 * bose_sentence``, since the ``__mul__`` operator on an integer
         will fail to multiply with a BoseSentence"""
 
-        if isinstance(other, (Number, ndarray)):
-            if isinstance(other, ndarray) and qml.math.size(other) > 1:
-                raise ValueError(
-                    f"Arithmetic Bose operations can only accept an array of length 1, "
-                    f"but received {other} of length {len(other)}"
-                )
-            vals = [i * other for i in self.values()]
-            return BoseSentence(dict(zip(self.keys(), vals)))
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot multiply {type(other)} by BoseSentence.")
 
-        raise TypeError(f"Cannot multiply {type(other)} by BoseSentence.")
+        if qml.math.size(other) > 1:
+            raise ValueError(
+                f"Arithmetic Bose operations can only accept an array of length 1, "
+                f"but received {other} of length {len(other)}"
+            )
+
+        vals = [i * other for i in self.values()]
+        return BoseSentence(dict(zip(self.keys(), vals)))
 
     def __pow__(self, value):
         r"""Exponentiate a Bose sentence to an integer power."""
