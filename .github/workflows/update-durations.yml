@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
-        uses: actions/download-artifacts@v4
+        uses: actions/download-artifact@v4
         with:
           pattern: durations-*
           path: ./
@@ -43,9 +43,9 @@ jobs:
       - name: Combine artifacts into single file
         run: |
           mkdir durations
-          jq -s 'add' core_tests_*.json > durations/core_tests_durations.json
-          jq -s 'add' jax_tests_*.json > durations/jax_tests_durations.json
-          jq -s 'add' tf_tests_*.json > durations/tf_tests_durations.json
+          jq -s 'add' core_*.json > durations/core_tests_durations.json
+          jq -s 'add' jax_*.json > durations/jax_tests_durations.json
+          jq -s 'add' tf_*.json > durations/tf_tests_durations.json
 
       - name: Upload combined durations artifacts
         uses: actions/upload-artifacts@v4
