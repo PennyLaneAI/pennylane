@@ -211,9 +211,7 @@ def op_to_resource_con(op: Operation) -> ResourceConstructor:
         ) from exc
 
     data, metadata = op._flatten()
-    resource_op = cls._unflatten(data, metadata)
-
-    return resource_op
+    return cls._unflatten(data, metadata)
 
 
 def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str, int]:
