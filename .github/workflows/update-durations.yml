@@ -1,0 +1,66 @@
+# This workflow is designed to run unit tests and open a pull request to update
+# JSON files that store test durations for better load balancing
+
+name: Update Durations
+on:
+  workflow_dispatch:
+  # Scheduled trigger every Saturday at 2:47am UTC
+  schedule:
+  - cron: '47 2 * * 6'
+
+concurrency:
+  group: update-durations-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DURATIONS_BRANCH: bot/durations-update
+
+jobs:
+
+  update-durations:
+    uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      branch: ${{ github.ref }}
+      upload_to_codecov: false
+      run_lightened_ci: true
+      skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
+
+  combine-durations-files:
+    needs: update-durations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifacts@v4
+        with:
+          pattern: durations-*
+          path: ./
+          merge-multiple: true
+
+      - name: Combine artifacts into single file
+        run: |
+          mkdir durations
+          jq -s 'add' core_tests_*.json > durations/core_tests_durations.json
+          jq -s 'add' jax_tests_*.json > durations/jax_tests_durations.json
+          jq -s 'add' tf_tests_*.json > durations/tf_tests_durations.json
+
+      - name: Upload combined durations artifacts
+        uses: actions/upload-artifacts@v4
+        with:
+          name: combined-durations
+          path: ./durations
+          include-hidden-files: true
+
+
+  upload-durations:
+    needs:
+      - update-durations
+      - combine-durations-files
+    with:
+      artifact_name_pattern: "combined-durations"
+      artifact_save_path: ".github/"
+      pull_request_head_branch_name: bot/durations-update
+      commit_message_description: Update test durations
+      pull_request_title: Update test durations
+      pull_request_body: Automatic update of test duration files
