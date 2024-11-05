@@ -111,7 +111,8 @@ def _use_tensorflow_autograph():
     except ImportError as e:  # pragma: no cover
         raise qml.QuantumFunctionError(  # pragma: no cover
             "tensorflow not found. Please install the latest "  # pragma: no cover
-            "version of tensorflow to enable the 'tensorflow' interface."  # pragma: no cover
+            "version of tensorflow supported by Pennylane "  # pragma: no cover
+            "to enable the 'tensorflow' interface."  # pragma: no cover
         ) from e  # pragma: no cover
 
     return not tf.executing_eagerly()
