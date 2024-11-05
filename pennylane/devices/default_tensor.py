@@ -61,6 +61,7 @@ try:
 
     openblas_threads = os.environ.get("OPENBLAS_NUM_THREADS")
     openblas_threads = int(openblas_threads) if openblas_threads else None
+    TESTING = os.environ.get("FDX_TESTING")
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_quimb = False
 
@@ -667,10 +668,12 @@ class DefaultTensor(Device):
                     f"Tensor on device has wires {self.wires.tolist()}"
                 )
             circuit = circuit.map_to_standard_wires()
-            # with threadpool_limits(limits=1, user_api='blas'):
-            #     result = self.simulate(circuit)
-            # results.append(result)
-            results.append(self.simulate(circuit))
+            if TESTING == 'true':
+                with threadpool_limits(limits=1, user_api='blas'):
+                    result = self.simulate(circuit)
+                results.append(result)
+            else:
+                results.append(self.simulate(circuit))
 
         return tuple(results)
 

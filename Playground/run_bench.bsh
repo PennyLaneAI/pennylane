@@ -1,36 +1,50 @@
 #!/bin/bash
 
-wires="8 10 12 14"
+wires="4 6"
 control=na
+vblas_base=venv_NV100
 
-vblas=venv_blas
+# Testing env-var for python
+FDX_TESTING="true"
 
-python3 -m virtualenv $vblas
+for test in true false; do 
+    # Testing env-var for python
+    FDX_TESTING=$test
+    control=na
 
-source ${vblas}/bin/activate 
+    if [ $test == "true" ]; then 
+        control=ctrl
+    fi
 
-pip install -r requirements.txt
-pip install quimb memory_profiler pandas threadpoolctl
-pip install -e .
+    vblas=${vblas_base}_blas
 
-python Playground/time_plot.py --device default.tensor --benchmark time --wires $wires --output_file Playground/default.tensor_${vblas}_${control}.txt
+    python3 -m virtualenv $vblas
 
-deactivate
+    source ${vblas}/bin/activate 
 
-# ----------------------------------------------------------------------------
-# ----------------------------------------------------------------------------
-vblas=venv_mkl
+    pip install -r requirements.txt
+    pip install quimb memory_profiler pandas threadpoolctl
+    pip install -e .
 
-python3 -m virtualenv $vblas
+    python Playground/time_plot.py --device default.tensor --benchmark time --wires $wires --output_file Playground/default.tensor_${vblas}_${control}.txt
 
-source ${vblas}/bin/activate 
+    deactivate
 
-pip install -i https://software.repos.intel.com/python/pypi numpy dpnp dpctl tbb4py
-pip install scipy
-pip install -r requirements.txt
-pip install quimb memory_profiler pandas threadpoolctl
-pip install -e .
+    # ----------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------
+    vblas=${vblas_base}_mkl
 
-python Playground/time_plot.py --device default.tensor --benchmark time --wires $wires --output_file Playground/default.tensor_${vblas}_${control}.txt
+    python3 -m virtualenv $vblas
 
-deactivate
+    source ${vblas}/bin/activate 
+
+    pip install -i https://software.repos.intel.com/python/pypi numpy dpnp dpctl tbb4py
+    pip install scipy
+    pip install -r requirements.txt
+    pip install quimb memory_profiler pandas threadpoolctl
+    pip install -e .
+
+    python Playground/time_plot.py --device default.tensor --benchmark time --wires $wires --output_file Playground/default.tensor_${vblas}_${control}.txt
+
+    deactivate
+done
