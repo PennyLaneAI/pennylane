@@ -57,6 +57,7 @@ jobs:
     needs:
       - update-durations
       - combine-durations-files
+    uses: ./.github/workflows/check_in_artifact.yml
     with:
       artifact_name_pattern: "combined-durations"
       artifact_save_path: ".github/"
