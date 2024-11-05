@@ -364,11 +364,7 @@ class Adjoint(SymbolicOp):
         )
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.ops.Hamiltonian):
-            base_matrix = qml.matrix(self.base, wire_order=wire_order)
-        else:
-            base_matrix = self.base.matrix(wire_order=wire_order)
-
+        base_matrix = self.base.matrix(wire_order=wire_order)
         return moveaxis(conj(base_matrix), -2, -1)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method

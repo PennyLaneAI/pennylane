@@ -582,15 +582,6 @@ def _partition_coeffs(partitioned_paulis, observables, coefficients):
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for ind, observable in enumerate(observables):
-                if isinstance(observable, qml.ops.Hamiltonian):
-                    # are_identical_pauli_words cannot handle Hamiltonian
-                    coeffs, ops = observable.terms()
-                    # Assuming the Hamiltonian has only one term
-                    observable = qml.s_prod(coeffs[0], ops[0])
-                if isinstance(pauli_word, qml.ops.Hamiltonian):
-                    # Need to add this case because rx methods do not change type of observables.
-                    coeffs, ops = pauli_word.terms()
-                    pauli_word = qml.s_prod(coeffs[0], ops[0])
                 if are_identical_pauli_words(pauli_word, observable):
                     indices.append(coeff_indices[ind])
                     observables.pop(ind)

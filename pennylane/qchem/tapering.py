@@ -597,7 +597,7 @@ def _build_generator(operation, wire_order, op_gen=None):
                 ) from exc
     else:  # check that user-provided generator is correct
         if not isinstance(
-            op_gen, (qml.ops.Hamiltonian, qml.ops.LinearCombination, PauliSentence)
+            op_gen, (qml.ops.LinearCombination, PauliSentence)
         ) and not isinstance(getattr(op_gen, "pauli_rep", None), PauliSentence):
             raise ValueError(
                 f"Generator for the operation needs to be a valid operator, but got {type(op_gen)}."

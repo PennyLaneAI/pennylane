@@ -345,21 +345,6 @@ class LinearCombination(Sum):
                 pr2.simplify()
                 return pr1 == pr2
 
-            if isinstance(other, (qml.ops.Hamiltonian, Tensor)):
-                warnings.warn(
-                    f"Attempting to compare a legacy operator class instance {other} of type {type(other)} with {self} of type {type(self)}."
-                    f"You are likely disabling/enabling new opmath in the same script or explicitly create legacy operator classes Tensor and ops.Hamiltonian."
-                    f"Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
-                    UserWarning,
-                )
-                op1 = self.simplify()
-                op2 = other.simplify()
-
-                op2 = qml.operation.convert_to_opmath(op2)
-                op2 = qml.ops.LinearCombination(*op2.terms())
-
-                return qml.equal(op1, op2)
-
             op1 = self.simplify()
             op2 = other.simplify()
             return qml.equal(op1, op2)
@@ -410,7 +395,7 @@ class LinearCombination(Sum):
         if isinstance(H, numbers.Number) and H == 0:
             return self
 
-        if isinstance(H, (LinearCombination, qml.ops.Hamiltonian)):
+        if isinstance(H, LinearCombination):
             coeffs = qml.math.concatenate([self_coeffs, H.coeffs], axis=0)
             ops.extend(H.ops)
             if (pr1 := self.pauli_rep) is not None and (pr2 := H.pauli_rep) is not None:
@@ -443,8 +428,8 @@ class LinearCombination(Sum):
     __rmul__ = __mul__
 
     def __sub__(self, H: Observable) -> Observable:
-        r"""The subtraction operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
-        if isinstance(H, (LinearCombination, qml.ops.Hamiltonian, Tensor, Observable)):
+        r"""The subtraction operation between a LinearCombination and a LinearCombination/Observable."""
+        if isinstance(H, (LinearCombination, Observable)):
             return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 

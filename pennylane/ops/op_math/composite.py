@@ -177,7 +177,7 @@ class CompositeOp(Operator):
     @property
     @handle_recursion_error
     def has_matrix(self):
-        return all(op.has_matrix or isinstance(op, qml.ops.Hamiltonian) for op in self)
+        return all(op.has_matrix for op in self)
 
     @handle_recursion_error
     def eigvals(self):

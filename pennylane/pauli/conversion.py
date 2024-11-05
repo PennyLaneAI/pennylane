@@ -424,28 +424,6 @@ def _(op: SProd):
     return ps
 
 
-@_pauli_sentence.register(qml.ops.Hamiltonian)
-def _(op: qml.ops.Hamiltonian):
-    if not all(is_pauli_word(o) for o in op.ops):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-    def term_2_pauli_word(term):
-        if isinstance(term, Tensor):
-            pw = {obs.wires[0]: obs.name[-1] for obs in term.non_identity_obs}
-        elif isinstance(term, Identity):
-            pw = {}
-        else:
-            pw = dict([(term.wires[0], term.name[-1])])
-        return PauliWord(pw)
-
-    ps = PauliSentence()
-    for coeff, term in zip(*op.terms()):
-        sub_ps = PauliSentence({term_2_pauli_word(term): coeff})
-        ps += sub_ps
-
-    return ps
-
-
 @_pauli_sentence.register(LinearCombination)
 def _(op: LinearCombination):
     if not all(is_pauli_word(o) for o in op.ops):

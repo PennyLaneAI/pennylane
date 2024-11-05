@@ -282,13 +282,7 @@ class Prod(CompositeOp):
         mats: list[TensorLike] = []
         batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
-            gen = (
-                (
-                    (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix()),
-                    op.wires,
-                )
-                for op in ops
-            )
+            gen = ((op.matrix(), op.wires) for op in ops)
 
             reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
 

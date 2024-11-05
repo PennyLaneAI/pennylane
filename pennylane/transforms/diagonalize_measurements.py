@@ -295,28 +295,6 @@ def _change_symbolic_op(observable: SymbolicOp):
 
 
 @_change_obs_to_Z.register
-def _change_tensor(observable: Tensor):
-    diagonalizing_gates, new_obs = diagonalize_qwc_pauli_words(
-        observable.obs,
-    )
-
-    new_observable = Tensor(*new_obs)
-
-    return diagonalizing_gates, new_observable
-
-
-@_change_obs_to_Z.register
-def _change_hamiltonian(observable: qml.ops.Hamiltonian):
-    diagonalizing_gates, new_ops = diagonalize_qwc_pauli_words(
-        observable.ops,
-    )
-
-    new_observable = qml.ops.Hamiltonian(observable.coeffs, new_ops)
-
-    return diagonalizing_gates, new_observable
-
-
-@_change_obs_to_Z.register
 def _change_linear_combination(observable: LinearCombination):
     coeffs, obs = observable.terms()
 
@@ -467,34 +445,6 @@ def _diagonalize_symbolic_op(
     hyperparams["base"] = new_base
 
     new_observable = observable.__class__(*params, **hyperparams)
-
-    return diagonalizing_gates, new_observable, _visited_obs
-
-
-@_diagonalize_compound_observable.register
-def _diagonalize_tensor(
-    observable: Tensor, _visited_obs, supported_base_obs=_default_supported_obs
-):
-    diagonalizing_gates, new_obs, _visited_obs = _get_obs_and_gates(
-        observable.obs, _visited_obs, supported_base_obs
-    )
-
-    new_observable = Tensor(*new_obs)
-
-    return diagonalizing_gates, new_observable, _visited_obs
-
-
-@_diagonalize_compound_observable.register
-def _diagonalize_hamiltonian(
-    observable: qml.ops.Hamiltonian,
-    _visited_obs,
-    supported_base_obs=_default_supported_obs,
-):
-    diagonalizing_gates, new_ops, _visited_obs = _get_obs_and_gates(
-        observable.ops, _visited_obs, supported_base_obs
-    )
-
-    new_observable = qml.ops.Hamiltonian(observable.coeffs, new_ops)
 
     return diagonalizing_gates, new_observable, _visited_obs
 

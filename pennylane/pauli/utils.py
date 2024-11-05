@@ -443,9 +443,6 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     if not is_pauli_word(pauli_word):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
-    if isinstance(pauli_word, qml.ops.Hamiltonian):
-        # hamiltonian contains only one term
-        return _pauli_word_to_string_legacy(pauli_word, wire_map)
 
     pr = next(iter(pauli_word.pauli_rep.keys()))
 
@@ -460,36 +457,6 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     for wire, op_label in pr.items():
         pauli_string[wire_map[wire]] = op_label
-
-    return "".join(pauli_string)
-
-
-def _pauli_word_to_string_legacy(pauli_word, wire_map):
-    """Turn a legacy Hamiltonian operator to strings"""
-    # TODO: Give Hamiltonian a pauli rep to make this branch obsolete
-    pauli_word = pauli_word.ops[0]
-
-    # If there is no wire map, we must infer from the structure of Paulis
-    if wire_map is None:
-        wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
-
-    character_map = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
-
-    n_qubits = len(wire_map)
-
-    # Set default value of all characters to identity
-    pauli_string = ["I"] * n_qubits
-
-    # Special case is when there is a single Pauli term
-    if not isinstance(pauli_word.name, list):
-        if pauli_word.name != "Identity":
-            wire_idx = wire_map[pauli_word.wires[0]]
-            pauli_string[wire_idx] = character_map[pauli_word.name]
-        return "".join(pauli_string)
-
-    for name, wire_label in zip(pauli_word.name, pauli_word.wires):
-        wire_idx = wire_map[wire_label]
-        pauli_string[wire_idx] = character_map[name]
 
     return "".join(pauli_string)
 

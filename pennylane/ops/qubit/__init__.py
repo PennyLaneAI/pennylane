@@ -32,7 +32,6 @@ The operations are divided into the following files:
 from ..identity import GlobalPhase, Identity
 from ..meta import Barrier, Snapshot, WireCut
 from .arithmetic_ops import *
-from .hamiltonian import Hamiltonian
 from .matrix_ops import *
 from .non_parametric_ops import *
 from .observables import *
@@ -117,7 +116,6 @@ __obs__ = {
     "Hermitian",
     "Projector",
     "SparseHamiltonian",
-    "Hamiltonian",
 }
 
 

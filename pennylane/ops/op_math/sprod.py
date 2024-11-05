@@ -282,7 +282,7 @@ class SProd(ScalarSymbolicOp):
     @handle_recursion_error
     def has_matrix(self):
         """Bool: Whether or not the Operator returns a defined matrix."""
-        return isinstance(self.base, qml.ops.Hamiltonian) or self.base.has_matrix
+        return self.base.has_matrix
 
     @staticmethod
     @handle_recursion_error
