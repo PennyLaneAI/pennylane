@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The bosonic representation classes and functions."""
-import re
 from copy import copy
 
-import numpy as np
 from pennylane.typing import TensorLike
 import pennylane as qml
 
