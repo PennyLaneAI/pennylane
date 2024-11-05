@@ -44,17 +44,16 @@ def draw(
     r"""Create a function that draws the given qnode or quantum function.
 
     Args:
-        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
-           If not provided, the wire order defaults to the device wires. If device wires are not
-           available, the circuit wires are sorted if possible.
+        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
+        wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
+            Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters.
+        decimals (int): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
             ``None`` will omit parameters from operation labels.
-        max_length (int): Maximum string width (columns) when printing the circuit
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-        show_wire_labels (bool): Whether or not to show the wire labels.
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+        max_length (int): Maximum string width (columns) when printing the circuit. Defaults to ``100``.
+        show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
+        show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
+        level (None, str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 

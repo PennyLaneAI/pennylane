@@ -107,10 +107,10 @@ Preprocessing
 
 The preprocessing method has two main responsibilities:
 
-1) Create a :class:`~.TransformProgram` capable of turning an arbitrary batch of :class:`~.QuantumScript` into a new batch of tapes supported the ``execute`` method.
-2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation
+1) Create a :class:`~.TransformProgram` capable of turning an arbitrary batch of :class:`~.QuantumScript`\ s into a new batch of tapes supported by the ``execute`` method.
+2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation.
 
-Once the transform program has been applied to a batch of circuits, that batch should be run via ``Device.execute`` without error.
+Once the transform program has been applied to a batch of circuits, that batch should be able to run via ``Device.execute`` without error.
 
 .. code-block:: python
 
@@ -120,7 +120,7 @@ Once the transform program has been applied to a batch of circuits, that batch s
 
 These two tasks can be extracted into private methods or helper functions if that improves source code organization.
 
-See the section on the **Execution Config** below for more information on step 2.
+See the section on the :ref:`Execution Config <execution_config>` below for more information on step 2.
 
 Once a program is created, an individual transform can be added to the program with the
 :meth:`~.TransformProgram.add_transform` method.
@@ -165,9 +165,9 @@ Even with these benefits, devices can still opt to
 place some transforms inside the ``execute`` method. For example, ``default.qubit`` maps wires to simulation indices
 inside ``execute`` instead of in ``preprocess``.
 
-The :meth:`~.devices.Device.execute` can assume that device preprocessing has been run on the input
+The :meth:`~.devices.Device.execute` method can assume that device preprocessing has been run on the input
 tapes, and has no obligation to re-validate the input or provide sensible error messages. In the below example,
-we see ``default.qubit`` erroring out when unsupported operations and unsupported measurements are 
+we see ``default.qubit`` erroring out when unsupported operations and unsupported measurements are present.
 
 >>> op = qml.Permute([2,1,0], wires=(0,1,2))
 >>> tape = qml.tape.QuantumScript([op], [qml.probs(wires=(0,1))])
@@ -200,17 +200,17 @@ Wires
 
 Devices can now either:
 
-1) Strictly use wires provided by the user on initialization ``device(name, wires=wires)``
+1) Strictly use wires provided by the user on initialization: ``device(name, wires=wires)``
 2) Infer the number and ordering of wires provided by the submitted circuit.
 3) Strictly require specific wire labels
 
 Option 2 allows workflows to change the number and labeling of wires over time, but sometimes users want
-to enfore a wire convention and labels. If a user does provide wires, the :meth:`~.devices.Device.preprocess` should
+to enfore a wire convention and labels. If a user does provide wires, :meth:`~.devices.Device.preprocess` should
 validate that submitted circuits only have wires in the requested range.
 
 >>> dev = qml.device('default.qubit', wires=1)
 >>> circuit = qml.tape.QuantumScript([qml.CNOT((0,1))], [qml.state()])
->>> dev.preprocess()[0]((circuit, ))
+>>> dev.preprocess()[0]((circuit,))
 WireError: Cannot run circuit(s) of default.qubit as they contain wires not found on the device.
 
 PennyLane wires can be any hashable object, where wire labels are distinguished by their equality and hash.
@@ -219,10 +219,10 @@ the :meth:`~.QuantumScript.map_to_standard_wires` method can be used inside of
 the :meth:`~.devices.Device.execute` method. The :class:`~.map_wires` transform can also 
 map the wires of the submitted circuit to internal labels.
 
-Sometimes hardware qubit labels cannot be arbitrarily mapped without a changing in behaviour.
+Sometimes, hardware qubit labels cannot be arbitrarily mapped without a change in behaviour.
 Connectivity, noise, performance, and
-other constraints can make it so that operations on qubit one cannot be arbitrarily exchanged with the same operation
-of qubit two. In such a situation, the device can hard code a list of the only acceptable wire labels. In such a case, it
+other constraints can make it so that operations on qubit 1 cannot be arbitrarily exchanged with the same operation
+on qubit 2. In such a situation, the device can hard code a list of the only acceptable wire labels. In such a case, it
 will be on the user to deliberately map wires if they wish such a thing to occur.
 
 >>> qml.device('my_hardware').wires
@@ -244,6 +244,8 @@ call signature and hard code the ``wires`` property. They should additionally ma
         @property
         def wires(self):
             return qml.wires.Wires((0,1,2,3))
+
+.. _execution_config:
 
 Execution Config
 ----------------
@@ -319,7 +321,7 @@ to handle each stage in the process.
 
 PennyLane does provide some helper functions to assist in executing
 circuits. Any ``StateMeasurement`` has ``process_state`` and ``process_density_matrix`` methods for
-classical post-processsing of a state vector or density matrix, and ``SampleMeasurement``'s implement
+classical post-processing of a state vector or density matrix, and ``SampleMeasurement``'s implement
 both ``process_samples`` and ``process_counts``. The ``pennylane.devices.qubit`` module also contains
 functions that implement parts of a Python-based statevector simulation.
 
@@ -412,11 +414,11 @@ To implement your own tracking, we recommend placing the following code in the `
 
 .. code-block:: python
 
-  if self.tracker.active:
-    self.tracker.update(batches=1, executions=len(circuits))
-    for c in circuits:
-        self.tracker.update(shots=c.shots)
-    self.tracker.record()
+    if self.tracker.active:
+        self.tracker.update(batches=1, executions=len(circuits))
+        for c in circuits:
+            self.tracker.update(shots=c.shots)
+        self.tracker.record()
 
 
 If the device provides differentiation logic, we also recommend tracking the number of derivative batches,
