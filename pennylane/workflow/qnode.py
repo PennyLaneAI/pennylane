@@ -168,9 +168,9 @@ def _resolve_execution_config(
     ):
         gradient_fn = qml.gradients.param_shift
     else:
-        gradient_fn = QNode.get_gradient_fn(
-            device, execution_config.interface, execution_config.gradient_method, tape=tapes[0]
-        )[0]
+        gradient_fn = qml.workflow._get_gradient_fn(
+            device, execution_config.gradient_method, tape=tapes[0]
+        )
 
     if gradient_fn is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
