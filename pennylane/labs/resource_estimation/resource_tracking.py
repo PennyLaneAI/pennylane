@@ -206,6 +206,7 @@ def _op_to_resource_con(op: Operation) -> ResourceConstructor:
 
     """
     import pennylane.labs.resource_estimation as re  # pylint: disable=import-outside-toplevel
+
     name = "Resource" + op._name
 
     try:
