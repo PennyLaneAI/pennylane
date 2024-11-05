@@ -28,6 +28,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``QubitStateVector`` template has been removed. Instead, use ``StatePrep``.
+  [(#)]()
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>

@@ -96,7 +96,6 @@ class DefaultMixed(QubitDevice):
         "Identity",
         "Snapshot",
         "BasisState",
-        "QubitStateVector",
         "StatePrep",
         "QubitDensityMatrix",
         "QubitUnitary",
