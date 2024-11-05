@@ -123,6 +123,8 @@ def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, fini
         raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
     if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
+        # This is a current limitation of defer_measurements. "hw-like" behaviour is
+        # not yet accessible.
         if mcm_config.postselect_mode == "hw-like":
             raise ValueError(
                 "Using postselect_mode='hw-like' is not supported with jax-jit when using "
@@ -137,8 +139,6 @@ def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, fini
         and mcm_config.postselect_mode in (None, "hw-like")
     ):
         mcm_config.postselect_mode = "pad-invalid-samples"
-
-    return mcm_config
 
 
 def _resolve_execution_config(
@@ -177,12 +177,11 @@ def _resolve_execution_config(
 
     updated_values["gradient_method"] = gradient_fn
 
-    finite_shots = any(tape.shots for tape in tapes)
-
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
     # workflow still needs to know if jax-jit is used
     interface = _get_interface_name(tapes, execution_config.interface)
+    finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
         _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
     )
