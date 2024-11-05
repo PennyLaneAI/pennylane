@@ -184,14 +184,6 @@ class LegacyDeviceFacade(Device):
     def name(self) -> str:
         return self._device.short_name
 
-    def capabilities(self) -> dict:
-        """To override the Device class's capabilities property
-
-        TODO: unify the behaviour of the old `capabilities` and the new.
-
-        """
-        return self._device.capabilities()
-
     def __repr__(self):
         return f"<LegacyDeviceFacade: {repr(self._device)}>"
 
