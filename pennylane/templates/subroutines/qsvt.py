@@ -172,10 +172,10 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
 
         block_encoding (str): Specifies the type of block encoding to use. Options include:
 
-            - "prepselprep": Embeds the Hamiltonian ``A`` using ``PrepSelPrep``. Default encoding for Hamiltonians.
-            - "qubitization": Embeds the Hamiltonian ``A`` using ``Qubitization``.
-            - "embedding": Embeds the matrix ``A`` using ``BlockEncode``. Template not hardware compatible.
-            - "fable": Embeds the matrix ``A`` using ``FABLE``. Default encoding for matrices.
+            - ``"prepselprep"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.PrepSelPrep`. Default encoding for Hamiltonians.
+            - ``"qubitization"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.Qubitization`.
+            - ``"embedding"``: Embeds the matrix ``A`` using :class:`~pennylane.BlockEncode`. Template not hardware compatible.
+            - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Default encoding for matrices.
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A` with the specified encoding and projector phases.
@@ -191,20 +191,22 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
 
         dev = qml.device("default.qubit")
 
+
         @qml.qnode(dev)
         def circuit():
             qml.qsvt_auto(hamiltonian, poly, encoding_wires=[0])
             return qml.state()
 
-        matrix = qml.matrix(circuit, wire_order=[0,1,2])()
+
+        matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
 
     .. code-block:: pycon
 
         >>> print(matrix[:4, :4].real)
-        [[-0.16254  0.      -0.37926  0.     ]
-         [ 0.      -0.16254  0.       0.37926]
-         [-0.37926  0.       0.16254  0.     ]
-         [ 0.       0.37926  0.       0.16254]]
+        [[-0.1625  0.     -0.3793  0.    ]
+         [ 0.     -0.1625  0.      0.3793]
+         [-0.3793  0.      0.1625  0.    ]
+         [ 0.      0.3793  0.      0.1625]]
 
 
     .. details::
@@ -219,7 +221,7 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
 
         .. code-block:: python
 
-            # P(x) = -1 + 0.2 x^2 - 0.3 x^4
+            # P(x) = -1 + 0.2 x^2 + 0.5 x^4
             poly = np.array([-1, 0, 0.2, 0, 0.5])
 
             hamiltonian = qml.dot([0.3, 0.4, 0.3], [qml.Z(2), qml.X(2) @ qml.Z(3), qml.X(2)])
@@ -228,11 +230,11 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
 
             @qml.qnode(dev)
             def circuit():
-                qml.qsvt_auto(hamiltonian, poly, encoding_wires=[0,1], block_encoding="prepselprep")
+                qml.qsvt_auto(hamiltonian, poly, encoding_wires=[0, 1], block_encoding="prepselprep")
                 return qml.state()
 
-            matrix = qml.matrix(circuit, wire_order=[0,1,2,3])()
 
+            matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3])()
 
         .. code-block:: pycon
 
@@ -250,12 +252,13 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
 
         .. code-block:: python
 
-            # P(x) = -0.1 + 0.2 x^2 + 0.5 x^4
+            # P(x) = -1 + 0.2 x^2 + 0.5 x^4
             poly = np.array([-0.1, 0, 0.2, 0, 0.5])
 
-            A = np.array([[-0.1, 0, 0, 0.3], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.3, 0, -0.2, 0.3]]) / 6
+            A = np.array([[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]])
 
             dev = qml.device("default.qubit")
+
             @qml.qnode(dev)
             def circuit():
                 qml.qsvt_auto(A, poly, encoding_wires=[0, 1, 2, 3, 4], block_encoding="fable")
@@ -266,12 +269,10 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
         .. code-block:: pycon
 
             >>> print(np.round(matrix[:4, :4], 4).real)
-            [[-0.0994 -0.     -0.0003  0.0003]
-             [-0.     -0.0998  0.      0.    ]
-             [-0.0003 -0.     -0.0996 -0.0001]
-             [ 0.0003 -0.     -0.0001 -0.0988]]
-
-
+            [[-0.0954  0.     -0.0056 -0.0054]
+             [ 0.     -0.0912 -0.     -0.    ]
+             [-0.0056  0.     -0.0788  0.0164]
+             [-0.0054 -0.      0.0164 -0.0842]]
     """
 
     angles = qml.math.poly_to_angles(poly, "QSVT")
@@ -280,7 +281,7 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
     # If the input A is a Hamiltonian
     if hasattr(A, "pauli_rep"):
 
-        if block_encoding not in ["prepselprep", "qubitization"]:
+        if block_encoding not in ["prepselprep", "qubitization", None]:
             raise ValueError("block_encoding should take the value 'prepselprep' or 'qubitization'")
 
         if block_encoding == "qubitization":
@@ -296,7 +297,7 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
 
     else:
 
-        if block_encoding not in ["embedding", "fable"]:
+        if block_encoding not in ["embedding", "fable", None]:
             raise ValueError("block_encoding should take the value 'embedding' or 'fable'")
 
         if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
