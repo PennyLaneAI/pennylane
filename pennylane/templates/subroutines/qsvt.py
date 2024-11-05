@@ -169,16 +169,17 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
             This means the first coefficient corresponds to the constant term, the second to the linear term, and so on.
 
         encoding_wires (Sequence[int]): The qubit wires used for the block encoding. See Usage Details below for
-            more information on `encoding_wires` depending on the block encoding used.
+            more information on ``encoding_wires`` depending on the block encoding used.
 
-        block_encoding (str): Specifies the type of block encoding to use. Options include:
-                - "prepselprep": Embeds the Hamiltonian `A` using `PrepSelPrep`. Default encoding for Hamiltonians.
-                - "qubitization": Embeds the Hamiltonian `A` using `Qubitization`.
-                - "embedding": Embeds the matrix `A` using `BlockEncode`. Template not hardware compatible.
-                - "fable": Embeds the matrix `A` using `FABLE`. Default encoding for matrices.
+                block_encoding (str): Specifies the type of block encoding to use. Options include:
+
+                    - "prepselprep": Embeds the Hamiltonian ``A`` using ``PrepSelPrep``. Default encoding for Hamiltonians.
+                    - "qubitization": Embeds the Hamiltonian ``A`` using ``Qubitization``.
+                    - "embedding": Embeds the matrix ``A`` using ``BlockEncode``. Template not hardware compatible.
+                    - "fable": Embeds the matrix ``A`` using ``FABLE``. Default encoding for matrices.
 
     Returns:
-        (Operator): A quantum operator implementing QSVT on the matrix `A` with the specified encoding and projector phases.
+        (Operator): A quantum operator implementing QSVT on the matrix ``A` with the specified encoding and projector phases.
 
     Example:
 
