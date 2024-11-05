@@ -364,6 +364,10 @@ class TestSnapshotSupportedQNode:
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_default_qutrit_mixed_finite_shot(self, diff_method):
         """Test that multiple snapshots are returned correctly on the qutrit density-matrix simulator."""
+
+        # TODO: not sure what to do with this test so leaving this here for now.
+        np.random.seed(9872653)
+
         dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
 
         assert qml.debugging.snapshot._is_snapshot_compatible(dev)
@@ -482,6 +486,10 @@ class TestSnapshotSupportedQNode:
 
     def test_adjoint_circuit(self):
         """Test that snapshots are returned correctly when adjointed."""
+
+        # TODO: not sure what to do with this test so leaving this here for now.
+        np.random.seed(9872653)
+
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(params, wire):
@@ -508,6 +516,10 @@ class TestSnapshotSupportedQNode:
 
     def test_all_sample_measurement_snapshot(self):
         """Test that the correct measurement snapshots are returned for different measurement types."""
+
+        # TODO: The fact that this entire test depends on a global seed is not good
+        np.random.seed(9872653)
+
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qml.qnode(dev)
