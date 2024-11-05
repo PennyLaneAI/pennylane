@@ -24,6 +24,7 @@ from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
 from typing import Optional, Union
+from threadpoolctl import threadpool_limits
 
 import numpy as np
 
@@ -264,7 +265,7 @@ class DefaultTensor(Device):
     We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
     .. warning::
-        To avoid a slowdown in performance we recommend you to set the environment variable `export OPENBLAS_NUM_THREADS=1` for circuits with more than 10 wires.
+        To avoid a slowdown in performance for circuits with more than 10 wires. We recommend you to set the environment variable `OPENBLAS_NUM_THREADS=1` or `MKL_NUM_THREADS=1`, depends on your NumPy packages & accelerated linear algebra libraries. 
 
     .. details::
             :title: Usage with MPS Method
@@ -421,15 +422,6 @@ class DefaultTensor(Device):
         # The `quimb` circuit is a class attribute so that we can implement methods
         # that access it as soon as the device is created before running a circuit.
         # if self.wires:
-        if (
-            (self.wires)
-            and (len(self.wires) > 10)
-            and (not openblas_threads or openblas_threads != 1)
-        ):
-            warnings.warn(
-                "\nThe environment variable OPENBLAS_NUM_THREADS is different from one and the system has wires > 10. To avoid a slowdown in performance we recommend you set OPENBLAS_NUM_THREADS=1"
-            )
-
         self._quimb_circuit = self._initial_quimb_circuit(self.wires)
 
         shots = kwargs.pop("shots", None)
@@ -675,6 +667,9 @@ class DefaultTensor(Device):
                     f"Tensor on device has wires {self.wires.tolist()}"
                 )
             circuit = circuit.map_to_standard_wires()
+            # with threadpool_limits(limits=1, user_api='blas'):
+            #     result = self.simulate(circuit)
+            # results.append(result)
             results.append(self.simulate(circuit))
 
         return tuple(results)

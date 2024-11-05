@@ -1,0 +1,36 @@
+#!/bin/bash
+
+wires="8 10 12 14"
+control=na
+
+vblas=venv_blas
+
+python3 -m virtualenv $vblas
+
+source ${vblas}/bin/activate 
+
+pip install -r requirements.txt
+pip install quimb memory_profiler pandas threadpoolctl
+pip install -e .
+
+python Playground/time_plot.py --device default.tensor --benchmark time --wires $wires --output_file Playground/default.tensor_${vblas}_${control}.txt
+
+deactivate
+
+# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+vblas=venv_mkl
+
+python3 -m virtualenv $vblas
+
+source ${vblas}/bin/activate 
+
+pip install -i https://software.repos.intel.com/python/pypi numpy dpnp dpctl tbb4py
+pip install scipy
+pip install -r requirements.txt
+pip install quimb memory_profiler pandas threadpoolctl
+pip install -e .
+
+python Playground/time_plot.py --device default.tensor --benchmark time --wires $wires --output_file Playground/default.tensor_${vblas}_${control}.txt
+
+deactivate
