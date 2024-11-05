@@ -49,7 +49,7 @@ jobs:
       - name: Upload combined durations artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: combined-durations
+          name: durations
           path: ./durations
           include-hidden-files: true
 
@@ -60,9 +60,9 @@ jobs:
       - combine-durations-files
     uses: ./.github/workflows/check_in_artifact.yml
     with:
-      artifact_name_pattern: "combined-durations"
+      artifact_name_pattern: "durations"
       artifact_save_path: ".github/"
-      pull_request_head_branch_name: bot/durations-update
+      pull_request_head_branch_name: bot/update-durations
       commit_message_description: Update test durations
       pull_request_title: Update test durations
       pull_request_body: Automatic update of test duration files
