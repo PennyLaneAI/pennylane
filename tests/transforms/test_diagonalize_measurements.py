@@ -625,12 +625,12 @@ class TestDiagonalizeTapeMeasurements:
     @pytest.mark.parametrize("to_eigvals", [True, False])
     @pytest.mark.parametrize("supported_base_obs", ([qml.Z], [qml.Z, qml.X], [qml.Z, qml.X, qml.Y]))
     @pytest.mark.parametrize("shots", [None, 2000, (4000, 5000, 6000)])
-    def test_qnode_integration(self, to_eigvals, supported_base_obs, shots):
+    def test_qnode_integration(self, to_eigvals, supported_base_obs, shots, seed):
 
         if to_eigvals and supported_base_obs != [qml.Z]:
             pytest.skip("to_eigvals is not supported when not diagonalizing all gates")
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit():
@@ -650,6 +650,6 @@ class TestDiagonalizeTapeMeasurements:
 
         if len(dev.shots.shot_vector) > 1:
             for r_diagonalized, r in zip(res, expected_res):
-                assert np.allclose(r_diagonalized, r, atol=0.1)
+                assert np.allclose(r_diagonalized, r, rtol=0.1)
         else:
-            assert np.allclose(expected_res, res, atol=0.1)
+            assert np.allclose(expected_res, res, rtol=0.1)

@@ -64,7 +64,7 @@ def shadow_expval(tape: QuantumScript, H, k=1) -> tuple[QuantumScriptBatch, Post
 
     .. warning::
 
-        ``qml.shadows.shadow_expval`` is deprecated. Please use the :func:`~pennylane.shadow_expval`
+        ``qml.shadows.shadow_expval`` is deprecated and will be removed in v0.40. Please use the :func:`~pennylane.shadow_expval`
         measurement process in your circuits instead.
 
     Args:
@@ -103,8 +103,8 @@ def shadow_expval(tape: QuantumScript, H, k=1) -> tuple[QuantumScriptBatch, Post
     """
 
     warnings.warn(
-        "qml.shadows.shadow_expval is deprecated. Instead, use the qml.shadow_expval "
-        "measurement process in your circuit.",
+        "qml.shadows.shadow_expval is deprecated and will be removed in v0.40. "
+        "Instead, use the qml.shadow_expval measurement process in your circuit.",
         qml.PennyLaneDeprecationWarning,
     )
 
