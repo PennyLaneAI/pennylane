@@ -152,7 +152,21 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``, using a polynomial
     defined by ``poly`` and a block encoding specified by ``block_encoding``.
 
-    The function calculates the required phase angles from the polynomial using :func:`~.math.poly_to_angles`.
+    .. math::
+
+        \begin{pmatrix}
+        A & * \\
+        * & * \\
+        \end{pmatrix}
+        \xrightarrow{\Re\left(\text{QSVT}(\text{poly})\right)}
+        \begin{pmatrix}
+        \text{poly}(A) & * \\
+        * & * \\
+        \end{pmatrix}
+
+    The polynomial transformation is encoded as the real part of the matrix after applying the operator.
+
+    This function calculates the required phase angles from the polynomial using :func:`~.math.poly_to_angles`.
 
     .. note::
 
@@ -178,7 +192,7 @@ def qsvt_auto(A, poly, encoding_wires, block_encoding=None):
             - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Default encoding for matrices.
 
     Returns:
-        (Operator): A quantum operator implementing QSVT on the matrix ``A` with the specified encoding and projector phases.
+        (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the specified encoding and projector phases.
 
     Example:
 
