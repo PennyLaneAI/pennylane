@@ -18,6 +18,8 @@ import pytest
 
 import pennylane.labs.resource_estimation as re
 
+# pylint: disable=no-self-use
+
 
 class TestQFT:
     """Test the ResourceQFT class"""

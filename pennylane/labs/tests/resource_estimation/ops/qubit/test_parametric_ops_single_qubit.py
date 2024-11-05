@@ -22,6 +22,8 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     _rotation_resources,
 )
 
+# pylint: disable=no-self-use
+
 
 @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
 def test_rotation_resources(epsilon):
