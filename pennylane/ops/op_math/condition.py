@@ -224,7 +224,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
             else list(self.orig_elifs)
         )
-        flat_true_fn = FlatFn(functools.partial(self.true_fn, **kwargs))
+        flat_true_fn = FlatFn(self.true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
         end_const_ind = len(branches)  # consts go after conditions, first cond at len(branches)
