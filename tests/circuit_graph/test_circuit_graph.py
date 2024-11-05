@@ -25,7 +25,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.resource import Resources, ResourcesOperation
+from pennylane.operation import ResourcesOperation
+from pennylane.resource import Resources
 from pennylane.wires import Wires
 
 
