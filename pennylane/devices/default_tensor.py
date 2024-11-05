@@ -669,10 +669,12 @@ class DefaultTensor(Device):
                 )
             circuit = circuit.map_to_standard_wires()
             if TESTING == 'true':
+                print('Use threadpool_limits')
                 with threadpool_limits(limits=1, user_api='blas'):
                     result = self.simulate(circuit)
                 results.append(result)
             else:
+                print('Use nothing')
                 results.append(self.simulate(circuit))
 
         return tuple(results)

@@ -262,7 +262,7 @@ def main():
         data2 = read_data(data_plot_current)
 
         # Plot comparison
-        plot_comparison(data1, data2, 'OPENBLAS_NUM_THREADS = NA', 'OPENBLAS_NUM_THREADS = 1   ', 'plot_2.png')
+        plot_comparison(data1, data2, 'Ref ', 'Current', 'plot_2.png')
         plot_speedup(data1, data2,'plot_2_speedup.png')
         
         return 0

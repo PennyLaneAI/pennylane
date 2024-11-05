@@ -1,20 +1,30 @@
 #!/bin/bash
 
-wires="4 6"
+wires="8 10 12 14"
+export OMP_NUM_THREADS=16
 control=na
 vblas_base=venv_NV100
 
 # Testing env-var for python
 FDX_TESTING="true"
 
-for test in true false; do 
+for test in true false direct; do 
     # Testing env-var for python
-    FDX_TESTING=$test
+    export FDX_TESTING=$test
     control=na
 
     if [ $test == "true" ]; then 
         control=ctrl
     fi
+    if [ $test == "false" ]; then 
+        control=na
+    fi
+    if [ $test == "direct" ]; then 
+        control=envar
+        export OPENBLAS_NUM_THREADS=1
+        export MKL_NUM_THREADS=1
+    fi
+
 
     vblas=${vblas_base}_blas
 
