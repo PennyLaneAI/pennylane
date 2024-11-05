@@ -18,6 +18,7 @@ Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 import pytest
 
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
+from pennylane.gradients import param_shift
 
 
 def test_default_values():
@@ -90,3 +91,18 @@ def test_mcm_config_invalid_postselect_mode():
     option = "foo"
     with pytest.raises(ValueError, match="Invalid postselection mode"):
         _ = MCMConfig(postselect_mode=option)
+
+
+@pytest.mark.parametrize("method", ("parameter-shift", None, param_shift))
+def test_valid_gradient_method(method):
+    """Test valid gradient_method types."""
+    config = ExecutionConfig(gradient_method=method)
+    assert config.gradient_method == method
+
+
+def test_invalid_gradient_method():
+    """Test that invalid types for gradient_method raise an error."""
+    with pytest.raises(
+        ValueError, match=r"Differentiation method 123 must be a str, TransformDispatcher, or None"
+    ):
+        ExecutionConfig(gradient_method=123)

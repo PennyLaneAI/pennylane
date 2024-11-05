@@ -27,6 +27,9 @@
   numbers of args.
   [(#6521)](https://github.com/PennyLaneAI/pennylane/pull/6521)
 
+* Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
+  [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -38,3 +41,5 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Andrija Paurevic
