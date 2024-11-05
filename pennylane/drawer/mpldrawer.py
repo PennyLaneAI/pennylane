@@ -298,7 +298,7 @@ class MPLDrawer:
                 for wire in range(self.n_wires)
             ]
         else:
-            # Separate default options from specific wire options
+            # Separate global options from per wire options
             global_options = {k: v for k, v in wire_options.items() if not isinstance(v, dict)}
             wire_specific_options = {k: v for k, v in wire_options.items() if isinstance(v, dict)}
 
