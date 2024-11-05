@@ -29,7 +29,7 @@
 <h3>Breaking changes 💔</h3>
 
 * The ``QubitStateVector`` template has been removed. Instead, use ``StatePrep``.
-  [(#)]()
+  [(#6525)](https://github.com/PennyLaneAI/pennylane/pull/6525)
 
 <h3>Deprecations 👋</h3>
 

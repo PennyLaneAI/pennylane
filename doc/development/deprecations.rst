@@ -128,7 +128,7 @@ Completed deprecation cycles
 * The ``QubitStateVector`` template has been removed. Instead, use ``StatePrep``.
 
   - Deprecated in v0.39
-  - Will be removed in v0.40
+  - Removed in v0.40
 
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
