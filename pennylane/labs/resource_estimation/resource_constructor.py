@@ -68,7 +68,7 @@ class ResourceConstructor(ABC):
         the methods of classes inheriting from ResourceConstructor."""
 
     @classmethod
-    def resources(cls, *args, **kwargs):
+    def resources(cls, *args, **kwargs) -> Dict[rc.CompressedResourceOp, int]:
         """Returns the Resource object. This method is intended to be user facing
         and overridable."""
         return cls._resource_decomp(*args, **kwargs)
