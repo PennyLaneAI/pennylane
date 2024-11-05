@@ -508,9 +508,34 @@ class TestPyTreeStructure:
                 [qml.probs(wires=1), {"a": qml.probs(wires=0)}, qml.expval(qml.Z(0))],
                 {"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))},
             ],
-            lambda: [qml.probs(), {"expval": qml.expval(qml.X(0))}],
-            lambda: ({"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))}),
             lambda: {"exp": qml.expval(qml.Z(0))},
+            lambda: {
+                "layer1": {
+                    "layer2": {
+                        "probs": qml.probs(wires=[0, 1]),
+                        "expval": qml.expval(qml.PauliY(1)),
+                    },
+                    "single_prob": qml.probs(wires=0),
+                }
+            },
+            lambda: (
+                [qml.probs(wires=1), {"exp": qml.expval(qml.PauliZ(0))}],
+                qml.expval(qml.PauliX(1)),
+            ),
+            lambda: [
+                (qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1))),
+                (qml.probs(wires=[1]), {"nested": qml.probs(wires=[0])}),
+            ],
+            lambda: [
+                {
+                    "first_layer": qml.probs(wires=0),
+                    "second_layer": [
+                        qml.expval(qml.PauliX(1)),
+                        {"nested_exp": qml.expval(qml.PauliY(0))},
+                    ],
+                },
+                (qml.probs(wires=[0, 1]), {"final": qml.expval(qml.PauliZ(0))}),
+            ],
         ],
     )
     def test_pytree_structure_preservation(self, measurement):
@@ -534,8 +559,8 @@ class TestPyTreeStructure:
 
         assert result_structure == measurement_structure
 
-    def test_hstack_measurement(self):
-        """Tests that measurements of tensor type using hstack are handled correctly"""
+    def test_tensor_measurement(self):
+        """Tests that measurements of tensor type are handled correctly"""
         dev = qml.device("default.qubit", wires=2, shots=100)
 
         @qml.qnode(dev)

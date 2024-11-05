@@ -20,7 +20,7 @@ import functools
 import inspect
 import logging
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any, Literal, Optional, Union, get_args
 
 from cachetools import Cache
@@ -180,17 +180,20 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess),
     )[0]
 
-    # Work around for tensor objects coming from qml.math.hstack
-    if len(measurement_processes) != 0 and isinstance(measurement_processes[0], qml.numpy.tensor):
+    if len(measurement_processes) == 0:
+        measurement_processes = [qfunc_output]
+
+    # Handle tensor measurement objects, e.g., returning qml.math.hstack
+    # Results in a nested list of tensors after flatten - requiring some processing.
+    if isinstance(measurement_processes[0], Iterable) and any(
+        isinstance(m, qml.typing.TensorLike) for m in measurement_processes[0]
+    ):
         measurement_processes = [
             m.base.item()
             for m in measurement_processes[0]
             if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
         ]
-    if len(measurement_processes) == 0:
-        measurement_processes = [qfunc_output]
-
-    if not measurement_processes or not all(
+    if measurement_processes == [None] or not all(
         isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
     ):
         raise qml.QuantumFunctionError(
