@@ -22,7 +22,6 @@ jobs:
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
-      # branch: ${{ github.ref }}
       branch: master
       upload_to_codecov: false
       run_lightened_ci: true
