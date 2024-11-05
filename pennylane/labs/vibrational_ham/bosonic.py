@@ -14,13 +14,10 @@
 """The bosonic representation classes and functions."""
 import re
 from copy import copy
-from numbers import Number
-from numpy import ndarray
+
 import numpy as np
 from pennylane.typing import TensorLike
 import pennylane as qml
-from functools import singledispatch
-from typing import Union
 
 
 class BoseWord(dict):
