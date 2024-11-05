@@ -390,10 +390,13 @@ def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None):
     harm_pot = taylor_harmonic(taylor_arr, freqs)
     ham = taylor_anharmonic(taylor_arr, start_deg) + harm_pot
     kin_ham = taylor_kinetic(taylor_arr, freqs, is_loc, Uloc)
+    ham += kin_ham
+    return ham.normal_order()
 
-    return ham.normal_order(), kin_ham
 
-
-def taylor_hamiltonian(pes_object):
+def taylor_hamiltonian(pes_object, deg=4, min_deg=3):
     """Compute taylor hamiltonian from PES object"""
-    pass
+    coeffs_arr = taylor_integrals(pes_object, deg, min_deg)
+    freqs = taylor_integrals_dipole(pes_object, deg, min_deg)
+    ham = taylor_bosonic(coeffs_arr, freqs)
+    return ham
