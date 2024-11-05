@@ -297,17 +297,34 @@ def taylor_integrals_dipole(pes, deg=4, min_deg=1):
 
 
 def _position_to_boson(index, op):
+    """Convert position operator `p` or `q` into respective bosonic operator
+    
+    Args:
+        index (int): the index of the operator
+        op (str): the position operator, either `"p"` or `"q"`
+
+    Returns:
+        BoseSentence: bosonic form of the position operator given
+    """
     factor = 1j / np.sqrt(2) if op == "p" else 1 / np.sqrt(2)
     bop = factor * BoseWord({(0, index): "-"})
     bdag = factor * BoseWord({(0, index): "+"})
     return bdag - bop if op == "p" else bdag + bop
 
 
-def taylor_anharmonic(taylor_arr, start_deg=2):
-    """Build Taylor form bosonic observable from provided integrals"""
-    num_coups = len(taylor_arr)
+def taylor_anharmonic(taylor_coeffs, start_deg=2):
+    """Build anharmonic term of taylor form bosonic observable from provided integrals
+    
+    Args:
+        taylor_coeffs (list(float)): the coeffs of the taylor integrals
+        start_deg (int): the starting degree
 
-    taylor_1D = taylor_arr[0]
+    Returns:
+        BoseSentence: anharmonic term of the taylor hamiltonian for given coeffs
+    """
+    num_coups = len(taylor_coeffs)
+
+    taylor_1D = taylor_coeffs[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
 
     taylor_deg = num_1D_coeffs + start_deg - 1
@@ -326,7 +343,7 @@ def taylor_anharmonic(taylor_arr, start_deg=2):
             ordered_dict += (coeff * qpow).normal_order()
     # Two-mode expansion
     if num_coups > 1:
-        taylor_2D = taylor_arr[1]
+        taylor_2D = taylor_coeffs[1]
         degs_2d = _twobody_degs(taylor_deg, min_deg=start_deg)
         for m1 in range(num_modes):
             bosonized_qm1 = _position_to_boson(m1, "q")
@@ -342,7 +359,7 @@ def taylor_anharmonic(taylor_arr, start_deg=2):
     # Three-mode expansion
     if num_coups > 2:
         degs_3d = _threebody_degs(taylor_deg, min_deg=start_deg)
-        taylor_3D = taylor_arr[2]
+        taylor_3D = taylor_coeffs[2]
         for m1 in range(num_modes):
             bosonized_qm1 = _position_to_boson(m1, "q")
             for m2 in range(m1):
@@ -362,8 +379,19 @@ def taylor_anharmonic(taylor_arr, start_deg=2):
     return BoseSentence(ordered_dict).normal_order()
 
 
-def taylor_kinetic(taylor_arr, freqs, is_loc=True, Uloc=None):
-    taylor_1D = taylor_arr[0]
+def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
+    """Build kinetic term of taylor form bosonic observable from provided integrals
+    
+    Args:
+        taylor_coeffs (list(float)): the coeffs of the taylor integrals
+        freqs (list(float)): the frequencies
+        is_loc (bool): whether or not if localized
+        Uloc (list(float)): not sure
+
+    Returns:
+        BoseSentence: anharmonic term of the taylor hamiltonian for given coeffs
+    """
+    taylor_1D = taylor_coeffs[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
 
     if is_loc:
@@ -383,8 +411,17 @@ def taylor_kinetic(taylor_arr, freqs, is_loc=True, Uloc=None):
     return kin_ham.normal_order()
 
 
-def taylor_harmonic(taylor_arr, freqs):
-    taylor_1D = taylor_arr[0]
+def taylor_harmonic(taylor_coeffs, freqs):
+    """Build harmonic term of taylor form bosonic observable from provided integrals
+    
+    Args:
+        taylor_coeffs (list(float)): the coeffs of the taylor integrals
+        freqs (list(float)): the harmonic frequencies
+
+    Returns:
+        BoseSentence: harmonic term of the taylor hamiltonian for given coeffs
+    """
+    taylor_1D = taylor_coeffs[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
     harm_pot = BoseSentence({})
     # Add Harmonic component
@@ -397,15 +434,26 @@ def taylor_harmonic(taylor_arr, freqs):
     return harm_pot.normal_order()
 
 
-def taylor_bosonic(taylor_arr, freqs, is_loc=True, Uloc=None):
+def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
+    """Build taylor form bosonic observable from provided integrals
+    
+    Args:
+        taylor_coeffs (list(float)): the coeffs of the taylor integrals
+        freqs (list(float)): the harmonic frequencies
+        is_loc (bool): whether or not if localized
+        Uloc (): not sure
+
+    Returns:
+        BoseSentence: taylor hamiltonian for given coeffs
+    """
     if is_loc:
         start_deg = 2
     else:
         start_deg = 3
 
-    harm_pot = taylor_harmonic(taylor_arr, freqs)
-    ham = taylor_anharmonic(taylor_arr, start_deg) + harm_pot
-    kin_ham = taylor_kinetic(taylor_arr, freqs, is_loc, Uloc)
+    harm_pot = taylor_harmonic(taylor_coeffs, freqs)
+    ham = taylor_anharmonic(taylor_coeffs, start_deg) + harm_pot
+    kin_ham = taylor_kinetic(taylor_coeffs, freqs, is_loc, Uloc)
     ham += kin_ham
     return ham.normal_order()
 
