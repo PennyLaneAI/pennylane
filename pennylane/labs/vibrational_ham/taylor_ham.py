@@ -298,7 +298,7 @@ def taylor_integrals_dipole(pes, deg=4, min_deg=1):
 
 def _position_to_boson(index, op):
     """Convert position operator `p` or `q` into respective bosonic operator
-    
+
     Args:
         index (int): the index of the operator
         op (str): the position operator, either `"p"` or `"q"`
@@ -314,7 +314,7 @@ def _position_to_boson(index, op):
 
 def taylor_anharmonic(taylor_coeffs, start_deg=2):
     """Build anharmonic term of taylor form bosonic observable from provided integrals
-    
+
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor integrals
         start_deg (int): the starting degree
@@ -381,7 +381,7 @@ def taylor_anharmonic(taylor_coeffs, start_deg=2):
 
 def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
     """Build kinetic term of taylor form bosonic observable from provided integrals
-    
+
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor integrals
         freqs (list(float)): the frequencies
@@ -413,7 +413,7 @@ def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
 
 def taylor_harmonic(taylor_coeffs, freqs):
     """Build harmonic term of taylor form bosonic observable from provided integrals
-    
+
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor integrals
         freqs (list(float)): the harmonic frequencies
@@ -436,7 +436,7 @@ def taylor_harmonic(taylor_coeffs, freqs):
 
 def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
     """Build taylor form bosonic observable from provided integrals
-    
+
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor integrals
         freqs (list(float)): the harmonic frequencies
