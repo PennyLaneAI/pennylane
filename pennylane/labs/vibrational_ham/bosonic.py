@@ -501,8 +501,8 @@ class BoseSentence(dict):
                 del self[fw]
 
     def normal_order(self):
-        empty_bose_sentence = BoseSentence({})  # Empty PS as 0 operator to add Pws to
-
+        r"""Convert a BoseSentence to its normal-ordered form."""
+        empty_bose_sentence = BoseSentence({})
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()
             for bw_ord, coeff_ord in bose_word_ordered.items():
