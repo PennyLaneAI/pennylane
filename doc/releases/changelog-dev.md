@@ -9,16 +9,20 @@
 <h4>Other Improvements</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
-  - A new API for mixed-state operations
-  - An `apply_operation` helper function featuring:
-    - Two density matrix contraction methods using `einsum` and `tensordot`
-    - Optimized handling of special cases including:
-      - Diagonal operators
-      - Identity operators 
-      - CX (controlled-X)
-      - Multi-controlled X gates
-      - Grover operators
-  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
+
+  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379) An `apply_operation` helper function featuring:
+  * Two density matrix contraction methods using `einsum` and `tensordot`
+  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
+
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) A submodule 'initialize_state' featuring:
+
+  * A `density_matrix` function for initializing a density matrix from a state vector
+
+  * A `state_vector` function for initializing a state vector from a density matrix
+
+  * A `mixed_state` function for initializing a mixed state from a state vector
+
+  * A `state_vector_from_mixed` function for initializing a state vector from a mixed state
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
@@ -27,6 +31,9 @@
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
 <h3>Breaking changes 💔</h3>
+
+* The :class:`~pennylane.BasisStatePreparation` template has been removed. Instead, use :class:`~pennylane.BasisState`.
+  [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6528)
 
 <h3>Deprecations 👋</h3>
 
@@ -38,4 +45,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Andrija Paurevic
+Yushao Chen,
+Andrija Paurevic,
