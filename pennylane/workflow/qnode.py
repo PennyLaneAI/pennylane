@@ -108,12 +108,15 @@ def _make_execution_config(
     )
 
 
-def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool):
-    """Helper function to update the mid-circuit measurements configuration based on
+def _resolve_mcm_config(
+    mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool
+) -> "qml.devices.MCMConfig":
+    """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
+    updated_values = {}
 
     if not finite_shots:
-        mcm_config.postselect_mode = None
+        updated_values["postselect_mode"] = None
         if mcm_config.mcm_method == "one-shot":
             raise ValueError(
                 f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
@@ -130,7 +133,7 @@ def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, fini
                 "Using postselect_mode='hw-like' is not supported with jax-jit when using "
                 "mcm_method='deferred'."
             )
-        mcm_config.postselect_mode = "fill-shots"
+        updated_values["postselect_mode"] = "fill-shots"
 
     if (
         finite_shots
@@ -138,7 +141,9 @@ def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, fini
         and mcm_config.mcm_method in (None, "one-shot")
         and mcm_config.postselect_mode in (None, "hw-like")
     ):
-        mcm_config.postselect_mode = "pad-invalid-samples"
+        updated_values["postselect_mode"] = "pad-invalid-samples"
+
+    return replace(mcm_config, **updated_values)
 
 
 def _resolve_execution_config(
@@ -162,7 +167,7 @@ def _resolve_execution_config(
     updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
 
     if (
-        device.name == "lightning.qubit"
+        "lightning" in device.name
         and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
@@ -185,7 +190,9 @@ def _resolve_execution_config(
     mcm_interface = (
         _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
     )
-    _update_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
+    mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
+
+    updated_values["mcm_config"] = mcm_config
 
     return replace(execution_config, **updated_values)
 

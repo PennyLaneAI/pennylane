@@ -15,7 +15,7 @@
 
 """
 
-from typing import Optional, get_args
+from typing import get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -32,7 +32,7 @@ from pennylane.workflow.qnode import (
 def _get_gradient_fn(
     device: SupportedDeviceAPIs,
     diff_method: "TransformDispatcher | SupportedDiffMethods" = "best",
-    tape: Optional["qml.tape.QuantumTape"] = None,
+    tape: "qml.tape.QuantumTape" = None,
 ):
     """Determines the differentiation method for a given device and diff method.
 
