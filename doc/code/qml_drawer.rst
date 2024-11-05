@@ -50,55 +50,6 @@ deleting the ``fontlist`` file in the Matplotlib cache directory) — to find th
 cache directory, run ``matplotlib.get_cachedir()``. If this font is not
 available, the drawer will fall back on a default font.
 
-Wire Options
-------------
-
-The ``wire_options`` dictionary allows customization of the formatting for the wire lines in
-the circuit visualization. This dictionary may contain standard matplotlib options
-for line formatting, as well as entries with wire labels as keys and corresponding
-dictionaries as values for specific wire line styling. For example, using keys such
-as `color`, `linestyle`, and `linewidth` within these inner dictionaries allows for
-per-wire customization.
-
-.. code-block:: python
-
-    # Define the quantum function with @qml.qnode
-    @qml.qnode(dev)
-    def wire1(x):
-        qml.RX(x, wires=0)
-        qml.Hadamard(wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
-
-    # Draw the circuit
-    fig, ax = qml.draw_mpl(wire1)(0.52)
-
-    # All wires are orange
-    wire_options = {"color": "orange"}
-    fig, ax = qml.draw_mpl(wire1, wire_options=wire_options)(0.52)
-
-    # Wires are orange and cyan
-    wire_options = {
-        0: {"color": "orange"},
-        1: {"color": "cyan"}
-    }
-    fig, ax = qml.draw_mpl(wire1, wire_options=wire_options)(0.52) 
-
-    @qml.qnode(dev)
-    def wire1(x):
-        for w in range(10):
-            qml.Hadamard(w) 
-        return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
-
-    # Make all wires cyan and bold, 
-    # except for wires 2 and 6, which are dashed and another color
-    wire_options = {"color": "cyan", 
-                    "linewidth": 5, 
-                    2: {"linestyle": "--", "color": "red"}, 
-                    6: {"linestyle": "--", "color": "orange"}
-                }
-    fig, ax = qml.draw_mpl(wire1, wire_options=wire_options)(0.52)
-
 Currently Available Styles
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. |bws| image:: ../_static/style/black_white_style.png
