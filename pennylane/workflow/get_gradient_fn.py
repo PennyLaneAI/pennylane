@@ -18,6 +18,7 @@
 from typing import Optional, get_args
 
 import pennylane as qml
+from pennylane.logging import debug_logger
 from pennylane.transforms.core import TransformDispatcher
 from pennylane.workflow.qnode import (
     SupportedDeviceAPIs,
@@ -27,6 +28,7 @@ from pennylane.workflow.qnode import (
 
 
 # pylint: disable=too-many-return-statements, unsupported-binary-operation, inconsistent-return-statements
+@debug_logger
 def _get_gradient_fn(
     device: SupportedDeviceAPIs,
     diff_method: "TransformDispatcher | SupportedDiffMethods" = "best",
