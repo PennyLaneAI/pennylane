@@ -313,9 +313,7 @@ class MPLDrawer:
                     (-1, self.n_layers),
                     (wire, wire),
                     zorder=1,
-                    color=line_options.get("color"),
-                    linewidth=line_options.get("linewidth"),
-                    linestyle=line_options.get("linestyle"),
+                    **line_options,
                 )
                 self._wire_lines.append(line)
 
