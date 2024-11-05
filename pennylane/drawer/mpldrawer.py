@@ -302,10 +302,6 @@ class MPLDrawer:
             global_options = {k: v for k, v in wire_options.items() if not isinstance(v, dict)}
             wire_specific_options = {k: v for k, v in wire_options.items() if isinstance(v, dict)}
 
-            # Define defaults if "color" and "linewidth" aren't specified in global_options
-            global_color = global_options.get("color", "black")
-            global_linewidth = global_options.get("linewidth", 1)
-
             # Adding wire lines with individual styles based on wire_options
             self._wire_lines = []
             for wire in range(self.n_wires):
@@ -317,9 +313,9 @@ class MPLDrawer:
                     (-1, self.n_layers),
                     (wire, wire),
                     zorder=1,
-                    color=line_options.get("color", global_color),
-                    linewidth=line_options.get("linewidth", global_linewidth),
-                    linestyle=line_options.get("linestyle", "-"),
+                    color=line_options.get("color"),
+                    linewidth=line_options.get("linewidth"),
+                    linestyle=line_options.get("linestyle"),
                 )
                 self._wire_lines.append(line)
 
