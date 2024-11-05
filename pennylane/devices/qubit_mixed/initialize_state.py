@@ -13,7 +13,6 @@
 # limitations under the License.
 """Functions to prepare a state."""
 
-import itertools
 from collections.abc import Iterable
 from typing import Union
 
@@ -21,6 +20,9 @@ import pennylane as qml
 import pennylane.numpy as np
 from pennylane import math
 from pennylane.wires import Wires
+
+DIM_MISMATCH_ERROR = "Incorrect state size. Expected size 2 to the power of num_wires."
+ZERO_NORM_ERROR = "Input state must not be the zero vector."
 
 
 def create_initial_state(
@@ -52,7 +54,7 @@ def create_initial_state(
     # Here, to avoid the extension of the previous class defined in `StatePrepBase`, we directly call the method `state_vector`. However, this requires some levels of abstract translation between state vectors and density matrices.
     # The concise explanation is that, either state vectors or density matrices, they are always originally just higher-rank tensors. Only diff is that state vectors are originally of ranks num_wires, while density matrices are of ranks 2*num_wires. Therefore, we can always define the density matrices as the same wires, appended by a 'shifted' set of wires by num_wires. Actually, this idea is also used in the wire sewing technique in catalyst package.
     dm_wires = qml.wires.Wires(wires + [w + num_wires for w in wires])
-    density_matrix = prep_operation.state_vector(wire_order=list(dm_wires))
+    density_matrix = prep_operation.state_vector(device_wires=list(dm_wires))
     density_matrix = np.reshape(density_matrix, (-1,) + (2,) * num_axes)
     dtype = str(density_matrix.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
@@ -112,17 +114,21 @@ def _apply_state_vector(device_wires, state, full_wires=None):
 
     num_wires = len(device_wires)
     # Check the wires are in the correct order
-    assert math.size(state) == 2**num_wires, "State vector must be of size 2**wires."
+    if math.size(state) != 2**num_wires:
+        raise ValueError(DIM_MISMATCH_ERROR)
 
     # Check normalization
-    norm = math.norm(state)
-    assert not math.allclose(norm, 0), "Input state must be non-zero."
+    norm = np.linalg.norm(state)
+    if math.allclose(norm, 0):
+        raise ValueError(ZERO_NORM_ERROR)
+
     if not math.allclose(norm, 1):  # If not yet normalized, normalize it
         state = state / norm
 
     # Check the full wires
     if full_wires is None:
-        full_wires = Wires(range(num_wires))
+        full_wires = device_wires
+
     full_num_wires = len(full_wires)
 
     if num_wires == full_num_wires and sorted(device_wires.labels) == list(device_wires.labels):
@@ -130,42 +136,26 @@ def _apply_state_vector(device_wires, state, full_wires=None):
         rho = math.outer(state, math.conj(state))
         rho = math.reshape(rho, [2] * 2 * num_wires)
         return math.cast_like(rho, state)
-    # generate basis states on subset of qubits via the cartesian product
-    # they should look like, e.g., [0, 0, 1, 1] for 4 qubits
-    basis_states = np.asarray(list(itertools.product([0, 1], repeat=num_wires)), dtype=int)
 
-    # Embed the basis states for the device wires into the full qubit system.
-    # Here, we only consider the basis states on the device wires, which we
-    # will embed into the larger space represented by all wires in the system.
-    #
-    # For example, if we have a 2-qubit device that is part of a 4-qubit system,
-    # the possible basis states on the device wires are [0, 0], [0, 1], [1, 0], and [1, 1],
-    # representing the four possible configurations of the two device qubits.
-    #
-    # - These configurations create a 2x2 basis space, resulting in 4 rows in the
-    #   `unravelled_indices` array.
-    # - Each row in `unravelled_indices` will represent one basis state for the
-    #   device wires embedded in the full qubit system.
-    #
-    # The `unravelled_indices` matrix has `2 ** num_wires` rows and `full_num_wires`
-    # columns:
-    # - `2 ** num_wires` rows for all possible basis states on the device wires.
-    # - `full_num_wires` columns to cover the entire set of qubits in the system.
-    #
-    # We then assign the basis states for `device_wires` to the relevant columns in
-    # `unravelled_indices`, so that each row corresponds to one configuration of the
-    # device wires embedded within the full system.
-    unravelled_indices = np.zeros((2**num_wires, full_num_wires), dtype=int)
-    unravelled_indices[:, device_wires] = basis_states
+    expected_shape = [2] * num_wires
+    expected_size = 2**num_wires
+    is_batch = False
+    if math.get_batch_size(state, expected_shape=expected_shape, expected_size=expected_size):
+        is_batch = True
+    op_vector = math.reshape(state, (-1,) + (2,) * num_wires if is_batch else (2,) * num_wires)
+    # add zeros for each wire that isn't being set
+    extra_wires = Wires(set(full_wires) - set(device_wires))
+    for _ in extra_wires:
+        op_vector = math.stack([op_vector, math.zeros_like(op_vector)], axis=-1)
 
-    # get indices for which the state is changed to input state vector elements
-    ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * full_num_wires)
-
-    # Note that here we are using the `scatter` function to assign the input state vector, all in flatten way.
-    state = math.scatter(ravelled_indices, state, [2**full_num_wires])
-    rho = np.outer(state, np.conj(state))
-    rho = np.reshape(rho, [2] * 2 * full_num_wires)
-    return math.cast_like(rho, state)
+    # transpose from operator wire order to provided wire order
+    current_wires = device_wires + extra_wires
+    transpose_axes = [current_wires.index(w) for w in full_wires]
+    if is_batch:
+        transpose_axes = [0] + [a + 1 for a in transpose_axes]
+    full_vector = math.transpose(op_vector, transpose_axes)
+    full_vector = math.reshape(full_vector, [-1] + [2**full_num_wires])
+    return math.reshape(math.dm_from_state_vector(full_vector), [2] * 2 * full_num_wires)
 
 
 # def _apply_density_matrix(state, device_wires):
