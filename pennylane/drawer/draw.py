@@ -574,13 +574,13 @@ def draw_mpl(
 
         Additionally, ``wire_options`` may contain wire labels as keys and dictionaries with
         keyword-value pairs of matplotlib options as values, which will control the line style for
-        the respective individual wire. 
+        the respective individual wire.
 
         .. code-block:: python
 
             wire_options = {
-                'color': 'teal', # all wires but wire 2 will be teal 
-                'linewidth': 5, # all wires but wire 2 will be bold 
+                'color': 'teal', # all wires but wire 2 will be teal
+                'linewidth': 5, # all wires but wire 2 will be bold
                 2: {'color': 'orange', 'linestyle': '--'}, # wire 2 will be orange and dashed
             }
             fig, ax = qml.draw_mpl(circuit, wire_options=wire_options)(1.2345,1.2345)
