@@ -28,6 +28,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
