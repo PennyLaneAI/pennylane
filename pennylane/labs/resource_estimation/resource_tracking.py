@@ -195,23 +195,27 @@ def _counts_from_compressed_res_op(
     return
 
 
-def op_to_resource_con(op: Operation) -> ResourceConstructor:
-    """Map a PL Operator to its corresponding Resource Operator"""
+def _op_to_resource_con(op: Operation) -> ResourceConstructor:
+    """Map a PL Operator to its corresponding Resource Operator
+
+    Args:
+        op Operation: A PennyLane operator
+
+    Returns:
+        ResourceConstructor: A ResourceConstructor instantiated with op's parameters and hyperparameters.
+
+    """
     import pennylane.labs.resource_estimation as re  # pylint: disable=import-outside-toplevel
-
-    lookup = vars(re)
-
     name = "Resource" + op._name
 
     try:
-        cls = lookup[name]
+        cls = vars(re)[name]
     except KeyError as exc:
         raise ResourceOperatorNotImplemented(
             f"No resource operator for PennyLane operator {op._name} has been implemented."
         ) from exc
 
-    data, metadata = op._flatten()
-    return cls._unflatten(data, metadata)
+    return cls._unflatten(*op._flatten())
 
 
 def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str, int]:
@@ -249,7 +253,7 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
 
         else:
             try:
-                cmp_rep_ops.append(op_to_resource_con(op).resource_rep_from_op())
+                cmp_rep_ops.append(_op_to_resource_con(op).resource_rep_from_op())
 
             except NotImplementedError:
                 decomp = op.decomposition()
