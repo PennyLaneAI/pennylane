@@ -3,7 +3,6 @@
 
 name: Update Durations
 on:
-  pull_request:
   workflow_dispatch:
   # Scheduled trigger every Saturday at 2:47am UTC
   schedule:
@@ -48,7 +47,7 @@ jobs:
           jq -s 'add' tf_*.json > durations/tf_tests_durations.json
 
       - name: Upload combined durations artifacts
-        uses: actions/upload-artifacts@v4
+        uses: actions/upload-artifact@v4
         with:
           name: combined-durations
           path: ./durations
