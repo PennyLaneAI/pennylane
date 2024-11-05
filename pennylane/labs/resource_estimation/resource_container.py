@@ -81,7 +81,8 @@ class CompressedResourceOp:
                 f"op_type must be a subclass of ResourceConstructor. Got type {type(op_type)}."
             )
 
-        self._name = (op_type.__name__).strip("Resource")
+
+        self._name = (op_type.__name__).replace("Resource", "")
         self.op_type = op_type
         self.params = params
         self._hashable_params = tuple(params.items())
