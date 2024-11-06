@@ -90,4 +90,4 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh_pr_up() { gh pr create $* || gh pr edit $* }
-        gh_pr_up --title "Update stable doc dependency files" --body ""
+        gh_pr_up --title \"Update stable doc dependency files\" --body \"\"
