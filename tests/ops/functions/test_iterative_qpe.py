@@ -23,26 +23,10 @@ import pennylane as qml
 class TestIQPE:
     """Test to check that the iterative quantum phase estimation function works as expected."""
 
-    def test_ancilla_deprecation(self):
-        """Test that the ancilla argument is deprecated and superceded by the aux_wire argument
-        if provided."""
-        aux_wire = 1
-        ancilla = 2
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'ancilla' argument"):
-            meas1 = qml.iterative_qpe(qml.RZ(2.0, wires=0), ancilla=ancilla, iters=3)
-            meas2 = qml.iterative_qpe(
-                qml.RZ(2.0, wires=0), aux_wire=aux_wire, iters=3, ancilla=ancilla
-            )
-
-        assert all(m.wires == qml.wires.Wires(ancilla) for m in meas1)
-        assert all(m.wires == qml.wires.Wires(aux_wire) for m in meas2)
-
     @pytest.mark.parametrize(
         "args, n_missing, missing_args",
         [
             ({"aux_wire": 1}, 1, "'iters'"),
-            ({"ancilla": 1}, 1, "'iters'"),
             ({"iters": 1}, 1, "'aux_wire'"),
             ({}, 2, "'aux_wire' and 'iters'"),
         ],
