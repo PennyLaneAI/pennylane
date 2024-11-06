@@ -460,7 +460,7 @@ def tape_mpl(
             :width: 60%
             :target: javascript:void(0);
 
-    Additionally, ``wire_options`` may contain sub-dictionaries of matplotlib options assigned
+    Additionally, ``wire_options`` may contain subdictionaries of matplotlib options assigned
     to separate wire labels, which will control the line style for the respective individual wires.
 
     .. code-block:: python
