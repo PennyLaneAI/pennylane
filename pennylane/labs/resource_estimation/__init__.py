@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
-
 As part of the labs module, this module contains experimental features for
 resource estimation.
 
@@ -24,8 +22,8 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
-Resource Estimation
-~~~~~~~~~~~~~~~~~~~
+Base Objects
+~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
