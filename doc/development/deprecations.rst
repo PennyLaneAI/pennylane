@@ -128,7 +128,7 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
-* The :class:`~pennylane.BasisStatePreparation` template is removed.
+* The :class:`~pennylane.BasisStatePreparation` template has been removed.
   Instead, use :class:`~pennylane.BasisState`.
 
   - Deprecated in v0.39
