@@ -572,9 +572,8 @@ def draw_mpl(
                 :target: javascript:void(0);
 
 
-        Additionally, ``wire_options`` may contain wire labels as keys and dictionaries with
-        keyword-value pairs of matplotlib options as values, which will control the line style for
-        the respective individual wire.
+        Additionally, ``wire_options`` may contain sub-dictionaries of matplotlib options assigned
+        to separate wire labels, which will control the line style for the respective individual wires.
 
         .. code-block:: python
 
