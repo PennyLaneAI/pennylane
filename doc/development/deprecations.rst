@@ -50,12 +50,6 @@ Pending deprecations
   - Deprecated top level access in v0.39
   - Top level access will be removed in v0.40
 
-* ``QNode.gradient_fn`` is deprecated. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
-  process the diff method.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
 
   - Deprecated in v0.38
@@ -130,6 +124,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``QNode.gradient_fn`` is removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
+  process the diff method.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
 
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
