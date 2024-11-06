@@ -14,7 +14,7 @@
 r"""
 .. currentmodule:: pennylane
 
-This module module contains experimental features enabling
+This module contains experimental features enabling
 advanced quantum computing research.
 
 .. warning::
@@ -22,6 +22,7 @@ advanced quantum computing research.
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
+<<<<<<< HEAD
 .. currentmodule:: pennylane.labs.resource_estimation
 
 Resource Estimation
@@ -41,6 +42,8 @@ Errors
     :toctree: api
 
     ~ResourcesNotDefined
+=======
+>>>>>>> f628f21863b996c5ad05e524a90c0bb2c2472396
 """
 
 from .resource_estimation import (
