@@ -114,7 +114,7 @@ guide](https://pennylane.ai/qml/demos_submission).
 
 ## Research Applications
 
-PennyLane is at the forefront of research in quantum computing, quantum machine learning, and quantum chemistry. Discover how researchers are using PennyLane.
+PennyLane is at the forefront of research in quantum computing, quantum machine learning, and quantum chemistry. Explore how PennyLane is used for research in the following publications:
 
 - **Quantum Computing**: [Fast quantum circuit cutting with randomized measurements](https://quantum-journal.org/papers/q-2023-03-02-934/)
 
