@@ -168,6 +168,9 @@ def localize_normal_modes(results, freq_separation=[2600]):
     ulocs_arr = []
     for idx in range(num_seps + 1):
         num_freqs = len(freqs_arr[idx])
+        loc_freqs = []
+        uloc = []
+        qloc = []
         if num_freqs > 1:
             loc_freqs, qloc, uloc = _localize_modes(freqs_arr[idx], disps_arr[idx])
         elif num_freqs == 1:
@@ -176,10 +179,7 @@ def localize_normal_modes(results, freq_separation=[2600]):
             qloc[:, :, 0] = disps_arr[idx][0]
             uloc = np.zeros((1, 1))
             uloc[0, 0] = 1
-        else:
-            loc_freqs = []
-            uloc = []
-            qloc = []
+
         loc_freqs_arr.append(loc_freqs)
         qlocs_arr.append(qloc)
         ulocs_arr.append(uloc)

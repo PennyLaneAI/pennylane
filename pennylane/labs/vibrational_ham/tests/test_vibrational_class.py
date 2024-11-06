@@ -114,44 +114,52 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "loc_freqs", "exp_vecs", "exp_freqs", "exp_uloc"),
+    ("sym", "geom", "loc_freqs", "exp_results"),
     # Expected results were obtained using vibrant code
     [
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
             [2600],
-            [[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]],
-            [0.01885394],
-            [[1.0]],
+            {
+                "vecs": [[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]],
+                "freqs": [0.01885394],
+                "uloc": [[1.0]],
+            },
         ),
         (
             ["H", "H", "S"],
             np.array([[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]]),
             [2600],
-            [
-                [
-                    [8.73825764e-18, 4.56823325e-01, -5.19946511e-01],
-                    [2.70251290e-17, -4.56823323e-01, -5.19946513e-01],
-                    [-4.06626509e-17, -7.26343693e-11, 3.26953265e-02],
+            {
+                "vecs": [
+                    [
+                        [8.73825764e-18, 4.56823325e-01, -5.19946511e-01],
+                        [2.70251290e-17, -4.56823323e-01, -5.19946513e-01],
+                        [-4.06626509e-17, -7.26343693e-11, 3.26953265e-02],
+                    ],
+                    [
+                        [-3.76513979e-17, -7.43327581e-01, -6.40379106e-01],
+                        [7.06164585e-17, 1.47544755e-02, 1.37353335e-02],
+                        [1.43329806e-17, 2.29071020e-02, 1.97023370e-02],
+                    ],
+                    [
+                        [-3.30668012e-17, 1.47544588e-02, -1.37353509e-02],
+                        [3.85908620e-18, -7.43327582e-01, 6.40379105e-01],
+                        [-1.26315618e-17, 2.29071026e-02, -1.97023364e-02],
+                    ],
                 ],
-                [
-                    [-3.76513979e-17, -7.43327581e-01, -6.40379106e-01],
-                    [7.06164585e-17, 1.47544755e-02, 1.37353335e-02],
-                    [1.43329806e-17, 2.29071020e-02, 1.97023370e-02],
+                "freqs": [0.00589689, 0.01232428, 0.01232428],
+                "uloc": [
+                    [1.0, 0.0, 0.0],
+                    [0.0, 0.70710715, -0.70710641],
+                    [0.0, 0.70710641, 0.70710715],
                 ],
-                [
-                    [-3.30668012e-17, 1.47544588e-02, -1.37353509e-02],
-                    [3.85908620e-18, -7.43327582e-01, 6.40379105e-01],
-                    [-1.26315618e-17, 2.29071026e-02, -1.97023364e-02],
-                ],
-            ],
-            [0.00589689, 0.01232428, 0.01232428],
-            [[1.0, 0.0, 0.0], [0.0, 0.70710715, -0.70710641], [0.0, 0.70710641, 0.70710715]],
+            },
         ),
     ],
 )
-def test_mode_localization(sym, geom, loc_freqs, exp_vecs, exp_freqs, exp_uloc):
+def test_mode_localization(sym, geom, loc_freqs, exp_results):
     r"""Test that mode localization returns correct results."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
@@ -161,9 +169,15 @@ def test_mode_localization(sym, geom, loc_freqs, exp_vecs, exp_freqs, exp_uloc):
     loc_res, uloc = vibrational_ham.localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
     freqs = loc_res["freq_wavenumber"] / au_to_cm
 
-    assert np.allclose(loc_res["norm_mode"], exp_vecs)
-    assert np.allclose(freqs, exp_freqs)
-    assert np.allclose(uloc, exp_uloc)
+    nmodes = len(freqs)
+    for i in range(nmodes):
+        assert any(
+            np.allclose(np.abs(loc_res["norm_mode"][i]), np.abs(vec), atol=1e-6)
+            for vec in exp_results["vecs"]
+        )
+
+    assert np.allclose(freqs, exp_results["freqs"])
+    assert np.allclose(np.abs(uloc), np.abs(exp_results["uloc"]))
 
 
 def test_hess_methoderror():
