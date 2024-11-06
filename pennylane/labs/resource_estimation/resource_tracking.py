@@ -24,7 +24,7 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .resource_constructor import ResourceOperator
+from .resource_operator import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources
 
 # pylint: disable=dangerous-default-value,protected-access
