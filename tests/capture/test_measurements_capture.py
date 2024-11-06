@@ -32,7 +32,6 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     StateMP,
     VarianceMP,
-    VnEntanglementEntropyMP,
     VnEntropyMP,
 )
 
@@ -150,7 +149,6 @@ creation_funcs = [
     lambda: ProbabilityMP(wires=qml.wires.Wires((0, 1)), eigvals=np.array([-1.0, -0.5, 0.5, 1.0])),
     lambda: qml.sample(wires=(3, 4)),
     lambda: qml.shadow_expval(np.array(2) * qml.X(0)),
-    lambda: qml.vn_entanglement_entropy(wires0=(1, 3), wires1=(2, 4), log_base=2),
     lambda: qml.vn_entropy(wires=(1, 2)),
     lambda: qml.purity(wires=(0, 1)),
     lambda: qml.mutual_info(wires0=(1, 3), wires1=(2, 4), log_base=2),
@@ -547,14 +545,14 @@ class TestSample:
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
-def test_shadow_expval(x64_mode):
+def test_shadow_expval(x64_mode, seed):
     """Test that the shadow expval of an observable can be captured."""
 
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 
     def f():
-        return qml.shadow_expval(qml.X(0), seed=887, k=4)
+        return qml.shadow_expval(qml.X(0), seed=seed, k=4)
 
     jaxpr = jax.make_jaxpr(f)()
 
@@ -563,7 +561,7 @@ def test_shadow_expval(x64_mode):
 
     assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
-    assert jaxpr.eqns[1].params == {"seed": 887, "k": 4}
+    assert jaxpr.eqns[1].params == {"seed": seed, "k": 4}
 
     am = jaxpr.eqns[1].outvars[0].aval
     assert isinstance(am, AbstractMeasurement)
@@ -611,25 +609,24 @@ def test_vn_entropy_purity(mtype, kwargs, x64_mode):
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
-@pytest.mark.parametrize("mtype", [MutualInfoMP, VnEntanglementEntropyMP])
-def test_mutual_info_vn_entanglement_entropy(mtype, x64_mode):
+def test_mutual_info(x64_mode):
     """Test the capture of a mutual info and vn entanglement entropy measurement."""
 
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 
     def f(w1, w2):
-        return mtype(wires=(qml.wires.Wires([w1, 1]), qml.wires.Wires([w2, 3])), log_base=2)
+        return MutualInfoMP(wires=(qml.wires.Wires([w1, 1]), qml.wires.Wires([w2, 3])), log_base=2)
 
     jaxpr = jax.make_jaxpr(f)(0, 2)
     assert len(jaxpr.eqns) == 1
 
-    assert jaxpr.eqns[0].primitive == mtype._wires_primitive
+    assert jaxpr.eqns[0].primitive == MutualInfoMP._wires_primitive
     assert jaxpr.eqns[0].params == {"log_base": 2, "n_wires0": 2}
     assert len(jaxpr.eqns[0].invars) == 4
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)
-    assert mp._abstract_eval == mtype._abstract_eval
+    assert mp._abstract_eval == MutualInfoMP._abstract_eval
 
     shapes = _get_shapes_for(
         *jaxpr.out_avals, num_device_wires=4, shots=qml.measurements.Shots(None)
@@ -641,11 +638,11 @@ def test_mutual_info_vn_entanglement_entropy(mtype, x64_mode):
     jax.config.update("jax_enable_x64", initial_mode)
 
 
-def test_ClassicalShadow():
+def test_ClassicalShadow(seed):
     """Test that the classical shadow measurement can be captured."""
 
     def f():
-        return qml.classical_shadow(wires=(0, 1, 2), seed=95)
+        return qml.classical_shadow(wires=(0, 1, 2), seed=seed)
 
     jaxpr = jax.make_jaxpr(f)()
 
@@ -653,7 +650,7 @@ def test_ClassicalShadow():
     assert len(jaxpr.eqns) == 1
 
     assert jaxpr.eqns[0].primitive == ClassicalShadowMP._wires_primitive
-    assert jaxpr.eqns[0].params == {"seed": 95}
+    assert jaxpr.eqns[0].params == {"seed": seed}
     assert len(jaxpr.eqns[0].invars) == 3
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)

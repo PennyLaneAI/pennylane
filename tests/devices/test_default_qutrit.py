@@ -18,7 +18,6 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 import math
 
 import pytest
-from flaky import flaky
 from gate_data import GELL_MANN, OMEGA, TADD, TCLOCK, TSHIFT, TSWAP
 from scipy.stats import unitary_group
 
@@ -701,6 +700,16 @@ class TestVar:
 class TestSample:
     """Tests that samples are properly calculated."""
 
+    def test_sample_dtype(self):
+        """Test that if the raw samples are requested, they are of dtype int."""
+
+        dev = qml.device("default.qutrit", wires=1, shots=10)
+
+        tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
+        res = dev.execute(tape)
+        assert qml.math.get_dtype_name(res)[0:3] == "int"
+        assert res.shape == (10,)
+
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
         the correct dimensions
@@ -1092,12 +1101,12 @@ class TestTensorSample:
         )
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("index", list(range(1, 9)))
-    def test_hermitian(self, index, tol_stochastic):
+    def test_hermitian(self, index, tol_stochastic, seed):
         """Tests that sampling on a tensor product of Hermitian observables with another observable works
         correctly"""
 
+        np.random.seed(seed)
         dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
 
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])

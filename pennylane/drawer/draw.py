@@ -38,21 +38,22 @@ def draw(
     decimals=2,
     max_length=100,
     show_matrices=True,
+    show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
     r"""Create a function that draws the given qnode or quantum function.
 
     Args:
-        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
-           If not provided, the wire order defaults to the device wires. If device wires are not
-           available, the circuit wires are sorted if possible.
+        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
+        wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
+            Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters.
+        decimals (int): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
             ``None`` will omit parameters from operation labels.
-        max_length (int): Maximum string width (columns) when printing the circuit
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+        max_length (int): Maximum string width (columns) when printing the circuit. Defaults to ``100``.
+        show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
+        show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
+        level (None, str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 
@@ -254,6 +255,7 @@ def draw(
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             level=level,
         )
 
@@ -281,6 +283,7 @@ def draw(
             show_all_wires=show_all_wires,
             decimals=decimals,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             max_length=max_length,
         )
 
@@ -294,6 +297,7 @@ def _draw_qnode(
     decimals=2,
     max_length=100,
     show_matrices=True,
+    show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
     @wraps(qnode)
@@ -319,6 +323,7 @@ def _draw_qnode(
                     show_all_wires=show_all_wires,
                     decimals=decimals,
                     show_matrices=False,
+                    show_wire_labels=show_wire_labels,
                     max_length=max_length,
                     cache=cache,
                 )
@@ -341,6 +346,7 @@ def _draw_qnode(
             show_all_wires=show_all_wires,
             decimals=decimals,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             max_length=max_length,
         )
 
@@ -381,6 +387,7 @@ def draw_mpl(
             Default is ``14``.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
+        show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         level (None, str, int, slice): An indication of what transforms to apply before drawing.

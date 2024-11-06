@@ -322,12 +322,12 @@ class TestMidMeasureExecute:
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
-    def test_simple_circuit_execution(self, phi, reset, postselect, get_device, shots, mp_fn):
+    def test_simple_circuit_execution(self, phi, reset, postselect, get_device, shots, mp_fn, seed):
         """Test that circuits with mid-circuit measurements can be executed in a QNode."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(12345))
+        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x):
@@ -340,7 +340,7 @@ class TestMidMeasureExecute:
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("multi_mcm", [True, False])
     def test_circuit_with_terminal_measurement_execution(
-        self, phi, get_device, shots, mp_fn, multi_mcm
+        self, phi, get_device, shots, mp_fn, multi_mcm, seed
     ):
         """Test that circuits with mid-circuit measurements that also collect statistics
         on the mid-circuit measurements can be executed in a QNode."""
@@ -350,7 +350,7 @@ class TestMidMeasureExecute:
         if multi_mcm and mp_fn in (qml.expval, qml.var):
             pytest.skip("Cannot measure sequences of MCMs with expval or var")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(12345))
+        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -364,13 +364,13 @@ class TestMidMeasureExecute:
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
-    def test_circuit_with_boolean_arithmetic_execution(self, phi, get_device, shots, mp_fn):
+    def test_circuit_with_boolean_arithmetic_execution(self, phi, get_device, shots, mp_fn, seed):
         """Test that circuits that apply boolean logic to mid-circuit measurement values
         can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(12345))
+        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -386,13 +386,13 @@ class TestMidMeasureExecute:
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
-    def test_circuit_with_classical_processing_execution(self, phi, get_device, shots, mp_fn):
+    def test_circuit_with_classical_processing_execution(self, phi, get_device, shots, mp_fn, seed):
         """Test that circuits that apply non-boolean operations to mid-circuit measurement
         values can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(12345))
+        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x, y):
@@ -409,13 +409,15 @@ class TestMidMeasureExecute:
     @pytest.mark.xfail
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.sqrt, jnp.log, jnp.exp])
-    def mid_measure_processed_with_jax_numpy_execution(self, phi, fn, get_device, shots, mp_fn):
+    def mid_measure_processed_with_jax_numpy_execution(
+        self, phi, fn, get_device, shots, mp_fn, seed
+    ):
         """Test that a circuit containing mid-circuit measurements processed using jax.numpy
         can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(12345))
+        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x):
@@ -428,13 +430,13 @@ class TestMidMeasureExecute:
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
-    def test_mid_measure_as_gate_parameter_execution(self, phi, get_device, shots, mp_fn):
+    def test_mid_measure_as_gate_parameter_execution(self, phi, get_device, shots, mp_fn, seed):
         """Test that mid-circuit measurements (simple or classical processed) used as gate
         parameters can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(12345))
+        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
 
         @qml.qnode(dev)
         def f(x):

@@ -151,11 +151,16 @@ class PhaseAdder(Operation):
                         "None of the wires in work_wire should be included in x_wires."
                     )
 
+        all_wires = (
+            qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
+            if work_wire
+            else qml.wires.Wires(x_wires)
+        )
+
         self.hyperparameters["k"] = k % mod
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
         self.hyperparameters["x_wires"] = x_wires
-        all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
         super().__init__(wires=all_wires, id=id)
 
     @property
@@ -173,7 +178,11 @@ class PhaseAdder(Operation):
 
     def map_wires(self, wire_map: dict):
         new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
+            key: (
+                [wire_map.get(w, w) for w in self.hyperparameters[key]]
+                if self.hyperparameters[key][0] is not None
+                else None
+            )
             for key in ["x_wires", "work_wire"]
         }
 

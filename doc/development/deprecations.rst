@@ -9,6 +9,17 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
+  has been deprecated.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
+* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been deprecated.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
 * The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
   argument.
 
@@ -33,7 +44,7 @@ Pending deprecations
   - Will be removed in v0.40
 
 * ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
-  we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  will be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
   respectively.
 
   - Deprecated top level access in v0.39
@@ -149,7 +160,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
 
   - Deprecated in v0.38
   - Removed in v0.39
