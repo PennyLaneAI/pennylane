@@ -84,7 +84,7 @@ Get up and running quickly with PennyLane by following our [quickstart guide](ht
 
 Whether you're exploring quantum machine learning (QML), quantum computing, or quantum chemistry, PennyLane offers a wide range of tools and resources to support your research:
 
-<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/gpu_to_qpu.png" align="right" width="400px">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/readme-update/doc/_static/readme/getting-started.png" align="right" width="400px">
 
 ### Key Resources:
 
