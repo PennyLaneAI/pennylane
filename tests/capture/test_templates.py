@@ -27,9 +27,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-pytestmark = [
-    pytest.mark.jax,
-]
+pytestmark = pytest.mark.jax
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 
 
