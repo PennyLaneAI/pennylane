@@ -75,18 +75,6 @@ def iterative_qpe(base, aux_wire, iters):
                                                                      ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                       ╚═══════╡ ╰Sample[MCM]
     """
-    missing = []
-    if aux_wire == "unset":
-        missing.append("'aux_wire'")
-    if iters == "unset":
-        missing.append("'iters'")
-
-    if missing:
-        missing_args = " and ".join(missing)
-        raise TypeError(
-            f"iterative_qpe() missing {len(missing)} required positional argument(s): {missing_args}"
-        )
-
     measurements = []
 
     for i in range(iters):
