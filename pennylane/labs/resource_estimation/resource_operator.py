@@ -18,7 +18,7 @@ from typing import Callable, Dict
 import pennylane.labs.resource_estimation.resource_container as rc
 
 
-class ResourceConstructor(ABC):
+class ResourceOperator(ABC):
     r"""This is an abstract class that defines the methods a PennyLane Operator
     must implement in order to be used for resource estimation.
 
@@ -32,9 +32,9 @@ class ResourceConstructor(ABC):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor
+            from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
 
-            class ResourceQFT(qml.QFT, ResourceConstructor):
+            class ResourceQFT(qml.QFT, ResourceOperator):
 
                 @staticmethod
                 def _resource_decomp(num_wires) -> dict:
@@ -65,7 +65,7 @@ class ResourceConstructor(ABC):
     @abstractmethod
     def _resource_decomp(*args, **kwargs) -> Dict[rc.CompressedResourceOp, int]:
         """Returns the Resource object. This method is only to be used inside
-        the methods of classes inheriting from ResourceConstructor."""
+        the methods of classes inheriting from ResourceOperator."""
 
     @classmethod
     def resources(cls, *args, **kwargs):
@@ -96,4 +96,4 @@ class ResourceConstructor(ABC):
 
 
 class ResourcesNotDefined(Exception):
-    """Exception to be raised when a ``ResourceConstructor`` does not implement _resource_decomp"""
+    """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
