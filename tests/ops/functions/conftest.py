@@ -69,17 +69,6 @@ _INSTANCES_TO_TEST = [
 ]
 """Valid operator instances that could not be auto-generated."""
 
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning)
-    _INSTANCES_TO_TEST.append(
-        (
-            qml.operation.convert_to_legacy_H(
-                qml.Hamiltonian([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)])
-            ),
-            {},
-        )
-    )
-
 
 _INSTANCES_TO_FAIL = [
     (

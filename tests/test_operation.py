@@ -28,8 +28,6 @@ from pennylane.operation import (
     Operation,
     Operator,
     StatePrepBase,
-    Tensor,
-    convert_to_legacy_H,
     operation_derivative,
 )
 from pennylane.ops import Prod, SProd, Sum, cv
@@ -2026,71 +2024,6 @@ with warnings.catch_warnings():
             ],
         ),
     ]
-
-
-@pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONIAN)
-def test_convert_to_hamiltonian(coeffs, obs):
-    """Test that arithmetic operators can be converted to Hamiltonian instances"""
-
-    opmath_instance = qml.dot(coeffs, obs)
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian uses the old approach"
-    ):
-        converted_opmath = convert_to_legacy_H(opmath_instance)
-        hamiltonian_instance = qml.ops.Hamiltonian(coeffs, obs)
-
-    assert isinstance(converted_opmath, qml.ops.Hamiltonian)
-    qml.assert_equal(converted_opmath, hamiltonian_instance)
-
-
-@pytest.mark.parametrize(
-    "coeffs, obs",
-    [
-        ([2], [qml.T(1)]),
-        ([0.5, 2], [qml.T(0), qml.Identity(1)]),
-        ([1, 2], [qml.T(0), qml.Identity(1)]),
-        ([0.5, 0.5], [qml.T(0), qml.T(0)]),
-    ],
-)
-def test_convert_to_hamiltonian_error(coeffs, obs):
-    """Test that arithmetic operator raise an error if there is a non-Observable"""
-
-    with pytest.raises(ValueError):
-        convert_to_legacy_H(qml.dot(coeffs, obs))
-
-
-@pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
-def test_convert_to_H():
-    operator = (
-        2 * qml.X(0)
-        + 3 * qml.X(0)
-        + qml.Y(1) @ qml.Z(2) @ (2 * qml.X(3))
-        + 2 * (qml.Hadamard(3) + 3 * qml.Z(2))
-    )
-    with qml.operation.disable_new_opmath_cm(warn=False):
-        legacy_H = qml.operation.convert_to_H(operator)
-    linear_combination = qml.operation.convert_to_H(operator)
-
-    assert isinstance(legacy_H, qml.ops.Hamiltonian)
-    assert isinstance(linear_combination, qml.ops.LinearCombination)
-
-    # coeffs match
-    legacy_coeffs, legacy_ops = legacy_H.terms()
-    coeffs, ops = linear_combination.terms()
-    assert np.all(legacy_coeffs == coeffs)
-
-    # legacy version has Tensors and not Prods, new version opposite
-    assert Tensor in [type(o) for o in legacy_ops]
-    assert Tensor not in [type(o) for o in ops]
-    assert qml.ops.op_math.Prod not in [type(o) for o in legacy_ops]
-    assert qml.ops.op_math.Prod in [type(o) for o in ops]
-
-    # ops match
-    for legacy_op, op in zip(legacy_ops, ops):
-        assert np.all(legacy_op.matrix() == op.matrix())
-
-    # the converted op is the same as the original op
-    qml.assert_equal(operator.simplify(), linear_combination.simplify())
 
 
 # pylint: disable=unused-import,no-name-in-module

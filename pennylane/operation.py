@@ -192,7 +192,6 @@ the ``operation`` module provides the following helper functions:
     ~disable_new_opmath
     ~active_new_opmath
     ~convert_to_opmath
-    ~convert_to_legacy_H
 
 Other
 ~~~~~
@@ -244,8 +243,6 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 # pylint:disable=access-member-before-definition,global-statement
 import abc
 import copy
-import functools
-import itertools
 import warnings
 from collections.abc import Hashable, Iterable
 from contextlib import contextmanager
@@ -254,7 +251,7 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 from numpy.linalg import multi_dot
-from scipy.sparse import coo_matrix, csr_matrix, eye, kron
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
@@ -264,7 +261,6 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .pytrees import register_pytree
-from .utils import pauli_eigs
 
 # =============================================================================
 # Errors
@@ -2662,9 +2658,8 @@ def enable_new_opmath_cm(warn=True):
 # pylint: disable=too-many-branches
 def convert_to_H(op):
     """
-    Converts arithmetic operators into a :class:`~pennylane.ops.Hamiltonian` or
-    :class:`~pennylane.ops.LinearCombination` instance, depending on whether
-    new_opmath is enabled. Objects of any other type are returned directly.
+    Converts arithmetic operators into a :class:`~pennylane.ops.LinearCombination` instance.
+    Objects of any other type are returned directly.
 
     Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
     :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
@@ -2673,8 +2668,7 @@ def convert_to_H(op):
         op (Operator): The operator instance to convert.
 
     Returns:
-        Operator: The operator as a :class:`~pennylane.ops.LinearCombination` instance
-            if `active_new_opmath()`, otherwise a :class:`~pennylane.ops.Hamiltonian`
+        Operator: The operator as a :class:`~pennylane.ops.LinearCombination`
     """
     if not isinstance(op, (qml.ops.op_math.Prod, qml.ops.op_math.SProd, qml.ops.op_math.Sum)):
         return op
@@ -2683,7 +2677,6 @@ def convert_to_H(op):
     ops = []
 
     op = qml.simplify(op)
-    product = qml.ops.op_math.Prod if active_new_opmath() else Tensor
 
     if isinstance(op, Observable):
         coeffs.append(1.0)
@@ -2694,13 +2687,13 @@ def convert_to_H(op):
         if isinstance(op.base, Observable):
             ops.append(op.base)
         elif isinstance(op.base, qml.ops.op_math.Prod):
-            ops.append(product(*op.base))
+            ops.append(qml.ops.Prod(*op.base))
         else:
             raise ValueError("The base of scalar product must be an observable or a product.")
 
     elif isinstance(op, qml.ops.Prod):
         coeffs.append(1.0)
-        ops.append(product(*op))
+        ops.append(qml.ops.Prod(*op))
 
     elif isinstance(op, qml.ops.Sum):
         for factor in op:
@@ -2709,14 +2702,14 @@ def convert_to_H(op):
                 if isinstance(factor.base, Observable):
                     ops.append(factor.base)
                 elif isinstance(factor.base, qml.ops.op_math.Prod):
-                    ops.append(product(*factor.base))
+                    ops.append(qml.ops.Prod(*factor.base))
                 else:
                     raise ValueError(
                         "The base of scalar product must be an observable or a product."
                     )
             elif isinstance(factor, (qml.ops.Prod)):
                 coeffs.append(1.0)
-                ops.append(product(*factor))
+                ops.append(qml.ops.Prod(*factor))
             elif isinstance(factor, Observable):
                 coeffs.append(1.0)
                 ops.append(factor)
@@ -2729,31 +2722,6 @@ def convert_to_H(op):
         raise ValueError("Could not convert to Hamiltonian. Some or all observables are not valid.")
 
     return qml.Hamiltonian(coeffs, ops)
-
-
-def convert_to_legacy_H(op):
-    """
-    Converts arithmetic operators into a legacy :class:`~pennylane.Hamiltonian` instance.
-    Objects of any other type are returned directly.
-
-    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
-    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
-
-    .. warning::
-
-        Using legacy operator arithmetic is deprecated, and will be removed in PennyLane v0.40.
-        For further details, see :doc:`Updated Operators </news/new_opmath/>`.
-
-    Args:
-        op (Operator): The operator instance to convert.
-
-    Returns:
-        Operator: The operator as a :class:`~pennylane.Hamiltonian` instance
-    """
-    with disable_new_opmath_cm(warn=False):
-        # Suppress warning because constructing Hamiltonian will raise a warning anyway
-        res = convert_to_H(op)
-    return res
 
 
 def __getattr__(name):

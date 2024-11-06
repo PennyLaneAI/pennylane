@@ -361,9 +361,6 @@ class TestMixerHamiltonians:
     @pytest.mark.parametrize(("graph", "target_hamiltonian"), make_xy_mixer_test_cases())
     def test_xy_mixer_output(self, graph, target_hamiltonian):
         """Tests that the output of the XY mixer is correct"""
-
-        if not qml.operation.active_new_opmath():
-            target_hamiltonian = qml.operation.convert_to_legacy_H(target_hamiltonian)
         hamiltonian = qaoa.xy_mixer(graph)
         assert hamiltonian.compare(target_hamiltonian)
 
@@ -386,9 +383,6 @@ class TestMixerHamiltonians:
     )
     def test_bit_flip_mixer_output(self, graph, n, target_hamiltonian):
         """Tests that the output of the bit-flip mixer is correct"""
-
-        if not qml.operation.active_new_opmath():
-            target_hamiltonian = qml.operation.convert_to_legacy_H(target_hamiltonian)
         hamiltonian = qaoa.bit_flip_mixer(graph, n)
         assert hamiltonian.compare(target_hamiltonian)
 
@@ -951,9 +945,6 @@ class TestCostHamiltonians:
     @pytest.mark.parametrize(("graph", "reward", "hamiltonian"), make_edge_driver_cost_test_cases())
     def test_edge_driver_output(self, graph, reward, hamiltonian):
         """Tests that the edge driver Hamiltonian throws the correct errors"""
-
-        if not qml.operation.active_new_opmath():
-            hamiltonian = qml.operation.convert_to_legacy_H(hamiltonian)
         H = qaoa.edge_driver(graph, reward)
         assert hamiltonian.compare(H)
 
@@ -984,10 +975,6 @@ class TestCostHamiltonians:
     )
     def test_maxcut_output(self, graph, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the MaxCut method is correct"""
-
-        if not qml.operation.active_new_opmath():
-            cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
-            mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         cost_h, mixer_h = qaoa.maxcut(graph)
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)
@@ -1011,10 +998,6 @@ class TestCostHamiltonians:
     )
     def test_mis_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Max Indepenent Set method is correct"""
-
-        if not qml.operation.active_new_opmath():
-            cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
-            mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         cost_h, mixer_h = qaoa.max_independent_set(graph, constrained=constrained)
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)
@@ -1038,10 +1021,6 @@ class TestCostHamiltonians:
     )
     def test_mvc_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Min Vertex Cover method is correct"""
-
-        if not qml.operation.active_new_opmath():
-            cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
-            mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         cost_h, mixer_h = qaoa.min_vertex_cover(graph, constrained=constrained)
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)
@@ -1065,10 +1044,6 @@ class TestCostHamiltonians:
     )
     def test_max_clique_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Maximum Clique method is correct"""
-
-        if not qml.operation.active_new_opmath():
-            cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
-            mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         cost_h, mixer_h = qaoa.max_clique(graph, constrained=constrained)
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)
@@ -1095,10 +1070,6 @@ class TestCostHamiltonians:
         self, graph, constrained, cost_hamiltonian, mixer_hamiltonian, mapping
     ):
         """Tests that the output of the maximum weighted cycle method is correct"""
-
-        if not qml.operation.active_new_opmath():
-            cost_hamiltonian = qml.operation.convert_to_legacy_H(cost_hamiltonian)
-            mixer_hamiltonian = qml.operation.convert_to_legacy_H(mixer_hamiltonian)
         cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)

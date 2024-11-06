@@ -657,9 +657,6 @@ class TestHamiltonianSamples:
     def test_hamiltonian_expval(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables"""
 
-        if not qml.operation.active_new_opmath():
-            obs = qml.operation.convert_to_legacy_H(obs)
-
         shots = qml.measurements.Shots(10000)
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
@@ -675,9 +672,6 @@ class TestHamiltonianSamples:
 
     def test_hamiltonian_expval_shot_vector(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector"""
-
-        if not qml.operation.active_new_opmath():
-            obs = qml.operation.convert_to_legacy_H(obs)
 
         shots = qml.measurements.Shots((10000, 100000))
         x, y = np.array(0.67), np.array(0.95)

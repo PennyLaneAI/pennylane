@@ -497,8 +497,6 @@ class TestPauliSentence:
     @pytest.mark.parametrize("op, ps", hamiltonian_ps)
     def test_hamiltonian(self, op, ps):
         """Test that a Hamiltonian is properly cast to a PauliSentence."""
-        if qml.operation.active_new_opmath():
-            op = qml.operation.convert_to_legacy_H(op)
         assert pauli_sentence(op) == ps
 
     operator_ps = (

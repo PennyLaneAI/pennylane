@@ -101,8 +101,6 @@ class TestIntegrationShadows:
     @pytest.mark.parametrize("shadow", shadows)
     def test_expval_input_types(self, shadow, H):
         """Test ClassicalShadow.expval can handle different inputs"""
-        if not qml.operation.active_new_opmath():
-            H = qml.operation.convert_to_legacy_H(H)
         assert qml.math.allclose(shadow.expval(H, k=2), 1.0, atol=1e-1)
 
     def test_reconstruct_bell_state(self):
