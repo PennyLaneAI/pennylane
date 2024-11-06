@@ -90,14 +90,17 @@ def resources_from_operation(
 ) -> Resources:
     """Get resources from an operation"""
 
-    if isinstance(obj, ResourceOperator):
-        cp_rep = obj.resource_rep_from_op()
-        gate_counts_dict = defaultdict(int)
-        _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
-        return Resources(gate_types=gate_counts_dict)
+    if not isinstance(obj, Operation):
+        raise TypeError(f"obj must be of type Operation. Got type {type(obj)}.")
 
-    res = Resources()  # TODO: Add implementation here!
-    return res
+    if not isinstance(obj, ResourceOperator):
+        obj = _op_to_resource_op(obj)
+
+    cp_rep = obj.resource_rep_from_op()
+    gate_counts_dict = defaultdict(int)
+    _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
+    return Resources(gate_types=gate_counts_dict)
+
 
 
 @get_resources.register
@@ -195,7 +198,7 @@ def _counts_from_compressed_res_op(
     return
 
 
-def _op_to_resource_con(op: Operation) -> ResourceOperator:
+def _op_to_resource_op(op: Operation) -> ResourceOperator:
     """Map a PL Operator to its corresponding Resource Operator
 
     Args:
@@ -254,7 +257,7 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
 
         else:
             try:
-                cmp_rep_ops.append(_op_to_resource_con(op).resource_rep_from_op())
+                cmp_rep_ops.append(_op_to_resource_op(op).resource_rep_from_op())
 
             except NotImplementedError:
                 decomp = op.decomposition()
