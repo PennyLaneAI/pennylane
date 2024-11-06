@@ -99,7 +99,11 @@ def resources_from_operation(
     cp_rep = obj.resource_rep_from_op()
     gate_counts_dict = defaultdict(int)
     _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
-    return Resources(gate_types=gate_counts_dict)
+
+    num_wires = len(obj.wires)
+    num_gates = len(gate_counts_dict.keys())
+
+    return Resources(gate_types=gate_counts_dict, num_gates=num_gates, num_wires=num_wires)
 
 
 
