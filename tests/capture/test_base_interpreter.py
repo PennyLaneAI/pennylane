@@ -149,9 +149,9 @@ def test_overriding_measurements():
 
     class MeasurementsToSample(PlxprInterpreter):
 
-        def interpret_measurement_eqn(self, primitive, *invals, **params):
-            temp_mp = primitive.impl(*invals, **params)
-            return qml.sample(wires=temp_mp.wires)
+        def interpret_measurement(self, measurement):
+            print(measurement)
+            return qml.sample(wires=measurement.wires)
 
     @MeasurementsToSample()
     @qml.qnode(qml.device("default.qubit", wires=2, shots=5))
@@ -159,6 +159,7 @@ def test_overriding_measurements():
         return qml.expval(qml.Z(0)), qml.probs(wires=(0, 1))
 
     res = circuit()
+    print(res)
     assert qml.math.allclose(res[0], jax.numpy.zeros(5))
     assert qml.math.allclose(res[1], jax.numpy.zeros((5, 2)))
 
