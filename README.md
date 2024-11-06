@@ -63,7 +63,7 @@
   feedback, and unbounded loops. See
   [Catalyst](https://github.com/pennylaneai/catalyst) for more details.
 
-Visit the [PennyLane features page](https://pennylane.ai/features/) for more details.
+For more details and additional features, please see the [PennyLane website](https://pennylane.ai/features/).
 
 ## Installation
 
