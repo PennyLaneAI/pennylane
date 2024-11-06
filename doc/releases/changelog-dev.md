@@ -43,7 +43,8 @@
 
 <h3>Documentation 📝</h3>
 
-* Add a warning message to Gradients and training documentation about ComplexWarnings ([#6543](https://github.com/PennyLaneAI/pennylane/pull/6543))
+* Add a warning message to Gradients and training documentation about ComplexWarnings
+  [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
 
