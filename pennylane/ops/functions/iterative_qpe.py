@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 
 
-def iterative_qpe(base, aux_wire="unset", iters="unset"):
+def iterative_qpe(base, aux_wire, iters):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
     Given a unitary :math:`U`, this function applies the circuit for iterative quantum phase
