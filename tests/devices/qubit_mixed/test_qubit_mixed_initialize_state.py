@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import math
+from pennylane import StatePrep, math
 from pennylane import numpy as np
 from pennylane.devices.qubit_mixed import create_initial_state
 from pennylane.operation import StatePrepBase
@@ -33,6 +33,8 @@ def allzero_dm(num_wires, interface="numpy"):
     return dm
 
 
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ml_interfaces)
 class TestInitializeState:
     """Test the functions in initialize_state.py"""
 
@@ -52,8 +54,6 @@ class TestInitializeState:
                 sv = qml.math.cast(sv, self.dtype)
             return sv
 
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ml_interfaces)
     def test_create_initial_state_no_state_prep(self, interface):
         """Tests that create_initial_state works without a state-prep operation."""
         wires = [0, 1]
@@ -65,14 +65,28 @@ class TestInitializeState:
         assert math.get_interface(state) == interface
         assert "complex" in str(state.dtype)
 
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ml_interfaces)
-    def test_create_initial_state_with_state_prep(self, interface):
+    def test_create_initial_state_with_dummy_state_prep(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""
         wires = [0, 1]
         num_wires = len(wires)
         state_correct = allzero_dm(num_wires, interface)
         prep_op = self.DefaultPrep(qml.math.array(state_correct, like=interface), wires=wires)
+        state = create_initial_state(wires, prep_operation=prep_op, like=interface)
+        assert math.allequal(state, state_correct)
+        assert math.get_interface(state) == interface
+
+    def test_create_initial_state_with_StatePrep(self, interface):
+        """Tests that create_initial_state works with a state-prep operation."""
+        wires = [0, 1]
+        num_wires = len(wires)
+        # The following 2 lines are for reusing the statevec code on the density matrices
+        wires_conj = [w + num_wires for w in wires]
+        wires_mimic = wires + wires_conj
+        state_correct = allzero_dm(num_wires, interface)
+        state_correct_flatten = math.reshape(state_correct, [-1])
+        prep_op = StatePrep(
+            qml.math.array(state_correct_flatten, like=interface), wires=wires_mimic
+        )
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
         assert math.allequal(state, state_correct)
         assert math.get_interface(state) == interface
