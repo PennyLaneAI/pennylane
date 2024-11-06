@@ -11,9 +11,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains experimental resource estimation functionality. """
+r"""
+As part of the labs module, this module contains experimental features for
+resource estimation.
 
-from .resource_constructor import ResourceConstructor, ResourcesNotDefined
+.. warning::
+
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
+
+.. currentmodule:: pennylane.labs.resource_estimation
+
+Base Objects
+~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceOperator
+    ~Resources
+    ~CompressedResourceOp
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
+
+"""
+
+from .resource_operator import ResourceOperator, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
 from .resource_tracking import get_resources, DefaultGateSet, _StandardGateSet, resource_config
 
