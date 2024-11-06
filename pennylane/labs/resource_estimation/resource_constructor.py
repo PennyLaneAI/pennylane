@@ -81,7 +81,7 @@ class ResourceConstructor(ABC):
     @abstractmethod
     def resource_params(self) -> dict:
         """Returns a dictionary containing the minimal information needed to
-        compute a comparessed representation"""
+        compute a compressed representation"""
 
     @classmethod
     @abstractmethod
