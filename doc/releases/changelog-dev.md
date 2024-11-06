@@ -19,7 +19,7 @@
 
 <h4>Other Improvements</h4>
 
-* Shortened the `qml.S`, `qml.T`, and `qml.SX` operators.
+* Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
