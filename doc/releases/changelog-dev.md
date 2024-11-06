@@ -19,6 +19,9 @@
 
 <h4>Other Improvements</h4>
 
+* Added string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
+  [(#...)](https://github.com/PennyLaneAI/pennylane/pull/...)
+
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
   - A new API for mixed-state operations
   - An `apply_operation` helper function featuring:
