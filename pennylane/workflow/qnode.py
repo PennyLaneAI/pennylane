@@ -110,7 +110,15 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    if isinstance(qfunc_output, Sequence) and len(qfunc_output) == 1:
+    qfunc_output_leaves, _ = qml.pytrees.flatten(
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+    )
+    results_leaves, _ = qml.pytrees.flatten(results)
+
+    if len(results_leaves) != len(qfunc_output_leaves):
+        return results
+
+    if isinstance(qfunc_output, Sequence):
         results = [results]
 
     if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
