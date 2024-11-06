@@ -719,6 +719,26 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         to the primitive via ``cls._primitive.bind``.
 
         """
+
+        print("primitive_bind_call")
+        print(f"class: {cls}")
+        print(f"args: {args}")
+        print(f"kwargs: {kwargs}")
+
+        # Avoid recursion by bypassing _primitive_bind_call during instance creation
+        instance = super(cls, cls).__new__(
+            cls
+        )  # Create instance without invoking _primitive_bind_call
+        instance.__init__(*args, **kwargs)  # Explicitly call the constructor
+
+        # Force calculation of batch size if it hasn't been set
+        batch_size = instance.batch_size  # This will invoke _check_batching if necessary
+
+        print(f"batch_size: {batch_size}")
+
+        if batch_size is not None:
+            kwargs["batch_size"] = batch_size
+
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
@@ -1188,6 +1208,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
+
+        print("check_batching called")
+
         self._batch_size = None
         params = self.data
 
@@ -1202,6 +1225,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
             # an operation with abstract parameters that make `qml.math.ndim` fail.
+
             if any(qml.math.is_abstract(p) for p in params):
                 self._batch_size = None
                 self._ndim_params = (0,) * len(params)

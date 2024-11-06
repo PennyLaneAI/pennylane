@@ -39,6 +39,9 @@ def _get_abstract_operator() -> type:
         """An operator captured into plxpr."""
 
         def __init__(self, abstract_eval: Callable, n_wires: Optional[int] = None):
+
+            print(f"init AbstractOperator: {abstract_eval}, {n_wires}")
+
             self._abstract_eval = abstract_eval
             self._n_wires = n_wires
 
@@ -130,17 +133,23 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         wires = tuple(int(w) for w in args[split:])
         args = args[:split]
+
+        print(f"args: {args}")
+        print(f"kwargs: {kwargs}")
+
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _(*_, **__):
+    def _(*args, **kwargs):
         abstract_eval = operator_type._abstract_eval  # pylint: disable=protected-access
 
         roba = abstract_type(abstract_eval, n_wires=None)
 
         print(f"roba from create_operator_primitive: {roba}")
+        print(f"args from create_operator_primitive abs def: {args}")
+        print(f"kwarg from create_operator_primitive abs def: {kwargs}")
 
         return roba
 
