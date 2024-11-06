@@ -729,7 +729,7 @@ class TestDefaultGaussianIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.gaussian", wires=1)
-        cap = dev.target_device.capabilities()
+        cap = dev.capabilities()
         capabilities = {
             "model": "cv",
             "supports_finite_shots": True,
