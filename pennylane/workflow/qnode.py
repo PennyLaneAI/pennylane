@@ -110,12 +110,10 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
+    if isinstance(qfunc_output, Sequence) and len(qfunc_output) == 1:
         results = [results]
 
-    # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+    if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
         return results
 
     return type(qfunc_output)(results)
