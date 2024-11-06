@@ -25,7 +25,7 @@
 <h3>Breaking changes 💔</h3>
 
 * The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
-  [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6528)
+  [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
 
 <h3>Deprecations 👋</h3>
 
