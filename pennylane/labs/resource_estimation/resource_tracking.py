@@ -90,7 +90,7 @@ def resources_from_operation(
 ) -> Resources:
     """Get resources from an operation"""
 
-    if isinstance(obj, ResourceConstructor):
+    if isinstance(obj, ResourceOperator):
         cp_rep = obj.resource_rep_from_op()
         gate_counts_dict = defaultdict(int)
         _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
@@ -229,7 +229,7 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
     """
     cmp_rep_ops = []
     for op in ops:
-        if isinstance(op, ResourceConstructor):
+        if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
 
         else:
