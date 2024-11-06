@@ -24,7 +24,7 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .resource_constructor import ResourceConstructor
+from .resource_constructor import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources
 
 # pylint: disable=dangerous-default-value,protected-access
@@ -90,7 +90,7 @@ def resources_from_operation(
 ) -> Resources:
     """Get resources from an operation"""
 
-    if isinstance(obj, ResourceConstructor):
+    if isinstance(obj, ResourceOperator):
         cp_rep = obj.resource_rep_from_op()
         gate_counts_dict = defaultdict(int)
         _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
@@ -195,7 +195,7 @@ def _counts_from_compressed_res_op(
     return
 
 
-def _temp_map_func(op: Operation) -> ResourceConstructor:
+def _temp_map_func(op: Operation) -> ResourceOperator:
     """Temp map function"""
     raise NotImplementedError
 
@@ -230,7 +230,7 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
     """
     cmp_rep_ops = []
     for op in ops:
-        if isinstance(op, ResourceConstructor):
+        if isinstance(op, ResourceOperator):
             cmp_rep_ops.append(op.resource_rep_from_op())
 
         else:

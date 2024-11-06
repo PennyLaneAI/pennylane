@@ -17,7 +17,7 @@ from typing import Dict
 import pennylane as qml
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
-    ResourceConstructor,
+    ResourceOperator,
     ResourceControlledPhaseShift,
     ResourceHadamard,
     ResourceSWAP,
@@ -26,7 +26,7 @@ from pennylane.labs.resource_estimation import (
 # pylint: disable=arguments-differ
 
 
-class ResourceQFT(qml.QFT, ResourceConstructor):
+class ResourceQFT(qml.QFT, ResourceOperator):
     """Resource class for QFT"""
 
     @staticmethod
