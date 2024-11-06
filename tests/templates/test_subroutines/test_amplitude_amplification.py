@@ -157,10 +157,10 @@ class TestDifferentiability:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_autograd(self, shots):
+    def test_qnode_autograd(self, shots, seed):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3, shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
 
