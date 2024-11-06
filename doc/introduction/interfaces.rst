@@ -36,7 +36,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 
 .. warning::
 
-    `ComplexWarning` messages may appear when running differentiable workflows involving both complex and float types, particularly    
+    ``ComplexWarning`` messages may appear when running differentiable workflows involving both complex and float types, particularly    
     with certain interfaces. These warnings are common in backpropagation due to the nature of complex casting and do not 
     indicate an error in computation. If desired, you can suppress these warnings by adding the following code:
            
