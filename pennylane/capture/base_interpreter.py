@@ -254,22 +254,20 @@ class PlxprInterpreter:
             return self.interpret_operation(op)
         return op
 
-    def interpret_measurement_eqn(self, primitive, *invals, **params):
+    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
 
         Args:
-            primitive (jax.core.Primitive): a jax primitive corresponding to a measurement.
-            *invals (Any): the positional input variables for the equation
-
-        Keyword Args:
-            **params: The equations parameters dictionary
+            eqn (jax.core.JaxprEqn)
 
         """
-        invals = (
-            self.interpret_operation(inval) if isinstance(inval, qml.operation.Operator) else inval
-            for inval in invals
-        )
-        return primitive.bind(*invals, **params)
+        invals = (self.read(invar) for invar in eqn.invars)
+        mp = eqn.primitive.impl(*invals, **eqn.params)
+        return self.interpret_measurement(mp)
+
+    def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+        data, struct = jax.tree_util.tree_flatten(measurement)
+        return jax.tree_util.tree_unflatten(struct, data)
 
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
         """Evaluate a jaxpr.
@@ -300,8 +298,7 @@ class PlxprInterpreter:
             elif isinstance(eqn.outvars[0].aval, AbstractOperator):
                 outvals = self.interpret_operation_eqn(eqn)
             elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
-                invals = [self.read(invar) for invar in eqn.invars]
-                outvals = self.interpret_measurement_eqn(eqn.primitive, *invals, **eqn.params)
+                outvals = self.interpret_measurement_eqn(eqn)
             else:
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = eqn.primitive.bind(*invals, **eqn.params)
