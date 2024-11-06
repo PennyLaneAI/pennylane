@@ -28,7 +28,7 @@ Base Objects
 .. autosummary::
     :toctree: api
 
-    ~ResourceConstructor
+    ~ResourceOperator
     ~Resources
     ~CompressedResourceOp
 
@@ -42,5 +42,5 @@ Exceptions
 
 """
 
-from .resource_constructor import ResourceConstructor, ResourcesNotDefined
+from .resource_operator import ResourceOperator, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources

@@ -32,7 +32,7 @@ Resource Estimation
 
     ~Resources
     ~CompressedResourceOp
-    ~ResourceConstructor
+    ~ResourceOperator
 
 Errors
 ~~~~~~
@@ -46,7 +46,7 @@ Errors
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
-    ResourceConstructor,
+    ResourceOperator,
     ResourcesNotDefined,
 )
 
