@@ -206,7 +206,6 @@ class TestMeasurements:
         t1, t2 = 0.5, 1.0
         assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
 
-    
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
 

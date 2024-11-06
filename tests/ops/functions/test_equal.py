@@ -2143,7 +2143,6 @@ class TestSymbolicOpComparison:
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
 
-
 class TestProdComparisons:
     """Tests comparisons between Prod operators"""
 
@@ -2247,7 +2246,6 @@ class TestProdComparisons:
         p2 = qml.X(0) @ qml.GlobalPhase(np.pi)
 
         assert qml.equal(p1, p2)
-
 
 
 class TestSumComparisons:

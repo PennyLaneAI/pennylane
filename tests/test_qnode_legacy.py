@@ -1560,7 +1560,6 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
-    
     @pytest.mark.parametrize("grouping", [True, False])
     def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""

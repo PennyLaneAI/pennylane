@@ -631,7 +631,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.QuantumMonteCarlo(probs, **kwargs)
 
-    
     def test_qubitization(self):
         """Test the primitive bind call of Qubitization."""
 
@@ -662,7 +661,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Qubitization(**kwargs))
 
-    
     def test_qrom(self):
         """Test the primitive bind call of QROM."""
 
@@ -697,7 +695,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROM(**kwargs))
 
-    
     def test_phase_adder(self):
         """Test the primitive bind call of PhaseAdder."""
 
@@ -732,7 +729,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.PhaseAdder(**kwargs))
 
-    
     def test_adder(self):
         """Test the primitive bind call of Adder."""
 
@@ -767,7 +763,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Adder(**kwargs))
 
-    
     def test_multiplier(self):
         """Test the primitive bind call of Multiplier."""
 
@@ -802,7 +797,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Multiplier(**kwargs))
 
-    
     def test_out_multiplier(self):
         """Test the primitive bind call of OutMultiplier."""
 
@@ -838,7 +832,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutMultiplier(**kwargs))
 
-    
     def test_out_adder(self):
         """Test the primitive bind call of OutAdder."""
 
@@ -874,7 +867,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutAdder(**kwargs))
 
-    
     def test_mod_exp(self):
         """Test the primitive bind call of ModExp."""
 

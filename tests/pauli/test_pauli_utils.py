@@ -453,7 +453,6 @@ class TestGroupingUtils:
         with pytest.raises(TypeError):
             pauli_word_to_string(non_pauli_word)
 
-    
     @pytest.mark.parametrize(
         "pauli_string,wire_map,expected_pauli",
         [

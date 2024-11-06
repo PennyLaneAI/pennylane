@@ -327,7 +327,6 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    
     @pytest.mark.parametrize(
         "obs, expected_obs, diag_gates",
         [
@@ -580,7 +579,6 @@ class TestDiagonalizeTapeMeasurements:
                 QuantumScript([]), supported_base_obs=supported_base_obs, to_eigvals=True
             )
 
-    
     @pytest.mark.parametrize("to_eigvals", [True, False])
     @pytest.mark.parametrize("supported_base_obs", ([qml.Z], [qml.Z, qml.X], [qml.Z, qml.X, qml.Y]))
     @pytest.mark.parametrize("shots", [None, 2000, (4000, 5000, 6000)])

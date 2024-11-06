@@ -163,6 +163,7 @@ def use_legacy_and_new_opmath(request):
     with request.param(warn=False) as cm:
         yield cm
 
+
 #######################################################################
 
 

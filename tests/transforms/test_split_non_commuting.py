@@ -426,7 +426,6 @@ class TestUnits:
         expected = 0.52 if not qml.operation.active_new_opmath() else 1.12
         assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), expected)
 
-    
     @pytest.mark.parametrize(
         "H",
         [
@@ -884,7 +883,6 @@ class TestIntegration:
         assert dev.tracker.totals == {}
         assert qml.math.allclose(res, 4.0)
 
-    
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_no_obs_tape(self, grouping_strategy):
         """Tests tapes with only constant offsets (only measurements on Identity)"""
@@ -903,7 +901,6 @@ class TestIntegration:
         assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, 1.5)
 
-    
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_no_obs_tape_multi_measurement(self, grouping_strategy):
         """Tests tapes with only constant offsets (only measurements on Identity)"""

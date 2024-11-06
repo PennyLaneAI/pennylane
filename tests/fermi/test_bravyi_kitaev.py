@@ -428,7 +428,6 @@ FERMI_OPS_COMPLEX = [
 ]
 
 
-
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS + FERMI_OPS_COMPLEX)
 def test_bravyi_kitaev_fermi_word_ps(fermionic_op, n_qubits, result):
     """Test that the parity_transform function returns the correct qubit operator."""
@@ -441,7 +440,6 @@ def test_bravyi_kitaev_fermi_word_ps(fermionic_op, n_qubits, result):
     expected_op.simplify()
 
     assert qubit_op == expected_op
-
 
 
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS)

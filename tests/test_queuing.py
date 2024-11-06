@@ -197,7 +197,6 @@ class TestAnnotatedQueue:
             ]
         assert q.queue == ops
 
-    
     def test_append_prod_ops_overloaded(self):
         """Test that Prod ops created using `@`
         are successfully added to the queue, as well as the `Prod` object."""
