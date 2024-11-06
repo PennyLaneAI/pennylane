@@ -411,10 +411,10 @@ def _get_while_loop_qfunc_prim():
     while_loop_prim.multiple_results = True
 
     @while_loop_prim.def_impl
-    def _(*args, jaxpr_body_fn, jaxpr_cond_fn, body_consts, cond_consts, args_slice):
+    def _(*args, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice):
 
-        jaxpr_consts_body = args[body_consts]
-        jaxpr_consts_cond = args[cond_consts]
+        jaxpr_consts_body = args[body_slice]
+        jaxpr_consts_cond = args[cond_slice]
         init_state = args[args_slice]
 
         # If cond_fn(*init_state) is False, return the initial state
@@ -478,8 +478,8 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             *flat_args,
             jaxpr_body_fn=jaxpr_body_fn.jaxpr,
             jaxpr_cond_fn=jaxpr_cond_fn.jaxpr,
-            body_consts=body_consts,
-            cond_consts=cond_consts,
+            body_slice=body_consts,
+            cond_slice=cond_consts,
             args_slice=args_slice,
         )
         assert flat_body_fn.out_tree is not None, "Should be set when constructing the jaxpr"
@@ -638,7 +638,7 @@ def _get_for_loop_qfunc_prim():
         consts = args[consts_slice]
         init_state = args[args_slice]
 
-        # in case lower_bound >= upper_bound, return the initial state
+        # in case start >= stop, return the initial state
         fn_res = init_state
 
         for i in range(start, stop, step):
@@ -660,8 +660,8 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
     loop via the Python interpreter.
 
     Args:
-        lower_bound (int): starting value of the iteration index
-        upper_bound (int): (exclusive) upper bound of the iteration index
+        start (int): starting value of the iteration index
+        stop (int): (exclusive) upper bound of the iteration index
         step (int): increment applied to the iteration index at the end of each iteration
         body_fn (Callable): The function called within the for loop. Note that the loop body
             function must always have the iteration index as its first
@@ -670,9 +670,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
             returned from the function.
     """
 
-    def __init__(self, lower_bound, upper_bound, step, body_fn):
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
+    def __init__(self, start, stop, step, body_fn):
+        self.start = start
+        self.stop = stop
         self.step = step
         self.body_fn = body_fn
 
@@ -680,7 +680,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
 
-        for i in range(self.lower_bound, self.upper_bound, self.step):
+        for i in range(self.start, self.stop, self.step):
             fn_res = self.body_fn(i, *args)
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
 
@@ -700,8 +700,8 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
 
         flat_args, _ = jax.tree_util.tree_flatten(init_state)
         results = for_loop_prim.bind(
-            self.lower_bound,
-            self.upper_bound,
+            self.start,
+            self.stop,
             self.step,
             *jaxpr_body_fn.consts,
             *flat_args,
