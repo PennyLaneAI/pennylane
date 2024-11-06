@@ -153,8 +153,6 @@ def disable_opmath_if_requested(request):
 
         # Suppressing warnings so that Hamiltonians and Tensors constructed outside tests
         # don't raise deprecation warnings
-        filterwarnings("ignore", "qml.ops.Hamiltonian", qml.PennyLaneDeprecationWarning)
-        filterwarnings("ignore", "qml.operation.Tensor", qml.PennyLaneDeprecationWarning)
         filterwarnings("ignore", "qml.pauli.simplify", qml.PennyLaneDeprecationWarning)
         filterwarnings("ignore", "PauliSentence.hamiltonian", qml.PennyLaneDeprecationWarning)
         filterwarnings("ignore", "PauliWord.hamiltonian", qml.PennyLaneDeprecationWarning)

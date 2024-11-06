@@ -393,8 +393,7 @@ class TestObservableReturn:
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianReturn:
     """Tests for format="hamiltonian". This format always returns the generator
-    as a Hamiltonian (either a qml.ops.Hamiltonian or a qml.ops.LinearCombination
-    depending on whether new_opmath is enabled.)"""
+    as a qml.ops.LinearCombination."""
 
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""
