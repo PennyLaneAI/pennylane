@@ -28,8 +28,17 @@ Base Objects
 .. autosummary::
     :toctree: api
 
+    ~ResourceConstructor
     ~Resources
     ~CompressedResourceOp
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
 
 """
 
