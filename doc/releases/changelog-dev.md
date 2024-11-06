@@ -24,7 +24,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been removed. Instead, use the ``'aux_wire'``.
+* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been removed. Instead, use the ``'aux_wire'`` argument.
   [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
 
 <h3>Deprecations 👋</h3>
