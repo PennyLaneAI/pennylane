@@ -20,7 +20,7 @@ import pennylane.labs.resource_estimation as re
 # pylint: disable=no-self-use,too-many-ancestors
 
 
-class ResourceIdentity(qml.Identity, re.ResourceConstructor):
+class ResourceIdentity(qml.Identity, re.ResourceOperator):
     """Resource class for Identity"""
 
     @staticmethod
@@ -35,7 +35,7 @@ class ResourceIdentity(qml.Identity, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceConstructor):
+class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     """Resource class for GlobalPhase"""
 
     @staticmethod
