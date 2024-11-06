@@ -3,6 +3,17 @@
 # Release 0.40.0-dev (development release)
 
 <h3>New features since last release</h3>
+  
+* A `DeviceCapabilities` data class is defined to contain all capabilities of the device's execution interface (i.e. its implementation of `Device.execute`). A TOML file can be used to define the capabilities of a device, and it can be loaded into a `DeviceCapabilities` object.
+  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
+
+  ```pycon
+  >>> from pennylane.devices.capabilities import load_toml_file, parse_toml_document, DeviceCapabilities
+  >>> document = load_toml_file("my_device.toml")
+  >>> capabilities = parse_toml_document(document)
+  >>> isinstance(capabilities, DeviceCapabilities)
+  True
+  ```
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -11,6 +22,7 @@
   [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379) An `apply_operation` helper function featuring:
 
   * Two density matrix contraction methods using `einsum` and `tensordot`
+
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) A submodule 'initialize_state' featuring:
@@ -45,5 +57,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
 Yushao Chen,
-Andrija Paurevic,
+Andrija Paurevic
