@@ -24,7 +24,7 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .resource_constructor import ResourceConstructor
+from .resource_operator import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources
 
 # pylint: disable=dangerous-default-value,protected-access
@@ -194,7 +194,7 @@ def _counts_from_compressed_res_op(
     return
 
 
-def _temp_map_func(op: Operation) -> ResourceConstructor:
+def _temp_map_func(op: Operation) -> ResourceOperator:
     """Temp map function"""
     raise NotImplementedError
 
