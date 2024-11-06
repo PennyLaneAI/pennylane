@@ -259,12 +259,23 @@ class PlxprInterpreter:
         Args:
             eqn (jax.core.JaxprEqn)
 
+        See also :meth:`~.interpret_measurement`.
+
         """
         invals = (self.read(invar) for invar in eqn.invars)
-        mp = eqn.primitive.impl(*invals, **eqn.params)
+        with qml.QueuingManager.stop_recording():
+            mp = eqn.primitive.impl(*invals, **eqn.params)
         return self.interpret_measurement(mp)
 
     def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+        """Interpret a measurement process instance.
+
+        Args:
+            measurement (MeasurementProcess): a measurement instance.
+
+        See also :meth:`~.interpret_measurement_eqn`.
+
+        """
         data, struct = jax.tree_util.tree_flatten(measurement)
         return jax.tree_util.tree_unflatten(struct, data)
 
