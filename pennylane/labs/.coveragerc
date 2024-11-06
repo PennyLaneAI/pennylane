@@ -1,9 +1,8 @@
 # .coveragerc to control coverage.py
 [run]
-source = pennylane
-omit =
-    pennylane/devices/tests*
-    pennylane/labs/*
+source = pennylane/labs
+omit = pennylane/labs/tests/*
+disable_warnings = no-data-collected
 
 [report]
 # Regexes for lines to exclude from consideration
@@ -21,6 +20,7 @@ exclude_lines =
 
     # Don't complain if non-runnable code isn't run:
     if 0:
+    if False:
     if __name__ == .__main__.:
 
     # Ignore things that would have trivial tests
