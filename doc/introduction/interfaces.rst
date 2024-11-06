@@ -43,7 +43,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
     .. code-block:: python
 
         import warnings
-        warnings.filterwarnings("ignore", category=ComplexWarning)
+        warnings.filterwarnings("ignore", category=np.ComplexWarning)
 
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
