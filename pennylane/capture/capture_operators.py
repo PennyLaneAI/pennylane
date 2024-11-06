@@ -14,7 +14,7 @@
 """
 This submodule defines the abstract classes and primitives for capturing operators.
 """
-
+from collections.abc import Callable
 from functools import lru_cache
 from typing import Optional, Type
 
@@ -37,6 +37,20 @@ def _get_abstract_operator() -> type:
 
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
+
+        def __init__(self, abstract_eval: Callable, n_wires: Optional[int] = None):
+            self._abstract_eval = abstract_eval
+            self._n_wires = n_wires
+
+        def abstract_eval(self, num_device_wires: int) -> tuple[tuple, type]:
+            """Calculate the shape and dtype for an evaluation with specified number of device
+            wires and shots.
+
+            """
+            return self._abstract_eval(
+                n_wires=self._n_wires,
+                num_device_wires=num_device_wires,
+            )
 
         # pylint: disable=missing-function-docstring
         def at_least_vspace(self):
@@ -122,6 +136,12 @@ def create_operator_primitive(
 
     @primitive.def_abstract_eval
     def _(*_, **__):
-        return abstract_type()
+        abstract_eval = operator_type._abstract_eval  # pylint: disable=protected-access
+
+        roba = abstract_type(abstract_eval, n_wires=None)
+
+        print(f"roba from create_operator_primitive: {roba}")
+
+        return roba
 
     return primitive

@@ -34,6 +34,15 @@ except ImportError:
     has_jax = False
 
 
+def extract_abstract_operators(jaxpr):
+    abstract_operators = []
+    for eqn in jaxpr.eqns:
+        # Check if the name of the primitive contains "AbstractOperator"
+        if "AbstractOperator" in eqn.primitive.name:
+            abstract_operators.append(eqn)
+    return abstract_operators
+
+
 def _is_scalar_tensor(arg) -> bool:
     """Check if an argument is a scalar tensor-like object or a numeric scalar."""
 
@@ -123,6 +132,9 @@ def _get_qnode_prim():
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
+
+        print(f"qfunc_jaxpr: {qfunc_jaxpr}")
+        print(f"qfunc_jaxpr.eqns[0]: {qfunc_jaxpr.eqns[0]}")
 
         mps = qfunc_jaxpr.outvars
 
