@@ -96,7 +96,7 @@ class ResourceOperator(ABC):
 
 
 class ResourceOperatorNotImplemented(Exception):
-    """Exception to be raised when a ResourceConstructor has not been defined for a PennyLane Operator"""
+    """Exception to be raised when a ResourceOperator has not been defined for a PennyLane Operator"""
 
 
 class ResourcesNotDefined(Exception):
