@@ -29,19 +29,6 @@ Execution functions and utilities
     ~workflow.get_transform_program
     ~workflow.get_best_diff_method
 
-Supported interfaces
-~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~workflow.interfaces.autograd
-    ~workflow.interfaces.jax
-    ~workflow.interfaces.jax_jit
-    ~workflow.interfaces.tensorflow
-    ~workflow.interfaces.tensorflow_autograph
-    ~workflow.interfaces.torch
-
 Jacobian Product Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
