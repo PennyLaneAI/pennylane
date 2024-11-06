@@ -167,7 +167,7 @@ def draw(
         .. code-block:: python
 
             from functools import partial
-            from pennylane import numpy as pnp
+            from pennylane import numpy as np
 
             @partial(qml.gradients.param_shift, shifts=[(0.1,)])
             @qml.qnode(qml.device('default.qubit', wires=1))
@@ -175,7 +175,7 @@ def draw(
                 qml.RX(x, wires=0)
                 return qml.expval(qml.Z(0))
 
-        >>> print(qml.draw(transformed_circuit)(pnp.array(1.0, requires_grad=True)))
+        >>> print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
         0: ──RX(1.10)─┤  <Z>
         0: ──RX(0.90)─┤  <Z>
 

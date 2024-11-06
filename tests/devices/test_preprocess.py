@@ -254,17 +254,7 @@ class TestValidateObservables:
         with pytest.raises(qml.DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_invalid_tensor_observable_legacy(self):
-        """Test that expand_fn throws an error when a tensor includes invalid obserables"""
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.PauliY(1)],
-            measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
-        )
-        with pytest.raises(qml.DeviceError, match="not supported on device"):
-            validate_observables(tape, lambda obj: obj.name == "PauliX")
-
-    @pytest.mark.usefixtures("use_legacy_opmath")  # only required for legacy observables
+    @pytest.mark.usefixtures("legacy_opmath_only")  # only required for legacy observables
     def test_valid_tensor_observable_legacy_opmath(self):
         """Test that a valid tensor ovservable passes without error."""
         tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])

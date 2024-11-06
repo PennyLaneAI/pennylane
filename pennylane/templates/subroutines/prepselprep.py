@@ -24,6 +24,7 @@ from pennylane.operation import Operation
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
     coeffs, ops = lcu.terms()
+    coeffs = qml.math.stack(coeffs)
     angles = qml.math.angle(coeffs)
     new_ops = []
 

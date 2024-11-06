@@ -121,3 +121,8 @@ class VnEntropyMP(StateMeasurement):
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
         )
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        return qml.math.vn_entropy(
+            density_matrix, indices=self.wires, c_dtype=density_matrix.dtype, base=self.log_base
+        )

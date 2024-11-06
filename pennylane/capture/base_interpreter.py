@@ -43,8 +43,7 @@ def jaxpr_to_jaxpr(
 ) -> "jax.core.Jaxpr":
     """A convenience utility for converting jaxpr to a new jaxpr via an interpreter."""
 
-    def f(*inner_args):
-        return interpreter.eval(jaxpr, consts, *inner_args)
+    f = partial(interpreter.eval, jaxpr, consts)
 
     return jax.make_jaxpr(f)(*args).jaxpr
 

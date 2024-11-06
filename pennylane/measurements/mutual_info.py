@@ -167,6 +167,15 @@ class MutualInfoMP(StateMeasurement):
             base=self.log_base,
         )
 
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        return qml.math.mutual_info(
+            density_matrix,
+            indices0=list(self._wires[0]),
+            indices1=list(self._wires[1]),
+            c_dtype=density_matrix.dtype,
+            base=self.log_base,
+        )
+
 
 if MutualInfoMP._wires_primitive is not None:
 

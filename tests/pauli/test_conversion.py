@@ -46,7 +46,7 @@ test_diff_matrix1 = [[[-2, -2 + 1j]], [[-2, -2 + 1j], [-1, -1j]]]
 test_diff_matrix2 = [[[-2, -2 + 1j], [-2 - 1j, 0]], [[2.5, -0.5], [-0.5, 2.5]]]
 
 with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
+    warnings.filterwarnings("ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning)
     hamiltonian_ps = (
         (
             qml.ops.Hamiltonian([], []),
@@ -132,7 +132,7 @@ class TestDecomposition:
         for tensor in tensors:
             assert all(isinstance(o, Identity) for o in tensor.obs)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types_legacy_opmath(self, hamiltonian, hide_identity):
@@ -142,7 +142,7 @@ class TestDecomposition:
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -275,7 +275,7 @@ class TestPhasedDecomposition:
         for tensor in tensors:
             assert all(isinstance(o, Identity) for o in tensor.obs)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types_legacy_opmath(self, hamiltonian, hide_identity):
@@ -288,7 +288,7 @@ class TestPhasedDecomposition:
         ).terms()
         assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
 
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -339,7 +339,7 @@ class TestPhasedDecomposition:
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
     # pylint: disable = consider-using-generator
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
     def test_observable_types_general_legacy_opmath(self, matrix, hide_identity):
@@ -368,7 +368,7 @@ class TestPhasedDecomposition:
             assert all(len(tensor.obs) == num_qubits for tensor in tensors)
 
     # pylint: disable = consider-using-generator
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
     def test_observable_types_general(self, matrix, hide_identity):
@@ -553,6 +553,9 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match="Op must be a linear combination of"):
             pauli_sentence(op)
 
+    @pytest.mark.filterwarnings(
+        "ignore:qml.ops.Hamiltonian uses:pennylane.PennyLaneDeprecationWarning"
+    )
     @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", hamiltonian_ps)
     def test_hamiltonian(self, op, ps):

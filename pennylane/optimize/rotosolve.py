@@ -235,13 +235,15 @@ class RotosolveOptimizer:
 
     .. code-block :: python
 
+        from pennylane import numpy as np
+
         init_param = (
-            pnp.array([0.3, 0.2, 0.67], requires_grad=True),
-            pnp.array(1.1, requires_grad=True),
-            pnp.array([-0.2, 0.1, -2.5], requires_grad=True),
+            np.array([0.3, 0.2, 0.67], requires_grad=True),
+            np.array(1.1, requires_grad=True),
+            np.array([-0.2, 0.1, -2.5], requires_grad=True),
         )
-        rot_weights = pnp.ones(3)
-        crot_weights = pnp.ones(3)
+        rot_weights = np.ones(3)
+        crot_weights = np.ones(3)
 
         nums_frequency = {
             "rot_param": {(0,): 1, (1,): 1, (2,): 1},
@@ -271,7 +273,7 @@ class RotosolveOptimizer:
     ...         crot_weights=crot_weights,
     ...     )
     ...     print(f"Cost before step: {cost}")
-    ...     print(f"Minimization substeps: {pnp.round(sub_cost, 6)}")
+    ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
     ...     cost_rotosolve.extend(sub_cost)
     Cost before step: 0.04200821039253547
     Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
@@ -290,8 +292,8 @@ class RotosolveOptimizer:
     but their concrete values. For the example QNode above, this happens if the
     weights are no longer one:
 
-    >>> rot_weights = pnp.array([0.4, 0.8, 1.2], requires_grad=False)
-    >>> crot_weights = pnp.array([0.5, 1.0, 1.5], requires_grad=False)
+    >>> rot_weights = np.array([0.4, 0.8, 1.2], requires_grad=False)
+    >>> crot_weights = np.array([0.5, 1.0, 1.5], requires_grad=False)
     >>> spectrum_fn = qml.fourier.qnode_spectrum(cost_function)
     >>> spectra = spectrum_fn(*param, rot_weights=rot_weights, crot_weights=crot_weights)
     >>> spectra["rot_param"]
@@ -313,7 +315,7 @@ class RotosolveOptimizer:
     ...         crot_weights = crot_weights,
     ...     )
     ...     print(f"Cost before step: {cost}")
-    ...     print(f"Minimization substeps: {pnp.round(sub_cost, 6)}")
+    ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
     Cost before step: 0.09299359486191039
     Minimization substeps: [-0.268008 -0.713209 -0.24993  -0.871989 -0.907672 -0.907892 -0.940474]
     Cost before step: -0.9404742138557066

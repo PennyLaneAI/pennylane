@@ -1508,10 +1508,11 @@ class QubitDevice(Device):
 
         **Example**
 
+            >>> from pennylane import numpy as np
             >>> num_wires = 2
             >>> dev = qml.device("default.mixed", wires=num_wires)
             >>> mp = qml.counts()
-            >>> samples = pnp.array([[0, 0], [0, 0], [1, 0]])
+            >>> samples = np.array([[0, 0], [0, 0], [1, 0]])
             >>> dev._samples_to_counts(samples, mp, num_wires)
             {'00': 2, '10': 1}
             >>> mp = qml.counts(all_outcomes=True)

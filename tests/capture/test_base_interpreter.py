@@ -63,16 +63,10 @@ def test_env_and_initialized():
 
 def test_primitive_registrations():
     """Test that child primitive registrations dict's are not copied and do
-    not effect PlxprInterpreeter."""
+    not affect PlxprInterpreter."""
 
-    class SimplifyInterpreterLocal(PlxprInterpreter):
-
-        def interpret_operation(self, op):
-            new_op = op.simplify()
-            if new_op is op:
-                # if new op isn't queued, need to requeue op.
-                new_op = new_op._unflatten(*op._flatten())
-            return new_op
+    class SimplifyInterpreterLocal(SimplifyInterpreter):
+        pass
 
     assert (
         SimplifyInterpreterLocal._primitive_registrations
@@ -81,7 +75,6 @@ def test_primitive_registrations():
 
     @SimplifyInterpreterLocal.register_primitive(qml.X._primitive)
     def _(self, *invals, **params):  # pylint: disable=unused-argument
-        print("in custom interpreter")
         return qml.Z(*invals)
 
     assert qml.X._primitive in SimplifyInterpreterLocal._primitive_registrations
@@ -97,8 +90,8 @@ def test_primitive_registrations():
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, [])
 
-    qml.assert_equal(q.queue[0], qml.Z(0))  # turned into a Y
-    qml.assert_equal(q.queue[1], qml.Y(5))  # mapped wire
+    qml.assert_equal(q.queue[0], qml.Z(0))  # turned into a Z
+    qml.assert_equal(q.queue[1], qml.Y(5))
 
 
 def test_default_operator_handling():
@@ -182,7 +175,7 @@ def test_overriding_measurements():
 
 
 def test_setup_method():
-    """Test that the setup method can be used to initialized variables each call."""
+    """Test that the setup method can be used to initialize variables at each call."""
 
     class CollectOps(PlxprInterpreter):
 
@@ -215,7 +208,7 @@ def test_setup_method():
 
 
 def test_cleanup_method():
-    """Test that the cleanup method."""
+    """Test that the cleanup method can be used to reset variables after evaluation."""
 
     class CleanupTester(PlxprInterpreter):
 
@@ -278,7 +271,7 @@ class TestHigherOrderPrimitiveRegistrations:
             qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-1.5), 0))
 
     def test_ctrl_transform(self):
-        """Test the higher order adjoint transform."""
+        """Test the higher order ctrl transform."""
 
         @SimplifyInterpreter()
         def f(x, control):

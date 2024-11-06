@@ -612,7 +612,7 @@ class TestSampleMeasurement:
 
 
 class TestStateMeasurement:
-    """Tests for the SampleMeasurement class."""
+    """Tests for the StateMeasurement class."""
 
     def test_custom_state_measurement(self):
         """Test the execution of a custom state measurement."""
@@ -620,6 +620,13 @@ class TestStateMeasurement:
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
+
+            @property
+            def return_type(self):
+                return State
+
+            def shape(self):
+                return ()
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -639,6 +646,9 @@ class TestStateMeasurement:
             @property
             def return_type(self):
                 return State
+
+            def shape(self):
+                return ()
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
