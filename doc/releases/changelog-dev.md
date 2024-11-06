@@ -28,6 +28,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
+  ``qml.shadow_expval`` measurement process.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
