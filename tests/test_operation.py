@@ -1705,7 +1705,7 @@ pairs_of_ops = [
 ]
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 class TestNewOpMath:
     """Tests dunder operations with new operator arithmetic enabled."""
 
@@ -1830,7 +1830,7 @@ class TestNewOpMath:
 class TestHamiltonianLinearCombinationAlias:
     """Unit tests for using qml.Hamiltonian as an alias for LinearCombination"""
 
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     def test_hamiltonian_linear_combination_alias_enabled(self):
         """Test that qml.Hamiltonian is an alias for LinearCombination with new operator
         arithmetic enabled"""
@@ -1891,13 +1891,13 @@ def test_op_arithmetic_toggle():
             assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 def test_op_arithmetic_default():
     """Test that new op math is enabled by default"""
     assert qml.operation.active_new_opmath()
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 def test_disable_enable_new_opmath():
     """Test that disabling and re-enabling new opmath works and raises the correct warning"""
     with pytest.warns(
@@ -1989,7 +1989,7 @@ def test_custom_operator_is_jax_pytree():
     qml.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 def test_use_new_opmath_fixture():
     """Test that the fixture for using new opmath in a context works as expected"""
     assert qml.operation.active_new_opmath()
@@ -2035,7 +2035,7 @@ with warnings.catch_warnings():
     ]
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 @pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONIAN)
 def test_convert_to_hamiltonian(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
@@ -2067,7 +2067,7 @@ def test_convert_to_hamiltonian_error(coeffs, obs):
         convert_to_legacy_H(qml.dot(coeffs, obs))
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 @pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
 def test_convert_to_H():
     operator = (

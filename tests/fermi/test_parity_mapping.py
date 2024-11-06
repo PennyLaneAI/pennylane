@@ -438,7 +438,7 @@ FERMI_OPS_COMPLEX = [
 ]
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS + FERMI_OPS_COMPLEX)
 def test_parity_transform_fermi_word_ps(fermionic_op, n_qubits, result):
     """Test that the parity_transform function returns the correct qubit operator."""
@@ -453,7 +453,7 @@ def test_parity_transform_fermi_word_ps(fermionic_op, n_qubits, result):
     assert qubit_op == expected_op
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS)
 def test_parity_transform_fermi_word_operation(fermionic_op, n_qubits, result):
     wires = fermionic_op.wires or [0]

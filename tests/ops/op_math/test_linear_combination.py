@@ -541,7 +541,7 @@ def circuit2(param):
 dev = qml.device("default.qubit", wires=2)
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 class TestLinearCombination:
     """Test the LinearCombination class"""
 

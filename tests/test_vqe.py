@@ -981,7 +981,7 @@ class TestNewVQE:
     @pytest.mark.xfail(
         reason="diagonalizing gates defined but not used, should not be included in specs"
     )
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     def test_specs(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)

@@ -482,7 +482,7 @@ class TestGroupObservables:
         assert groups == [observables]
         assert coeffs == [[1, 2]]
 
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     def test_observables_on_no_wires_coeffs(self):
         """Test that observables on no wires are stuck in the first group and
         coefficients are tracked when provided."""

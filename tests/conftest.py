@@ -163,13 +163,6 @@ def use_legacy_and_new_opmath(request):
     with request.param(warn=False) as cm:
         yield cm
 
-
-@pytest.fixture
-def new_opmath_only():
-    if not qml.operation.active_new_opmath():
-        pytest.skip("This feature only works with new opmath enabled")
-
-
 #######################################################################
 
 

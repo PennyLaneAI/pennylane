@@ -349,7 +349,7 @@ FERMI_WORDS_AND_OPS_EXTENDED = [
 ]
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 @pytest.mark.parametrize("fermionic_op, result", FERMI_WORDS_AND_OPS + FERMI_WORDS_AND_OPS_EXTENDED)
 def test_jordan_wigner_fermi_word_ps(fermionic_op, result):
     """Test that the jordan_wigner function returns the correct qubit operator."""
@@ -364,7 +364,7 @@ def test_jordan_wigner_fermi_word_ps(fermionic_op, result):
     assert qubit_op == expected_op
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 # TODO: if qml.equal is extended to compare layers of nested ops, also test with FERMI_WORDS_AND_OPS_EXTENDED
 @pytest.mark.parametrize("fermionic_op, result", FERMI_WORDS_AND_OPS)
 def test_jordan_wigner_fermi_word_operation(fermionic_op, result):

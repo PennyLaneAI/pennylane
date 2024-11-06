@@ -517,7 +517,7 @@ class TestMeasureSamples:
         [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
         assert qml.math.allclose(result, 1.0)
 
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     def test_identity_on_no_wires_with_other_observables(self):
         """Test that measuring an identity on no wires can be used in conjunction with other measurements."""
 

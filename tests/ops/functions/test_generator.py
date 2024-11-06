@@ -341,14 +341,14 @@ class TestObservableReturn:
     """Tests for format="observable". This format preserves the initial generator
     encoded in the operator."""
 
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="observable")(0.5, wires=0)
         assert gen.name == "SProd"
         qml.assert_equal(gen, ObservableOp(0.5, wires=0).generator())
 
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
         gen = qml.generator(TensorOp, format="observable")(0.5, wires=[0, 1])

@@ -124,7 +124,7 @@ class TestMultiQubitMeasurements:
 
         _ = qml.QNode(circuit, dev)()
 
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     def test_hamiltonian(self, method):
         """Test that the device can compute the expval of a multi-qubit Hamiltonian."""
 

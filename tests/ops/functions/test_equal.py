@@ -2143,7 +2143,7 @@ class TestSymbolicOpComparison:
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 class TestProdComparisons:
     """Tests comparisons between Prod operators"""
 
@@ -2249,7 +2249,7 @@ class TestProdComparisons:
         assert qml.equal(p1, p2)
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+
 class TestSumComparisons:
     """Tests comparisons between Sum operators"""
 

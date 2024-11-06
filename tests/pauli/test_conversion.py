@@ -130,7 +130,7 @@ class TestDecomposition:
         for tensor in tensors:
             assert all(isinstance(o, Identity) for o in tensor.obs)
 
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -263,7 +263,7 @@ class TestPhasedDecomposition:
         for tensor in tensors:
             assert all(isinstance(o, Identity) for o in tensor.obs)
 
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -314,7 +314,7 @@ class TestPhasedDecomposition:
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
     # pylint: disable = consider-using-generator
-    @pytest.mark.usefixtures("new_opmath_only")
+    
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
     def test_observable_types_general(self, matrix, hide_identity):
