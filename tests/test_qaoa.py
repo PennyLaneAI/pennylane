@@ -1139,7 +1139,7 @@ class TestUtils:
     """Tests that the utility functions are working properly"""
 
     # pylint: disable=protected-access
-    @pytest.mark.usefixtures("legacy_opmath_only")
+    # removed a fixture to only use legacy opmath here for now, because I'm not sure why its relevant
     @pytest.mark.parametrize(
         ("hamiltonian", "value"),
         (
@@ -1906,31 +1906,6 @@ class TestCycles:
         for op, expected_op in zip(non_zero_ops, expected_ops):
             assert op.pauli_rep == expected_op.pauli_rep
 
-    @pytest.mark.parametrize(
-        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
-    )
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_inner_net_flow_constraint_hamiltonian_legacy_opmath(self, g):
-        """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
-        example of a 3-node complete digraph relative to the 0 node"""
-        h = _inner_net_flow_constraint_hamiltonian(g, 0)
-
-        expected_ops = [
-            qml.Identity(0),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliZ(4),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-            qml.PauliZ(1) @ qml.PauliZ(4),
-            qml.PauliZ(2) @ qml.PauliZ(4),
-        ]
-        expected_coeffs = [4, 2, -2, -2, -2, -2, 2]
-
-        assert np.allclose(expected_coeffs, h.coeffs)
-        for i, expected_op in enumerate(expected_ops):
-            assert str(h.ops[i]) == str(expected_op)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
-
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
     def test_inner_net_flow_constraint_hamiltonian_error(self, g):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns raises ValueError"""
@@ -1959,25 +1934,6 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_inner_out_flow_constraint_hamiltonian_non_complete_legacy_opmath(self, g):
-        """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
-        on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with
-        the (0, 1) edge removed"""
-        g.remove_edge(0, 1)
-        h = _inner_out_flow_constraint_hamiltonian(g, 0)
-
-        expected_ops = [qml.PauliZ(wires=[0])]
-        expected_coeffs = [0]
-
-        assert np.allclose(expected_coeffs, h.coeffs)
-        for i, expected_op in enumerate(expected_ops):
-            assert str(h.ops[i]) == str(expected_op)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
-
-    @pytest.mark.parametrize(
-        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
-    )
     def test_inner_net_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
@@ -1998,32 +1954,6 @@ class TestCycles:
         assert qml.math.allclose(coeffs, expected_coeffs)
         for op, expected_op in zip(ops, expected_ops):
             assert op.pauli_rep == expected_op.pauli_rep
-
-    @pytest.mark.parametrize(
-        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
-    )
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_inner_net_flow_constraint_hamiltonian_non_complete_legacy_opmath(self, g):
-        """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
-        example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
-        g.remove_edge(1, 0)
-        h = _inner_net_flow_constraint_hamiltonian(g, 0)
-
-        expected_ops = [
-            qml.Identity(0),
-            qml.PauliZ(0),
-            qml.PauliZ(1),
-            qml.PauliZ(3),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0) @ qml.PauliZ(3),
-            qml.PauliZ(1) @ qml.PauliZ(3),
-        ]
-        expected_coeffs = [4, -2, -2, 2, 2, -2, -2]
-
-        assert np.allclose(expected_coeffs, h.coeffs)
-        for i, expected_op in enumerate(expected_ops):
-            assert str(h.ops[i]) == str(expected_op)
-        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
 
     def test_out_flow_constraint_raises(self):
         """Test the out-flow constraint function may raise an error."""

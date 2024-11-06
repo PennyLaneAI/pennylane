@@ -164,30 +164,6 @@ class TestInheritanceMixins:
         # check the dir
         assert "grad_recipe" not in dir(ob)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_observable_legacy_opmath(self, power_method):
-        """Test that when the base is an Observable, Pow will also inherit from Observable."""
-
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
-
-        base = CustomObs(wires=0)
-        ob: Pow = power_method(base=base, z=-1.2)
-
-        assert isinstance(ob, Pow)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        assert isinstance(ob, qml.operation.Observable)
-        assert not isinstance(ob, PowOperation)
-
-        # Check some basic observable functionality
-        assert ob.compare(ob)
-        assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
-
-        # check the dir
-        assert "grad_recipe" not in dir(ob)
-
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestInitialization:
@@ -256,26 +232,6 @@ class TestInitialization:
         assert qml.math.allclose(params, op.data[0])
 
         assert op.wires == qml.wires.Wires((0, 1))
-        assert op.num_wires == 2
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_base(self, power_method):
-        """Test pow initialization for a hamiltonian."""
-        base = qml.Hamiltonian([2.0, 1.0], [qml.PauliX(0) @ qml.PauliY(0), qml.PauliZ("b")])
-
-        op: Pow = power_method(base=base, z=3.4)
-
-        assert op.base is base
-        assert op.z == 3.4
-        assert op.hyperparameters["base"] is base
-        assert op.hyperparameters["z"] == 3.4
-        assert op.name == "Hamiltonian**3.4"
-
-        assert op.num_params == 2
-        assert qml.math.allclose(op.parameters, [2.0, 1.0])
-        assert qml.math.allclose(op.data, [2.0, 1.0])
-
-        assert op.wires == qml.wires.Wires([0, "b"])
         assert op.num_wires == 2
 
 
@@ -422,12 +378,6 @@ class TestProperties:
         """Test that the queue category `"_ops"` carries over."""
         op: Pow = power_method(base=qml.PauliX(0), z=3.5)
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_queue_category_None(self, power_method):
-        """Test that the queue category `None` for some observables carries over."""
-        op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
-        assert op._queue_category is None  # pylint: disable=protected-access
 
     def test_batching_properties(self, power_method):
         """Test the batching properties and methods."""

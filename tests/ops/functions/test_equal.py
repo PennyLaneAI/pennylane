@@ -1464,7 +1464,9 @@ class TestMeasurementsEqual:
         assert not qml.equal(m1, m2)
 
 
-@pytest.mark.usefixtures("legacy_opmath_only")  # TODO update qml.equal with new opmath
+# seems to only have been marked as legacy opmath because we didn't get
+# qml.equal fully up to date - leaving the existing to-do below. Should we fix this?
+# TODO update qml.equal with new opmath
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
 

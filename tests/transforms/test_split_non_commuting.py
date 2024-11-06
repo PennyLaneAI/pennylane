@@ -446,20 +446,6 @@ class TestUnits:
         for actual_tape, expected_tape in zip(tapes, expected_tapes):
             qml.assert_equal(actual_tape, expected_tape)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_single_hamiltonian_non_pauli_words_legacy(self):
-        """Tests that a single Hamiltonian with non-pauli words is split correctly"""
-
-        H = qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Hadamard(1) @ qml.Z(0), qml.Y(1)])
-        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
-        tapes, _ = split_non_commuting(tape)
-        expected_tapes = [
-            qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(1))], shots=100),
-            qml.tape.QuantumScript([], [qml.expval(qml.Hadamard(1) @ qml.Z(0))], shots=100),
-        ]
-        for actual_tape, expected_tape in zip(tapes, expected_tapes):
-            qml.assert_equal(actual_tape, expected_tape)
-
     @pytest.mark.parametrize(
         "grouping_strategy, expected_tapes, processing_fn, mock_results",
         [

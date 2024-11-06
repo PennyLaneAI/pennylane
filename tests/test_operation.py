@@ -15,14 +15,11 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import copy
-import itertools
 import warnings
-from functools import reduce
 
 import numpy as np
 import pytest
 from gate_data import CNOT, I, Toffoli, X
-from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -1998,12 +1995,6 @@ def test_use_new_opmath_fixture():
     assert qml.operation.active_new_opmath()
 
 
-@pytest.mark.usefixtures("legacy_opmath_only")
-def test_legacy_opmath_only_fixture():
-    """Test that the fixture for using new opmath in a context works as expected"""
-    assert not qml.operation.active_new_opmath()
-
-
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning)
 
@@ -2058,18 +2049,6 @@ def test_convert_to_hamiltonian(coeffs, obs):
 
     assert isinstance(converted_opmath, qml.ops.Hamiltonian)
     qml.assert_equal(converted_opmath, hamiltonian_instance)
-
-
-@pytest.mark.usefixtures("legacy_opmath_only")
-@pytest.mark.parametrize(
-    "coeffs, obs", [([1], [qml.Hadamard(1)]), ([0.5, 0.5], [qml.Identity(1), qml.Identity(1)])]
-)
-def test_convert_to_hamiltonian_trivial(coeffs, obs):
-    """Test that non-arithmetic operator after simplification is returned as an Observable"""
-
-    opmath_instance = qml.dot(coeffs, obs)
-    converted_opmath = convert_to_legacy_H(opmath_instance)
-    assert isinstance(converted_opmath, qml.operation.Observable)
 
 
 @pytest.mark.parametrize(

@@ -432,16 +432,6 @@ class TestDecomposition:
         ):
             op.decomposition()
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_nontensor_tensor_no_decomposition(self):
-        """Checks that accessing the decomposition throws an error if the base is a Tensor
-        object that is not a mathematical tensor"""
-        base_op = qml.PauliX(0) @ qml.PauliZ(0)
-        op = Exp(base_op, 1j)
-        assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
-            _ = op.decomposition()
-
     @pytest.mark.parametrize(
         "base, base_string",
         (

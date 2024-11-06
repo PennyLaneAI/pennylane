@@ -370,47 +370,6 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_diagonalize_all_measurements_hamiltonian(self):
-        """Test that the diagonalize_measurements transform diagonalizes a Hamiltonian with a pauli_rep
-        when diagonalizing all measurements"""
-        obs = qml.ops.Hamiltonian([1, 2], [X(1), Y(2)])
-        expected_obs = qml.ops.Hamiltonian([1, 2], [Z(1), Z(2)])
-
-        assert obs.pauli_rep is not None
-
-        measurements = [qml.expval(obs)]
-
-        tape = QuantumScript([], measurements=measurements)
-        tapes, fn = diagonalize_measurements(tape)
-        new_tape = tapes[0]
-
-        assert new_tape.measurements == [qml.expval(expected_obs)]
-        assert new_tape.operations == diagonalize_qwc_pauli_words(obs.ops)[0]
-
-        assert fn == null_postprocessing
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_diagonalize_all_measurements_tensor(self):
-        """Test that the diagonalize_measurements transform diagonalizes a Tensor with a pauli_rep
-        when diagonalizing all measurements"""
-
-        obs = qml.operation.Tensor(X(1), Y(2))
-        expected_obs = qml.operation.Tensor(Z(1), Z(2))
-
-        assert obs.pauli_rep is not None
-
-        measurements = [qml.expval(obs)]
-
-        tape = QuantumScript([], measurements=measurements)
-        tapes, fn = diagonalize_measurements(tape)
-        new_tape = tapes[0]
-
-        assert new_tape.measurements == [qml.expval(expected_obs)]
-        assert new_tape.operations == diagonalize_qwc_pauli_words(obs.obs)[0]
-
-        assert fn == null_postprocessing
-
     def test_diagonalize_subset_of_measurements(self):
         """Test that the diagonalize_measurements transform diagonalizes the measurements on the tape
         when diagonalizing a subset of the measurements"""
