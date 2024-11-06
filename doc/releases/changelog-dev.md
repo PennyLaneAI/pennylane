@@ -35,7 +35,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* ``QNode.gradient_fn`` is removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
+* ``QNode.gradient_fn`` has been removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
   process the diff method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
 
