@@ -171,9 +171,7 @@ del globals()["Hamiltonian"]
 
 def __getattr__(name):
     if name == "Hamiltonian":
-        if pennylane.operation.active_new_opmath():
-            return pennylane.ops.LinearCombination
-        return pennylane.ops.Hamiltonian
+        return pennylane.ops.LinearCombination
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
