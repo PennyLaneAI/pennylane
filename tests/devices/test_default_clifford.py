@@ -256,7 +256,6 @@ def test_meas_samples(circuit, shots):
     assert qml.math.shape(samples[2]) == (shots,)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("tableau", [True, False])
 @pytest.mark.parametrize("shots", [None, 50000])
 @pytest.mark.parametrize(

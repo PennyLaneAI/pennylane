@@ -459,7 +459,6 @@ class TestPauliSentence:
         (qml.Identity(wires=0), PauliSentence({PauliWord({}): 1})),
     )
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", pauli_op_ps)
     def test_pauli_ops(self, op, ps):
         """Test that PL Pauli ops are properly cast to a PauliSentence."""
@@ -481,13 +480,11 @@ class TestPauliSentence:
         (qml.PauliX(wires=0) @ qml.PauliY(wires=0), PauliSentence({PauliWord({0: "Z"}): 1j})),
     )
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", tensor_ps)
     def test_tensor(self, op, ps):
         """Test that Tensors of Pauli ops are properly cast to a PauliSentence."""
         assert pauli_sentence(op) == ps
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_tensor_raises_error(self):
         """Test that Tensors of non-Pauli ops raise error when cast to a PauliSentence."""
         h_mat = np.array([[1, 1], [1, -1]])
@@ -497,7 +494,6 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match="Op must be a linear combination of"):
             pauli_sentence(op)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", hamiltonian_ps)
     def test_hamiltonian(self, op, ps):
         """Test that a Hamiltonian is properly cast to a PauliSentence."""

@@ -161,7 +161,6 @@ class TestOptimize:
         assert np.allclose(step1, expected_step)
         assert np.allclose(step2, expected_step)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_step_and_cost_autograd_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned via the
         step_and_cost method for the QNG optimizer when the generator

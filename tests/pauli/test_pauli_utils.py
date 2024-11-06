@@ -433,7 +433,6 @@ class TestGroupingUtils:
 
     PAULI_WORD_STRINGS = _make_pauli_word_strings()
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("pauli_word,wire_map,expected_string", PAULI_WORD_STRINGS)
     def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
         """Test that Pauli words are correctly converted into strings."""

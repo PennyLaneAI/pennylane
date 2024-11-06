@@ -654,7 +654,6 @@ class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables"""
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables"""
 
@@ -674,7 +673,6 @@ class TestHamiltonianSamples:
         assert isinstance(res, np.float64)
         assert np.allclose(res, expected, atol=APPROX_ATOL)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval_shot_vector(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector"""
 

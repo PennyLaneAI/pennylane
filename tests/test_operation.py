@@ -927,7 +927,6 @@ class TestOperationConstruction:
         assert op.is_hermitian is False
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestObservableTensorLegacySupport:
     """Test legacy support of observables with new opmath types"""
 
@@ -1874,7 +1873,6 @@ def test_symmetric_matrix_early_return(op, mocker):
     assert np.allclose(actual, manually_expanded)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_op_arithmetic_toggle():
     """Tests toggling op arithmetic on and off"""
 
@@ -2124,7 +2122,6 @@ def test_get_attr():
         lambda: 1.2 * qml.PauliX(0),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_convert_to_opmath_queueing(make_op):
     """Tests that converting to opmath dequeues the original operation"""
 

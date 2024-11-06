@@ -826,7 +826,6 @@ class TestMatrix:
 
         assert qml.math.allclose(op_mat, compare_mat)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pow_hamiltonian(self):
         """Test that a hamiltonian object can be exponentiated."""
         U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0)])

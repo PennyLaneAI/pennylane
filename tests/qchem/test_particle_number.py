@@ -23,7 +23,6 @@ from pennylane import qchem
 from pennylane.operation import active_new_opmath
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("orbitals", "coeffs_ref", "ops_ref"),
     [

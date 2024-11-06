@@ -274,7 +274,6 @@ def test_linear_combination(H, new_coeffs, expected_H):
     assert new_H is not H
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_hamiltonian_grouping_indices():
     """Test that bind_new_parameters with a Hamiltonian preserves the grouping indices."""
     H = qml.Hamiltonian([1.0, 2.0], [qml.PauliX(0), qml.PauliX(1)])

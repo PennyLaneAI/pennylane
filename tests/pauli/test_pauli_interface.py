@@ -59,7 +59,6 @@ ops = (
 )
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("op", ops)
 def test_pauli_word_prefactor_raises_error(op):
     """Test that an error is raised when the operator provided is not a valid PauliWord."""

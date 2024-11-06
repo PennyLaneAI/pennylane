@@ -466,7 +466,6 @@ class TestAdjointOperation:
 
         assert op.has_generator is False
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
@@ -627,7 +626,6 @@ class TestMatrix:
         with pytest.raises(qml.operation.MatrixUndefinedError):
             Adjoint(base).matrix()
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_adj_hamiltonian(self):
         """Test that a we can take the adjoint of a hamiltonian."""
         U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0) @ qml.PauliZ(wires=1)])

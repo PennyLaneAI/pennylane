@@ -227,7 +227,6 @@ eig_h2o.append([-0.67873019, -0.45673019, -0.45673019])
         (h2o, x_h2o, 0, 2, 2, "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_openfermion_molecular_dipole(
     symbols, geometry, charge, active_el, active_orb, mapping, coeffs, ops, tol, tmpdir
 ):
@@ -284,7 +283,6 @@ def test_openfermion_molecular_dipole(
         (h2o, x_h2o, 0, 2, 2, "bravyi_kitaev", eig_h2o),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_molecular_dipole(
     symbols, geometry, charge, active_el, active_orb, mapping, eig_ref, tmpdir
 ):
@@ -309,7 +307,6 @@ def test_differentiable_molecular_dipole(
         assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("wiremap"),
     [

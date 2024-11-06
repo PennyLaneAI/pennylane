@@ -394,7 +394,6 @@ ops_wires = (
 )
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("pl_op, of_op, wire_order", ops_wires)
 def test_operation_conversion(pl_op, of_op, wire_order):
     """Assert the conversion between pennylane and openfermion operators"""
@@ -529,7 +528,6 @@ of_pl_ops = (
 )
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("of_op, pl_h, pl_op, wires", of_pl_ops)
 def test_import_operator(of_op, pl_h, pl_op, wires):
     """Test the import_operator function correctly imports an OpenFermion operator into a PL one."""

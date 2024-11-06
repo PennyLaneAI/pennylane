@@ -166,7 +166,6 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
         (1.23 * from_string(""), [[1.23], [qml.Identity(0)]]),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
     h_as_op = qchem.qubit_observable(f_observable)
@@ -195,7 +194,6 @@ def test_qubit_observable(f_observable, q_observable):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_qubit_observable_cutoff(f_observable, cut_off):
     """Test that qubit_observable returns the correct operator when a cutoff is provided."""
     h_ref, h_ref_op = (qml.Hamiltonian([], []), qml.s_prod(0, qml.Identity(0)))

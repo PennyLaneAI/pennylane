@@ -749,7 +749,6 @@ class TestExecutingBatches:
         assert qml.math.allclose(jacobian_1, jacobian_3)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestSumOfTermsDifferentiability:
     """Tests Hamiltonian and sum expvals are still differentiable.
     This is a copy of the tests in `test_qutrit_mixed_measure.py`, but using the device instead.
@@ -1142,7 +1141,6 @@ class TestPRNGKeySeed:
         qml.s_prod(0.8, qml.GellMann(0, 3)) + qml.s_prod(0.5, qml.GellMann(0, 1)),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables.

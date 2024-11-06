@@ -224,7 +224,6 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
         )
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
 
@@ -252,7 +251,6 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     )
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_diff_hamiltonian_active_space():
     r"""Test that diff_hamiltonian works when an active space is defined."""
 
@@ -345,7 +343,6 @@ def test_gradient_expvalH():
     assert np.allclose(grad_qml[0][0], grad_finitediff)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestJax:
     @pytest.mark.jax
     def test_gradient_expvalH(self):

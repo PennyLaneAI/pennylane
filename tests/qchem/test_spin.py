@@ -116,7 +116,6 @@ def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
     assert np.allclose(s2_me_result, matrix_ref)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("electrons", "orbitals", "coeffs_ref", "ops_ref"),
     [
@@ -204,7 +203,6 @@ def test_exception_spin2(electrons, orbitals, msg_match):
         qchem.spin.spin2(electrons, orbitals)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("orbitals", "coeffs_ref", "ops_ref"),
     [

@@ -81,7 +81,6 @@ class TestOptimize:
             var -= accum
             assert np.allclose([var1, var2], var)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_step_and_cost_autograd_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned after 8 optimization steps via the
         step_and_cost method for the MomentumQNG optimizer when the generator

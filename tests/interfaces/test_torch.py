@@ -758,7 +758,6 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""

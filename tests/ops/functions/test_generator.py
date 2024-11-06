@@ -374,7 +374,6 @@ class TestObservableReturn:
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianReturn:
     """Tests for format="hamiltonian". This format always returns the generator
     as a qml.ops.LinearCombination."""

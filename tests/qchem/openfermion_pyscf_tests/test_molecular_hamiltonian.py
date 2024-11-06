@@ -348,7 +348,6 @@ def test_building_hamiltonian_molecule_class(
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
     r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
     backend."""
@@ -580,7 +579,6 @@ def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h_ref_data):
     r"""Test that molecular_hamiltonian generated using the molecule class
     returns the correct Hamiltonian with the differentiable backend."""
@@ -618,7 +616,6 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     )
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("wiremap"),
     [
@@ -670,7 +667,6 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     assert set(hamiltonian.wires) == set(wiremap)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("wiremap", "args"),
     [
@@ -711,7 +707,6 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
     assert wiremap_calc == wiremap_dict
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("wiremap", "args"),
     [
@@ -1233,7 +1228,6 @@ def test_error_raised_for_missing_molecule_information():
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_mapped_hamiltonian_pyscf_openfermion(
     symbols, geometry, charge, mapping, h_ref_data, tmpdir
 ):

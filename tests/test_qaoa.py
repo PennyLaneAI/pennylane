@@ -325,7 +325,6 @@ def make_bit_flip_mixer_test_cases():
 class TestMixerHamiltonians:
     """Tests that the mixer Hamiltonians are being generated correctly"""
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_x_mixer_output(self):
         """Tests that the output of the Pauli-X mixer is correct"""
 
@@ -337,7 +336,6 @@ class TestMixerHamiltonians:
         )
         assert mixer_hamiltonian.compare(expected_hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_x_mixer_grouping(self):
         """Tests that the grouping information is set and correct"""
 
@@ -360,7 +358,6 @@ class TestMixerHamiltonians:
         ):
             qaoa.xy_mixer(graph)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize(("graph", "target_hamiltonian"), make_xy_mixer_test_cases())
     def test_xy_mixer_output(self, graph, target_hamiltonian):
         """Tests that the output of the XY mixer is correct"""
@@ -387,7 +384,6 @@ class TestMixerHamiltonians:
         ("graph", "n", "target_hamiltonian"),
         make_bit_flip_mixer_test_cases(),
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_bit_flip_mixer_output(self, graph, n, target_hamiltonian):
         """Tests that the output of the bit-flip mixer is correct"""
 
@@ -928,7 +924,6 @@ class TestCostHamiltonians:
         with pytest.raises(ValueError, match=r"'b' must be either 0 or 1"):
             qaoa.bit_driver(range(3), 2)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_bit_driver_output(self):
         """Tests that the bit driver Hamiltonian has the correct output"""
 
@@ -953,7 +948,6 @@ class TestCostHamiltonians:
         with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph"):
             qaoa.edge_driver([(0, 1), (1, 2)], ["00", "11"])
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize(("graph", "reward", "hamiltonian"), make_edge_driver_cost_test_cases())
     def test_edge_driver_output(self, graph, reward, hamiltonian):
         """Tests that the edge driver Hamiltonian throws the correct errors"""
@@ -988,7 +982,6 @@ class TestCostHamiltonians:
     @pytest.mark.parametrize(
         ("graph", "cost_hamiltonian", "mixer_hamiltonian"), make_max_cut_test_cases()
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_maxcut_output(self, graph, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the MaxCut method is correct"""
 
@@ -999,7 +992,6 @@ class TestCostHamiltonians:
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_maxcut_grouping(self):
         """Tests that the grouping information is set and correct"""
 
@@ -1017,7 +1009,6 @@ class TestCostHamiltonians:
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"),
         make_max_independent_test_cases(),
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_mis_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Max Indepenent Set method is correct"""
 
@@ -1028,7 +1019,6 @@ class TestCostHamiltonians:
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_mis_grouping(self):
         """Tests that the grouping information is set and correct"""
 
@@ -1046,7 +1036,6 @@ class TestCostHamiltonians:
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"),
         make_min_vertex_cover_test_cases(),
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_mvc_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Min Vertex Cover method is correct"""
 
@@ -1057,7 +1046,6 @@ class TestCostHamiltonians:
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_mvc_grouping(self):
         """Tests that the grouping information is set and correct"""
 
@@ -1075,7 +1063,6 @@ class TestCostHamiltonians:
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"),
         make_max_clique_test_cases(),
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_max_clique_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the Maximum Clique method is correct"""
 
@@ -1086,7 +1073,6 @@ class TestCostHamiltonians:
         assert cost_h.compare(cost_hamiltonian)
         assert mixer_h.compare(mixer_hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_max_clique_grouping(self):
         """Tests that the grouping information is set and correct"""
 
@@ -1105,7 +1091,6 @@ class TestCostHamiltonians:
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"),
         make_max_weighted_cycle_test_cases(),
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_max_weight_cycle_output(
         self, graph, constrained, cost_hamiltonian, mixer_hamiltonian, mapping
     ):
@@ -1119,7 +1104,6 @@ class TestCostHamiltonians:
         assert mixer_h.compare(mixer_hamiltonian)
         assert mapping == m
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_max_weight_cycle_grouping(self):
         """Tests that the grouping information is set and correct"""
 
@@ -1269,7 +1253,6 @@ class TestLayers:
 class TestIntegration:
     """Test integration of the QAOA module with PennyLane"""
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_module_example(self, tol):
         """Test the example in the QAOA module docstring"""
 
@@ -1306,7 +1289,6 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_module_example_rx(self, tol):
         """Test the example in the QAOA module docstring"""
 
@@ -1424,7 +1406,6 @@ class TestCycles:
         "g",
         [nx.complete_graph(4).to_directed(), rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])],
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_partial_cycle_mixer_complete(self, g):
         """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
         example"""
@@ -1486,7 +1467,6 @@ class TestCycles:
         "g",
         [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])],
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_cycle_mixer(self, g):
         """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
 
@@ -1561,7 +1541,6 @@ class TestCycles:
             cycle_mixer(g)
 
     @pytest.mark.parametrize("g", [nx.lollipop_graph(3, 1), lollipop_graph_rx(3, 1)])
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_matrix(self, g):
         """Test that the matrix function works as expected on a fixed example"""
         h = qml.qaoa.bit_flip_mixer(g, 0)
@@ -1590,7 +1569,6 @@ class TestCycles:
 
         assert np.allclose(mat.toarray(), mat_expected)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_matrix_rx(self):
         """Test that the matrix function works as expected on a fixed example"""
         g = rx.generators.star_graph(4, [0, 1, 2, 3])
@@ -1671,7 +1649,6 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_loss_hamiltonian_complete(self, g):
         """Test if the loss_hamiltonian function returns the expected result on a
         manually-calculated example of a 3-node complete digraph"""
@@ -1710,7 +1687,6 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.lollipop_graph(4, 1).to_directed(), lollipop_graph_rx(4, 1, to_directed=True)]
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_loss_hamiltonian_incomplete(self, g):
         """Test if the loss_hamiltonian function returns the expected result on a
         manually-calculated example of a 4-node incomplete digraph"""
@@ -1805,7 +1781,6 @@ class TestCycles:
         with pytest.raises(TypeError, match="does not contain weight data"):
             loss_hamiltonian(g)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_square_hamiltonian_terms(self):
         """Test if the _square_hamiltonian_terms function returns the expected result on a fixed
         example"""

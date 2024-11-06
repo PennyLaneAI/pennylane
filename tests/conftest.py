@@ -158,12 +158,6 @@ def disable_opmath_if_requested(request):
         filterwarnings("ignore", "PauliWord.hamiltonian", qml.PennyLaneDeprecationWarning)
 
 
-@pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")
-def use_legacy_and_new_opmath(request):
-    with request.param(warn=False) as cm:
-        yield cm
-
-
 #######################################################################
 
 

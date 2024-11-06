@@ -74,7 +74,6 @@ hamiltonians = [
 tensors = [Tensor(qml.PauliX(1), qml.PauliY(2))]
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
 @pytest.mark.parametrize("obs_in", [*hermitian_ops, *pauli_ops, *identity, *hamiltonians, *tensors])
 class TestDatasetOperatorObservable:
