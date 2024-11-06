@@ -122,7 +122,7 @@ PennyLane is at the forefront of research in quantum computing, quantum machine 
 
 - **Quantum Chemistry**: [Accelerating Quantum Computations of Chemistry Through Regularized Compressed Double Factorization](https://quantum-journal.org/papers/q-2024-06-13-1371/)
 
-Impactful research drives PennyLane. Let us know what features you need for your research on [GitHub](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=enhancement+%3Asparkles%3A&projects=&template=feature_request.yml) or on our [research page](https://pennylane.ai/research).
+Impactful research drives PennyLane. Let us know what features you need for your research on [GitHub](https://github.com/PennyLaneAI/pennylane/issues/new?assignees=&labels=enhancement+%3Asparkles%3A&projects=&template=feature_request.yml) or on our [website](https://pennylane.ai/research).
 
 
 
