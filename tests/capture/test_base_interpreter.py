@@ -502,3 +502,23 @@ class TestHigherOrderPrimitiveRegistrations:
         out = f(0.5)
         expected = -2 * jax.numpy.sin(2 * 0.5)  # includes the factors of 2 from doubling the angle.
         assert qml.math.allclose(out, expected)
+
+
+def test_zip_length_validation():
+    """Test that errors are raised if the input values isnt long enough for the needed variables."""
+
+    def f(x):
+        return x + 1
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+    with pytest.raises(ValueError):
+        PlxprInterpreter().eval(jaxpr.jaxpr, [])
+
+    y = jax.numpy.array([1.0])
+
+    def g():
+        return y + 2
+
+    jaxpr = jax.make_jaxpr(g)()
+    with pytest.raises(ValueError):
+        PlxprInterpreter().eval(jaxpr.jaxpr, [])

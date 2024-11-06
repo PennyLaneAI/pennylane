@@ -63,10 +63,18 @@ class PlxprInterpreter:
             def interpret_operation(self, op):
                 new_op = qml.simplify(op)
                 if new_op is op:
-                    # if new op isn't queued, need to requeue op.
+                    # simplify didnt create a new operator, so it didnt get captured
                     data, struct = jax.tree_util.tree_flatten(new_op)
                     new_op = jax.tree_util.tree_unflatten(struct, data)
                 return new_op
+
+            def interpret_measurement(self, measurement):
+                new_mp = measurement.simplify()
+                if new_mp is measurement:
+                    new_mp = new_mp._unflatten(*measurement._flatten())
+                    # if new op isn't queued, need to requeue op.
+                return new_mp
+
 
     Now the interpreter can be used to transform functions and jaxpr:
 
@@ -294,9 +302,9 @@ class PlxprInterpreter:
         self._env = {}
         self.setup()
 
-        for arg, invar in zip(args, jaxpr.invars):
+        for arg, invar in zip(args, jaxpr.invars, strict=True):
             self._env[invar] = arg
-        for const, constvar in zip(consts, jaxpr.constvars):
+        for const, constvar in zip(consts, jaxpr.constvars, strict=True):
             self._env[constvar] = const
 
         for eqn in jaxpr.eqns:
@@ -315,7 +323,7 @@ class PlxprInterpreter:
 
             if not eqn.primitive.multiple_results:
                 outvals = [outvals]
-            for outvar, outval in zip(eqn.outvars, outvals):
+            for outvar, outval in zip(eqn.outvars, outvals, strict=True):
                 self._env[outvar] = outval
 
         # Read the final result of the Jaxpr from the environment
@@ -351,7 +359,7 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
-    jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args)
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return adjoint_transform_prim.bind(*invals, jaxpr=jaxpr, lazy=lazy, n_consts=n_consts)
 
 
@@ -361,7 +369,7 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     """Interpret a ctrl transform primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:-n_control]
-    jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args)
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return ctrl_transform_prim.bind(
         *invals,
