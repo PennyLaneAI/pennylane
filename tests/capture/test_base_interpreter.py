@@ -52,6 +52,13 @@ class SimplifyInterpreter(PlxprInterpreter):
             # if new op isn't queued, need to requeue op.
         return new_op
 
+    def interpret_measurement(self, measurement):
+        new_mp = measurement.simplify()
+        if new_mp is measurement:
+            new_mp = new_mp._unflatten(*measurement._flatten())
+            # if new op isn't queued, need to requeue op.
+        return new_mp
+
 
 # pylint: disable=use-implicit-booleaness-not-comparison
 def test_env_and_initialized():
@@ -122,6 +129,22 @@ def test_default_operator_handling():
 
 
 def test_default_measurement_handling():
+    """Test that measurements are simply re-queued by default."""
+
+    def f():
+        return qml.expval(qml.Z(0) + qml.Z(0)), qml.probs(wires=0)
+
+    jaxpr = jax.make_jaxpr(f)()
+    with qml.queuing.AnnotatedQueue() as q:
+        res1, res2 = PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts)
+    assert len(q.queue) == 2
+    assert q.queue[0] is res1
+    assert q.queue[1] is res2
+    qml.assert_equal(res1, qml.expval(qml.Z(0) + qml.Z(0)))
+    qml.assert_equal(res2, qml.probs(wires=0))
+
+
+def test_measurement_handling():
     """Test that the default measurment handling works."""
 
     @SimplifyInterpreter()
@@ -150,7 +173,6 @@ def test_overriding_measurements():
     class MeasurementsToSample(PlxprInterpreter):
 
         def interpret_measurement(self, measurement):
-            print(measurement)
             return qml.sample(wires=measurement.wires)
 
     @MeasurementsToSample()
