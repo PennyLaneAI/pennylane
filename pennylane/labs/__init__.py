@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
+.. currentmodule:: pennylane
+
 This module contains experimental features enabling
 advanced quantum computing research.
 
