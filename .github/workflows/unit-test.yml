@@ -84,18 +84,26 @@ jobs:
     runs-on: ${{ inputs.job_runner_name }}
 
     steps:
+      - name: DF 1
+        run: df -h
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
           repository: PennyLaneAI/pennylane
-      
+
+      - name: DF2
+        run: df -h
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '${{ inputs.python_version }}'
-      
+
+      - name: DF3
+        run: df -h
+
       - name: Upgrade PIP and install wheel
         run: pip install --upgrade pip && pip install wheel --upgrade
       
@@ -103,7 +111,10 @@ jobs:
         run: |
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
-      
+
+      - name: DF4
+        run: df -h
+
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
         if: inputs.additional_pip_packages != ''
@@ -119,13 +130,19 @@ jobs:
                 pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
-      
+
+      - name: DF5
+        run: df -h
+
       - name: Install PennyLane
         shell: bash
         run: |
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
-      
+
+      - name: DF6
+        run: df -h
+
       - name: Install additional PIP packages (Post PennyLane Install)
         shell: bash
         if: inputs.additional_pip_packages_post != ''
@@ -142,6 +159,9 @@ jobs:
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
+      - name: DF7
+        run: df -h
+
       - name: Set PyTest Args
         id: pytest_args
         env:
@@ -152,6 +172,9 @@ jobs:
         run: |
           echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS" >> $GITHUB_OUTPUT
 
+      - name: DF8
+        run: df -h
+
       - name: Run PennyLane Unit Tests
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
@@ -159,18 +182,27 @@ jobs:
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
-      
+
+      - name: DF9
+        run: df -h
+
       - name: Freeze dependencies
         shell: bash
         if: inputs.requirements_file != ''
         run: pip freeze | grep -v "file:///" | sed 's/\(pennylane[-_]lightning==[0-9\.]\+\)\.dev[0-9]\+/\1/gI' > ${{ inputs.requirements_file }}
   
+      - name: DF10
+        run: df -h
+
       - name: Upload frozen requirements
         if: inputs.requirements_file != ''
         uses: actions/upload-artifact@v4
         with:
           name: frozen-${{ inputs.requirements_file }}
           path: ${{ inputs.requirements_file }}
+
+      - name: DF11
+        run: df -h
 
       - name: Upload Durations file as artifact
         if: inputs.pytest_durations_file_path != ''
@@ -180,8 +212,14 @@ jobs:
           path: ${{ inputs.pytest_durations_file_path }}
           include-hidden-files: true
 
+      - name: DF12
+        run: df -h
+
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: DF13
+        run: df -h
 
       - name: Upload Coverage File
         uses: actions/upload-artifact@v4
