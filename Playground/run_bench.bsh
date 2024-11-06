@@ -1,9 +1,8 @@
 #!/bin/bash
 
-wires="8 10 12 14"
+wires="8 10 12 14 16 18 20"
 export OMP_NUM_THREADS=16
-control=na
-vblas_base=venv_GH
+vblas_base=venv_NV100
 
 # Testing env-var for python
 FDX_TESTING="true"
@@ -25,10 +24,10 @@ for test in true false direct; do
         export MKL_NUM_THREADS=1
     fi
 
-
     vblas=${vblas_base}_blas
 
-    python3 -m venv --system-site-packages $vblas
+    python3 -m virtualenv $vblas
+    # python3 -m venv --system-site-packages $vblas
 
     source ${vblas}/bin/activate 
 
