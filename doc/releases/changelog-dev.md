@@ -53,4 +53,5 @@
 This release contains contributions from (in alphabetical order):
 
 Astral Cai,
-Andrija Paurevic
+Andrija Paurevic,
+Justin Pickering
