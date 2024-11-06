@@ -17,6 +17,7 @@ This module contains unit tests for device capabilities and the TOML module
 
 # pylint: disable=protected-access,trailing-whitespace
 
+import re
 import pytest
 
 from pennylane.devices.capabilities import (
