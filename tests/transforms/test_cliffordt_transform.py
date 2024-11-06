@@ -80,18 +80,6 @@ def circuit_5():
     return qml.expval(qml.PauliZ(0))
 
 
-def test_max_expansion_is_deprecated():
-    """Tests that max_expansion is deprecated"""
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="The max_expansion argument is deprecated",
-    ):
-        tape = qml.tape.QuantumScript([qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])])
-
-        with pytest.raises(ValueError, match="Cannot unroll"):
-            clifford_t_decomposition(tape, max_expansion=0)
-
-
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -296,10 +284,7 @@ class TestCliffordCompile:
         tape = qml.tape.QuantumScript([qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])])
 
         with pytest.raises(ValueError, match="Cannot unroll"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
-            ):
-                clifford_t_decomposition(tape, max_expansion=0)
+            clifford_t_decomposition(tape)
 
     @pytest.mark.parametrize("op", [qml.U1(1.0, wires=["b"])])
     def test_raise_with_rot_decomposition(self, op):

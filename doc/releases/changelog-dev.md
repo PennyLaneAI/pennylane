@@ -28,6 +28,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition` has been removed.
+
+* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been removed.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
