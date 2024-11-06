@@ -106,7 +106,7 @@ quantum device.
 Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations.html).
 
 <a href="https://pennylane.ai/qml/demonstrations">
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/readme-update/doc/_static/readme/demos.png" width="900px">
 </a>
 
 If you would like to contribute your own demo, see our [demo submission
