@@ -30,7 +30,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
     """Resource class for QFT"""
 
     @staticmethod
-    def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         if not isinstance(num_wires, int):
             raise TypeError("num_wires must be an int.")
 
