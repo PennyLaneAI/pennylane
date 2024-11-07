@@ -89,9 +89,9 @@ Whether you're exploring quantum machine learning (QML), quantum computing, or q
 ### Key Resources:
 
 * [Research-oriented demos](https://pennylane.ai/qml/demonstrations.html)
-* [Learn quantum programming](https://pennylane.ai/qml/) with the [PennyLane Codebook](https://pennylane.ai/codebook/) and [Coding challenges](https://pennylane.ai/challenges/)
-* [Frequently asked questions](https://pennylane.ai/faq.html)
-* [Key concepts](https://pennylane.ai/qml/glossary.html)
+* [Learn quantum programming](https://pennylane.ai/qml/) with the [Codebook](https://pennylane.ai/codebook/) and [Coding Challenges](https://pennylane.ai/challenges/)
+* [Frequently Asked Questions](https://pennylane.ai/faq.html)
+* [Glossary](https://pennylane.ai/qml/glossary.html)
 * [Videos](https://pennylane.ai/qml/videos.html)
 
 
