@@ -52,7 +52,9 @@ jobs:
 
     - name: Freeze dependencies
       shell: bash
-      run: pip freeze | grep -v 'file:///' > doc.txt
+      run: |
+        pip freeze | grep -v 'file:///' > doc.txt
+        cat doc.txt
 
     - name: Upload frozen requirements
       uses: actions/upload-artifact@v4
