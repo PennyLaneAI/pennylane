@@ -129,6 +129,7 @@ Uloc = [
     [0.0, -0.70710644, 0.70710712],
 ]
 
+# Pre-sorted
 reference_taylor_bosonic_coeffs = np.array(
     [
         -0.0014741495669876705,
@@ -300,6 +301,7 @@ reference_taylor_bosonic_coeffs = np.array(
     ]
 )
 
+# Pre-sorted, with operators rearranged with indices in descending order
 reference_taylor_bosonic_ops = [
     {(0, 1): "+", (1, 1): "+", (2, 1): "-"},
     {(0, 1): "+", (1, 1): "-", (2, 1): "-"},
