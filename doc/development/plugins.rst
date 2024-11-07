@@ -213,9 +213,9 @@ you need to define a configuration file for your device as described below.
 Device Capabilities
 -------------------
 
-Optionally, you can add a ``config`` class variable pointing to your configuration file. This file
+Optionally, you can add a ``config_filepath`` class variable pointing to your configuration file. This file
 should be a `toml file <https://toml.io/en/>`_ that describes which gates and features are supported
-by your device, i.e., what your of :meth:`~pennylane.devices.Device.execute` method accepts.
+by your device, i.e., what the :meth:`~pennylane.devices.Device.execute` method accepts.
 
 .. code-block:: python
 
