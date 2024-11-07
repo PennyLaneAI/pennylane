@@ -129,10 +129,14 @@ jobs:
           PR_TITLE: ${{ inputs.pull_request_title }}
           PR_BODY: ${{ inputs.pull_request_body }}
         run: |
-          EXISTING_PR="$(gh pr list --state open --base master --head bot/stable-deps-update --json 'url' --jq '.[].url' | head -n 1)"
+          EXISTING_PR="$(gh pr list --state open --base master --head $HEAD_BRANCH_NAME --json 'url' --jq '.[].url' | head -n 1)"
 
           if [ -n "${EXISTING_PR}" ]; then
             echo "PR already exists ==> ${EXISTING_PR}"
+            exit 0
+          else
+            echo "Creating PR..."
+            gh pr create --title "$PR_TITLE" --body "$PR_BODY"
             exit 0
           fi
 
@@ -143,7 +147,3 @@ jobs:
             gh pr reopen "${EXISTING_CLOSED_PR}"
             exit 0
           fi
-
-          echo "Creating PR..."
-          gh pr create --title "$PR_TITLE" --body "$PR_BODY"
-          exit 0
