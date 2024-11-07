@@ -25,15 +25,7 @@
 
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
-  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) A submodule 'initialize_state' featuring:
-
-  * A `density_matrix` function for initializing a density matrix from a state vector
-
-  * A `state_vector` function for initializing a state vector from a density matrix
-
-  * A `mixed_state` function for initializing a mixed state from a state vector
-
-  * A `state_vector_from_mixed` function for initializing a state vector from a mixed state
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) A submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations
 
 <h3>Improvements 🛠</h3>
 
