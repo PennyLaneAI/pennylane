@@ -95,5 +95,3 @@ class ResourceOperator(ABC):
         return self.__class__.resource_rep(**params)
 
 
-class ResourcesNotDefined(Exception):
-    """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
