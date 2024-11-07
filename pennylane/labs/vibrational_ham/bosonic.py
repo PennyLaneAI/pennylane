@@ -307,7 +307,7 @@ class BoseWord(dict):
                         ).normal_order()
 
                 elif self[key_l] == self[key_r]:
-                    if key_r[1] > key_l[1]:
+                    if key_r[1] < key_l[1]:
                         bw_terms[j] = key_l
                         bw_terms[j - 1] = key_r
 
