@@ -14,6 +14,8 @@
 """
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
+import copy
+
 # pylint: disable=protected-access
 import os
 import warnings
@@ -265,7 +267,7 @@ class DefaultTensor(Device):
     We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
     .. warning::
-        To avoid a slowdown in performance for circuits with more than 10 wires. We recommend you to set the environment variable `OPENBLAS_NUM_THREADS=1` or `MKL_NUM_THREADS=1`, depending on your NumPy packages & accelerated linear algebra libraries or using `threadpoolctl<https://github.com/joblib/threadpoolctl>`_ package. 
+        To avoid a slowdown in performance for circuits with more than 10 wires. We recommend you to set the environment variable `OPENBLAS_NUM_THREADS=1` or `MKL_NUM_THREADS=1`, depending on your NumPy packages & accelerated linear algebra libraries or using `threadpoolctl<https://github.com/joblib/threadpoolctl>`_ package.
 
     .. details::
             :title: Usage with MPS Method
@@ -421,7 +423,7 @@ class DefaultTensor(Device):
 
         # The `quimb` circuit is a class attribute so that we can implement methods
         # that access it as soon as the device is created before running a circuit.
-        if ( self.wires and (len(self.wires) > 10) ):
+        if self.wires and (len(self.wires) > 10):
             if not (openblas_threads or openblas_threads != 1):
                 warnings.warn(
                     "\nThe environment variable OPENBLAS_NUM_THREADS is different from one and the system has wires > 10. To avoid a slowdown in performance we recommend you set OPENBLAS_NUM_THREADS=1"
