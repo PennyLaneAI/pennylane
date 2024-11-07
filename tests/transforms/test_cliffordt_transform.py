@@ -102,20 +102,15 @@ class TestCliffordCompile:
         assert check_clifford_t(op, use_decomposition=True) == res
 
     @pytest.mark.parametrize(
-        ("circuit, max_expansion"),
-        [(circuit_1, 1), (circuit_2, 0), (circuit_3, 0), (circuit_4, 1), (circuit_5, 0)],
+        "circuit",
+        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5],
     )
-    def test_decomposition(self, circuit, max_expansion):
+    def test_decomposition(self, circuit):
         """Test decomposition for the Clifford transform."""
 
         old_tape = qml.tape.make_qscript(circuit)()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
-        ):
-            [new_tape], tape_fn = clifford_t_decomposition(
-                old_tape, max_expansion=max_expansion, max_depth=3
-            )
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=3)
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
