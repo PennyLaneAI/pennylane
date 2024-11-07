@@ -14,8 +14,10 @@
 """The bosonic representation classes and functions."""
 from copy import copy
 
-from pennylane.typing import TensorLike
 import pennylane as qml
+from pennylane.typing import TensorLike
+
+# pylint: disable= too-many-nested-blocks, too-many-branches, invalid-name
 
 
 class BoseWord(dict):
@@ -39,9 +41,10 @@ class BoseWord(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator):
-        self.sorted_dic = dict(sorted(operator.items()))
+    def __init__(self, operator, christiansen_boson=False):
 
+        self.sorted_dic = dict(sorted(operator.items()))
+        self.christiansen_boson = christiansen_boson
         indices = [i[0] for i in self.sorted_dic.keys()]
 
         if indices:
@@ -171,14 +174,14 @@ class BoseWord(dict):
         elements into BoseSentences (with negative coefficient for `other`), and
         uses the BoseSentence __add__  method"""
 
-        self_fs = BoseSentence({self: 1.0})
+        self_bs = BoseSentence({self: 1.0})
 
         if isinstance(other, BoseWord):
-            return self_fs + BoseSentence({other: -1.0})
+            return self_bs + BoseSentence({other: -1.0})
 
         if isinstance(other, BoseSentence):
-            other_fs = BoseSentence(dict(zip(other.keys(), [-v for v in other.values()])))
-            return self_fs + other_fs
+            other_bs = BoseSentence(dict(zip(other.keys(), [-v for v in other.values()])))
+            return self_bs + other_bs
 
         if qml.math.size(other) > 1:
             raise ValueError(
@@ -186,7 +189,7 @@ class BoseWord(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        return self_fs + BoseSentence({BoseWord({}): -1 * other})  # -constant * I
+        return self_bs + BoseSentence({BoseWord({}): -1 * other})  # -constant * I
 
     def __rsub__(self, other):
         """Subtract a BoseWord to a constant, i.e. `2 - BoseWord({...})`"""
@@ -198,9 +201,9 @@ class BoseWord(dict):
                 f"Arithmetic Bose operations can only accept an array of length 1, "
                 f"but received {other} of length {len(other)}"
             )
-        self_fs = BoseSentence({self: -1.0})
-        other_fs = BoseSentence({BoseWord({}): other})
-        return self_fs + other_fs
+        self_bs = BoseSentence({self: -1.0})
+        other_bs = BoseSentence({BoseWord({}): other})
+        return self_bs + other_bs
 
     def __mul__(self, other):
         r"""Multiply a BoseWord with another BoseWord, a BoseSentence, or a constant.
@@ -279,7 +282,8 @@ class BoseWord(dict):
 
         bw_terms = sorted(self)
         len_op = len(bw_terms)
-        bw_comm = BoseSentence({BoseWord({}): 0.0})
+        double_occupancy = False
+        bw_comm = BoseSentence({BoseWord({}): 0.0}, christiansen_boson=self.christiansen_boson)
         for i in range(1, len_op):
             for j in range(i, 0, -1):
                 key_r = bw_terms[j]
@@ -293,25 +297,44 @@ class BoseWord(dict):
                     if key_r[1] == key_l[1]:
                         term_dict_comm = {}
                         j = 0
-                        for key, value in self.items():
+                        for key in bw_terms:
                             if key not in [key_r, key_l]:
-                                term_dict_comm[(j, key[1])] = value
+                                term_dict_comm[(j, key[1])] = self[key]
                                 j += 1
 
-                        bw_comm += BoseWord(term_dict_comm).normal_order()
+                        bw_comm += BoseWord(
+                            term_dict_comm, christiansen_boson=self.christiansen_boson
+                        ).normal_order()
 
-        bose_dict = {}
-        for i in range(len_op):
-            bose_dict[(i, bw_terms[i][1])] = self[bw_terms[i]]
-        ordered_op = BoseWord(bose_dict) + bw_comm
+                elif self[key_l] == self[key_r]:
+                    if key_r[1] > key_l[1]:
+                        bw_terms[j] = key_l
+                        bw_terms[j - 1] = key_r
+
+                    if self.christiansen_boson:
+                        if key_r[1] == key_l[1]:
+                            double_occupancy = True
+                            break
+            if double_occupancy:
+                break
+
+        if double_occupancy:
+            ordered_op = bw_comm
+        else:
+            bose_dict = {}
+            for i, term in enumerate(bw_terms):
+                bose_dict[(i, term[1])] = self[term]
+
+            ordered_op = BoseWord(bose_dict, christiansen_boson=self.christiansen_boson) + bw_comm
+
         ordered_op.simplify(tol=1e-8)
         return ordered_op
 
 
 # pylint: disable=useless-super-delegation
 class BoseSentence(dict):
-    r"""Immutable dictionary used to represent a Bose sentence, a linear combination of Bose words, with the keys
-    as BoseWord instances and the values correspond to coefficients.
+    r"""Immutable dictionary used to represent a Bose sentence, a linear combination of Bose words,
+    with the keys as BoseWord instances and the values correspond to coefficients.
 
     >>> w1 = BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = BoseWord({(0, 1) : '+', (1, 2) : '-'})
@@ -323,12 +346,14 @@ class BoseSentence(dict):
 
     # override the arithmetic dunder methods for numpy arrays so that the
     # methods defined on this class are used instead
-    # (i.e. ensure `np.array + BoseSentence` uses `BoseSentence.__radd__` instead of `np.array.__add__`)
+    # (i.e. ensure `np.array + BoseSentence` uses `BoseSentence.__radd__`
+    # instead of `np.array.__add__`)
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator):
+    def __init__(self, operator, christiansen_boson=False):
         super().__init__(operator)
+        self.christiansen_boson = christiansen_boson
 
     def adjoint(self):
         r"""Return the adjoint of BoseSentence."""
@@ -343,13 +368,13 @@ class BoseSentence(dict):
     @property
     def wires(self):
         r"""Return wires of the BoseSentence."""
-        return set().union(*(fw.wires for fw in self.keys()))
+        return set().union(*(bw.wires for bw in self.keys()))
 
     def __str__(self):
         r"""String representation of a BoseSentence."""
         if len(self) == 0:
             return "0 * I"
-        return "\n+ ".join(f"{coeff} * {fw.to_string()}" for fw, coeff in self.items())
+        return "\n+ ".join(f"{coeff} * {bw.to_string()}" for bw, coeff in self.items())
 
     def __repr__(self):
         r"""Terminal representation for BoseSentence."""
@@ -377,13 +402,13 @@ class BoseSentence(dict):
         if isinstance(other, TensorLike):
             other = BoseSentence({BoseWord({}): other})
 
-        smaller_fs, larger_fs = (
+        smaller_bs, larger_bs = (
             (self, copy(other)) if len(self) < len(other) else (other, copy(self))
         )
-        for key in smaller_fs:
-            larger_fs[key] += smaller_fs[key]
+        for key in smaller_bs:
+            larger_bs[key] += smaller_bs[key]
 
-        return larger_fs
+        return larger_bs
 
     def __radd__(self, other):
         """Add a BoseSentence to a constant, i.e. `2 + BoseSentence({...})`"""
@@ -426,9 +451,9 @@ class BoseSentence(dict):
                 f"but received {other} of length {len(other)}"
             )
 
-        self_fs = BoseSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
-        other_fs = BoseSentence({BoseWord({}): other})  # constant * I
-        return self_fs + other_fs
+        self_bs = BoseSentence(dict(zip(self.keys(), [-1 * v for v in self.values()])))
+        other_bs = BoseSentence({BoseWord({}): other})  # constant * I
+        return self_bs + other_bs
 
     def __mul__(self, other):
         r"""Multiply two Bose sentences by iterating over each sentence and multiplying the Bose
@@ -443,9 +468,9 @@ class BoseSentence(dict):
 
             product = BoseSentence({})
 
-            for fw1, coeff1 in self.items():
-                for fw2, coeff2 in other.items():
-                    product[fw1 * fw2] += coeff1 * coeff2
+            for bw1, coeff1 in self.items():
+                for bw2, coeff2 in other.items():
+                    product[bw1 * bw2] += coeff1 * coeff2
 
             return product
 
@@ -496,12 +521,14 @@ class BoseSentence(dict):
         r"""Remove any BoseWords in the BoseSentence with coefficients less than the threshold
         tolerance."""
         items = list(self.items())
-        for fw, coeff in items:
+        for bw, coeff in items:
             if abs(coeff) <= tol:
-                del self[fw]
+                del self[bw]
 
     def normal_order(self):
-        empty_bose_sentence = BoseSentence({})  # Empty PS as 0 operator to add Pws to
+        r"""Convert a BoseSentence to its normal-ordered form."""
+
+        empty_bose_sentence = BoseSentence({}, christiansen_boson=self.christiansen_boson)
 
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()
