@@ -721,9 +721,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
 
         print("primitive_bind_call")
-        print(f"class: {cls}")
-        print(f"args: {args}")
-        print(f"kwargs: {kwargs}")
 
         # Avoid recursion by bypassing _primitive_bind_call during instance creation
         instance = super(cls, cls).__new__(
@@ -733,8 +730,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         # Force calculation of batch size if it hasn't been set
         batch_size = instance.batch_size  # This will invoke _check_batching if necessary
-
-        print(f"batch_size: {batch_size}")
 
         if batch_size is not None:
             kwargs["batch_size"] = batch_size

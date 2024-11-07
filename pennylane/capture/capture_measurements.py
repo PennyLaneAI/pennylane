@@ -140,11 +140,7 @@ def create_measurement_obs_primitive(
     def _(*_, **__):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         
-        roba = abstract_type(abstract_eval, n_wires=None)
-
-        print(f"roba from create_measurement_obs_primitive: {roba}")
-        
-        return roba
+        return abstract_type(abstract_eval, n_wires=None)
 
     return primitive
 

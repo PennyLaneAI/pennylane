@@ -80,12 +80,6 @@ class RX(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
-    @classmethod
-    def _abstract_eval(cls, n_wires=None, num_device_wires=0):
-        n_wires = num_device_wires if n_wires == 0 else n_wires
-
-        return super().batch_size(cls)
-
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).

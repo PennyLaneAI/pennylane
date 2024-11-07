@@ -38,22 +38,14 @@ def _get_abstract_operator() -> type:
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
 
-        def __init__(self, abstract_eval: Callable, n_wires: Optional[int] = None):
+        def __init__(self, abstract_batch_size: Callable):
 
-            print(f"init AbstractOperator: {abstract_eval}, {n_wires}")
+            print(f"init AbstractOperator: {abstract_batch_size}")
+            self._abstract_batch_size = abstract_batch_size
 
-            self._abstract_eval = abstract_eval
-            self._n_wires = n_wires
+        def abstract_batch_size(self) -> int:
 
-        def abstract_eval(self, num_device_wires: int) -> tuple[tuple, type]:
-            """Calculate the shape and dtype for an evaluation with specified number of device
-            wires and shots.
-
-            """
-            return self._abstract_eval(
-                n_wires=self._n_wires,
-                num_device_wires=num_device_wires,
-            )
+            return self._abstract_batch_size()
 
         # pylint: disable=missing-function-docstring
         def at_least_vspace(self):
@@ -134,8 +126,9 @@ def create_operator_primitive(
         wires = tuple(int(w) for w in args[split:])
         args = args[:split]
 
-        print(f"args: {args}")
-        print(f"kwargs: {kwargs}")
+        # Do we need to use the batch size here?
+        if "batch_size" in kwargs:
+            batch_size = kwargs.pop("batch_size")
 
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 
@@ -143,14 +136,12 @@ def create_operator_primitive(
 
     @primitive.def_abstract_eval
     def _(*args, **kwargs):
-        abstract_eval = operator_type._abstract_eval  # pylint: disable=protected-access
 
-        roba = abstract_type(abstract_eval, n_wires=None)
+        batch_size = None
 
-        print(f"roba from create_operator_primitive: {roba}")
-        print(f"args from create_operator_primitive abs def: {args}")
-        print(f"kwarg from create_operator_primitive abs def: {kwargs}")
+        if "batch_size" in kwargs:
+            batch_size = kwargs.pop("batch_size")
 
-        return roba
+        return abstract_type(batch_size)
 
     return primitive
