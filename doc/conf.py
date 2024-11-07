@@ -83,7 +83,7 @@ copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {
     "demo": ("https://pennylane.ai/qml/", None),
-    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None)
+    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
 
 mathjax_path = (
@@ -113,6 +113,7 @@ add_module_names = False
 # built documents.
 
 import pennylane
+
 pennylane.Hamiltonian = pennylane.ops.Hamiltonian
 
 # The full version, including alpha/beta/rc tags.
@@ -254,7 +255,6 @@ html_theme = "pennylane"
 
 # Xanadu theme options (see theme.conf for more information).
 html_theme_options = {
-    "navbar_active_link": 4,
     "extra_copyrights": [
         "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
     ],
