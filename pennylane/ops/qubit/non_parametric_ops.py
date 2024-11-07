@@ -627,12 +627,6 @@ class PauliZ(Observable, Operation):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
-    @classmethod
-    def _abstract_eval(cls, n_wires=None, num_device_wires=0):
-        n_wires = num_device_wires if n_wires == 0 else n_wires
-        shape = 46
-        return shape, float
-
     def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
