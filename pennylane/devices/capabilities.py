@@ -168,11 +168,11 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
 
         if match := re.match(r"Adjoint\((.*)\)", op_name):
             base_op_name = match.group(1)
-            return self._supports_operator(base_op_name, op_dict)
+            return base_op_name in op_dict and op_dict[base_op_name].invertible
 
         if match := re.match(r"C\((.*)\)", op_name):
             base_op_name = match.group(1)
-            return self._supports_operator(base_op_name, op_dict)
+            return base_op_name in op_dict and op_dict[base_op_name].controllable
 
         return False
 
