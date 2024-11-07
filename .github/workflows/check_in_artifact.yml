@@ -134,10 +134,6 @@ jobs:
           if [ -n "${EXISTING_PR}" ]; then
             echo "PR already exists ==> ${EXISTING_PR}"
             exit 0
-          else
-            echo "Creating PR..."
-            gh pr create --title "$PR_TITLE" --body "$PR_BODY"
-            exit 0
           fi
 
           EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
@@ -147,3 +143,7 @@ jobs:
             gh pr reopen "${EXISTING_CLOSED_PR}"
             exit 0
           fi
+
+          echo "Creating PR..."
+          gh pr create --title "$PR_TITLE" --body "$PR_BODY"
+          exit 0
