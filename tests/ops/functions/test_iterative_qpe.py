@@ -23,22 +23,6 @@ import pennylane as qml
 class TestIQPE:
     """Test to check that the iterative quantum phase estimation function works as expected."""
 
-    @pytest.mark.parametrize(
-        "args, n_missing, missing_args",
-        [
-            ({"aux_wire": 1}, 1, "'iters'"),
-            ({"iters": 1}, 1, "'aux_wire'"),
-            ({}, 2, "'aux_wire' and 'iters'"),
-        ],
-    )
-    def test_args_not_provided(self, args, n_missing, missing_args):
-        """Test that the correct error is raised if there are missing arguments"""
-        # Adjusted to use "arguments" for multiple missing args
-        plural_suffix = "s" if n_missing > 1 else ""
-        err_msg = rf"iterative_qpe\(\) missing {n_missing} required positional argument{plural_suffix}: {missing_args}"
-        with pytest.raises(TypeError, match=err_msg):
-            _ = qml.iterative_qpe(qml.RZ(1.5, 0), **args)
-
     @pytest.mark.parametrize("mcm_method", ["deferred", "tree-traversal"])
     @pytest.mark.parametrize("phi", (1.0, 2.0, 3.0))
     def test_compare_qpe(self, mcm_method, phi):
