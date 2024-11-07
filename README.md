@@ -35,7 +35,7 @@
 
 <p align="center">
   The definitive open-source framework for quantum programming. Built by researchers, for research.
-  <img src="./doc/_static/header.png#gh-light-mode-only" width="700px">
+  <img src="./doc/_static/pl-logo.png#gh-light-mode-only" width="700px">
     <!--
     Use a relative import for the dark mode image. When loading on PyPI, this
     will fail automatically and show nothing.
