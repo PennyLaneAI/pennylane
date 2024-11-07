@@ -24,8 +24,8 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .resource_operator import ResourceOperator, ResourceOperatorNotImplemented
 from .resource_container import CompressedResourceOp, Resources
+from .resource_operator import ResourceOperator, ResourceOperatorNotImplemented
 
 # pylint: disable=dangerous-default-value,protected-access
 
@@ -101,7 +101,6 @@ def resources_from_operation(
     num_gates = sum(gate_counts_dict.values())
 
     return Resources(gate_types=gate_counts_dict, num_gates=num_gates, num_wires=num_wires)
-
 
 
 @get_resources.register
