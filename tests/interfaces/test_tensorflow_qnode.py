@@ -541,14 +541,14 @@ class TestShotsIntegration:
         # since we are using finite shots, parameter-shift will
         # be chosen
         assert (
-            circuit.get_gradient_fn(dev, "autograd", diff_method="parameter-shift")[0]
+            circuit.get_gradient_fn(dev, "tensorflow", diff_method="parameter-shift")[0]
             == qml.gradients.param_shift
         )
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
-        assert circuit.get_gradient_fn(dev, "autograd")[0] == "backprop"
+        assert circuit.get_gradient_fn(dev, "tensorflow")[0] == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
