@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 
 DEP_WARNING_MESSAGE_MUTUAL_INFO = (
     "The qml.qinfo.mutual_info transform is deprecated and will be removed "
-    "in v0.40. Instead include the qml.mutual_info measurement process in the "
+    "in v0.40. Instead, include the qml.mutual_info measurement process in the "
     "return line of your QNode."
 )
 

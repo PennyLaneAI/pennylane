@@ -612,7 +612,7 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 def apply_snapshot(
     op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
-    """Take a snapshot of the state"""
+    """Take a snapshot of the state."""
     if debugger is not None and debugger.active:
         measurement = op.hyperparameters["measurement"]
 
