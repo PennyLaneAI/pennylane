@@ -91,6 +91,7 @@ def test_postselect_mode(postselect_mode, mocker):
         assert len(res) == shots
     assert np.all(res != np.iinfo(np.int32).min)
 
+
 @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
 def test_postselect_mode_transform(postselect_mode):
     """Test that invalid shots are discarded if requested"""
@@ -110,6 +111,7 @@ def test_postselect_mode_transform(postselect_mode):
     else:
         assert len(res) == shots
     assert np.all(res != np.iinfo(np.int32).min)
+
 
 @pytest.mark.jax
 @pytest.mark.parametrize("use_jit", [True, False])
