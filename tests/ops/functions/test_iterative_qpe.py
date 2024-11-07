@@ -33,7 +33,9 @@ class TestIQPE:
     )
     def test_args_not_provided(self, args, n_missing, missing_args):
         """Test that the correct error is raised if there are missing arguments"""
-        err_msg = rf"iterative_qpe\(\) missing {n_missing} required positional argument\(s\): {missing_args}"
+        # Adjusted to use "arguments" for multiple missing args
+        plural_suffix = "s" if n_missing > 1 else ""
+        err_msg = rf"iterative_qpe\(\) missing {n_missing} required positional argument{plural_suffix}: {missing_args}"
         with pytest.raises(TypeError, match=err_msg):
             _ = qml.iterative_qpe(qml.RZ(1.5, 0), **args)
 
