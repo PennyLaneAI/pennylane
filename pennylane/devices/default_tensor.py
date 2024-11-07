@@ -266,7 +266,7 @@ class DefaultTensor(Device):
     We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
     .. warning::
-        To avoid a slowdown in performance for circuits with more than 10 wires. We recommend you to set the environment variable `OPENBLAS_NUM_THREADS=1` or `MKL_NUM_THREADS=1`, depends on your NumPy packages & accelerated linear algebra libraries. 
+        To avoid a slowdown in performance for circuits with more than 10 wires. We recommend you to set the environment variable `OPENBLAS_NUM_THREADS=1` or `MKL_NUM_THREADS=1`, depending on your NumPy packages & accelerated linear algebra libraries or using `threadpoolctl<https://github.com/joblib/threadpoolctl>`_ package. 
 
     .. details::
             :title: Usage with MPS Method
