@@ -116,6 +116,10 @@ def _to_qfunc_output_type(
     results_leaves, _ = qml.pytrees.flatten(results)
 
     if len(results_leaves) != len(qfunc_output_leaves):
+        if qml.math.get_interface(qfunc_output) == "autograd":
+            if isinstance(qfunc_output, Sequence):
+                results = [results]
+            return type(qfunc_output)(results)
         return results
 
     if isinstance(qfunc_output, Sequence):

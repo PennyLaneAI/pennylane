@@ -318,11 +318,14 @@ class TestBroadcastExpand:
         if use_jit:
             cost = jax.jit(cost)
 
+        def wrapped_cost(*args):
+            return cost(*args)[0]
+
         expected = exp_fn(*params)
 
-        assert qml.math.allclose(cost(*params), expected)
+        assert qml.math.allclose(wrapped_cost(*params), expected)
 
-        jac = jax.jacobian(cost, argnums=[0, 1, 2])(*params)
+        jac = jax.jacobian(wrapped_cost, argnums=[0, 1, 2])(*params)
 
         exp_jac = jax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
 
@@ -348,8 +351,11 @@ class TestBroadcastExpand:
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)
 
+        def wrapped_cost(*args):
+            return cost(*args)[0]
+
         with tf.GradientTape(persistent=True) as t:
-            out = tf.stack(cost(*params))
+            out = tf.stack(wrapped_cost(*params))
             exp = exp_fn(*params)
 
         jac = t.jacobian(out, params)
@@ -381,8 +387,11 @@ class TestBroadcastExpand:
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)
 
-        res = cost(*torch_params)
-        jac = torch.autograd.functional.jacobian(cost, torch_params)
+        def wrapped_cost(*args):
+            return cost(*args)[0]
+
+        res = wrapped_cost(*torch_params)
+        jac = torch.autograd.functional.jacobian(wrapped_cost, torch_params)
         exp_jac = torch.autograd.functional.jacobian(exp_fn, torch_params)
 
         if len(obs) > 1:

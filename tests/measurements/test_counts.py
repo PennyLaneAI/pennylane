@@ -482,7 +482,7 @@ class TestCountsIntegration:
                 qml.counts(qml.PauliZ(2)),
             )
 
-        result = circuit()
+        result = circuit()[0]
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)
@@ -696,21 +696,21 @@ class TestCountsIntegration:
             return qml.counts(wires=0), qml.apply(meas2)
 
         res = circuit()
-        assert isinstance(res, tuple)
+        assert isinstance(res[0], tuple)
 
         num_shot_bins = 1 if isinstance(shots, int) else len(shots)
 
         if num_shot_bins == 1:
             counts_term_indices = [i * 2 for i in range(num_shot_bins)]
             for ind in counts_term_indices:
-                assert isinstance(res[ind], dict)
+                assert isinstance(res[0][ind], dict)
         else:
             assert len(res) == 2
 
             assert isinstance(res[0], tuple)
-            assert isinstance(res[0][0], dict)
+            assert isinstance(res[0][0][0], dict)
             assert isinstance(res[1], tuple)
-            assert isinstance(res[1][0], dict)
+            assert isinstance(res[1][0][0], dict)
 
     def test_all_outcomes_kwarg_providing_observable(self):
         """Test that the dictionary keys *all* eigenvalues of the observable,
