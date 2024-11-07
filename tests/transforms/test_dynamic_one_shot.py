@@ -14,6 +14,8 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
+from functools import partial
+
 # pylint: disable=too-few-public-methods, too-many-arguments
 
 import numpy as np
@@ -89,6 +91,25 @@ def test_postselect_mode(postselect_mode, mocker):
         assert len(res) == shots
     assert np.all(res != np.iinfo(np.int32).min)
 
+@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+def test_postselect_mode_transform(postselect_mode):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    dev = qml.device("default.qubit", shots=shots)
+
+    @partial(qml.dynamic_one_shot)
+    @qml.qnode(dev, postselect_mode=postselect_mode)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    res = f(np.pi / 2)
+    if postselect_mode == "hw-like":
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+    assert np.all(res != np.iinfo(np.int32).min)
 
 @pytest.mark.jax
 @pytest.mark.parametrize("use_jit", [True, False])
