@@ -98,19 +98,15 @@ jobs:
         run: |
           git config user.name "$COMMIT_AUTHOR_NAME"
           git config user.email "$COMMIT_AUTHOR_EMAIL"
-
+          git stash push --all
 
           echo "Checking if $HEAD_BRANCH_NAME exists..."
           if git ls-remote --exit-code origin "refs/heads/$HEAD_BRANCH_NAME"; then
             echo "$HEAD_BRANCH_NAME exists! Checking out..."
-            git stash push --all
             git checkout "$HEAD_BRANCH_NAME"
-            git stash pop
           else
             echo "$HEAD_BRANCH_NAME does not exist! Creating..."
-            git stash push --all
             git checkout -b "$HEAD_BRANCH_NAME"
-            git stash pop
           fi
 
 
@@ -120,6 +116,7 @@ jobs:
           HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
           COMMIT_MESSAGE_DESCRIPTION: ${{ inputs.commit_message_description != '' && format('-> {0}', inputs.commit_message_description) || '' }}
         run: |
+          git checkout stash -- .
           git add ${{ inputs.artifact_save_path }}
           git commit -m "Check in artifacts$COMMIT_MESSAGE_DESCRIPTION"
           git push -f --set-upstream origin "$HEAD_BRANCH_NAME"
