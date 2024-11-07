@@ -28,6 +28,7 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.wires import Wires
+from .conftest import get_legacy_capabilities
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -140,9 +141,8 @@ class TestSupportedObservables:
         This test is skipped for devices that do not support tensor observables."""
         device_kwargs["wires"] = 2
         dev = qml.device(**device_kwargs)
-        supports_tensor = isinstance(dev, qml.devices.Device) or (
-            "supports_tensor_observables" in dev.capabilities()
-            and dev.capabilities()["supports_tensor_observables"]
+        supports_tensor = isinstance(dev, qml.devices.Device) or get_legacy_capabilities(dev).get(
+            "supports_tensor_observables", False
         )
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")

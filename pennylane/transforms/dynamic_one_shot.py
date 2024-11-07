@@ -166,6 +166,30 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     return aux_tapes, processing_fn
 
 
+def get_legacy_capabilities(dev):
+    """Gets the capabilities dictionary of a device."""
+
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        return dev.target_device.capabilities()
+
+    if isinstance(dev, qml.devices.LegacyDevice):
+        return dev.capabilities()
+
+    return {}
+
+
+def _supports_one_shot(dev: qml.devices.Device):
+    """Checks whether a device supports one-shot."""
+
+    if isinstance(dev, qml.devices.LegacyDevice):
+        return get_legacy_capabilities(dev).get("supports_mid_measure", False)
+
+    if dev.name in ("default.qubit", "lightning.qubit"):
+        return True
+
+    return "one-shot" in dev.capabilities.supported_mcm_methods
+
+
 @dynamic_one_shot.custom_qnode_transform
 def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
     """Custom qnode transform for ``dynamic_one_shot``."""
@@ -175,16 +199,12 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
             "when transforming a QNode."
         )
     if qnode.device is not None:
-        support_mcms = hasattr(qnode.device, "capabilities") and qnode.device.capabilities().get(
-            "supports_mid_measure", False
-        )
-        support_mcms = support_mcms or qnode.device.name in ("default.qubit", "lightning.qubit")
-        if not support_mcms:
+        if not _supports_one_shot(qnode.device):
             raise TypeError(
-                f"Device {qnode.device.name} does not support mid-circuit measurements "
-                "natively, and hence it does not support the dynamic_one_shot transform. "
-                "'default.qubit' and 'lightning.qubit' currently support mid-circuit "
-                "measurements and the dynamic_one_shot transform."
+                f"Device {qnode.device.name} does not support mid-circuit measurements and/or"
+                "one-shot execution mode natively, and hence it does not support the "
+                "dynamic_one_shot transform. 'default.qubit' and 'lightning.qubit' currently "
+                "support mid-circuit measurements and the dynamic_one_shot transform."
             )
     tkwargs.setdefault("device", qnode.device)
     return self.default_qnode_transform(qnode, targs, tkwargs)

@@ -16,6 +16,7 @@
 import pytest
 
 import pennylane as qml
+from .conftest import get_legacy_capabilities
 
 
 class TestTracker:
@@ -26,7 +27,7 @@ class TestTracker:
 
         dev = device(1)
 
-        if isinstance(dev, qml.devices.LegacyDevice) and not dev.capabilities().get(
+        if isinstance(dev, qml.devices.LegacyDevice) and not get_legacy_capabilities(dev).get(
             "supports_tracker", False
         ):
             pytest.skip("Device does not support a tracker")
@@ -38,7 +39,7 @@ class TestTracker:
 
         dev = device(1)
 
-        if isinstance(dev, qml.devices.LegacyDevice) and not dev.capabilities().get(
+        if isinstance(dev, qml.devices.LegacyDevice) and not get_legacy_capabilities(dev).get(
             "supports_tracker", False
         ):
             pytest.skip("Device does not support a tracker")

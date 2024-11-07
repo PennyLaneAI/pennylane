@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
+from .conftest import get_legacy_capabilities
 
 try:
     import tensorflow as tf
@@ -104,6 +105,7 @@ class TestDeviceProperties:
                 pytest.skip("test is old interface specific.")
 
 
+
 class TestCapabilities:
     """Test that the device declares its capabilities correctly."""
 
@@ -113,7 +115,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
         assert isinstance(cap, dict)
 
     def test_model_is_defined_valid_and_correct(self, device_kwargs):
@@ -122,7 +124,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
         assert "model" in cap
         assert cap["model"] in ["qubit", "cv"]
 
@@ -149,7 +151,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         if "passthru_interface" not in cap:
             pytest.skip("No passthru_interface capability specified by device.")
@@ -200,7 +202,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         if "supports_tensor_observables" not in cap:
             pytest.skip("No supports_tensor_observables capability specified by device.")
@@ -226,7 +228,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         @qml.qnode(dev)
         def circuit():
@@ -263,7 +265,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         if "returns_probs" not in cap:
             pytest.skip("No returns_probs capability specified by device.")
@@ -290,7 +292,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         assert "supports_broadcasting" in cap
 
