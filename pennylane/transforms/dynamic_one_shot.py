@@ -178,7 +178,7 @@ def get_legacy_capabilities(dev):
     return {}
 
 
-def _supports_one_shot(dev: qml.devices.Device):
+def _supports_one_shot(dev: "qml.devices.Device"):
     """Checks whether a device supports one-shot."""
 
     if isinstance(dev, qml.devices.LegacyDevice):
