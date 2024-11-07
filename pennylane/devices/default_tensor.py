@@ -14,8 +14,6 @@
 """
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
-import copy
-
 # pylint: disable=protected-access
 import os
 import warnings
@@ -24,7 +22,6 @@ from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
 from typing import Optional, Union
-from threadpoolctl import threadpool_limits
 
 import numpy as np
 
@@ -60,8 +57,10 @@ try:
     import quimb.tensor as qtn
 
     openblas_threads = os.environ.get("OPENBLAS_NUM_THREADS")
+    mkl_threads = os.environ.get("MKL_NUM_THREADS")
     openblas_threads = int(openblas_threads) if openblas_threads else None
-    TESTING = os.environ.get("FDX_TESTING")
+    mkl_threads = int(mkl_threads) if mkl_threads else None
+
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_quimb = False
 
@@ -422,7 +421,16 @@ class DefaultTensor(Device):
 
         # The `quimb` circuit is a class attribute so that we can implement methods
         # that access it as soon as the device is created before running a circuit.
-        # if self.wires:
+        if ( self.wires and (len(self.wires) > 10) ):
+            if not (openblas_threads or openblas_threads != 1):
+                warnings.warn(
+                    "\nThe environment variable OPENBLAS_NUM_THREADS is different from one and the system has wires > 10. To avoid a slowdown in performance we recommend you set OPENBLAS_NUM_THREADS=1"
+                )
+            if not (mkl_threads or mkl_threads != 1):
+                warnings.warn(
+                    "\nThe environment variable MKL_NUM_THREADS is different from one and the system has wires > 10. To avoid a slowdown in performance we recommend you set MKL_NUM_THREADS=1"
+                )
+
         self._quimb_circuit = self._initial_quimb_circuit(self.wires)
 
         shots = kwargs.pop("shots", None)
@@ -668,14 +676,7 @@ class DefaultTensor(Device):
                     f"Tensor on device has wires {self.wires.tolist()}"
                 )
             circuit = circuit.map_to_standard_wires()
-            if TESTING == 'true':
-                print('Use threadpool_limits')
-                with threadpool_limits(limits=1, user_api='blas'):
-                    result = self.simulate(circuit)
-                results.append(result)
-            else:
-                print('Use nothing')
-                results.append(self.simulate(circuit))
+            results.append(self.simulate(circuit))
 
         return tuple(results)
 
