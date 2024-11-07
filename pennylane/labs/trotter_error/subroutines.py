@@ -131,8 +131,9 @@ class PTerrorTensor(PTerror):
             # create mpo for the counterpart, the H_j fragment
             h1e = self.h1e * 0
             g2e = self.cdf_eri[jj]
-            Hj_mpo_py = self.driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=self.ecore, \
+            Hj_mpo = self.driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=self.ecore, \
                                     iprint=0, add_ident=False)
+            Hj_mpo_py = MPOTools.from_block2(Hj_mpo.prim_mpo)
 
             # evaluate all the six commutator expressions
             for label, mps in self.mf_mps.items(): #todo: make it more general
