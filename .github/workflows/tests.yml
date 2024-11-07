@@ -39,7 +39,7 @@ jobs:
   upload-stable-deps:
     needs: tests
     uses: ./.github/workflows/check_in_artifact.yml
-    if: github.event_name == 'push'
+    if: github.event_name == 'schedule'
     with:
       artifact_name_pattern: "frozen-*"
       artifact_save_path: ".github/stable/"
