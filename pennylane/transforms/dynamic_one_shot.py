@@ -168,14 +168,8 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
 
 def get_legacy_capabilities(dev):
     """Gets the capabilities dictionary of a device."""
-
-    if isinstance(dev, qml.devices.LegacyDeviceFacade):
-        return dev.target_device.capabilities()
-
-    if isinstance(dev, qml.devices.LegacyDevice):
-        return dev.capabilities()
-
-    return {}
+    assert isinstance(dev, qml.devices.LegacyDeviceFacade)
+    return dev.target_device.capabilities()
 
 
 def _supports_one_shot(dev: "qml.devices.Device"):
@@ -184,10 +178,9 @@ def _supports_one_shot(dev: "qml.devices.Device"):
     if isinstance(dev, qml.devices.LegacyDevice):
         return get_legacy_capabilities(dev).get("supports_mid_measure", False)
 
-    if dev.name in ("default.qubit", "lightning.qubit"):
-        return True
-
-    return "one-shot" in dev.capabilities.supported_mcm_methods
+    return dev.name in ("default.qubit", "lightning.qubit") or (
+        dev.capabilities is not None and "one-shot" in dev.capabilities.supported_mcm_methods
+    )
 
 
 @dynamic_one_shot.custom_qnode_transform
