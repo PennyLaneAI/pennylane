@@ -41,6 +41,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `gradient_fn` keyword argument has been renamed `diff_method`, to better align with the termionology
+  used by the `QNode`. `gradient_fn` will be removed in v0.41.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
