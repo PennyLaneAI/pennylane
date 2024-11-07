@@ -129,7 +129,7 @@ jobs:
           PR_TITLE: ${{ inputs.pull_request_title }}
           PR_BODY: ${{ inputs.pull_request_body }}
         run: |
-          EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json url --jq '.[0].url')"
+          EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
 
           if [ -n "${EXISTING_CLOSED_PR}" ]; then
             echo "Reopening PR... ${EXISTING_CLOSED_PR}"
@@ -137,7 +137,7 @@ jobs:
             exit 0
           fi
 
-          EXISTING_PR="$(gh pr list --state open --base master --head $HEAD_BRANCH_NAME --json url --jq '.[0].url')"
+          EXISTING_PR="$(gh pr list --state open --base master --head bot/stable-deps-update --json 'url' --jq '.[].url' | head -n 1)"
 
           if [ -n "${EXISTING_PR}" ]; then
             echo "PR already exists ==> ${EXISTING_PR}"
