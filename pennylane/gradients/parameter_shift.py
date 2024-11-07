@@ -62,15 +62,6 @@ of that observable.
 def _square_observable(obs):
     """Returns the square of an observable."""
 
-    if isinstance(obs, qml.operation.Tensor):
-        # Observable is a tensor, we must consider its
-        # component observables independently. Note that
-        # we assume all component observables are on distinct wires.
-        components_squared = [
-            NONINVOLUTORY_OBS[o.name](o) for o in obs.obs if o.name in NONINVOLUTORY_OBS
-        ]
-        return qml.operation.Tensor(*components_squared)
-
     if isinstance(obs, qml.ops.Prod):
         components_squared = [
             NONINVOLUTORY_OBS[o.name](o) for o in obs if o.name in NONINVOLUTORY_OBS
@@ -634,12 +625,7 @@ def _get_non_involuntory_indices(tape, var_indices):
     for i in var_indices:
         obs = tape.measurements[i].obs
 
-        if isinstance(obs, qml.operation.Tensor):
-            # Observable is a tensor product, we must investigate all constituent observables.
-            if any(o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs.obs):
-                non_involutory_indices.append(i)
-
-        elif isinstance(tape.measurements[i].obs, qml.ops.Prod):
+        if isinstance(tape.measurements[i].obs, qml.ops.Prod):
             if any(o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs):
                 non_involutory_indices.append(i)
 

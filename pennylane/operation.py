@@ -1938,40 +1938,6 @@ class Observable(Operator):
         """All observables must be hermitian"""
         return True
 
-    def _obs_data(self) -> tuple[str, Wires, tuple[int, ...]]:
-        r"""Extracts the data from an Observable and serializes it in an order-independent fashion.
-
-        This allows for comparison between observables that are equivalent, but are expressed
-        in different orders. For example, `qml.X(0) @ qml.Z(1)` and
-        `qml.Z(1) @ qml.X(0)` are equivalent observables with different orderings.
-
-        **Example**
-
-        >>> obs = qml.Hermitian([[0, -1j],[1j, 0]], wires=2)
-        >>> print(obs._obs_data())
-        ('Hermitian',
-        Wires([2]),
-        (b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
-        \x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0\xbf\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
-        \x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',))
-        """
-        # obs = Tensor(self).non_identity_obs
-        # tensor = set()
-        #
-        # for ob in obs:
-        #     parameters = tuple(param.tobytes() for param in ob.parameters)
-        #     if isinstance(ob, qml.GellMann):
-        #         parameters += (ob.hyperparameters["index"],)
-        #     tensor.add((ob.name, ob.wires, parameters))
-        #
-        # return tensor
-
-        parameters = tuple(param.tobytes() for param in self.parameters)
-        if isinstance(self, qml.GellMann):
-            parameters += (self.hyperparameters["index"],)
-
-        return self.name, self.wires, parameters
-
     def compare(
         self,
         other: Union["Observable", "qml.ops.LinearCombination"],
@@ -2003,12 +1969,7 @@ class Observable(Operator):
         >>> ob1.compare(ob2)
         False
         """
-        if isinstance(other, qml.ops.LinearCombination):
-            return other.compare(self)
-        if isinstance(other, Observable):
-            return other._obs_data() == self._obs_data()
-
-        raise ValueError("Can only compare with Observable or LinearCombination.")
+        return qml.equal(self, other)
 
 
 # =============================================================================

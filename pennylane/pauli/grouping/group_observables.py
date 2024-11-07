@@ -476,8 +476,8 @@ def group_observables(
     graph using graph-colouring heuristic algorithms.
 
     Args:
-        observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
-            operation instances and :class:`~.Tensor` instances thereof)
+        observables (list[Operator]): a list of Pauli word ``Observable`` instances (Pauli
+            operation instances and tensor products thereof)
         coefficients (TensorLike): A tensor or list of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.

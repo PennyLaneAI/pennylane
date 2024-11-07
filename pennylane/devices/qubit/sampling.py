@@ -25,7 +25,7 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     Shots,
 )
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation
@@ -236,9 +236,7 @@ def measure_with_samples(
     groups, indices = _group_measurements(mps)
     all_res = []
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, (Hamiltonian, LinearCombination)
-        ):
+        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, LinearCombination):
             measure_fn = _measure_hamiltonian_with_samples
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
             measure_fn = _measure_sum_with_samples

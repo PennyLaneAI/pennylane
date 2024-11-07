@@ -21,7 +21,6 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract
-from pennylane.operation import Tensor
 from pennylane.ops import (
     Hamiltonian,
     Identity,
@@ -399,15 +398,6 @@ def _(op: PauliZ):
 @_pauli_sentence.register
 def _(op: Identity):  # pylint:disable=unused-argument
     return PauliSentence({PauliWord({}): 1.0})
-
-
-@_pauli_sentence.register
-def _(op: Tensor):
-    if not is_pauli_word(op):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-    factors = (_pauli_sentence(factor) for factor in op.obs)
-    return reduce(lambda a, b: a @ b, factors)
 
 
 @_pauli_sentence.register

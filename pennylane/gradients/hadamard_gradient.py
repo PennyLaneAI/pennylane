@@ -321,9 +321,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             measurements = []
             # Add the Y measurement on the aux qubit
             for m in tape.measurements:
-                if isinstance(m.obs, qml.operation.Tensor):
-                    obs_new = m.obs.obs.copy()
-                elif m.obs:
+                if m.obs:
                     obs_new = [m.obs]
                 else:
                     m_wires = m.wires if len(m.wires) > 0 else tape.wires
