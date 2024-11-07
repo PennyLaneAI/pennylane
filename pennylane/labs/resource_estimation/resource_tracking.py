@@ -24,7 +24,7 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .resource_operator import ResourceOperator
+from .resource_operator import ResourceOperator, ResourceOperatorNotImplemented
 from .resource_container import CompressedResourceOp, Resources
 
 # pylint: disable=dangerous-default-value,protected-access
@@ -89,9 +89,6 @@ def resources_from_operation(
     obj: Operation, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Resources:
     """Get resources from an operation"""
-
-    if not isinstance(obj, Operation):
-        raise TypeError(f"obj must be of type Operation. Got type {type(obj)}.")
 
     if not isinstance(obj, ResourceOperator):
         obj = _op_to_resource_op(obj)

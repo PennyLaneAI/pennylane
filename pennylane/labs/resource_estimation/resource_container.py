@@ -16,7 +16,7 @@ import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-import pennylane.labs.resource_estimation.resource_operator as rc
+from pennylane.labs.resource_estimation import ResourceOperator
 
 
 class CompressedResourceOp:
@@ -76,7 +76,7 @@ class CompressedResourceOp:
             >>> print(op_tp)
             QSVT(num_wires=5, num_angles=100)
         """
-        if not issubclass(op_type, rc.ResourceOperator):
+        if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
 
         self._name = (op_type.__name__).replace("Resource", "")
