@@ -35,8 +35,6 @@ jobs:
 
   sphinx:
     # if: github.event.pull_request.draft == false
-    env:
-      DEPS_BRANCH: bot/stable-deps-update
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
@@ -63,14 +61,19 @@ jobs:
         name: frozen-doc
         path: doc.txt
 
-    - name: Create pull request with frozen requirements
-      uses: ./.github/workflows/check_in_artifact.yml
-      with:
-        artifact_name_pattern: "frozen-doc"
-        artifact_save_path: ".github/stable/"
-        # pull_request_head_branch_name: bot/stable-deps-update
-        pull_request_head_branch_name: bot/test-stable-deps-update
-        commit_message_description: Frozen Doc Dependencies Update
-        pull_request_title: Update stable dependency files
-        pull_request_body: |
-          Automatic update of stable requirement files to snapshot valid python environments.
+  upload-stable-deps:
+    # if: github.event.pull_request.draft == false
+    needs:
+      - determine_runner
+      - sphinx
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    uses: ./.github/workflows/check_in_artifact.yml
+    with:
+      artifact_name_pattern: "frozen-doc"
+      artifact_save_path: ".github/stable/"
+      # pull_request_head_branch_name: bot/stable-deps-update
+      pull_request_head_branch_name: bot/test-stable-deps-update
+      commit_message_description: Frozen Doc Dependencies Update
+      pull_request_title: Update stable dependency files
+      pull_request_body: |
+        Automatic update of stable requirement files to snapshot valid python environments.
