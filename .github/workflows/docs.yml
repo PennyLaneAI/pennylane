@@ -17,11 +17,11 @@
 name: "Documentation check"
 on:
   pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      # - ready_for_review
+    # types:
+    #   - opened
+    #   - reopened
+    #   - synchronize
+    #   - ready_for_review
 
 permissions: write-all
 
@@ -68,12 +68,12 @@ jobs:
       - sphinx
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     uses: ./.github/workflows/check_in_artifact.yml
-    with:
-      artifact_name_pattern: "frozen-doc"
-      artifact_save_path: ".github/stable/"
-      # pull_request_head_branch_name: bot/stable-deps-update
-      pull_request_head_branch_name: bot/test-stable-deps-update
-      commit_message_description: Frozen Doc Dependencies Update
-      pull_request_title: Update stable dependency files
-      pull_request_body: |
-        Automatic update of stable requirement files to snapshot valid python environments.
+      with:
+        artifact_name_pattern: "frozen-doc"
+        artifact_save_path: ".github/stable/"
+        # pull_request_head_branch_name: bot/stable-deps-update
+        pull_request_head_branch_name: bot/test-stable-deps-update
+        commit_message_description: Frozen Doc Dependencies Update
+        pull_request_title: Update stable dependency files
+        pull_request_body: |
+          Automatic update of stable requirement files to snapshot valid python environments.
