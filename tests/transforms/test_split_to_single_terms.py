@@ -48,12 +48,12 @@ complex_obs_list = [
 
 # pylint: disable=too-few-public-methods
 class NoTermsDevice(qml.devices.DefaultQubit):
-    """A device that builds on default.qubit, but won't accept Hamiltonian, LinearCombination and Sum"""
+    """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 
     def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
         for t in circuits:
             for mp in t.measurements:
-                if mp.obs and isinstance(mp.obs, (qml.ops.Hamiltonian, qml.ops.Sum)):
+                if mp.obs and isinstance(mp.obs, qml.ops.Sum):
                     raise ValueError(
                         "no terms device does not accept observables with multiple terms"
                     )
@@ -236,12 +236,12 @@ class TestUnits:
 
 class TestIntegration:
     """Tests the ``split_to_single_terms`` transform performed on a QNode. In these tests,
-    the supported observables of ``default_qubit`` are mocked to make the device reject Sum,
-    Hamiltonian and LinearCombination, to ensure the transform works as intended."""
+    the supported observables of ``default_qubit`` are mocked to make the device reject Sum
+    and LinearCombination, to ensure the transform works as intended."""
 
     def test_splitting_sums(self):
         """Test that the transform takes a tape that is not executable on a device that
-        doesn't support Sum/Hamiltonian, and turns it into one that is"""
+        doesn't support Sum, and turns it into one that is"""
 
         coeffs, obs = [0.1, 0.2, 0.3, 0.4, 0.5], single_term_obs_list
 

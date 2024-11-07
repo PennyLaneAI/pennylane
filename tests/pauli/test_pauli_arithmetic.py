@@ -419,11 +419,6 @@ class TestPauliWord:
         res = pw4.operation()
         assert res == qml.Identity()
 
-    def test_hamiltonian_deprecation(self):
-        """Test that the correct deprecation warning is raised when calling hamiltonian()"""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="PauliWord.hamiltonian"):
-            _ = pw1.hamiltonian()
-
     def test_pickling(self):
         """Check that pauliwords can be pickled and unpickled."""
         pw = PauliWord({2: "X", 3: "Y", 4: "Z"})
@@ -954,11 +949,6 @@ class TestPauliSentence:
         id = qml.s_prod(0.0, qml.Identity(wires=["a", "b"]))
 
         qml.assert_equal(op, id)
-
-    def test_hamiltonian_deprecation(self):
-        """Test that the correct deprecation warning is raised when calling hamiltonian()"""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="PauliSentence.hamiltonian"):
-            _ = ps1.hamiltonian()
 
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""

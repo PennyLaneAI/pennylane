@@ -48,7 +48,6 @@ from pennylane.pauli import (
     pauli_word_to_string,
     qwc_complement_adj_matrix,
     qwc_rotation,
-    simplify,
     string_to_pauli_word,
 )
 
@@ -949,17 +948,6 @@ class TestMeasurementTransformations:
         qubit-wise commuting Pauli words."""
 
         assert pytest.raises(ValueError, diagonalize_qwc_pauli_words, not_qwc_grouping)
-
-
-class TestObservableHF:
-
-    def test_simplify_deprecation(self):
-        """Test that a deprecation warning is raised when using simplify"""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian"):
-            h = qml.ops.Hamiltonian([1.5, 2.5], [qml.X(0), qml.Z(0)])
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="qml.pauli.simplify"):
-            _ = simplify(h)
 
 
 # removed a fixture to only use legacy_opmath because its not clear why it there

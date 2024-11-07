@@ -29,36 +29,6 @@ from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
 
-
-def test_isinstance_Hamiltonian():
-    """Test that Hamiltonian and LinearCombination can be used interchangeably when new opmath is disabled or enabled"""
-    H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
-    assert isinstance(H, qml.Hamiltonian)
-
-
-def test_mixed_legacy_warning_Hamiltonian_legacy():
-    """Test that mixing legacy ops and LinearCombination.compare raises a warning in legacy opmath"""
-
-    op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
-    op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
-
-    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
-        res = op1.compare(op2)
-
-    assert res
-
-
-def test_mixed_legacy_warning_Tensor():
-    """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
-    op1 = qml.ops.LinearCombination([1.0], [X(0) @ qml.Hadamard(1)])
-    op2 = qml.operation.Tensor(X(0), qml.Hadamard(1))
-
-    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
-        res = op1.compare(op2)
-
-    assert res
-
-
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
     ([-0.05, 0.17], 1.7, "autograd"),

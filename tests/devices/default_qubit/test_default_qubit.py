@@ -821,9 +821,7 @@ class TestSumOfTermsDifferentiability:
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if style == "hamiltonian":
-            H = H.pauli_rep.hamiltonian()
-        elif style == "hermitian":
+        if style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return dev.execute(qs)
@@ -836,11 +834,8 @@ class TestSumOfTermsDifferentiability:
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if style == "hamiltonian":
-            H = H.pauli_rep.hamiltonian()
-        elif style == "hermitian":
+        if style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return DefaultQubit().execute(qs)
 
@@ -853,7 +848,7 @@ class TestSumOfTermsDifferentiability:
         return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_autograd_backprop(self, style):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
         dev = DefaultQubit()
@@ -868,7 +863,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_jax_backprop(self, style, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
@@ -885,7 +880,7 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(g, expected_g)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_torch_backprop(self, style):
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
@@ -903,7 +898,7 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(x.grad, x2.grad)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_tf_backprop(self, style):
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf

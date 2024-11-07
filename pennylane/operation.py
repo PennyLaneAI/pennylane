@@ -244,7 +244,6 @@ from .pytrees import register_pytree
 # =============================================================================
 
 SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
-__use_new_opmath = True
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
 
 

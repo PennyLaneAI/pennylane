@@ -307,7 +307,7 @@ class TestDotPauliSentence:
     def test_coeffs_and_ops(self):
         """Test that the coefficients and operators of the returned PauliSentence are correct."""
         ps = qml.dot(coeffs0, ops0, pauli=True)
-        h = ps.hamiltonian()
+        h = ps.operation()
         assert qml.math.allequal(h.coeffs, coeffs0)
         for _op1, _op2 in zip(h.ops, ops0):
             qml.assert_equal(_op1, _op2)
@@ -318,15 +318,15 @@ class TestDotPauliSentence:
             coeffs=[0.12, 1.2, 12], ops=[qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)], pauli=True
         )
         assert len(ps) == 1
-        h = ps.hamiltonian()
-        assert len(h.ops) == 1
-        qml.assert_equal(h.ops[0], qml.PauliX(0))
+        h = ps.operation()
+        assert isinstance(h, qml.ops.SProd)
+        qml.assert_equal(h.base, qml.PauliX(0))
 
     def test_dot_returns_hamiltonian_simplified(self):
         """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
         to the simplified hamiltonian."""
         ps = qml.dot(coeffs0, ops0, pauli=True)
-        h_ps = ps.hamiltonian()
+        h_ps = ps.operation()
         h = qml.Hamiltonian(coeffs0, ops0)
         h.simplify()
         qml.assert_equal(h_ps, h)
