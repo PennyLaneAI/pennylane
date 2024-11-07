@@ -41,20 +41,21 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
     - uses: actions/checkout@v4
-    - uses: PennyLaneAI/sphinx-action@master
-      with:
-        docs-folder: "doc/"
-        pre-build-command: >
-            apt install -y graphviz
-            && pip3 install -r doc/requirements.txt
-            && pip3 install .
-            && pip3 install openfermionpyscf
-            && pip3 install aiohttp fsspec h5py
-        build-command: "sphinx-build -b html . _build -W --keep-going"
+    # - uses: PennyLaneAI/sphinx-action@master
+    #   with:
+    #     docs-folder: "doc/"
+    #     pre-build-command: >
+    #         apt install -y graphviz
+    #         && pip3 install -r doc/requirements.txt
+    #         && pip3 install .
+    #         && pip3 install openfermionpyscf
+    #         && pip3 install aiohttp fsspec h5py
+    #     build-command: "sphinx-build -b html . _build -W --keep-going"
 
     - name: Freeze dependencies
       shell: bash
-      run: pip freeze | grep -v 'file:///' > doc.txt
+      # run: pip freeze | grep -v 'file:///' > doc.txt
+      run: echo "bleh" > doc.txt
 
     - name: Upload frozen requirements
       uses: actions/upload-artifact@v4
@@ -67,7 +68,8 @@ jobs:
       with:
         artifact_name_pattern: "frozen-doc"
         artifact_save_path: ".github/stable/"
-        pull_request_head_branch_name: bot/stable-deps-update
+        # pull_request_head_branch_name: bot/stable-deps-update
+        pull_request_head_branch_name: bot/test-stable-deps-update
         commit_message_description: Frozen Doc Dependencies Update
         pull_request_title: Update stable dependency files
         pull_request_body: |
