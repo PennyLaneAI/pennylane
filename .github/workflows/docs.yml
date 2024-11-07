@@ -53,9 +53,8 @@ jobs:
         build-command: "sphinx-build -b html . _build -W --keep-going"
 
     - name: Freeze dependencies
-        shell: bash
-        if: inputs.requirements_file != ''
-        run: pip freeze | grep -v 'file:///' > doc.txt
+      shell: bash
+      run: pip freeze | grep -v 'file:///' > doc.txt
 
     - name: Upload frozen requirements
       uses: actions/upload-artifact@v4
