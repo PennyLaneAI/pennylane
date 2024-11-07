@@ -124,7 +124,7 @@ Operator Types
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrepBase
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
 
 Errors
@@ -1927,8 +1927,9 @@ class Observable(Operator):
             * `"_measurements"`
             * None
 
-        Non-pauli observables, like Tensor, Hermitian, and Hamiltonian, should not be processed into any queue.
-        The Pauli observables double as Operations, and should therefore be processed into `_ops` if unowned.
+        Non-pauli observables like Hermitian should not be processed into any queue.
+        The Pauli observables double as Operations, and should therefore be processed
+        into `_ops` if unowned.
         """
         return "_ops" if isinstance(self, Operation) else None
 
@@ -1937,8 +1938,8 @@ class Observable(Operator):
         """All observables must be hermitian"""
         return True
 
-    def _obs_data(self) -> set[tuple[str, Wires, tuple[int, ...]]]:
-        r"""Extracts the data from an Observable or Tensor and serializes it in an order-independent fashion.
+    def _obs_data(self) -> tuple[str, Wires, tuple[int, ...]]:
+        r"""Extracts the data from an Observable and serializes it in an order-independent fashion.
 
         This allows for comparison between observables that are equivalent, but are expressed
         in different orders. For example, `qml.X(0) @ qml.Z(1)` and
@@ -1946,29 +1947,38 @@ class Observable(Operator):
 
         **Example**
 
-        >>> tensor = qml.X(0) @ qml.Z(1)
-        >>> print(tensor._obs_data())
-        {("PauliZ", Wires([1]), ()), ("PauliX", Wires([0]), ())}
+        >>> obs = qml.Hermitian([[0, -1j],[1j, 0]], wires=2)
+        >>> print(obs._obs_data())
+        ('Hermitian',
+        Wires([2]),
+        (b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+        \x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0\xbf\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+        \x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',))
         """
-        obs = Tensor(self).non_identity_obs
-        tensor = set()
+        # obs = Tensor(self).non_identity_obs
+        # tensor = set()
+        #
+        # for ob in obs:
+        #     parameters = tuple(param.tobytes() for param in ob.parameters)
+        #     if isinstance(ob, qml.GellMann):
+        #         parameters += (ob.hyperparameters["index"],)
+        #     tensor.add((ob.name, ob.wires, parameters))
+        #
+        # return tensor
 
-        for ob in obs:
-            parameters = tuple(param.tobytes() for param in ob.parameters)
-            if isinstance(ob, qml.GellMann):
-                parameters += (ob.hyperparameters["index"],)
-            tensor.add((ob.name, ob.wires, parameters))
+        parameters = tuple(param.tobytes() for param in self.parameters)
+        if isinstance(self, qml.GellMann):
+            parameters += (self.hyperparameters["index"],)
 
-        return tensor
+        return self.name, self.wires, parameters
 
     def compare(
         self,
-        other: Union["Tensor", "Observable", "qml.ops.LinearCombination"],
+        other: Union["Observable", "qml.ops.LinearCombination"],
     ) -> bool:
-        r"""Compares with another :class:`~.Hamiltonian`, :class:`~Tensor`, or :class:`~Observable`,
-        to determine if they are equivalent.
+        r"""Compares with another :class:`~Observable`, to determine if they are equivalent.
 
-        Observables/Hamiltonians are equivalent if they represent the same operator
+        Observables are equivalent if they represent the same operator
         (their matrix representations are equal), and they are defined on the same wires.
 
         .. Warning::
@@ -1976,8 +1986,8 @@ class Observable(Operator):
             The compare method does **not** check if the matrix representation
             of a :class:`~.Hermitian` observable is equal to an equivalent
             observable expressed in terms of Pauli matrices.
-            To do so would require the matrix form of Hamiltonians and Tensors
-            be calculated, which would drastically increase runtime.
+            To do so would require the matrix form to be calculated, which would
+            drastically increase runtime.
 
         Returns:
             (bool): True if equivalent.
