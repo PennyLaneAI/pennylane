@@ -18,12 +18,11 @@ import itertools
 import numbers
 
 # pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
-import warnings
 from copy import copy
 from typing import Union
 
 import pennylane as qml
-from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath
+from pennylane.operation import Observable, Operator
 
 from .sum import Sum
 
@@ -137,7 +136,7 @@ class LinearCombination(Sum):
 
         self._coeffs = coeffs
 
-        self._ops = [convert_to_opmath(op) for op in observables]
+        self._ops = observables
 
         self._hyperparameters = {"ops": self._ops}
 

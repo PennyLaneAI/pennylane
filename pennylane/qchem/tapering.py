@@ -23,7 +23,6 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.operation import convert_to_opmath
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
@@ -607,7 +606,7 @@ def _build_generator(operation, wire_order, op_gen=None):
             raise ValueError(
                 f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
             )
-        op_gen = convert_to_opmath(op_gen).pauli_rep
+        op_gen = op_gen.pauli_rep
 
     return op_gen
 
@@ -760,7 +759,7 @@ def taper_operation(
     # Obtain the tapered generator for the operation
     with qml.QueuingManager.stop_recording():
         # Get pauli rep for symmetery generators
-        ps_gen = list(map(lambda x: convert_to_opmath(x).pauli_rep, generators))
+        ps_gen = list(map(lambda x: x.pauli_rep, generators))
 
         gen_tapered = PauliSentence({})
         if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qml.math.allclose(

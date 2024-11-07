@@ -698,7 +698,7 @@ class TestPauliGroup:
         obtained_product = qml.prod(pauli_word_1, pauli_word_2).simplify()
         if isinstance(obtained_product, qml.ops.SProd):  # don't care about phase here
             obtained_product = obtained_product.base
-        assert obtained_product == qml.operation.convert_to_opmath(expected_product)
+        assert obtained_product == expected_product
 
     @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,expected_phase",
@@ -921,15 +921,9 @@ class TestMeasurementTransformations:
         ),
     ]
 
-    @pytest.mark.parametrize("convert_to_opmath", (True, False))
     @pytest.mark.parametrize("qwc_grouping,qwc_sol_tuple", qwc_diagonalization_io)
-    def test_diagonalize_qwc_pauli_words(self, qwc_grouping, qwc_sol_tuple, convert_to_opmath):
+    def test_diagonalize_qwc_pauli_words(self, qwc_grouping, qwc_sol_tuple):
         """Tests for validating diagonalize_qwc_pauli_words solutions."""
-
-        if convert_to_opmath:
-            qwc_grouping = [qml.operation.convert_to_opmath(o) for o in qwc_grouping]
-            diag_terms = [qml.operation.convert_to_opmath(o) for o in qwc_sol_tuple[1]]
-            qwc_sol_tuple = (qwc_sol_tuple[0], diag_terms)
 
         qwc_rot, diag_qwc_grouping = diagonalize_qwc_pauli_words(qwc_grouping)
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple

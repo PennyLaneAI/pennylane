@@ -20,7 +20,7 @@ from typing import Union
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator, TermsUndefinedError, convert_to_opmath
+from pennylane.operation import Operator, TermsUndefinedError
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -73,7 +73,6 @@ def s_prod(scalar, operator, lazy=True, id=None):
     array([[ 0., 2.],
            [ 2., 0.]])
     """
-    operator = convert_to_opmath(operator)
     if lazy or not isinstance(operator, SProd):
         return SProd(scalar, operator, id=id)
 
