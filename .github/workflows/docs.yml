@@ -21,20 +21,20 @@ on:
       - opened
       - reopened
       - synchronize
-      - ready_for_review
+      # - ready_for_review
 
 permissions: write-all
 
 jobs:
   determine_runner:
-    if: github.event.pull_request.draft == false
+    # if: github.event.pull_request.draft == false
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
       default_runner: ubuntu-latest
 
   sphinx:
-    if: github.event.pull_request.draft == false
+    # if: github.event.pull_request.draft == false
     env:
       DEPS_BRANCH: bot/stable-deps-update
     needs: [determine_runner]
