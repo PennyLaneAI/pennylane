@@ -16,8 +16,6 @@ Tests for the transform implementing the deferred measurement principle.
 """
 from functools import partial
 
-# pylint: disable=too-few-public-methods, too-many-arguments
-
 import numpy as np
 import pytest
 
@@ -34,6 +32,8 @@ from pennylane.transforms.dynamic_one_shot import (
     fill_in_value,
     parse_native_mid_circuit_measurements,
 )
+
+# pylint: disable=too-few-public-methods, too-many-arguments
 
 
 @pytest.mark.parametrize(
