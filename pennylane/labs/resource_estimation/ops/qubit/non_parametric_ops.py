@@ -20,7 +20,7 @@ import pennylane.labs.resource_estimation as re
 # pylint: disable=arguments-differ
 
 
-class ResourceHadamard(qml.Hadamard, re.ResourceConstructor):
+class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     """Resource class for Hadamard"""
 
     @staticmethod
@@ -35,7 +35,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceS(qml.S, re.ResourceConstructor):
+class ResourceS(qml.S, re.ResourceOperator):
     """Resource class for S"""
 
     @staticmethod
@@ -54,7 +54,7 @@ class ResourceS(qml.S, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
+class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     """Resource class for SWAP"""
 
     @staticmethod
@@ -73,7 +73,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceT(qml.T, re.ResourceConstructor):
+class ResourceT(qml.T, re.ResourceOperator):
     """Resource class for T"""
 
     @staticmethod

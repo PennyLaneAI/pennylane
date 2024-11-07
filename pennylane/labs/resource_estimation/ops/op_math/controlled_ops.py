@@ -20,7 +20,7 @@ import pennylane.labs.resource_estimation as re
 # pylint: disable=arguments-differ,too-many-ancestors
 
 
-class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstructor):
+class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
     """Resource class for ControlledPhaseShift"""
 
     @staticmethod
@@ -43,7 +43,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstruc
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
+class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     """Resource class for CNOT"""
 
     @staticmethod

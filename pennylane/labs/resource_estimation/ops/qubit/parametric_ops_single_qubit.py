@@ -32,7 +32,7 @@ def _rotation_resources(epsilon=10e-3):
     return gate_types
 
 
-class ResourcePhaseShift(qml.PhaseShift, re.ResourceConstructor):
+class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     """Resource class for PhaseShift"""
 
     @staticmethod
@@ -53,7 +53,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceRX(qml.RX, re.ResourceConstructor):
+class ResourceRX(qml.RX, re.ResourceOperator):
     """Resource class for RX"""
 
     @staticmethod
@@ -68,7 +68,7 @@ class ResourceRX(qml.RX, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceRY(qml.RY, re.ResourceConstructor):
+class ResourceRY(qml.RY, re.ResourceOperator):
     """Resource class for RY"""
 
     @staticmethod
@@ -83,7 +83,7 @@ class ResourceRY(qml.RY, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceRZ(qml.RZ, re.ResourceConstructor):
+class ResourceRZ(qml.RZ, re.ResourceOperator):
     """Resource class for RZ"""
 
     @staticmethod
@@ -98,7 +98,7 @@ class ResourceRZ(qml.RZ, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceRot(qml.Rot, re.ResourceConstructor):
+class ResourceRot(qml.Rot, re.ResourceOperator):
     """Resource class for Rot"""
 
     @staticmethod

@@ -14,7 +14,7 @@
 r"""
 .. currentmodule:: pennylane
 
-This module module contains experimental features enabling
+This module contains experimental features enabling
 advanced quantum computing research.
 
 .. warning::
@@ -32,7 +32,7 @@ Resource Estimation
 
     ~Resources
     ~CompressedResourceOp
-    ~ResourceConstructor
+    ~ResourceOperator
 
 Errors
 ~~~~~~
@@ -46,7 +46,7 @@ Errors
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
-    ResourceConstructor,
+    ResourceOperator,
     ResourcesNotDefined,
 )
 
