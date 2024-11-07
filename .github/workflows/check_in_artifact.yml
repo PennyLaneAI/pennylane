@@ -69,26 +69,26 @@ on:
 jobs:
   check_in_artifact:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout master
         uses: actions/checkout@v4
         with:
           fetch-depth: ${{ inputs.master_branch_fetch_depth }}
           ref: master
-      
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: ${{ inputs.artifact_name_pattern }}
           path: ${{ inputs.artifact_save_path }}
           merge-multiple: ${{ inputs.merge_multiple }}
-      
+
       - name: Determine if changes have been made
         id: changed
         run: |
           echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
-      
+
       - name: Prepare Commit Author
         if: steps.changed.outputs.has_changes != '0'
         env:
@@ -98,16 +98,22 @@ jobs:
         run: |
           git config user.name "$COMMIT_AUTHOR_NAME"
           git config user.email "$COMMIT_AUTHOR_EMAIL"
-          
+
+
           echo "Checking if $HEAD_BRANCH_NAME exists..."
           if git ls-remote --exit-code origin "refs/heads/$HEAD_BRANCH_NAME"; then
             echo "$HEAD_BRANCH_NAME exists! Checking out..."
+            git stash push --all
             git checkout "$HEAD_BRANCH_NAME"
+            git stash pop
           else
             echo "$HEAD_BRANCH_NAME does not exist! Creating..."
+            git stash push --all
             git checkout -b "$HEAD_BRANCH_NAME"
+            git stash pop
           fi
-      
+
+
       - name: Stage changes
         if: steps.changed.outputs.has_changes != '0'
         env:
@@ -117,7 +123,7 @@ jobs:
           git add ${{ inputs.artifact_save_path }}
           git commit -m "Check in artifacts$COMMIT_MESSAGE_DESCRIPTION"
           git push -f --set-upstream origin "$HEAD_BRANCH_NAME"
-      
+
       # Create PR to master
       - name: Create Pull Request to master
         if: steps.changed.outputs.has_changes != '0'
@@ -128,15 +134,15 @@ jobs:
           PR_BODY: ${{ inputs.pull_request_body }}
         run: |
           EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json url --jq '.[0].url')"
-          
+
           if [ -n "${EXISTING_CLOSED_PR}" ]; then
             echo "Reopening PR... ${EXISTING_CLOSED_PR}"
             gh pr reopen "${EXISTING_CLOSED_PR}"
             exit 0
           fi
-          
+
           EXISTING_PR="$(gh pr list --state open --base master --head $HEAD_BRANCH_NAME --json url --jq '.[0].url')"
-          
+
           if [ -n "${EXISTING_PR}" ]; then
             echo "PR already exists ==> ${EXISTING_PR}"
             exit 0
