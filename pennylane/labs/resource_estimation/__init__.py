@@ -32,17 +32,9 @@ Base Objects
     ~Resources
     ~CompressedResourceOp
 
-Exceptions
-~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourcesNotDefined
-
 """
 
-from .resource_operator import ResourceOperator, ResourcesNotDefined
+from .resource_operator import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources
 from .resource_tracking import get_resources, DefaultGateSet, _StandardGateSet, resource_config
 
