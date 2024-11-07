@@ -69,6 +69,7 @@ jobs:
     with:
       artifact_name_pattern: "frozen-doc"
       artifact_save_path: ".github/stable/"
+      merge_multiple: true
       pull_request_head_branch_name: bot/stable-deps-update
       commit_message_description: Frozen Doc Dependencies Update
       pull_request_title: Update stable dependency files
