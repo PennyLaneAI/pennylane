@@ -796,18 +796,12 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn == qml.gradients.param_shift
+        cost_fn.diff_method == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn == "backprop"
+        cost_fn.diff_method == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
