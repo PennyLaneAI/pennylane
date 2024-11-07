@@ -23,7 +23,7 @@ from pennylane import math
 def create_initial_state(
     # pylint: disable=unsupported-binary-operation
     wires: qml.wires.Wires | Iterable,
-    prep_operation: qml.operation.StatePrepBase = None,
+    prep_operation: qml.operation.StatePrepBase | qml.QubitDensityMatrix = None,
     like: str = None,
 ):
     r"""
@@ -47,10 +47,19 @@ def create_initial_state(
         state[(0,) * num_axes] = 1
         return math.asarray(state, like=like)
 
-    # Here, to avoid extending the previous class defined in `StatePrepBase`, we directly call the method `state_vector`. However, this requires some levels of abstract translation between state vectors and density matrices.
-    # The concise explanation is that either state vectors or density matrices are always originally just higher-rank tensors. The only diff is that state vectors are originally of rank num_wires, while density matrices are of rank 2*num_wires. Therefore, we can always define the density matrices as the same wires, appended by a 'shifted' set of wires by num_wires. This idea is also used in the wire sewing technique in the catalyst package.
-    dm_wires = qml.wires.Wires(wires + [w + num_wires for w in wires])
-    density_matrix = prep_operation.state_vector(wire_order=list(dm_wires))
+    if isinstance(prep_operation, qml.QubitDensityMatrix):
+        density_matrix = prep_operation.data
+
+    else:
+        pure_state = prep_operation.state_vector(wire_order=list(wires))
+        density_matrix = np.outer(pure_state, np.conj(pure_state))
+    return _post_process(density_matrix, num_axes, like)
+
+
+def _post_process(density_matrix, num_axes, like):
+    r"""
+    This post processor is necessary to ensure that the density matrix is in the correct format, i.e. the original tensor form, instead of the pure matrix form, as requested by all the other more fundamental chore functions in the module (again from some legacy code).
+    """
     density_matrix = np.reshape(density_matrix, (-1,) + (2,) * num_axes)
     dtype = str(density_matrix.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype

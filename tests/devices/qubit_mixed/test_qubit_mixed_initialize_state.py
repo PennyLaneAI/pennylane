@@ -24,6 +24,14 @@ from pennylane.operation import StatePrepBase
 ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
 
 
+def allzero_vec(num_wires, interface="numpy"):
+    """Returns the state vector of the all-zero state."""
+    state = np.zeros(2**num_wires, dtype=complex)
+    state[0] = 1
+    state = math.asarray(state, like=interface)
+    return state
+
+
 def allzero_dm(num_wires, interface="numpy"):
     """Returns the density matrix of the all-zero state."""
     num_axes = 2 * num_wires
@@ -69,8 +77,10 @@ class TestInitializeState:
         """Tests that create_initial_state works with a state-prep operation."""
         wires = [0, 1]
         num_wires = len(wires)
+
+        vec_correct = allzero_vec(num_wires, interface)
         state_correct = allzero_dm(num_wires, interface)
-        prep_op = self.DefaultPrep(qml.math.array(state_correct, like=interface), wires=wires)
+        prep_op = self.DefaultPrep(qml.math.array(vec_correct, like=interface), wires=wires)
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
         assert math.allequal(state, state_correct)
         assert math.get_interface(state) == interface
@@ -80,13 +90,22 @@ class TestInitializeState:
         wires = [0, 1]
         num_wires = len(wires)
         # The following 2 lines are for reusing the statevec code on the density matrices
-        wires_conj = [w + num_wires for w in wires]
-        wires_mimic = wires + wires_conj
+        vec_correct = allzero_vec(num_wires, interface)
         state_correct = allzero_dm(num_wires, interface)
-        state_correct_flatten = math.reshape(state_correct, [-1])
-        prep_op = StatePrep(
-            qml.math.array(state_correct_flatten, like=interface), wires=wires_mimic
-        )
+        state_correct_flatten = math.reshape(vec_correct, [-1])
+        prep_op = StatePrep(qml.math.array(state_correct_flatten, like=interface), wires=wires)
+        state = create_initial_state(wires, prep_operation=prep_op, like=interface)
+        assert math.allequal(state, state_correct)
+        assert math.get_interface(state) == interface
+
+    def test_create_initial_state_with_QubitDensityMatrix(self, interface):
+        """Tests that create_initial_state works with a state-prep operation."""
+        wires = [0, 1]
+        num_wires = len(wires)
+        # The following 2 lines are for reusing the statevec code on the density matrices
+        wires_conj = [w + num_wires for w in wires]
+        state_correct = allzero_dm(num_wires, interface)
+        prep_op = qml.QubitDensityMatrix(qml.math.array(state_correct, like=interface), wires=wires)
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
         assert math.allequal(state, state_correct)
         assert math.get_interface(state) == interface
