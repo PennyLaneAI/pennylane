@@ -308,11 +308,9 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
             unique integer labels as their values
 
     Returns:
-        Union[Tensor, Prod]: The Pauli word corresponding to the input binary vector.
+        Union[Prod]: The Pauli word corresponding to the input binary vector.
         Note that if a zero vector is input, then the resulting Pauli word will be
-        an :class:`~.Identity` instance. If new operator arithmetic is enabled via
-        :func:`~.pennylane.operation.enable_new_opmath`, a :class:`~.Prod` will be
-        returned, else a :class:`~.Tensor` will be returned.
+        an :class:`~.Identity` instance.
 
     Raises:
         TypeError: if length of binary vector is not even, or if vector does not have strictly

@@ -391,5 +391,4 @@ class TestOptimize:
 
         # check final cost
         assert np.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)
-        if qml.operation.active_new_opmath():
-            assert len(recwarn) == 0
+        assert len(recwarn) == 0

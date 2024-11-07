@@ -230,15 +230,6 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
         assert np.allclose(calc_coeffs, exp_coeffs, **tol)
 
         r_ops = ops[i]
-        if not qml.operation.active_new_opmath():
-            r_ops = [
-                (
-                    qml.operation.Tensor(*obs.simplify())
-                    if isinstance(obs.simplify(), (qml.ops.op_math.Prod))
-                    else obs.simplify()
-                )
-                for obs in ops[i]
-            ]
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
         for o1, o2 in zip(d_ops, r_ops):

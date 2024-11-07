@@ -19,8 +19,6 @@ from functools import singledispatch
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
 # pylint: disable=consider-using-generator, protected-access
 import pennylane as qml
-from pennylane.operation import active_new_opmath
-from pennylane.pauli.utils import simplify
 
 from .basis_data import atomic_numbers
 from .hartree_fock import nuclear_energy, scf
@@ -301,7 +299,7 @@ def molecular_hamiltonian(*args, **kwargs):
 
 
     Returns:
-        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed  Hamiltonian
+        tuple[pennylane.Sum, int]: the fermionic-to-qubit transformed  Hamiltonian
         and the number of qubits
 
     .. note::
@@ -556,19 +554,11 @@ def _molecular_hamiltonian(
             else qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
         )
 
-        if active_new_opmath():
-            h_as_ps = qml.pauli.pauli_sentence(h)
-            coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=requires_grad)
+        h_as_ps = qml.pauli.pauli_sentence(h)
+        coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=requires_grad)
 
-            h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
-            h = (
-                qml.s_prod(0, qml.Identity(h.wires[0]))
-                if len(h_as_ps) == 0
-                else h_as_ps.operation()
-            )
-        else:
-            coeffs = qml.numpy.real(h.coeffs, requires_grad=requires_grad)
-            h = qml.Hamiltonian(coeffs, h.ops)
+        h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
+        h = qml.s_prod(0, qml.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
 
         if wires:
             h = qml.map_wires(h, wires_map)
@@ -583,24 +573,14 @@ def _molecular_hamiltonian(
         mapping = mapping.strip().lower()
         qubits = len(hf.wires)
 
-        if active_new_opmath():
-            if mapping == "jordan_wigner":
-                h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10)
-            elif mapping == "parity":
-                h_pl = qml.parity_transform(hf, qubits, wire_map=wires_map, tol=1.0e-10)
-            elif mapping == "bravyi_kitaev":
-                h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10)
+        if mapping == "jordan_wigner":
+            h_pl = qml.jordan_wigner(hf, wire_map=wires_map, tol=1.0e-10)
+        elif mapping == "parity":
+            h_pl = qml.parity_transform(hf, qubits, wire_map=wires_map, tol=1.0e-10)
+        elif mapping == "bravyi_kitaev":
+            h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10)
 
-            h_pl.simplify()
-        else:
-            if mapping == "jordan_wigner":
-                h_pl = qml.jordan_wigner(hf, ps=True, wire_map=wires_map, tol=1.0e-10)
-            elif mapping == "parity":
-                h_pl = qml.parity_transform(hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10)
-            elif mapping == "bravyi_kitaev":
-                h_pl = qml.bravyi_kitaev(hf, qubits, ps=True, wire_map=wires_map, tol=1.0e-10)
-
-            h_pl = simplify(h_pl.hamiltonian())
+        h_pl.simplify()
 
         return h_pl, len(h_pl.wires)
 

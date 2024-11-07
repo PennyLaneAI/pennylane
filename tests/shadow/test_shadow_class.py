@@ -345,12 +345,7 @@ class TestExpvalEstimation:
 
         H = qml.Hadamard(0) @ qml.Hadamard(2)
 
-        msg = (
-            "Observable must have a valid pauli representation"
-            if qml.operation.active_new_opmath()
-            else "Observable must be a linear combination of Pauli observables"
-        )
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation"):
             shadow.expval(H, k=10)
 
     def test_non_pauli_error_no_pauli_rep(self):
@@ -361,11 +356,7 @@ class TestExpvalEstimation:
 
         H = qml.Hadamard(0) @ qml.Hadamard(2)
 
-        legacy_msg = "Observable must be a linear combination of Pauli observables"
-        new_opmath_msg = "Observable must have a valid pauli representation."
-        msg = new_opmath_msg if qml.operation.active_new_opmath() else legacy_msg
-
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation."):
             shadow.expval(H, k=10)
 
 

@@ -120,7 +120,6 @@ Operator Types
     ~CVObservable
     ~CVOperation
     ~Channel
-    ~Tensor
     ~StatePrepBase
 
 .. currentmodule:: pennylane.operation
@@ -172,26 +171,6 @@ The ``operation`` module provides the following:
     ~is_measurement
     ~is_trainable
     ~not_tape
-
-Enabling New Arithmetic Operators
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-PennyLane is in the process of replacing :class:`~pennylane.Hamiltonian` and :class:`~.Tensor`
-with newer, more general arithmetic operators. These consist of :class:`~pennylane.ops.op_math.Prod`,
-:class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`. By default, using dunder
-methods (eg. ``+``, ``-``, ``@``, ``*``) to combine operators with scalars or other operators will
-create the aforementioned newer operators. To toggle the dunders to return the older arithmetic operators,
-the ``operation`` module provides the following helper functions:
-
-.. currentmodule:: pennylane.operation
-
-.. autosummary::
-    :toctree: api
-
-    ~enable_new_opmath
-    ~disable_new_opmath
-    ~active_new_opmath
-    ~convert_to_opmath
 
 Other
 ~~~~~
@@ -245,12 +224,10 @@ import abc
 import copy
 import warnings
 from collections.abc import Hashable, Iterable
-from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
-from numpy.linalg import multi_dot
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
@@ -1961,20 +1938,8 @@ class Observable(Operator):
         """All observables must be hermitian"""
         return True
 
-    def __matmul__(self, other: Operator) -> Operator:
-        if active_new_opmath():
-            return super().__matmul__(other=other)
-
-        if isinstance(other, qml.ops.LinearCombination):
-            return other.__rmatmul__(self)
-
-        if isinstance(other, Observable):
-            return Tensor(self, other)
-
-        return super().__matmul__(other=other)
-
     def _obs_data(self) -> set[tuple[str, Wires, tuple[int, ...]]]:
-        r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
+        r"""Extracts the data from an Observable or Tensor and serializes it in an order-independent fashion.
 
         This allows for comparison between observables that are equivalent, but are expressed
         in different orders. For example, `qml.X(0) @ qml.Z(1)` and
@@ -2031,46 +1996,10 @@ class Observable(Operator):
         """
         if isinstance(other, qml.ops.LinearCombination):
             return other.compare(self)
-        if isinstance(other, (Tensor, Observable)):
+        if isinstance(other, Observable):
             return other._obs_data() == self._obs_data()
 
-        raise ValueError(
-            "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
-        )
-
-    def __add__(self, other: Operator) -> Operator:
-        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if active_new_opmath():
-            return super().__add__(other=other)
-
-        if isinstance(other, qml.ops.LinearCombination):
-            return other + self
-
-        return super().__add__(other=other)
-
-    __radd__ = __add__
-
-    def __mul__(self, a):
-        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
-        if active_new_opmath():
-            return super().__mul__(other=a)
-
-        if isinstance(a, (int, float)):
-            return qml.simplify(qml.Hamiltonian([a], [self]))
-
-        return super().__mul__(other=a)
-
-    __rmul__ = __mul__
-
-    def __sub__(self, other: Operator) -> Operator:
-        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if active_new_opmath():
-            return super().__sub__(other=other)
-
-        if isinstance(other, (Observable, qml.ops.LinearCombination)):
-            return self + (-1 * other)
-
-        return super().__sub__(other=other)
+        raise ValueError("Can only compare with Observable or LinearCombination.")
 
 
 # =============================================================================
@@ -2489,170 +2418,6 @@ def gen_is_multi_term_hamiltonian(obj):
         return False
 
     return isinstance(o, qml.ops.LinearCombination) and len(o.coeffs) > 1
-
-
-def enable_new_opmath(warn=True):
-    """
-    Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
-
-    .. warning::
-
-        Using legacy operator arithmetic is deprecated, and will be removed in PennyLane v0.40.
-        For further details, see :doc:`Updated Operators </news/new_opmath/>`.
-
-    Args:
-        warn (bool): Whether or not to emit a warning for re-enabling new opmath. Default is ``True``.
-
-    **Example**
-
-    >>> qml.operation.active_new_opmath()
-    False
-    >>> type(qml.X(0) @ qml.Z(1))
-    <class 'pennylane.operation.Tensor'>
-    >>> qml.operation.enable_new_opmath()
-    >>> type(qml.X(0) @ qml.Z(1))
-    <class 'pennylane.ops.op_math.prod.Prod'>
-    """
-    if warn:
-        warnings.warn(
-            "Toggling the new approach to operator arithmetic is deprecated. From version 0.40 of "
-            "PennyLane, only the new approach to operator arithmetic will be available. If you are "
-            "experiencing issues, visit https://docs.pennylane.ai/en/stable/news/new_opmath.html "
-            "or contact the PennyLane team on the discussion forum: https://discuss.pennylane.ai/.",
-            qml.PennyLaneDeprecationWarning,
-        )
-    global __use_new_opmath
-    __use_new_opmath = True
-
-
-def disable_new_opmath(warn=True):
-    """
-    Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
-
-    .. warning::
-
-        Using legacy operator arithmetic is deprecated, and will be removed in PennyLane v0.40.
-        For further details, see :doc:`Updated Operators </news/new_opmath/>`.
-
-    Args:
-        warn (bool): Whether or not to emit a warning for disabling new opmath. Default is ``True``.
-
-    **Example**
-
-    >>> qml.operation.active_new_opmath()
-    True
-    >>> type(qml.X(0) @ qml.Z(1))
-    <class 'pennylane.ops.op_math.prod.Prod'>
-    >>> qml.operation.disable_new_opmath()
-    >>> type(qml.X(0) @ qml.Z(1))
-    <class 'pennylane.operation.Tensor'>
-    """
-    if warn:
-        warnings.warn(
-            "Disabling the new approach to operator arithmetic is deprecated. From version 0.40 of "
-            "PennyLane, only the new approach to operator arithmetic will be available. If you are "
-            "experiencing issues, visit https://docs.pennylane.ai/en/stable/news/new_opmath.html "
-            "or contact the PennyLane team on the discussion forum: https://discuss.pennylane.ai/.",
-            qml.PennyLaneDeprecationWarning,
-        )
-    global __use_new_opmath
-    __use_new_opmath = False
-
-
-def active_new_opmath():
-    """
-    Function that checks if the new arithmetic operator dunders are active
-
-    .. warning::
-
-        Using legacy operator arithmetic is deprecated, and will be removed in PennyLane v0.40.
-        For further details, see :doc:`Updated Operators </news/new_opmath/>`.
-
-    Returns:
-        bool: Returns ``True`` if the new arithmetic operator dunders are active
-
-    **Example**
-
-    >>> qml.operation.active_new_opmath()
-    False
-    >>> qml.operation.enable_new_opmath()
-    >>> qml.operation.active_new_opmath()
-    True
-    """
-    return __use_new_opmath
-
-
-def convert_to_opmath(op):
-    """
-    Converts :class:`~pennylane.Hamiltonian` and :class:`.Tensor` instances
-    into arithmetic operators. Objects of any other type are returned directly.
-
-    Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
-    :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
-
-    Args:
-        op (Operator): The operator instance to convert
-
-    Returns:
-        Operator: An operator using the new arithmetic operations, if relevant
-    """
-    if isinstance(op, qml.ops.LinearCombination):
-        if qml.QueuingManager.recording():
-            qml.QueuingManager.remove(op)
-        c, ops = op.terms()
-        ops = tuple(convert_to_opmath(o) for o in ops)
-        return qml.dot(c, ops)
-    return op
-
-
-@contextmanager
-def disable_new_opmath_cm(warn=True):
-    r"""Allows to use the old operator arithmetic within a
-    temporary context using the `with` statement."""
-    if warn:
-        warnings.warn(
-            "Disabling the new approach to operator arithmetic is deprecated. From version 0.40 of "
-            "PennyLane, only the new approach to operator arithmetic will be available. If you are "
-            "experiencing issues, visit https://docs.pennylane.ai/en/stable/news/new_opmath.html "
-            "or contact the PennyLane team on the discussion forum: https://discuss.pennylane.ai/.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    was_active = qml.operation.active_new_opmath()
-    try:
-        if was_active:
-            disable_new_opmath(warn=False)  # Only warn once
-        yield
-    except Exception as e:
-        raise e
-    finally:
-        if was_active:
-            enable_new_opmath(warn=False)  # Only warn once
-        else:
-            disable_new_opmath(warn=False)  # Only warn once
-
-
-@contextmanager
-def enable_new_opmath_cm(warn=True):
-    r"""Allows to use the new operator arithmetic within a
-    temporary context using the `with` statement."""
-    if warn:
-        warnings.warn(
-            "Toggling the new approach to operator arithmetic is deprecated. From version 0.40 of "
-            "PennyLane, only the new approach to operator arithmetic will be available. If you are "
-            "experiencing issues, visit https://docs.pennylane.ai/en/stable/news/new_opmath.html "
-            "or contact the PennyLane team on the discussion forum: https://discuss.pennylane.ai/.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-    was_active = qml.operation.active_new_opmath()
-    if not was_active:
-        enable_new_opmath(warn=False)  # Only warn once
-    yield
-    if was_active:
-        enable_new_opmath(warn=False)  # Only warn once
-    else:
-        disable_new_opmath(warn=False)  # Only warn once
 
 
 # pylint: disable=too-many-branches

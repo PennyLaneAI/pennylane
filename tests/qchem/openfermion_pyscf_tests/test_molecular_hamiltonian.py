@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import active_new_opmath
 
 test_symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
 test_coordinates = np.array(
@@ -98,10 +97,7 @@ def test_building_hamiltonian(
 
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
 
-    if active_new_opmath():
-        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
-    else:
-        assert isinstance(built_hamiltonian, qml.Hamiltonian)
+    assert isinstance(built_hamiltonian, qml.Sum)
     assert qubits == 2 * nact_orbs
 
 
@@ -147,10 +143,7 @@ def test_building_hamiltonian_molecule_class(
 
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(args, **kwargs)
 
-    if active_new_opmath():
-        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
-    else:
-        assert isinstance(built_hamiltonian, qml.Hamiltonian)
+    assert isinstance(built_hamiltonian, qml.Sum)
     assert qubits == 2 * nact_orbs
 
 
@@ -953,10 +946,7 @@ def test_molecule_as_kwargs(tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    if active_new_opmath():
-        assert not isinstance(built_hamiltonian, qml.Hamiltonian)
-    else:
-        assert isinstance(built_hamiltonian, qml.Hamiltonian)
+    assert isinstance(built_hamiltonian, qml.Sum)
     assert qubits == 4
 
 

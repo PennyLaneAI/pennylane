@@ -18,14 +18,12 @@ Pytest configuration file for PennyLane test suite.
 import os
 import pathlib
 import sys
-from warnings import filterwarnings, warn
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
-from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
@@ -135,27 +133,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
     )
-
-
-# pylint: disable=eval-used
-@pytest.fixture(scope="session", autouse=True)
-def disable_opmath_if_requested(request):
-    disable_opmath = request.config.getoption("--disable-opmath")
-    # value from yaml file is a string, convert to boolean
-    if eval(disable_opmath):
-        warn(
-            "Disabling the new Operator arithmetic system for legacy support. "
-            "If you need help troubleshooting your code, please visit "
-            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
-            UserWarning,
-        )
-        qml.operation.disable_new_opmath(warn=False)
-
-        # Suppressing warnings so that Hamiltonians and Tensors constructed outside tests
-        # don't raise deprecation warnings
-        filterwarnings("ignore", "qml.pauli.simplify", qml.PennyLaneDeprecationWarning)
-        filterwarnings("ignore", "PauliSentence.hamiltonian", qml.PennyLaneDeprecationWarning)
-        filterwarnings("ignore", "PauliWord.hamiltonian", qml.PennyLaneDeprecationWarning)
 
 
 #######################################################################

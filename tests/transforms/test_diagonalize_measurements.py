@@ -132,26 +132,6 @@ class TestDiagonalizeObservable:
         assert visited_obs == (set(base_obs), {o.wires[0] for o in base_obs})
         assert diagonalizing_gates == list(expected_diag_gates)
 
-    def test_legacy_hamiltonian(self):
-        """Test that _diagonalize_observable works on legacy Hamiltonians observables"""
-
-        if qml.operation.active_new_opmath():
-            with pytest.warns():
-                compound_obs = qml.ops.Hamiltonian([2, 3], [Y(0), X(1)])
-                expected_res = qml.ops.Hamiltonian([2, 3], [Z(0), Z(1)])
-                diagonalizing_gates, new_obs, visited_obs = _diagonalize_observable(compound_obs)
-        else:
-            compound_obs = qml.ops.Hamiltonian([2, 3], [Y(0), X(1)])
-            expected_res = qml.ops.Hamiltonian([2, 3], [Z(0), Z(1)])
-            diagonalizing_gates, new_obs, visited_obs = _diagonalize_observable(compound_obs)
-
-        base_obs = [Y(0), X(1)]
-        expected_diag_gates = np.concatenate([o.diagonalizing_gates() for o in base_obs])
-
-        assert new_obs == expected_res
-        assert visited_obs == (set(base_obs), {o.wires[0] for o in base_obs})
-        assert diagonalizing_gates == list(expected_diag_gates)
-
     @pytest.mark.parametrize(
         "compound_obs, expected_res, base_obs",
         [

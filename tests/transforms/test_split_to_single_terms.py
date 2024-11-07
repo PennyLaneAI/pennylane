@@ -46,18 +46,6 @@ complex_obs_list = [
 ]
 
 
-def _convert_obs_to_legacy_opmath(obs):
-    """Convert single-term observables to legacy opmath"""
-
-    if isinstance(obs, qml.ops.Prod):
-        return qml.operation.Tensor(*obs.operands)
-
-    if isinstance(obs, list):
-        return [_convert_obs_to_legacy_opmath(o) for o in obs]
-
-    return obs
-
-
 # pylint: disable=too-few-public-methods
 class NoTermsDevice(qml.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept Hamiltonian, LinearCombination and Sum"""
@@ -257,9 +245,6 @@ class TestIntegration:
 
         coeffs, obs = [0.1, 0.2, 0.3, 0.4, 0.5], single_term_obs_list
 
-        if not qml.operation.active_new_opmath():
-            obs = _convert_obs_to_legacy_opmath(obs)
-
         dev = NoTermsDevice(wires=2)
 
         @qml.qnode(dev)
@@ -309,14 +294,8 @@ class TestIntegration:
     def test_single_expval(self, shots, params, expected_results):
         """Tests that a QNode with a single expval measurement is executed correctly"""
 
-        coeffs, obs = [0.1, 0.2, 0.3, 0.4, 0.5], single_term_obs_list
-
-        if not qml.operation.active_new_opmath():
-            obs = _convert_obs_to_legacy_opmath(obs)
-
-        if qml.operation.active_new_opmath():
-            # test constant offset with new opmath
-            coeffs, obs = coeffs + [0.6], obs + [qml.I()]
+        coeffs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        obs = single_term_obs_list + [qml.I()]  # test constant offset
 
         dev = NoTermsDevice(wires=2, shots=shots)
 
@@ -331,9 +310,8 @@ class TestIntegration:
         circuit = split_to_single_terms(circuit)
         res = circuit(params)
 
-        if qml.operation.active_new_opmath():
-            identity_results = [1] if len(np.shape(params)) == 1 else [[1, 1]]
-            expected_results = expected_results + identity_results
+        identity_results = [1] if len(np.shape(params)) == 1 else [[1, 1]]
+        expected_results = expected_results + identity_results
 
         expected = np.dot(coeffs, expected_results)
 
@@ -391,8 +369,6 @@ class TestIntegration:
         dev = NoTermsDevice(wires=2, shots=shots)
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         @qml.qnode(dev)
         def circuit(angles):
@@ -404,9 +380,6 @@ class TestIntegration:
 
         circuit = split_to_single_terms(circuit)
         res = circuit(params)
-
-        if not qml.operation.active_new_opmath():
-            expected_results = expected_results[:-1]  # exclude the identity term
 
         if isinstance(shots, list):
             assert qml.math.shape(res) == (3, *np.shape(expected_results))
@@ -462,8 +435,6 @@ class TestIntegration:
         dev = NoTermsDevice(wires=2, shots=shots)
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         @qml.qnode(dev)
         def circuit(angles):
@@ -481,9 +452,6 @@ class TestIntegration:
 
         circuit = split_to_single_terms(circuit)
         res = circuit(params)
-
-        if not qml.operation.active_new_opmath():
-            expected_results = expected_results[:-1]  # exclude the identity term
 
         if isinstance(shots, list):
             assert len(res) == 3

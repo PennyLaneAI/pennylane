@@ -79,7 +79,7 @@ tensors = [Tensor(qml.PauliX(1), qml.PauliY(2))]
 class TestDatasetOperatorObservable:
     """Tests serializing Observable operators using the ``compare()`` method."""
 
-    def test_value_init(self, attribute_cls, obs_in, recwarn):
+    def test_value_init(self, attribute_cls, obs_in):
         """Test that a DatasetOperator can be value-initialized
         from an observable, and that the deserialized operator
         is equivalent."""
@@ -90,22 +90,10 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        if (
-            qml.operation.active_new_opmath()
-            and isinstance(obs_in, Tensor)
-            and attribute_cls is DatasetOperator
-        ):
-            assert isinstance(obs_out, qml.ops.Prod)
-            for o1, o2 in zip(obs_in.obs, obs_out.operands):
-                qml.assert_equal(o1, o2)
+        qml.assert_equal(obs_out, obs_in)
+        assert obs_in.compare(obs_out)
 
-            # No Tensor deprecation warnings are raised
-            assert len(recwarn) == 0
-        else:
-            qml.assert_equal(obs_out, obs_in)
-            assert obs_in.compare(obs_out)
-
-    def test_bind_init(self, attribute_cls, obs_in, recwarn):
+    def test_bind_init(self, attribute_cls, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
         that contains an operator attribute."""
 
@@ -117,20 +105,8 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        if (
-            qml.operation.active_new_opmath()
-            and isinstance(obs_in, Tensor)
-            and attribute_cls is DatasetOperator
-        ):
-            assert isinstance(obs_out, qml.ops.Prod)
-            for o1, o2 in zip(obs_in.obs, obs_out.operands):
-                qml.assert_equal(o1, o2)
-
-            # No Tensor deprecation warnings are raised
-            assert len(recwarn) == 0
-        else:
-            qml.assert_equal(obs_out, obs_in)
-            assert obs_in.compare(obs_out)
+        qml.assert_equal(obs_out, obs_in)
+        assert obs_in.compare(obs_out)
 
 
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])

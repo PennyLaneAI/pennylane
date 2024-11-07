@@ -14,7 +14,6 @@
 """
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
-import warnings
 
 # pylint: disable=too-few-public-methods,too-many-public-methods
 import numpy as np
@@ -438,13 +437,6 @@ class TestGroupingUtils:
         """Test that Pauli words are correctly converted into strings."""
         obtained_string = pauli_word_to_string(pauli_word, wire_map)
         assert obtained_string == expected_string
-
-    with qml.operation.disable_new_opmath_cm(warn=False):
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
-            )
-            PAULI_WORD_STRINGS_LEGACY = _make_pauli_word_strings()
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_pauli_word_to_string_invalid_input(self, non_pauli_word):

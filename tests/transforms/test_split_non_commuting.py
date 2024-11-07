@@ -70,18 +70,6 @@ complex_no_grouping_obs = [
 ]
 
 
-def _convert_obs_to_legacy_opmath(obs):
-    """Convert single-term observables to legacy opmath"""
-
-    if isinstance(obs, qml.ops.Prod):
-        return qml.operation.Tensor(*obs.operands)
-
-    if isinstance(obs, list):
-        return [_convert_obs_to_legacy_opmath(o) for o in obs]
-
-    return obs
-
-
 def complex_no_grouping_processing_fn(results):
     """The expected processing function without grouping of complex_obs_list"""
 
@@ -172,8 +160,6 @@ class TestUnits:
         """Tests that the correct number of tapes is returned for a single Hamiltonian"""
 
         obs_list = single_term_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = _convert_obs_to_legacy_opmath(obs_list)
 
         obs_list = obs_list + [qml.Y(0), qml.X(0) @ qml.Y(1)]  # add duplicate terms
         coeffs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
@@ -224,8 +210,6 @@ class TestUnits:
         what is requested through the ``grouping_strategy`` argument."""
 
         obs_list = single_term_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = _convert_obs_to_legacy_opmath(obs_list)
 
         H = make_H(obs_list)
         H.compute_grouping()
@@ -354,19 +338,10 @@ class TestUnits:
         assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), [0.01, 0.04, 0.09, 0.16, 0.25])
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="default")
-        # When new opmath is disabled, c * o gives Hamiltonians, which leads to wires grouping
-        if qml.operation.active_new_opmath():
-            for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
-                qml.assert_equal(actual_tape, expected_tape)
-            assert qml.math.allclose(
-                fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), [0.01, 0.06, 0.12, 0.08, 0.25]
-            )
-        else:
-            for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
-                qml.assert_equal(actual_tape, expected_tape)
-            assert qml.math.allclose(
-                fn([[0.1, 0.2], 0.3, 0.4, 0.5]), [0.01, 0.06, 0.06, 0.16, 0.25]
-            )
+
+        for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
+            qml.assert_equal(actual_tape, expected_tape)
+        assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), [0.01, 0.06, 0.12, 0.08, 0.25])
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="qwc")
         for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
@@ -388,12 +363,11 @@ class TestUnits:
     def test_grouping_strategies_single_hamiltonian(self, make_H):
         """Tests that a single Hamiltonian or Sum is split correctly"""
 
-        coeffs, obs_list = [0.1, 0.2, 0.3, 0.4, 0.5], single_term_obs_list
-        qwc_groups = single_term_qwc_groups
+        coeffs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        obs_list = single_term_obs_list + [qml.I()]
+        H = make_H(coeffs, obs_list)  # Tests that constant offset is handled
 
-        if not qml.operation.active_new_opmath():
-            obs_list = _convert_obs_to_legacy_opmath(obs_list)
-            qwc_groups = _convert_obs_to_legacy_opmath(single_term_qwc_groups)
+        qwc_groups = single_term_qwc_groups
 
         expected_tapes_no_grouping = [
             qml.tape.QuantumScript([], [qml.expval(o)], shots=100) for o in obs_list
@@ -404,27 +378,17 @@ class TestUnits:
             for group in qwc_groups
         ]
 
-        if qml.operation.active_new_opmath():
-            coeffs, obs_list = coeffs + [0.6], obs_list + [qml.I()]
-
-        H = make_H(coeffs, obs_list)  # Tests that constant offset is handled
-
-        if not qml.operation.active_new_opmath() and isinstance(H, qml.ops.Sum):
-            pytest.skip("Sum is not part of legacy opmath")
-
         tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
 
         tapes, fn = split_non_commuting(tape, grouping_strategy=None)
         for actual_tape, expected_tape in zip(tapes, expected_tapes_no_grouping):
             qml.assert_equal(actual_tape, expected_tape)
-        expected = 0.55 if not qml.operation.active_new_opmath() else 1.15
-        assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), expected)
+        assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), 1.15)
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="default")
         for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
             qml.assert_equal(actual_tape, expected_tape)
-        expected = 0.52 if not qml.operation.active_new_opmath() else 1.12
-        assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), expected)
+        assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), 1.12)
 
     @pytest.mark.parametrize(
         "H",
@@ -483,8 +447,6 @@ class TestUnits:
         """Tests that the tape is split correctly when containing more complex observables"""
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         measurements = [qml.expval(o) for o in obs_list]
         tape = qml.tape.QuantumScript([], measurements, shots=100)
@@ -494,8 +456,6 @@ class TestUnits:
             qml.assert_equal(actual_tape, expected_tape)
 
         expected = processing_fn(mock_results)
-        if not qml.operation.active_new_opmath():
-            expected = expected[:-1]  # exclude the identity term
 
         assert qml.math.allclose(fn(mock_results), expected)
 
@@ -545,10 +505,6 @@ class TestUnits:
         """Tests that the tape is split correctly when containing non-Pauli observables"""
 
         obs_list = single_term_obs_list + non_pauli_obs
-
-        if not qml.operation.active_new_opmath():
-            non_pauli_obs = _convert_obs_to_legacy_opmath(non_pauli_obs)
-            obs_list = _convert_obs_to_legacy_opmath(obs_list)
 
         measurements = [
             qml.expval(c * o) for c, o in zip([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7], obs_list)
@@ -650,12 +606,8 @@ class TestIntegration:
 
         coeffs, obs = [0.1, 0.2, 0.3, 0.4, 0.5], single_term_obs_list
 
-        if not qml.operation.active_new_opmath():
-            obs = _convert_obs_to_legacy_opmath(obs)
-
-        if qml.operation.active_new_opmath():
-            # test constant offset with new opmath
-            coeffs, obs = coeffs + [0.6], obs + [qml.I()]
+        # test constant offset
+        coeffs, obs = coeffs + [0.6], obs + [qml.I()]
 
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
@@ -670,9 +622,8 @@ class TestIntegration:
         circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
         res = circuit(params)
 
-        if qml.operation.active_new_opmath():
-            identity_results = [1] if len(np.shape(params)) == 1 else [[1, 1]]
-            expected_results = expected_results + identity_results
+        identity_results = [1] if len(np.shape(params)) == 1 else [[1, 1]]
+        expected_results = expected_results + identity_results
 
         expected = np.dot(coeffs, expected_results)
 
@@ -731,8 +682,6 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         @qml.qnode(dev)
         def circuit(angles):
@@ -744,9 +693,6 @@ class TestIntegration:
 
         circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
         res = circuit(params)
-
-        if not qml.operation.active_new_opmath():
-            expected_results = expected_results[:-1]  # exclude the identity term
 
         if isinstance(shots, list):
             assert qml.math.shape(res) == (3, *np.shape(expected_results))
@@ -803,8 +749,6 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         @qml.qnode(dev)
         def circuit(angles):
@@ -822,9 +766,6 @@ class TestIntegration:
 
         circuit = split_non_commuting(circuit, grouping_strategy=grouping_strategy)
         res = circuit(params)
-
-        if not qml.operation.active_new_opmath():
-            expected_results = expected_results[:-1]  # exclude the identity term
 
         if isinstance(shots, list):
             assert len(res) == 3
@@ -977,8 +918,6 @@ class TestDifferentiability:
         dev = qml.device("default.qubit", wires=2)
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         @partial(split_non_commuting, grouping_strategy=grouping_strategy)
         @qml.qnode(dev)
@@ -998,9 +937,6 @@ class TestDifferentiability:
 
         expected_grad_1 = expected_grad_param_0
         expected_grad_2 = expected_grad_param_1
-        if not qml.operation.active_new_opmath():
-            expected_grad_1 = expected_grad_param_0[:-1]
-            expected_grad_2 = expected_grad_param_1[:-1]
 
         assert qml.math.allclose(grad1, expected_grad_1)
         assert qml.math.allclose(grad2, expected_grad_2)
@@ -1059,8 +995,6 @@ class TestDifferentiability:
         dev = qml.device("default.qubit", wires=2)
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         @partial(split_non_commuting, grouping_strategy=grouping_strategy)
         @qml.qnode(dev)
@@ -1083,9 +1017,6 @@ class TestDifferentiability:
 
         expected_grad_1 = expected_grad_param_0
         expected_grad_2 = expected_grad_param_1
-        if not qml.operation.active_new_opmath():
-            expected_grad_1 = expected_grad_param_0[:-1]
-            expected_grad_2 = expected_grad_param_1[:-1]
 
         assert qml.math.allclose(grad1, expected_grad_1)
         assert qml.math.allclose(grad2, expected_grad_2)
@@ -1127,8 +1058,6 @@ class TestDifferentiability:
         dev = qml.device("default.qubit", wires=2)
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         @partial(split_non_commuting, grouping_strategy=grouping_strategy)
         @qml.qnode(dev)
@@ -1148,9 +1077,6 @@ class TestDifferentiability:
 
         expected_grad_1 = expected_grad_param_0
         expected_grad_2 = expected_grad_param_1
-        if not qml.operation.active_new_opmath():
-            expected_grad_1 = expected_grad_param_0[:-1]
-            expected_grad_2 = expected_grad_param_1[:-1]
 
         assert qml.math.allclose(grad1, expected_grad_1, atol=1e-5)
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-5)
@@ -1187,8 +1113,6 @@ class TestDifferentiability:
         dev = qml.device("default.qubit", wires=2)
 
         obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
 
         @qml.qnode(dev)
         def circuit(theta, phi):
@@ -1208,9 +1132,6 @@ class TestDifferentiability:
 
         expected_grad_1 = expected_grad_param_0
         expected_grad_2 = expected_grad_param_1
-        if not qml.operation.active_new_opmath():
-            expected_grad_1 = expected_grad_param_0[:-1]
-            expected_grad_2 = expected_grad_param_1[:-1]
 
         assert qml.math.allclose(grad1, expected_grad_1, atol=1e-5)
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-5)

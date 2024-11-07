@@ -2159,9 +2159,6 @@ class TestIntegration:
         """Test that a jitted qnode can be correctly differentiated"""
         import jax
 
-        if measurement_func is qml.var and not qml.operation.active_new_opmath():
-            pytest.skip(reason="Variance for this test circuit not supported with legacy opmath")
-
         dev = DefaultQubit()
 
         def qfunc(x, y):

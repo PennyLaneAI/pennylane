@@ -24,14 +24,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import active_new_opmath
 
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 pyscf = pytest.importorskip("pyscf")
 
 pauli_ops_and_prod = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.ops.Prod)
-pauli_ops_and_tensor = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity, qml.operation.Tensor)
 
 
 @pytest.fixture(
@@ -403,10 +401,7 @@ def test_operation_conversion(pl_op, of_op, wire_order):
     converted_of_op = qml.qchem.convert._openfermion_to_pennylane(of_op)
     _, converted_of_op_terms = converted_of_op
 
-    assert all(
-        isinstance(term, pauli_ops_and_prod if active_new_opmath() else pauli_ops_and_tensor)
-        for term in converted_of_op_terms
-    )
+    assert all(isinstance(term, pauli_ops_and_prod) for term in converted_of_op_terms)
 
     assert np.allclose(
         qml.matrix(qml.dot(*pl_op), wire_order=wire_order),
@@ -534,7 +529,7 @@ def test_import_operator(of_op, pl_h, pl_op, wires):
     of_h = qml.qchem.convert.import_operator(of_op, "openfermion", wires=wires)
     assert qml.pauli.pauli_sentence(pl_h) == qml.pauli.pauli_sentence(of_h)
 
-    assert isinstance(of_h, type(pl_op) if active_new_opmath() else qml.Hamiltonian)
+    assert isinstance(of_h, type(pl_op))
 
     if isinstance(of_h, qml.ops.Sum):
         assert all(

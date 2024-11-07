@@ -15,7 +15,6 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import copy
-import warnings
 
 import numpy as np
 import pytest
@@ -30,7 +29,7 @@ from pennylane.operation import (
     StatePrepBase,
     operation_derivative,
 )
-from pennylane.ops import Prod, SProd, Sum, cv
+from pennylane.ops import Prod, SProd, Sum
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
@@ -1871,43 +1870,6 @@ def test_symmetric_matrix_early_return(op, mocker):
     assert np.allclose(actual, manually_expanded)
 
 
-def test_op_arithmetic_toggle():
-    """Tests toggling op arithmetic on and off"""
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Toggling the new approach"):
-        with qml.operation.enable_new_opmath_cm():
-            assert qml.operation.active_new_opmath()
-            assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Disabling the new approach"):
-        with qml.operation.disable_new_opmath_cm():
-            assert not qml.operation.active_new_opmath()
-            assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
-
-
-def test_op_arithmetic_default():
-    """Test that new op math is enabled by default"""
-    assert qml.operation.active_new_opmath()
-
-
-def test_disable_enable_new_opmath():
-    """Test that disabling and re-enabling new opmath works and raises the correct warning"""
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="Disabling the new approach to operator arithmetic"
-    ):
-        qml.operation.disable_new_opmath()
-
-    assert not qml.operation.active_new_opmath()
-
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="Toggling the new approach to operator arithmetic",
-    ):
-        qml.operation.enable_new_opmath()
-
-    assert qml.operation.active_new_opmath()
-
-
 def test_docstring_example_of_operator_class(tol):
     """Tests an example of how to create an operator which is used in the
     Operator class docstring, as well as in the 'adding_operators'
@@ -1981,51 +1943,6 @@ def test_custom_operator_is_jax_pytree():
     qml.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
-def test_use_new_opmath_fixture():
-    """Test that the fixture for using new opmath in a context works as expected"""
-    assert qml.operation.active_new_opmath()
-
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning)
-
-    CONVERT_HAMILTONIAN = [
-        (
-            [1.5, 0.5, 1, 1],
-            [
-                qml.Identity(1),
-                Tensor(qml.Z(1), qml.Z(2)),
-                Tensor(qml.X(1), qml.Y(2)),
-                qml.Hadamard(1),
-            ],
-        ),
-        ([0.5], [qml.X(1)]),
-        ([1], [Tensor(qml.X(0), qml.Y(1))]),
-        (
-            [-0.5, 0.4, -0.3, 0.2],
-            [
-                qml.Identity(0, 1),
-                Tensor(qml.X(1), qml.Y(2)),
-                qml.Identity(1),
-                Tensor(qml.Z(1), qml.Z(2)),
-            ],
-        ),
-        (
-            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
-            [
-                Tensor(qml.Hadamard(0), qml.X(1), qml.X(2), qml.Y(3)),
-                Tensor(qml.X(0), qml.X(1), qml.Y(2), qml.X(3)),
-                Tensor(qml.X(0), qml.Y(1), qml.X(2), qml.X(3)),
-                Tensor(qml.X(0), qml.Y(1), qml.Y(2), qml.Y(3)),
-                Tensor(qml.Y(0), qml.X(1), qml.X(2), qml.X(3)),
-                Tensor(qml.Y(0), qml.X(1), qml.Hadamard(2), qml.Y(3)),
-                Tensor(qml.Y(0), qml.Y(1), qml.X(2), qml.Y(3)),
-                Tensor(qml.Y(0), qml.Y(1), qml.Y(2), qml.Hadamard(3)),
-            ],
-        ),
-    ]
-
-
 # pylint: disable=unused-import,no-name-in-module
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
@@ -2059,13 +1976,7 @@ def test_convert_to_opmath_queueing(make_op):
     """Tests that converting to opmath dequeues the original operation"""
 
     with qml.queuing.AnnotatedQueue() as q:
-        if not qml.operation.active_new_opmath():
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian uses the old approach"
-            ):
-                original_op = make_op()
-        else:
-            original_op = make_op()
+        original_op = make_op()
         new_op = qml.operation.convert_to_opmath(original_op)
 
     assert len(q.queue) == 1

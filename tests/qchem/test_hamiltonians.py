@@ -22,7 +22,6 @@ from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-from pennylane.operation import active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -242,7 +241,7 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
 
-    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
+    assert isinstance(h, qml.ops.Sum)
 
     wire_order = h_ref.wires
     assert np.allclose(
@@ -262,7 +261,7 @@ def test_diff_hamiltonian_active_space():
 
     h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
 
-    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
+    assert isinstance(h, qml.ops.Sum)
 
 
 @pytest.mark.parametrize(

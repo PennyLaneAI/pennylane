@@ -373,7 +373,7 @@ class TestMeasureWithSamples:
             qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
         )
         assert results_gel_1s.shape == (shots.total_shots,)
-        assert results_gel_1s.dtype == np.float64 if qml.operation.active_new_opmath() else np.int64
+        assert results_gel_1s.dtype == np.float64
         assert sorted(np.unique(results_gel_1s)) == [-1, 0, 1]
 
     @flaky

@@ -25,7 +25,6 @@ import numpy as np
 import rustworkx as rx
 
 import pennylane as qml
-from pennylane.ops import Prod, SProd
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
@@ -537,18 +536,7 @@ def group_observables(
         wires_obs, grouping_type=grouping_type, graph_colourer=method
     )
 
-    # Handles legacy op_math
-    temp_opmath = not qml.operation.active_new_opmath() and any(
-        isinstance(o, (Prod, SProd)) for o in observables
-    )
-    if temp_opmath:
-        qml.operation.enable_new_opmath(warn=False)
-
-    try:
-        partitioned_paulis = pauli_groupper.partition_observables()
-    finally:
-        if temp_opmath:
-            qml.operation.disable_new_opmath(warn=False)
+    partitioned_paulis = pauli_groupper.partition_observables()
 
     # Add observables without wires back to the first partition
     partitioned_paulis[0].extend(no_wires_obs)

@@ -230,22 +230,6 @@ QUEUES = [
 add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 
 #####################################################
-# Helper functions
-
-
-def _convert_obs_to_legacy_opmath(obs):
-    """Convert single-term observables to legacy opmath"""
-
-    if isinstance(obs, qml.ops.Prod):
-        return qml.operation.Tensor(*obs.operands)
-
-    if isinstance(obs, (list, tuple)):
-        return [_convert_obs_to_legacy_opmath(o) for o in obs]
-
-    return obs
-
-
-#####################################################
 # Tests
 
 
@@ -256,8 +240,6 @@ class TestVQE:
     @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES)))
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
-        if not qml.operation.active_new_opmath():
-            observables = _convert_obs_to_legacy_opmath(observables)
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
         expval = generate_cost_fn(ansatz, hamiltonian, dev)
@@ -269,8 +251,6 @@ class TestVQE:
     )
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
-        if not qml.operation.active_new_opmath() and (not coeffs or all(c == 0 for c in coeffs)):
-            pytest.skip("Legacy opmath does not support zero Hamiltonians")
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         cost = generate_cost_fn(lambda params, **kwargs: None, hamiltonian, dev)
@@ -731,9 +711,6 @@ class TestNewVQE:
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
         """Tests simple VQE evaluations."""
-
-        if not qml.operation.active_new_opmath():
-            observables = _convert_obs_to_legacy_opmath(observables)
 
         coeffs = [1.0] * len(observables)
         dev = qml.device("default.qubit", wires=3)
