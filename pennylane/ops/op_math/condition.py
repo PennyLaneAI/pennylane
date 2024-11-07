@@ -227,7 +227,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         flat_true_fn = FlatFn(self.true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
-        end_const_ind = len(branches)  # consts go after conditions, first cond at len(branches)
+        end_const_ind = len(branches)  # consts go after the len(branches) conditions, first const at len(branches)
         conditions = []
         jaxpr_branches = []
         consts = []
