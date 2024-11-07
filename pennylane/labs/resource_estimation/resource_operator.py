@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Abstract base class for resource operators."""
-from abc import ABC, abstractmethod
-from typing import Callable, Dict
+from __future__ import annotations
 
-import pennylane.labs.resource_estimation.resource_container as rc
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Callable, Dict
+
+if TYPE_CHECKING:
+    from pennylane.labs.resource_estimation import CompressedResourceOp
 
 
 class ResourceOperator(ABC):
@@ -26,7 +29,7 @@ class ResourceOperator(ABC):
 
         **Example**
 
-        A PennyLane Operator can be extended for resource estimation by creating a new class that inherits from both the Operator and Resource Constructor.
+        A PennyLane Operator can be extended for resource estimation by creating a new class that inherits from both the Operator and ``ResourceOperator``.
         Here is an example showing how to extend ``qml.QFT`` for resource estimation.
 
         .. code-block:: python
@@ -37,18 +40,12 @@ class ResourceOperator(ABC):
             class ResourceQFT(qml.QFT, ResourceOperator):
 
                 @staticmethod
-                def _resource_decomp(num_wires) -> dict:
-                    if not isinstance(num_wires, int):
-                        raise TypeError("num_wires must be an int.")
-
-                    if num_wires < 1:
-                        raise ValueError("num_wires must be greater than 0.")
-
+                def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
                     gate_types = {}
 
-                    hadamard = CompressedResourceOp(qml.Hadamard, {})
-                    swap = CompressedResourceOp(qml.SWAP, {})
-                    ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
+                    hadamard = CompressedResourceOp(ResourceHadamard, {})
+                    swap = CompressedResourceOp(ResourceSWAP, {})
+                    ctrl_phase_shift = CompressedResourceOp(ResourceControlledPhaseShift, {})
 
                     gate_types[hadamard] = num_wires
                     gate_types[swap] = num_wires // 2
@@ -56,14 +53,18 @@ class ResourceOperator(ABC):
 
                     return gate_types
 
-                def resource_rep(self) -> CompressedResourceOp:
-                    params = {"num_wires": len(self.wires)}
-                    return CompressedResourceOp(qml.QFT, params)
+                def resource_params(self) -> dict:
+                    return {"num_wires": len(self.wires)}
+
+                @classmethod
+                def resource_rep(cls, num_wires) -> CompressedResourceOp:
+                    params = {"num_wires": num_wires}
+                    return CompressedResourceOp(cls, params)
     """
 
     @staticmethod
     @abstractmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[rc.CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
         """Returns the Resource object. This method is only to be used inside
         the methods of classes inheriting from ResourceOperator."""
 
@@ -93,5 +94,3 @@ class ResourceOperator(ABC):
         """Returns a compressed representation directly from the operator"""
         params = self.resource_params()
         return self.__class__.resource_rep(**params)
-
-
