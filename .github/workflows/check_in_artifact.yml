@@ -109,7 +109,6 @@ jobs:
             git checkout -b "$HEAD_BRANCH_NAME"
           fi
 
-
       - name: Stage changes
         if: steps.changed.outputs.has_changes != '0'
         env:
