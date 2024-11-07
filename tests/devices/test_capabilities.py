@@ -21,6 +21,7 @@ import re
 
 import pytest
 
+import pennylane as qml
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
@@ -724,14 +725,29 @@ class TestDeviceCapabilities:
 
         capabilities = DeviceCapabilities.from_toml_file(request.node.toml_file)
 
-        for op_name in ["RY", "C(RY)", "RZ", "C(RZ)", "Adjoint(RZ)", "CNOT", "Adjoint(CNOT)"]:
-            assert capabilities.supports_operation(op_name) is True
+        for op in [
+            qml.RY(0.5, wires=0),
+            qml.ops.Controlled(qml.RY(0.5, wires=0), control_wires=[1]),
+            qml.RZ(0.5, wires=0),
+            qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1]),
+            qml.adjoint(qml.RZ(0.5, wires=0)),
+            qml.CNOT(wires=[0, 1]),
+            qml.adjoint(qml.CNOT),
+        ]:
+            assert capabilities.supports_operation(op.name) is True
 
-        for op_name in ["PauliX", "Adjoint(RY), C(CNOT)"]:
-            assert capabilities.supports_operation(op_name) is False
+        for op in [
+            qml.X(0),
+            qml.adjoint(qml.RY(0.5, wires=0)),
+            qml.ops.Controlled(qml.CNOT(wires=[0, 1]), control_wires=[2]),
+        ]:
+            assert capabilities.supports_operation(op.name) is False
 
-        for obs_name in ["PauliX", "PauliY", "PauliZ"]:
-            assert capabilities.supports_observable(obs_name) is True
+        for obs in [qml.X(0), qml.Y(0), qml.Z(0)]:
+            assert capabilities.supports_observable(obs.name) is True
 
-        for obs_name in ["LinearCombination", "Hadamard"]:
-            assert capabilities.supports_observable(obs_name) is False
+        for obs in [
+            qml.H(0),
+            qml.Hamiltonian([0.5], [qml.PauliZ(0)]),
+        ]:
+            assert capabilities.supports_observable(obs.name) is False
