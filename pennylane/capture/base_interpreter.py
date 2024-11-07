@@ -75,7 +75,6 @@ class PlxprInterpreter:
                     # if new op isn't queued, need to requeue op.
                 return new_mp
 
-
     Now the interpreter can be used to transform functions and jaxpr:
 
     >>> interpreter = SimplifyInterpreter()
@@ -204,10 +203,9 @@ class PlxprInterpreter:
 
         return decorator
 
-    # pylint: disable=unidiomatic-typecheck
     def read(self, var):
         """Extract the value corresponding to a variable."""
-        return var.val if type(var) is jax.core.Literal else self._env[var]
+        return var.val if isinstance(var, jax.core.Literal) else self._env[var]
 
     def setup(self) -> None:
         """Initialize the instance before interpreting equations.
