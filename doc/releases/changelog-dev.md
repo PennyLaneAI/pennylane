@@ -15,21 +15,19 @@
   True
   ```
 
+<h4>New API for Qubit Mixed</h4>
+
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
+
+  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379) An `apply_operation` helper function featuring:
+
+  * Two density matrix contraction methods using `einsum` and `tensordot`
+
+  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
+
 <h3>Improvements 🛠</h3>
 
 <h4>Other Improvements</h4>
-
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
-  - A new API for mixed-state operations
-  - An `apply_operation` helper function featuring:
-    - Two density matrix contraction methods using `einsum` and `tensordot`
-    - Optimized handling of special cases including:
-      - Diagonal operators
-      - Identity operators 
-      - CX (controlled-X)
-      - Multi-controlled X gates
-      - Grover operators
-  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
@@ -50,4 +48,5 @@
 This release contains contributions from (in alphabetical order):
 
 Astral Cai,
+Yushao Chen,
 Andrija Paurevic
