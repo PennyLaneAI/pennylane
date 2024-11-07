@@ -198,6 +198,7 @@ def _counts_from_compressed_res_op(
     return
 
 
+@qml.QueuingManager.stop_recording()
 def _op_to_resource_op(op: Operation) -> ResourceOperator:
     """Map a PL Operator to its corresponding Resource Operator
 
