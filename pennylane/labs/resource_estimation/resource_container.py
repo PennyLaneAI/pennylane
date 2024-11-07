@@ -21,7 +21,7 @@ class CompressedResourceOp:
     r"""Instantiate the light weight class corressponding to the operator type and parameters.
 
     Args:
-        op_type (Type): the PennyLane type of the operation
+        op_type: the class object for of an operation which inherits from '~.ResourceOperator'
         params (dict): a dictionary containing the minimal pairs of parameter names and values
                     required to compute the resources for the given operator!
 
@@ -31,26 +31,16 @@ class CompressedResourceOp:
 
         **Example**
 
-        >>> op_tp = CompressedResourceOp(qml.Hadamard, {"num_wires":1})
+        >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
         >>> print(op_tp)
         Hadamard(num_wires=1)
-
-        >>> op_tp = CompressedResourceOp(
-                qml.QSVT,
-                {
-                    "num_wires": 5,
-                    "num_angles": 100,
-                },
-            )
-        >>> print(op_tp)
-        QSVT(num_wires=5, num_angles=100)
     """
 
-    def __init__(self, op_type: type, params: dict) -> None:
+    def __init__(self, op_type, params: dict) -> None:
         r"""Instantiate the light weight class corressponding to the operator type and parameters.
 
         Args:
-            op_type (Type): the PennyLane type of the operation
+            op_type: the class object for an operation which inherits from '~.ResourceOperator'
             params (dict): a dictionary containing the minimal pairs of parameter names and values
                         required to compute the resources for the given operator!
 
@@ -60,21 +50,11 @@ class CompressedResourceOp:
 
             **Example**
 
-            >>> op_tp = CompressedResourceOp(qml.Hadamard, {"num_wires":1})
+            >>> op_tp = CompressedResourceOp(ResourceHadamard, {"num_wires":1})
             >>> print(op_tp)
             Hadamard(num_wires=1)
-
-            >>> op_tp = CompressedResourceOp(
-                    qml.QSVT,
-                    {
-                        "num_wires": 5,
-                        "num_angles": 100,
-                    },
-                )
-            >>> print(op_tp)
-            QSVT(num_wires=5, num_angles=100)
         """
-        self._name = op_type.__name__
+        self._name = (op_type.__name__).replace("Resource", "")
         self.op_type = op_type
         self.params = params
         self._hashable_params = tuple(params.items())
@@ -129,19 +109,19 @@ class Resources:
         """Add two resources objects in series"""
         return add_in_series(self, other)
 
-    def __mul__(self, scaler: int) -> "Resources":
+    def __mul__(self, scalar: int) -> "Resources":
         """Scale a resources object in series"""
-        return mul_in_series(self, scaler)
+        return mul_in_series(self, scalar)
 
     __rmul__ = __mul__  # same implementation
 
-    def __iadd__(self, other: "Resources") -> None:
+    def __iadd__(self, other: "Resources") -> "Resources":
         """Add two resources objects in series"""
-        add_in_series(self, other, in_place=True)
+        return add_in_series(self, other, in_place=True)
 
-    def __imull__(self, scaler: int) -> None:
+    def __imull__(self, scalar: int) -> "Resources":
         """Scale a resources object in series"""
-        mul_in_series(self, scaler, in_place=True)
+        return mul_in_series(self, scalar, in_place=True)
 
     def __str__(self):
         """String representation of the Resources object."""
@@ -209,19 +189,19 @@ def add_in_parallel(first: Resources, other: Resources, in_place=False) -> Resou
     return Resources(new_wires, new_gates, new_gate_types)
 
 
-def mul_in_series(first: Resources, scaler: int, in_place=False) -> Resources:
-    r"""Multiply two resources assuming the circuits are executed in series.
+def mul_in_series(first: Resources, scalar: int, in_place=False) -> Resources:
+    r"""Multiply the resources by a scalar assuming the circuits are executed in series.
 
     Args:
         first (Resources): first resource object to combine
-        scaler (int): integer value to scale the resources by
+        scalar (int): integer value to scale the resources by
         in_place (bool): determines if the first Resources are modified in place (default False)
 
     Returns:
         Resources: combined resources
     """
-    new_gates = scaler * first.num_gates
-    new_gate_types = _scale_dict(first.gate_types, scaler, in_place=in_place)
+    new_gates = scalar * first.num_gates
+    new_gate_types = _scale_dict(first.gate_types, scalar, in_place=in_place)
 
     if in_place:
         first.num_gates = new_gates
@@ -230,20 +210,20 @@ def mul_in_series(first: Resources, scaler: int, in_place=False) -> Resources:
     return Resources(first.num_wires, new_gates, new_gate_types)
 
 
-def mul_in_parallel(first: Resources, scaler: int, in_place=False) -> Resources:
-    r"""Multiply two resources assuming the circuits are executed in parallel.
+def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
+    r"""Multiply the resources by a scalar assuming the circuits are executed in parallel.
 
     Args:
         first (Resources): first resource object to combine
-        scaler (int): integer value to scale the resources by
+        scalar (int): integer value to scale the resources by
         in_place (bool): determines if the first Resources are modified in place (default False)
 
     Returns:
         Resources: combined resources
     """
-    new_wires = scaler * first.num_wires
-    new_gates = scaler * first.num_gates
-    new_gate_types = _scale_dict(first.gate_types, scaler, in_place=in_place)
+    new_wires = scalar * first.num_wires
+    new_gates = scalar * first.num_gates
+    new_gate_types = _scale_dict(first.gate_types, scalar, in_place=in_place)
 
     if in_place:
         first.num_wires = new_wires
@@ -263,12 +243,12 @@ def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
     return combined_dict
 
 
-def _scale_dict(dict1: defaultdict, scaler: int, in_place=False):
+def _scale_dict(dict1: defaultdict, scalar: int, in_place=False):
     r"""Private function which scales the values in a dictionary."""
 
     combined_dict = dict1 if in_place else copy.copy(dict1)
 
     for k in combined_dict:
-        combined_dict[k] *= scaler
+        combined_dict[k] *= scalar
 
     return combined_dict
