@@ -79,6 +79,23 @@ class OperatorProperties:
         )
 
 
+def _supports_operator(op_name: str, op_dict: dict[str, OperatorProperties]) -> bool:
+    """Checks if the given operator is supported by name."""
+
+    if op_name in op_dict:
+        return True
+
+    if match := re.match(r"Adjoint\((.*)\)", op_name):
+        base_op_name = match.group(1)
+        return base_op_name in op_dict and op_dict[base_op_name].invertible
+
+    if match := re.match(r"C\((.*)\)", op_name):
+        base_op_name = match.group(1)
+        return base_op_name in op_dict and op_dict[base_op_name].controllable
+
+    return False
+
+
 @dataclass
 class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     """Capabilities of a quantum device.
@@ -154,27 +171,11 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
 
     def supports_operation(self, operation_name: str) -> bool:
         """Checks if the given operation is supported by name."""
-        return self._supports_operator(operation_name, self.operations)
+        return _supports_operator(operation_name, self.operations)
 
     def supports_observable(self, observable_name: str) -> bool:
         """Checks if the given observable is supported by name."""
-        return self._supports_operator(observable_name, self.observables)
-
-    def _supports_operator(self, op_name: str, op_dict: dict[str, OperatorProperties]) -> bool:
-        """Checks if the given operator is supported by name."""
-
-        if op_name in op_dict:
-            return True
-
-        if match := re.match(r"Adjoint\((.*)\)", op_name):
-            base_op_name = match.group(1)
-            return base_op_name in op_dict and op_dict[base_op_name].invertible
-
-        if match := re.match(r"C\((.*)\)", op_name):
-            base_op_name = match.group(1)
-            return base_op_name in op_dict and op_dict[base_op_name].controllable
-
-        return False
+        return _supports_operator(observable_name, self.observables)
 
 
 VALID_COMPILATION_OPTIONS = {
