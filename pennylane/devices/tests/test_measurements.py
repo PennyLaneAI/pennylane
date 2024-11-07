@@ -28,6 +28,7 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.wires import Wires
+
 from .conftest import get_legacy_capabilities
 
 pytestmark = pytest.mark.skip_unsupported

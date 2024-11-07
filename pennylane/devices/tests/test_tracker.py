@@ -16,6 +16,7 @@
 import pytest
 
 import pennylane as qml
+
 from .conftest import get_legacy_capabilities
 
 

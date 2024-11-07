@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
+
 from .conftest import get_legacy_capabilities
 
 try:

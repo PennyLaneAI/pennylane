@@ -21,6 +21,7 @@ from flaky import flaky
 import pennylane as qml
 from pennylane import numpy as pnp  # Import from PennyLane to mirror the standard approach in demos
 from pennylane.templates.layers import RandomLayers
+
 from .conftest import get_legacy_capabilities
 
 pytestmark = pytest.mark.skip_unsupported
