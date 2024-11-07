@@ -20,7 +20,7 @@ from jax.core import MainTrace, Primitive, ShapedArray, Trace, Tracer
 
 import pennylane as qml
 
-from .base_interpreter import jaxpr_to_jaxpr, PlxprInterpreter
+from .base_interpreter import PlxprInterpreter, jaxpr_to_jaxpr
 from .primitives import qnode_prim
 
 
@@ -76,10 +76,10 @@ class TransformTracer(Tracer):
         # TransformTracers set abstract eval in __init__, then recursion will never be needed.
         if isinstance(val, Tracer):
             self._aval = val.aval
-        elif isinstance(val, ShapedArray):
+        elif isinstance(val, jax.core.AbstractValue):
             self._aval = val
         else:
-            if isinstance(val, (list, tuple, int, float, complex)):
+            if isinstance(val, (list, tuple, int, float, complex, bool)):
                 val = jnp.array(val)
             self._aval = ShapedArray(qml.math.shape(val), val.dtype)
 
