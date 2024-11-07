@@ -55,7 +55,10 @@ def test_postselection_error_with_wrong_device():
     """Test that an error is raised when a device does not support native execution."""
     dev = qml.device("default.mixed", wires=2)
 
-    with pytest.raises(TypeError, match="does not support mid-circuit measurements natively"):
+    with pytest.raises(
+        TypeError,
+        match="does not support mid-circuit measurements and/or one-shot execution mode natively",
+    ):
 
         @qml.dynamic_one_shot
         @qml.qnode(dev)

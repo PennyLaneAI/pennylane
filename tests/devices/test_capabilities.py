@@ -509,7 +509,7 @@ schema = 3
 
 [operators.gates]
 
-RY = { properties = ["controllable", "invertible", "differentiable"] }
+RY = { properties = ["controllable", "differentiable"] }
 RZ = { properties = ["controllable", "invertible", "differentiable"] }
 CNOT = { properties = ["invertible"] }
 
@@ -565,7 +565,7 @@ class TestDeviceCapabilities:
         device_capabilities = parse_toml_document(document)
         assert isinstance(device_capabilities, DeviceCapabilities)
         assert device_capabilities.operations == {
-            "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+            "RY": OperatorProperties(differentiable=True, controllable=True),
             "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
             "CNOT": OperatorProperties(invertible=True),
         }
@@ -656,7 +656,7 @@ class TestDeviceCapabilities:
         assert isinstance(capabilities, DeviceCapabilities)
         assert capabilities == DeviceCapabilities(
             operations={
-                "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+                "RY": OperatorProperties(differentiable=True, controllable=True),
                 "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
                 "CNOT": OperatorProperties(invertible=True),
             },
@@ -693,7 +693,7 @@ class TestDeviceCapabilities:
         assert isinstance(capabilities, DeviceCapabilities)
         assert capabilities == DeviceCapabilities(
             operations={
-                "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+                "RY": OperatorProperties(differentiable=True, controllable=True),
                 "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
                 "CNOT": OperatorProperties(invertible=True),
             },
@@ -716,3 +716,22 @@ class TestDeviceCapabilities:
             supported_mcm_methods=[],
             options={"option_key": "option_field"},
         )
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_supports_operators(self, request):
+        """Tests that the supports_operators method returns the correct result."""
+
+        capabilities = DeviceCapabilities.from_toml_file(request.node.toml_file)
+
+        for op_name in ["RY", "C(RY)", "RZ", "C(RZ)", "Adjoint(RZ)", "CNOT", "Adjoint(CNOT)"]:
+            assert capabilities.supports_operation(op_name) is True
+
+        for op_name in ["PauliX", "Adjoint(RY), C(CNOT)"]:
+            assert capabilities.supports_operation(op_name) is False
+
+        for obs_name in ["PauliX", "PauliY", "PauliZ"]:
+            assert capabilities.supports_observable(obs_name) is True
+
+        for obs_name in ["LinearCombination", "Hadamard"]:
+            assert capabilities.supports_observable(obs_name) is False

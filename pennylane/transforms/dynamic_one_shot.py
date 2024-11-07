@@ -201,7 +201,7 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
     if qnode.device is not None:
         if not _supports_one_shot(qnode.device):
             raise TypeError(
-                f"Device {qnode.device.name} does not support mid-circuit measurements and/or"
+                f"Device {qnode.device.name} does not support mid-circuit measurements and/or "
                 "one-shot execution mode natively, and hence it does not support the "
                 "dynamic_one_shot transform. 'default.qubit' and 'lightning.qubit' currently "
                 "support mid-circuit measurements and the dynamic_one_shot transform."
