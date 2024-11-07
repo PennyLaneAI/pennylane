@@ -137,15 +137,8 @@ class PTerrorTensor(PTerror):
 
             # evaluate all the six commutator expressions
             for label, mps in self.mf_mps.items(): #todo: make it more general
-                #Y3_j = self.matrix_element(mps, self.commutator(self.commutator(A_mpo_py, Hj_mpo_py), A_mpo_py), mps) / 12 \
-                #        + self.matrix_element(mps, self.commutator(self.commutator(A_mpo_py, Hj_mpo_py), Hj_mpo_py), mps) / 24
-                Y3_j = mps @ \
-                    (2. * (A_mpo_py @ Hj_mpo_py @ A_mpo_py) \
-                    - Hj_mpo_py @ A_mpo_py @ A_mpo_py \
-                    - A_mpo_py @ A_mpo_py @ Hj_mpo_py \
-                    - 2. * (Hj_mpo_py @ A_mpo_py @ Hj_mpo_py) \
-                    + A_mpo_py @ Hj_mpo_py @ Hj_mpo_py \
-                    + Hj_mpo_py @ Hj_mpo_py @ A_mpo_py ) @ mps
+                Y3_j = self.matrix_element(mps, self.commutator(self.commutator(A_mpo_py, Hj_mpo_py), A_mpo_py), mps) / 12 \
+                        + self.matrix_element(mps, self.commutator(self.commutator(A_mpo_py, Hj_mpo_py), Hj_mpo_py), mps) / 24
 
                 if not label in error_per_state.keys():
                     error_per_state[label] = Y3_j
