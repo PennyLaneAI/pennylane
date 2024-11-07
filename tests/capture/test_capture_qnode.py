@@ -32,6 +32,7 @@ from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-imp
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
+    """Enable and disable the PennyLane JAX capture context around each test."""
     qml.capture.enable()
     yield
     qml.capture.disable()
@@ -515,8 +516,8 @@ class TestQNodeVmapIntegration:
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(res, circuit(x))
 
-    def test_qnode_vmap_closure_error(self):
-        """Test that an error is raised when trying to vmap over a batched non-scalar closure variable."""
+    def test_qnode_vmap_closure_warn(self):
+        """Test that a warning is raised when trying to vmap over a batched non-scalar closure variable."""
         dev = qml.device("default.qubit", wires=2)
 
         const = jax.numpy.array([2.0, 6.6])
@@ -527,9 +528,7 @@ class TestQNodeVmapIntegration:
             qml.RX(const, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError, match="Only scalar constants are currently supported with jax.vmap."
-        ):
+        with pytest.warns(UserWarning, match="Constant argument at index 0 is not scalar. "):
             jax.make_jaxpr(jax.vmap(circuit))(jax.numpy.array([0.1, 0.2]))
 
     def test_vmap_overriding_shots(self):
@@ -601,7 +600,7 @@ class TestQNodeVmapIntegration:
         param_array = jax.numpy.array([1.0, 1.2, 1.3])
         param_array_2 = jax.numpy.array([2.0, 2.1, 2.2])
 
-        with pytest.warns(UserWarning, match="Argument at index 1 has more"):
+        with pytest.warns(UserWarning, match="Argument at index 1 has size"):
             jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(param_array, param_array_2)
 
     def test_qnode_pytree_input_vmap(self):
@@ -682,6 +681,35 @@ class TestQNodeVmapIntegration:
         assert len(result[0]) == 2
         assert jax.numpy.allclose(result[0][0], cost_fn(x[0]))
         assert jax.numpy.allclose(result[0][1], cost_fn(x[1]))
+
+    def test_simple_multidim_case_2(self):
+        """Test vmap over a simple multidimensional case with a scalar and constant argument."""
+
+        # pylint: disable=import-outside-toplevel
+        from scipy.stats import unitary_group
+
+        const = jax.numpy.array(2.0)
+
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def circuit(x, y, U):
+            qml.QubitUnitary(U, wires=[0, 1, 2, 3])
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RX(x, wires=2)
+            qml.RY(const, wires=3)
+            return qml.expval(qml.Z(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3))
+
+        x = jax.numpy.array([0.4, 2.1, -1.3])
+        y = 2.71
+        U = jax.numpy.stack([unitary_group.rvs(16) for _ in range(3)])
+
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None, 0)))(x, y, U)
+        assert len(jaxpr.eqns[0].invars) == 4  # 3 args + 1 const
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.out_avals[0].shape == (3,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, U)
+        assert qml.math.allclose(result, circuit(x, y, U))
 
     def test_vmap_circuit_inside(self):
         """Test vmap of a hybrid workflow."""
