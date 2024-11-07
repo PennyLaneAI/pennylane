@@ -600,7 +600,7 @@ class TestQNodeVmapIntegration:
         param_array = jax.numpy.array([1.0, 1.2, 1.3])
         param_array_2 = jax.numpy.array([2.0, 2.1, 2.2])
 
-        with pytest.warns(UserWarning, match="Argument at index 1 has more"):
+        with pytest.warns(UserWarning, match="Argument at index 1 has size"):
             jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(param_array, param_array_2)
 
     def test_qnode_pytree_input_vmap(self):

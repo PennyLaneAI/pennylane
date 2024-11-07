@@ -158,7 +158,7 @@ def _get_qnode_prim():
 
             # Regardless of their shape, jax.vmap automatically inserts `None` as the batch dimension for constants.
             # However, if the constant is not a standard JAX type, the batch dimension is not inserted at all.
-            # How to handle this case is still an open question.
+            # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
             if idx < n_consts:
                 warn(
                     f"Constant argument at index {idx} is not scalar. "
@@ -169,11 +169,12 @@ def _get_qnode_prim():
 
             else:
 
-                # To resolve this, we need to add more properties to the AbstractOperator
-                # class to indicate which operators support batching and check them here
+                # To resolve this ambiguity, we might add more properties to the AbstractOperator
+                # class to indicate which operators support batching and check them here.
+                # As above, at this stage we raise a warning and give the user full flexibility.
                 if arg.size > 1 and batch_dim is None:
                     warn(
-                        f"Argument at index {idx} has more than 1 element but is not batched. "
+                        f"Argument at index {idx} has size > 1 but its batch dimension is None. "
                         "This may lead to unintended behavior or wrong results if the argument is provided "
                         "using parameter broadcasting to a quantum operation that supports batching.",
                         UserWarning,
