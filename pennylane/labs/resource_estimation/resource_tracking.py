@@ -19,7 +19,7 @@ from typing import Dict, Iterable, List, Set
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operation
+from pennylane.operation import DecompositionUndefinedError, Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -259,8 +259,12 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
             try:
                 cmp_rep_ops.append(_op_to_resource_op(op).resource_rep_from_op())
 
-            except NotImplementedError:
-                decomp = op.decomposition()
-                cmp_rep_ops.extend(_operations_to_compressed_reps(decomp))
+            except ResourceOperatorNotImplemented as exc:
+                try:
+                    decomp = op.decomposition()
+                    cmp_rep_ops.extend(_operations_to_compressed_reps(decomp))
+                except DecompositionUndefinedError:
+                    raise ResourceOperatorNotImplemented(f"No resource operator defined for {op._name}, but {op._name} has no decomposition.") from exc
+
 
     return cmp_rep_ops
