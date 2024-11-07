@@ -123,8 +123,8 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
-* The ``qml.workflow.set_shots`` helper func has been removed. We no longer interact with the legacy device interface in our code 
-  workflow behavior. Instead, shots should be specified on the tape, and the device should pull it's number of shots from the tape.
+* The ``qml.workflow.set_shots`` helper function has been removed. We no longer interact with the legacy device interface in our code.
+  Instead, shots should be specified on the tape, and the device should use these shots.
 
   - Deprecated in v0.39
   - Removed in v0.40
