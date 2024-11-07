@@ -752,6 +752,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             args = args[:-1] + tuple(args[-1])
         else:
             kwargs["n_wires"] = 1
+
         return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self) -> "Operator":

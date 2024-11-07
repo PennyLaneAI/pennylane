@@ -38,14 +38,9 @@ def _get_abstract_operator() -> type:
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
 
-        def __init__(self, abstract_batch_size: Callable):
-
-            print(f"init AbstractOperator: {abstract_batch_size}")
-            self._abstract_batch_size = abstract_batch_size
-
-        def abstract_batch_size(self) -> int:
-
-            return self._abstract_batch_size()
+        def __init__(self, abstract_batch_size: int = None):
+            
+            self._batch_size = abstract_batch_size
 
         # pylint: disable=missing-function-docstring
         def at_least_vspace(self):
