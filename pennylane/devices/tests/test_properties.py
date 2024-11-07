@@ -105,7 +105,6 @@ class TestDeviceProperties:
                 pytest.skip("test is old interface specific.")
 
 
-
 class TestCapabilities:
     """Test that the device declares its capabilities correctly."""
 
