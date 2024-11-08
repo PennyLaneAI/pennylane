@@ -20,12 +20,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
-  argument.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
   ``qml.shadow_expval`` measurement process.
 
@@ -119,6 +113,12 @@ Completed deprecation cycles
 
 * The :class:`~pennylane.BasisStatePreparation` template has been removed.
   Instead, use :class:`~pennylane.BasisState`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been removed. Instead, use the ``'aux_wire'``
+  argument.
 
   - Deprecated in v0.39
   - Removed in v0.40

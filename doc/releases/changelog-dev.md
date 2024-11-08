@@ -48,6 +48,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
+  [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
+
 * The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
   [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
 
