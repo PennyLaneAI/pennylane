@@ -48,6 +48,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
+  [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -61,9 +64,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Shiwen An
+Shiwen An,
 Astral Cai,
+Yushao Chen,
+Pietropaolo Frisoni,
 Andrija Paurevic,
 Justin Pickering
-Pietropaolo Frisoni
-

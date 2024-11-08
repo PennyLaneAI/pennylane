@@ -56,12 +56,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* The :class:`~pennylane.BasisStatePreparation` template is deprecated.
-  Instead, use :class:`~pennylane.BasisState`.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
 
@@ -122,6 +116,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The :class:`~pennylane.BasisStatePreparation` template has been removed.
+  Instead, use :class:`~pennylane.BasisState`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
 
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
