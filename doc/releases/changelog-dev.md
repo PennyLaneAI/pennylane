@@ -55,4 +55,3 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Austin Huang,
 Andrija Paurevic
-
