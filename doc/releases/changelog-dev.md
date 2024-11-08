@@ -17,15 +17,15 @@
 
 <h4>New API for Qubit Mixed</h4>
 
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
 
-  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379) An `apply_operation` helper function featuring:
 
   * Two density matrix contraction methods using `einsum` and `tensordot`
 
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
-  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) A submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations
+* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) 
 
 <h3>Improvements 🛠</h3>
 
@@ -43,10 +43,18 @@
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
 
+* The Jaxpr primitives for `for_loop`, `while_loop` and `cond` now store slices instead of
+  numbers of args.
+  [(#6521)](https://github.com/PennyLaneAI/pennylane/pull/6521)
+
 * Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
 <h3>Breaking changes 💔</h3>
+
+* The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
+  `qml.shadow_expval` measurement process.
+  [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
 
 <h3>Deprecations 👋</h3>
 
