@@ -198,13 +198,13 @@ class TestValidation:
 
         dev = CustomDeviceWithDiffMethod()
 
-        with pytest.raises(
+        with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
         ):
             res = QNode.get_best_method(dev, "jax")
             assert res == ("device", {}, dev)
 
-        with pytest.raises(
+        with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
         ):
             res = QNode.get_best_method(dev, None)
@@ -219,7 +219,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
-        with pytest.raises(
+        with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
         ):
             res = QNode.get_best_method(dev, interface)
@@ -233,7 +233,7 @@ class TestValidation:
 
         # null device has no info - fall back on parameter-shift
         dev = CustomDevice()
-        with pytest.raises(
+        with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
         ):
             res = QNode.get_best_method(dev, None)
@@ -242,7 +242,7 @@ class TestValidation:
         # no interface - fall back on parameter-shift
         dev2 = qml.device("default.qubit", wires=1)
         tape = qml.tape.QuantumScript([], [], shots=50)
-        with pytest.raises(
+        with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
         ):
             res2 = QNode.get_best_method(dev2, None, tape=tape)

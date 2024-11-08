@@ -23,7 +23,6 @@ import warnings
 from collections.abc import Callable, Sequence
 from typing import Any, Literal, Optional, Union, get_args
 
-import pytest
 from cachetools import Cache
 
 import pennylane as qml
@@ -617,12 +616,10 @@ class QNode:
         else:
             tape = self.tape
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
-        ):
-            return QNode.get_gradient_fn(self.device, self.interface, self.diff_method, tape=tape)[
-                0
-            ]
+        warnings.filterwarnings(
+            "ignore", "QNode.get_gradient_fn is deprecated", qml.PennyLaneDeprecationWarning
+        )
+        return QNode.get_gradient_fn(self.device, self.interface, self.diff_method, tape=tape)[0]
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
@@ -730,10 +727,10 @@ class QNode:
             )
 
         if diff_method == "best":
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-            ):
-                return QNode.get_best_method(device, interface, tape=tape)
+            warnings.filterwarnings(
+                "ignore", "QNode.get_best_method is deprecated", qml.PennyLaneDeprecationWarning
+            )
+            return QNode.get_best_method(device, interface, tape=tape)
 
         if diff_method == "parameter-shift":
             if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):
@@ -867,10 +864,10 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            transform = QNode.get_best_method(device, interface)[0]
+        warnings.filterwarnings(
+            "ignore", "QNode.get_best_method is deprecated", qml.PennyLaneDeprecationWarning
+        )
+        transform = QNode.get_best_method(device, interface)[0]
 
         if transform is qml.gradients.finite_diff:
             return "finite-diff"
