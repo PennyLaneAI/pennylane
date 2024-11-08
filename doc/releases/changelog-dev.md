@@ -45,9 +45,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_deep_interface` now works properly for autograd arrays.
+  [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Astral Cai,
+Austin Huang,
 Andrija Paurevic
+
