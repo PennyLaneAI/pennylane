@@ -542,7 +542,6 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        # a = cost_fn.get_gradient_fn(dev, "autograd")[0]
         assert cost_fn.get_gradient_fn(dev, "autograd")[0] == "backprop"  # gets restored to default
 
         cost_fn(a, b, shots=100)
