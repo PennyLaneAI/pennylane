@@ -28,6 +28,7 @@ from pennylane.labs.vibrational_ham.bosonic import (
 
 
 class TestBoseWord:
+    # Expected bose sentences were computed manually or with openfermion
     @pytest.mark.parametrize(
         ("bose_sentence", "expected"),
         [
@@ -46,6 +47,28 @@ class TestBoseWord:
                         BoseWord({(0, 0): "+", (1, 0): "-"}): 1.0102e-05,
                         BoseWord({}): 5.051e-06,
                         BoseWord({(0, 0): "-", (1, 0): "-"}): 5.051e-06,
+                    }
+                ),
+            ),
+            (
+                BoseWord(
+                    {(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"}
+                ),
+                BoseSentence(
+                    {
+                        BoseWord({(0, 0): "+", (1, 2): "+"}): 2.0,
+                        BoseWord({(0, 0): "+", (1, 1): "+", (2, 2): "+", (3, 1): "-"}): 2.0,
+                        BoseWord({(0, 0): "+", (1, 0): "+", (2, 2): "+", (3, 0): "-"}): 1.0,
+                        BoseWord(
+                            {
+                                (0, 0): "+",
+                                (1, 0): "+",
+                                (2, 1): "+",
+                                (3, 2): "+",
+                                (4, 0): "-",
+                                (5, 1): "-",
+                            }
+                        ): 1.0,
                     }
                 ),
             ),
