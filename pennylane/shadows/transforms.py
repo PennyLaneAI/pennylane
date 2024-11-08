@@ -55,67 +55,6 @@ def _replace_obs(
     return [qscript], processing_fn
 
 
-@partial(transform, final_transform=True)
-def shadow_expval(tape: QuantumScript, H, k=1) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Transform a circuit returning a classical shadow into one that returns
-    the approximate expectation values in a differentiable manner.
-
-    See :func:`~.pennylane.shadow_expval` for more usage details.
-
-    .. warning::
-
-        ``qml.shadows.shadow_expval`` is deprecated and will be removed in v0.40. Please use the :func:`~pennylane.shadow_expval`
-        measurement process in your circuits instead.
-
-    Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
-        H (:class:`~.pennylane.Observable` or list[:class:`~.pennylane.Observable`]): Observables
-            for which to compute the expectation values
-        k (int): k (int): Number of equal parts to split the shadow's measurements to compute
-            the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
-
-    Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will provide the expectation value estimates for each observable in the form of a tensor.
-
-    **Example**
-
-    .. code-block:: python3
-
-        H = qml.Z(0) @ qml.Z(1)
-        dev = qml.device("default.qubit", wires=2, shots=10000)
-
-        @partial(qml.shadows.shadow_expval, H, k=1)
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(x, wires=0)
-            return qml.classical_shadow(wires=[0, 1])
-
-    >>> x = np.array(1.2)
-    >>> circuit(x)
-    [array(0.3528)]
-    >>> qml.grad(circuit)(x)
-    -0.9323999999999998
-    """
-
-    warnings.warn(
-        "qml.shadows.shadow_expval is deprecated and will be removed in v0.40. "
-        "Instead, use the qml.shadow_expval measurement process in your circuit.",
-        qml.PennyLaneDeprecationWarning,
-    )
-
-    tapes, _ = _replace_obs(tape, qml.shadow_expval, H, k=k)
-
-    def post_processing_fn(res):
-        return res
-
-    return tapes, post_processing_fn
-
-
 def _shadow_state_diffable(tape, wires):
     """Differentiable version of the shadow state transform"""
     wires_list = wires if isinstance(wires[0], list) else [wires]
