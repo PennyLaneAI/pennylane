@@ -132,17 +132,8 @@ jobs:
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10"],
-            "torch-tests": ["3.10"],
-            "tf-tests": ["3.10"],
-            "jax-tests": ["3.10"],
-            "all-interfaces-tests": ["3.10"],
-            "external-libraries-tests": ["3.10"],
-            "qcut-tests": ["3.10"],
-            "qchem-tests": ["3.10"],
-            "gradients-tests": ["3.10"],
-            "data-tests": ["3.10"],
-            "device-tests": ["3.10"]          }
+            "default": ["3.10"]       
+          }
           EOF
           else
             cat >python_versions.json <<-EOF
