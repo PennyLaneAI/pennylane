@@ -4,16 +4,16 @@
 
 <h3>New features since last release</h3>
 
-* A `DeviceCapabilities` data class is defined to contain all capabilities of the device's execution interface (i.e. its implementation of `Device.execute`). A TOML file can be used to define the capabilities of a device, and it can be loaded into a `DeviceCapabilities` object.
+* Developers of plugin devices now have the option of providing a TOML-formatted configuration file
+  to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
   [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
+  [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
-  ```pycon
-  >>> from pennylane.devices.capabilities import load_toml_file, parse_toml_document, DeviceCapabilities
-  >>> document = load_toml_file("my_device.toml")
-  >>> capabilities = parse_toml_document(document)
-  >>> isinstance(capabilities, DeviceCapabilities)
-  True
-  ```
+  * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
+    data class, as well as functions that load and parse the TOML-formatted configuration files.
+  * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
+    that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
+    file if it exists. Otherwise, it is set to `None`.
 
 <h3>Improvements 🛠</h3>
 
@@ -49,5 +49,9 @@
 
 This release contains contributions from (in alphabetical order):
 
+Shiwen An,
 Astral Cai,
-Andrija Paurevic
+Andrija Paurevic,
+Justin Pickering,
+Pietropaolo Frisoni
+
