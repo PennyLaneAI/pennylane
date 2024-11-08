@@ -704,7 +704,7 @@ class QNode:
         """
 
         warnings.warn(
-            "QNode.get_gradient_fn is deprecated and will be removed in v0.40. "
+            "QNode.get_gradient_fn is deprecated and will be removed in v0.41. "
             "Instead, please use the qml.workflow._get_gradient_fn function.",
             qml.PennyLaneDeprecationWarning,
         )
@@ -797,7 +797,7 @@ class QNode:
         """
 
         warnings.warn(
-            "QNode.get_best_method is deprecated and will be removed in v0.40. "
+            "QNode.get_best_method is deprecated and will be removed in v0.41. "
             "Instead, use the qml.workflow.get_best_diff_method function.",
             qml.PennyLaneDeprecationWarning,
         )
@@ -851,7 +851,7 @@ class QNode:
         """
 
         warnings.warn(
-            "QNode.best_method_str is deprecated and will be removed in v0.40. "
+            "QNode.best_method_str is deprecated and will be removed in v0.41. "
             "Instead, use the qml.workflow.get_best_diff_method function.",
             qml.PennyLaneDeprecationWarning,
         )
