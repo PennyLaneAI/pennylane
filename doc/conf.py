@@ -113,7 +113,7 @@ add_module_names = False
 # built documents.
 
 import pennylane
-pennylane.Hamiltonian = pennylane.ops.Hamiltonian
+pennylane.Hamiltonian = pennylane.ops.op_math.linear_combination.Hamiltonian
 
 # The full version, including alpha/beta/rc tags.
 release = pennylane.__version__
