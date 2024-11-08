@@ -159,9 +159,7 @@ class PlxprInterpreter:
     [RX(0.5, wires=[0]), RX(0.5, wires=[1]), RX(0.5, wires=[2])]
 
     In this case, we need to actually evaluate the jaxpr 3 times using our interpreter. If jax's
-    evalutation interpreter ran it three times, we wouldn't actually manage to accumulate the operations.
-
-
+    evaluation interpreter ran it three times, we wouldn't actually manage to accumulate the operations.
     """
 
     _env: dict
@@ -213,7 +211,6 @@ class PlxprInterpreter:
         Blank by default, this method can initialize any additional instance variables
         needed by an interpreter. For example, a device interpreter could initialize a statevector,
         or a compilation interpreter could initialize a staging area for the latest operation on each wire.
-
         """
 
     def cleanup(self) -> None:
@@ -251,7 +248,6 @@ class PlxprInterpreter:
         See also: :meth:`~.interpret_operation`.
 
         """
-
         invals = (self.read(invar) for invar in eqn.invars)
         with qml.QueuingManager.stop_recording():
             op = eqn.primitive.impl(*invals, **eqn.params)
