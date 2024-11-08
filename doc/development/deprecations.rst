@@ -36,7 +36,12 @@ Pending deprecations
 
   - Deprecated in v0.39
   - Will be removed in v0.40
+* ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
+  will be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  respectively.
 
+  - Deprecated top level access in v0.39
+  - Top level access will be removed in v0.40
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
 
