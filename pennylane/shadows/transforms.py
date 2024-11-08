@@ -21,7 +21,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.measurements import ClassicalShadowMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -33,13 +32,6 @@ def _replace_obs(
     """
     Tape transform to replace the measurement processes with the given one
     """
-    # check if the measurement process of the tape is qml.classical_shadow
-    for m in tape.measurements:
-        if not isinstance(m, ClassicalShadowMP):
-            raise ValueError(
-                f"Tape measurement must be ClassicalShadowMP, got {m.__class__.__name__!r}"
-            )
-
     with qml.queuing.AnnotatedQueue() as q:
         # queue everything from the old tape except the measurement processes
         for op in tape.operations:
