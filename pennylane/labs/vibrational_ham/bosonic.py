@@ -28,7 +28,7 @@ class BoseWord(dict):
     position of the creation/annihilation operator in the Bose word and the second integer
     represents the mode it acts on. The values of the dictionary are one of ``'+'`` or ``'-'``
     symbols that denote creation and annihilation operators, respectively. The operator
-    :math:`a^{\dagger}_0 a_1` can then be constructed as
+    :math:`b^{\dagger}_0 b_1` can then be constructed as
 
     >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
