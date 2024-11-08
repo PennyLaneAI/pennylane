@@ -52,6 +52,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
+  `qml.shadow_expval` measurement process.
+  [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
