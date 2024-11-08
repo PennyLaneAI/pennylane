@@ -26,7 +26,7 @@ def add_noise(tape, noise_model, level=None):
     Circuits passed through this quantum transform will be updated to apply the
     insertion-based :class:`~.NoiseModel`, which contains mappings
     ``{BooleanFn: Callable}`` from conditions to the corresponding noise
-    gates for circuit operations and measurements each. First, each condition
+    gates for circuit operations and measurements respectively. First, each condition
     in the first mapping of a noise model will be evaluated on the operations
     contained within the given circuit. For conditions that evaluate to ``True``,
     the noisy gates contained within the ``Callable`` will be inserted after the

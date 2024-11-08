@@ -255,7 +255,7 @@ class TestConstruction:
         qml.assert_equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
 
     def test_measurement_before_operation(self):
-        """Test that an exception is raised if a measurement occurs before a operation"""
+        """Test that an exception is raised if a measurement occurs before an operation"""
 
         with pytest.raises(ValueError, match="must occur prior to measurements"):
             with QuantumTape():
