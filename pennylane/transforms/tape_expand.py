@@ -463,7 +463,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
     """Context manager for setting custom decompositions.
 
     .. warning::
-        The ``decomp_depth`` argument is deprecated and will be removed in version 0.40.
+        The ``decomp_depth`` argument is deprecated and will be removed in version 0.41.
 
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
@@ -511,7 +511,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
     """
     if decomp_depth is not None:
         warnings.warn(
-            "The decomp_depth argument is deprecated and will be removed in version v0.40.",
+            "The decomp_depth argument is deprecated and will be removed in version v0.41.",
             qml.PennyLaneDeprecationWarning,
         )
     else:

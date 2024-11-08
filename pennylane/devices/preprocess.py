@@ -315,7 +315,7 @@ def decompose(
 
     .. warning::
 
-        The `max_expansion` argument is deprecated and will be removed in v0.40.
+        The `max_expansion` argument is deprecated and will be removed in v0.41.
 
     Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If
@@ -383,7 +383,7 @@ def decompose(
     """
     if max_expansion is not None:
         warnings.warn(
-            "The max_expansion argument is deprecated and will be removed in v0.40. ",
+            "The max_expansion argument is deprecated and will be removed in v0.41. ",
             qml.PennyLaneDeprecationWarning,
         )
 

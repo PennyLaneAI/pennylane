@@ -11,8 +11,8 @@ Pending deprecations
 
 * The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` is deprecated. 
 
-  - Deprecated in v0.39
-  - Will be removed in v0.40
+  - Deprecated in v0.40
+  - Will be removed in v0.41
 
 * The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
   has been deprecated.
