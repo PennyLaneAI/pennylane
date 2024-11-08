@@ -75,26 +75,31 @@ def QSP_angles(F):
     parity = (len(F) - 1) % 2
 
     # Construct the auxiliary polynomial P and its complementary Q based on appendix A in [arXiv:2406.04246]
-    P = np.concatenate([np.zeros(len(F) // 2), chebyshev.poly2cheb(F)[parity::2]]) * (1 - 1e-12)
-    Q = np.array(complementary_poly(P))
+    primary_poly = np.concatenate([np.zeros(len(F) // 2), chebyshev.poly2cheb(F)[parity::2]]) * (
+        1 - 1e-12
+    )
+    secondary_poly = complementary_poly(primary_poly)
 
-    S = np.array([P, Q])
-    n = S.shape[1]
-    theta = np.zeros(n)
+    polynomial_matrix = np.array([primary_poly, secondary_poly])
+    num_terms = polynomial_matrix.shape[1]
+    rotation_angles = np.zeros(num_terms)
 
     # This subroutine is an adaptation of Algorithm 1 in [arXiv:2308.01501]
     # in order to work in the context of QSP.
-
     with qml.QueuingManager.stop_recording():
-        for d in reversed(range(n)):
+        for idx in range(num_terms - 1, -1, -1):
 
-            a, b = S[:, d]
-            theta[d] = np.arctan2(b.real, a.real)
-            matrix = qml.matrix(qml.RY(-2 * theta[d], wires=0))
-            S = matrix @ S
-            S = np.array([S[0][1 : d + 1], S[1][0:d]])
+            poly_a, poly_b = polynomial_matrix[:, idx]
+            rotation_angles[idx] = np.arctan2(poly_b.real, poly_a.real)
 
-    return theta
+            rotation_op = qml.matrix(qml.RY(-2 * rotation_angles[idx], wires=0))
+
+            updated_poly_matrix = rotation_op @ polynomial_matrix
+            polynomial_matrix = np.array(
+                [updated_poly_matrix[0][1 : idx + 1], updated_poly_matrix[1][0:idx]]
+            )
+
+    return rotation_angles
 
 
 def transform_angles(angles, routine1, routine2):
