@@ -1,4 +1,4 @@
-:orphan:
+from pennylane.devices.capabilities import DeviceCapabilitiesfrom tests.data.test_dataset import MyDataset:orphan:
 
 # Release 0.40.0-dev (development release)
 
@@ -11,9 +11,31 @@
 
   * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
     data class, as well as functions that load and parse the TOML-formatted configuration files.
+
+    ```pycon
+      >>> from pennylane.devices.capabilities import DeviceCapabilities
+      >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
+      >>> isinstance(capabilities, DeviceCapabilities)
+      True
+    ```
+
   * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
     that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
     file if it exists. Otherwise, it is set to `None`.
+
+    ```python
+    from pennylane.devices import Device
+    
+    class MyDevice(Device):
+    
+        config_filepath = "path/to/config.toml"
+    
+        ...
+    ```
+    ```pycon
+    >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
+    True
+    ```
 
 <h4>New API for Qubit Mixed</h4>
 
