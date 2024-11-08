@@ -221,6 +221,8 @@ def find_and_validate_gradient_methods(tape, method, trainable_param_indices, us
             parameters on the tape that only support numeric differentiation.
 
     """
+    print(tape.circuit)
+    print(tape.trainable_params)
     diff_methods = _find_gradient_methods(tape, trainable_param_indices, use_graph=use_graph)
     _validate_gradient_methods(tape, method, diff_methods)
     return diff_methods
