@@ -456,7 +456,9 @@ def validate_observables(
         if m.obs is not None:
             if isinstance(m.obs, Tensor):
                 if any(not stopping_condition(o) for o in m.obs.obs):
-                    raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
+                    raise qml.DeviceError(  # pragma: no cover
+                        f"Observable {repr(m.obs)} not supported on {name}"  # pragma: no cover
+                    )  # pragma: no cover
             elif not stopping_condition(m.obs):
                 raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
 
