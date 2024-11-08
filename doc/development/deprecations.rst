@@ -44,7 +44,7 @@ Pending deprecations
   - Will be removed in v0.40
 
 * ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
-  we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  will be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
   respectively.
 
   - Deprecated top level access in v0.39
@@ -56,19 +56,11 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
-  Instead, ``qml.simplify()`` can be called on the constructed operator.
-
-  - Deprecated in v0.37
-  - Will be removed in v0.39
-
 * The :class:`~pennylane.BasisStatePreparation` template is deprecated.
   Instead, use :class:`~pennylane.BasisState`.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
@@ -160,7 +152,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
 
   - Deprecated in v0.38
   - Removed in v0.39

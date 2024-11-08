@@ -15,7 +15,7 @@
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
 
-# pylint: disable=abstract-method
+# pylint: disable=abstract-method,too-many-arguments
 
 import numpy as np
 import pytest
@@ -516,7 +516,7 @@ class TestSpsaGradientIntegration:
 
     def test_ragged_output(self, approx_order, strategy, validate, seed):
         """Test that the Jacobian is correctly returned for a tape with ragged output"""
-        dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector, seed=seed)
         params = [1.0, 1.0, 1.0]
         rng = np.random.default_rng(seed)
 
@@ -560,7 +560,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -607,7 +607,7 @@ class TestSpsaGradientIntegration:
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -660,7 +660,7 @@ class TestSpsaGradientIntegration:
         jacobian will match the expected analytical value.
         """
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -715,7 +715,7 @@ class TestSpsaGradientIntegration:
         jacobian will match the expected analytical value.
         """
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -757,7 +757,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -811,7 +811,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=rng)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
 
         x = 0.543
         y = -0.654
@@ -866,7 +866,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
