@@ -684,7 +684,7 @@ class QNode:
         """
         .. warning::
 
-            This method is deprecated in v0.39 and will be removed in v0.40.
+            This method is deprecated in v0.40 and will be removed in v0.41.
 
         Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
@@ -769,7 +769,7 @@ class QNode:
         """
         .. warning::
 
-            This method is deprecated in v0.39 and will be removed in v0.40.
+            This method is deprecated in v0.40 and will be removed in v0.41.
 
         Returns the 'best' differentiation method
         for a particular device and interface combination.
@@ -822,7 +822,7 @@ class QNode:
         """
         .. warning::
 
-            This property is deprecated in v0.39 and will be removed in v0.40.
+            This property is deprecated in v0.40 and will be removed in v0.41.
 
         Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
