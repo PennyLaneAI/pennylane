@@ -22,8 +22,7 @@ Execution functions and utilities
 .. autosummary::
     :toctree: api
 
-    ~execute
-    ~workflow.set_shots
+    ~executeset_shots
     ~workflow.construct_tape
     ~workflow.construct_batch
     ~workflow.get_transform_program
@@ -43,10 +42,9 @@ Jacobian Product Calculation
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 
 """
-from .get_best_diff_method import get_best_diff_method
-from .get_gradient_fn import _get_gradient_fn
 from .construct_batch import construct_batch, get_transform_program
 from .construct_tape import construct_tape
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, execute
+from .get_best_diff_method import get_best_diff_method
+from .get_gradient_fn import _get_gradient_fn
 from .qnode import QNode, qnode
-from .set_shots import set_shots

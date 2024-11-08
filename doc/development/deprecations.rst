@@ -123,6 +123,12 @@ Completed deprecation cycles
   - Deprecated in v0.39
   - Removed in v0.40
 
+* The ``qml.workflow.set_shots`` helper func has been removed. We no longer interact with the legacy device interface in our code 
+workflow behavior. Instead, shots should be specified on the tape, and the device should pull it's number of shots from the tape.
+
+  - Deprecated in v0.38
+  - Removed in v0.40
+
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 

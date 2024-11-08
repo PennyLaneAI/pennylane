@@ -29,16 +29,12 @@
 <h4>Other Improvements</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
-  - A new API for mixed-state operations
-  - An `apply_operation` helper function featuring:
-    - Two density matrix contraction methods using `einsum` and `tensordot`
-    - Optimized handling of special cases including:
-      - Diagonal operators
-      - Identity operators 
-      - CX (controlled-X)
-      - Multi-controlled X gates
-      - Grover operators
-  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
+
+  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379) An `apply_operation` helper function featuring:
+
+  * Two density matrix contraction methods using `einsum` and `tensordot`
+
+  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
@@ -53,6 +49,10 @@
 
 * The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
   [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
+
+* The ``qml.workflow.set_shots`` helper func has been removed. We no longer interact with the legacy device interface in our code 
+workflow behavior. Instead, shots should be specified on the tape, and the device should pull it's number of shots from the tape.
+  [(#6534)](https://github.com/PennyLaneAI/pennylane/pull/6534)
 
 <h3>Deprecations 👋</h3>
 
@@ -72,4 +72,4 @@ Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
 Andrija Paurevic,
-Justin Pickering
+Justin Pickering,
