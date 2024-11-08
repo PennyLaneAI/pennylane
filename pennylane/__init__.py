@@ -184,4 +184,3 @@ def __getattr__(name):
 def version():
     """Returns the PennyLane version number."""
     return __version__
-
