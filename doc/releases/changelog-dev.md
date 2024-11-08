@@ -24,6 +24,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
+  are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
+  respectively.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
