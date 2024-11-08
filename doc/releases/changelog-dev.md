@@ -39,9 +39,11 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition` has been removed.
+* The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
+  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
 
-* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been removed.
+* The `expand_depth` argument for `qml.compile` has been removed.
+  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
 
 <h3>Deprecations 👋</h3>
 
