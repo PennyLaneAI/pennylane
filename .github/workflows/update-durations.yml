@@ -27,7 +27,7 @@ jobs:
       run_lightened_ci: true
       skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
 
-  combine-durations-files:
+  merge-durations-files:
     needs: update-durations
     runs-on: ubuntu-latest
     steps:
@@ -38,7 +38,7 @@ jobs:
           path: ./
           merge-multiple: false
 
-      - name: Combine artifacts into single file
+      - name: Merge artifacts into single file
         run: |
           mkdir durations
           jq -s 'add' durations-core-*/*.json > durations/core_tests_durations.json
@@ -48,7 +48,7 @@ jobs:
       - name: Upload combined durations artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: durations
+          name: merged-durations
           path: ./durations
           include-hidden-files: true
 
@@ -56,11 +56,12 @@ jobs:
   upload-durations:
     needs:
       - update-durations
-      - combine-durations-files
+      - merge-durations-files
     uses: ./.github/workflows/check_in_artifact.yml
     with:
-      artifact_name_pattern: "durations"
-      artifact_save_path: ".github/"
+      artifact_name_pattern: "merged-durations"
+      artifact_save_path: ".github/durations"
+      merge_multiple: true
       pull_request_head_branch_name: bot/update-durations
       commit_message_description: Update test durations
       pull_request_title: Update test durations
