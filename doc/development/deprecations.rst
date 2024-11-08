@@ -123,7 +123,7 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
-* The ``QubitStateVector`` template has been removed. Instead, use ``StatePrep``.
+* The ``qml.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
 
   - Deprecated in v0.39
   - Removed in v0.40
