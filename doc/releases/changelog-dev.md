@@ -65,6 +65,10 @@ workflow behavior. Instead, shots should be specified on the tape, and the devic
 * ``QNode.gradient_fn`` has been removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
   process the diff method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
+ 
+* The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
+  `qml.shadow_expval` measurement process.
+  [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
 
 <h3>Deprecations 👋</h3>
 

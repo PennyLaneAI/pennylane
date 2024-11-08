@@ -20,9 +20,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
-  ``qml.shadow_expval`` measurement process.
-
   - Deprecated in v0.39
   - Will be removed in v0.40
 
@@ -124,6 +121,9 @@ workflow behavior. Instead, shots should be specified on the tape, and the devic
 
 * ``QNode.gradient_fn`` is removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
   process the diff method.
+  
+* The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
+  ``qml.shadow_expval`` measurement process.
 
   - Deprecated in v0.39
   - Removed in v0.40
