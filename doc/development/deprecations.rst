@@ -37,19 +37,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
-  will be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
-  respectively.
-
-  - Deprecated top level access in v0.39
-  - Top level access will be removed in v0.40
-
-* ``QNode.gradient_fn`` is deprecated. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
-  process the diff method.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
 
@@ -127,6 +114,12 @@ Completed deprecation cycles
 workflow behavior. Instead, shots should be specified on the tape, and the device should pull it's number of shots from the tape.
 
   - Deprecated in v0.38
+  - Removed in v0.40
+
+* ``QNode.gradient_fn`` is removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
+  process the diff method.
+
+  - Deprecated in v0.39
   - Removed in v0.40
 
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.

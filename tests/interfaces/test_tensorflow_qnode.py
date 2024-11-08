@@ -540,18 +540,15 @@ class TestShotsIntegration:
         circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert circuit.gradient_fn == qml.gradients.param_shift
+        assert (
+            circuit.get_gradient_fn(dev, "tensorflow", diff_method="parameter-shift")[0]
+            == qml.gradients.param_shift
+        )
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert circuit.gradient_fn == "backprop"
+        assert circuit.get_gradient_fn(dev, "tensorflow")[0] == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
