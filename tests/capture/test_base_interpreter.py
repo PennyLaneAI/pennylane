@@ -181,7 +181,6 @@ def test_overriding_measurements():
         return qml.expval(qml.Z(0)), qml.probs(wires=(0, 1))
 
     res = circuit()
-    print(res)
     assert qml.math.allclose(res[0], jax.numpy.zeros(5))
     assert qml.math.allclose(res[1], jax.numpy.zeros((5, 2)))
 
