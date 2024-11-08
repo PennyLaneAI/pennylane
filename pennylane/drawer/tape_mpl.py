@@ -219,6 +219,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     """Private function wrapped with styling."""
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
+    show_wire_labels = kwargs.get("show_wire_labels", True)
     active_wire_notches = kwargs.get("active_wire_notches", True)
     fontsize = kwargs.get("fontsize", None)
 
@@ -259,7 +260,10 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig
     if fontsize is not None:
         drawer.fontsize = fontsize
 
-    drawer.label(list(wire_map), text_options=label_options)
+    if show_wire_labels:
+        drawer.label(list(wire_map), text_options=label_options)
+    else:
+        drawer.crop_wire_labels()
 
     _add_classical_wires(drawer, cwire_layers, cwire_wires)
 
@@ -299,8 +303,11 @@ def tape_mpl(
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
-        wire_options (dict): matplotlib formatting options for the wire lines
+        wire_options (dict): matplotlib formatting options for the wire lines. In addition to
+            standard options, options per wire can be specified with ``wire_label: options``
+            pairs, also see examples below.
         label_options (dict): matplotlib formatting options for the wire labels
+        show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         fig (None or matplotlib Figure): Matplotlib figure to plot onto. If None, then create a new figure.
@@ -323,7 +330,7 @@ def tape_mpl(
         measurements = [qml.expval(qml.Z(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
 
-        fig, ax = tape_mpl(tape)
+        fig, ax = qml.drawer.tape_mpl(tape)
         fig.show()
 
     .. figure:: ../../_static/tape_mpl/default.png
@@ -345,7 +352,7 @@ def tape_mpl(
         measurements = [qml.expval(qml.Z(0))]
         tape2 = qml.tape.QuantumTape(ops, measurements)
 
-        fig, ax = tape_mpl(tape2, decimals=2)
+        fig, ax = qml.drawer.tape_mpl(tape2, decimals=2)
 
     .. figure:: ../../_static/tape_mpl/decimals.png
         :align: center
@@ -358,7 +365,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = tape_mpl(tape, wire_order=[3,2,1,0])
+        fig, ax = qml.drawer.tape_mpl(tape, wire_order=[3,2,1,0])
 
     .. figure:: ../../_static/tape_mpl/wire_order.png
             :align: center
@@ -370,7 +377,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = tape_mpl(tape, wire_order=["aux"], show_all_wires=True)
+        fig, ax = qml.drawer.tape_mpl(tape, wire_order=["aux"], show_all_wires=True)
 
     .. figure:: ../../_static/tape_mpl/show_all_wires.png
             :align: center
@@ -384,7 +391,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = tape_mpl(tape)
+        fig, ax = qml.drawer.tape_mpl(tape)
         fig.suptitle("My Circuit", fontsize="xx-large")
 
         options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
@@ -408,7 +415,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = tape_mpl(tape, style='sketch')
+        fig, ax = qml.drawer.tape_mpl(tape, style='sketch')
 
     .. figure:: ../../_static/tape_mpl/sketch_style.png
             :align: center
@@ -432,7 +439,7 @@ def tape_mpl(
         plt.rcParams['lines.linewidth'] = 5
         plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-        fig, ax = tape_mpl(tape, style="rcParams")
+        fig, ax = qml.drawer.tape_mpl(tape, style="rcParams")
 
     .. figure:: ../../_static/tape_mpl/rcparams.png
             :align: center
@@ -445,7 +452,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = tape_mpl(tape, wire_options={'color':'teal', 'linewidth': 5},
+        fig, ax = qml.drawer.tape_mpl(tape, wire_options={'color':'teal', 'linewidth': 5},
                     label_options={'size': 20})
 
     .. figure:: ../../_static/tape_mpl/wires_labels.png
@@ -453,6 +460,22 @@ def tape_mpl(
             :width: 60%
             :target: javascript:void(0);
 
+    Additionally, ``wire_options`` may contain sub-dictionaries of matplotlib options assigned
+    to separate wire labels, which will control the line style for the respective individual wires.
+
+    .. code-block:: python
+
+        wire_options = {
+            'color': 'teal', # all wires but wire 2 will be teal
+            'linewidth': 5, # all wires but wire 2 will be bold
+            2: {'color': 'orange', 'linestyle': '--'}, # wire 2 will be orange and dashed
+        }
+        fig, ax = qml.drawer.tape_mpl(tape, wire_options=wire_options)
+
+    .. figure:: ../../_static/tape_mpl/per_wire_options.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
     """
 
     restore_params = {}

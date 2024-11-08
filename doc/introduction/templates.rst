@@ -158,6 +158,10 @@ as addition, multiplication and exponentiation.
     :description: :doc:`IntegerComparator <../code/api/pennylane.IntegerComparator>`
     :figure: _static/templates/arithmetic/integercomparator.png
 
+.. gallery-item::
+    :description: :doc:`OutPoly <../code/api/pennylane.OutPoly>`
+    :figure: _static/templates/arithmetic/outpoly.png
+
 
 .. raw:: html
 

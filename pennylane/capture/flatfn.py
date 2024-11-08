@@ -47,7 +47,7 @@ class FlatFn:
     {'y': 2.5}
 
     If we want to use a fully flattened function that also takes flat inputs instead of
-    the original inputs with tree structure, we can provide the treedef for this input
+    the original inputs with tree structure, we can provide the ``PyTreeDef`` for this input
     structure:
 
     >>> flat_args, in_tree = jax.tree_util.tree_flatten((arg,))

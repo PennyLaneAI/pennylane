@@ -127,16 +127,45 @@ def validate_device_wires(
         The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        WireError: if the tape has a wire not present in the provided wires.
+        WireError: if the tape has a wire not present in the provided wires, or if abstract wires are present.
     """
+
+    if any(qml.math.is_abstract(w) for w in tape.wires):
+        raise WireError(
+            f"Cannot run circuit(s) on {name} as abstract wires are present in the tape: {tape.wires}. "
+            f"Abstract wires are not yet supported."
+        )
+
     if wires:
+
+        if any(qml.math.is_abstract(w) for w in wires):
+            raise WireError(
+                f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
+                f"Abstract wires are not yet supported."
+            )
+
         if extra_wires := set(tape.wires) - set(wires):
             raise WireError(
                 f"Cannot run circuit(s) on {name} as they contain wires "
                 f"not found on the device: {extra_wires}"
             )
-        measurements = tape.measurements.copy()
+
         modified = False
+        new_ops = None
+        for i, op in enumerate(tape.operations):
+            if isinstance(op, qml.Snapshot):
+                mp = op.hyperparameters["measurement"]
+                if not mp.wires:
+                    if not new_ops:
+                        new_ops = list(tape.operations)
+                    modified = True
+                    new_mp = copy(mp)
+                    new_mp._wires = wires  # pylint:disable=protected-access
+                    new_ops[i] = qml.Snapshot(measurement=new_mp, tag=op.tag)
+        if not new_ops:
+            new_ops = tape.operations  # no copy in this case
+
+        measurements = tape.measurements.copy()
         for m_idx, mp in enumerate(measurements):
             if not mp.obs and not mp.wires:
                 modified = True
@@ -144,7 +173,7 @@ def validate_device_wires(
                 new_mp._wires = wires  # pylint:disable=protected-access
                 measurements[m_idx] = new_mp
         if modified:
-            tape = type(tape)(tape.operations, measurements, shots=tape.shots)
+            tape = tape.copy(ops=new_ops, measurements=measurements)
 
     return (tape,), null_postprocessing
 
@@ -307,6 +336,8 @@ def decompose(
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+
+    .. seealso:: This transform is intended for device developers. See :func:`qml.transforms.decompose <pennylane.transforms.decompose>` for a more user-friendly interface.
 
     Raises:
         Exception: Type defaults to ``qml.DeviceError`` but can be modified via keyword argument.
