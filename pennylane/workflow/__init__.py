@@ -22,7 +22,7 @@ Execution functions and utilities
 .. autosummary::
     :toctree: api
 
-    ~executeset_shots
+    ~execute
     ~workflow.construct_tape
     ~workflow.construct_batch
     ~workflow.get_transform_program
