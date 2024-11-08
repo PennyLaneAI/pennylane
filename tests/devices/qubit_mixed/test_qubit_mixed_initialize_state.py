@@ -103,7 +103,6 @@ class TestInitializeState:
         wires = [0, 1]
         num_wires = len(wires)
         # The following 2 lines are for reusing the statevec code on the density matrices
-        wires_conj = [w + num_wires for w in wires]
         state_correct = allzero_dm(num_wires, interface)
         prep_op = qml.QubitDensityMatrix(qml.math.array(state_correct, like=interface), wires=wires)
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
