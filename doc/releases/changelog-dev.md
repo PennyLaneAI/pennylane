@@ -21,6 +21,13 @@
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
+<h4>Capturing and representing hybrid programs</h4>
+
+* `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
+  [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
+
+<h4>Other Improvements</h4>
+
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
   - A new API for mixed-state operations
   - An `apply_operation` helper function featuring:
@@ -53,4 +60,5 @@ This release contains contributions from (in alphabetical order):
 
 Shiwen An
 Astral Cai,
+Pietropaolo Frisoni,
 Andrija Paurevic
