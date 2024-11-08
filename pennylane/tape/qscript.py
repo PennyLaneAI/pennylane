@@ -897,11 +897,11 @@ class QuantumScript:
                 measurements will replace the copied measurements on the new tape.
             shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution. If provided, these
                 shots will replace the copied shots on the new tape.
-            trainable_params (None, Sequence[int]): the indices for which parameters are trainable. If provided, these
-                parameter indices will replace the copied parameter indicies on the new tape.
+            trainable_params (None, Sequence[int]): The indices for which parameters are trainable. If provided, these
+                parameter indices will replace the copied parameter indices on the new tape.
 
         Returns:
-            QuantumScript : a copy of the quantum script, with modified attributes if specified by keyword argument.
+            QuantumScript : A copy of the quantum script, with modified attributes if specified by keyword argument.
 
         **Example**
 

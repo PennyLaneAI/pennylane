@@ -28,7 +28,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
-from pennylane.capture.capture_diff import create_non_jvp_primitive
+from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -204,6 +204,9 @@ def _ctrl_transform(op, control, control_values, work_wires):
     def wrapper(*args, **kwargs):
         qscript = qml.tape.make_qscript(op)(*args, **kwargs)
 
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.
         flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
         op_control_values = None if flip_control_on_zero else control_values
@@ -232,7 +235,7 @@ def _get_ctrl_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    ctrl_prim = create_non_jvp_primitive()("ctrl_transform")
+    ctrl_prim = create_non_interpreted_prim()("ctrl_transform")
     ctrl_prim.multiple_results = True
 
     @ctrl_prim.def_impl

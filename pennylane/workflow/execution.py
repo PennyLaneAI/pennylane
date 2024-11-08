@@ -35,12 +35,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
 
-from .jacobian_products import (
-    DeviceDerivatives,
-    DeviceJacobianProducts,
-    LightningVJPs,
-    TransformJacobianProducts,
-)
+from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -528,17 +523,7 @@ def execute(
         results = inner_execute(tapes)
         return post_processing(results)
 
-    if (
-        device_vjp
-        and getattr(device, "short_name", "") in ("lightning.gpu", "lightning.kokkos")
-        and interface in jpc_interfaces
-    ):  # pragma: no cover
-        if "jax" in interface and "use_device_state" in gradient_kwargs:
-            gradient_kwargs["use_device_state"] = False
-
-        jpc = LightningVJPs(device, gradient_kwargs=gradient_kwargs)
-
-    elif config.use_device_jacobian_product and interface in jpc_interfaces:
+    if config.use_device_jacobian_product and interface in jpc_interfaces:
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
