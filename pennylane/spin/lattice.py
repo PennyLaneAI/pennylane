@@ -33,12 +33,13 @@ class Lattice:
     Args:
        n_cells (list[int]): Number of cells in each direction of the grid.
        vectors (list[list[float]]): Primitive vectors for the lattice.
-       positions (list[list[float]]): Initial positions of spin sites. Default value is
+       positions (list[list[float]]): Initial positions of the lattice nodes. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
-       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
-           default is ``False`` indicating open boundary condition.
+       boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-           Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
+           Default is 1, indicating nearest neighbour. Must be 1 if ``custom_edges`` is defined.
        custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
            Default value is ``None``, which adds the edges based on ``neighbour_order``.
            Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
@@ -58,8 +59,11 @@ class Lattice:
           if ``n_cells`` contains numbers other than positive integers.
        ValueError:
           if ``positions`` doesn't have a dimension of 2.
+       ValueError:
           if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
-          if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
+       ValueError:
+          if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors.
+       ValueError:
           if ``custom_nodes`` contains nodes with negative indices or indices greater than number of sites
 
     Returns:
@@ -67,12 +71,92 @@ class Lattice:
 
     **Example**
 
-    >>> n_cells = [2, 2]
-    >>> vectors = [[0, 1], [1, 0]]
-    >>> boundary_condition = [True, False]
-    >>> lattice = qml.spin.Lattice(n_cells, vectors, boundary_condition=boundary_condition)
+    We can define the positions of nodes in the lattice unit cell along with the lattice vectors
+    to create a custom lattice layout.
+
+    .. code-block:: python
+
+        from pennylane.spin import Lattice
+
+        positions = [[0.2, 0.5],
+                     [0.5, 0.2],
+                     [0.5, 0.8],
+                     [0.8, 0.5]]
+
+        vectors = [[1, 0], [0, 1]]
+
+        n_cells = [2, 2]
+
+        # periodic boundary conditions applied along the [1,0] axis only
+        boundary_condition = [True, False]
+
+        lattice = Lattice(n_cells, vectors, positions, boundary_condition=boundary_condition)
+
     >>> lattice.edges
-    [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
+    [(10, 13, 0), (0, 11, 0), (4, 15, 0), (2, 5, 0), (3, 8, 0), (7, 12, 0)]
+
+    .. details::
+        :title: Usage Details
+
+        Unless otherwise specified, the edges will be added based on the ``neighbour_order``,
+        which defaults to 1. Increasing ``neighbour_order`` will add additional connections
+        in the lattice.
+
+        .. code-block :: python
+
+            positions = [[0.2, 0.5],
+                         [0.5, 0.2],
+                         [0.5, 0.8],
+                         [0.8, 0.5]]
+
+            lattice = Lattice(n_cells=[2, 2],
+                              vectors=[[1, 0], [0, 1]],
+                              positions=positions,
+                              neighbour_order=2,
+                              boundary_condition=[True, False])
+
+        >>> len(lattice.edges)
+        22
+
+        We can also define edges with custom interactions, as well as adding on-site potentials for the
+        nodes:
+
+        .. code-block:: python
+
+            # defining on-site potential at each node in the unit cell
+            custom_nodes = [[(0), ('X', 0.5)],
+                            [(1), ('X', 0.6)],
+                            [(2), ('X', 0.7)],
+                            [(3), ('X', 0.8)]]
+
+            # defining custom edges (instead of nearest-neigbour connections) and their interactions
+            custom_edges = [[(0, 1), ('XX', 0.5)],
+                            [(0, 2), ('YY', 0.6)],
+                            [(1, 3), ('ZZ', 0.7)],
+                            [(2, 3), ('ZZ', 0.7)]]
+
+        >>> lattice = Lattice(n_cells,
+        ...                   vectors,
+        ...                   positions,
+        ...                   custom_edges=custom_edges,
+        ...                   custom_nodes=custom_nodes)
+        >>> lattice.edges
+        [(0, 1, ('XX', 0.5)),
+        (4, 5, ('XX', 0.5)),
+        (8, 9, ('XX', 0.5)),
+        (12, 13, ('XX', 0.5)),
+        (0, 2, ('YY', 0.6)),
+        (4, 6, ('YY', 0.6)),
+        (8, 10, ('YY', 0.6)),
+        (12, 14, ('YY', 0.6)),
+        (1, 3, ('ZZ', 0.7)),
+        (5, 7, ('ZZ', 0.7)),
+        (9, 11, ('ZZ', 0.7)),
+        (13, 15, ('ZZ', 0.7)),
+        (2, 3, ('ZZ', 0.7)),
+        (6, 7, ('ZZ', 0.7)),
+        (10, 11, ('ZZ', 0.7)),
+        (14, 15, ('ZZ', 0.7))]
 
     """
 
@@ -132,9 +216,9 @@ class Lattice:
             edges = self._identify_neighbours(cutoff)
             self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
         else:
-            if neighbour_order > 1:
+            if neighbour_order != 1:
                 raise ValueError(
-                    "custom_edges cannot be specified if neighbour_order argument is set to greater than 1."
+                    "custom_edges cannot be specified if neighbour_order argument is set to a value other than 1."
                 )
             lattice_map = dict(zip(lattice_map, self.lattice_points))
             self.edges = self._get_custom_edges(custom_edges, lattice_map)

@@ -35,8 +35,6 @@ jobs:
 
   sphinx:
     if: github.event.pull_request.draft == false
-    env:
-      DEPS_BRANCH: bot/stable-deps-update
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
@@ -50,44 +48,32 @@ jobs:
             && pip3 install .
             && pip3 install openfermionpyscf
             && pip3 install aiohttp fsspec h5py
-            && pip freeze | grep -v 'file:///' > .github/stable/doc.txt.tmp
         build-command: "sphinx-build -b html . _build -W --keep-going"
 
-    - name: Prepare local repo
-      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane'
+    - name: Freeze dependencies
+      shell: bash
       run: |
-        git fetch
-        git config user.name "GitHub Actions Bot"
-        git config user.email "<>"
-        if git ls-remote --exit-code origin "refs/heads/${{ env.DEPS_BRANCH }}"; then
-          git checkout "${{ env.DEPS_BRANCH }}"
-        else
-          git checkout master
-          git pull
-          git checkout -b "${{ env.DEPS_BRANCH }}"
-        fi
-        mv -f .github/stable/doc.txt.tmp .github/stable/doc.txt
+        pip freeze | grep -v 'file:///' > doc.txt
+        cat doc.txt
 
-    - name: Determine if changes have been made
-      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane'
-      id: changed
-      run: |
-        echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
+    - name: Upload frozen requirements
+      uses: actions/upload-artifact@v4
+      with:
+        name: frozen-doc
+        path: doc.txt
 
-    - name: Stage changes
-      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane' && steps.changed.outputs.has_changes != '0'
-      run: |
-        git add .github/stable/doc.txt
-        git commit -m "Update stable docs dependencies"
-        git push -f --set-upstream origin "${{ env.DEPS_BRANCH }}"
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # Create PR to master
-    - name: Create pull request
-      if: github.event.pull_request.head.repo.full_name == 'PennyLaneAI/pennylane' && steps.changed.outputs.has_changes != '0'
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh_pr_up() { gh pr create $* || gh pr edit $* }
-        gh_pr_up --title "Update stable dependency files" --body "Automatic update of stable requirement files to snapshot valid python environments."
+  upload-stable-deps:
+    if: github.event.pull_request.draft == false
+    needs:
+      - determine_runner
+      - sphinx
+    uses: ./.github/workflows/check_in_artifact.yml
+    with:
+      artifact_name_pattern: "frozen-doc"
+      artifact_save_path: ".github/stable/"
+      merge_multiple: true
+      pull_request_head_branch_name: bot/stable-deps-update
+      commit_message_description: Frozen Doc Dependencies Update
+      pull_request_title: Update stable dependency files
+      pull_request_body: |
+        Automatic update of stable requirement files to snapshot valid python environments.

@@ -192,8 +192,11 @@ class TestJacobianProductResults:
             assert qml.math.allclose(res[0][1], np.cos(x), atol=_tol_for_shots(shots))
             assert qml.math.allclose(jvp[0][1], -0.5 * np.sin(x), atol=_tol_for_shots(shots))
 
-    def test_vjp_basic(self, jpc, shots):
+    def test_vjp_basic(self, jpc, shots, seed):
         """Test compute_vjp for a simple single input single output."""
+
+        np.random.seed(seed)
+
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
 

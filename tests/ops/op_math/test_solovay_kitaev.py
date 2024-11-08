@@ -122,7 +122,7 @@ def test_approximate_sets():
     ],
 )
 def test_group_commutator_decompose(op):
-    """Test group commutator deocompose method for SU(2)"""
+    """Test group commutator decomposition method for SU(2)"""
 
     su2_matrix, _ = _SU2_transform(qml.matrix(op))
 
