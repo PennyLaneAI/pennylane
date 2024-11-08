@@ -1205,6 +1205,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                     "Broadcasting was attempted but the broadcasted dimensions "
                     f"do not match: {first_dims}."
                 )
+
             self._batch_size = first_dims[0]
 
     def __repr__(self) -> str:
