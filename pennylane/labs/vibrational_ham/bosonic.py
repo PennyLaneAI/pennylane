@@ -437,9 +437,7 @@ class BoseSentence(dict):
         return self.__add__(other)
 
     def __rsub__(self, other):
-        """Subtract a BoseSentence to a constant, i.e.
-
-        >>> 2 - BoseSentence({...})
+        """Subtract a BoseSentence to a constant, i.e. 2 - BoseSentence({...})
         """
 
         if not isinstance(other, TensorLike):
