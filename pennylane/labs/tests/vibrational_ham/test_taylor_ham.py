@@ -24,8 +24,6 @@ from pennylane.labs.vibrational_ham.taylor_ham import (
     taylor_bosonic,
     taylor_hamiltonian,
     taylor_harmonic,
-    # taylor_integrals,
-    # taylor_integrals_dipole,
     taylor_kinetic,
 )
 

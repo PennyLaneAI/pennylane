@@ -392,7 +392,7 @@ def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
         BoseSentence: anharmonic term of the taylor hamiltonian for given coeffs
     """
     taylor_1D = taylor_coeffs[0]
-    num_modes, num_1D_coeffs = np.shape(taylor_1D)
+    num_modes, _ = np.shape(taylor_1D)
 
     if is_loc:
         alphas_arr = np.einsum("ij,ik,j,k->jk", Uloc, Uloc, np.sqrt(freqs), np.sqrt(freqs))
@@ -422,9 +422,8 @@ def taylor_harmonic(taylor_coeffs, freqs):
         BoseSentence: harmonic term of the taylor hamiltonian for given coeffs
     """
     taylor_1D = taylor_coeffs[0]
-    num_modes, num_1D_coeffs = np.shape(taylor_1D)
+    num_modes, _ = np.shape(taylor_1D)
     harm_pot = BoseSentence({})
-    # Add Harmonic component
     for mode in range(num_modes):
         bosonized_qm2 = (
             _position_to_boson(mode, "q") * _position_to_boson(mode, "q")
