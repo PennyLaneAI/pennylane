@@ -90,12 +90,12 @@ jobs:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
           repository: PennyLaneAI/pennylane
-      
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '${{ inputs.python_version }}'
-      
+
       - name: Upgrade PIP and install wheel
         run: pip install --upgrade pip && pip install wheel --upgrade
       
@@ -103,7 +103,7 @@ jobs:
         run: |
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
-      
+
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
         if: inputs.additional_pip_packages != ''
@@ -119,13 +119,13 @@ jobs:
                 pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
-      
+
       - name: Install PennyLane
         shell: bash
         run: |
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
-      
+
       - name: Install additional PIP packages (Post PennyLane Install)
         shell: bash
         if: inputs.additional_pip_packages_post != ''
@@ -159,12 +159,12 @@ jobs:
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
-      
+
       - name: Freeze dependencies
         shell: bash
         if: inputs.requirements_file != ''
         run: pip freeze | grep -v "file:///" | sed 's/\(pennylane[-_]lightning==[0-9\.]\+\)\.dev[0-9]\+/\1/gI' > ${{ inputs.requirements_file }}
-  
+
       - name: Upload frozen requirements
         if: inputs.requirements_file != ''
         uses: actions/upload-artifact@v4
