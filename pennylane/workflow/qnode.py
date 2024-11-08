@@ -822,7 +822,7 @@ class QNode:
         """
         .. warning::
 
-            This property is deprecated in v0.40 and will be removed in v0.41.
+            This method is deprecated in v0.40 and will be removed in v0.41.
 
         Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
