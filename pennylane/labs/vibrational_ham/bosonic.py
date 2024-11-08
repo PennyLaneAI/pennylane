@@ -528,11 +528,11 @@ class BoseSentence(dict):
     def normal_order(self):
         r"""Convert a BoseSentence to its normal-ordered form."""
 
-        empty_bose_sentence = BoseSentence({}, christiansen_boson=self.christiansen_boson)
+        bose_sen_ordered = BoseSentence({}, christiansen_boson=self.christiansen_boson)
 
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()
             for bw_ord, coeff_ord in bose_word_ordered.items():
-                bose_sentence_ordered += coeff_ord * coeff * bw_ord
+                bose_sen_ordered += coeff_ord * coeff * bw_ord
 
         return bose_sen_ordered

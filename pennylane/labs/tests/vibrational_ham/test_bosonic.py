@@ -28,5 +28,14 @@ from pennylane.labs.vibrational_ham.bosonic import (
 
 
 class TestBoseWord:
-    def test_normal_order():
-        pass
+    @pytest.mark.parametrize(
+        ("bose_sentence", "expected"),
+        [
+            (
+                BoseSentence({BoseWord({(0, 0): '+', (1, 0): '+'}): 5.051e-06, BoseWord({(0, 0): '+', (1, 0): '-'}): 5.051e-06, BoseWord({(0, 0): '-', (1, 0): '+'}): 5.051e-06, BoseWord({(0, 0): '-', (1, 0): '-'}): 5.051e-06}),
+                BoseSentence({BoseWord({(0, 0): '+', (1, 0): '+'}): 5.051e-06, BoseWord({(0, 0): '+', (1, 0): '-'}): 1.0102e-05, BoseWord({}): 5.051e-06, BoseWord({(0, 0): '-', (1, 0): '-'}): 5.051e-06}),
+            ),
+        ],
+    )
+    def test_normal_order(self, bose_sentence, expected):
+        assert bose_sentence.normal_order() == expected
