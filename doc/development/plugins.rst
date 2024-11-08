@@ -121,7 +121,7 @@ The :meth:`~.devices.Device.preprocess` method has two main responsibilities:
 
 These two tasks can be extracted into private methods or helper functions if that improves source
 code organization. Once the transform program has been applied to a batch of circuits, the result
-circuit batch produced by the program should be run via ``Device.execute`` without error.
+circuit batch produced by the program should be run via ``Device.execute`` without error:
 
 .. code-block:: python
 
@@ -129,16 +129,25 @@ circuit batch produced by the program should be run via ``Device.execute`` witho
     batch, fn = transform_program(initial_batch)
     fn(dev.execute(batch, execution_config))
 
-See the section on the **Execution Config** below for more information on step 2.
+PennyLane can potentially provide a default implementation of the preprocessing program which should
+be sufficient for most plugin devices. This requires that a TOML-formatted configuration file is
+defined for your device. The details of this configuration file is described the next section. The
+default preprocessing program will be constructed based on what is declared in this file if provided.
+Alternatively, you could override the :meth:`~.devices.Device.preprocess` method with a completely
+customized implementation.
 
-Once a program is created, an individual transform can be added to the program with the
-:meth:`~.TransformProgram.add_transform` method.
+The :meth:`~.devices.Device.preprocess` method should start with creating a transform program:
+
+.. code-block:: python
+
+    program = qml.transforms.core.TransformProgram()
+
+Once a program is created, individual transforms can be added to the program with the :meth:`~.TransformProgram.add_transform` method.
 
 .. code-block:: python
 
     from pennylane.devices.preprocess import validate_device_wires, validate_measurements, decompose
 
-    program = qml.transforms.core.TransformProgram()
     program.add_transform(validate_device_wires, wires=qml.wires.Wires((0,1,2)), name="my_device")
     program.add_transform(validate_measurements, name="my_device")
     program.add_transform(qml.defer_measurements)
@@ -204,20 +213,16 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
 
-As an alternative to a customized :meth:`~pennylane.devices.Device.preprocess` method, PennyLane can
-potentially provide a default preprocessing program which should be sufficient for most plugin devices.
-This requires that a TOML-formatted configuration file is defined for your device. The details of
-this configuration file is described in the section below. If provided, a default preprocessing
-program will be constructed based on what is declared in this file.
+See the section on the :ref:`**Execution Config** <execution_config>` below for more information on step 2.
 
 .. _device_capabilities:
 
 Device Capabilities
 -------------------
 
-Optionally, you can add a ``config_filepath`` class variable pointing to your configuration file. This file
-should be a `toml file <https://toml.io/en/>`_ that describes which gates and features are supported
-by your device, i.e., what the :meth:`~pennylane.devices.Device.execute` method accepts.
+Optionally, you can add a ``config_filepath`` class variable pointing to your configuration file.
+This file should be a `toml file <https://toml.io/en/>`_ that describes which gates and features are
+supported by your device, i.e., what the :meth:`~pennylane.devices.Device.execute` method accepts.
 
 .. code-block:: python
 
