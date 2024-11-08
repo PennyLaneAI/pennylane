@@ -12,11 +12,7 @@ concurrency:
   group: update-durations-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DURATIONS_BRANCH: bot/durations-update
-
 jobs:
-
   update-durations:
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
