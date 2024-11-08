@@ -3,7 +3,7 @@
 # Release 0.40.0-dev (development release)
 
 <h3>New features since last release</h3>
-
+  
 * A `DeviceCapabilities` data class is defined to contain all capabilities of the device's execution interface (i.e. its implementation of `Device.execute`). A TOML file can be used to define the capabilities of a device, and it can be loaded into a `DeviceCapabilities` object.
   [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
@@ -14,6 +14,18 @@
   >>> isinstance(capabilities, DeviceCapabilities)
   True
   ```
+
+<h4>New API for Qubit Mixed</h4>
+
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
+
+  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379) An `apply_operation` helper function featuring:
+
+  * Two density matrix contraction methods using `einsum` and `tensordot`
+
+  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
+
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) A submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations
 
 <h3>Improvements 🛠</h3>
 
@@ -27,18 +39,6 @@
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
 
 <h4>Other Improvements</h4>
-
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
-  - A new API for mixed-state operations
-  - An `apply_operation` helper function featuring:
-    - Two density matrix contraction methods using `einsum` and `tensordot`
-    - Optimized handling of special cases including:
-      - Diagonal operators
-      - Identity operators 
-      - CX (controlled-X)
-      - Multi-controlled X gates
-      - Grover operators
-  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
@@ -63,7 +63,7 @@ This release contains contributions from (in alphabetical order):
 
 Shiwen An
 Astral Cai,
+Yushao Chen,
+Pietropaolo Frisoni,
 Andrija Paurevic,
 Justin Pickering
-Pietropaolo Frisoni
-
