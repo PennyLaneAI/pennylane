@@ -58,8 +58,8 @@
 * The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
   [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
 
-* The ``qml.workflow.set_shots`` helper func has been removed. We no longer interact with the legacy device interface in our code 
-workflow behavior. Instead, shots should be specified on the tape, and the device should pull it's number of shots from the tape.
+* The `qml.workflow.set_shots` helper function has been removed. We no longer interact with the legacy device interface in our code.
+  Instead, shots should be specified on the tape, and the device should use these shots.
   [(#6534)](https://github.com/PennyLaneAI/pennylane/pull/6534)
 
 * ``QNode.gradient_fn`` has been removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
