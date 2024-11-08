@@ -61,7 +61,7 @@ hamiltonian_ps = (
     (
         qml.Hamiltonian(
             [2, -0.5],
-            [qml.PauliZ(wires=0), qml.operation.Tensor(qml.X(wires=0), qml.Z(wires=1))],
+            [qml.PauliZ(wires=0), qml.prod(qml.X(wires=0), qml.Z(wires=1))],
         ),
         PauliSentence(
             {
@@ -75,7 +75,7 @@ hamiltonian_ps = (
             [2, -0.5, 3.14],
             [
                 qml.PauliZ(wires=0),
-                qml.operation.Tensor(qml.X(wires=0), qml.Z(wires="a")),
+                qml.prod(qml.X(wires=0), qml.Z(wires="a")),
                 qml.Identity(wires="b"),
             ],
         ),
@@ -517,14 +517,6 @@ class TestPauliSentence:
                 {
                     PauliWord({0: "Z"}): 2,
                     PauliWord({0: "X", 1: "Z"}): -0.5,
-                }
-            ),
-        ),
-        (
-            qml.operation.Tensor(qml.PauliX(wires=0), qml.PauliZ(wires=1)),
-            PauliSentence(
-                {
-                    PauliWord({0: "X", 1: "Z"}): 1,
                 }
             ),
         ),

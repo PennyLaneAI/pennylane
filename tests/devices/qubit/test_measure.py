@@ -416,8 +416,8 @@ class TestSumOfTermsDifferentiability:
             H = qml.Hamiltonian(
                 coeffs,
                 [
-                    qml.operation.Tensor(*(qml.PauliZ(i) for i in range(n_wires))),
-                    qml.operation.Tensor(*(qml.PauliY(i) for i in range(n_wires))),
+                    qml.prod(*(qml.PauliZ(i) for i in range(n_wires))),
+                    qml.prod(*(qml.PauliY(i) for i in range(n_wires))),
                 ],
             )
         else:

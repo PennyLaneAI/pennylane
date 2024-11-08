@@ -678,4 +678,4 @@ class Hamiltonian(LinearCombination):
         Note that one can compute the ``grouping_indices`` for an already initialized Hamiltonian by
         using the :func:`compute_grouping <pennylane.Hamiltonian.compute_grouping>` method.
 
-        """
+    """

@@ -354,10 +354,7 @@ def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
     geometry.requires_grad = False
     h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping=mapping)[0]
 
-    ops = [
-        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
-    ]
+    ops = [op for op in map(qml.simplify, h_ref_data[1])]
     h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     h_ref_coeffs, h_ref_ops = h_ref.terms()
@@ -585,10 +582,7 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
     molecule = qchem.Molecule(symbols, geometry)
     h_noargs = qchem.molecular_hamiltonian(molecule, method="dhf", mapping=mapping)[0]
 
-    ops = [
-        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
-    ]
+    ops = [op for op in map(qml.simplify, h_ref_data[1])]
     h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     h_ref_coeffs, h_ref_ops = h_ref.terms()
@@ -1231,10 +1225,7 @@ def test_mapped_hamiltonian_pyscf_openfermion(
             molecule, method=method, mapping=mapping, outpath=tmpdir.strpath
         )[0]
 
-        ops = [
-            qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-            for op in map(qml.simplify, h_ref_data[1])
-        ]
+        ops = [op for op in map(qml.simplify, h_ref_data[1])]
         h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
         h_ref_coeffs, h_ref_ops = h_ref.terms()

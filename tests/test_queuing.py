@@ -268,16 +268,6 @@ class TestAnnotatedQueue:
         q.update_info(B, inv=True)
         assert len(q.queue) == 1
 
-    def test_append_annotating_object(self):
-        """Test appending an object that writes annotations when queuing itself"""
-
-        with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = qml.operation.Tensor(A, B)
-
-        assert q.queue == [tensor_op]
-
     def test_parallel_queues_are_isolated(self):
         """Tests that parallel queues do not queue each other's constituents."""
         q1 = AnnotatedQueue()
@@ -300,8 +290,6 @@ class TestAnnotatedQueue:
 
 test_observables = [
     qml.PauliZ(0) @ qml.PauliZ(1),
-    qml.operation.Tensor(qml.PauliZ(0), qml.PauliX(1)),
-    qml.operation.Tensor(qml.PauliZ(0), qml.PauliX(1)) @ qml.Hadamard(2),
     qml.Hamiltonian(
         [0.1, 0.2, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(1), qml.Identity(2)]
     ),

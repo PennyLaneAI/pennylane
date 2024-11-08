@@ -97,11 +97,6 @@ class TestDiagonalizeObservable:
         "compound_obs, expected_res, base_obs",
         [
             (X(0) @ Y(2), Z(0) @ Z(2), [X(0), Y(2)]),  # prod
-            (
-                qml.operation.Tensor(X(0), Y(2)),
-                qml.operation.Tensor(Z(0), Z(2)),
-                [X(0), Y(2)],
-            ),  # tensor
             (X(1) + Y(2), Z(1) + Z(2), [X(1), Y(2)]),  # sum
             (2 * X(1), 2 * Z(1), [X(1)]),  # sprod
             (
@@ -136,11 +131,6 @@ class TestDiagonalizeObservable:
         "compound_obs, expected_res, base_obs",
         [
             (X(0) @ Y(2), X(0) @ Z(2), [X(0), Y(2)]),  # prod
-            (
-                qml.operation.Tensor(X(0), Y(2)),
-                qml.operation.Tensor(X(0), Z(2)),
-                [X(0), Y(2)],
-            ),  # tensor
             (X(1) + Y(2), X(1) + Z(2), [X(1), Y(2)]),  # sum
             (2 * X(1), 2 * X(1), [X(1)]),  # sprod
             (

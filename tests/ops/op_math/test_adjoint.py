@@ -105,7 +105,7 @@ class TestInheritanceMixins:
         (
             PlainOperator(1.2, wires=0),
             qml.RX(1.2, wires=0),
-            qml.operation.Tensor(qml.PauliX(0), qml.PauliX(1)),
+            qml.Hermitian([[1, 0], [0, 1]], wires=0),
             qml.PauliX(0),
         ),
     )

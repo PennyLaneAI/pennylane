@@ -213,27 +213,6 @@ class TestConstruction:
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
 
-    def test_tensor_and_hamiltonian_converted(self):
-        """Test that Tensor and Hamiltonian instances get converted to Prod and Sum."""
-        operands = [
-            qml.Hamiltonian(
-                [1.1, 2.2], [qml.PauliZ(0), qml.operation.Tensor(qml.PauliX(0), qml.PauliZ(1))]
-            ),
-            qml.prod(qml.PauliX(0), qml.PauliZ(1)),
-            qml.operation.Tensor(qml.PauliX(2), qml.PauliZ(3)),
-        ]
-        op = qml.sum(*operands)
-        assert isinstance(op[0], Sum)
-        assert isinstance(op[0][1], SProd)
-        assert isinstance(op[0][1].base, Prod)
-        assert op[1] is operands[1]
-        assert isinstance(op[2], Prod)
-        assert op.operands == (
-            qml.dot([1.1, 2.2], [qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliZ(1))]),
-            operands[1],
-            qml.prod(qml.PauliX(2), qml.PauliZ(3)),
-        )
-
 
 @pytest.mark.parametrize("math_op", [qml.prod, qml.sum])
 def test_no_recursion_error_raised(math_op):

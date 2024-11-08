@@ -105,7 +105,7 @@ def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
             op_matrix = op.sparse_matrix(wire_order=list(range(n_wires)))
         else:
             op_wires = np.array(op.wires.tolist())
-            op_list = op.non_identity_obs if isinstance(op, qml.operation.Tensor) else [op]
+            op_list = [op]
             op_matrices = []
 
             for wire in range(n_wires):

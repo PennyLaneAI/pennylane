@@ -402,11 +402,6 @@ class TestPauliWord:
             assert pw_op.name == op.name
             assert pw_op.wires == op.wires
 
-        if isinstance(op, qml.ops.Prod):  # pylint: disable=no-member
-            pw_tensor_op = pw.operation(get_as_tensor=True)
-            expected_tensor_op = qml.operation.Tensor(*op.operands)
-            qml.assert_equal(pw_tensor_op, expected_tensor_op)
-
     def test_operation_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity."""
         op = PauliWord({}).operation(wire_order=[0, 1])

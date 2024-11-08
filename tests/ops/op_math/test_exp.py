@@ -448,22 +448,6 @@ class TestDecomposition:
         pr = op.decomposition()[0]
         qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
-    @pytest.mark.parametrize(
-        "base, base_string",
-        (
-            (qml.operation.Tensor(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
-            (qml.operation.Tensor(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
-        ),
-    )
-    def test_decomposition_tensor_into_pauli_rot(self, base, base_string):
-        """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
-        theta = 3.21
-        op = Exp(base, -0.5j * theta)
-
-        assert op.has_decomposition
-        pr = op.decomposition()[0]
-        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
-
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
     def test_generator_decomposition(self, op_name, str_wires):

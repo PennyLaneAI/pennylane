@@ -427,7 +427,7 @@ def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
 
 
 invalid_ops = (
-    qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+    qml.prod(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
     qml.prod(qml.PauliX(0), qml.Hadamard(1)),
     qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
 )
@@ -441,7 +441,7 @@ def test_not_xyz_pennylane_to_openfermion(op):
         qml.qchem.convert._pennylane_to_openfermion(
             np.array([0.1 + 0.0j, 0.0]),
             [
-                qml.operation.Tensor(qml.PauliX(0)),
+                qml.prod(qml.PauliX(0)),
                 op,
             ],
         )
@@ -456,8 +456,8 @@ def test_wires_not_covered_pennylane_to_openfermion():
         qml.qchem.convert._pennylane_to_openfermion(
             np.array([0.1, 0.2]),
             [
-                qml.operation.Tensor(qml.PauliX(wires=["w0"])),
-                qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
+                qml.prod(qml.PauliX(wires=["w0"])),
+                qml.prod(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
             ],
             wires=qml.wires.Wires(["w0", "w1"]),
         )
@@ -607,8 +607,8 @@ def test_pennylane_to_openfermion_no_decomp():
     """Test the _pennylane_to_openfermion function with custom wires."""
     coeffs = np.array([0.1, 0.2])
     ops = [
-        qml.operation.Tensor(qml.PauliX(wires=["w0"])),
-        qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
+        qml.prod(qml.PauliX(wires=["w0"])),
+        qml.prod(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
     ]
     op_str = str(
         qml.qchem.convert._pennylane_to_openfermion(
@@ -729,8 +729,8 @@ def test_fail_import_openfermion(monkeypatch):
             qml.qchem.convert._pennylane_to_openfermion(
                 np.array([0.1 + 0.0j, 0.0]),
                 [
-                    qml.operation.Tensor(qml.PauliX(0)),
-                    qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+                    qml.prod(qml.PauliX(0)),
+                    qml.prod(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
                 ],
             )
 

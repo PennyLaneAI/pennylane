@@ -230,10 +230,7 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     args = []
     h = qchem.diff_hamiltonian(mol)(*args)
 
-    ops = [
-        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
-    ]
+    ops = [op for op in map(qml.simplify, h_ref_data[1])]
     h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
