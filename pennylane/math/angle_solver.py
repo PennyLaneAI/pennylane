@@ -157,6 +157,9 @@ def poly_to_angles(P, routine):
         (array-like): Angles corresponding to the specified transformation routine.
     """
 
+    if routine == "GQSP":
+        return GQSP_angles(P)
+
     parity = (len(P) - 1) % 2
     assert np.allclose(P[1 - parity :: 2], 0), "Polynomial must have defined parity"
     assert np.allclose(
@@ -166,4 +169,59 @@ def poly_to_angles(P, routine):
     if routine == "QSVT":
         return transform_angles(QSP_angles(P), "QSP", "QSVT")
 
+
     return QSP_angles(P)
+
+
+def GQSP_angles(P):
+    r"""
+    Computes the Generalized Quantum Signal Processing (QSP) angles given a polynomial P.
+    Currently works up to polynomials of degree ~1000.
+
+    Args:
+        P (array-like): Coefficients of the input polynomial P.
+
+    Returns:
+        angles (array-like): GQSP angles corresponding to the input polynomial P. The shape is (3, P-degree)
+    """
+
+    Q = complementary_poly(P)
+
+    S = np.array([P, Q])
+    n = S.shape[1]
+
+    theta = np.zeros(n)
+    phi = np.zeros(n)
+    lambd = np.zeros(n)
+
+    def U3_paper(theta, phi, lambd):
+
+        exp_phi = np.exp(1j * phi)
+        exp_lambda = np.exp(1j * lambd)
+        exp_lambda_phi = np.exp(1j * (lambd + phi))
+
+        R = np.array([
+            [exp_lambda_phi * np.cos(theta), exp_phi * np.sin(theta)],
+            [exp_lambda * np.sin(theta), -np.cos(theta)]
+        ], dtype=complex)
+
+        return R
+
+    def safe_angle(x):
+        return 0 if np.isclose(x, 0, atol=1e-10) else np.angle(x)
+
+    for d in reversed(range(n)):
+        assert S.shape == (2, d + 1)
+
+        a, b = S[:, d]
+        theta[d] = np.arctan2(np.abs(b), np.abs(a))
+        # \phi_d = arg(a / b)
+        phi[d] = 0 if np.isclose(np.abs(b), 0, atol=1e-10) else safe_angle(a * np.conj(b))
+
+        if d == 0:
+            lambd[0] = safe_angle(b)
+        else:
+            S = U3_paper(theta[d], phi[d], 0).conj().T @ S
+            S = np.array([S[0][1: d + 1], S[1][0:d]])
+
+    return theta, phi, lambd
