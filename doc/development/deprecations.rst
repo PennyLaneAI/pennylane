@@ -10,10 +10,10 @@ Pending deprecations
 --------------------
 
 * The ``QNode.get_best_method``, ``QNode.best_method_str`` and ``QNode.get_gradient_fn`` methods have been deprecated. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` and ``qml.workflow.get_gradient_fn`` functions. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` and ``qml.workflow._get_gradient_fn`` functions. 
 
-  - Deprecated in v0.39
-  - Will be removed in v0.40
+  - Deprecated in v0.40
+  - Will be removed in v0.41
 
 * The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
   has been deprecated.

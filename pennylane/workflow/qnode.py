@@ -584,7 +584,7 @@ class QNode:
 
         # validation check.  Will raise error if bad diff_method
         if diff_method is not None:
-            qml.workflow.get_gradient_fn(self.device, self.diff_method)
+            qml.workflow._get_gradient_fn(self.device, self.diff_method)
 
     @property
     def gradient_fn(self):
@@ -616,7 +616,7 @@ class QNode:
         else:
             tape = self.tape
 
-        return qml.workflow.get_gradient_fn(self.device, self.diff_method, tape=tape)[0]
+        return qml.workflow._get_gradient_fn(self.device, self.diff_method, tape=tape)
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
@@ -705,7 +705,7 @@ class QNode:
 
         warnings.warn(
             "QNode.get_gradient_fn is deprecated and will be removed in v0.40. "
-            "Instead, please use the qml.workflow.get_gradient_fn function.",
+            "Instead, please use the qml.workflow._get_gradient_fn function.",
             qml.PennyLaneDeprecationWarning,
         )
 
@@ -920,9 +920,9 @@ class QNode:
         ):
             gradient_fn = qml.gradients.param_shift
         else:
-            gradient_fn = qml.workflow.get_gradient_fn(
+            gradient_fn = qml.workflow._get_gradient_fn(
                 self.device, self.diff_method, tape=self.tape
-            )[0]
+            )
         execute_kwargs = copy.copy(self.execute_kwargs)
 
         gradient_kwargs = copy.copy(self.gradient_kwargs)
