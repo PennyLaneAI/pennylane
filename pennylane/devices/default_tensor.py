@@ -266,7 +266,8 @@ class DefaultTensor(Device):
 
     We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
-    .. warning::
+    .. note::
+        Be aware that `quimb` uses multi-threading with `numba <https://numba.pydata.org/numba-doc/dev/user/threading-layer.html>`_ as well as for linear algebra operations with `numpy.linalg <https://numpy.org/doc/stable/reference/routines.linalg.html#linear-algebra-numpy-linalg>`_. Proper setting of the corresponding environment variables (e.g. `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `NUMBA_NUM_THREADS` etc.) depending on your hardware is highly recommended and will have a strong impact on the device's performance.
         To avoid a slowdown in performance for circuits with more than 10 wires. We recommend you to set the environment variable `OPENBLAS_NUM_THREADS=1` or `MKL_NUM_THREADS=1`, depending on your NumPy packages & accelerated linear algebra libraries or using  `threadpoolctl <https://github.com/joblib/threadpoolctl>`_ package.
 
     .. details::
