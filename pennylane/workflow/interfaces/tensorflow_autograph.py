@@ -101,7 +101,7 @@ def execute(
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (pennylane.devices.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes

@@ -42,6 +42,11 @@ to verify and test quantum gradient computations.
 Next generation devices
 -----------------------
 
+:class:`pennylane.devices.Device` is the latest interface for the next generation of devices that
+replaces :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
+
+While the previous interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.Device` is
+accessible from the ``pennylane.devices`` submodule.
 
 .. currentmodule:: pennylane.devices
 .. autosummary::
@@ -142,25 +147,25 @@ Qutrit Mixed-State Simulation Tools
 """
 
 
-from ._legacy_device import Device as LegacyDevice
-from ._qubit_device import QubitDevice
-from ._qutrit_device import QutritDevice
-from .default_clifford import DefaultClifford
+from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
+from .device_constructor import device, refresh_devices
+from .device_api import Device
+from .default_qubit import DefaultQubit
+from .legacy_facade import LegacyDeviceFacade
 
 # DefaultTensor is not imported here to avoid warnings
 # from quimb in case it is installed on the system.
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
-from .default_qubit import DefaultQubit
-from .default_qutrit import DefaultQutrit
-from .default_qutrit_mixed import DefaultQutritMixed
+from .default_clifford import DefaultClifford
 from .default_tensor import DefaultTensor
-from .device_api import Device
-from .device_constructor import device, refresh_devices
-from .execution_config import DefaultExecutionConfig, ExecutionConfig, MCMConfig
-from .legacy_facade import LegacyDeviceFacade
 from .null_qubit import NullQubit
 from .reference_qubit import ReferenceQubit
+from .default_qutrit import DefaultQutrit
+from .default_qutrit_mixed import DefaultQutritMixed
+from ._legacy_device import Device as LegacyDevice
+from ._qubit_device import QubitDevice
+from ._qutrit_device import QutritDevice
 
 
 # pylint: disable=undefined-variable

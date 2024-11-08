@@ -676,7 +676,7 @@ class MeasurementTransform(MeasurementProcess):
     which should have the following arguments:
 
     * tape (QuantumTape): quantum tape to transform
-    * device (pennylane.devices.Device): device used to transform the quantum tape
+    * device (pennylane.Device): device used to transform the quantum tape
     """
 
     @abstractmethod
@@ -685,5 +685,5 @@ class MeasurementTransform(MeasurementProcess):
 
         Args:
             tape (QuantumTape): quantum tape to transform
-            device (pennylane.devices.Device): device used to transform the quantum tape
+            device (pennylane.Device): device used to transform the quantum tape
         """

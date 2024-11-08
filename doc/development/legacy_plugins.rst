@@ -107,7 +107,7 @@ as well as potential further capabilities, by providing the following class attr
               return obj.name in {'CNOT', 'PauliX', 'PauliY', 'PauliZ'}
           return qml.BooleanFn(accepts_obj)
 
-  Supported operations can also be determined by the :attr:`pennylane.devices.Device.operations` property.
+  Supported operations can also be determined by the :attr:`pennylane.Device.operations` property.
   This property is a list of string names for supported operations.
 
   .. code-block:: python
@@ -422,7 +422,7 @@ and similar code in the ``batch_execute`` method:
     self.tracker.update(batches=1, batch_len=len(circuits))
     self.tracker.record()
 
-These functions are called in base :class:`pennylane.devices.Device` and :class:`~.QubitDevice` devices. Unless you are
+These functions are called in base :class:`pennylane.Device` and :class:`~.QubitDevice` devices. Unless you are
 overriding the ``execute`` and ``batch_execute`` methods or want to customize the stored
 information, you do not need to add any new code.
 

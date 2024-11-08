@@ -203,7 +203,7 @@ def find_and_place_cuts(
     device, a :class:`~.CutStrategy` can be used to populate the necessary explorations of cutting
     parameters. As an extreme example, if the only device at our disposal is a 2-qubit device, a
     simple cut strategy is to simply specify the the ``max_free_wires`` argument (or equivalently
-    directly passing a :class:`pennylane.devices.Device` to the ``device`` argument):
+    directly passing a :class:`pennylane.Device` to the ``device`` argument):
 
     >>> cut_strategy = qml.qcut.CutStrategy(max_free_wires=2)
     >>> cut_strategy.get_cut_kwargs(graph)
