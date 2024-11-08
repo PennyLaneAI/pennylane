@@ -50,8 +50,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* The ``QNode.get_best_method``, ``QNode.best_method_str`` and ``QNode.get_gradient_fn`` methods have been deprecated. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` and ``qml.workflow.get_gradient_fn`` functions.
+* The `QNode.get_best_method`, `QNode.best_method_str` and `QNode.get_gradient_fn` methods have been deprecated. 
+  Instead, use the `qml.workflow.get_best_diff_method` and `qml.workflow._get_gradient_fn` functions.
   [(#6418)](https://github.com/PennyLaneAI/pennylane/pull/6418)
 
 <h3>Documentation 📝</h3>
