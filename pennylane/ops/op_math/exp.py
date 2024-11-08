@@ -164,6 +164,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
     """
 
+    grad_method = None
     control_wires = Wires([])
     _name = "Exp"
 

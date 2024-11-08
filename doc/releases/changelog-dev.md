@@ -50,6 +50,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes incorrect differentiation of `TrotterProduct` when using `diff_method="parameter-shift"`.
+  [(#6432)](https://github.com/PennyLaneAI/pennylane/pull/6432)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
