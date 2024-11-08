@@ -29,7 +29,7 @@ class ResourceOperator(ABC):
 
         **Example**
 
-        A PennyLane Operator can be extended for resource estimation by creating a new class that 
+        A PennyLane Operator can be extended for resource estimation by creating a new class that
         inherits from both the Operator and ``ResourceOperator``. Here is an example showing how to
         extend ``qml.QFT`` for resource estimation.
 
