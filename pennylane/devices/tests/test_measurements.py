@@ -51,7 +51,6 @@ obs = {
         qml.Projector(np.array([0, 1]), wires=[0]),
     ],
     "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
-    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.Z(0), qml.X(0)]),
     "Prod": qml.prod(qml.X(0), qml.Z(1)),
     "SProd": qml.s_prod(0.1, qml.Z(0)),
     "Sum": qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),

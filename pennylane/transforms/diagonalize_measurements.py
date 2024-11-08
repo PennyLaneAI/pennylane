@@ -17,7 +17,6 @@ from copy import copy
 from functools import singledispatch
 
 import pennylane as qml
-from pennylane.operation import Tensor
 from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape.tape import (

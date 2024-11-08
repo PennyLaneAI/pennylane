@@ -21,17 +21,7 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract
-from pennylane.ops import (
-    Hamiltonian,
-    Identity,
-    LinearCombination,
-    PauliX,
-    PauliY,
-    PauliZ,
-    Prod,
-    SProd,
-    Sum,
-)
+from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
@@ -229,7 +219,7 @@ def _generalized_pauli_decompose(
 
 def pauli_decompose(
     H, hide_identity=False, wire_order=None, pauli=False, check_hermitian=True
-) -> Union[Hamiltonian, PauliSentence]:
+) -> Union[LinearCombination, PauliSentence]:
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:

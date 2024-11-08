@@ -166,9 +166,6 @@ class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
 
 
-del globals()["Hamiltonian"]
-
-
 def __getattr__(name):
     if name == "Hamiltonian":
         return pennylane.ops.LinearCombination

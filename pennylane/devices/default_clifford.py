@@ -73,7 +73,6 @@ _OBSERVABLES_MAP = {
     "Hermitian",
     "Identity",
     "Projector",
-    "Hamiltonian",
     "LinearCombination",
     "Sum",
     "SProd",
