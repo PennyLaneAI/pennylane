@@ -3,7 +3,7 @@
 # Release 0.40.0-dev (development release)
 
 <h3>New features since last release</h3>
-
+  
 * A `DeviceCapabilities` data class is defined to contain all capabilities of the device's execution interface (i.e. its implementation of `Device.execute`). A TOML file can be used to define the capabilities of a device, and it can be loaded into a `DeviceCapabilities` object.
   [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
@@ -14,6 +14,18 @@
   >>> isinstance(capabilities, DeviceCapabilities)
   True
   ```
+
+<h4>New API for Qubit Mixed</h4>
+
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
+
+
+  * Two density matrix contraction methods using `einsum` and `tensordot`
+
+  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
+
+* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) 
 
 <h3>Improvements 🛠</h3>
 
@@ -27,14 +39,6 @@
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
 
 <h4>Other Improvements</h4>
-
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
-
-  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379) An `apply_operation` helper function featuring:
-
-  * Two density matrix contraction methods using `einsum` and `tensordot`
-
-  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
@@ -67,6 +71,9 @@ workflow behavior. Instead, shots should be specified on the tape, and the devic
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed `Identity.__repr__` to return correct wires list.
+  [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -76,4 +83,4 @@ Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
 Andrija Paurevic,
-Justin Pickering,
+Justin Pickering
