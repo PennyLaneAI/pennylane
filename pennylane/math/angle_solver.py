@@ -144,14 +144,15 @@ def transform_angles(angles, routine1, routine2):
 
 def poly_to_angles(P, routine):
     r"""
-    Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP)
-    or quantum singular value transformation (QSVT) routines. By default, returns QSP angles.
+    Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP),
+    quantum singular value transformation (QSVT) or generalizeed quantum signal processing (GQSP) routines.
+    By default, returns QSP angles.
 
     Args:
         P (array-like): Coefficients of the polynomial, ordered from lowest to higher degree.
                         The polynomial must have defined parity and real coefficients.
 
-        routine (str):  Specifies the type of angle transformation required. Must be either: "QSP" or "QSVT".
+        routine (str):  Specifies the type of angle transformation required. Must be either: "QSP", "QSVT" or "GQSP".
 
     Returns:
         (array-like): Angles corresponding to the specified transformation routine.
@@ -169,14 +170,12 @@ def poly_to_angles(P, routine):
     if routine == "QSVT":
         return transform_angles(QSP_angles(P), "QSP", "QSVT")
 
-
     return QSP_angles(P)
 
 
 def GQSP_angles(P):
     r"""
-    Computes the Generalized Quantum Signal Processing (QSP) angles given a polynomial P.
-    Currently works up to polynomials of degree ~1000.
+    Computes the Generalized Quantum Signal Processing (GQSP) angles given a polynomial P [arXiv:2308.01501].
 
     Args:
         P (array-like): Coefficients of the input polynomial P.
@@ -187,41 +186,41 @@ def GQSP_angles(P):
 
     Q = complementary_poly(P)
 
-    S = np.array([P, Q])
-    n = S.shape[1]
-
-    theta = np.zeros(n)
-    phi = np.zeros(n)
-    lambd = np.zeros(n)
-
-    def U3_paper(theta, phi, lambd):
+    def gqsp_u3_gate(theta, phi, lambd):
+        # Matrix definition of U3 gate chosen in the GQSP paper
 
         exp_phi = np.exp(1j * phi)
         exp_lambda = np.exp(1j * lambd)
         exp_lambda_phi = np.exp(1j * (lambd + phi))
 
-        R = np.array([
-            [exp_lambda_phi * np.cos(theta), exp_phi * np.sin(theta)],
-            [exp_lambda * np.sin(theta), -np.cos(theta)]
-        ], dtype=complex)
+        matrix = np.array(
+            [
+                [exp_lambda_phi * np.cos(theta), exp_phi * np.sin(theta)],
+                [exp_lambda * np.sin(theta), -np.cos(theta)],
+            ],
+            dtype=complex,
+        )
 
-        return R
+        return matrix
 
-    def safe_angle(x):
-        return 0 if np.isclose(x, 0, atol=1e-10) else np.angle(x)
+    # This subroutine is an adaptation of Algorithm 1 in [arXiv:2308.01501]
+    input_data = np.array([P, Q])
+    num_elements = input_data.shape[1]
 
-    for d in reversed(range(n)):
-        assert S.shape == (2, d + 1)
+    angles_theta, angles_phi, angles_lambda = np.zeros([3,num_elements])
 
-        a, b = S[:, d]
-        theta[d] = np.arctan2(np.abs(b), np.abs(a))
-        # \phi_d = arg(a / b)
-        phi[d] = 0 if np.isclose(np.abs(b), 0, atol=1e-10) else safe_angle(a * np.conj(b))
+    for idx in range(num_elements - 1, -1, -1):
 
-        if d == 0:
-            lambd[0] = safe_angle(b)
+        component_a, component_b = input_data[:, idx]
+        angles_theta[idx] = np.arctan2(np.abs(component_b) , np.abs(component_a))
+        angles_phi[idx] = 0 if np.isclose(np.abs(component_b), 0, atol=1e-10) else np.angle(
+            component_a * np.conj(component_b))
+
+        if idx == 0:
+            angles_lambda[0] = np.angle(component_b)
         else:
-            S = U3_paper(theta[d], phi[d], 0).conj().T @ S
-            S = np.array([S[0][1: d + 1], S[1][0:d]])
+            updated_matrix = gqsp_u3_gate(angles_theta[idx], angles_phi[idx], 0).conj().T @ input_data
+            input_data = np.array([updated_matrix[0][1: idx + 1], updated_matrix[1][0:idx]])
 
-    return theta, phi, lambd
+    return angles_theta, angles_phi, angles_lambda
+

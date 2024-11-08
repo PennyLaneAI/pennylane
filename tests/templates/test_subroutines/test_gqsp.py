@@ -43,10 +43,11 @@ class TestGQSP:
     @pytest.mark.torch
     @pytest.mark.parametrize(
         ("unitary", "poly"),
-        [(qml.RX(0.3, wires = 1),  [0.3, -0.2j, 0.1]),
-         (qml.RZ(1.3, wires=1), [-0.3j, -0.2j, 0, 0, 0.2]),
-         (qml.RY(0.2, wires=1), [0.4, -0, 0.2, 0, 0.2]),
-         ],
+        [
+            (qml.RX(0.3, wires=1), [0.3, -0.2j, 0.1]),
+            (qml.RZ(1.3, wires=1), [-0.3j, -0.2j, 0, 0, 0.2]),
+            (qml.RY(0.2, wires=1), [0.4, -0, 0.2, 0, 0.2]),
+        ],
     )
     def test_correct_solution(self, unitary, poly):
         """Test that poly_to_angles and GQSP produce the correct solution"""
@@ -61,24 +62,25 @@ class TestGQSP:
             return qml.expval(qml.Z(0))
 
         unitary_matrix = qml.matrix(unitary)
-        expected_output = sum([coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate(poly)])
-        generated_output = qml.matrix(circuit, wire_order = [0,1])(angles)[:2,:2]
+        expected_output = sum(
+            [coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate(poly)]
+        )
+        generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
 
         assert np.allclose(expected_output, generated_output)
-
 
     def test_queueing(self):
         """Test that no additional gates are being queued"""
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.GQSP(qml.Z(1), np.ones([3,3]), control=0)
+            qml.GQSP(qml.Z(1), np.ones([3, 3]), control=0)
 
         assert len(q.queue) == 1
         assert q.queue[0].name == "GQSP"
 
     def test_decomposition(self):
 
-        angles = np.array([[1,2],[3,4],[5,6]])
+        angles = np.array([[1, 2], [3, 4], [5, 6]])
 
         qml.GQSP(qml.Z(1), angles, control=0)
 
@@ -86,14 +88,14 @@ class TestGQSP:
 
         expected = [
             qml.PauliX(wires=0),
-            qml.U3(2 * angles[0,0], angles[1,0], angles[2,0], wires=0),
+            qml.U3(2 * angles[0, 0], angles[1, 0], angles[2, 0], wires=0),
             qml.PauliX(wires=0),
             qml.PauliZ(wires=0),
             qml.ctrl(qml.PauliZ(wires=1), control=0, control_values=[0]),
             qml.PauliX(wires=0),
-            qml.U3(2 * angles[0,1], angles[1,1], angles[2,1], wires=0),
+            qml.U3(2 * angles[0, 1], angles[1, 1], angles[2, 1], wires=0),
             qml.PauliX(wires=0),
-            qml.PauliZ(wires=0)
+            qml.PauliZ(wires=0),
         ]
 
         for op1, op2 in zip(decomposition, expected):
@@ -105,17 +107,17 @@ class TestGQSP:
 
         import jax.numpy as jnp
 
-        angles = np.array([[1,2],[3,4],[5,6]])
+        angles = np.array([[1, 2], [3, 4], [5, 6]])
 
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circuit(angles):
-            qml.GQSP(qml.RX(0.3, wires = 1), angles, control=0)
+            qml.GQSP(qml.RX(0.3, wires=1), angles, control=0)
             return qml.expval(qml.Z(0))
 
-        expected_output = jnp.array(qml.matrix(circuit, wire_order = [0,1])(angles))
-        generated_output = qml.matrix(circuit, wire_order = [0,1])(jnp.array(angles))
+        expected_output = jnp.array(qml.matrix(circuit, wire_order=[0, 1])(angles))
+        generated_output = qml.matrix(circuit, wire_order=[0, 1])(jnp.array(angles))
 
         assert np.allclose(expected_output, generated_output)
         assert qml.math.get_interface(generated_output) == "jax"
@@ -177,7 +179,6 @@ class TestGQSP:
         def circuit(angles):
             qml.GQSP(qml.RX(0.3, wires=1), angles, control=0)
             return qml.expval(qml.Z(0) @ qml.Z(1))
-
 
         expected_output = circuit(angles)
 

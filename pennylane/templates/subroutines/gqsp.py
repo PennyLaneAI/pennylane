@@ -88,55 +88,67 @@ class GQSP(Operation):
 
     """
 
-    #num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    #ndim_params = (2,)
     grad_method = None
 
     def __init__(self, unitary, angles, control, id=None):
         total_wires = qml.wires.Wires(control) + unitary.wires
 
-        self._hyperparameters = {
-            "unitary": unitary,
-            "control": qml.wires.Wires(control)
-        }
+        self._hyperparameters = {"unitary": unitary, "control": qml.wires.Wires(control)}
 
         super().__init__(angles, *unitary.data, wires=total_wires, id=id)
 
     def _flatten(self):
         data = self.parameters
-        return data, (self.hyperparameters["unitary"], self.hyperparameters["control"],)
-
+        return data, (
+            self.hyperparameters["unitary"],
+            self.hyperparameters["control"],
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        return cls(unitary = metadata[0], angles = data[0], control = metadata[1])
+        return cls(unitary=metadata[0], angles=data[0], control=metadata[1])
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
-
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = qml.map_wires(new_op._hyperparameters["unitary"], wire_map)
+        new_op._hyperparameters["unitary"] = qml.map_wires(
+            new_op._hyperparameters["unitary"], wire_map
+        )
         new_op._hyperparameters["control"] = tuple(
             wire_map.get(w, w) for w in new_op._hyperparameters["control"]
         )
 
-
         return new_op
-
 
     @staticmethod
     def compute_decomposition(
         *parameters, wires=None, **hyperparameters
     ):  # pylint: disable=arguments-differ
-        r"""
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. note::
+
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
+        .. seealso:: :meth:`~.Operator.decomposition`.
+
+        Args:
+            *parameters (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            wires (Iterable[Any], Wires): wires that the operator acts on
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        Returns:
+            list[Operator]: decomposition of the operator
         """
+
         unitary = hyperparameters["unitary"]
         control = hyperparameters["control"]
 
@@ -147,6 +159,7 @@ class GQSP(Operation):
 
         op_list = []
 
+        # These four gates adapt PennyLane's qml.U3 to the chosen U3 format of the GQSP paper.
         op_list.append(qml.X(control))
         op_list.append(qml.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
         op_list.append(qml.X(control))
@@ -163,10 +176,7 @@ class GQSP(Operation):
 
         return op_list
 
-
     def queue(self, context=QueuingManager):
         context.remove(self.hyperparameters["unitary"])
         context.append(self)
         return self
-
-
