@@ -214,7 +214,7 @@ class TestValidation:
 
     # pylint: disable=protected-access
     @pytest.mark.xfail(
-        reason="qml.Device will always work with 'parameter-shift' and never falls back on 'finite-diff'"
+        reason="qml.device will always work with 'parameter-shift' and never falls back on 'finite-diff'"
     )
     def test_best_method_is_finite_diff(self, monkeypatch):
         """Test that the method for determining the best diff method
