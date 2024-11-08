@@ -23,6 +23,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from typing import Any, Literal, Optional, Union, get_args
 
+import pytest
 from cachetools import Cache
 
 import pennylane as qml
@@ -584,7 +585,10 @@ class QNode:
 
         # validation check.  Will raise error if bad diff_method
         if diff_method is not None:
-            qml.workflow._get_gradient_fn(self.device, self.diff_method)
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+            ):
+                QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
 
     @property
     def gradient_fn(self):
@@ -616,7 +620,12 @@ class QNode:
         else:
             tape = self.tape
 
-        return qml.workflow._get_gradient_fn(self.device, self.diff_method, tape=tape)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+        ):
+            return QNode.get_gradient_fn(self.device, self.interface, self.diff_method, tape=tape)[
+                0
+            ]
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
@@ -724,9 +733,10 @@ class QNode:
             )
 
         if diff_method == "best":
-            qn = qml.QNode(lambda: None, device=device, interface=interface, diff_method=None)
-            qn._tape = tape
-            return qml.workflow.get_best_diff_method(qn)()
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+            ):
+                return QNode.get_best_method(device, interface, tape=tape)
 
         if diff_method == "parameter-shift":
             if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):
@@ -859,8 +869,10 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
-        qn = qml.QNode(lambda: None, device=device, interface=interface, diff_method=None)
-        transform = qml.workflow.get_best_diff_method(qn)()[0]
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            transform = QNode.get_best_method(device, interface)[0]
 
         if transform is qml.gradients.finite_diff:
             return "finite-diff"
@@ -920,9 +932,12 @@ class QNode:
         ):
             gradient_fn = qml.gradients.param_shift
         else:
-            gradient_fn = qml.workflow._get_gradient_fn(
-                self.device, self.diff_method, tape=self.tape
-            )
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+            ):
+                gradient_fn = QNode.get_gradient_fn(
+                    self.device, self.interface, self.diff_method, tape=self.tape
+                )[0]
         execute_kwargs = copy.copy(self.execute_kwargs)
 
         gradient_kwargs = copy.copy(self.gradient_kwargs)
