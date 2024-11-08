@@ -48,7 +48,6 @@ jobs:
           path: ./durations
           include-hidden-files: true
 
-
   upload-durations:
     needs:
       - update-durations
