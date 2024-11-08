@@ -585,10 +585,7 @@ class QNode:
 
         # validation check.  Will raise error if bad diff_method
         if diff_method is not None:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
-            ):
-                QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
+            qml.workflow._get_gradient_fn(self.device, self.diff_method)
 
     @property
     def gradient_fn(self):
