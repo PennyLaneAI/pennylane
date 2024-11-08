@@ -54,5 +54,5 @@
 This release contains contributions from (in alphabetical order):
 
 Astral Cai,
-Yushao Chen
+Yushao Chen,
 Andrija Paurevic
