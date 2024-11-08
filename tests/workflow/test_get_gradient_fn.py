@@ -79,7 +79,7 @@ class TestCustomDeviceIntegration:
     def test_get_gradient_fn_custom_device(self):
         """Test get_gradient_fn is parameter for best for null device."""
         gradient_fn = _get_gradient_fn(self.dev, "best")
-        assert gradient_fn == qml.gradients.param_shift
+        assert gradient_fn is qml.gradients.param_shift
 
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
@@ -150,32 +150,32 @@ class TestGetGradientFn:
         """Test that get_gradient_fn returns 'finite-diff' for the 'finite-diff' method"""
         dev = qml.device("default.qubit", wires=1)
         gradient_fn = _get_gradient_fn(dev, diff_method="finite-diff")
-        assert gradient_fn == qml.gradients.finite_diff
+        assert gradient_fn is qml.gradients.finite_diff
 
     def test_spsa_method(self):
         """Test that get_gradient_fn returns 'spsa' for the 'spsa' method"""
         dev = qml.device("default.qubit", wires=1)
         gradient_fn = _get_gradient_fn(dev, diff_method="spsa")
-        assert gradient_fn == qml.gradients.spsa_grad
+        assert gradient_fn is qml.gradients.spsa_grad
 
     def test_hadamard_method(self):
         """Test that get_gradient_fn returns 'hadamard' for the 'hadamard' method"""
         dev = qml.device("default.qubit", wires=1)
         gradient_fn = _get_gradient_fn(dev, diff_method="hadamard")
-        assert gradient_fn == qml.gradients.hadamard_grad
+        assert gradient_fn is qml.gradients.hadamard_grad
 
     def test_param_shift_method(self):
         """Test that get_gradient_fn returns 'parameter-shift' for the 'parameter-shift' method"""
         dev = qml.device("default.qubit", wires=1)
         gradient_fn = _get_gradient_fn(dev, diff_method="parameter-shift")
-        assert gradient_fn == qml.gradients.param_shift
+        assert gradient_fn is qml.gradients.param_shift
 
     def test_param_shift_method_with_cv_ops(self):
         """Test that get_gradient_fn returns 'parameter-shift-cv' when CV operations are present on tape"""
         dev = qml.device("default.gaussian", wires=1)
         tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
         gradient_fn = _get_gradient_fn(dev, diff_method="parameter-shift", tape=tape)
-        assert gradient_fn == qml.gradients.param_shift_cv
+        assert gradient_fn is qml.gradients.param_shift_cv
 
     def test_invalid_diff_method(self):
         """Test that get_gradient_fn raises an error for invalid diff method"""
