@@ -32,7 +32,7 @@ class BoseWord(dict):
 
     >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
-    a⁺(0) a(1)
+    b⁺(0) b(1)
     """
 
     # override the arithmetic dunder methods for numpy arrays so that the
@@ -340,8 +340,8 @@ class BoseSentence(dict):
     >>> w2 = BoseWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = BoseSentence({w1 : 1.2, w2: 3.1})
     >>> s
-    1.2 * a⁺(0) a(1)
-    + 3.1 * a⁺(1) a(2)
+    1.2 * b⁺(0) b(1)
+    + 3.1 * b⁺(1) b(2)
     """
 
     # override the arithmetic dunder methods for numpy arrays so that the
@@ -533,7 +533,6 @@ class BoseSentence(dict):
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()
             for bw_ord, coeff_ord in bose_word_ordered.items():
-                empty_bose_sentence += coeff_ord * coeff * bw_ord
+                bose_sentence_ordered += coeff_ord * coeff * bw_ord
 
-        bose_sen_ordered = empty_bose_sentence
         return bose_sen_ordered
