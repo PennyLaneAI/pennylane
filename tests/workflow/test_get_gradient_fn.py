@@ -79,7 +79,7 @@ class TestCustomDeviceIntegration:
     def test_get_gradient_fn_custom_device(self):
         """Test get_gradient_fn is parameter for best for null device."""
         gradient_fn = _get_gradient_fn(self.dev, "best")
-        assert gradient_fn == "parameter-shift"
+        assert gradient_fn == qml.gradients.param_shift
 
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""

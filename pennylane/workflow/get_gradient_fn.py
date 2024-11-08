@@ -61,8 +61,16 @@ def _get_gradient_fn(
         )
 
     if diff_method == "best":
-        qn = qml.QNode(lambda: None, device, diff_method=None)
-        return qml.workflow.get_best_diff_method(qn)()
+        config = _make_execution_config(None, diff_method)
+
+        if device.supports_derivatives(config, circuit=tape):
+            new_config = device.preprocess(config)[1]
+            return new_config.gradient_method
+
+        if tape and any(isinstance(o, qml.operation.CV) for o in tape):
+            return qml.gradients.param_shift_cv
+
+        return qml.gradients.param_shift
 
     if diff_method == "parameter-shift":
         if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):

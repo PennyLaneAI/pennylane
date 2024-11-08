@@ -929,12 +929,9 @@ class QNode:
         ):
             gradient_fn = qml.gradients.param_shift
         else:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
-            ):
-                gradient_fn = QNode.get_gradient_fn(
-                    self.device, self.interface, self.diff_method, tape=self.tape
-                )[0]
+            gradient_fn = qml.workflow._get_gradient_fn(
+                self.device, self.diff_method, tape=self.tape
+            )
         execute_kwargs = copy.copy(self.execute_kwargs)
 
         gradient_kwargs = copy.copy(self.gradient_kwargs)
