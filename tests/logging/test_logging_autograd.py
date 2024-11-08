@@ -133,9 +133,9 @@ class TestLogging:
                 ],
             ),
             (
-                "pennylane.workflow.qnode",
+                "pennylane.workflow.get_gradient_fn",
                 [
-                    "Calling <get_gradient_fn(device=<default.qubit device (wires=2)",
+                    "Calling <_get_gradient_fn(device=<default.qubit device (wires=2)",
                 ],
             ),
             (
