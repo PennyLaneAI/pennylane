@@ -29,6 +29,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
+  visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
+  [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
@@ -54,6 +58,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Shiwen An
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
