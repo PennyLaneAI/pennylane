@@ -204,9 +204,11 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
 
-PennyLane also provides a default implementation of :meth:`~pennylane.devices.Device.preprocess`
-which should be sufficient for most plugin devices. To take advantage of this default implementation,
-you need to define a configuration file for your device as described below.
+As an alternative to a customized :meth:`~pennylane.devices.Device.preprocess` method, PennyLane can
+potentially provide a default preprocessing program which should be sufficient for most plugin devices.
+This requires that a TOML-formatted configuration file is defined for your device. The details of
+this configuration file is described in the section below. If provided, a default preprocessing
+program will be constructed based on what is declared in this file.
 
 .. _device_capabilities:
 
@@ -229,7 +231,8 @@ by your device, i.e., what the :meth:`~pennylane.devices.Device.execute` method 
 
 This configuration file will be loaded into another class variable :attr:`~pennylane.devices.Device.capabilities`
 that is used in the default implementation of :meth:`~pennylane.devices.Device.preprocess` if you
-choose not to override it yourself as described above.
+choose not to override it yourself as described above. Note that this file must be declared as
+package data as instructed at the end of :ref:`this section <packaging>`.
 
 Below is an example configuration file defining all accepted fields, with inline descriptions of
 how to fill these fields. All headers and fields are generally required, unless stated otherwise.
@@ -603,6 +606,8 @@ keyword-value pairs.  For example, a device could also track cost and a job ID v
   self.tracker.update(price=price_for_execution, job_id=job_id)
 
 
+.. _packaging:
+
 Identifying and installing your device
 --------------------------------------
 
@@ -643,10 +648,27 @@ To ensure your device is working as expected, you can install it in developer mo
 then be accessible via PennyLane.
 
 If a :ref:`configuration file <device_capabilities>` is defined for your device, you will need
-to declare it in the ``MANIFEST.in`` file of your package:
+to declare it as package data in ``setup.py``:
+
+.. code-block:: python
+
+    from setuptools import setup, find_packages
+
+    setup(
+        ...
+        include_package_data=True,
+        package_data={
+            'package_name' : ['path/to/config/device_name.toml'],
+        },
+        ...
+    )
+
+Alternatively, with ``include_package_data=True``, you can also declare the file in a ``MANIFEST.in``:
 
 .. code-block::
 
     include path/to/config/device_name.toml
 
-This will ensure that PennyLane can correctly load the device and its associated capabilities.
+See :ref:`packaging data files <https://setuptools.pypa.io/en/stable/userguide/datafiles.html>`
+for a detailed explanation. This will ensure that PennyLane can correctly load the device and its
+associated capabilities.
