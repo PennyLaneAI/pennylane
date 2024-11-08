@@ -39,7 +39,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
+* `qml.broadcast` has been removed. Users should use `for` loops instead.
   [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
 
 <h3>Deprecations 👋</h3>
