@@ -122,7 +122,7 @@ jobs:
         run: |
           git checkout stash -- .
           git add ${{ inputs.artifact_save_path }}
-          git commit -m --allow-empty "Check in artifacts$COMMIT_MESSAGE_DESCRIPTION"
+          git commit --allow-empty -m "Check in artifacts$COMMIT_MESSAGE_DESCRIPTION"
           git push -f --set-upstream origin "$HEAD_BRANCH_NAME"
 
       # Create PR to master
