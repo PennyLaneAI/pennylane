@@ -68,6 +68,17 @@ PARAMETRIZED_OPERATIONS = [
     qml.GlobalPhase(0.123),
 ]
 
+SINGLE_QUBIT_PARAMETRIZED_OPERATIONS = [
+    qml.RX(0.123, wires=0),
+    qml.RY(1.434, wires=0),
+    qml.RZ(2.774, wires=0),
+    qml.Rot(0.123, 0.456, 0.789, wires=0),
+    qml.PhaseShift(2.133, wires=0),
+    qml.U1(0.123, wires=0),
+    qml.U2(3.556, 2.134, wires=0),
+    qml.U3(2.009, 1.894, 0.7789, wires=0),
+]
+
 BROADCASTED_OPERATIONS = [
     qml.RX(np.array([0.142, -0.61, 2.3]), wires=0),
     qml.RY(np.array([1.291, -0.10, 5.2]), wires=0),
@@ -4049,3 +4060,23 @@ def test_op_aliases_are_valid():
     """Tests that ops in new files can still be accessed from the old parametric_ops module."""
     assert qml.ops.qubit.parametric_ops_multi_qubit.MultiRZ is old_loc_MultiRZ
     assert qml.ops.qubit.parametric_ops_single_qubit.RX is old_loc_RX
+
+
+class TestPauliRep:
+    def test_matrix_and_pauli_rep_equivalence_for_all_single_qubit_parametric_ops(self):
+        """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
+        import re
+
+        for op in SINGLE_QUBIT_PARAMETRIZED_OPERATIONS:
+            dim = op.matrix().shape[0]
+            if dim == 2:
+                id_str = "I(0)"
+            if dim == 4:
+                id_str = "I(0)@I(1)"
+            op_in_pauli_decomp = str(op.pauli_rep).replace("\n", " ").replace("I", id_str)
+            for pauli_op in ["I", "X", "Y", "Z"]:
+                op_in_pauli_decomp = re.sub(
+                    rf"{pauli_op}", "qml." + rf"{pauli_op}", op_in_pauli_decomp
+                )
+            op_in_pauli_decomp = eval(op_in_pauli_decomp).matrix()
+            assert np.allclose(op.matrix(), op_in_pauli_decomp)

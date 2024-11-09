@@ -31,6 +31,7 @@ from gate_data import (
     ISWAP,
     SISWAP,
     SWAP,
+    SX,
     H,
     I,
     S,
@@ -64,6 +65,20 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.CY, CY),
     (qml.CZ, CZ),
     (qml.CCZ, CCZ),
+]
+
+NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
+    (qml.X(0), X),
+    (qml.Y(0), Y),
+    (qml.Z(0), Z),
+    (qml.H(0), H),
+    (qml.S(0), S),
+    (qml.T(0, 1), T),
+    (qml.SX(0), SX),
+    (qml.SWAP([0, 1]), SWAP),
+    (qml.ISWAP([0, 1]), ISWAP),
+    (qml.ECR([0, 1]), ECR),
+    (qml.SISWAP([0, 1]), SISWAP),
 ]
 
 STRING_REPR = (
@@ -1313,3 +1328,23 @@ class TestHadamardAlias:
         assert isinstance(
             qml.H(0), qml.Hadamard
         ), "qml.H(0) should create an instance of qml.Hadamard"
+
+
+class TestPauliRep:
+    def test_matrix_and_pauli_rep_equivalence_for_all_non_parametric_ops(self):
+        """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
+        import re
+
+        for op, _ in NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED:
+            dim = op.matrix().shape[0]
+            if dim == 2:
+                id_str = "I(0)"
+            if dim == 4:
+                id_str = "I(0)@I(1)"
+            op_in_pauli_decomp = str(op.pauli_rep).replace("\n", " ").replace("I", id_str)
+            for pauli_op in ["I", "X", "Y", "Z"]:
+                op_in_pauli_decomp = re.sub(
+                    rf"{pauli_op}", "qml." + rf"{pauli_op}", op_in_pauli_decomp
+                )
+            op_in_pauli_decomp = eval(op_in_pauli_decomp).matrix()
+            assert np.allclose(op.matrix(), op_in_pauli_decomp)

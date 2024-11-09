@@ -31,6 +31,8 @@ from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
+INV_SQRT2 = 1 / qml.math.sqrt(2)
+
 
 def _can_replace(x, y):
     """
@@ -74,11 +76,24 @@ class RX(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep_cached is None:
+            self._pauli_rep_cached = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self._phi / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): -1j * qml.math.sin(self._phi / 2),
+                }
+            )
+        return self._pauli_rep_cached
+
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+        self._phi = phi
+        self._pauli_rep_cached = None
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -170,11 +185,24 @@ class RY(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep_cached is None:
+            self._pauli_rep_cached = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self._phi / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -1j * qml.math.sin(self._phi / 2),
+                }
+            )
+        return self._pauli_rep_cached
+
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+        self._phi = phi
+        self._pauli_rep_cached = None
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -265,11 +293,24 @@ class RZ(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep_cached is None:
+            self._pauli_rep_cached = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self._phi / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): -1j * qml.math.sin(self._phi / 2),
+                }
+            )
+        return self._pauli_rep_cached
+
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+        self._phi = phi
+        self._pauli_rep_cached = None
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -401,11 +442,26 @@ class PhaseShift(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep_cached is None:
+            self._pauli_rep_cached = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
+                    * (1 + qml.math.exp(1j * self._phi)),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
+                    * (1 - qml.math.exp(1j * self._phi)),
+                }
+            )
+        return self._pauli_rep_cached
+
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+        self._phi = phi
+        self._pauli_rep_cached = None
 
     def label(
         self,
@@ -580,6 +636,26 @@ class Rot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep_cached is None:
+            self._pauli_rep_cached = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self._theta / 2)
+                    * qml.math.cos((self._phi + self._omega) / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): -1j
+                    * qml.math.sin(self._theta / 2)
+                    * qml.math.sin((self._phi - self._omega) / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -1j
+                    * qml.math.cos((self._phi - self._omega) / 2)
+                    * qml.math.sin((self._theta) / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): -1j
+                    * qml.math.cos(self._theta / 2)
+                    * qml.math.sin((self._phi + self._omega) / 2),
+                }
+            )
+        return self._pauli_rep_cached
+
     def __init__(
         self,
         phi: TensorLike,
@@ -589,6 +665,10 @@ class Rot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
+        self._phi = phi
+        self._theta = theta
+        self._omega = omega
+        self._pauli_rep_cached = None
 
     @staticmethod
     def compute_matrix(
@@ -756,11 +836,26 @@ class U1(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep_cached is None:
+            self._pauli_rep_cached = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
+                    * (1 + qml.math.exp(1j * self._phi)),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
+                    * (1 - qml.math.exp(1j * self._phi)),
+                }
+            )
+        return self._pauli_rep_cached
+
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+        self._phi = phi
+        self._pauli_rep_cached = None
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -884,10 +979,34 @@ class U2(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep_cached is None:
+            self._pauli_rep_cached = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
+                    * INV_SQRT2
+                    * (1 + qml.math.exp(1j * (self._delta + self._phi))),
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): 0.5
+                    * INV_SQRT2
+                    * (qml.math.exp(1j * self._phi) - qml.math.exp(1j * self._delta)),
+                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -0.5j
+                    * INV_SQRT2
+                    * (qml.math.exp(1j * self._phi) + qml.math.exp(1j * self._delta)),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
+                    * INV_SQRT2
+                    * (1 - qml.math.exp(1j * (self._delta + self._phi))),
+                }
+            )
+        return self._pauli_rep_cached
+
     def __init__(
         self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
     ):
         super().__init__(phi, delta, wires=wires, id=id)
+        self._phi = phi
+        self._delta = delta
+        self._pauli_rep_cached = None
 
     @staticmethod
     def compute_matrix(
@@ -1031,6 +1150,27 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep_cached is None:
+            self._pauli_rep_cached = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
+                    * (1 + qml.math.exp(1j * (self._delta + self._phi)))
+                    * qml.math.cos(self._theta / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): -0.5
+                    * (qml.math.exp(1j * self._delta) - qml.math.exp(1j * self._phi))
+                    * qml.math.sin(self._theta / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -0.5j
+                    * (qml.math.exp(1j * self._delta) + qml.math.exp(1j * self._phi))
+                    * qml.math.sin(self._theta / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
+                    * (1 - qml.math.exp(1j * (self._delta + self._phi)))
+                    * qml.math.cos(self._theta / 2),
+                }
+            )
+        return self._pauli_rep_cached
+
     def __init__(
         self,
         theta: TensorLike,
@@ -1040,6 +1180,10 @@ class U3(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
+        self._theta = theta
+        self._phi = phi
+        self._delta = delta
+        self._pauli_rep_cached = None
 
     @staticmethod
     def compute_matrix(
