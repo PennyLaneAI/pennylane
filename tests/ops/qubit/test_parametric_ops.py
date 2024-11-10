@@ -4078,5 +4078,5 @@ class TestPauliRep:
                 op_in_pauli_decomp = re.sub(
                     rf"{pauli_op}", "qml." + rf"{pauli_op}", op_in_pauli_decomp
                 )
-            op_in_pauli_decomp = eval(op_in_pauli_decomp).matrix()
+            op_in_pauli_decomp = eval(op_in_pauli_decomp).matrix()  # pylint: disable=eval-used
             assert np.allclose(op.matrix(), op_in_pauli_decomp)
