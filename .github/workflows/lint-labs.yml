@@ -38,5 +38,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Pylint (test files)
-        if: always()
         run: pylint --rcfile pennylane/labs/tests/.pylintrc $(find pennylane/labs/tests -name "*.py")
