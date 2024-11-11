@@ -370,7 +370,7 @@ def clifford_t_decomposition(
     """
 
     with QueuingManager.stop_recording():
-        # Build the basis set and the pipeline for intial compilation pass
+        # Build the basis set and the pipeline for initial compilation pass
         basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
         pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
@@ -433,7 +433,7 @@ def clifford_t_decomposition(
                                     # Resort to decomposing manually
                                     d_ops = _two_qubit_decompose(md_op)
 
-                                # Final resort (should not enter in an ideal situtation)
+                                # Final resort (should not enter in an ideal situation)
                                 else:
                                     d_ops = md_op.decomposition()
 

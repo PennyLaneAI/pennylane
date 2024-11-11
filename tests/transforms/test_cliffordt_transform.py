@@ -81,6 +81,13 @@ def circuit_5():
     return qml.expval(qml.PauliZ(0))
 
 
+def circuit_6():
+    """Circuit 6 with skippable operations"""
+    qml.RZ(1.0, wires=[0])
+    qml.Barrier(wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -104,7 +111,7 @@ class TestCliffordCompile:
 
     @pytest.mark.parametrize(
         "circuit",
-        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5],
+        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5, circuit_6],
     )
     def test_decomposition(self, circuit):
         """Test decomposition for the Clifford transform."""
@@ -171,6 +178,36 @@ class TestCliffordCompile:
         diff = mat_exact - mat_approx
         error = qml.math.sqrt(qml.math.real(qml.math.trace(qml.math.conj(diff).T @ diff)) / 2)
         assert error < epsilon
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.RY(qml.numpy.pi / 4, wires=0),
+        ],
+    )
+    def test_zxz_rotation_decomposition(self, op):
+        """Test single-qubit gates are decomposed correctly using ZXZ rotations"""
+
+        def circuit():
+            qml.apply(op)
+            return qml.probs(wires=0)
+
+        old_tape = qml.tape.make_qscript(circuit)()
+
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=3)
+
+        assert all(
+            isinstance(op, _CLIFFORD_PHASE_GATES)
+            or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
+            for op in new_tape.operations
+        )
+
+        dev = qml.device("default.qubit")
+        transform_program, _ = dev.preprocess()
+        res1, res2 = qml.execute(
+            [old_tape, new_tape], device=dev, transform_program=transform_program
+        )
+        qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
     @pytest.mark.parametrize(
         "op", [qml.RX(1.0, wires="a"), qml.U3(1, 2, 3, wires=[1]), qml.PhaseShift(1.0, wires=[2])]
