@@ -308,7 +308,7 @@ def get_deep_interface(value):
     itr = value
     while isinstance(itr, (list, tuple)):
         if len(itr) == 0:
-            return "builtins"
+            return "numpy"
         itr = itr[0]
     return _get_interface_of_single_tensor(itr)
 
