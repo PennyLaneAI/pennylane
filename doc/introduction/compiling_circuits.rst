@@ -269,7 +269,7 @@ Circuit Decomposition
 ---------------------
 
 When compiling a circuit it is often beneficial to decompose the circuit into a set of basis gates.  
-To do this, we can use the :func:`~.pennylane.transforms.decompose` function, which allows the decomposition of 
+To do this, we can use the :func:`~.pennylane.transforms.decompose` function, which enables decomposition of
 circuits into a set of gates defined either by their name, type, or by a set of rules they must follow.
 
 Using a gate set
@@ -302,7 +302,7 @@ With the Hadamard gate not in our gate set, it will be decomposed into the respe
 Using a gate rule
 *****************
 
-The example below demonstrates how a three-wire circuit can be decomposed using a rule that decomposes the circuit down into single or two-qubit gates: 
+The example below demonstrates how a three-wire circuit can be decomposed into single or two-qubit gates using a rule:
 
 .. code-block:: python
 
@@ -321,9 +321,8 @@ The example below demonstrates how a three-wire circuit can be decomposed using 
 Decomposition in stages
 ***********************
 
-You can use the ``max_expansion`` kwarg to have control over the number 
-of decomposition stages applied to the circuit. By default, the function will decompose
-the circuit until the desired gate set is reached. 
+You can use the ``max_expansion`` argument to control the number of decomposition stages applied to
+the circuit. By default, the function will decompose the circuit until the desired gate set is reached.
 
 The example below shows how the user can visualize the decomposition. 
 We begin with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit: 

@@ -365,6 +365,25 @@ class TestClassicalShadow:
         assert qml.math.shape(res[0]) == (2, shots, wires)
         assert qml.math.shape(res[1]) == ()
 
+    @pytest.mark.parametrize("shots", shots_list)
+    @pytest.mark.parametrize("params", [[0.1, 0.2], [0.1, 0.2, 0.3]])
+    def test_parameter_broadcasting(self, wires, shots, params):
+        """Test that the classical_shadow measurement process supports parameter broadcasting"""
+
+        @qml.qnode(qml.device("default.qubit", wires=wires, shots=shots))
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.classical_shadow(wires=range(wires))
+
+        result = circuit(params)
+        sequential_result = [circuit(i) for i in params]
+
+        assert isinstance(result, np.ndarray)
+        assert qml.math.shape(result) == (len(params), 2, shots, wires)
+        for seq_res, res in zip(sequential_result, result):
+            assert qml.math.shape(seq_res) == qml.math.shape(res)
+
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
@@ -460,10 +479,10 @@ class TestExpvalMeasurement:
         with pytest.raises(qml.DeviceError, match=msg):
             _ = circuit(H, k=10)
 
-    def test_multi_measurement_allowed(self):
+    def test_multi_measurement_allowed(self, seed):
         """Test that no error is raised when classical shadows is returned
         with other measurement processes"""
-        dev = qml.device("default.qubit", wires=2, shots=10000)
+        dev = qml.device("default.qubit", wires=2, shots=10000, seed=seed)
 
         @qml.qnode(dev)
         def circuit():
@@ -486,6 +505,24 @@ class TestExpvalMeasurement:
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], ShadowExpvalMP)
+
+    @pytest.mark.parametrize("params", [[0.1, 0.2], [0.1, 0.2, 0.3]])
+    def test_expval_parameter_broadcasting(self, params):
+        """Test that the shadow_expval measurement process supports parameter broadcasting"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2, shots=10))
+        def circuit(x):
+            qml.RX(x, wires=1)
+            qml.Hadamard(wires=0)
+            return qml.shadow_expval([qml.PauliZ(0), qml.PauliZ(1)])
+
+        result = circuit(params)
+        sequential_result = [circuit(i) for i in params]
+
+        assert isinstance(result, np.ndarray)
+        assert qml.math.shape(result)[0] == len(params)
+        for seq_res, res in zip(sequential_result, result):
+            assert qml.math.shape(seq_res) == qml.math.shape(res)
 
 
 obs_hadamard = [

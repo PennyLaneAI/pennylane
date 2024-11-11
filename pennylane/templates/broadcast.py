@@ -216,7 +216,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     .. warning::
 
-        ``qml.broadcast`` has been deprecated. Please use ``for`` loops instead.
+        ``qml.broadcast`` has been deprecated and will be removed in v0.40. Please use ``for`` loops instead.
 
     Args:
         unitary (func): quantum gate or template
@@ -561,7 +561,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     # pylint: disable=consider-using-enumerate
 
     warn(
-        "qml.broadcast is deprecated. Please use a for loop instead",
+        "qml.broadcast is deprecated and will be removed in v0.40. Please use a for loop instead",
         qml.PennyLaneDeprecationWarning,
     )
 

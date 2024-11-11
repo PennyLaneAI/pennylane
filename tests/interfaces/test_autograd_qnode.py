@@ -69,7 +69,6 @@ interface_qubit_device_and_diff_method = [
 pytestmark = pytest.mark.autograd
 
 TOL_FOR_SPSA = 1.0
-SEED_FOR_SPSA = 32651
 H_FOR_SPSA = 0.01
 
 
@@ -128,7 +127,7 @@ class TestQNode:
 
         assert grad.shape == tuple()
 
-    def test_jacobian(self, interface, dev, diff_method, grad_on_execution, tol, device_vjp):
+    def test_jacobian(self, interface, dev, diff_method, grad_on_execution, tol, device_vjp, seed):
         """Test jacobian calculation"""
         kwargs = dict(
             diff_method=diff_method,
@@ -138,7 +137,7 @@ class TestQNode:
         )
 
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         a = np.array(0.1, requires_grad=True)
@@ -175,7 +174,7 @@ class TestQNode:
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_jacobian_no_evaluate(
-        self, interface, dev, diff_method, grad_on_execution, tol, device_vjp
+        self, interface, dev, diff_method, grad_on_execution, tol, device_vjp, seed
     ):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
         kwargs = dict(
@@ -185,7 +184,7 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         a = np.array(0.1, requires_grad=True)
@@ -416,7 +415,7 @@ class TestQNode:
             grad_fn(data1)
 
     def test_differentiable_expand(
-        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
+        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
     ):
         """Test that operation and nested tape expansion
         is differentiable"""
@@ -428,7 +427,7 @@ class TestQNode:
         )
 
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
 
@@ -572,7 +571,7 @@ class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
     def test_probability_differentiation(
-        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
+        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
@@ -587,7 +586,7 @@ class TestQubitIntegration:
         )
 
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x = np.array(0.543, requires_grad=True)
@@ -610,7 +609,7 @@ class TestQubitIntegration:
         assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
     def test_multiple_probability_differentiation(
-        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
+        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
@@ -624,7 +623,7 @@ class TestQubitIntegration:
         )
 
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x = np.array(0.543, requires_grad=True)
@@ -676,7 +675,7 @@ class TestQubitIntegration:
         assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
     def test_ragged_differentiation(
-        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
+        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
@@ -691,7 +690,7 @@ class TestQubitIntegration:
         )
 
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x = np.array(0.543, requires_grad=True)
@@ -728,7 +727,7 @@ class TestQubitIntegration:
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_ragged_differentiation_variance(
-        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
+        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
@@ -742,7 +741,7 @@ class TestQubitIntegration:
         )
 
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
@@ -845,7 +844,7 @@ class TestQubitIntegration:
         assert len(res) == 2
 
     def test_chained_gradient_value(
-        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
+        self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
     ):
         """Test that the returned gradient value for two chained qubit QNodes
         is correct."""
@@ -857,7 +856,7 @@ class TestQubitIntegration:
         )
 
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         dev1 = qml.device("default.qubit")
 
@@ -1375,7 +1374,7 @@ class TestQubitIntegration:
 
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
     def test_projector(
-        self, state, interface, dev, diff_method, grad_on_execution, device_vjp, tol
+        self, state, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
     ):
         """Test that the variance of a projector is correctly returned"""
         if diff_method == "adjoint":
@@ -1390,7 +1389,7 @@ class TestQubitIntegration:
         )
 
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
@@ -1526,7 +1525,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(
-        self, dev, diff_method, grad_on_execution, max_diff, tol, device_vjp
+        self, dev, diff_method, grad_on_execution, max_diff, tol, device_vjp, seed
     ):
         """Test that if there are non-commuting groups and the number of shots is None
         the first and second order gradients are correctly evaluated"""
@@ -1540,7 +1539,7 @@ class TestTapeExpansion:
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The diff method requested does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            kwargs["sampler_rng"] = np.random.default_rng(seed)
             kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
 
@@ -1596,7 +1595,7 @@ class TestTapeExpansion:
     @pytest.mark.slow
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_finite_shots(
-        self, dev, diff_method, grad_on_execution, max_diff, device_vjp
+        self, dev, diff_method, grad_on_execution, max_diff, device_vjp, seed
     ):
         """Test that the Hamiltonian is correctly measured if there
         are non-commuting groups and the number of shots is finite
@@ -1608,7 +1607,7 @@ class TestTapeExpansion:
         elif diff_method == "spsa":
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
-                "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
+                "sampler_rng": np.random.default_rng(seed),
                 "num_directions": 10,
             }
             tol = TOL_FOR_SPSA
