@@ -167,8 +167,8 @@ class TestGQSP:
     def test_gqsp_jax_jit(self):
         """Test that GQSP works with jax"""
 
-        import jax.numpy as jnp
         import jax
+        import jax.numpy as jnp
 
         angles = jnp.array([[1, 2], [3, 4], [5, 6]])
 
