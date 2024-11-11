@@ -72,7 +72,7 @@ def lie_closure_dense(
 
     This function computes the Lie closure of a set of generators using their dense matrix representation.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
-    `~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
+    :class:`~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
     that are sums of many Paulis.
 
     .. seealso:: For details on the mathematical definitions, see :func:`~lie_closure` and our `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
