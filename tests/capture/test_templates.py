@@ -240,7 +240,6 @@ def test_unmodified_templates(template, args, kwargs):
 
 # Only add a template to the following list if you manually added a test for it to
 # TestModifiedTemplates below.
-# pylint: too-many-public-method
 tested_modified_templates = [
     qml.TrotterProduct,
     qml.AmplitudeAmplification,
@@ -273,6 +272,7 @@ tested_modified_templates = [
 ]
 
 
+# pylint: disable=too-many-public-methods
 class TestModifiedTemplates:
     """Test that templates with custom primitive binds are captured as expected."""
 
