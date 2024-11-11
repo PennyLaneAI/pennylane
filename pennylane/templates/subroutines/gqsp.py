@@ -17,7 +17,6 @@ Contains the GQSP template.
 # pylint: disable=too-many-arguments
 
 import copy
-import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -126,9 +125,7 @@ class GQSP(Operation):
         return new_op
 
     @staticmethod
-    def compute_decomposition(
-        *parameters, wires=None, **hyperparameters
-    ):  # pylint: disable=arguments-differ
+    def compute_decomposition(*parameters, **hyperparameters):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
