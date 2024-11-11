@@ -1244,8 +1244,8 @@ class TestOutputShape:
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
         qs = QuantumScript(ops, [measurement], shots=shots)
         program, _ = dev.preprocess()
-        # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, gradient_fn=None, transform_program=program)[0]
+        # TODO: test diff_method is not None when the interface `execute` functions are implemented
+        res = qml.execute([qs], dev, diff_method=None, transform_program=program)[0]
 
         if isinstance(shots, tuple):
             res_shape = tuple(r.shape for r in res)
@@ -1271,8 +1271,8 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, gradient_fn=None)[0]
+        # TODO: test diff_method is not None when the interface `execute` functions are implemented
+        res = qml.execute([qs], dev, diff_method=None)[0]
         res_shape = tuple(r.shape for r in res)
 
         assert res_shape == expected
@@ -1303,8 +1303,8 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, gradient_fn=None)[0]
+        # TODO: test diff_method is not None when the interface `execute` functions are implemented
+        res = qml.execute([qs], dev, diff_method=None)[0]
         res_shape = tuple(tuple(r_.shape for r_ in r) for r in res)
 
         assert res_shape == expected
@@ -1330,7 +1330,7 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        res = qml.execute([qs], dev, gradient_fn=None)[0]
+        res = qml.execute([qs], dev, diff_method=None)[0]
         res_shape = tuple(r.shape for r in res)
 
         assert res_shape == expected
@@ -1363,7 +1363,7 @@ class TestOutputShape:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         program, _ = dev.preprocess()
-        expected_shape = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[
+        expected_shape = qml.execute([tape], dev, diff_method=None, transform_program=program)[
             0
         ].shape
 
@@ -1394,7 +1394,7 @@ class TestOutputShape:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         program, _ = dev.preprocess()
-        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
+        expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         actual = tape.shape(dev)
 
         for exp, act in zip(expected, actual):
@@ -1421,7 +1421,7 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        expected = qml.execute([qs], dev, gradient_fn=None)[0]
+        expected = qml.execute([qs], dev, diff_method=None)[0]
         expected_shape = tuple(tuple(e_.shape for e_ in e) for e in expected)
 
         assert res == expected_shape
@@ -1445,7 +1445,7 @@ class TestOutputShape:
         assert res == expected
 
         program, _ = dev.preprocess()
-        expected = qml.execute([qs], dev, gradient_fn=None, transform_program=program)[0]
+        expected = qml.execute([qs], dev, diff_method=None, transform_program=program)[0]
         expected_shape = tuple(tuple(e_.shape for e_ in e) for e in expected)
 
         assert res == expected_shape
@@ -1485,7 +1485,7 @@ class TestNumericType:
         a, b = 0.3, 0.2
         ops = [qml.RY(a, 0), qml.RZ(b, 0)]
         qs = QuantumScript(ops, [ret], shots=shots)
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         if not isinstance(result, tuple):
             result = (result,)
@@ -1506,7 +1506,7 @@ class TestNumericType:
         ops = [qml.RY(a, 0), qml.RZ(b, 0)]
         qs = QuantumScript(ops, [ret])
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
@@ -1518,7 +1518,7 @@ class TestNumericType:
         dev = qml.device("default.qubit", wires=3, shots=5)
         qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample()], shots=5)
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, np.int64)
@@ -1541,7 +1541,7 @@ class TestNumericType:
 
         qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))], shots=5)
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
@@ -1562,7 +1562,7 @@ class TestNumericType:
         m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample()]
         qs = QuantumScript(ops, m, shots=5)
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
