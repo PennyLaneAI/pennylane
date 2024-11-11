@@ -24,7 +24,6 @@ to verify and test quantum gradient computations.
 .. autosummary::
     :toctree: api
 
-
     default_qubit
     default_gaussian
     default_mixed
@@ -37,7 +36,6 @@ to verify and test quantum gradient computations.
     _qutrit_device
     null_qubit
     reference_qubit
-    capabilities
     tests
 
 Next generation devices
