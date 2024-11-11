@@ -168,6 +168,7 @@ class LegacyDeviceFacade(Device):
             )
 
         self._device = device
+        self.config_filepath = getattr(self._device, "config_filepath", None)
 
     @property
     def tracker(self):
