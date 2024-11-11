@@ -20,8 +20,8 @@ import pennylane as qml
 from pennylane.devices import DefaultQubit
 
 
-@pytest.mark.parametrize("gradient_fn", (None, "backprop", qml.gradients.param_shift))
-def test_caching(gradient_fn):
+@pytest.mark.parametrize("diff_method", (None, "backprop", qml.gradients.param_shift))
+def test_caching(diff_method):
     """Test that cache execute returns the cached result if the same script is executed
     multiple times, both in multiple times in a batch and in separate batches."""
     dev = DefaultQubit()
@@ -31,8 +31,8 @@ def test_caching(gradient_fn):
     cache = {}
 
     with qml.Tracker(dev) as tracker:
-        results = qml.execute([qs, qs], dev, cache=cache, gradient_fn=gradient_fn)
-        results2 = qml.execute([qs, qs], dev, cache=cache, gradient_fn=gradient_fn)
+        results = qml.execute([qs, qs], dev, cache=cache, diff_method=diff_method)
+        results2 = qml.execute([qs, qs], dev, cache=cache, diff_method=diff_method)
 
     assert len(cache) == 1
     assert cache[qs.hash] == -1.0
@@ -55,3 +55,18 @@ def test_execute_legacy_device():
     res = qml.execute((tape,), dev)
 
     assert qml.math.allclose(res[0], np.cos(0.1))
+
+
+def test_gradient_fn_deprecation():
+    """Test that gradient_fn has been renamed to diff_method."""
+
+    tape = qml.tape.QuantumScript([qml.RX(qml.numpy.array(1.0), 0)], [qml.expval(qml.Z(0))])
+    dev = qml.device("default.qubit")
+
+    with dev.tracker:
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"gradient_fn has been renamed to diff_method"
+        ):
+            qml.execute((tape,), dev, gradient_fn="adjoint")
+
+    assert dev.tracker.totals["execute_and_derivative_batches"] == 1  # uses adjoint diff

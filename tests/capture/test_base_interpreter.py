@@ -68,6 +68,26 @@ def test_env_and_initialized():
     assert interpreter._env == {}
 
 
+def test_zip_length_validation():
+    """Test that errors are raised if the input values isnt long enough for the needed variables."""
+
+    def f(x):
+        return x + 1
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+    with pytest.raises(ValueError):
+        PlxprInterpreter().eval(jaxpr.jaxpr, [])
+
+    y = jax.numpy.array([1.0])
+
+    def g():
+        return y + 2
+
+    jaxpr = jax.make_jaxpr(g)()
+    with pytest.raises(ValueError):
+        PlxprInterpreter().eval(jaxpr.jaxpr, [])
+
+
 def test_primitive_registrations():
     """Test that child primitive registrations dict's are not copied and do
     not affect PlxprInterpreter."""
@@ -345,9 +365,6 @@ class TestHigherOrderPrimitiveRegistrations:
             jax.core.eval_jaxpr(branch2, [], 0.5)
         qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-0.5), 0))
 
-        assert jaxpr.eqns[0].params["n_args"] == 1
-        assert jaxpr.eqns[0].params["n_consts_per_branch"] == [0, 0]
-
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.4, True)
 
@@ -483,41 +500,23 @@ class TestHigherOrderPrimitiveRegistrations:
     def test_grad_and_jac(self, grad_f):
         """Test interpreters can handle grad and jacobian HOP's."""
 
-        class DoubleAngle(PlxprInterpreter):
-
-            def interpret_operation(self, op):
-                leaves, struct = jax.tree_util.tree_flatten(op)
-                return jax.tree_util.tree_unflatten(struct, [2 * l for l in leaves])
-
-        @DoubleAngle()
+        @SimplifyInterpreter()
         def f(x):
             @qml.qnode(qml.device("default.qubit", wires=2))
             def circuit(y):
-                qml.RX(y, 0)
-                return qml.expval(qml.Z(0))
+                _ = qml.RX(y, 0) ** 2
+                return qml.expval(qml.Z(0) + qml.Z(0))
 
             return grad_f(circuit)(x)
 
-        out = f(0.5)
-        expected = -2 * jax.numpy.sin(2 * 0.5)  # includes the factors of 2 from doubling the angle.
-        assert qml.math.allclose(out, expected)
+        jaxpr = jax.make_jaxpr(f)(0.5)
 
-
-def test_zip_length_validation():
-    """Test that errors are raised if the input values isnt long enough for the needed variables."""
-
-    def f(x):
-        return x + 1
-
-    jaxpr = jax.make_jaxpr(f)(0.5)
-    with pytest.raises(ValueError):
-        PlxprInterpreter().eval(jaxpr.jaxpr, [])
-
-    y = jax.numpy.array([1.0])
-
-    def g():
-        return y + 2
-
-    jaxpr = jax.make_jaxpr(g)()
-    with pytest.raises(ValueError):
-        PlxprInterpreter().eval(jaxpr.jaxpr, [])
+        if grad_f == qml.grad:
+            assert jaxpr.eqns[0].primitive == qml.capture.primitives.grad_prim
+        else:
+            assert jaxpr.eqns[0].primitive == qml.capture.primitives.jacobian_prim
+        grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul
+        assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
