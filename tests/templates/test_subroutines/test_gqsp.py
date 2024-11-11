@@ -35,7 +35,7 @@ class TestGQSP:
         @qml.prod
         def unitary(wires):
             qml.RX(0.3, wires)
-            qml.RZ(0.3, wires)
+            qml.RZ(0.6, wires)
 
         op = qml.GQSP(unitary(1), angles, control=0)
         qml.ops.functions.assert_valid(op)

@@ -159,7 +159,7 @@ class GQSP(Operation):
 
         op_list = []
 
-        # These four gates adapt PennyLane's qml.U3 to the chosen U3 format of the GQSP paper.
+        # These four gates adapt PennyLane's qml.U3 to the chosen U3 format in the GQSP paper.
         op_list.append(qml.X(control))
         op_list.append(qml.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
         op_list.append(qml.X(control))

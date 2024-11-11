@@ -99,7 +99,7 @@ def QSP_angles(F):
                 [updated_poly_matrix[0][1 : idx + 1], updated_poly_matrix[1][0:idx]]
             )
 
-    return rotation_angles 
+    return rotation_angles
 
 
 def transform_angles(angles, routine1, routine2):
@@ -207,20 +207,24 @@ def GQSP_angles(P):
     input_data = np.array([P, Q])
     num_elements = input_data.shape[1]
 
-    angles_theta, angles_phi, angles_lambda = np.zeros([3,num_elements])
+    angles_theta, angles_phi, angles_lambda = np.zeros([3, num_elements])
 
     for idx in range(num_elements - 1, -1, -1):
 
         component_a, component_b = input_data[:, idx]
-        angles_theta[idx] = np.arctan2(np.abs(component_b) , np.abs(component_a))
-        angles_phi[idx] = 0 if np.isclose(np.abs(component_b), 0, atol=1e-10) else np.angle(
-            component_a * np.conj(component_b))
+        angles_theta[idx] = np.arctan2(np.abs(component_b), np.abs(component_a))
+        angles_phi[idx] = (
+            0
+            if np.isclose(np.abs(component_b), 0, atol=1e-10)
+            else np.angle(component_a * np.conj(component_b))
+        )
 
         if idx == 0:
             angles_lambda[0] = np.angle(component_b)
         else:
-            updated_matrix = gqsp_u3_gate(angles_theta[idx], angles_phi[idx], 0).conj().T @ input_data
-            input_data = np.array([updated_matrix[0][1: idx + 1], updated_matrix[1][0:idx]])
+            updated_matrix = (
+                gqsp_u3_gate(angles_theta[idx], angles_phi[idx], 0).conj().T @ input_data
+            )
+            input_data = np.array([updated_matrix[0][1 : idx + 1], updated_matrix[1][0:idx]])
 
     return angles_theta, angles_phi, angles_lambda
-
