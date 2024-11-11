@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
   has been deprecated.
 
