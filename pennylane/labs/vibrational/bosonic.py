@@ -329,6 +329,94 @@ class BoseWord(dict):
 
         ordered_op.simplify(tol=1e-8)
         return ordered_op
+    
+    def shift_operator(self, initial_position, final_position):
+        r"""Shifts an operator in the BoseWord from ``initial_position`` to ``final_position`` by applying the bosonic commutation relations.
+
+        Args:
+            initial_position (int): The position of the operator to be shifted.
+            final_position (int): The desired position of the operator.
+
+        Returns:
+            FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
+
+        Raises:
+            TypeError: if ``initial_position`` or ``final_position`` is not an integer
+            ValueError: if ``initial_position`` or ``final_position`` are outside the range ``[0, len(fermiword) - 1]``
+                        where ``len(fermiword)`` is the number of operators in the FermiWord.
+
+
+        **Example**
+
+        >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w.shift_operator(0, 1)
+        -1 * a(1) a⁺(0)
+        """
+
+        if not isinstance(initial_position, int) or not isinstance(final_position, int):
+            raise TypeError("Positions must be integers.")
+
+        if initial_position < 0 or final_position < 0:
+            raise ValueError("Positions must be positive integers.")
+
+        if initial_position > len(self.sorted_dic) - 1 or final_position > len(self.sorted_dic) - 1:
+            raise ValueError("Positions are out of range.")
+
+        if initial_position == final_position:
+            return FermiSentence({self: 1})
+
+        fw = self
+        fs = FermiSentence({fw: 1})
+        delta = 1 if initial_position < final_position else -1
+        current = initial_position
+
+        while current != final_position:
+            indices = list(fw.sorted_dic.keys())
+            next = current + delta
+            curr_idx, curr_val = indices[current], fw[indices[current]]
+            next_idx, next_val = indices[next], fw[indices[next]]
+
+            # commuting identical terms
+            if curr_idx[1] == next_idx[1] and curr_val == next_val:
+                current += delta
+                continue
+
+            coeff = fs.pop(fw)
+
+            fw = dict(fw)
+            fw[(current, next_idx[1])] = next_val
+            fw[(next, curr_idx[1])] = curr_val
+
+            if curr_idx[1] != next_idx[1]:
+                del fw[curr_idx], fw[next_idx]
+
+            fw = FermiWord(fw)
+
+            # anti-commutator is 0
+            if curr_val == next_val or curr_idx[1] != next_idx[1]:
+                current += delta
+                fs += -coeff * fw
+                continue
+
+            # anti-commutator is 1
+            _min = min(current, next)
+            _max = max(current, next)
+            items = list(fw.sorted_dic.items())
+
+            left = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[:_min])})
+            middle = FermiWord(
+                {(i, key[1]): value for i, (key, value) in enumerate(items[_min : _max + 1])}
+            )
+            right = FermiWord(
+                {(i, key[1]): value for i, (key, value) in enumerate(items[_max + 1 :])}
+            )
+
+            terms = left * (1 - middle) * right
+            fs += coeff * terms
+
+            current += delta
+
+        return fs
 
 
 # pylint: disable=useless-super-delegation
