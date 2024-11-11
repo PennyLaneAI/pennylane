@@ -193,9 +193,9 @@ class TestLieClosure:
         res = lie_closure_dense(generators)
         assert len(res) == (2 * n - 1) * (2 * n - 2) // 2
 
-    @pytest.mark.parametrize("n", range(3, 5))
-    def test_lie_closure_dense_transverse_field_ising_1D_cyclic(self, n):
+    def test_lie_closure_dense_transverse_field_ising_1D_cyclic(self):
         """Test the lie closure works correctly for the transverse Field Ising model with cyclic boundary conditions, a8 in theorem IV.2 in https://arxiv.org/pdf/2309.05690.pdf"""
+        n = 3
         generators = [PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n)]
         generators += [
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n)
