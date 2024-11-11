@@ -495,22 +495,48 @@ class Testqsvt:
         assert np.allclose(qml.matrix(circuit)()[: len(A_matrix), : len(A_matrix)].real, expected)
 
     @pytest.mark.parametrize(
-        ("A", "block_encoding", "encoding_wires", "msg_match"),
+        ("A", "poly", "block_encoding", "encoding_wires", "msg_match"),
         [
-            ([[0.1, 0], [0, -0.1]], "prepselprep", [0, 1], "block_encoding should take"),
-            (qml.Z(0) - qml.X(0), "fable", [1], "block_encoding should take"),
+            (
+                [[0.1, 0], [0, -0.1]],
+                [0.3, 0, 0.4],
+                "prepselprep",
+                [0, 1],
+                "block_encoding should take",
+            ),
+            (qml.Z(0) - qml.X(0), [0.3, 0, 0.4], "fable", [1], "block_encoding should take"),
+            (
+                [[0.1, 0], [0, -0.1]],
+                [0.3, 0.1, 0.4],
+                "fable",
+                [1],
+                "The polynomial has no definite parity",
+            ),
+            (
+                [[0.1, 0], [0, -0.1]],
+                [0.3],
+                "fable",
+                [1],
+                "The polynomial must have at least degree 1",
+            ),
+            (qml.Z(0) - qml.X(0), [0.3, 0, 0.4], "prepselprep", [0], "Control wires in"),
+            (
+                qml.Z(0) - qml.X(0),
+                [1.3, 0, 0.4],
+                "prepselprep",
+                [1],
+                "The polynomial must satisfy that",
+            ),
         ],
     )
-    def test_block_encoding_error(
-        self, A, block_encoding, encoding_wires, msg_match
+    def test_raise_error(
+        self, A, poly, block_encoding, encoding_wires, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):
 
-            qml.qsvt(
-                A, [0, 0.1, 0, 0.3], encoding_wires=encoding_wires, block_encoding=block_encoding
-            )
+            qml.qsvt(A, poly, encoding_wires=encoding_wires, block_encoding=block_encoding)
 
     @pytest.mark.torch
     def test_qsvt_torch(self):
