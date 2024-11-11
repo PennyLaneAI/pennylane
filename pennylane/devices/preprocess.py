@@ -419,6 +419,38 @@ def decompose(
     return (tape,), null_postprocessing
 
 
+@decompose.custom_plxpr_transform
+def _decompose_plxpr_transform(self, primitive, tracers, params, targs, tkwargs, state=None):
+    """Binding function for processing primitives for decomposition"""
+    from pennylane.capture import TransformTracer
+
+    stopping_condition = targs[0]
+    if (
+        stopping_condition_shots := tkwargs.get("stopping_condition_shots", None)
+    ) is not None and state.get("shots", None):
+        stopping_condition = stopping_condition_shots
+
+    with qml.QueuingManager.stop_recording():
+        tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
+        op = primitive.impl(*tracers_in, **params)
+
+    if not isinstance(op, qml.operation.Operator) or stopping_condition(op):
+        tracers = [
+            TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
+            for t in tracers
+        ]
+        return primitive.bind(*tracers, **params)
+
+    try:
+        return op.decomposition()
+    except qml.operation.DecompositionUndefinedError as e:
+        error = tkwargs.get("error", qml.DeviceError)
+        name = tkwargs.get("name", "device")
+        raise error(
+            f"Operator {op} not supported with {name} and does not provide a decomposition."
+        ) from e
+
+
 @transform
 def validate_observables(
     tape: QuantumScript,
