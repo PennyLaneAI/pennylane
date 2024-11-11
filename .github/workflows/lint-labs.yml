@@ -33,7 +33,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install pylint==2.7.5
+        run: pip install pylint==2.7.4
 
       - uses: actions/checkout@v4
 
