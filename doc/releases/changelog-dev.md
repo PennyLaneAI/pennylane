@@ -1,4 +1,4 @@
-from pennylane.devices.capabilities import DeviceCapabilitiesfrom tests.data.test_dataset import MyDataset:orphan:
+:orphan:
 
 # Release 0.40.0-dev (development release)
 
