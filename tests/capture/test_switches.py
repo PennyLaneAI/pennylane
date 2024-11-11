@@ -15,6 +15,7 @@
 Unit tests for the backbone of the :mod:`pennylane.capture` module.
 """
 import pytest
+from autoray import infer_backend
 
 import pennylane as qml
 
@@ -39,3 +40,28 @@ def test_switches_without_jax():
     assert qml.capture.enabled() is False
     assert qml.capture.disable() is None
     assert qml.capture.enabled() is False
+
+
+@pytest.mark.jax
+def test_capture_autoray_backend():
+    """Test that enabling capture causes autoray to dispatch objects belonging to the
+    pennylane namespace to jax instead of autograd, and that the behaviour is reverted
+    when capture is disabled."""
+
+    class DummyClass:  # pylint: disable=too-few-public-methods
+        """Dummy class for testing"""
+
+    DummyClass.__module__ = "pennylane"
+    qml_object = DummyClass()
+
+    assert qml.capture.enabled() is False
+    assert qml.math.get_interface(qml_object) == "autograd"
+    assert infer_backend(qml_object) == "autograd"
+
+    qml.capture.enable()
+    assert qml.math.get_interface(qml_object) == "jax"
+    assert infer_backend(qml_object) == "jax"
+
+    qml.capture.disable()
+    assert qml.math.get_interface(qml_object) == "autograd"
+    assert infer_backend(qml_object) == "autograd"
