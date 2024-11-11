@@ -20,11 +20,35 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+class TestBasics:
+    """Test basic properties of the MomentumQNGOptimizer."""
+
+    def test_initialization_default(self):
+        """Test that initializing MomentumQNGOptimizer with default values works."""
+        opt = qml.MomentumQNGOptimizer()
+        assert opt.stepsize == 0.01
+        assert opt.approx == "block-diag"
+        assert opt.lam == 0
+        assert opt.momentum == 0.9
+        assert opt.accumulation is None
+        assert opt.metric_tensor is None
+
+    def test_initialization_custom_values(self):
+        """Test that initializing MomentumQNGOptimizer with custom values works."""
+        opt = qml.MomentumQNGOptimizer(stepsize=0.05, momentum=0.8, approx="diag", lam=1e-9)
+        assert opt.stepsize == 0.05
+        assert opt.approx == "diag"
+        assert opt.lam == 1e-9
+        assert opt.momentum == 0.8
+        assert opt.accumulation is None
+        assert opt.metric_tensor is None
+
+
 class TestOptimize:
     """Test basic optimization integration"""
 
     @pytest.mark.parametrize("rho", [0.9, 0.0])
-    def test_step_and_cost_autograd(self, rho):
+    def test_step_and_cost(self, rho):
         """Test that the correct cost and step is returned after 8 optimization steps via the
         step_and_cost method for the MomentumQNG optimizer"""
         dev = qml.device("default.qubit", wires=1)
@@ -126,7 +150,7 @@ class TestOptimize:
 
         stepsize = 0.05
         momentum = 0.7
-        # Create two optimizers so that the opt.accumulation state does not
+        # Create multiple optimizers so that the opt.accumulation state does not
         # interact between tests for step_and_cost and for step.
         opt1 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
         opt2 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
@@ -328,7 +352,6 @@ class TestOptimize:
             grad = gradient(theta)
             dtheta *= rho
             dtheta += tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
-            print(circuit(*theta))
             assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost

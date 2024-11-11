@@ -325,8 +325,8 @@ class QNSPSAOptimizer:
         params_vec = pnp.concatenate([param.reshape(-1) for param in params])
         grad_vec = pnp.concatenate([grad.reshape(-1) for grad in gradient])
 
-        new_params_vec = pnp.linalg.solve(
-            self.metric_tensor,
+        new_params_vec = pnp.matmul(
+            pnp.linalg.pinv(self.metric_tensor),
             (-self.stepsize * grad_vec + pnp.matmul(self.metric_tensor, params_vec)),
         )
         # reshape single-vector new_params_vec into new_params, to match the input params

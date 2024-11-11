@@ -151,13 +151,13 @@ class TestIntegration:
             qml.device("lightning.qubit", wires=3),
         ),
     )
-    def test_quantum_fisher_info(self, dev):
+    def test_quantum_fisher_info(self, dev, seed):
         """Integration test of quantum fisher information matrix CFIM. This is just calling
         ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
 
         n_wires = 2
 
-        rng = pnp.random.default_rng(200)
+        rng = pnp.random.default_rng(seed)
         dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000, seed=rng)
 
         def qfunc(params):
