@@ -345,9 +345,6 @@ class TestHigherOrderPrimitiveRegistrations:
             jax.core.eval_jaxpr(branch2, [], 0.5)
         qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-0.5), 0))
 
-        assert jaxpr.eqns[0].params["n_args"] == 1
-        assert jaxpr.eqns[0].params["n_consts_per_branch"] == [0, 0]
-
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.4, True)
 

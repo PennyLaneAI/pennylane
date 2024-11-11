@@ -140,10 +140,9 @@ class PlxprInterpreter:
                 self.ops.append(op)
 
         @AccumulateOps.register_primitive(qml.capture.primitives.for_loop_prim)
-        def _(self, *invals, jaxpr_body_fn, n_consts):
-            start, stop, step = invals[0], invals[1], invals[2]
-            consts = invals[3 : 3 + n_consts]
-            state = invals[3 + n_consts :]
+        def _(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice):
+            consts = invals[consts_slice]
+            state = invals[args_slice]
 
             for i in range(start, stop, step):
                 state = copy(self).eval(jaxpr_body_fn, consts, i, *state)
@@ -376,45 +375,51 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
-def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
+def handle_for_loop(self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice):
     """Handle a for loop primitive."""
-    start = invals[0]
-    consts = invals[3 : 3 + n_consts]
-    init_state = invals[3 + n_consts :]
+    init_state = args[args_slice]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts, start, *init_state)
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(
+        copy(self), jaxpr_body_fn, args[consts_slice], start, *init_state
+    )
 
-    return for_loop_prim.bind(*invals, jaxpr_body_fn=new_jaxpr_body_fn, n_consts=n_consts)
+    return for_loop_prim.bind(
+        start,
+        stop,
+        step,
+        *args,
+        jaxpr_body_fn=new_jaxpr_body_fn,
+        consts_slice=consts_slice,
+        args_slice=args_slice,
+    )
 
 
 @PlxprInterpreter.register_primitive(cond_prim)
-def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
+def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
     """Handle a cond primitive."""
-    n_branches = len(jaxpr_branches)
-    consts_flat = invals[n_branches + n_args :]
-    args = invals[n_branches : n_branches + n_args]
+    args = invals[args_slice]
 
     new_jaxprs = []
-    start = 0
-    for n_consts, jaxpr in zip(n_consts_per_branch, jaxpr_branches):
-        consts = consts_flat[start : start + n_consts]
-        start += n_consts
+    for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
+        consts = invals[const_slice]
         if jaxpr is None:
             new_jaxprs.append(None)
         else:
             new_jaxprs.append(jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args))
 
     return cond_prim.bind(
-        *invals, jaxpr_branches=new_jaxprs, n_consts_per_branch=n_consts_per_branch, n_args=n_args
+        *invals, jaxpr_branches=new_jaxprs, consts_slices=consts_slices, args_slice=args_slice
     )
 
 
 @PlxprInterpreter.register_primitive(while_loop_prim)
-def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
+def handle_while_loop(
+    self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice
+):
     """Handle a while loop primitive."""
-    consts_body = invals[:n_consts_body]
-    consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
-    init_state = invals[n_consts_body + n_consts_cond :]
+    consts_body = invals[body_slice]
+    consts_cond = invals[cond_slice]
+    init_state = invals[args_slice]
 
     new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts_body, *init_state)
     new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy(self), jaxpr_cond_fn, consts_cond, *init_state)
@@ -423,8 +428,9 @@ def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body
         *invals,
         jaxpr_body_fn=new_jaxpr_body_fn,
         jaxpr_cond_fn=new_jaxpr_cond_fn,
-        n_consts_body=n_consts_body,
-        n_consts_cond=n_consts_cond,
+        body_slice=body_slice,
+        cond_slice=cond_slice,
+        args_slice=args_slice,
     )
 
 

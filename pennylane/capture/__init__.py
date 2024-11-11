@@ -187,9 +187,7 @@ def __getattr__(key):
         return _get_qnode_prim()
 
     if key == "PlxprInterpreter":
-        from .base_interpreter import (
-            PlxprInterpreter,
-        )
+        from .base_interpreter import PlxprInterpreter
 
         return PlxprInterpreter
 
