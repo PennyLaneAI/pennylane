@@ -99,7 +99,7 @@ def QSP_angles(F):
                 [updated_poly_matrix[0][1 : idx + 1], updated_poly_matrix[1][0:idx]]
             )
 
-    return rotation_angles 
+    return rotation_angles
 
 
 def transform_angles(angles, routine1, routine2):
@@ -166,4 +166,4 @@ def poly_to_angles(P, routine):
     if routine == "QSVT":
         return transform_angles(QSP_angles(P), "QSP", "QSVT")
 
-    return QSP_angles(P) 
+    return QSP_angles(P)
