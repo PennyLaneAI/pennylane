@@ -190,10 +190,10 @@ def test_meas_qinfo_clifford(meas_op):
         qml.Projector([1, 0], [0, 1]),
     ],
 )
-def test_meas_expval(shots, ops):
+def test_meas_expval(shots, ops, seed):
     """Test that expectation value measurements with `default.clifford` is possible
     and agrees with `default.qubit`."""
-    dev_c = qml.device("default.clifford", shots=shots, seed=24)
+    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
@@ -218,10 +218,10 @@ def test_meas_expval(shots, ops):
         qml.sum(qml.PauliZ(0), qml.s_prod(2.0, qml.PauliY(1))),
     ],
 )
-def test_meas_var(shots, ops):
+def test_meas_var(shots, ops, seed):
     """Test that variance measurements with `default.clifford` is possible
     and agrees with `default.qubit`."""
-    dev_c = qml.device("default.clifford", shots=shots)
+    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
@@ -269,10 +269,10 @@ def test_meas_samples(circuit, shots):
         qml.Projector([0, 1], wires=[0, 1]),
     ],
 )
-def test_meas_probs(tableau, shots, ops):
+def test_meas_probs(tableau, shots, ops, seed):
     """Test if probabilities are returned in the clifford device."""
 
-    dev_c = qml.device("default.clifford", tableau=tableau, shots=shots, seed=24)
+    dev_c = qml.device("default.clifford", tableau=tableau, shots=shots, seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
@@ -290,10 +290,8 @@ def test_meas_probs(tableau, shots, ops):
     assert qml.math.allclose(gotten_probs, target_probs, atol=5e-2 if shots else 1e-8)
 
 
-def test_meas_probs_large():
+def test_meas_probs_large(seed):
     """Test if probabilities are returned in the clifford device with target basis states"""
-
-    dev_c = qml.device("default.clifford", seed=24)
 
     def single_op(idx):
         return [qml.PauliX, qml.PauliY, qml.Hadamard, qml.PauliZ][idx]
@@ -304,7 +302,7 @@ def test_meas_probs_large():
             qml.CNOT([wire, wire + 1])
         return qml.apply(meas)
 
-    dev_c = qml.device("default.clifford", seed=24)
+    dev_c = qml.device("default.clifford", seed=seed)
     qnode_clfrd = qml.QNode(circuit_fn2, dev_c)
 
     meas1 = qml.probs(op=qml.Projector([1, 1, 0], wires=[0, 6, 14]))
@@ -321,11 +319,11 @@ def test_meas_probs_large():
     "ops",
     [None, qml.PauliY(0), qml.PauliX(0) @ qml.PauliY(1)],
 )
-def test_meas_counts(shots, ops):
+def test_meas_counts(shots, ops, seed):
     """Test if counts are returned with shots given in the clifford device."""
 
-    dev_c = qml.device("default.clifford", shots=shots, seed=24)
-    dev_q = qml.device("default.qubit", shots=shots, seed=24)
+    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
+    dev_q = qml.device("default.qubit", shots=shots, seed=seed)
 
     def circuit_fn():
         qml.PauliX(0)
@@ -352,7 +350,7 @@ def test_meas_counts(shots, ops):
         qml.PauliZ(0) @ qml.PauliY(1),
     ],
 )
-def test_meas_classical_shadows(shots, ops):
+def test_meas_classical_shadows(shots, ops, seed):
     """Test if classical shadows measurements are returned with shots
     given in the clifford device."""
 
@@ -367,7 +365,7 @@ def test_meas_classical_shadows(shots, ops):
 
     def circuit_shadow():
         circuit()
-        return qml.classical_shadow(wires=[0, 1], seed=13)
+        return qml.classical_shadow(wires=[0, 1], seed=seed)
 
     qnode_clfrd_shadow = qml.QNode(circuit_shadow, dev_c)
     qnode_qubit_shadow = qml.QNode(circuit_shadow, dev_q)
@@ -381,7 +379,7 @@ def test_meas_classical_shadows(shots, ops):
 
     def circuit_expval():
         circuit()
-        return qml.shadow_expval(ops, seed=13)
+        return qml.shadow_expval(ops, seed=seed)
 
     qnode_clfrd_expval = qml.QNode(circuit_expval, dev_c)
     expval = qnode_clfrd_expval()
