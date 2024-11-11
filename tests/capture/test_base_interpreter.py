@@ -14,7 +14,7 @@
 """
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -22,9 +22,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.base_interpreter import (  # pylint: disable=wrong-import-position
-    PlxprInterpreter,
-)
+from pennylane.capture import PlxprInterpreter  # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
     adjoint_transform_prim,
     cond_prim,
@@ -54,6 +52,13 @@ class SimplifyInterpreter(PlxprInterpreter):
             # if new op isn't queued, need to requeue op.
         return new_op
 
+    def interpret_measurement(self, measurement):
+        new_mp = measurement.simplify()
+        if new_mp is measurement:
+            new_mp = new_mp._unflatten(*measurement._flatten())
+            # if new op isn't queued, need to requeue op.
+        return new_mp
+
 
 # pylint: disable=use-implicit-booleaness-not-comparison
 def test_env_and_initialized():
@@ -61,21 +66,34 @@ def test_env_and_initialized():
 
     interpreter = SimplifyInterpreter()
     assert interpreter._env == {}
-    assert interpreter._op_math_cache == {}
+
+
+def test_zip_length_validation():
+    """Test that errors are raised if the input values isnt long enough for the needed variables."""
+
+    def f(x):
+        return x + 1
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+    with pytest.raises(ValueError):
+        PlxprInterpreter().eval(jaxpr.jaxpr, [])
+
+    y = jax.numpy.array([1.0])
+
+    def g():
+        return y + 2
+
+    jaxpr = jax.make_jaxpr(g)()
+    with pytest.raises(ValueError):
+        PlxprInterpreter().eval(jaxpr.jaxpr, [])
 
 
 def test_primitive_registrations():
     """Test that child primitive registrations dict's are not copied and do
-    not effect PlxprInterpreeter."""
+    not affect PlxprInterpreter."""
 
-    class SimplifyInterpreterLocal(PlxprInterpreter):
-
-        def interpret_operation(self, op):
-            new_op = op.simplify()
-            if new_op is op:
-                # if new op isn't queued, need to requeue op.
-                new_op = new_op._unflatten(*op._flatten())
-            return new_op
+    class SimplifyInterpreterLocal(SimplifyInterpreter):
+        pass
 
     assert (
         SimplifyInterpreterLocal._primitive_registrations
@@ -84,7 +102,6 @@ def test_primitive_registrations():
 
     @SimplifyInterpreterLocal.register_primitive(qml.X._primitive)
     def _(self, *invals, **params):  # pylint: disable=unused-argument
-        print("in custom interpreter")
         return qml.Z(*invals)
 
     assert qml.X._primitive in SimplifyInterpreterLocal._primitive_registrations
@@ -100,8 +117,74 @@ def test_primitive_registrations():
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, [])
 
-    qml.assert_equal(q.queue[0], qml.Z(0))  # turned into a Y
-    qml.assert_equal(q.queue[1], qml.Y(5))  # mapped wire
+    qml.assert_equal(q.queue[0], qml.Z(0))  # turned into a Z
+    qml.assert_equal(q.queue[1], qml.Y(5))
+
+
+def test_default_operator_handling():
+    """Test that the PlxprInterpreter itself can handle operators and leaves them unchanged."""
+
+    @PlxprInterpreter()
+    def f(x):
+        qml.adjoint(qml.RX(x, 0))
+        qml.T(1)
+        return qml.X(0) + qml.X(1)
+
+    with qml.queuing.AnnotatedQueue() as q:
+        out = f(0.5)
+
+    qml.assert_equal(out, qml.X(0) + qml.X(1))
+    qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(0.5, 0)))
+    qml.assert_equal(q.queue[1], qml.T(1))
+    qml.assert_equal(q.queue[2], qml.X(0) + qml.X(1))
+
+    jaxpr = jax.make_jaxpr(f)(1.2)
+
+    assert jaxpr.eqns[0].primitive == qml.RX._primitive
+    assert jaxpr.eqns[1].primitive == qml.ops.Adjoint._primitive
+    assert jaxpr.eqns[2].primitive == qml.T._primitive
+    assert jaxpr.eqns[3].primitive == qml.X._primitive
+    assert jaxpr.eqns[4].primitive == qml.X._primitive
+    assert jaxpr.eqns[5].primitive == qml.ops.Sum._primitive
+
+
+def test_default_measurement_handling():
+    """Test that measurements are simply re-queued by default."""
+
+    def f():
+        return qml.expval(qml.Z(0) + qml.Z(0)), qml.probs(wires=0)
+
+    jaxpr = jax.make_jaxpr(f)()
+    with qml.queuing.AnnotatedQueue() as q:
+        res1, res2 = PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts)
+    assert len(q.queue) == 2
+    assert q.queue[0] is res1
+    assert q.queue[1] is res2
+    qml.assert_equal(res1, qml.expval(qml.Z(0) + qml.Z(0)))
+    qml.assert_equal(res2, qml.probs(wires=0))
+
+
+def test_measurement_handling():
+    """Test that the default measurment handling works."""
+
+    @SimplifyInterpreter()
+    def f(w):
+        return qml.expval(qml.X(w) + qml.X(w)), qml.probs(wires=w)
+
+    m1, m2 = f(0)
+    qml.assert_equal(m1, qml.expval(2 * qml.X(0)))
+    qml.assert_equal(m2, qml.probs(wires=0))
+
+    jaxpr = jax.make_jaxpr(f)(0)
+
+    assert jaxpr.eqns[0].primitive == qml.X._primitive
+    assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
+    assert jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+    assert jaxpr.eqns[3].primitive == qml.measurements.ProbabilityMP._wires_primitive
+
+    m1, m2 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)
+    qml.assert_equal(m1, qml.expval(2 * qml.X(0)))
+    qml.assert_equal(m2, qml.probs(wires=0))
 
 
 def test_overriding_measurements():
@@ -109,9 +192,8 @@ def test_overriding_measurements():
 
     class MeasurementsToSample(PlxprInterpreter):
 
-        def interpret_measurement_eqn(self, primitive, *invals, **params):
-            temp_mp = primitive.impl(*invals, **params)
-            return qml.sample(wires=temp_mp.wires)
+        def interpret_measurement(self, measurement):
+            return qml.sample(wires=measurement.wires)
 
     @MeasurementsToSample()
     @qml.qnode(qml.device("default.qubit", wires=2, shots=5))
@@ -134,7 +216,7 @@ def test_overriding_measurements():
 
 
 def test_setup_method():
-    """Test that the setup method can be used to initialized variables each call."""
+    """Test that the setup method can be used to initialize variables at each call."""
 
     class CollectOps(PlxprInterpreter):
 
@@ -167,7 +249,7 @@ def test_setup_method():
 
 
 def test_cleanup_method():
-    """Test that the cleanup method."""
+    """Test that the cleanup method can be used to reset variables after evaluation."""
 
     class CleanupTester(PlxprInterpreter):
 
@@ -187,6 +269,16 @@ def test_cleanup_method():
 
     f(0.5)
     assert inst.state is None
+
+
+def test_returning_operators():
+    """Test that operators that are returned are still processed by the interpreter."""
+
+    @SimplifyInterpreter()
+    def f():
+        return qml.X(0) ** 2
+
+    qml.assert_equal(f(), qml.I(0))
 
 
 class TestHigherOrderPrimitiveRegistrations:
@@ -220,7 +312,7 @@ class TestHigherOrderPrimitiveRegistrations:
             qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-1.5), 0))
 
     def test_ctrl_transform(self):
-        """Test the higher order adjoint transform."""
+        """Test the higher order ctrl transform."""
 
         @SimplifyInterpreter()
         def f(x, control):
@@ -272,9 +364,6 @@ class TestHigherOrderPrimitiveRegistrations:
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(branch2, [], 0.5)
         qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-0.5), 0))
-
-        assert jaxpr.eqns[0].params["n_args"] == 1
-        assert jaxpr.eqns[0].params["n_consts_per_branch"] == [0, 0]
 
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.4, True)
@@ -411,21 +500,23 @@ class TestHigherOrderPrimitiveRegistrations:
     def test_grad_and_jac(self, grad_f):
         """Test interpreters can handle grad and jacobian HOP's."""
 
-        class DoubleAngle(PlxprInterpreter):
-
-            def interpret_operation(self, op):
-                leaves, struct = jax.tree_util.tree_flatten(op)
-                return jax.tree_util.tree_unflatten(struct, [2 * l for l in leaves])
-
-        @DoubleAngle()
+        @SimplifyInterpreter()
         def f(x):
             @qml.qnode(qml.device("default.qubit", wires=2))
             def circuit(y):
-                qml.RX(y, 0)
-                return qml.expval(qml.Z(0))
+                _ = qml.RX(y, 0) ** 2
+                return qml.expval(qml.Z(0) + qml.Z(0))
 
             return grad_f(circuit)(x)
 
-        out = f(0.5)
-        expected = -2 * jax.numpy.sin(2 * 0.5)  # includes the factors of 2 from doubling the angle.
-        assert qml.math.allclose(out, expected)
+        jaxpr = jax.make_jaxpr(f)(0.5)
+
+        if grad_f == qml.grad:
+            assert jaxpr.eqns[0].primitive == qml.capture.primitives.grad_prim
+        else:
+            assert jaxpr.eqns[0].primitive == qml.capture.primitives.jacobian_prim
+        grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul
+        assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
