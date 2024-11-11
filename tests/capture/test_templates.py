@@ -240,6 +240,7 @@ def test_unmodified_templates(template, args, kwargs):
 
 # Only add a template to the following list if you manually added a test for it to
 # TestModifiedTemplates below.
+# pylint: too-many-public-methods
 tested_modified_templates = [
     qml.TrotterProduct,
     qml.AmplitudeAmplification,

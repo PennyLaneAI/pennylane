@@ -45,7 +45,7 @@ class GQSP(Operation):
 
         unitary (Operator): The unitary operator to be applied in the generalized quantum signal processing (GQSP) circuit.
 
-        angles (array[float]): An array of angles in the shape `(3, d+1)`, where `d` is the degree of the desired polynomial.
+        angles (array[float]): An array of angles with shape `(3, d+1)`, where `d` is the degree of the desired polynomial.
             These angles define the coefficients for the polynomial transformation applied to the unitary matrix.
 
         control (Union[Wires, int, str]): The control qubit used to encode the polynomial transformation on the unitary
@@ -65,7 +65,7 @@ class GQSP(Operation):
 
         angles = qml.math.poly_to_angles(poly, "GQSP")
 
-        @qml.prod
+        @qml.prod # transforms the qfunc into an Operator
         def unitary(wires):
             qml.RX(0.3, wires)
 
@@ -73,7 +73,7 @@ class GQSP(Operation):
 
         @qml.qnode(dev)
         def circuit(angles):
-            qml.GQSP(unitary(1), angles, control = 0)
+            qml.GQSP(unitary(wires = 1), angles, control = 0)
             return qml.state()
 
 
@@ -133,11 +133,6 @@ class GQSP(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        .. note::
-
-            Operations making up the decomposition should be queued within the
-            ``compute_decomposition`` method.
-
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
@@ -155,7 +150,6 @@ class GQSP(Operation):
         angles = parameters[0]
 
         thetas, phis, lambds = angles[0], angles[1], angles[2]
-        print(thetas.shape, phis.shape, lambds.shape)
 
         op_list = []
 
