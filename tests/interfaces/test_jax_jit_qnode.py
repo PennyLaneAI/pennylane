@@ -895,7 +895,7 @@ class TestShotsIntegration:
 
         cost_fn(a, b)
         # if we set the shots to None, backprop can now be used
-        assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert spy.call_args[1]["diff_method"] == "backprop"
 
     @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
     def test_shot_vectors_single_measurements(self, interface, shots, seed):

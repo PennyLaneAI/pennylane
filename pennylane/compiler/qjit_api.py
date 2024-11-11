@@ -699,6 +699,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         args_slice = slice(len(jaxpr_body_fn.consts), None)
 
         flat_args, _ = jax.tree_util.tree_flatten(init_state)
+
         results = for_loop_prim.bind(
             self.start,
             self.stop,
