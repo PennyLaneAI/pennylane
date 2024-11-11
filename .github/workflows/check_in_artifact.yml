@@ -1,0 +1,149 @@
+# Different workflows within CI generate artifacts, and there has been a need to check-in some of those artifacts
+# into the repository for historical tracking purposes.
+# 
+# This workflow is designed to check in artifacts to a specified branch and create a pull request to merge the changes 
+# into the master branch on GitHub Actions. 
+# 
+# The workflow is triggered by a workflow call and requires inputs such as the artifact name pattern to match the artifacts, 
+# the path to save the artifacts to, the name of the branch to create from master, the title and body of the pull request, 
+# and additional parameters for the commit message. 
+# 
+# The workflow includes steps to checkout the master branch, download the artifacts, determine if changes have been made, 
+# prepare the commit author, stage the changes, and create a pull request to the master branch. 
+# The workflow utilizes the GitHub CLI (gh) to interact with the GitHub API for creating the pull request.
+
+name: Check in Artifact
+on:
+  workflow_call:
+    inputs:
+      artifact_name_pattern:
+        description: Glob pattern to match artifact name(s)
+        required: true
+        type: string
+      artifact_save_path:
+        description: Path to save the artifact(s) to
+        required: true
+        type: string
+      pull_request_head_branch_name:
+        description: The name of the branch to create from master in which the artifacts will be checked in
+        required: true
+        type: string
+      pull_request_title:
+        description: The title of the pull request
+        required: true
+        type: string
+      pull_request_body:
+        description: The body of the pull request
+        required: true
+        type: string
+      master_branch_fetch_depth:
+        description: How many commits to checkout from HEAD of master
+        required: false
+        type: number
+        default: 0
+      commit_message_description:
+        description: Additional information to add to the commit message (if created)
+        required: false
+        type: string
+        default: ''
+      commit_author_name:
+        description: The name of the commit author
+        required: false
+        type: string
+        default: 'github-actions[bot]'
+      commit_author_email:
+        description: The email of the commit author
+        required: false
+        type: string
+        default: '41898282+github-actions[bot]@users.noreply.github.com'
+      merge_multiple:
+        description: |
+          When multiple artifacts are matched, this changes the behavior of the destination directories.
+          If true, the downloaded artifacts will be in the same directory specified by path.
+          If false, the downloaded artifacts will be extracted into individual named directories within the specified path.
+          Optional. Default is 'true'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  check_in_artifact:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ inputs.master_branch_fetch_depth }}
+          ref: master
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ inputs.artifact_name_pattern }}
+          path: ${{ inputs.artifact_save_path }}
+          merge-multiple: ${{ inputs.merge_multiple }}
+
+      - name: Determine if changes have been made
+        id: changed
+        run: |
+          echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Prepare Commit Author
+        if: steps.changed.outputs.has_changes != '0'
+        env:
+          HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
+          COMMIT_AUTHOR_NAME: ${{ inputs.commit_author_name }}
+          COMMIT_AUTHOR_EMAIL: ${{ inputs.commit_author_email }}
+        run: |
+          git config user.name "$COMMIT_AUTHOR_NAME"
+          git config user.email "$COMMIT_AUTHOR_EMAIL"
+          git stash push --all
+
+          echo "Checking if $HEAD_BRANCH_NAME exists..."
+          if git ls-remote --exit-code origin "refs/heads/$HEAD_BRANCH_NAME"; then
+            echo "$HEAD_BRANCH_NAME exists! Checking out..."
+            git checkout "$HEAD_BRANCH_NAME"
+          else
+            echo "$HEAD_BRANCH_NAME does not exist! Creating..."
+            git checkout -b "$HEAD_BRANCH_NAME"
+          fi
+
+      - name: Stage changes
+        if: steps.changed.outputs.has_changes != '0'
+        env:
+          HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
+          COMMIT_MESSAGE_DESCRIPTION: ${{ inputs.commit_message_description != '' && format('-> {0}', inputs.commit_message_description) || '' }}
+        run: |
+          git checkout stash -- .
+          git add ${{ inputs.artifact_save_path }}
+          git commit --allow-empty -m "Check in artifacts$COMMIT_MESSAGE_DESCRIPTION"
+          git push -f --set-upstream origin "$HEAD_BRANCH_NAME"
+
+      # Create PR to master
+      - name: Create Pull Request to master
+        if: steps.changed.outputs.has_changes != '0'
+        env:
+          HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: ${{ inputs.pull_request_title }}
+          PR_BODY: ${{ inputs.pull_request_body }}
+        run: |
+          EXISTING_PR="$(gh pr list --state open --base master --head $HEAD_BRANCH_NAME --json 'url' --jq '.[].url' | head -n 1)"
+
+          if [ -n "${EXISTING_PR}" ]; then
+            echo "PR already exists ==> ${EXISTING_PR}"
+            exit 0
+          else
+            echo "Creating PR..."
+            gh pr create --title "$PR_TITLE" --body "$PR_BODY"
+            exit 0
+          fi
+
+          EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
+
+          if [ -n "${EXISTING_CLOSED_PR}" ]; then
+            echo "Reopening PR... ${EXISTING_CLOSED_PR}"
+            gh pr reopen "${EXISTING_CLOSED_PR}"
+            exit 0
+          fi

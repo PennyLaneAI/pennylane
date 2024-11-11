@@ -190,6 +190,47 @@ class TestValidateDeviceWires:
         assert batch[0].operations == tape1.operations
         assert batch[0].shots == tape1.shots
 
+    @pytest.mark.jax
+    def test_error_abstract_wires_tape(self):
+        """Tests that an error is raised if abstract wires are present in the tape."""
+
+        import jax
+
+        def jit_wires_tape(wires):
+            tape_with_abstract_wires = QuantumScript([qml.CNOT(wires=qml.wires.Wires(wires))])
+            validate_device_wires(tape_with_abstract_wires, name="fictional_device")
+
+        with pytest.raises(
+            qml.wires.WireError,
+            match="on fictional_device as abstract wires are present in the tape",
+        ):
+            jax.jit(jit_wires_tape)([0, 1])
+
+    @pytest.mark.jax
+    def test_error_abstract_wires_dev(self):
+        """Tests that an error is raised if abstract wires are present in the device."""
+
+        import jax
+
+        def jit_wires_dev(wires):
+            validate_device_wires(QuantumScript([]), wires=wires, name="fictional_device")
+
+        with pytest.raises(
+            qml.wires.WireError,
+            match="on fictional_device as abstract wires are present in the device",
+        ):
+            jax.jit(jit_wires_dev)([0, 1])
+
+    def test_fill_in_wires_on_snapshots(self):
+        """Test that validate_device_wires also fills in the wires on snapshots."""
+
+        tape = qml.tape.QuantumScript([qml.Snapshot(), qml.Snapshot(measurement=qml.probs())])
+
+        (output,), _ = validate_device_wires(tape, wires=qml.wires.Wires((0, 1, 2)))
+        mp0 = qml.measurements.StateMP(wires=qml.wires.Wires((0, 1, 2)))
+        qml.assert_equal(output[0], qml.Snapshot(measurement=mp0))
+        qml.assert_equal(output[1], qml.Snapshot(measurement=qml.probs(wires=(0, 1, 2))))
+
 
 class TestDecomposeValidation:
     """Unit tests for helper functions in qml.devices.qubit.preprocess"""
@@ -254,17 +295,7 @@ class TestValidateObservables:
         with pytest.raises(qml.DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_invalid_tensor_observable_legacy(self):
-        """Test that expand_fn throws an error when a tensor includes invalid obserables"""
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.PauliY(1)],
-            measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
-        )
-        with pytest.raises(qml.DeviceError, match="not supported on device"):
-            validate_observables(tape, lambda obj: obj.name == "PauliX")
-
-    @pytest.mark.usefixtures("use_legacy_opmath")  # only required for legacy observables
+    @pytest.mark.usefixtures("legacy_opmath_only")  # only required for legacy observables
     def test_valid_tensor_observable_legacy_opmath(self):
         """Test that a valid tensor ovservable passes without error."""
         tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])

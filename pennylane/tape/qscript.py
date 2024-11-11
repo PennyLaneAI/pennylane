@@ -336,11 +336,54 @@ class QuantumScript:
 
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
+
+        **Examples**
+
+        For a tape with a single observable, we get the diagonalizing gate of that observable:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0))])
+        >>> tape.diagonalizing_gates
+        [H(0)]
+
+        If the tape includes multiple observables, they are each diagonalized individually:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(1))])
+        >>> tape.diagonalizing_gates
+        [H(0), Z(1), S(1), H(1)]
+
+        .. warning::
+            If the tape contains multiple observables acting on the same wire,
+            then ``tape.diagonalizing_gates`` will include multiple conflicting
+            diagonalizations.
+
+            For example:
+
+            >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(0))])
+            >>> tape.diagonalizing_gates
+            [H(0), Z(0), S(0), H(0)]
+
+            If it is relevant for your application, applying
+            :func:`~.pennylane.transforms.split_non_commuting` to a tape will split it into multiple
+            tapes with only qubit-wise commuting observables.
+
+        Generally, composite operators are handled by diagonalizing their component parts, for example:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)+Y(1))])
+        >>> tape.diagonalizing_gates
+        [H(0), Z(1), S(1), H(1)]
+
+        However, for operators that contain multiple terms on the same wire, a single diagonalizing
+        operator will be returned that diagonalizes the full operator as a unit:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)+Y(0))])
+        >>> tape.diagonalizing_gates
+        [QubitUnitary(array([[-0.70710678-0.j ,  0.5       -0.5j],
+        [-0.70710678-0.j , -0.5       +0.5j]]), wires=[0])]
         """
         rotation_gates = []
 
         with qml.queuing.QueuingManager.stop_recording():
-            for observable in self.observables:
+            for observable in _get_base_obs(self.observables):
                 # some observables do not have diagonalizing gates,
                 # in which case we just don't append any
                 with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
@@ -854,11 +897,11 @@ class QuantumScript:
                 measurements will replace the copied measurements on the new tape.
             shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution. If provided, these
                 shots will replace the copied shots on the new tape.
-            trainable_params (None, Sequence[int]): the indices for which parameters are trainable. If provided, these
-                parameter indices will replace the copied parameter indicies on the new tape.
+            trainable_params (None, Sequence[int]): The indices for which parameters are trainable. If provided, these
+                parameter indices will replace the copied parameter indices on the new tape.
 
         Returns:
-            QuantumScript : a copy of the quantum script, with modified attributes if specified by keyword argument.
+            QuantumScript : A copy of the quantum script, with modified attributes if specified by keyword argument.
 
         **Example**
 
@@ -905,11 +948,15 @@ class QuantumScript:
 
             _measurements = self.measurements.copy()
 
+        update_trainable_params = "operations" in update or "measurements" in update
+        # passing trainable_params=None will re-calculate trainable_params
+        default_trainable_params = None if update_trainable_params else self.trainable_params
+
         new_qscript = self.__class__(
             ops=_ops,
             measurements=_measurements,
             shots=update.get("shots", self.shots),
-            trainable_params=list(update.get("trainable_params", self.trainable_params)),
+            trainable_params=update.get("trainable_params", default_trainable_params),
         )
 
         # copy cached properties when relevant
@@ -1033,7 +1080,7 @@ class QuantumScript:
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
             >>> tape.expand(expand_measurements=True).circuit
-            [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
+            [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
         """
         return qml.tape.tape.expand_tape(
@@ -1352,7 +1399,7 @@ def make_qscript(
     ...     _ = qml.RY(1.0, wires=0)
     ...     qs = make_qscript(qfunc)(0.5)
     >>> qs.operations
-    [Hadamard(wires=[0]), CNOT(wires=[0, 1]), RX(0.5, wires=[0])]
+    [H(0), CNOT(wires=[0, 1]), RX(0.5, wires=[0])]
 
     Note that the currently recording queue did not queue any of these quantum operations:
 
@@ -1373,3 +1420,29 @@ QuantumScriptBatch = Sequence[QuantumScript]
 QuantumScriptOrBatch = Union[QuantumScript, QuantumScriptBatch]
 
 register_pytree(QuantumScript, QuantumScript._flatten, QuantumScript._unflatten)
+
+
+def _get_base_obs(observables):
+
+    overlapping_ops_observables = []
+
+    while any(isinstance(o, (qml.ops.CompositeOp, qml.ops.SymbolicOp)) for o in observables):
+
+        new_obs = []
+
+        for observable in observables:
+
+            if isinstance(observable, qml.ops.CompositeOp):
+                if any(len(o) > 1 for o in observable.overlapping_ops):
+                    overlapping_ops_observables.append(observable)
+                else:
+                    new_obs.extend(observable.operands)
+            elif isinstance(observable, qml.ops.SymbolicOp):
+                new_obs.append(observable.base)
+            else:
+                new_obs.append(observable)
+
+        observables = new_obs
+
+    # removes duplicates from list without disrupting order - basically an ordered set
+    return list(dict.fromkeys(observables + overlapping_ops_observables))

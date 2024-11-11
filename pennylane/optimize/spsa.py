@@ -81,6 +81,7 @@ class SPSAOptimizer:
 
     For VQE/VQE-like problems, the objective function can be the following:
 
+    >>> from pennylane import numpy as np
     >>> coeffs = [0.2, -0.543, 0.4514]
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2),
     ...             qml.X(3) @ qml.Z(1)]
@@ -89,7 +90,7 @@ class SPSAOptimizer:
     >>> dev = qml.device("default.qubit", wires=num_qubits)
     >>> @qml.qnode(dev)
     ... def cost(params, num_qubits=1):
-    ...     qml.BasisState(pnp.array([1, 1, 0, 0]), wires=range(num_qubits))
+    ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
     ...     for i in range(num_qubits):
     ...         qml.Rot(*params[i], wires=0)
     ...         qml.CNOT(wires=[2, 3])
@@ -97,7 +98,7 @@ class SPSAOptimizer:
     ...         qml.CNOT(wires=[3, 1])
     ...     return qml.expval(H)
     ...
-    >>> params = pnp.random.normal(0, pnp.pi, (num_qubits, 3), requires_grad=True)
+    >>> params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
 
     Once constructed, the cost function can be passed directly to the
     ``step`` or ``step_and_cost`` function of the optimizer:

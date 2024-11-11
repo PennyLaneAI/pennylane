@@ -1,0 +1,65 @@
+name: Determine Workflow Runner group
+
+on:
+  workflow_call:
+    inputs:
+      default_runner:
+        description: The runner type that is used by the calling workflow by default
+        required: true
+        type: string
+      large_runner_group_name:
+        description: The name of the runner group that should be used for large jobs
+        required: false
+        type: string
+        default: 'pl-4-core-large-runner'
+      force_large_runner:
+        description: Whether to force the use of a large runner
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      runner_group:
+        description: The runner all subsequent jobs within the calling workflow should run on
+        value: >-
+          ${{
+            jobs.determine_workflow_runner.outputs.runner_group ||
+            (
+              inputs.force_large_runner &&
+              inputs.large_runner_group_name ||
+              inputs.default_runner
+            )
+          }}
+
+jobs:
+  determine_workflow_runner:
+    runs-on: >-
+      ${{
+        (
+          github.event_name == 'pull_request'
+          && contains(github.event.pull_request.labels.*.name, 'urgent')
+        ) && inputs.large_runner_group_name || 'ubuntu-latest'
+      }}
+
+    outputs:
+      runner_group: ${{ steps.runner_group.outputs.runner_group }}
+
+    steps:
+      - name: Output Runner Group name
+        if: >-
+          ${{
+            github.event_name == 'pull_request'
+            && startsWith(inputs.default_runner, 'ubuntu')
+          }}
+        id: runner_group
+        env:
+          # We are not able to use \d to check numeric values as bash does not allow them (not POSIX compliant)
+          RC_BRANCH_FORMAT_REGEX: v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]?
+          REPO_FULL_NAME: PennyLaneAI/pennylane
+          LARGE_RUNNER_GROUP_NAME: ${{ inputs.large_runner_group_name }}
+        run: |
+          if [[ '${{ contains(github.event.pull_request.labels.*.name, 'urgent') }}' == 'true' || ('${{ github.event.pull_request.head.repo.full_name }}' == "$REPO_FULL_NAME" && '${{ github.event.pull_request.base.ref }}' =~ $RC_BRANCH_FORMAT_REGEX) ]]; then
+            echo "This job requires usage of the large runner group '$LARGE_RUNNER_GROUP_NAME'";
+            echo "runner_group=$LARGE_RUNNER_GROUP_NAME" >> $GITHUB_OUTPUT
+          else
+            echo "This job does not require usage of large runners ...";
+          fi

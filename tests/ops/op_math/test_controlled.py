@@ -369,16 +369,16 @@ class TestControlledMiscMethods:
 
     def test_repr(self):
         """Test __repr__ method."""
-        assert repr(Controlled(qml.S(0), [1])) == "Controlled(S(wires=[0]), control_wires=[1])"
+        assert repr(Controlled(qml.S(0), [1])) == "Controlled(S(0), control_wires=[1])"
 
         base = qml.S(0) + qml.T(1)
         op = Controlled(base, [2])
-        assert repr(op) == "Controlled(S(wires=[0]) + T(wires=[1]), control_wires=[2])"
+        assert repr(op) == "Controlled(S(0) + T(1), control_wires=[2])"
 
         op = Controlled(base, [2, 3], control_values=[True, False], work_wires=[4])
         assert (
             repr(op)
-            == "Controlled(S(wires=[0]) + T(wires=[1]), control_wires=[2, 3], work_wires=[4], control_values=[True, False])"
+            == "Controlled(S(0) + T(1), control_wires=[2, 3], work_wires=[4], control_values=[True, False])"
         )
 
     def test_flatten_unflatten(self):
@@ -470,33 +470,6 @@ class TestControlledMiscMethods:
         assert op.has_generator is False
 
     def test_generator(self):
-        """Test that the generator is a tensor product of projectors and the base's generator."""
-
-        base = qml.RZ(-0.123, wires="a")
-        control_values = [0, 1]
-        op = Controlled(base, ("b", "c"), control_values=control_values)
-
-        base_gen, base_gen_coeff = qml.generator(base, format="prefactor")
-        gen_tensor, gen_coeff = qml.generator(op, format="prefactor")
-
-        assert base_gen_coeff == gen_coeff
-
-        for wire, val in zip(op.control_wires, control_values):
-            ob = list(op for op in gen_tensor.operands if op.wires == qml.wires.Wires(wire))
-            assert len(ob) == 1
-            assert ob[0].data == ([val],)
-
-        ob = list(op for op in gen_tensor.operands if op.wires == base.wires)
-        assert len(ob) == 1
-        assert ob[0].__class__ is base_gen.__class__
-
-        expected = qml.exp(op.generator(), 1j * op.data[0])
-        assert qml.math.allclose(
-            expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
-        )
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_generator_legacy_opmath(self):
         """Test that the generator is a tensor product of projectors and the base's generator."""
 
         base = qml.RZ(-0.123, wires="a")
@@ -1898,6 +1871,17 @@ class TestCtrl:
         )
         expected = qml.MultiControlledX(wires=[3, 2, 1, 0], control_values=[1, 0, 1])
         assert op == expected
+
+    def test_correct_queued_operators(self):
+        """Test that args and kwargs do not add operators to the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.ctrl(qml.QSVT, control=0)(qml.X(1), [qml.Z(1)])
+            qml.ctrl(qml.QSVT(qml.X(1), [qml.Z(1)]), control=0)
+        for op in q.queue:
+            assert op.name == "C(QSVT)"
+
+        assert len(q.queue) == 2
 
 
 class _Rot(Operation):

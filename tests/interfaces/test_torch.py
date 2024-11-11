@@ -66,7 +66,7 @@ class TestCaching:
             return qml.execute(
                 [get_cost_tape(x)],
                 dev,
-                gradient_fn=qml.gradients.param_shift,
+                diff_method=qml.gradients.param_shift,
                 cache=False,
                 max_diff=2,
             )[0]
@@ -75,7 +75,7 @@ class TestCaching:
             return qml.execute(
                 [get_cost_tape(x)],
                 dev,
-                gradient_fn=qml.gradients.param_shift,
+                diff_method=qml.gradients.param_shift,
                 cache=True,
                 max_diff=2,
             )[0]
@@ -127,52 +127,50 @@ class TestCaching:
         assert expected_runs_ideal < expected_runs
 
 
+def get_device(dev_name, seed):
+    if dev_name == "param_shift.qubit":
+        return ParamShiftDerivativesDevice(seed=seed)
+    return qml.device(dev_name, seed=seed)
+
+
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots((100000, 100000)), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
+    ({"diff_method": param_shift}, Shots(100000), "default.qubit"),
+    ({"diff_method": param_shift}, Shots((100000, 100000)), "default.qubit"),
+    ({"diff_method": param_shift}, Shots(None), "default.qubit"),
+    ({"diff_method": "backprop"}, Shots(None), "default.qubit"),
     (
-        {"gradient_fn": "adjoint", "grad_on_execution": True, "device_vjp": False},
+        {"diff_method": "adjoint", "grad_on_execution": True, "device_vjp": False},
         Shots(None),
-        DefaultQubit(),
+        "default.qubit",
     ),
     (
         {
-            "gradient_fn": "adjoint",
+            "diff_method": "adjoint",
             "grad_on_execution": False,
             "device_vjp": False,
         },
         Shots(None),
-        DefaultQubit(),
+        "default.qubit",
     ),
-    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
+    ({"diff_method": "adjoint", "device_vjp": True}, Shots(None), "default.qubit"),
+    ({"diff_method": "device", "device_vjp": False}, Shots((100000, 100000)), "param_shift.qubit"),
+    ({"diff_method": "device", "device_vjp": True}, Shots((100000, 100000)), "param_shift.qubit"),
     (
-        {"gradient_fn": "device", "device_vjp": False},
-        Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(),
-    ),
-    (
-        {"gradient_fn": "device", "device_vjp": True},
-        Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(),
-    ),
-    (
-        {"gradient_fn": param_shift},
+        {"diff_method": param_shift},
         Shots(None),
-        qml.device("reference.qubit"),
+        "reference.qubit",
     ),
     (
-        {"gradient_fn": param_shift},
+        {"diff_method": param_shift},
         Shots(100000),
-        qml.device("reference.qubit"),
+        "reference.qubit",
     ),
     (
-        {"gradient_fn": param_shift},
+        {"diff_method": param_shift},
         Shots((100000, 100000)),
-        qml.device("reference.qubit"),
+        "reference.qubit",
     ),
 ]
 
@@ -182,13 +180,15 @@ def atol_for_shots(shots):
     return 1e-2 if shots else 1e-6
 
 
-@pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
+@pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
 class TestTorchExecuteIntegration:
     """Test the torch interface execute function
     integrates well for both forward and backward execution"""
 
-    def test_execution(self, execute_kwargs, shots, device):
+    def test_execution(self, execute_kwargs, shots, device_name, seed):
         """Test execution"""
+
+        device = get_device(device_name, seed)
 
         def cost(a, b):
             ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
@@ -224,9 +224,10 @@ class TestTorchExecuteIntegration:
             for wire in range(2):
                 assert qml.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
 
-    def test_scalar_jacobian(self, execute_kwargs, shots, device):
+    def test_scalar_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test scalar jacobian calculation"""
         a = torch.tensor(0.1, requires_grad=True)
+        device = get_device(device_name, seed)
 
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
@@ -251,10 +252,13 @@ class TestTorchExecuteIntegration:
             assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
             assert torch.allclose(res, -torch.sin(a), atol=atol_for_shots(shots))
 
-    def test_jacobian(self, execute_kwargs, shots, device):
+    @pytest.mark.local_salt(1)
+    def test_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test jacobian calculation"""
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
+
+        device = get_device(device_name, seed)
 
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
@@ -295,9 +299,11 @@ class TestTorchExecuteIntegration:
             for _r, _e in zip(res, expected):
                 assert torch.allclose(_r, _e, atol=atol_for_shots(shots))
 
-    def test_tape_no_parameters(self, execute_kwargs, shots, device):
+    def test_tape_no_parameters(self, execute_kwargs, shots, device_name, seed):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
+
+        device = get_device(device_name, seed)
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -347,11 +353,13 @@ class TestTorchExecuteIntegration:
             assert torch.allclose(params.grad, expected, atol=atol_for_shots(shots), rtol=0)
 
     @pytest.mark.skip("torch cannot reuse tensors in various computations")
-    def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
+    def test_tapes_with_different_return_size(self, execute_kwargs, shots, device_name, seed):
         """Test that tapes wit different can be executed and differentiated."""
 
-        if execute_kwargs["gradient_fn"] == "backprop":
+        if execute_kwargs["diff_method"] == "backprop":
             pytest.xfail("backprop is not compatible with something about this situation.")
+
+        device = get_device(device_name, seed)
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -400,10 +408,11 @@ class TestTorchExecuteIntegration:
         assert torch.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))  # fails for torch
         assert torch.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
 
-    def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
+    def test_reusing_quantum_tape(self, execute_kwargs, shots, device_name, seed):
         """Test re-using a quantum tape by passing new parameters"""
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
+        device = get_device(device_name, seed)
 
         tape = qml.tape.QuantumScript(
             [qml.RY(a, 0), qml.RX(b, 1), qml.CNOT((0, 1))],
@@ -435,11 +444,12 @@ class TestTorchExecuteIntegration:
         for _j, _e in zip(jac, expected):
             assert torch.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
-    def test_classical_processing(self, execute_kwargs, device, shots):
+    def test_classical_processing(self, execute_kwargs, device_name, seed, shots):
         """Test classical processing within the quantum tape"""
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=False)
         c = torch.tensor(0.3, requires_grad=True)
+        device = get_device(device_name, seed)
 
         def cost(a, b, c):
             ops = [
@@ -464,10 +474,12 @@ class TestTorchExecuteIntegration:
         # I tried getting analytic results for this circuit but I kept being wrong and am giving up
 
     @pytest.mark.skip("torch handles gradients and jacobians differently")
-    def test_no_trainable_parameters(self, execute_kwargs, shots, device):
+    def test_no_trainable_parameters(self, execute_kwargs, shots, device_name, seed):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         a = torch.tensor(0.1, requires_grad=False)
         b = torch.tensor(0.2, requires_grad=False)
+
+        device = get_device(device_name, seed)
 
         def cost(a, b):
             ops = [qml.RY(a, 0), qml.RX(b, 0), qml.CNOT((0, 1))]
@@ -489,11 +501,12 @@ class TestTorchExecuteIntegration:
 
         assert torch.allclose(torch.tensor([a.grad, b.grad]), 0)
 
-    def test_matrix_parameter(self, execute_kwargs, device, shots):
+    def test_matrix_parameter(self, execute_kwargs, device_name, seed, shots):
         """Test that the torch interface works correctly
         with a matrix parameter"""
         U = torch.tensor([[0, 1], [1, 0]], requires_grad=False, dtype=torch.float64)
         a = torch.tensor(0.1, requires_grad=True)
+        device = get_device(device_name, seed)
 
         def cost(a, U):
             ops = [qml.QubitUnitary(U, wires=0), qml.RY(a, wires=0)]
@@ -507,9 +520,11 @@ class TestTorchExecuteIntegration:
         assert isinstance(jac, torch.Tensor)
         assert torch.allclose(jac, torch.sin(a), atol=atol_for_shots(shots), rtol=0)
 
-    def test_differentiable_expand(self, execute_kwargs, device, shots):
+    def test_differentiable_expand(self, execute_kwargs, device_name, seed, shots):
         """Test that operation and nested tapes expansion
         is differentiable"""
+
+        device = get_device(device_name, seed)
 
         class U3(qml.U3):
             """Dummy operator."""
@@ -526,11 +541,11 @@ class TestTorchExecuteIntegration:
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
-            gradient_fn = execute_kwargs["gradient_fn"]
-            if gradient_fn is None:
+            diff_method = execute_kwargs["diff_method"]
+            if diff_method is None:
                 _gradient_method = None
-            elif isinstance(gradient_fn, str):
-                _gradient_method = gradient_fn
+            elif isinstance(diff_method, str):
+                _gradient_method = diff_method
             else:
                 _gradient_method = "gradient-transform"
             config = qml.devices.ExecutionConfig(
@@ -573,9 +588,10 @@ class TestTorchExecuteIntegration:
         )
         assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_probability_differentiation(self, execute_kwargs, device, shots):
+    def test_probability_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
+        device = get_device(device_name, seed)
 
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -625,9 +641,10 @@ class TestTorchExecuteIntegration:
         assert torch.allclose(res[0], expected[0], atol=atol_for_shots(shots), rtol=0)
         assert torch.allclose(res[1], expected[1], atol=atol_for_shots(shots), rtol=0)
 
-    def test_ragged_differentiation(self, execute_kwargs, device, shots):
+    def test_ragged_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        device = get_device(device_name, seed)
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -685,7 +702,7 @@ class TestHigherOrderDerivatives:
 
             ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
             tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=2)
+            result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=2)
             return result[0] + result[1][0]
 
         res = cost_fn(params)
@@ -721,7 +738,7 @@ class TestHigherOrderDerivatives:
             ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
             tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
 
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=1)
+            result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=1)
             return result[0] + result[1][0]
 
         res = cost_fn(params)
@@ -740,15 +757,16 @@ class TestHigherOrderDerivatives:
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
+@pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
     @pytest.fixture
-    def cost_fn(self, execute_kwargs, shots, device):
+    def cost_fn(self, execute_kwargs, shots, device_name, seed):
         """Cost function for gradient tests"""
+        device = get_device(device_name, seed)
 
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
@@ -812,7 +830,7 @@ class TestHamiltonianWorkflows:
     def test_multiple_hamiltonians_not_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
 
-        if execute_kwargs["gradient_fn"] == "adjoint" and not qml.operation.active_new_opmath():
+        if execute_kwargs["diff_method"] == "adjoint" and not qml.operation.active_new_opmath():
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
 
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False)
@@ -837,7 +855,7 @@ class TestHamiltonianWorkflows:
 
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
-        if execute_kwargs["gradient_fn"] == "adjoint":
+        if execute_kwargs["diff_method"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
         if qml.operation.active_new_opmath():
             pytest.skip("parameter shift derivatives do not yet support sums.")

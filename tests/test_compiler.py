@@ -246,7 +246,7 @@ class TestCatalyst:
             return qml.expval(qml.PauliZ(0))
 
         mlir_str = str(circuit.mlir)
-        result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
+        result_header = "func.func public @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
     def test_qjit_adjoint(self):
@@ -864,7 +864,7 @@ class TestCatalystMCMs:
     @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs])
     @pytest.mark.parametrize("meas_obj", [qml.PauliZ(0), [0], "mcm"])
     # pylint: disable=too-many-arguments
-    def test_dynamic_one_shot_simple(self, measure_f, meas_obj):
+    def test_dynamic_one_shot_simple(self, measure_f, meas_obj, seed):
         """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple
         circuit with a mid-circuit measurement."""
         if measure_f in (qml.counts, qml.probs, qml.sample) and (
@@ -879,7 +879,7 @@ class TestCatalystMCMs:
             pytest.xfail("isa<UnrealizedConversionCastOp>")
         shots = 8000
 
-        dq = qml.device("default.qubit", shots=shots, seed=8237945)
+        dq = qml.device("default.qubit", shots=shots, seed=seed)
 
         @qml.defer_measurements
         @qml.qnode(dq)

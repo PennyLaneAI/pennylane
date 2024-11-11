@@ -31,7 +31,7 @@ def test_flatten_unflatten_standard_checks(op_type):
 
     v_wires = qml.wires.Wires((0, 1))
     op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u_tape=u_tape)
-    qml.ops.functions.assert_valid(op, skip_wire_mapping=True)
+    qml.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
 
     data, metadata = op._flatten()
 
@@ -249,6 +249,28 @@ class TestHilbertSchmidt:
             qml.QuantumFunctionError, match="u_tape and v_tape must act on distinct wires."
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u_tape=U)
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        import jax
+        import numpy as np
+
+        with qml.QueuingManager.stop_recording():
+            u_tape = qml.tape.QuantumTape([qml.Hadamard(0)])
+
+        def v_function(params):
+            qml.RZ(params[0], wires=1)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(v_params):
+            qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=[1], u_tape=u_tape)
+            return qml.probs(u_tape.wires + [1])
+
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(np.array([np.pi / 2])), jit_circuit(np.array([np.pi / 2])))
 
 
 class TestLocalHilbertSchmidt:
@@ -469,3 +491,30 @@ class TestLocalHilbertSchmidt:
             qml.QuantumFunctionError, match="u_tape and v_tape must act on distinct wires."
         ):
             qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u_tape=U)
+
+    @pytest.mark.jax
+    def test_jit(self):
+        import jax
+        import numpy as np
+
+        with qml.QueuingManager.stop_recording():
+            u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0, 1))])
+
+        def v_function(params):
+            qml.RZ(params[0], wires=2)
+            qml.RZ(params[1], wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.RZ(params[2], wires=3)
+            qml.CNOT(wires=[2, 3])
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(v_params):
+            qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=[2, 3], u_tape=u_tape)
+            return qml.probs(u_tape.wires + [2, 3])
+
+        jit_circuit = jax.jit(circuit)
+
+        params = np.array([3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2])
+        assert qml.math.allclose(circuit(params), jit_circuit(params))

@@ -197,10 +197,12 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             return op.to_mat(wire_order=wire_order)
 
         if isinstance(op, QuantumScript):
-            if wire_order is None and len(op.wires) > 1:
-                raise ValueError(
-                    "wire_order is required by qml.matrix() for tapes with more than one wire."
-                )
+            if wire_order is None:
+                error_base_str = "wire_order is required by qml.matrix() for tapes"
+                if len(op.wires) > 1:
+                    raise ValueError(error_base_str + " with more than one wire.")
+                if len(op.wires) == 0:
+                    raise ValueError(error_base_str + " without wires.")
 
         elif isinstance(op, qml.QNode):
             if wire_order is None and op.device.wires is None:
@@ -235,8 +237,6 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 def _matrix_transform(
     tape: QuantumScript, wire_order=None, **kwargs
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    if not tape.wires:
-        raise qml.operation.MatrixUndefinedError
 
     if wire_order and not set(tape.wires).issubset(wire_order):
         raise TransformError(

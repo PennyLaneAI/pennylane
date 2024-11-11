@@ -348,6 +348,32 @@ class TestInterfaces:
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        time = jnp.array(0.5)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(time)
+        res2 = circuit2(time)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(time)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(time)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+
     @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
@@ -433,7 +459,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
             tape = dev.expand_fn(tape)
             return qml.execute([tape], dev, diff_method)[0]
         program, _ = dev.preprocess()
-        return qml.execute([tape], dev, gradient_fn=diff_method, transform_program=program)[0]
+        return qml.execute([tape], dev, diff_method=diff_method, transform_program=program)[0]
 
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)

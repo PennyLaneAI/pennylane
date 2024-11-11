@@ -46,7 +46,6 @@ class ObservableReturnTypes(Enum):
     State = "state"
     MidMeasure = "measure"
     VnEntropy = "vnentropy"
-    VnEntanglementEntropy = "vnentanglemententropy"
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
@@ -90,9 +89,6 @@ basis in the middle of the circuit."""
 
 VnEntropy = ObservableReturnTypes.VnEntropy
 """Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
-
-VnEntanglementEntropy = ObservableReturnTypes.VnEntanglementEntropy
-"""Enum: An enumeration which represents returning Von Neumann entanglement entropy before measurements."""
 
 MutualInfo = ObservableReturnTypes.MutualInfo
 """Enum: An enumeration which represents returning the mutual information before measurements."""
@@ -338,7 +334,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     def __repr__(self):
         """Representation of this class."""
         name_str = self.return_type.value if self.return_type else type(self).__name__
-        if self.mv:
+        if self.mv is not None:
             return f"{name_str}({repr(self.mv)})"
         if self.obs:
             return f"{name_str}({self.obs})"

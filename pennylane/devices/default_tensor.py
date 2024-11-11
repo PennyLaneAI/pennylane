@@ -258,6 +258,10 @@ class DefaultTensor(Device):
 
     We can provide additional keyword arguments to the device to customize the simulation. These are passed to the ``quimb`` backend.
 
+    .. note::
+        Be aware that `quimb` uses multi-threading with `numba <https://numba.pydata.org/numba-doc/dev/user/threading-layer.html>`_ as well as for linear algebra operations with `numpy.linalg <https://numpy.org/doc/stable/reference/routines.linalg.html#linear-algebra-numpy-linalg>`_. Proper setting of the corresponding environment variables (e.g. `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `NUMBA_NUM_THREADS` etc.) depending on your hardware is highly recommended and will have a strong impact on the device's performance.
+        To avoid a slowdown in performance for circuits with more than 10 wires, we recommend setting the environment variable relevant for your BLAS library backend (e.g. `OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1` or `MKL_NUM_THREADS=1`), depending on your NumPy package & associated libraries. Alternatively, you can use  `threadpoolctl <https://github.com/joblib/threadpoolctl>`_  to limit the threads within your executing script. For optimal performance you can adjust the number of threads to find the best fit for your workload.
+
     .. details::
             :title: Usage with MPS Method
 
@@ -413,6 +417,12 @@ class DefaultTensor(Device):
         # The `quimb` circuit is a class attribute so that we can implement methods
         # that access it as soon as the device is created before running a circuit.
         self._quimb_circuit = self._initial_quimb_circuit(self.wires)
+
+        shots = kwargs.pop("shots", None)
+        if shots is not None:
+            raise qml.DeviceError(
+                "default.tensor only supports analytic simulations with shots=None."
+            )
 
         for arg in kwargs:
             if arg not in self._device_options:
@@ -571,13 +581,17 @@ class DefaultTensor(Device):
         Update the execution config with choices for how the device should be used and the device options.
         """
         # TODO: add options for gradients next quarter
-
         updated_values = {}
 
         new_device_options = dict(config.device_options)
         for option in self._device_options:
             if option not in new_device_options:
                 new_device_options[option] = getattr(self, f"_{option}", None)
+
+        if config.mcm_config.mcm_method not in {None, "deferred"}:
+            raise qml.DeviceError(
+                f"{self.name} only supports the deferred measurement principle, not {config.mcm_config.mcm_method}"
+            )
 
         return replace(config, **updated_values, device_options=new_device_options)
 
@@ -610,6 +624,7 @@ class DefaultTensor(Device):
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
         program.add_transform(validate_device_wires, self._wires, name=self.name)
+        program.add_transform(qml.defer_measurements, device=self)
         program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
@@ -925,9 +940,16 @@ class DefaultTensor(Device):
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
-    device._quimb_circuit.apply_gate(
-        qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
-    )
+    if not isinstance(ops, qml.Identity):
+        device._quimb_circuit.apply_gate(
+            qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
+        )
+
+
+@apply_operation_core.register
+def apply_operation_core_global_phase(ops: qml.GlobalPhase, device):
+    """Dispatcher for _apply_operation."""
+    device._quimb_circuit._psi *= qml.math.exp(-1j * ops.data[0])
 
 
 @apply_operation_core.register
@@ -938,24 +960,39 @@ def apply_operation_core_multirz(ops: qml.MultiRZ, device):
 
 @apply_operation_core.register
 def apply_operation_core_paulirot(ops: qml.PauliRot, device):
-    """Dispatcher for _apply_operation."""
+    """Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO)."""
+
     theta = ops.parameters[0]
     pauli_string = ops._hyperparameters["pauli_word"]
 
     arrays = []
     sites = list(ops.wires)
     for i, P in enumerate(pauli_string):
-        if i == 0:
+
+        if len(sites) == 1:
+            # Special case for a single-qubit Pauli rotation
+            arr = qml.math.zeros((1, 1, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
+            arr[0, 0] += qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
+
+        # Multi-qubit Pauli rotations are implemented with an MPO chain. Each tensor
+        # in this chain has the shape of (in_dim, out_dim, 2, 2), where the last two
+        # dimensions are the physical dimensions, i.e., the dimensions of the operator
+        # acting on a single site.
+        elif i == 0:
+            # The first tensor has an in-dimension of 1, and an out-dimension of 2.
             arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
             arr[0, 1] = qml.math.eye(2, dtype=complex)
 
         elif i == len(sites) - 1:
+            # The last tensor has an out-dimension of 1, and an in-dimension of 2.
             arr = qml.math.zeros((2, 1, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
             arr[1, 0] = qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
 
         else:
+            # The middle tensors maintain connectivity with the previous and next tensors.
             arr = qml.math.zeros((2, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
             arr[1, 1] = qml.math.eye(2, dtype=complex)

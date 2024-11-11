@@ -344,7 +344,7 @@ class TestInitialization:
         # qml.sum(*[0.5 * X(i) for i in range(10)]) # multiline output needs fixing of https://github.com/PennyLaneAI/pennylane/issues/5162 before working
     )
 
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""

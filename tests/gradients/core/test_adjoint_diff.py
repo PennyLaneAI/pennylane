@@ -55,7 +55,7 @@ class TestAdjointJacobian:
         ):
             dev.adjoint_jacobian(tape)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_error_legacy_opmath(self, dev):
         """Test that error is raised for qml.Hamiltonian"""
 

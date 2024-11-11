@@ -18,7 +18,7 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
-from pennylane.capture.capture_diff import create_non_jvp_primitive
+from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
@@ -193,7 +193,7 @@ def _get_adjoint_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    adjoint_prim = create_non_jvp_primitive()("adjoint_transform")
+    adjoint_prim = create_non_interpreted_prim()("adjoint_transform")
     adjoint_prim.multiple_results = True
 
     @adjoint_prim.def_impl
@@ -236,6 +236,10 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
         qscript = make_qscript(qfunc)(*args, **kwargs)
+
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:
@@ -485,3 +489,8 @@ class AdjointOpObs(AdjointOperation, Observable):
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
+
+
+AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointOpObs._primitive = Adjoint._primitive  # pylint: disable=protected-access

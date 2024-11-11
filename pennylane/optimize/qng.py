@@ -115,8 +115,9 @@ class QNGOptimizer(GradientDescentOptimizer):
     Once constructed, the cost function can be passed directly to the
     optimizer's :meth:`~.step` function:
 
+    >>> from pennylane import numpy as np
     >>> eta = 0.01
-    >>> init_params = pnp.array([0.011, 0.012])
+    >>> init_params = np.array([0.011, 0.012])
     >>> opt = qml.QNGOptimizer(eta)
     >>> theta_new = opt.step(circuit, init_params)
     >>> theta_new
@@ -278,7 +279,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             if getattr(arg, "requires_grad", False):
                 grad_flat = pnp.array(list(_flatten(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                update = pnp.linalg.solve(mt[trained_index], grad_flat)
+                update = pnp.linalg.pinv(mt[trained_index]) @ grad_flat
                 args_new[index] = arg - self.stepsize * unflatten(update, grad[trained_index])
 
                 trained_index += 1

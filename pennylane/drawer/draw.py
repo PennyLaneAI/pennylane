@@ -38,21 +38,22 @@ def draw(
     decimals=2,
     max_length=100,
     show_matrices=True,
+    show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
     r"""Create a function that draws the given qnode or quantum function.
 
     Args:
-        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
-           If not provided, the wire order defaults to the device wires. If device wires are not
-           available, the circuit wires are sorted if possible.
+        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
+        wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
+            Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters.
+        decimals (int): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
             ``None`` will omit parameters from operation labels.
-        max_length (int): Maximum string width (columns) when printing the circuit
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+        max_length (int): Maximum string width (columns) when printing the circuit. Defaults to ``100``.
+        show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
+        show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
+        level (None, str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
 
@@ -167,7 +168,7 @@ def draw(
         .. code-block:: python
 
             from functools import partial
-            from pennylane import numpy as pnp
+            from pennylane import numpy as np
 
             @partial(qml.gradients.param_shift, shifts=[(0.1,)])
             @qml.qnode(qml.device('default.qubit', wires=1))
@@ -175,7 +176,7 @@ def draw(
                 qml.RX(x, wires=0)
                 return qml.expval(qml.Z(0))
 
-        >>> print(qml.draw(transformed_circuit)(pnp.array(1.0, requires_grad=True)))
+        >>> print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
         0: ──RX(1.10)─┤  <Z>
         0: ──RX(0.90)─┤  <Z>
 
@@ -254,6 +255,7 @@ def draw(
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             level=level,
         )
 
@@ -281,6 +283,7 @@ def draw(
             show_all_wires=show_all_wires,
             decimals=decimals,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             max_length=max_length,
         )
 
@@ -294,6 +297,7 @@ def _draw_qnode(
     decimals=2,
     max_length=100,
     show_matrices=True,
+    show_wire_labels=True,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
     @wraps(qnode)
@@ -319,6 +323,7 @@ def _draw_qnode(
                     show_all_wires=show_all_wires,
                     decimals=decimals,
                     show_matrices=False,
+                    show_wire_labels=show_wire_labels,
                     max_length=max_length,
                     cache=cache,
                 )
@@ -341,6 +346,7 @@ def _draw_qnode(
             show_all_wires=show_all_wires,
             decimals=decimals,
             show_matrices=show_matrices,
+            show_wire_labels=show_wire_labels,
             max_length=max_length,
         )
 
@@ -379,8 +385,11 @@ def draw_mpl(
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
-        wire_options (dict): matplotlib formatting options for the wire lines
+        wire_options (dict): matplotlib formatting options for the wire lines. In addition to
+            standard options, options per wire can be specified with ``wire_label: options``
+            pairs, also see examples below.
         label_options (dict): matplotlib formatting options for the wire labels
+        show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         level (None, str, int, slice): An indication of what transforms to apply before drawing.
@@ -451,7 +460,8 @@ def draw_mpl(
 
         **Wires:**
 
-        The keywords ``wire_order`` and ``show_all_wires`` control the location of wires from top to bottom.
+        The keywords ``wire_order`` and ``show_all_wires`` control the location of wires
+        from top to bottom.
 
         .. code-block:: python
 
@@ -463,8 +473,8 @@ def draw_mpl(
                 :width: 60%
                 :target: javascript:void(0);
 
-        If a wire is in ``wire_order``, but not in the ``tape``, it will be omitted by default.  Only by selecting
-        ``show_all_wires=True`` will empty wires be displayed.
+        If a wire is in ``wire_order``, but not in the ``tape``, it will be omitted by default.
+        Only by selecting ``show_all_wires=True`` will empty wires be displayed.
 
         .. code-block:: python
 
@@ -557,6 +567,25 @@ def draw_mpl(
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/wires_labels.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
+
+        Additionally, ``wire_options`` may contain sub-dictionaries of matplotlib options assigned
+        to separate wire labels, which will control the line style for the respective individual wires.
+
+        .. code-block:: python
+
+            wire_options = {
+                'color': 'teal', # all wires but wire 2 will be teal
+                'linewidth': 5, # all wires but wire 2 will be bold
+                2: {'color': 'orange', 'linestyle': '--'}, # wire 2 will be orange and dashed
+            }
+            fig, ax = qml.draw_mpl(circuit, wire_options=wire_options)(1.2345,1.2345)
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/per_wire_options.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);

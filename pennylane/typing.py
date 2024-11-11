@@ -35,7 +35,7 @@ class TensorLikeMETA(type):
     def __instancecheck__(cls, other):
         """Dunder method used to check if an object is a `TensorLike` instance."""
         return (
-            isinstance(other, _TensorLike.__args__)  # TODO: Remove __args__ when python>=3.10
+            isinstance(other, _TensorLike)
             or _is_jax(other)
             or _is_torch(other)
             or _is_tensorflow(other)
@@ -44,7 +44,7 @@ class TensorLikeMETA(type):
     def __subclasscheck__(cls, other):
         """Dunder method that checks if a class is a subclass of ``TensorLike``."""
         return (
-            issubclass(other, _TensorLike.__args__)  # TODO: Remove __args__ when python>=3.10
+            issubclass(other, _TensorLike)
             or _is_jax(other, subclass=True)
             or _is_torch(other, subclass=True)
             or _is_tensorflow(other, subclass=True)
@@ -54,7 +54,7 @@ class TensorLikeMETA(type):
 class TensorLike(metaclass=TensorLikeMETA):
     """Returns a ``Union`` of all tensor-like types, which includes any scalar or sequence
     that can be interpreted as a pennylane tensor, including lists and tuples. Any argument
-    accepted by ``pnp.array`` is tensor-like.
+    accepted by ``qml.numpy.array`` is tensor-like.
 
     **Examples**
 

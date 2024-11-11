@@ -75,8 +75,9 @@ class Hamiltonian(Observable):
 
     .. warning::
 
-        As of ``v0.36``, ``qml.Hamiltonian`` dispatches to :class:`~.pennylane.ops.op_math.LinearCombination`
-        by default. For further details, see :doc:`Updated Operators </news/new_opmath/>`.
+        As of ``v0.39``, ``qml.ops.Hamiltonian`` is deprecated. When using the new operator arithmetic,
+        ``qml.Hamiltonian`` will dispatch to :class:`~pennylane.ops.op_math.LinearCombination`. See
+        :doc:`Updated Operators </news/new_opmath/>` for more details.
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
@@ -101,7 +102,7 @@ class Hamiltonian(Observable):
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
-    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     The coefficients can be a trainable tensor, for example:
 
@@ -109,7 +110,7 @@ class Hamiltonian(Observable):
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
-    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     A ``qml.Hamiltonian`` stores information on which commuting observables should be measured
     together in a circuit:
@@ -140,7 +141,7 @@ class Hamiltonian(Observable):
 
         The following code examples show the behaviour of ``qml.Hamiltonian`` using old operator
         arithmetic. See :doc:`Updated Operators </news/new_opmath/>` for more details. The old
-        behaviour can be reactivated by calling
+        behaviour can be reactivated by calling the deprecated
 
         >>> qml.operation.disable_new_opmath()
 
@@ -253,13 +254,13 @@ class Hamiltonian(Observable):
         method: Literal["lf", "rlf"] = "rlf",
         id: str = None,
     ):
-        if qml.operation.active_new_opmath():
-            warn(
-                "Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated. "
-                "Instead, use 'qml.Hamiltonian'. "
-                "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
-                qml.PennyLaneDeprecationWarning,
-            )
+        warn(
+            "qml.ops.Hamiltonian uses the old approach to operator arithmetic, which will become "
+            "unavailable in version 0.40 of PennyLane. If you are experiencing issues, visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html or contact the PennyLane "
+            "team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(

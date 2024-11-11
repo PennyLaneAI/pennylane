@@ -151,6 +151,30 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
             )
 
 
+def _validate_qfunc_output(qfunc_output, measurements) -> None:
+    if isinstance(qfunc_output, qml.numpy.ndarray):
+        measurement_processes = tuple(measurements)
+    elif not isinstance(qfunc_output, Sequence):
+        measurement_processes = (qfunc_output,)
+    else:
+        measurement_processes = qfunc_output
+
+    if not measurement_processes or not all(
+        isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
+    ):
+        raise qml.QuantumFunctionError(
+            "A quantum function must return either a single measurement, "
+            "or a nonempty sequence of measurements."
+        )
+
+    terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
+
+    if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
+        raise qml.QuantumFunctionError(
+            "All measurements must be returned in the order they are measured."
+        )
+
+
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -837,39 +861,7 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        if isinstance(self._qfunc_output, qml.numpy.ndarray):
-            measurement_processes = tuple(self.tape.measurements)
-        elif not isinstance(self._qfunc_output, Sequence):
-            measurement_processes = (self._qfunc_output,)
-        else:
-            measurement_processes = self._qfunc_output
-
-        if not measurement_processes or not all(
-            isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
-        ):
-            raise qml.QuantumFunctionError(
-                "A quantum function must return either a single measurement, "
-                "or a nonempty sequence of measurements."
-            )
-
-        terminal_measurements = [
-            m for m in self.tape.measurements if not isinstance(m, MidMeasureMP)
-        ]
-
-        if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
-            raise qml.QuantumFunctionError(
-                "All measurements must be returned in the order they are measured."
-            )
-
-        num_wires = len(self.tape.wires) if not self.device.wires else len(self.device.wires)
-        for obj in self.tape.operations + self.tape.observables:
-            if (
-                getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
-                and obj.wires
-                and len(obj.wires) != num_wires
-            ):
-                # check here only if enough wires
-                raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
+        _validate_qfunc_output(self._qfunc_output, self.tape.measurements)
 
     def _execution_component(self, args: tuple, kwargs: dict) -> qml.typing.Result:
         """Construct the transform program and execute the tapes. Helper function for ``__call__``
@@ -943,7 +935,7 @@ class QNode:
         res = qml.execute(
             (self._tape,),
             device=self.device,
-            gradient_fn=gradient_fn,
+            diff_method=gradient_fn,
             interface=interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,

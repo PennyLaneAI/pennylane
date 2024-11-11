@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 
 DEP_WARNING_MESSAGE_MUTUAL_INFO = (
     "The qml.qinfo.mutual_info transform is deprecated and will be removed "
-    "in v0.40. Instead include the qml.mutual_info measurement process in the "
+    "in v0.40. Instead, include the qml.mutual_info measurement process in the "
     "return line of your QNode."
 )
 
@@ -86,6 +86,57 @@ class TestMutualInfoUnitTests:
         )
         assert mapped2.raw_wires == [Wires([0, 1]), Wires([2])]
         qml.assert_equal(mapped2, MutualInfoMP(wires=[Wires([0, 1]), Wires([2])]))
+
+    def test_mutual_info_overlapping_wires(self):
+        """Test that an error is raised when subsystems overlap."""
+        dm = qml.math.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
+        wires = qml.wires.Wires(range(2))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Subsystems for computing mutual information must not overlap.",
+        ):
+            qml.mutual_info(wires0=[0], wires1=[0, 1]).process_density_matrix(dm, wires)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize(
+        "wires0, wires1, log_base, expected_mutual_info",
+        [
+            ([0], [1], None, 1.3862943611198906),  # ln(4), natural log
+            ([0], [1], 2, 2.0),  # log2(4)
+        ],
+    )
+    def test_process_density_matrix_mutual_info(
+        self, interface, wires0, wires1, log_base, expected_mutual_info
+    ):  # pylint: disable=too-many-arguments
+        """Test mutual information calculation for non-overlapping subsystems."""
+        # Define a pure, entangled two-qubit state (|00> + |11>) / sqrt(2)
+        dm = qml.math.array(
+            [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
+            like=interface,
+        )
+
+        if interface == "tensorflow":
+            dm = qml.math.cast(dm, "float64")
+
+        wires = qml.wires.Wires(range(2))
+
+        mutual_info = qml.mutual_info(
+            wires0=wires0, wires1=wires1, log_base=log_base
+        ).process_density_matrix(dm, wires)
+
+        # Set tolerance based on interface
+        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+
+        assert qml.math.allclose(
+            mutual_info, expected_mutual_info, atol=atol
+        ), f"Wires0: {wires0}, Wires1: {wires1}, Log base: {log_base}, Mutual Info doesn't match expected value. Got {mutual_info}, expected {expected_mutual_info}"
+
+        # Test if the result is real
+        assert qml.math.allclose(
+            qml.math.imag(mutual_info), 0, atol=atol
+        ), f"Mutual Info should be real, but got imaginary part: {qml.math.imag(mutual_info)}"
 
 
 class TestIntegration:

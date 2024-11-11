@@ -34,6 +34,17 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
     If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
     See ``qml.workflow.SUPPORTED_INTERFACES`` for a list of all accepted interface strings.
 
+.. warning::
+
+    ``ComplexWarning`` messages may appear when running differentiable workflows involving both complex and float types, particularly    
+    with certain interfaces. These warnings are common in backpropagation due to the nature of complex casting and do not 
+    indicate an error in computation. If desired, you can suppress these warnings by adding the following code:
+           
+    .. code-block:: python
+
+        import warnings
+        warnings.filterwarnings("ignore", category=np.ComplexWarning)
+
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
 the gradients of the quantum circuit accessible to the classical library, enabling the
