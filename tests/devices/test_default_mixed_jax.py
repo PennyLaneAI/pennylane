@@ -154,7 +154,7 @@ class TestQNodeIntegration:
                 qml.RX(x, wires=0)
                 qml.expval(qml.PauliZ(0))
             tape = qml.tape.QuantumScript.from_queue(q)
-            return qml.execute([tape], dev, gradient_fn=gradient_func)
+            return qml.execute([tape], dev, diff_method=gradient_func)
 
         assert jnp.allclose(wrapper(jnp.array(0.0))[0], 1.0)
 
