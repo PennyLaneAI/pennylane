@@ -37,6 +37,7 @@ to verify and test quantum gradient computations.
     _qutrit_device
     null_qubit
     reference_qubit
+    capabilities
     tests
 
 Next generation devices
@@ -147,6 +148,7 @@ Qutrit Mixed-State Simulation Tools
 """
 
 
+from .capabilities import DeviceCapabilities
 from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device

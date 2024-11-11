@@ -2537,7 +2537,7 @@ class TestCutCircuitMCTransform:
 
         dev = dev_fn(wires=2, shots=20000, seed=seed)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn, seed=seed)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
