@@ -31,12 +31,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
-  ``qml.shadow_expval`` measurement process.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * ``qml.broadcast`` has been deprecated. Users should use ``for`` loops instead.
 
   - Deprecated in v0.39
@@ -127,6 +121,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
+  ``qml.shadow_expval`` measurement process.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
 
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
