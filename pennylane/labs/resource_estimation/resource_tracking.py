@@ -193,6 +193,7 @@ def _counts_from_compressed_res_op(
         _counts_from_compressed_res_op(
             sub_cp_rep, gate_counts_dict, scalar=scalar * counts, gate_set=gate_set, config=config
         )
+
     return
 
 

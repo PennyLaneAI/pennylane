@@ -36,4 +36,23 @@ Base Objects
 
 from .resource_operator import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources
-from .resource_tracking import get_resources, DefaultGateSet, _StandardGateSet
+from .resource_tracking import get_resources, DefaultGateSet, _StandardGateSet, resource_config
+
+from .ops import (
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+    ResourceGlobalPhase,
+    ResourceHadamard,
+    ResourceIdentity,
+    ResourceRot,
+    ResourceRX,
+    ResourceRZ,
+    ResourceRY,
+    ResourceS,
+    ResourceSWAP,
+    ResourceT,
+)
+
+from .templates import (
+    ResourceQFT,
+)
