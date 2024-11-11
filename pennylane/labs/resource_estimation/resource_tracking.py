@@ -76,7 +76,7 @@ def get_resources(obj, gate_set: Set = DefaultGateSet, config: Dict = resource_c
         Resources: The total resources of the quantum circuit.
 
     Rasies:
-        TypeError: "Could not obtain resources for obj of type (type(obj)).
+        TypeError: "Could not obtain resources for obj of type (type(obj))".
     """
 
     raise TypeError(
@@ -103,7 +103,7 @@ def resources_from_operation(
 @get_resources.register
 def resources_from_qfunc(
     obj: Callable, gate_set: Set = DefaultGateSet, config: Dict = resource_config
-) -> Resources:
+) -> Callable:
     """Get resources from a quantum function which queues operations!"""
 
     @wraps(obj)
@@ -174,7 +174,7 @@ def _counts_from_compressed_res_op(
 
     Args:
         cp_rep (CompressedResourceOp): operation in compressed representation to extract resources from
-        gate_counts_dict (_type_): base dictionary to modify with the resource counts
+        gate_counts_dict (Dict): base dictionary to modify with the resource counts
         gate_set (Set): the set of operations to track resources with respect too
         scalar (int, optional): optional scalar to multiply the counts. Defaults to 1.
         config (Dict, optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
