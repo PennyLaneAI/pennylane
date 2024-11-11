@@ -482,10 +482,10 @@ class PauliRot(Operation):
         **Example:**
 
         >>> qml.PauliRot.compute_decomposition(1.2, "XY", wires=(0,1))
-        [Hadamard(wires=[0]),
+        [H(0),
         RX(1.5707963267948966, wires=[1]),
         MultiRZ(1.2, wires=[0, 1]),
-        Hadamard(wires=[0]),
+        H(0),
         RX(-1.5707963267948966, wires=[1])]
 
         """
@@ -1286,7 +1286,7 @@ class IsingXY(Operation):
         **Example:**
 
         >>> qml.IsingXY.compute_decomposition(1.23, wires=(0,1))
-        [Hadamard(wires=[0]), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), Hadamard(wires=[0])]
+        [H(0), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), H(0)]
 
         """
         return [
