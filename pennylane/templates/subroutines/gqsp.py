@@ -27,7 +27,7 @@ from pennylane.wires import Wires
 
 class GQSP(Operation):
     r"""
-    Implements generalized quantum signal processing <https://arxiv.org/abs/2308.01501>`__ (GQSP) circuit.
+    Implements the generalized quantum signal processing `(GQSP) <https://arxiv.org/abs/2308.01501>`__ circuit.
 
     This algorithm takes as input a unitary matrix in the form of an operator and encodes, with the help of an auxiliary
     qubit, a polynomial transformation of the unitary.
@@ -45,7 +45,7 @@ class GQSP(Operation):
 
         unitary (Operator): The unitary operator to be applied in the generalized quantum signal processing (GQSP) circuit.
 
-        angles (array[float]): An array of angles in the shape `(3, d)`, where `d` is the degree of the desired polynomial.
+        angles (array[float]): An array of angles in the shape `(3, d+1)`, where `d` is the degree of the desired polynomial.
             These angles define the coefficients for the polynomial transformation applied to the unitary matrix.
 
         control (Union[Wires, int, str]): The control qubit used to encode the polynomial transformation on the unitary
