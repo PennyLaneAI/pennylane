@@ -40,6 +40,21 @@
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
+* Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
+  [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
+
+* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
+  - A new API for mixed-state operations
+  - An `apply_operation` helper function featuring:
+    - Two density matrix contraction methods using `einsum` and `tensordot`
+    - Optimized handling of special cases including:
+      - Diagonal operators
+      - Identity operators 
+      - CX (controlled-X)
+      - Multi-controlled X gates
+      - Grover operators
+  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
@@ -65,6 +80,11 @@
   [(#6561)](https://github.com/PennyLaneAI/pennylane/pull/6561)
 
 <h3>Deprecations 👋</h3>
+
+* The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,
+  to better align with the termionology used by the `QNode`.
+  `gradient_fn` will be removed in v0.41.
+  [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
 
