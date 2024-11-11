@@ -398,11 +398,11 @@ class RiemannianGradientOptimizer:
                 self.circuit.device,
                 transform_program=program,
                 config=config,
-                gradient_fn=None,
+                diff_method=None,
             )
         else:
             circuits = qml.execute(
-                circuits, self.circuit.device, gradient_fn=None
+                circuits, self.circuit.device, diff_method=None
             )  # pragma: no cover
 
         program, _ = self.circuit.device.preprocess()
