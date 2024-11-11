@@ -134,19 +134,6 @@ class ResourcesOperation(Operation):
         {}
         """
 
-def substitute(primary_resources: Resources, gate_info: Tuple[str, int], replacement_resources: Resources):
-    """Replaces a gate with the contents of another Resource object.
-
-    Args:
-        primary_resource (Resources): The Resource object to be modified
-        gate_info (Tuple(str, int)): The name of the gate to be replace and the number of wires it acts on
-        replacement_resource (Resources): The Resource object containing the resources that will replace the gate
-
-    Returns:
-        Resources: The substituted Resources object
-    """
-
-    gate_name, num_wires = gate_info
 
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
     """Add two resources assuming the circuits are executed in series.
@@ -225,6 +212,37 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
 
+def substitute(primary_resources: Resources, gate_info: Tuple[str, int], replacement_resources: Resources):
+    """Replaces a gate with the contents of another Resource object.
+
+    Args:
+        primary_resource (Resources): The Resource object to be modified
+        gate_info (Tuple(str, int)): The name of the gate to be replace and the number of wires it acts on
+        replacement_resource (Resources): The Resource object containing the resources that will replace the gate
+
+    Returns:
+        Resources: The substituted Resources object
+    """
+
+    gate_name, num_wires = gate_info
+    gate_count = primary_resources.gate_types.pop(gate_name, 0)
+
+    if gate_count > 0:
+        new_wires = primary_resources.num_wires
+        new_gates = primary_resources.num_gates - gate_count + (gate_count * replacement_resources.num_gates)
+
+        replacement_gate_types = _scale_dict(replacement_resources.gate_types, gate_count)
+        replacement_gate_sizes = _scale_dict(replacement_resources.gate_sizes, gate_count)
+
+        new_gate_types = _combine_dict(primary_resources.gate_types, replacement_gate_types)
+
+        new_gate_sizes = copy.copy(primary_resources.gate_sizes)
+        new_gate_sizes[num_wires] -= gate_count
+        new_gate_sizes = _combine_dict(new_gate_sizes, replacement_gate_sizes)
+
+        return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+
+    return primary_resources
 
 def _combine_dict(dict1: defaultdict, dict2: defaultdict):
     r"""Private function which combines two dictionaries together."""
