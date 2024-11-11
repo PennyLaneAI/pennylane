@@ -19,6 +19,7 @@
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
 
+<<<<<<< HEAD
 <h4>New API for Qubit Mixed</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
@@ -42,6 +43,10 @@
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
 
+=======
+<h3>Improvements 🛠</h3>
+
+>>>>>>> d49a3244661f85775b9197369cd0cd74347193b1
 <h4>Other Improvements</h4>
 
 * `qml.BasisRotation` template is now JIT compatible.
