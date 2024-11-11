@@ -674,6 +674,6 @@ Alternatively, with ``include_package_data=True``, you can also declare the file
 
     include path/to/config/device_name.toml
 
-See :ref:`packaging data files <https://setuptools.pypa.io/en/stable/userguide/datafiles.html>`
+See `packaging data files <https://setuptools.pypa.io/en/stable/userguide/datafiles.html>`_
 for a detailed explanation. This will ensure that PennyLane can correctly load the device and its
 associated capabilities.
