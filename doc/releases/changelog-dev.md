@@ -104,6 +104,8 @@
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
+* Add reporting of test warnings as failures.
+  [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
 * Add a warning message to Gradients and training documentation about ComplexWarnings
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
