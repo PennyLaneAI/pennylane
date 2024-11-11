@@ -15,7 +15,6 @@
 Tests for the GQSP template.
 """
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
-from copy import copy
 
 import pytest
 from numpy.linalg import matrix_power
