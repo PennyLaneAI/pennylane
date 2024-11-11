@@ -228,3 +228,4 @@ def GQSP_angles(P):
             input_data = np.array([updated_matrix[0][1 : idx + 1], updated_matrix[1][0:idx]])
 
     return angles_theta, angles_phi, angles_lambda
+
