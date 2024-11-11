@@ -24,8 +24,8 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .resource_operator import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources
+from .resource_operator import ResourceOperator
 
 # pylint: disable=dangerous-default-value,protected-access
 
@@ -114,10 +114,12 @@ def resources_from_qfunc(
         operations = tuple(op for op in q.queue if not isinstance(op, MeasurementProcess))
         compressed_res_ops_lst = _operations_to_compressed_reps(operations)
 
+        initial_gate_set = set.union(gate_set, _StandardGateSet)
+
         gate_counts_dict = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
             _counts_from_compressed_res_op(
-                cmp_rep_op, gate_counts_dict, gate_set=_StandardGateSet, config=config
+                cmp_rep_op, gate_counts_dict, gate_set=initial_gate_set, config=config
             )
 
         # Validation:
