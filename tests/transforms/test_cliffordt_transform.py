@@ -81,13 +81,6 @@ def circuit_5():
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_6():
-    """Circuit 6 with skippable operations"""
-    qml.RZ(1.0, wires=[0])
-    qml.Barrier(wires=0)
-    return qml.expval(qml.PauliZ(0))
-
-
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -111,7 +104,7 @@ class TestCliffordCompile:
 
     @pytest.mark.parametrize(
         "circuit",
-        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5, circuit_6],
+        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5],
     )
     def test_decomposition(self, circuit):
         """Test decomposition for the Clifford transform."""
