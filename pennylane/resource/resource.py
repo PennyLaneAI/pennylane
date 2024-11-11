@@ -14,6 +14,9 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from __future__ import annotations
+
+import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -62,6 +65,12 @@ class Resources:
     gate_sizes: dict = field(default_factory=dict)
     depth: int = 0
     shots: Shots = field(default_factory=Shots)
+
+    def __add__(self, other: Resources):
+        return add_in_series(self, other)
+
+    def __mul__(self, scalar: int):
+        return mul_in_series(self, scalar)
 
     def __str__(self):
         keys = ["wires", "gates", "depth"]
@@ -124,6 +133,98 @@ class ResourcesOperation(Operation):
         {}
         """
 
+def add_in_series(r1: Resources, r2: Resources) -> Resources:
+    """Add two resources assuming the circuits are executed in series.
+
+    Args:
+        r1 (Resources): A Resources object to add.
+        r2 (Resources): A Resources object to add.
+
+    Returns:
+        Resources: The combined resources of r1 and r2.
+    """
+
+    new_wires = max(r1.num_wires, r2.num_wires)
+    new_gates = r1.num_gates + r2.num_gates
+    new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
+    new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
+
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+
+def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
+    """Add two resources assuming the circuits are executed in parallel.
+
+    Args:
+        r1 (Resources): A Resources object to add.
+        r2 (Resources): A Resources object to add.
+
+    Returns:
+        Resources: The combined resources of r1 and r2.
+    """
+
+    new_wires = r1.num_wires + r2.num_wires
+    new_gates = r1.num_gates + r2.num_gates
+    new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
+    new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
+
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+
+def mul_in_series(r1: Resources, scalar: int) -> Resources:
+    """Multiply the Resources object by a scalar as if the circuit was repeated
+    that many times in series.
+
+    Args:
+        r1 (Resources): A Resources object to be scaled.
+        scalar (int): The scalar to multiply the Resources object by.
+
+    Returns:
+        Resources: The combined resources
+    """
+
+    new_wires = r1.num_wires
+    new_gates = scalar*r1.num_gates
+    new_gate_types = _scale_dict(r1.gate_types, scalar)
+    new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
+
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+
+def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
+    """Multiply the Resources object by a scalar as if the circuit was repeated
+    that many times in parallel.
+
+    Args:
+        r1 (Resources): A Resources object to be scaled.
+        scalar (int): The scalar to multiply the Resources object by.
+
+    Returns:
+        Resources: The combined resources
+    """
+
+    new_wires = scalar * r1.num_wires
+    new_gates = scalar * r1.num_gates
+    new_gate_types = _scale_dict(r1, scalar)
+    new_gate_sizes = _scale_dict(r1, scalar)
+
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+
+def _combine_dict(dict1: dict, dict2: dict):
+    r"""Private function which combines two dictionaries together."""
+    combined_dict = copy.copy(dict1)
+
+    for k, v in dict2.items():
+        combined_dict[k] += v
+
+    return combined_dict
+
+def _scale_dict(dict1: dict, scalar: int):
+    r"""Private function which scales the values in a dictionary."""
+
+    combined_dict = copy.copy(dict1)
+
+    for k in combined_dict:
+        combined_dict[k] *= scalar
+
+    return combined_dict
 
 def _count_resources(tape) -> Resources:
     """Given a quantum circuit (tape), this function
