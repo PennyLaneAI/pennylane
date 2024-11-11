@@ -33,7 +33,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install black pylint==2.7.4 isort==5.13.2
+        run: pip install pylint==2.7.5
 
       - uses: actions/checkout@v4
 
