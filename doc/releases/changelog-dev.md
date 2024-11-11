@@ -24,7 +24,7 @@
 
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
-* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
+* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.  
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
 
 * Added a dense implementation of computing the Lie closure in a new function
