@@ -133,6 +133,7 @@ class ResourcesOperation(Operation):
         {}
         """
 
+
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
     """Add two resources assuming the circuits are executed in series.
 
@@ -150,6 +151,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+
 
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     """Add two resources assuming the circuits are executed in parallel.
@@ -169,6 +171,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
 
+
 def mul_in_series(r1: Resources, scalar: int) -> Resources:
     """Multiply the Resources object by a scalar as if the circuit was repeated
     that many times in series.
@@ -182,11 +185,12 @@ def mul_in_series(r1: Resources, scalar: int) -> Resources:
     """
 
     new_wires = r1.num_wires
-    new_gates = scalar*r1.num_gates
+    new_gates = scalar * r1.num_gates
     new_gate_types = _scale_dict(r1.gate_types, scalar)
     new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+
 
 def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
     """Multiply the Resources object by a scalar as if the circuit was repeated
@@ -202,19 +206,24 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
 
     new_wires = scalar * r1.num_wires
     new_gates = scalar * r1.num_gates
-    new_gate_types = _scale_dict(r1, scalar)
-    new_gate_sizes = _scale_dict(r1, scalar)
+    new_gate_types = _scale_dict(r1.gate_types, scalar)
+    new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
 
-def _combine_dict(dict1: dict, dict2: dict):
+
+def _combine_dict(dict1: defaultdict, dict2: defaultdict):
     r"""Private function which combines two dictionaries together."""
     combined_dict = copy.copy(dict1)
 
     for k, v in dict2.items():
-        combined_dict[k] += v
+        try:
+            combined_dict[k] += v
+        except KeyError:
+            combined_dict[k] = v
 
     return combined_dict
+
 
 def _scale_dict(dict1: dict, scalar: int):
     r"""Private function which scales the values in a dictionary."""
@@ -225,6 +234,7 @@ def _scale_dict(dict1: dict, scalar: int):
         combined_dict[k] *= scalar
 
     return combined_dict
+
 
 def _count_resources(tape) -> Resources:
     """Given a quantum circuit (tape), this function
