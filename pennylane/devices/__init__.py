@@ -36,7 +36,6 @@ to verify and test quantum gradient computations.
     _qutrit_device
     null_qubit
     reference_qubit
-    capabilities
     tests
 
 Next generation devices
