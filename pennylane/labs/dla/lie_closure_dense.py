@@ -68,7 +68,7 @@ def lie_closure_dense(
     verbose: bool = False,
     tol: float = None,
 ):
-    r"""Compute the dynamical Lie algebra :math:`frak{g}` from a set of generators using their dense matrix representation.
+    r"""Compute the dynamical Lie algebra :math:`\mathfrak{g}` from a set of generators using their dense matrix representation.
 
     This function computes the Lie closure of a set of generators using their dense matrix representation.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
