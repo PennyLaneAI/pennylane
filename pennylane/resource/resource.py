@@ -20,6 +20,7 @@ import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Tuple
 
 from pennylane.measurements import Shots
 from pennylane.operation import Operation
@@ -133,6 +134,19 @@ class ResourcesOperation(Operation):
         {}
         """
 
+def substitute(primary_resources: Resources, gate_info: Tuple[str, int], replacement_resources: Resources):
+    """Replaces a gate with the contents of another Resource object.
+
+    Args:
+        primary_resource (Resources): The Resource object to be modified
+        gate_info (Tuple(str, int)): The name of the gate to be replace and the number of wires it acts on
+        replacement_resource (Resources): The Resource object containing the resources that will replace the gate
+
+    Returns:
+        Resources: The substituted Resources object
+    """
+
+    gate_name, num_wires = gate_info
 
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
     """Add two resources assuming the circuits are executed in series.
