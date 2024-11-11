@@ -71,6 +71,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
+  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+
+* The `expand_depth` argument for `qml.compile` has been removed.
+  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
   [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)

@@ -14,17 +14,6 @@ Pending deprecations
   - Deprecated in v0.40
   - Will be removed in v0.41
 
-* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
-  has been deprecated.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been deprecated.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
   argument.
 
@@ -121,6 +110,17 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
+  has been removed.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been removed.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
 
 * The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
   ``qml.shadow_expval`` measurement process.
