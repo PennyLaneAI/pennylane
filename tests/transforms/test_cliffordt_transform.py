@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.decompositions.clifford_t_transform import (
     _CLIFFORD_T_GATES,
+    _merge_param_gates,
     _one_qubit_decompose,
     _rot_decompose,
     _two_qubit_decompose,
@@ -272,6 +273,41 @@ class TestCliffordCompile:
             where=matrix_op != 0,
         )[qml.math.nonzero(qml.math.round(matrix_op, 10))]
         assert qml.math.allclose(phase / phase[0], qml.math.ones(qml.math.shape(phase)[0]))
+
+    def test_merge_param_gates(self):
+        """Test _merge_param_gates helper function"""
+        operations = [
+            qml.RX(0.1, wires=0),
+            qml.RX(0.2, wires=0),
+            qml.RY(0.3, wires=1),
+            qml.RY(0.4, wires=1),
+            qml.RX(0.5, wires=0),
+        ]
+
+        merge_ops = {"RX", "RY"}
+
+        merged_ops, number_ops = _merge_param_gates(operations, merge_ops=merge_ops)
+
+        assert len(merged_ops) == 2
+        assert number_ops == 2
+
+        assert isinstance(merged_ops[0], qml.RX)
+        assert merged_ops[0].parameters == [0.8]  # 0.1 + 0.2 + 0.5 for wire 0
+        assert isinstance(merged_ops[1], qml.RY)
+        assert merged_ops[1].parameters == [0.7]  # 0.3 + 0.4 for wire 1
+
+        merge_ops.discard("RY")
+        merged_ops, number_ops = _merge_param_gates(operations, merge_ops=merge_ops)
+
+        assert len(merged_ops) == 3
+        assert number_ops == 1
+
+        assert isinstance(merged_ops[0], qml.RX)
+        assert merged_ops[0].parameters == [0.8]  # 0.1 + 0.2 + 0.5 for wire 0
+        assert isinstance(merged_ops[1], qml.RY)
+        assert merged_ops[1].parameters == [0.3]  # 0.3 for wire 1
+        assert isinstance(merged_ops[1], qml.RY)
+        assert merged_ops[2].parameters == [0.4]  # 0.4 for wire 1
 
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
