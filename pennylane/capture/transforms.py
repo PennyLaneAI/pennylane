@@ -88,7 +88,7 @@ class TransformTracer(Tracer):
             self._aval = ShapedArray(qml.math.shape(val), val.dtype)
 
     def __repr__(self):
-        return f"TransformTracer({self._trace}, {self.val}, {self.idx})"
+        return f"TransformTracer({self._trace}, val={self.val}, idx={self.idx})"
 
     @property
     def aval(self):

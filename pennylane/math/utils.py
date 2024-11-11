@@ -22,8 +22,6 @@ import numpy as _np
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 
-from pennylane.capture import TransformTracer
-
 from . import single_dispatch  # pylint:disable=unused-import
 
 
@@ -271,7 +269,7 @@ def _get_interface_of_single_tensor(tensor):
     """
     namespace = tensor.__class__.__module__.split(".")[0]
 
-    if namespace in ("pennylane", "autograd"):
+    if namespace == "autograd":
         return "autograd"
 
     res = ar.infer_backend(tensor)
@@ -405,6 +403,8 @@ def is_abstract(tensor, like=None):
     if interface == "jax":
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        from pennylane.capture import TransformTracer
 
         if isinstance(
             tensor,

@@ -169,7 +169,7 @@ qnode_prim: "jax.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 TransformTrace: "jax.core.Trace"
 TransformTracer: "jax.core.Tracer"
-TransformTraceInterpreter: type  # pylint: disable=redefined-outer-name
+TransformInterpreter: type  # pylint: disable=redefined-outer-name
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
@@ -231,4 +231,7 @@ __all__ = (
     "PlxprInterpreter",
     "FlatFn",
     "make_plxpr",
+    "TransformInterpreter",
+    "TransformTrace",
+    "TransformTracer",
 )

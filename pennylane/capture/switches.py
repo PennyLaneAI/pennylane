@@ -16,6 +16,7 @@ Contains the switches to (de)activate the capturing mechanism, and a
 status reporting function on whether it is enabled or not.
 """
 from collections.abc import Callable
+
 import autoray as ar
 
 has_jax = True
@@ -47,14 +48,21 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
         nonlocal _FEATURE_ENABLED
         _FEATURE_ENABLED = True
 
+        # pylint: disable=protected-access
         ar.autoray._BACKEND_ALIASES["pennylane"] = "jax"
+        # Cache clearing is required to reflect the update to _BACKEND_ALIASES
+        ar.autoray._infer_class_backend_cached.cache_clear()
 
     def disable_fn() -> None:
         """Disable the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr)."""
         nonlocal _FEATURE_ENABLED
         _FEATURE_ENABLED = False
+
+        # pylint: disable=protected-access
         ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
+        # Cache clearing is required to reflect the update to _BACKEND_ALIASES
+        ar.autoray._infer_class_backend_cached.cache_clear()
 
     def status_fn() -> bool:
         """Return whether the capturing mechanism of hybrid quantum-classical programs
