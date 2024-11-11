@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
   argument.
 
