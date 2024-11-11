@@ -93,29 +93,27 @@ def _(bose_operator: BoseWord, d, ps=False, wire_map=None, tol=None):
         for item in bose_operator.items():
             (_, boson), sign = item
             oper = PauliSentence()
-            for i in range(d):
-                for j in range(d):
-                    coeff = d_mat[sign][i][j]
-                    if coeff != 0:
+            non_zero_d = np.nonzero(d_mat[sign])
+            for i, j in zip(*non_zero_d):
+                coeff = d_mat[sign][i][j]
+                
+                # Least significant bit is written leftmost
+                binary_row = list(map(int, bin(i)[2:]))[::-1]
+                if nqub_per_boson > len(binary_row):
+                    binary_row += [0] * (nqub_per_boson - len(binary_row))
 
-                        # Least significant bit is written leftmost
-                        binary_row = list(map(int, bin(i)[2:]))[::-1]
+                # Least significant bit is written leftmost
+                binary_col = list(map(int, bin(j)[2:]))[::-1]
+                if nqub_per_boson > len(binary_col):
+                    binary_col += [0] * (nqub_per_boson - len(binary_col))
 
-                        if nqub_per_boson > len(binary_row):
-                            binary_row += [0] * (nqub_per_boson - len(binary_row))
+                pauliOp = PauliSentence({PauliWord({}): 1.0})
+                for n in range(nqub_per_boson):
+                    pauliOp @= _get_pauli_op(
+                        binary_row[n], binary_col[n], n + boson * nqub_per_boson
+                    )
 
-                        # Least significant bit is written leftmost
-                        binary_col = list(map(int, bin(j)[2:]))[::-1]
-                        if nqub_per_boson > len(binary_col):
-                            binary_col += [0] * (nqub_per_boson - len(binary_col))
-
-                        pauliOp = PauliSentence({PauliWord({}): 1.0})
-                        for n in range(nqub_per_boson):
-                            pauliOp @= _get_pauli_op(
-                                binary_row[n], binary_col[n], n + boson * nqub_per_boson
-                            )
-
-                        oper += coeff * pauliOp
+                oper += coeff * pauliOp
             qubit_operator @= oper
     qubit_operator.simplify()
 
