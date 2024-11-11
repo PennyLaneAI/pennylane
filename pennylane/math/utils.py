@@ -22,6 +22,8 @@ import numpy as _np
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 
+from pennylane.capture import TransformTracer
+
 from . import single_dispatch  # pylint:disable=unused-import
 
 
@@ -417,7 +419,7 @@ def is_abstract(tensor, like=None):
             # Otherwise, it will be abstract.
             return not isinstance(tensor.aval, jax.core.ConcreteArray)
 
-        return isinstance(tensor, jax.core.Tracer)
+        return isinstance(tensor, (DynamicJaxprTracer, TransformTracer))
 
     if interface == "tensorflow":
         import tensorflow as tf

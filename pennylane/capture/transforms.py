@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Trace implementations for program capture"""
+from copy import copy
 from typing import Any
 
 import jax
@@ -44,6 +45,7 @@ class TransformTrace(Trace):
 
     @property
     def state(self):
+        """Dictionary containing environment information for transforms to use."""
         return self._state
 
     @state.setter
@@ -55,12 +57,14 @@ class TransformTrace(Trace):
         is_qml_primitive = primitive.__class__.__module__.split(".")[0] == "pennylane"
 
         if idx >= len(self._transform_program) or not is_qml_primitive:
+            # Either all transforms have been applied or the primitive is not an operator or measurement
             tracers = [t.val if isinstance(t, TransformTracer) else t for t in tracers]
             return primitive.bind(*tracers, **params)
 
         transform: "qml.transforms.core.TransformContainer" = self._transform_program[idx]
         bind_fn = transform.plxpr_transform
         targs, tkwargs = transform.args, transform.kwargs
+
         return bind_fn(primitive, tracers, params, targs, tkwargs, state=self.state)
 
 
@@ -90,7 +94,7 @@ class TransformTracer(Tracer):
     def aval(self):
         return self._aval
 
-    def full_lower(self):
+    def full_lower(self):  # pylint: disable=missing-function-docstring
         return self
 
 
@@ -147,19 +151,18 @@ class TransformInterpreter(PlxprInterpreter):
 
         return op
 
-    def interpret_measure_eqn(self, primitive, *invals, **params):
+    def interpret_measure_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
 
         Args:
-            primitive (jax.core.Primitive): a jax primitive corresponding to a measurement.
-            *invals (Any): the positional input variables for the equation
+            eqn (jax.core.JaxprEqn)
 
-        Keyword Args:
-            **params: The equations parameters dictionary
+        See also :meth:`~.interpret_measurement`.
 
         """
+        invals = [self.read(invar) for invar in eqn.invars]
         invals = [self.read_with_trace(self.read(inval)) for inval in invals]
-        return primitive.bind(*invals, **params)
+        return eqn.primitive.bind(*invals, **eqn.params)
 
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
         """Evaluate a jaxpr.
@@ -180,7 +183,7 @@ class TransformInterpreter(PlxprInterpreter):
         return [r.val if isinstance(r, TransformTracer) else r for r in tracers_out]
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument, too-many-arguments, protected-access
 @TransformInterpreter.register_primitive(qnode_prim)
 def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
