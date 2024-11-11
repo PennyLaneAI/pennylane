@@ -28,9 +28,11 @@ Base Objects
 .. autosummary::
     :toctree: api
 
+    ~ResourceOperator
     ~Resources
     ~CompressedResourceOp
 
 """
 
+from .resource_operator import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources

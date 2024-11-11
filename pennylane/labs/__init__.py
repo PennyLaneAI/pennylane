@@ -22,11 +22,24 @@ advanced quantum computing research.
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
+.. currentmodule:: pennylane.labs.resource_estimation
+
+Resource Estimation
+~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Resources
+    ~CompressedResourceOp
+    ~ResourceOperator
+
 """
 
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
+    ResourceOperator,
 )
 
 __all__ = ["Resources", "CompressedResourceOp"]

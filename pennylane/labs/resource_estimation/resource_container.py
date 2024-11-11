@@ -16,6 +16,8 @@ import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from pennylane.labs.resource_estimation import ResourceOperator
+
 
 class CompressedResourceOp:
     r"""Instantiate the light weight class corressponding to the operator type and parameters.
@@ -54,6 +56,9 @@ class CompressedResourceOp:
             >>> print(op_tp)
             Hadamard(num_wires=1)
         """
+        if not issubclass(op_type, ResourceOperator):
+            raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
+
         self._name = (op_type.__name__).replace("Resource", "")
         self.op_type = op_type
         self.params = params
