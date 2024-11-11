@@ -53,6 +53,10 @@
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
 
+* `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
+  pennylane variant jaxpr.
+  [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
+
 <h4>Other Improvements</h4>
 
 * `qml.BasisRotation` template is now JIT compatible.
@@ -97,5 +101,6 @@ Shiwen An
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
+Christina Lee,
 Andrija Paurevic,
 Justin Pickering
