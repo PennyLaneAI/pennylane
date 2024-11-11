@@ -13,7 +13,6 @@
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
 import numpy as np
-
 # pylint: disable=too-many-arguments,too-few-public-methods,comparison-with-callable, use-implicit-booleaness-not-comparison
 import pytest
 
@@ -540,15 +539,10 @@ class TestShotsIntegration:
         circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert (
-            circuit.get_gradient_fn(dev, "tensorflow", diff_method="parameter-shift")[0]
-            == qml.gradients.param_shift
-        )
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
-        assert circuit.get_gradient_fn(dev, "tensorflow")[0] == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 

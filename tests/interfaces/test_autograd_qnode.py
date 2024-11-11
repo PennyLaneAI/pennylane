@@ -542,20 +542,13 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        assert cost_fn.get_gradient_fn(dev, "autograd")[0] == "backprop"  # gets restored to default
-
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
-        assert (
-            cost_fn.get_gradient_fn(dev, "autograd", diff_method="parameter-shift")[0]
-            is qml.gradients.param_shift
-        )
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        assert cost_fn.get_gradient_fn(dev, "autograd")[0] == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 

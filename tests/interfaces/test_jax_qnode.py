@@ -798,15 +798,10 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert (
-            cost_fn.get_gradient_fn(dev, interface, diff_method="parameter-shift")[0]
-            == qml.gradients.param_shift
-        )
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        assert cost_fn.get_gradient_fn(dev, interface)[0] == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 

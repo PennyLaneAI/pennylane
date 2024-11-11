@@ -21,6 +21,7 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+from pennylane.workflow import _get_gradient_fn
 
 pytestmark = pytest.mark.torch
 
@@ -644,10 +645,6 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert (
-            cost_fn.get_gradient_fn(dev, "torch", diff_method="parameter-shift")[0]
-            == qml.gradients.param_shift
-        )
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
