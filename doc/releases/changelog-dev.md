@@ -96,6 +96,11 @@ from pennylane.devices.capabilities import DeviceCapabilitiesfrom tests.data.tes
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,
+  to better align with the termionology used by the `QNode`.
+  `gradient_fn` will be removed in v0.41.
+  [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
+
 <h3>Documentation 📝</h3>
 
 * Add a warning message to Gradients and training documentation about ComplexWarnings
