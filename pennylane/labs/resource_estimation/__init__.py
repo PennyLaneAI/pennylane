@@ -36,7 +36,7 @@ Base Objects
 
 from .resource_operator import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources
-from .resource_tracking import get_resources, DefaultGateSet, _StandardGateSet, resource_config
+from .resource_tracking import DefaultGateSet, get_resources
 
 from .ops import (
     ResourceCNOT,
