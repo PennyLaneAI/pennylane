@@ -21,7 +21,6 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from pennylane.workflow import _get_gradient_fn
 
 pytestmark = pytest.mark.torch
 

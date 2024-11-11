@@ -13,6 +13,7 @@
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
 import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods,comparison-with-callable, use-implicit-booleaness-not-comparison
 import pytest
 
