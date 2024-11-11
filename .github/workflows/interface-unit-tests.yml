@@ -246,10 +246,9 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
-      pytest_additional_args: --disable-opmath=${{ inputs.disable_new_opmath }}
+      pytest_additional_args: --disable-opmath=${{ inputs.disable_new_opmath }} -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'torch.txt' || '' }}
 
 
@@ -632,9 +631,8 @@ jobs:
       python_version: ${{ matrix.python-version }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_additional_args: --disable-opmath=${{ inputs.disable_new_opmath }}
+      pytest_additional_args: --disable-opmath=${{ inputs.disable_new_opmath }} -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       pytest_markers: data
-      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
         h5py
         ${{ inputs.additional_python_packages }}
