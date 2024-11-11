@@ -893,7 +893,7 @@ class TestShotsIntegration:
             qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
         ):
             assert cost_fn.gradient_fn == qml.gradients.param_shift
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
 
         cost_fn(a, b)
         with pytest.warns(
@@ -901,7 +901,7 @@ class TestShotsIntegration:
         ):
             assert cost_fn.gradient_fn == "backprop"
         # if we set the shots to None, backprop can now be used
-        assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert spy.call_args[1]["diff_method"] == "backprop"
 
     @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
     def test_shot_vectors_single_measurements(self, interface, shots, seed):
