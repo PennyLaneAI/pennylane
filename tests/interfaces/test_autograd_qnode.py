@@ -545,11 +545,11 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert spy.call_args[1]["diff_method"] == "backprop"
 
 
 @pytest.mark.parametrize(

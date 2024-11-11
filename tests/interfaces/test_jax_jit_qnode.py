@@ -891,7 +891,7 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
 
         cost_fn(a, b)
         # if we set the shots to None, backprop can now be used
