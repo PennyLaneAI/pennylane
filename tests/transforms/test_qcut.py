@@ -15,7 +15,7 @@
 Unit tests for the `pennylane.qcut` package.
 """
 # pylint: disable=protected-access,too-few-public-methods,too-many-arguments
-# pylint: disable=too-many-public-methods,comparison-with-callable
+# pylint: disable=too-many-public-methods,comparison-with-callable,unused-argument
 # pylint: disable=no-value-for-parameter,no-member,not-callable, use-implicit-booleaness-not-comparison
 import copy
 import itertools
