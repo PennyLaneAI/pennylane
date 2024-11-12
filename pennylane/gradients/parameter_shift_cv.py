@@ -450,7 +450,8 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         start = 0
 
         if not results:
-            results = [np.squeeze(np.zeros([tape.output_dim]))]
+            _output_dim = _get_output_dim(tape)
+            results = [np.squeeze(np.zeros([_output_dim]))]
 
         interface = qml.math.get_interface(results[0])
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
@@ -726,7 +727,8 @@ def param_shift_cv(
         fns.append(data[1])
 
     if all(g == "0" for g in method_map.values()):
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        _output_dim = _get_output_dim(tape)
+        return [], lambda _: np.zeros([_output_dim, len(tape.trainable_params)])
 
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 
@@ -814,3 +816,25 @@ def param_shift_cv(
         return jacobian
 
     return gradient_tapes, processing_fn
+
+def _get_output_dim(tape):
+    """Update the dimension of the output of the quantum script.
+
+    Sets:
+        self._output_dim (int): Size of the quantum script output (when flattened)
+
+    This method makes use of `self.batch_size`, so that `self._batch_size`
+    needs to be up to date when calling it.
+    Call `_update_batch_size` before `_update_output_dim`
+    """
+    _output_dim = 0
+    for m in tape.measurements:
+        # attempt to infer the output dimension
+        if isinstance(m, ProbabilityMP):
+            _output_dim += m.shape()
+        elif not isinstance(m, StateMP):
+            _output_dim += 1
+    if tape.batch_size:
+        _output_dim *= tape.batch_size
+        
+    return _output_dim
