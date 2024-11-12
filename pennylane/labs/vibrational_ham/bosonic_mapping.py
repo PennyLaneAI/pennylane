@@ -18,7 +18,6 @@ from typing import Union
 
 import numpy as np
 import pennylane as qml
-from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .bosonic import BoseSentence, BoseWord
@@ -132,7 +131,7 @@ def _(bose_operator: BoseSentence, d, ps=False, wire_map=None, tol=None):
     qubit_operator = PauliSentence()
 
     for bw, coeff in bose_operator.items():
-        bose_word_as_ps = binary_mapping(bw, d=d)
+        bose_word_as_ps = binary_mapping(bw, d=d, ps=True)
 
         for pw in bose_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
@@ -141,6 +140,11 @@ def _(bose_operator: BoseSentence, d, ps=False, wire_map=None, tol=None):
                 qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
+
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)

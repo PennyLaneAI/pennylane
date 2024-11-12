@@ -1,3 +1,17 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""This module contains tests for binary_mapping of bosonic operators."""
 import pytest
 
 import pennylane as qml
@@ -371,19 +385,19 @@ def test_binary_mapping_bosesentence(bose_op, d, result):
     assert qubit_op == expected_op
 
 
-# @pytest.mark.parametrize(
-#     "bose_op",
-#     [
-#         BoseWord({(0, 0): "-"}),
-#         BoseSentence({BoseWord({(0, 0): "-"}): 1.0, BoseWord({(0, 1): "-"}): 1.0}),
-#     ],
-# )
-# def test_return_binary_mapping_sum(bose_op):
-#     """Test that the correct type is returned for binary mapping
-#     when ps is set to False."""
+@pytest.mark.parametrize(
+    "bose_op",
+    [
+        BoseWord({(0, 0): "-"}),
+        BoseSentence({BoseWord({(0, 0): "-"}): 1.0, BoseWord({(0, 1): "-"}): 1.0}),
+    ],
+)
+def test_return_binary_mapping_sum(bose_op):
+    """Test that the correct type is returned for binary mapping
+    when ps is set to False."""
 
-#     qubit_op = binary_mapping(bose_op, ps=False)
-#     assert isinstance(qubit_op, qml.ops.Sum)
+    qubit_op = binary_mapping(bose_op, ps=False)
+    assert isinstance(qubit_op, qml.ops.Sum)
 
 
 @pytest.mark.parametrize(
