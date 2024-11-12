@@ -76,6 +76,20 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
+  [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
+
+* The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
+  [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
+
+* The `qml.workflow.set_shots` helper function has been removed. We no longer interact with the legacy device interface in our code.
+  Instead, shots should be specified on the tape, and the device should use these shots.
+  [(#6534)](https://github.com/PennyLaneAI/pennylane/pull/6534)
+
+* `QNode.gradient_fn` has been removed. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
+  process the diff method.
+  [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
+ 
 * `qml.broadcast` has been removed. Users should use `for` loops instead.
   [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
 
@@ -117,7 +131,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Shiwen An
+Shiwen An,
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
