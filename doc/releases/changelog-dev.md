@@ -90,14 +90,20 @@
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
+* Add reporting of test warnings as failures.
+  [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
 * Add a warning message to Gradients and training documentation about ComplexWarnings
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_deep_interface` now works properly for autograd arrays.
+  [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
+
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -107,6 +113,7 @@ Shiwen An
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
+Austin Huang,
 Christina Lee,
 Andrija Paurevic,
 Justin Pickering
