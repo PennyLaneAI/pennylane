@@ -363,11 +363,9 @@ class TestUnits:
     def test_grouping_strategies_single_hamiltonian(self, make_H):
         """Tests that a single Hamiltonian or Sum is split correctly"""
 
-        coeffs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-        obs_list = single_term_obs_list + [qml.I()]
+        coeffs = [0.1, 0.2, 0.3, 0.4, 0.5]
+        obs_list = single_term_obs_list
         H = make_H(coeffs, obs_list)  # Tests that constant offset is handled
-
-        qwc_groups = single_term_qwc_groups
 
         expected_tapes_no_grouping = [
             qml.tape.QuantumScript([], [qml.expval(o)], shots=100) for o in obs_list
@@ -375,8 +373,11 @@ class TestUnits:
 
         expected_tapes_qwc_grouping = [
             qml.tape.QuantumScript([], [qml.expval(o) for o in group], shots=100)
-            for group in qwc_groups
+            for group in single_term_qwc_groups
         ]
+
+        coeffs, obs_list = coeffs + [0.6], obs_list + [qml.I()]
+        H = make_H(coeffs, obs_list)  # Tests that constant offset is handled
 
         tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
 
