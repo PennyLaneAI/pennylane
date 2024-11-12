@@ -68,37 +68,10 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-New operator arithmetic deprecations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In PennyLane v0.39, the legacy operator arithmetic system has been deprecated. Check out the :ref:`Updated operators <new_opmath>` page
-for details on how to port your legacy code to the new system. The old system is still accessible via :func:`~.disable_new_opmath`, though
-it is not recommended, as the old system is deprecated and will be removed in the v0.40 release. The following functionality will explicitly
-raise a deprecation warning when used:
-
-* In PennyLane v0.39, legacy operator arithmetic has been deprecated. This includes :func:`~pennylane.operation.enable_new_opmath`,
-  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
-  that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`;
-  this behaviour is not deprecated.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
-  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* :func:`pennylane.pauli.simplify` is deprecated. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
+* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
   :meth:`~.Operator.terms` instead.
 
-  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
+  - deprecated in v0.35
 
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
@@ -119,6 +92,31 @@ Other deprecations
 
   - Deprecated in v0.36
   - Will be removed in v0.37
+
+Completed removal of legacy operator arithmetic
+-----------------------------------------------
+
+In PennyLane v0.40, the legacy operator arithmetic system has been removed, and is fully replaced by the new
+operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
+for details on how to port your legacy code to the new system. The following functionality has been removed:
+
+* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`~pennylane.operation.enable_new_opmath`,
+  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
+  that ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` has been removed. Instead, please use
+  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
 
 Completed deprecation cycles
 ----------------------------

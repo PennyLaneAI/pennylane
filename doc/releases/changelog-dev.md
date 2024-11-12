@@ -52,6 +52,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
+  `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
+  Note that `qml.Hamiltonian` will continue to dispatch to `qml.ops.LinearCombination`. For more information, 
+  check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
+  [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
