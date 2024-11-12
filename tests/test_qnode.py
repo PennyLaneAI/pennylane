@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 import copy
-
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
 from dataclasses import replace
@@ -211,27 +210,6 @@ class TestValidation:
         tape = qml.tape.QuantumScript([], [], shots=50)
         res2 = QNode.get_best_method(dev2, None, tape=tape)
         assert res2 == (qml.gradients.param_shift, {}, dev2)
-
-    # pylint: disable=protected-access
-    @pytest.mark.xfail(
-        reason="qml.device will always work with 'parameter-shift' and never falls back on 'finite-diff'"
-    )
-    def test_best_method_is_finite_diff(self, monkeypatch):
-        """Test that the method for determining the best diff method
-        for a given device and interface returns finite differences"""
-        dev = qml.device("default.qubit", wires=1)
-        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
-
-        def capabilities(cls):
-            capabilities = cls._capabilities
-            capabilities.update(model="None")
-            return capabilities
-
-        # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultMixed, "capabilities", capabilities)
-        res = QNode.get_best_method(dev, "another_interface")
-        assert res == (qml.gradients.finite_diff, {}, dev)
 
     # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
