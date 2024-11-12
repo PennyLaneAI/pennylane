@@ -24,11 +24,16 @@ import pennylane as qml
 from .base_interpreter import PlxprInterpreter, jaxpr_to_jaxpr
 from .primitives import qnode_prim
 
-# pylint: disable=missing-function-docstring
-
 
 class TransformTrace(Trace):
-    """Trace for processing primitives for PennyLane transforms"""
+    """Trace for processing primitives for PennyLane transforms.
+
+    Args:
+        main (jax.core.MainTrace): Active interpreter that this ``Trace`` belongs to
+        sublevel (int): Sublevel for this ``Trace``
+        transform_program (pennylane.transforms.core.TransformProgram): ``TransformProgram``
+            containing the transforms to apply to the primitives being interpreted
+    """
 
     def __init__(
         self,
@@ -41,6 +46,7 @@ class TransformTrace(Trace):
         self._state = None
 
     def pure(self, val: Any):
+        """Create a ``TransformTracer``"""
         return TransformTracer(self, val, 0)
 
     lift = sublift = pure
@@ -52,9 +58,20 @@ class TransformTrace(Trace):
 
     @state.setter
     def state(self, state):
+        """Setter for the state attribute."""
         self._state = state
 
     def process_primitive(self, primitive: Primitive, tracers: tuple[Tracer], params: dict):
+        """Interpret a given primitive.
+
+        Args:
+            primitive (jax.core.Primitive): Primitive to interpret
+            tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive
+            params (dict): Keyword arguments/metadata for the primitive
+
+        Returns:
+            Any: The result of the interpretation
+        """
         idx = max(t.idx for t in tracers if isinstance(t, TransformTracer))
         is_qml_primitive = primitive.__class__.__module__.split(".")[0] == "pennylane"
 
@@ -71,7 +88,14 @@ class TransformTrace(Trace):
 
 
 class TransformTracer(Tracer):
-    """Tracer for tracing PennyLane transforms"""
+    """Tracer for tracing PennyLane transforms
+
+    Args:
+        trace (pennylane.capture.TransformTrace): TransformTrace that boxed up inputs into this
+            ``TransformTracer``
+        val (Any): Input value to box inside this ``TransformTracer``
+        idx (int): Index into the transform program to track which transform to apply
+    """
 
     def __init__(self, trace: TransformTrace, val: Any, idx: int):
         super().__init__(trace=trace)
@@ -94,6 +118,7 @@ class TransformTracer(Tracer):
 
     @property
     def aval(self):
+        """Abstract value of this ``TransformTracer``"""
         return self._aval
 
     def full_lower(self):  # pylint: disable=missing-function-docstring
@@ -101,7 +126,87 @@ class TransformTracer(Tracer):
 
 
 class TransformInterpreter(PlxprInterpreter):
-    """Interpreter for transforming PLxPR."""
+    r"""Interpreter for transforming PLxPR.
+
+    This interpreter can be used to apply transforms to PLxPR natively without having to create
+    ``QuantumTape``\ s as an intermediate step.
+
+    Args:
+        transform_program (pennylane.transforms.core.TransformProgram): Transform program containing
+            all transforms to be applied to the input function.
+
+    **Example**
+
+    Let's say a user has defined a transform that converts all ``qml.RX`` gates into ``qml.RY``
+    gates. First, a PLxPR compatible version of the transform needs to be implemented. This can
+    be done as shown below:
+
+    .. code-block:: python
+
+        @qml.transforms.core.transform
+        def convert_rx_to_ry(tape):
+            new_ops = [
+                qml.RY(op.data[0], op.wires) if isinstance(op, qml.RX) else op for op in tape.operations
+            ]
+            new_tape = qml.tape.QuantumScript(
+                new_ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+            )
+            return [new_tape], lambda results: results[0]
+
+
+        @convert_rx_to_ry.custom_plxpr_transform
+        def _(self, primitive, tracers, params, targs, tkwargs, state):
+            from pennylane.capture import TransformTracer
+
+            # Step 1: Transform primitive
+            primitive = qml.RY._primitive if primitive.name == "RX" else primitive
+            # Step 2: Update tracers
+            tracers = [
+                TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
+                for t in tracers
+            ]
+            # Step 3: Return the result of the transformation
+            return primitive.bind(*tracers, **params)
+
+    Using ``@convert_rx_to_ry.custom_plxpr_transform`` will register the decorated function as the interpreter
+    that processes primitives when the transform is included in the transform program.
+
+    We can now use this to transform user functions:
+
+    .. code-block:: python
+
+        def func(x, y):
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            qml.RY(y, 1)
+            return qml.expval(qml.Z(1))
+
+    >>> print(qml.capture.make_plxpr(func)(1.2, 3.4))
+    { lambda ; a:f32[] b:f32[]. let
+        _:AbstractOperator() = RX[n_wires=1] a 0
+        _:AbstractOperator() = CNOT[n_wires=2] 0 1
+        _:AbstractOperator() = RY[n_wires=1] b 1
+        c:AbstractOperator() = PauliZ[n_wires=1] 1
+        d:AbstractMeasurement(n_wires=None) = expval_obs c
+      in (d,) }
+
+    .. code-block:: python
+
+        program = qml.transforms.core.TransformProgram()
+        program.add_transform(convert_rx_to_ry)
+        transform_interpreter = TransformInterpreter(program)
+        transformed_func = transform_interpreter(func)
+
+    >>> print(qml.capture.make_plxpr(transformed_func)(1.2, 3.4))
+    { lambda ; a:f32[] b:f32[]. let
+        _:AbstractOperator() = RY[n_wires=1] a 0
+        _:AbstractOperator() = CNOT[n_wires=2] 0 1
+        _:AbstractOperator() = RY[n_wires=1] b 1
+        c:AbstractOperator() = PauliZ[n_wires=1] 1
+        d:AbstractMeasurement(n_wires=None) = expval_obs c
+      in (d,) }
+
+    """
 
     _trace: TransformTrace
     _transform_program: "qml.transforms.core.TransformProgram"
@@ -124,7 +229,8 @@ class TransformInterpreter(PlxprInterpreter):
         self._state = {}
 
     def read_with_trace(self, var):
-        """Extract the value corresponding to a variable."""
+        """Extract the value corresponding to a variable and box it in a ``TransformTracer``
+        if not already boxed."""
         if getattr(var, "_trace", None) is self._trace:
             return var
 
