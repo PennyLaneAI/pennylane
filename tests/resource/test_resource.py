@@ -285,21 +285,25 @@ class TestResources:
             num_wires=2,
             num_gates=6,
             gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
         ),
         Resources(
             num_wires=2,
             num_gates=12,
             gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
+            gate_sizes=defaultdict(int, {1: 10, 2: 2})
         ),
         Resources(
             num_wires=2,
             num_gates=18,
             gate_types=defaultdict(int, {"RZ": 6, "CNOT": 3, "RY": 6, "Hadamard": 3}),
+            gate_sizes=defaultdict(int, {1: 15, 2: 3}),
         ),
         Resources(
             num_wires=2,
             num_gates=30,
             gate_types=defaultdict(int, {"RZ": 10, "CNOT": 5, "RY": 10, "Hadamard": 5}),
+            gate_sizes=defaultdict(int, {1: 25, 2: 5}),
         ),
     )
 
@@ -312,6 +316,7 @@ class TestResources:
             num_wires=2,
             num_gates=6,
             gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
         )
 
         resultant_obj = mul_in_series(resource_obj, scalar)
@@ -328,21 +333,25 @@ class TestResources:
             num_wires=2,
             num_gates=6,
             gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
         ),
         Resources(
             num_wires=4,
             num_gates=12,
             gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
+            gate_sizes=defaultdict(int, {1: 10, 2: 2}),
         ),
         Resources(
             num_wires=6,
             num_gates=18,
             gate_types=defaultdict(int, {"RZ": 6, "CNOT": 3, "RY": 6, "Hadamard": 3}),
+            gate_sizes=defaultdict(int, {1: 15, 2: 3}),
         ),
         Resources(
             num_wires=10,
             num_gates=30,
             gate_types=defaultdict(int, {"RZ": 10, "CNOT": 5, "RY": 10, "Hadamard": 5}),
+            gate_sizes=defaultdict(int, {1: 25, 2: 5}),
         ),
     )
 
@@ -355,17 +364,11 @@ class TestResources:
             num_wires=2,
             num_gates=6,
             gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
         )
 
         resultant_obj = mul_in_parallel(resource_obj, scalar)
         assert resultant_obj == expected_res_obj
-
-    test_str_data = (
-        ("wires: 0\n" + "gates: 0\n" + "gate_types:\n" + "{}"),
-        ("wires: 5\n" + "gates: 0\n" + "gate_types:\n" + "{}"),
-        ("wires: 1\n" + "gates: 3\n" + "gate_types:\n" + "{'Hadamard': 1, 'PauliZ': 2}"),
-        ("wires: 4\n" + "gates: 2\n" + "gate_types:\n" + "{'Hadamard': 1, 'CNOT': 1}"),
-    )
 
 
 class TestResourcesOperation:  # pylint: disable=too-few-public-methods
