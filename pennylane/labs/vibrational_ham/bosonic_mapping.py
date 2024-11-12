@@ -28,15 +28,14 @@ def _get_pauli_op(i, j, qub_id):
     r"""Returns expression to convert qubit-local term ::math::``\ket{x_j}\bra{x^{'}}``
     to qubit operators as given in Eq. (6-9) <https://www.nature.com/articles/s41534-020-0278-0>"""
 
-    if i == 0 and j == 0:
-        return PauliSentence({PauliWord({}): 0.5, PauliWord({qub_id: "Z"}): 0.5})
-    if i == 0 and j == 1:
-        return PauliSentence({PauliWord({qub_id: "X"}): 0.5, PauliWord({qub_id: "Y"}): 0.5j})
-    if i == 1 and j == 0:
-        return PauliSentence({PauliWord({qub_id: "X"}): 0.5, PauliWord({qub_id: "Y"}): -0.5j})
+    c1, c2 = 0.5, 0.5
+    if i == 1:
+        c2 = -c2
 
-    return PauliSentence({PauliWord({}): 0.5, PauliWord({qub_id: "Z"}): -0.5})
+    if i != j:
+        return PauliSentence({PauliWord({qub_id: "X"}): c1, PauliWord({qub_id: "Y"}):c2*1j})
 
+    return PauliSentence({PauliWord({}): c1, PauliWord({qub_id: "Z"}):c2})
 
 def binary_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
@@ -87,36 +86,39 @@ def _(bose_operator: BoseWord, d, ps=False, wire_map=None, tol=None):
 
     qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
-    if len(bose_operator) != 0:
-        for item in bose_operator.items():
-            (_, boson), sign = item
-            oper = PauliSentence()
-            non_zero_d = np.nonzero(d_mat[sign])
-            for i, j in zip(*non_zero_d):
-                coeff = d_mat[sign][i][j]
-                
-                # Least significant bit is written leftmost
-                binary_row = list(map(int, bin(i)[2:]))[::-1]
-                if nqub_per_boson > len(binary_row):
-                    binary_row += [0] * (nqub_per_boson - len(binary_row))
+    for item in bose_operator.items():
+        (_, boson), sign = item
+        oper = PauliSentence()
+        non_zero_d = np.nonzero(d_mat[sign])
+        for i, j in zip(*non_zero_d):
+            coeff = d_mat[sign][i][j]
 
-                binary_col = list(map(int, bin(j)[2:]))[::-1]
-                if nqub_per_boson > len(binary_col):
-                    binary_col += [0] * (nqub_per_boson - len(binary_col))
+            binary_row = list(map(int, bin(i)[2:]))[::-1]
+            if nqub_per_boson > len(binary_row):
+                binary_row += [0] * (nqub_per_boson - len(binary_row))
 
-                pauliOp = PauliSentence({PauliWord({}): 1.0})
-                for n in range(nqub_per_boson):
-                    pauliOp @= _get_pauli_op(
-                        binary_row[n], binary_col[n], n + boson * nqub_per_boson
-                    )
+            binary_col = list(map(int, bin(j)[2:]))[::-1]
+            if nqub_per_boson > len(binary_col):
+                binary_col += [0] * (nqub_per_boson - len(binary_col))
 
-                oper += coeff * pauliOp
-            qubit_operator @= oper
+            pauliOp = PauliSentence({PauliWord({}): 1.0})
+            for n in range(nqub_per_boson):
+                pauliOp @= _get_pauli_op(
+                    binary_row[n], binary_col[n], n + boson * nqub_per_boson
+                )
+
+            oper += coeff * pauliOp
+        qubit_operator @= oper
     qubit_operator.simplify()
 
     for pw in qubit_operator:
         if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
             qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
