@@ -861,9 +861,6 @@ class S(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
-
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -981,14 +978,11 @@ class T(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5 * INV_SQRT2 * (1 + 1.0j)),
-                    qml.pauli.PauliWord({self.wires[0]: "Z"}): (0.5 - 0.5 * INV_SQRT2 * (1 + 1.0j)),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + INV_SQRT2 * (0.5 + 0.5j)),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): (0.5 - INV_SQRT2 * (0.5 + 0.5j)),
                 }
             )
         return self._pauli_rep
-
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
 
     @staticmethod
     @lru_cache()
@@ -1111,9 +1105,6 @@ class SX(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
-
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1234,7 +1225,7 @@ class SWAP(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.5,
+                    qml.pauli.PauliWord({}): 0.5,
                     qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5,
                     qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5,
                     qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
@@ -1242,8 +1233,6 @@ class SWAP(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
 
     @staticmethod
     @lru_cache()
@@ -1341,14 +1330,12 @@ class ECR(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "I"}): INV_SQRT2,
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): INV_SQRT2,
                     qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "X"}): -INV_SQRT2,
                 }
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
 
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1491,9 +1478,6 @@ class ISWAP(Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
-
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1625,9 +1609,6 @@ class SISWAP(Operation):
                 }
             )
         return self._pauli_rep
-
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
 
     @staticmethod
     @lru_cache()
