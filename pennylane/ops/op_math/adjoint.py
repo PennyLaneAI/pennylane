@@ -413,10 +413,10 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        base = self.base.simplify()
-        if self.base.has_adjoint:
-            return base.adjoint().simplify()
-        return Adjoint(base=base.simplify())
+        base = self.base if qml.capture.enabled() else self.base.simplify()
+        if base.has_adjoint:
+            return base.adjoint() if qml.capture.enabled() else base.adjoint().simplify()
+        return Adjoint(base=base)
 
 
 # pylint: disable=no-member
@@ -489,3 +489,8 @@ class AdjointOpObs(AdjointOperation, Observable):
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
+
+
+AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointOpObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
