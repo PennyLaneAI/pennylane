@@ -1,3 +1,5 @@
+# Transforms for program capture
+
 This document provides a brief introduction to JAX `Trace`s and `Tracer`s and explains how we use
 them in PennyLane to apply PennyLane transforms to PLxPR without having to create tapes. A lot of
 details here have been derived and reused from the
@@ -14,7 +16,7 @@ import pennylane as qml
 qml.capture.enable()
 ```
 
-# Trace basics
+## Trace basics
 
 JAX represents active interpreters as a stack, stored as a list of containers, where each container
 has an interpreter type (`trace_type`), an integer corresponding to its height in the stack
@@ -196,7 +198,7 @@ class Primitive:
 Now, we have everything we need to start implementing interpreters. Let's start with the level-0
 interpreter, called the Evaluation Interpreter.
 
-##  Evaluation Interpreter (EvalTrace)
+###  Evaluation Interpreter
 
 ```python
 class EvalTrace(Trace):
@@ -244,7 +246,7 @@ Binding primitive with standard evaluation
 Now that we have a good understanding of how JAX's core works, we can start creating `Trace`s for
 our purposes.
 
-# PennyLane Transforms
+## PennyLane Transforms
 
 As mentioned earlier, JAX has a built in optimization to avoid processing primitives with
 unnecessary interpreters by leveraging data-dependence: we only apply an interpreter when
@@ -262,7 +264,7 @@ Check out `pennylane/capture/transforms.py` to see how the `TransformInterpreter
 `PlxprInterpreter`, is implemented, and how it uses `TransformTrace` and `TransformTracer` to
 transform PennyLane primitives.
 
-## How to process primitives for custom transforms
+### How to process primitives for custom transforms
 
 To create new transforms for PLxPR, or to register already-existing transforms for natively
 transforming PLxPR, use the `custom_plxpr_transform` decorator of `TransformDispatcher`:
@@ -351,7 +353,7 @@ transformed_qfunc = transformer(qfunc)
 
 All the `RX` primitives have been transformed into `RY` primitives. Woohoo!
 
-## Constraints
+### Constraints
 
 This implementation has many constraints. Hopefully some of these can be mitigated in the future.
 But, for now, they're listed below:
