@@ -81,8 +81,8 @@ class RX(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self._phi / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): -1j * qml.math.sin(self._phi / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self.data[0] / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): -1j * qml.math.sin(self.data[0] / 2),
                 }
             )
         return self._pauli_rep
@@ -92,7 +92,6 @@ class RX(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
-        self._phi = phi
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -189,8 +188,8 @@ class RY(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self._phi / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -1j * qml.math.sin(self._phi / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self.data[0] / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -1j * qml.math.sin(self.data[0] / 2),
                 }
             )
         return self._pauli_rep
@@ -200,7 +199,6 @@ class RY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
-        self._phi = phi
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -296,8 +294,8 @@ class RZ(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self._phi / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "Z"}): -1j * qml.math.sin(self._phi / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self.data[0] / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): -1j * qml.math.sin(self.data[0] / 2),
                 }
             )
         return self._pauli_rep
@@ -307,7 +305,6 @@ class RZ(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
-        self._phi = phi
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -445,9 +442,9 @@ class PhaseShift(Operation):
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
                     qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
-                    * (1 + qml.math.exp(1j * self._phi)),
+                    * (1 + qml.math.exp(1j * self.data[0])),
                     qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
-                    * (1 - qml.math.exp(1j * self._phi)),
+                    * (1 - qml.math.exp(1j * self.data[0])),
                 }
             )
         return self._pauli_rep
@@ -457,7 +454,6 @@ class PhaseShift(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
-        self._phi = phi
 
     def label(
         self,
@@ -637,17 +633,17 @@ class Rot(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self._theta / 2)
-                    * qml.math.cos((self._phi + self._omega) / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self.data[1] / 2)
+                    * qml.math.cos((self.data[0] + self.data[2]) / 2),
                     qml.pauli.PauliWord({self.wires[0]: "X"}): -1j
-                    * qml.math.sin(self._theta / 2)
-                    * qml.math.sin((self._phi - self._omega) / 2),
+                    * qml.math.sin(self.data[1] / 2)
+                    * qml.math.sin((self.data[0] - self.data[2]) / 2),
                     qml.pauli.PauliWord({self.wires[0]: "Y"}): -1j
-                    * qml.math.cos((self._phi - self._omega) / 2)
-                    * qml.math.sin((self._theta) / 2),
+                    * qml.math.cos((self.data[0] - self.data[2]) / 2)
+                    * qml.math.sin((self.data[1]) / 2),
                     qml.pauli.PauliWord({self.wires[0]: "Z"}): -1j
-                    * qml.math.cos(self._theta / 2)
-                    * qml.math.sin((self._phi + self._omega) / 2),
+                    * qml.math.cos(self.data[1] / 2)
+                    * qml.math.sin((self.data[0] + self.data[2]) / 2),
                 }
             )
         return self._pauli_rep
@@ -661,9 +657,6 @@ class Rot(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
-        self._phi = phi
-        self._theta = theta
-        self._omega = omega
 
     @staticmethod
     def compute_matrix(
@@ -837,9 +830,9 @@ class U1(Operation):
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
                     qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
-                    * (1 + qml.math.exp(1j * self._phi)),
+                    * (1 + qml.math.exp(1j * self.data[0])),
                     qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
-                    * (1 - qml.math.exp(1j * self._phi)),
+                    * (1 - qml.math.exp(1j * self.data[0])),
                 }
             )
         return self._pauli_rep
@@ -849,7 +842,6 @@ class U1(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
-        self._phi = phi
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -980,16 +972,16 @@ class U2(Operation):
                 {
                     qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
                     * INV_SQRT2
-                    * (1 + qml.math.exp(1j * (self._delta + self._phi))),
+                    * (1 + qml.math.exp(1j * (self.data[1]  + self.data[0]))),
                     qml.pauli.PauliWord({self.wires[0]: "X"}): 0.5
                     * INV_SQRT2
-                    * (qml.math.exp(1j * self._phi) - qml.math.exp(1j * self._delta)),
+                    * (qml.math.exp(1j * self.data[0]) - qml.math.exp(1j * self.data[1] )),
                     qml.pauli.PauliWord({self.wires[0]: "Y"}): -0.5j
                     * INV_SQRT2
-                    * (qml.math.exp(1j * self._phi) + qml.math.exp(1j * self._delta)),
+                    * (qml.math.exp(1j * self.data[0]) + qml.math.exp(1j * self.data[1] )),
                     qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
                     * INV_SQRT2
-                    * (1 - qml.math.exp(1j * (self._delta + self._phi))),
+                    * (1 - qml.math.exp(1j * (self.data[1] + self.data[0]))),
                 }
             )
         return self._pauli_rep
@@ -998,8 +990,6 @@ class U2(Operation):
         self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
     ):
         super().__init__(phi, delta, wires=wires, id=id)
-        self._phi = phi
-        self._delta = delta
 
     @staticmethod
     def compute_matrix(
@@ -1149,17 +1139,17 @@ class U3(Operation):
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
                     qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
-                    * (1 + qml.math.exp(1j * (self._delta + self._phi)))
-                    * qml.math.cos(self._theta / 2),
+                    * (1 + qml.math.exp(1j * (self.data[2] + self.data[1])))
+                    * qml.math.cos(self.data[0] / 2),
                     qml.pauli.PauliWord({self.wires[0]: "X"}): -0.5
-                    * (qml.math.exp(1j * self._delta) - qml.math.exp(1j * self._phi))
-                    * qml.math.sin(self._theta / 2),
+                    * (qml.math.exp(1j * self.data[2]) - qml.math.exp(1j * self.data[1]))
+                    * qml.math.sin(self.data[0] / 2),
                     qml.pauli.PauliWord({self.wires[0]: "Y"}): -0.5j
-                    * (qml.math.exp(1j * self._delta) + qml.math.exp(1j * self._phi))
-                    * qml.math.sin(self._theta / 2),
+                    * (qml.math.exp(1j * self.data[2]) + qml.math.exp(1j * self.data[1]))
+                    * qml.math.sin(self.data[0]  / 2),
                     qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
-                    * (1 - qml.math.exp(1j * (self._delta + self._phi)))
-                    * qml.math.cos(self._theta / 2),
+                    * (1 - qml.math.exp(1j * (self.data[2] + self.data[1])))
+                    * qml.math.cos(self.data[0] / 2),
                 }
             )
         return self._pauli_rep
@@ -1173,9 +1163,6 @@ class U3(Operation):
         id: Optional[str] = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
-        self._theta = theta
-        self._phi = phi
-        self._delta = delta
 
     @staticmethod
     def compute_matrix(

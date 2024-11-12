@@ -73,7 +73,7 @@ NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
     (qml.Z(0), Z),
     (qml.H(0), H),
     (qml.S(0), S),
-    (qml.T(0, 1), T),
+    (qml.T(0), T),
     (qml.SX(0), SX),
     (qml.SWAP([0, 1]), SWAP),
     (qml.ISWAP([0, 1]), ISWAP),
