@@ -234,6 +234,10 @@ class TestResources:
         resultant_obj = add_in_series(resource_obj, other_obj)
         assert resultant_obj == expected_res_obj
 
+        resultant_obj = resource_obj + other_obj
+        assert resultant_obj == expected_res_obj
+
+
     expected_results_add_parallel = (
         Resources(
             2,
@@ -313,6 +317,13 @@ class TestResources:
 
         resultant_obj = mul_in_series(resource_obj, scalar)
         assert resultant_obj == expected_res_obj
+
+        resultant_obj = resource_obj * scalar
+        assert resultant_obj == expected_res_obj
+
+        resultant_obj = scalar * resource_obj
+        assert resultant_obj == expected_res_obj
+
 
     expected_results_mul_parallel = (
         Resources(

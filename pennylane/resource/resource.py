@@ -72,6 +72,8 @@ class Resources:
     def __mul__(self, scalar: int):
         return mul_in_series(self, scalar)
 
+    __rmul__ = __mul__
+
     def __str__(self):
         keys = ["wires", "gates", "depth"]
         vals = [self.num_wires, self.num_gates, self.depth]
