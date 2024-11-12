@@ -253,25 +253,24 @@ def substitute(
         Resources: The substituted Resources object
     """
 
-    count = primary_resources.gate_types.pop(name, 0)
+    count = primary_resources.gate_types.get(name, 0)
 
     if count > 0:
-        new_wires = primary_resources.num_wires
         new_gates = (
             primary_resources.num_gates
             - count
             + (count * replacement_resources.num_gates)
         )
 
-        replacement_gate_types = _scale_dict(replacement_resources.gate_types, count)
-        new_gate_types = _combine_dict(primary_resources.gate_types, replacement_gate_types)
+        replacement_gate_types = _scale_dict(replacement_resources.gate_types, count, in_place=in_place)
+        new_gate_types = _combine_dict(primary_resources.gate_types, replacement_gate_types, in_place=in_place)
+        new_gate_types.pop(name)
 
         if in_place:
             primary_resources.num_gates = new_gates
-            primary_resources.gate_types = new_gate_types
             return primary_resources
 
-        return Resources(new_wires, new_gates, new_gate_types)
+        return Resources(primary_resources.num_wires, new_gates, new_gate_types)
 
     return primary_resources
 
