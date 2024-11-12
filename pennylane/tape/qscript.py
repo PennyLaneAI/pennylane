@@ -334,6 +334,7 @@ class QuantumScript:
             for an example.
             
         """
+        # pylint: disable=import-outside-toplevel
         import warnings
         warnings.warn(
             "The 'output_dim' property is deprecated and will be removed in version 0.41",

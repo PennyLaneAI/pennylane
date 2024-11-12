@@ -836,5 +836,5 @@ def _get_output_dim(tape):
             _output_dim += 1
     if tape.batch_size:
         _output_dim *= tape.batch_size
-        
+
     return _output_dim
