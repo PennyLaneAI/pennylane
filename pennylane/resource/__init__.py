@@ -136,6 +136,14 @@ gate_sizes:
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .first_quantization import FirstQuantization
 from .measurement import estimate_error, estimate_shots
-from .resource import Resources, ResourcesOperation, add_in_series, add_in_parallel, mul_in_series, mul_in_parallel, substitute
+from .resource import (
+    Resources,
+    ResourcesOperation,
+    add_in_series,
+    add_in_parallel,
+    mul_in_series,
+    mul_in_parallel,
+    substitute,
+
 from .second_quantization import DoubleFactorization
 from .specs import specs
