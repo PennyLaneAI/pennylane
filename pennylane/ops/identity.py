@@ -80,10 +80,12 @@ class Identity(CVObservable, Operation):
         """String representation."""
         if len(self.wires) == 0:
             return "I()"
-        wire = self.wires[0]
-        if isinstance(wire, str):
-            return f"I('{wire}')"
-        return f"I({wire})"
+        if len(self.wires) == 1:
+            wire = self.wires[0]
+            if isinstance(wire, str):
+                return f"I('{wire}')"
+            return f"I({wire})"
+        return f"I({self.wires.tolist()})"
 
     @property
     def name(self):
