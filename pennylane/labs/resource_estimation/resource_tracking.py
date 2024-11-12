@@ -64,7 +64,7 @@ resource_config = {
 
 @singledispatch
 def get_resources(obj, gate_set: Set = DefaultGateSet, config: Dict = resource_config) -> Resources:
-    """Obtain the resources from a quantum circuit or operation in terms of the gates provided
+    r"""Obtain the resources from a quantum circuit or operation in terms of the gates provided
     in the gate_set.
 
     Args:
@@ -77,6 +77,72 @@ def get_resources(obj, gate_set: Set = DefaultGateSet, config: Dict = resource_c
 
     Rasies:
         TypeError: "Could not obtain resources for obj of type (type(obj))".
+
+    **Example**
+
+    We can track the resources of a quantum workflow by passing the quantum function defining our workflow directly
+    into this function.
+
+    .. code-block:: python
+
+        import pennylane.labs.resource_estimation as re
+
+        def my_circuit():
+            for w in range(2):
+                re.ResourceHadamard(w)
+
+            re.ResourceCNOT([0, 1])
+            re.ResourceRX(1.23, 0)
+            re.ResourceRY(-4.56, 1)
+
+            re.ResourceQFT(wires=[0, 1, 2])
+            return qml.expval(re.ResourceHadamard(2))
+
+    Note that we are passing a python function NOT a :class:`~.QNode`. The resources for this workflow are then obtained by:
+
+    >>> res = re.get_resources(my_circuit)()
+    >>> print(res)
+    wires: 3
+    gates: 202
+    gate_types:
+    {'Hadamard': 5, 'CNOT': 10, 'T': 187}
+
+    .. details::
+        :title: Usage Details
+
+        Users can provide custom gatesets to track resources with. Consider :code:`my_circuit()` from above:
+
+        >>> my_gateset = {"Hadamard", "RX", "RY", "QFT", "CNOT"}
+        >>> print(re.get_resources(my_circuit, gate_set = my_gateset)())
+        wires: 3
+        gates: 6
+        gate_types:
+        {'Hadamard': 2, 'CNOT': 1, 'RX': 1, 'RY': 1, 'QFT': 1}
+
+        We can also obtain resources for individual operations and quantum tapes in a similar manner:
+
+        >>> op = re.ResourceRX(1.23, 0)
+        >>> print(re.get_resources(op))
+        wires: 1
+        gates: 17
+        gate_types:
+        {'T': 17}
+
+        Finally, we can modify the config values listed in the global :code:`labs.resource_estimation.resource_config`
+        dictionary to have finegrain control of how the resources are computed.
+
+        >>> re.resource_config
+        {'error_rx': 0.01, 'error_ry': 0.01, 'error_rz': 0.01}
+        >>>
+        >>> my_config = copy.copy(re.resource_config)
+        >>> my_config["error_rx"] = 0.001
+        >>>
+        >>> print(re.get_resources(op, config=my_config))
+        wires: 1
+        gates: 21
+        gate_types:
+        {'T': 21}
+
     """
 
     raise TypeError(

@@ -35,6 +35,7 @@ from pennylane.labs.resource_estimation.resource_tracking import (
 
 
 class DummyOperation(qml.operation.Operation):
+    """Dummy class to test _operations_to_compressed_reps function."""
 
     def __init__(self, wires=None):
         super().__init__(wires=wires)
@@ -253,6 +254,7 @@ class TestGetResources:
 
     @staticmethod
     def my_qfunc():
+        """Dummy qfunc used to test resources_from_qfunc function."""
         for w in range(2):
             re.ResourceHadamard(w)
 

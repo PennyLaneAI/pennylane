@@ -32,11 +32,21 @@ Base Objects
     ~Resources
     ~CompressedResourceOp
 
+Tracking Resources
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~get_resources
+    ~DefaultGateSet
+    ~resource_config
+
 """
 
 from .resource_operator import ResourceOperator
 from .resource_container import CompressedResourceOp, Resources
-from .resource_tracking import DefaultGateSet, get_resources
+from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 from .ops import (
     ResourceCNOT,
