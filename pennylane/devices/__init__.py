@@ -45,9 +45,6 @@ Next generation devices
 :class:`pennylane.devices.Device` is the latest interface for the next generation of devices that
 replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.QubitDevice`.
 
-The previous interface :class:`pennylane.Device` has been removed from the top level, and the new :class:`pennylane.devices.Device` is
-accessible from the ``pennylane.devices`` submodule.
-
 .. currentmodule:: pennylane.devices
 .. autosummary::
     :toctree: api
