@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Helper Functionality to compute the khk decomposition variationally, as outlined in https://arxiv.org/abs/2104.00728"""
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 import warnings
 from datetime import datetime
 from functools import partial
@@ -32,7 +32,7 @@ from .cartan_subalgebra import adjvec_to_op, op_to_adjvec
 jax.config.update("jax_enable_x64", True)
 
 
-def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
+def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=False):
     r"""
     Variational KaK decomposition of Hermitian ``H``
 
@@ -223,7 +223,10 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None):
         plt.yscale("log")
         plt.show()
 
-    theta_opt = thetas[-1]
+    if pick_min:
+        theta_opt = thetas[np.argmin(energy)]
+    else:
+        theta_opt = thetas[-1]
 
     M = jnp.eye(dim_g)
 
