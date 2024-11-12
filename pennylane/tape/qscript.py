@@ -328,7 +328,7 @@ class QuantumScript:
         import warnings
         warnings.warn(
             "The 'output_dim' property is deprecated and will be removed in version 0.41",
-            qml.PendingDeprecationWarning
+            qml.PennyLaneDeprecationWarning
         )
         if self._output_dim is None:
             self._update_output_dim()  # this will set _batch_size if it isn't already
