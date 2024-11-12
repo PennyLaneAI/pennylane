@@ -52,7 +52,7 @@ def binary_mapping(
       d(int): Number of states in the boson.
       ps (bool): whether to return the result as a PauliSentence instead of an operator. Defaults to False.
       wire_map (dict): a dictionary defining how to map the orbitals of
-      the Fermi operator to qubit wires. If None, the integers used to
+      the Bose operator to qubit wires. If None, the integers used to
       order the orbitals will be used as wire labels. Defaults to None.
       tol (float): tolerance for discarding the imaginary part of the coefficients
 
