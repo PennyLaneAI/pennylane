@@ -586,38 +586,6 @@ class QNode:
         if diff_method is not None:
             QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
 
-    @property
-    def gradient_fn(self):
-        """A processed version of ``QNode.diff_method``.
-
-        .. warning::
-
-            This property is deprecated in v0.39 and will be removed in v0.40.
-
-        Please see ``QNode.diff_method`` instead.
-
-        """
-        warnings.warn(
-            "QNode.gradient_fn is deprecated. Please use QNode.diff_method instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        if self.diff_method is None:
-            return None
-
-        if (
-            self.device.name == "lightning.qubit"
-            and qml.metric_tensor in self.transform_program
-            and self.diff_method == "best"
-        ):
-            return qml.gradients.param_shift
-
-        if self.tape is None and self.device.shots:
-            tape = qml.tape.QuantumScript([], [], shots=self.device.shots)
-        else:
-            tape = self.tape
-
-        return QNode.get_gradient_fn(self.device, self.interface, self.diff_method, tape=tape)[0]
-
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
         for attr, value in vars(self).items():
@@ -935,7 +903,7 @@ class QNode:
         res = qml.execute(
             (self._tape,),
             device=self.device,
-            gradient_fn=gradient_fn,
+            diff_method=gradient_fn,
             interface=interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
