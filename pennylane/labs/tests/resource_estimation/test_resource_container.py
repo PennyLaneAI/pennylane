@@ -30,7 +30,7 @@ from pennylane.labs.resource_estimation.resource_container import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
-    substitute
+    substitute,
 )
 
 
@@ -316,6 +316,7 @@ class TestResources:
         resultant_obj2 = substitute(resource_obj, gate_name, sub_obj, in_place=True)
         assert resultant_obj2 == expected_res_obj
         assert resultant_obj2 is resource_obj
+
 
 @pytest.mark.parametrize("in_place", [False, True])
 def test_combine_dict(in_place):
