@@ -1331,11 +1331,11 @@ class TestHadamardAlias:
 
 
 class TestPauliRep:
-    def test_matrix_and_pauli_rep_equivalence_for_all_non_parametric_ops(self):
+    @pytest.mark.parametrize("op, _", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED)
+    def test_matrix_and_pauli_rep_equivalence_for_all_non_parametric_ops(self, op):
         """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
         import re
 
-        for op, _ in NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED:
             dim = op.matrix().shape[0]
             if dim == 2:
                 id_str = "I(0)"
