@@ -349,7 +349,7 @@ def _get_compilation_options(document: dict, prefix: str = "") -> dict[str, bool
 
 def _get_options(document: dict) -> dict[str, str]:
     """Get custom options"""
-    return {k: str(v) for k, v in document.get("options", {})}
+    return {k: str(v) for k, v in document.get("options", {}).items()}
 
 
 def parse_toml_document(document: dict) -> DeviceCapabilities:
