@@ -136,7 +136,7 @@ class LinearCombination(Sum):
 
         self._coeffs = coeffs
 
-        self._ops = observables
+        self._ops = list(observables)
 
         self._hyperparameters = {"ops": self._ops}
 

@@ -1510,46 +1510,37 @@ class TestObservablesComparisons:
 
     @pytest.mark.parametrize(("op1", "op2", "res"), equal_pauli_operators)
     def test_pauli_operator_equals(self, op1, op2, res):
-        """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators and Hamiltonians"""
+        """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators
+        and Hamiltonians"""
 
         assert qml.equal(op1, op2) == qml.equal(op2, op1)
         assert qml.equal(op1, op2) == res
 
     def test_hamiltonian_and_operation_not_equal(self):
-        """Tests that comparing a Hamiltonian with an Operator that is not an Observable returns False"""
+        """Tests that comparing a LinearCombination with an Operation returns False"""
         op1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
         op2 = qml.RX(1.2, 0)
         assert qml.equal(op1, op2) is False
         assert qml.equal(op2, op1) is False
-        with pytest.raises(AssertionError, match="is not of type Observable"):
+        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
             assert_equal(op1, op2)
 
     def test_tensor_and_operation_not_equal(self):
-        """Tests that comparing a Tensor with an Operator that is not an Observable returns False"""
+        """Tests that comparing a tensor product with an Operator that is not an Observable returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
         op2 = qml.RX(1.2, 0)
         assert qml.equal(op1, op2) is False
         assert qml.equal(op2, op1) is False
-        with pytest.raises(AssertionError, match="is not of type Observable"):
+        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
             assert_equal(op1, op2)
 
     def test_tensor_and_observable_not_equal(self):
-        """Tests that comparing a Tensor with an Observable that is not a Tensor returns False"""
+        """Tests that comparing a tensor product with a single Observable returns False"""
         op1 = qml.PauliX(0) @ qml.PauliY(1)
         op2 = qml.Z(0)
         assert qml.equal(op1, op2) is False
         assert qml.equal(op2, op1) is False
-        with pytest.raises(AssertionError, match="is of type <class 'pennylane.operation.Tensor'>"):
-            assert_equal(op1, op2)
-
-    def test_tensor_and_unsupported_observable_returns_false(self):
-        """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian returns False"""
-        op1 = qml.PauliX(0) @ qml.PauliY(1)
-        op2 = qml.Hermitian([[0, 1], [1, 0]], 0)
-
-        assert not qml.equal(op1, op2)
-        error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not the same")
-        with pytest.raises(AssertionError, match=error_message_pattern):
+        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
             assert_equal(op1, op2)
 
     def test_unsupported_object_type_not_implemented(self):
