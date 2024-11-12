@@ -100,7 +100,6 @@ def _(bose_operator: BoseWord, d, ps=False, wire_map=None, tol=None):
                 if nqub_per_boson > len(binary_row):
                     binary_row += [0] * (nqub_per_boson - len(binary_row))
 
-                # Least significant bit is written leftmost
                 binary_col = list(map(int, bin(j)[2:]))[::-1]
                 if nqub_per_boson > len(binary_col):
                     binary_col += [0] * (nqub_per_boson - len(binary_col))
