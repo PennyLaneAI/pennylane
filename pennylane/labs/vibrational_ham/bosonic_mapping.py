@@ -150,3 +150,122 @@ def _(bose_operator: BoseSentence, d, ps=False, wire_map=None, tol=None):
         return qubit_operator.map_wires(wire_map)
 
     return qubit_operator
+
+def unary_mapping(
+    bose_operator: Union[BoseWord, BoseSentence],
+    d: int = 2,
+    ps: bool = True,
+    wire_map: dict = None,
+    tol: float = None,
+):
+    r"""Convert a bosonic operator to a qubit operator using the unary mapping
+    as described in <https://www.nature.com/articles/s41534-020-0278-0>
+    Args:
+      bose_operator(BoseWord, BoseSentence): the bosonic operator
+      d(int): Number of states in the boson.
+      ps (bool): whether to return the result as a PauliSentence instead of an operator. Defaults to False.
+      wire_map (dict): a dictionary defining how to map the orbitals of
+      the Bose operator to qubit wires. If None, the integers used to
+      order the orbitals will be used as wire labels. Defaults to None.
+      tol (float): tolerance for discarding the imaginary part of the coefficients
+
+    Returns:
+      a linear combination of qubit operators
+
+    **Example**
+
+    >>> w = qml.vibrational_ham.BoseWord()
+    >>> unary_mapping(w, d=2)
+
+    """
+
+    return _unary_mapping_dispatch(bose_operator, d, ps, wire_map, tol)
+
+
+@singledispatch
+def _unary_mapping_dispatch(bose_operator, d, ps=False, wires_map=None, tol=None):
+    """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
+    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
+
+
+@_unary_mapping_dispatch.register
+def _(bose_operator: BoseWord, d, ps=False, wire_map=None, tol=None):
+
+    cr = np.zeros((d, d))
+    for s in range(d - 1):
+        cr[s + 1, s] = np.sqrt(s + 1.0)
+
+    d_mat = {"+": cr, "-": cr.T}
+
+    qubit_operator = PauliSentence({PauliWord({}): 1.0})
+
+    op_prod = defaultdict(list)
+
+    for item in bose_operator.items():
+        (_, boson), sign = item
+        op_prod[boson].append(sign)
+    for item in op_prod.items():
+        boson, signs = item
+        d_mat_prod = np.eye(d)
+        for sign in signs:
+            d_mat_prod = np.dot(d_mat_prod, d_mat[sign])
+
+        oper = PauliSentence()
+        non_zero_d = np.nonzero(d_mat_prod)
+        for i, j in zip(*non_zero_d):
+            coeff = d_mat_prod[i][j]
+            
+            binary_row = np.zeros(d)
+            binary_row[i] = 1
+            
+            binary_col = np.zeros(d)
+            binary_col[j] = 1
+            
+            pauliOp = PauliSentence({PauliWord({}): 1.0})
+            for n in range(d):
+                if binary_row[n]==1 or binary_col[n]==1:
+                    pauliOp @= _get_pauli_op(
+                        binary_row[n], binary_col[n], n + boson * d
+                    )
+            oper += coeff * pauliOp
+        qubit_operator @= oper
+    qubit_operator.simplify()
+
+    for pw in qubit_operator:
+        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
+
+
+@_unary_mapping_dispatch.register
+def _(bose_operator: BoseSentence, d, ps=False, wire_map=None, tol=None):
+
+    qubit_operator = PauliSentence()
+
+    for bw, coeff in bose_operator.items():
+        bose_word_as_ps = unary_mapping(bw, d=d, ps=True)
+
+        for pw in bose_word_as_ps:
+            qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
+
+            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    qubit_operator.simplify(tol=1e-16)
+
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])    
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
