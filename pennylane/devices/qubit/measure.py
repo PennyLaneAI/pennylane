@@ -18,7 +18,6 @@ from collections.abc import Callable
 
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
 from pennylane import math
 from pennylane.measurements import (
     ExpectationMP,

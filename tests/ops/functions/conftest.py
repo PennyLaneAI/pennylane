@@ -16,14 +16,13 @@ Pytest configuration file for ops.functions submodule.
 
 Generates parametrizations of operators to test in test_assert_valid.py.
 """
-import warnings
 from inspect import getmembers, isclass
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Channel, Observable, Operation, Operator, Tensor
+from pennylane.operation import Channel, Observable, Operation, Operator
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 
@@ -52,7 +51,6 @@ _INSTANCES_TO_TEST = [
     (qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]), {"skip_differentiation": True}),
     (qml.adjoint(qml.PauliX(0)), {}),
     (qml.adjoint(qml.RX(1.1, 0)), {}),
-    (Tensor(qml.PauliX(0), qml.PauliX(1)), {}),
     (qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]), {}),
     (qml.s_prod(1.1, qml.RX(1.1, 0)), {}),
     (qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)), {}),

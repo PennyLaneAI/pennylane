@@ -214,7 +214,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
 
-            elif isinstance(op, qml.ops.LinearCombination):
+            if isinstance(op, qml.ops.LinearCombination):
                 coeffs, ops = op.terms()
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
