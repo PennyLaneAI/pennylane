@@ -1898,8 +1898,14 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
         fixed_choice = np.array([[4, 0, 1]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
-            m.setattr(onp.random, "choice", lambda a, size, replace: fixed_choice)
+            m.setattr(onp.random, "default_rng", lambda *_: _MockRNG())
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 tapes, communication_graph, 3
             )
