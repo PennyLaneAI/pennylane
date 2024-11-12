@@ -92,9 +92,13 @@ def resources_from_operation(
 
     if isinstance(obj, ResourceOperator):
         cp_rep = obj.resource_rep_from_op()
+
         gate_counts_dict = defaultdict(int)
         _counts_from_compressed_res_op(cp_rep, gate_counts_dict, gate_set=gate_set, config=config)
-        return Resources(gate_types=gate_counts_dict)
+        gate_types = _clean_gate_counts(gate_counts_dict)
+
+        n_gates = sum(gate_types.values())
+        return Resources(num_wires=len(obj.wires), num_gates=n_gates, gate_types=gate_types)
 
     res = Resources()  # TODO: Add implementation here!
     return res
@@ -131,7 +135,7 @@ def resources_from_qfunc(
 
         clean_gate_counts = _clean_gate_counts(condensed_gate_counts)
         num_gates = sum(clean_gate_counts.values())
-        num_wires = len(Wires.shared_wires(tuple(op.wires for op in operations)))
+        num_wires = len(Wires.all_wires(tuple(op.wires for op in operations)))
         return Resources(num_wires=num_wires, num_gates=num_gates, gate_types=clean_gate_counts)
 
     return wrapper
