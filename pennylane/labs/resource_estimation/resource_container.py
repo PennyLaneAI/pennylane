@@ -15,6 +15,7 @@ r"""Base classes for resource estimation."""
 import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Tuple
 
 from pennylane.labs.resource_estimation import ResourceOperator
 
@@ -237,6 +238,42 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
 
     return Resources(new_wires, new_gates, new_gate_types)
 
+
+def substitute(
+        primary_resources: Resources, name: str, replacement_resources: Resources, in_place=False) -> Resources:
+    """Replaces a gate with the contents of another Resource object.
+
+    Args:
+        primary_resource (Resources): The Resource object to be modified
+        name: str: The name of the operator to be replaced 
+        replacement_resource (Resources): The Resource object containing the resources that will replace the gate
+        in_place (bool): Determines if the first Resources are modified in place (default False)
+
+    Returns:
+        Resources: The substituted Resources object
+    """
+
+    count = primary_resources.gate_types.pop(name, 0)
+
+    if count > 0:
+        new_wires = primary_resources.num_wires
+        new_gates = (
+            primary_resources.num_gates
+            - count
+            + (count * replacement_resources.num_gates)
+        )
+
+        replacement_gate_types = _scale_dict(replacement_resources.gate_types, count)
+        new_gate_types = _combine_dict(primary_resources.gate_types, replacement_gate_types)
+
+        if in_place:
+            primary_resources.num_gates = new_gates
+            primary_resources.gate_types = new_gate_types
+            return primary_resources
+
+        return Resources(new_wires, new_gates, new_gate_types)
+
+    return primary_resources
 
 def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
     r"""Private function which combines two dictionaries together."""
