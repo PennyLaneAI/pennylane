@@ -78,15 +78,6 @@ Pending deprecations
 
   - Deprecated in v0.36
 
-
-Other deprecations
-~~~~~~~~~~~~~~~~~~
-
-* PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
-  
-  - Last supported version of ``manylinux2014`` with v0.36
-  - Fully migrated to ``manylinux_2_28`` with v0.37
-
 * ``MultiControlledX`` is the only controlled operation that still supports specifying control
   values with a bit string. In the future, it will no longer accepts strings as control values.
 
@@ -120,6 +111,11 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
+
+  - Last supported version of ``manylinux2014`` with v0.36
+  - Fully migrated to ``manylinux_2_28`` with v0.37
 
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
