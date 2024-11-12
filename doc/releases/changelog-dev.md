@@ -50,6 +50,11 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Added `TransformInterpreter`, `TransformTrace`, and `TransformTracer` classes to the `qml.capture`
+  module. These classes can collectively be used to define transforms that can natively transform
+  PLxPR without the need to first create a `QuantumTape`.
+  [(#6389)](https://github.com/PennyLaneAI/pennylane/pull/6389)
+
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
 
