@@ -197,17 +197,17 @@ def __getattr__(key):
         return PlxprInterpreter
 
     if key == "TransformTrace":
-        from .transforms import TransformTrace
+        from .capture_transforms import TransformTrace
 
         return TransformTrace
 
     if key == "TransformTracer":
-        from .transforms import TransformTracer
+        from .capture_transforms import TransformTracer
 
         return TransformTracer
 
     if key == "TransformInterpreter":
-        from .transforms import TransformInterpreter
+        from .capture_transforms import TransformInterpreter
 
         return TransformInterpreter
 
