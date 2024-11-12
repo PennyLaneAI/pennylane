@@ -273,17 +273,6 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn.diff_method == "best"
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert qn.gradient_fn == "backprop"
-
-        dev_shots = qml.device("default.qubit", shots=45)
-        qn_shots = QNode(dummyfunc, dev_shots, diff_method="best")
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert qn_shots.gradient_fn is qml.gradients.param_shift
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="best")
         assert qn.diff_method == "best"
