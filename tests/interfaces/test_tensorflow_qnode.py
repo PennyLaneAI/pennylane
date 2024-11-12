@@ -544,7 +544,7 @@ class TestShotsIntegration:
             qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
         ):
             assert circuit.gradient_fn == qml.gradients.param_shift
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
@@ -552,7 +552,7 @@ class TestShotsIntegration:
             qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
         ):
             assert circuit.gradient_fn == "backprop"
-        assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert spy.call_args[1]["diff_method"] == "backprop"
 
 
 @pytest.mark.parametrize(
