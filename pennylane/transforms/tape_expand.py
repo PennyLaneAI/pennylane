@@ -98,9 +98,9 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     def expand_fn(tape, depth=depth, **kwargs):
         with qml.QueuingManager.stop_recording():
             if stop_at is None:
-                tape = tape.expand(depth=depth)
+                (tape,), _ = qml.transforms.decompose(tape, max_expansion=depth)
             elif not all(stop_at(op) for op in tape.operations):
-                tape = tape.expand(depth=depth, stop_at=stop_at)
+                (tape,), _ = qml.transforms.decompose(tape, max_expansion=depth, gate_set=stop_at)
             else:
                 return tape
 
@@ -132,7 +132,7 @@ Returns:
 """
 
 expand_multipar = create_expand_fn(
-    depth=10,
+    depth=None,
     stop_at=not_tape | is_measurement | has_nopar | (has_gen & ~gen_is_multi_term_hamiltonian),
     docstring=_expand_multipar_doc,
 )
@@ -155,7 +155,7 @@ Returns:
 """
 
 expand_trainable_multipar = create_expand_fn(
-    depth=10,
+    depth=None,
     stop_at=not_tape
     | is_measurement
     | has_nopar
@@ -180,7 +180,7 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
         return obj in trainable_ops
 
     return create_expand_fn(
-        depth=10,
+        depth=None,
         stop_at=not_tape
         | is_measurement
         | has_nopar
@@ -208,7 +208,7 @@ Returns:
 """
 
 expand_nonunitary_gen = create_expand_fn(
-    depth=10,
+    depth=None,
     stop_at=not_tape | is_measurement | has_nopar | (has_gen & has_unitary_gen),
     docstring=_expand_nonunitary_gen_doc,
 )
@@ -231,7 +231,7 @@ Returns:
 """
 
 expand_invalid_trainable = create_expand_fn(
-    depth=10,
+    depth=None,
     stop_at=not_tape | is_measurement | (~is_trainable) | has_grad_method,
     docstring=_expand_invalid_trainable_doc,
 )
@@ -277,7 +277,7 @@ hadamard_comp_list = [
 
 
 expand_invalid_trainable_hadamard_gradient = create_expand_fn(
-    depth=10,
+    depth=None,
     stop_at=not_tape
     | is_measurement
     | (~is_trainable)
@@ -514,8 +514,6 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
             "The decomp_depth argument is deprecated and will be removed in version v0.41.",
             qml.PennyLaneDeprecationWarning,
         )
-    else:
-        decomp_depth = 10
 
     if isinstance(dev, qml.devices.LegacyDeviceFacade):
         dev = dev.target_device
@@ -540,7 +538,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=None):
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 action="ignore",
-                message=r"The max_expansion argument is deprecated",
+                message=r"max_expansion argument is deprecated",
                 category=qml.PennyLaneDeprecationWarning,
             )
             original_preprocess = dev.preprocess

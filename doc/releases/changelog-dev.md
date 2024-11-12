@@ -84,7 +84,10 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated.
+* The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
+  [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
+
+* The `decomp_depth` argument in `qml.transforms.set_decomposition` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
 * The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,

@@ -14,6 +14,11 @@ Pending deprecations
   - Deprecated in v0.40
   - Will be removed in v0.41
 
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` is deprecated. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
 
   - Deprecated in v0.40
