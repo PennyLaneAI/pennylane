@@ -85,6 +85,9 @@
   process the diff method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
  
+* `qml.broadcast` has been removed. Users should use `for` loops instead.
+  [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
+
 * The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
 
@@ -112,8 +115,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_deep_interface` now works properly for autograd arrays.
+  [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
+
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -123,6 +130,7 @@ Shiwen An,
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
+Austin Huang,
 Christina Lee,
 Andrija Paurevic,
 Justin Pickering

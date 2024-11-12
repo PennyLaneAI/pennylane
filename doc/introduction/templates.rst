@@ -356,54 +356,6 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. _intro_ref_temp_constr:
 
-Broadcasting function
----------------------
-
-PennyLane offers a broadcasting function to easily construct templates: :func:`~.broadcast`
-takes either quantum gates or templates and applies them to wires in a specific pattern.
-
-.. warning::
-
-    While the broadcasting function can make template construction very convenient, it
-    adds an overhead and is therefore not recommended when speed is a major concern.
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Single) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_single.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Double) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_double.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Double Odd) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_double_odd.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Chain) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_chain.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Ring) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_ring.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Pyramid) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_pyramid.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (All-to-All) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_alltoall.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Custom) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_custom.png
-
-.. raw:: html
-
-        <div style='clear:both'></div>
-
-.. _intro_ref_temp_init:
 
 Parameter initializations
 -------------------------
