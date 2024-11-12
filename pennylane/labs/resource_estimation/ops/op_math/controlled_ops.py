@@ -20,7 +20,7 @@ import pennylane.labs.resource_estimation as re
 # pylint: disable=arguments-differ,too-many-ancestors
 
 
-class ResourceCH(qml.CH, re.ResourceConstructor):
+class ResourceCH(qml.CH, re.ResourceOperator):
     r"""Resource class for CH gate.
     
     Resources:
@@ -37,7 +37,6 @@ class ResourceCH(qml.CH, re.ResourceConstructor):
         We can control on the Pauli-X gate to obtain our controlled Hadamard gate. 
 
     """
-
     # TODO: Reference this:
     # https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control
 
@@ -63,8 +62,8 @@ class ResourceCH(qml.CH, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCY(qml.CY, re.ResourceConstructor):
-    """Resource class for CY gate.
+class ResourceCY(qml.CY, re.ResourceOperator):
+    r"""Resource class for CY gate.
 
     Resources:
         The resources are derived from the following identity:
@@ -95,8 +94,8 @@ class ResourceCY(qml.CY, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCZ(qml.CZ, re.ResourceConstructor):
-    """Resource class for CZ
+class ResourceCZ(qml.CZ, re.ResourceOperator):
+    r"""Resource class for CZ
 
     Resources:
         The resources are derived from the following identity:
@@ -127,14 +126,24 @@ class ResourceCZ(qml.CZ, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCSWAP(qml.CSWAP, re.ResourceConstructor):
-    """Resource class for CSWAP
+class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
+    r"""Resource class for CSWAP
 
     Resources:
-        The resources are taken from the paper "Shallow unitary decompositions
-        of quantum Fredkin and Toffoli gates for connectivity-aware equivalent circuit averaging"
-        (figure 1d).
-    """  # TODO: Reference this https://arxiv.org/pdf/2305.18128
+        The resources are taken (figure 1d) from the paper `Shallow unitary decompositions
+        of quantum Fredkin and Toffoli gates for connectivity-aware equivalent circuit averaging 
+        <https://arxiv.org/pdf/2305.18128>`_.
+
+        The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
+        given by: 
+
+        .. code-block:: bash
+
+            0: ────╭●────┤
+            1: ─╭X─├●─╭X─┤   
+            2: ─╰●─╰X─╰●─┤
+
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -156,8 +165,44 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCCZ(qml.CCZ, re.ResourceConstructor):
-    """Resource class for CCZ"""
+class ResourceCCZ(qml.CCZ, re.ResourceOperator):
+    r"""Resource class for CCZ
+    
+    Resources:
+        The resources are derived from the following identity:
+
+        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}.
+
+        We replace the Pauli-X gate with a Toffoli gate to obtain our control-control-Z gate.
+    """
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        gate_types = {}
+
+        toffoli = re.ResourceToffoli.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
+
+        gate_types[toffoli] = 1
+        gate_types[h] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceCNOT(qml.CNOT, re.ResourceOperator):
+    r"""Resource class for CNOT
+    
+    Resources:
+        There is no further decomposition provided for this gate.
+
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -171,13 +216,47 @@ class ResourceCCZ(qml.CCZ, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
-    """Resource class for CNOT"""
+class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
+    """Resource class for Toffoli
+    
+    Resources:
+        The resources are obtained from the paper `Novel constructions for the fault-tolerant 
+        Toffoli gate <https://arxiv.org/pdf/1212.5069>`_. We summarize the cost as: 
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
+    @staticmethod
+    def textbook_resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        """Resources for the Toffoli gate
+    
+        Resources:
+            The resources are taken (figure 4.9) from the textbook `Quantum Computation and Quantum Information
+            <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
+
+            The circuit is given by: 
+        
+            .. code-block:: bash
+
+                0: ───────────╭●───────────╭●────╭●──T──╭●─┤
+                1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤     
+                2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤  
+
+        """
+        gate_types = {}
+
+        cnot = re.ResourceCNOT.resource_rep()
+        t = re.ResourceT.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
+
+        gate_types[cnot] = 6
+        gate_types[h] = 2
+        gate_types[t] = 7
+
+        return gate_types
+    
     def resource_params(self) -> dict:
         return {}
 
@@ -186,22 +265,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceToffoli(qml.Toffoli, re.ResourceConstructor):
-    """Resource class for Toffoli"""
-
-    @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        raise re.ResourcesNotDefined
-
-    def resource_params(self) -> dict:
-        return {}
-
-    @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(cls, {})
-
-
-class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceConstructor):
+class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     """Resource class for MultiControlledX"""
 
     @staticmethod
@@ -216,7 +280,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCRX(qml.CRX, re.ResourceConstructor):
+class ResourceCRX(qml.CRX, re.ResourceOperator):
     """Resource class for CRX"""
 
     @staticmethod
@@ -231,7 +295,7 @@ class ResourceCRX(qml.CRX, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCRY(qml.CRY, re.ResourceConstructor):
+class ResourceCRY(qml.CRY, re.ResourceOperator):
     """Resource class for CRY"""
 
     @staticmethod
@@ -246,7 +310,7 @@ class ResourceCRY(qml.CRY, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCRZ(qml.CRZ, re.ResourceConstructor):
+class ResourceCRZ(qml.CRZ, re.ResourceOperator):
     """Resource class for CRZ"""
 
     @staticmethod
@@ -261,7 +325,7 @@ class ResourceCRZ(qml.CRZ, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceCRot(qml.CRot, re.ResourceConstructor):
+class ResourceCRot(qml.CRot, re.ResourceOperator):
     """Resource class for CRot"""
 
     @staticmethod
@@ -276,7 +340,7 @@ class ResourceCRot(qml.CRot, re.ResourceConstructor):
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceConstructor):
+class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
     """Resource class for ControlledPhaseShift"""
 
     @staticmethod

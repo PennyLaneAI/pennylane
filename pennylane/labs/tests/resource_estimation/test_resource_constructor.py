@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Test the abstract ResourceConstructor class
+Test the abstract ResourceOperator class
 """
 import pytest
 
@@ -24,7 +24,7 @@ import pennylane.labs.resource_estimation as re
 def test_abstract_resource_decomp():
     """Test that the _resource_decomp method is abstract."""
 
-    class DummyClass(re.ResourceConstructor):
+    class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
         def resource_params(self):
@@ -44,7 +44,7 @@ def test_abstract_resource_decomp():
 def test_abstract_resource_params():
     """Test that the resource_params method is abstract"""
 
-    class DummyClass(re.ResourceConstructor):
+    class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
         @staticmethod
@@ -64,7 +64,7 @@ def test_abstract_resource_params():
 def test_abstract_resource_rep():
     """Test that the resource_rep method is abstract"""
 
-    class DummyClass(re.ResourceConstructor):
+    class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
         @staticmethod
@@ -84,7 +84,7 @@ def test_abstract_resource_rep():
 def test_set_resources():
     """Test that the resources method can be overriden"""
 
-    class DummyClass(re.ResourceConstructor):
+    class DummyClass(re.ResourceOperator):
         """Dummy class for testing"""
 
         def resource_params(self):

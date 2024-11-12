@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Abstract base class for resource operators."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Callable, Dict
+from typing import TYPE_CHECKING, Callable, Dict
 
-import pennylane.labs.resource_estimation.resource_container as rc
+if TYPE_CHECKING:
+    from pennylane.labs.resource_estimation import CompressedResourceOp
 
 
-class ResourceConstructor(ABC):
+class ResourceOperator(ABC):
     r"""This is an abstract class that defines the methods a PennyLane Operator
     must implement in order to be used for resource estimation.
 
@@ -26,29 +29,24 @@ class ResourceConstructor(ABC):
 
         **Example**
 
-        A PennyLane Operator can be extended for resource estimation by creating a new class that inherits from both the Operator and Resource Constructor.
-        Here is an example showing how to extend ``qml.QFT`` for resource estimation.
+        A PennyLane Operator can be extended for resource estimation by creating a new class that
+        inherits from both the Operator and ``ResourceOperator``. Here is an example showing how to
+        extend ``qml.QFT`` for resource estimation.
 
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceConstructor
+            from pennylane.labs.resource_estimation import CompressedResourceOp, ResourceOperator
 
-            class ResourceQFT(qml.QFT, ResourceConstructor):
+            class ResourceQFT(qml.QFT, ResourceOperator):
 
                 @staticmethod
-                def _resource_decomp(num_wires) -> dict:
-                    if not isinstance(num_wires, int):
-                        raise TypeError("num_wires must be an int.")
-
-                    if num_wires < 1:
-                        raise ValueError("num_wires must be greater than 0.")
-
+                def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
                     gate_types = {}
 
-                    hadamard = CompressedResourceOp(qml.Hadamard, {})
-                    swap = CompressedResourceOp(qml.SWAP, {})
-                    ctrl_phase_shift = CompressedResourceOp(qml.ControlledPhaseShift, {})
+                    hadamard = CompressedResourceOp(ResourceHadamard, {})
+                    swap = CompressedResourceOp(ResourceSWAP, {})
+                    ctrl_phase_shift = CompressedResourceOp(ResourceControlledPhaseShift, {})
 
                     gate_types[hadamard] = num_wires
                     gate_types[swap] = num_wires // 2
@@ -56,21 +54,25 @@ class ResourceConstructor(ABC):
 
                     return gate_types
 
-                def resource_rep(self) -> CompressedResourceOp:
-                    params = {"num_wires": len(self.wires)}
-                    return CompressedResourceOp(qml.QFT, params)
+                def resource_params(self) -> dict:
+                    return {"num_wires": len(self.wires)}
+
+                @classmethod
+                def resource_rep(cls, num_wires) -> CompressedResourceOp:
+                    params = {"num_wires": num_wires}
+                    return CompressedResourceOp(cls, params)
     """
 
     @staticmethod
     @abstractmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[rc.CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
         """Returns the Resource object. This method is only to be used inside
-        the methods of classes inheriting from ResourceConstructor."""
+        the methods of classes inheriting from ResourceOperator."""
 
     @classmethod
-    def resources(cls, *args, **kwargs):
-        """Returns the Resource object. This method is intended to be user facing
-        and overridable."""
+    def resources(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
+        """Returns a dictionary containing the counts of each operator type used to
+        compute the resources of the operator."""
         return cls._resource_decomp(*args, **kwargs)
 
     @classmethod
@@ -85,15 +87,15 @@ class ResourceConstructor(ABC):
 
     @classmethod
     @abstractmethod
-    def resource_rep(cls, **kwargs) -> rc.CompressedResourceOp:
+    def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
-    def resource_rep_from_op(self) -> rc.CompressedResourceOp:
+    def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
         params = self.resource_params()
         return self.__class__.resource_rep(**params)
 
 
 class ResourcesNotDefined(Exception):
-    """Exception to be raised when a ``ResourceConstructor`` does not implement _resource_decomp"""
+    """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""

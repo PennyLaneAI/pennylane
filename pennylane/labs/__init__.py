@@ -14,7 +14,7 @@
 r"""
 .. currentmodule:: pennylane
 
-This module module contains experimental features enabling
+This module contains experimental features enabling
 advanced quantum computing research.
 
 .. warning::
@@ -32,22 +32,14 @@ Resource Estimation
 
     ~Resources
     ~CompressedResourceOp
-    ~ResourceConstructor
+    ~ResourceOperator
 
-Errors
-~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourcesNotDefined
 """
 
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
-    ResourceConstructor,
-    ResourcesNotDefined,
+    ResourceOperator,
 )
 
 __all__ = ["Resources", "CompressedResourceOp"]

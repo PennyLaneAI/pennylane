@@ -17,7 +17,7 @@ from typing import Dict
 import pennylane as qml
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
-    ResourceConstructor,
+    ResourceOperator,
     ResourceControlledPhaseShift,
     ResourceHadamard,
     ResourceSWAP,
@@ -26,11 +26,11 @@ from pennylane.labs.resource_estimation import (
 # pylint: disable=arguments-differ
 
 
-class ResourceQFT(qml.QFT, ResourceConstructor):
+class ResourceQFT(qml.QFT, ResourceOperator):
     """Resource class for QFT"""
 
     @staticmethod
-    def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
         if not isinstance(num_wires, int):
             raise TypeError("num_wires must be an int.")
 
