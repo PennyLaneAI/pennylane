@@ -26,7 +26,7 @@ from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
@@ -706,3 +706,19 @@ class Device(abc.ABC):
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_vjp` is overridden.
         """
         return type(self).compute_vjp != Device.compute_vjp
+
+    def eval_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+    ) -> list[TensorLike]:
+        """An **experimental** method for natively evaluating PLXPR.  See the capture module for more details.
+
+        Args:
+            jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measuerments
+            consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr.
+            *args (TensorLike): the variables to use with the jaxpr'
+
+        Returns:
+            list[TensorLike]: the result of evaluating the jaxpr with the given parameters.
+
+        """
+        raise NotImplementedError
