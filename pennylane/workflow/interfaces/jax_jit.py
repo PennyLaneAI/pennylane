@@ -267,7 +267,7 @@ def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
             for the input tapes.
-        device (pennylane.devices.LegacyDevice, pennylane.devices.Device): The device used for execution. Used to determine the shapes of outputs for
+        device (pennylane.devices.Device): The device used for execution. Used to determine the shapes of outputs for
             pure callback calls.
 
     Returns:
