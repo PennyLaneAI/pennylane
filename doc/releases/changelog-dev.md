@@ -81,7 +81,7 @@
   Instead, shots should be specified on the tape, and the device should use these shots.
   [(#6534)](https://github.com/PennyLaneAI/pennylane/pull/6534)
 
-* ``QNode.gradient_fn`` has been removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
+* `QNode.gradient_fn` has been removed. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
   process the diff method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
  
