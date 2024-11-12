@@ -584,7 +584,7 @@ class QNode:
 
         # validation check.  Will raise error if bad diff_method
         if diff_method is not None:
-            qml.workflow._get_gradient_fn(self.device, self.diff_method)
+            QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
 
     @property
     def gradient_fn(self):
@@ -616,9 +616,6 @@ class QNode:
         else:
             tape = self.tape
 
-        warnings.filterwarnings(
-            "ignore", "QNode.get_gradient_fn is deprecated", qml.PennyLaneDeprecationWarning
-        )
         return QNode.get_gradient_fn(self.device, self.interface, self.diff_method, tape=tape)[0]
 
     def __copy__(self) -> "QNode":
@@ -684,12 +681,7 @@ class QNode:
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         tape: Optional["qml.tape.QuantumTape"] = None,
     ):
-        """
-        .. warning::
-
-            This method is deprecated in v0.40 and will be removed in v0.41.
-
-        Determine the best differentiation method, interface, and device
+        """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
 
         Args:
@@ -705,13 +697,6 @@ class QNode:
             tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
-
-        warnings.warn(
-            "QNode.get_gradient_fn is deprecated and will be removed in v0.41. "
-            "Instead, please use the qml.workflow._get_gradient_fn function.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
         if diff_method is None:
             return None, {}, device
 
@@ -727,10 +712,10 @@ class QNode:
             )
 
         if diff_method == "best":
-            warnings.filterwarnings(
-                "ignore", "QNode.get_best_method is deprecated", qml.PennyLaneDeprecationWarning
-            )
-            return QNode.get_best_method(device, interface, tape=tape)
+            if tape and any(isinstance(o, qml.operation.CV) for o in tape):
+                return qml.gradients.param_shift_cv, {"dev": device}, device
+
+            return qml.gradients.param_shift, {}, device
 
         if diff_method == "parameter-shift":
             if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):
@@ -927,9 +912,9 @@ class QNode:
         ):
             gradient_fn = qml.gradients.param_shift
         else:
-            gradient_fn = qml.workflow._get_gradient_fn(
-                self.device, self.diff_method, tape=self.tape
-            )
+            gradient_fn = QNode.get_gradient_fn(
+                self.device, self.interface, self.diff_method, tape=self.tape
+            )[0]
         execute_kwargs = copy.copy(self.execute_kwargs)
 
         gradient_kwargs = copy.copy(self.gradient_kwargs)

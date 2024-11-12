@@ -80,8 +80,8 @@ class TestLogging:
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
-                "pennylane.workflow.get_gradient_fn",
-                ["Calling <_get_gradient_fn(device=<default.qubit"],
+                "pennylane.workflow.qnode",
+                ["Calling <get_gradient_fn(device=<default.qubit"],
             ),
             (
                 "pennylane.devices.default_qubit",
@@ -133,9 +133,9 @@ class TestLogging:
                 ],
             ),
             (
-                "pennylane.workflow.get_gradient_fn",
+                "pennylane.workflow.qnode",
                 [
-                    "Calling <_get_gradient_fn(device=<default.qubit device (wires=2)",
+                    "Calling <get_gradient_fn(device=<default.qubit device (wires=2)",
                 ],
             ),
             (

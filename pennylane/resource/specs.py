@@ -215,11 +215,12 @@ def specs(
             )
 
             # pylint: disable=protected-access
-            gradient_fn = qml.workflow._get_gradient_fn(
+            gradient_fn = qml.QNode.get_gradient_fn(
                 qnode.device,
+                qnode.interface,
                 qnode.diff_method,
                 tape=tape,
-            )
+            )[0]
             if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
                 info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
 
