@@ -20,12 +20,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
-  ``qml.shadow_expval`` measurement process.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * The ``qml.qinfo`` module has been deprecated. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
   modules instead.
 
