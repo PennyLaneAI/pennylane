@@ -4068,15 +4068,5 @@ class TestPauliRep:
         import re
 
         for op in SINGLE_QUBIT_PARAMETRIZED_OPERATIONS:
-            dim = op.matrix().shape[0]
-            if dim == 2:
-                id_str = "I(0)"
-            if dim == 4:
-                id_str = "I(0)@I(1)"
-            op_in_pauli_decomp = str(op.pauli_rep).replace("\n", " ").replace("I", id_str)
-            for pauli_op in ["I", "X", "Y", "Z"]:
-                op_in_pauli_decomp = re.sub(
-                    rf"{pauli_op}", "qml." + rf"{pauli_op}", op_in_pauli_decomp
-                )
-            op_in_pauli_decomp = eval(op_in_pauli_decomp).matrix()  # pylint: disable=eval-used
+            op_in_pauli_decomp = qml.matrix(op.pauli_rep)
             assert np.allclose(op.matrix(), op_in_pauli_decomp)
