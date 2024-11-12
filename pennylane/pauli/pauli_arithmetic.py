@@ -509,7 +509,11 @@ class PauliWord(dict):
         if len(self) == 0:
             return Identity(wires=wire_order)
 
-        factors = [_make_operation(op, wire) for wire, op in self.items()]
+        if qml.capture.enabled():
+            # cant use lru_cache with program capture
+            factors = [op_map[op](wire) for wire, op in self.items()]
+        else:
+            factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         pauli_rep = PauliSentence({self: 1})
         return factors[0] if len(factors) == 1 else Prod(*factors, _pauli_rep=pauli_rep)

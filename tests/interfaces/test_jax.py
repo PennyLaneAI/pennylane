@@ -43,8 +43,8 @@ def test_jit_execution():
         [qml.RX(jax.numpy.array(0.1), 0)], [qml.expval(qml.s_prod(2.0, qml.PauliZ(0)))]
     )
 
-    out = jax.jit(qml.execute, static_argnames=("device", "gradient_fn"))(
-        (tape,), device=dev, gradient_fn=qml.gradients.param_shift
+    out = jax.jit(qml.execute, static_argnames=("device", "diff_method"))(
+        (tape,), device=dev, diff_method=qml.gradients.param_shift
     )
     expected = 2.0 * jax.numpy.cos(jax.numpy.array(0.1))
     assert qml.math.allclose(out[0], expected)
@@ -78,7 +78,7 @@ class TestCaching:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             return qml.execute(
-                [tape], device, gradient_fn=qml.gradients.param_shift, cache=cache, max_diff=2
+                [tape], device, diff_method=qml.gradients.param_shift, cache=cache, max_diff=2
             )[0]
 
         # No caching: number of executions is not ideal
@@ -131,16 +131,16 @@ no_shots = Shots(None)
 shots_10k = Shots(10000)
 shots_2_10k = Shots((10000, 10000))
 test_matrix = [
-    ({"gradient_fn": param_shift}, shots_10k, "default.qubit"),  # 0
-    ({"gradient_fn": param_shift}, shots_2_10k, "default.qubit"),  # 1
-    ({"gradient_fn": param_shift}, no_shots, "default.qubit"),  # 2
-    ({"gradient_fn": "backprop"}, no_shots, "default.qubit"),  # 3
-    ({"gradient_fn": "adjoint"}, no_shots, "default.qubit"),  # 4
-    ({"gradient_fn": "adjoint", "device_vjp": True}, no_shots, "default.qubit"),  # 5
-    ({"gradient_fn": "device"}, shots_2_10k, "param_shift.qubit"),  # 6
-    ({"gradient_fn": param_shift}, no_shots, "reference.qubit"),  # 7
-    ({"gradient_fn": param_shift}, shots_10k, "reference.qubit"),  # 8
-    ({"gradient_fn": param_shift}, shots_2_10k, "reference.qubit"),  # 9
+    ({"diff_method": param_shift}, shots_10k, "default.qubit"),  # 0
+    ({"diff_method": param_shift}, shots_2_10k, "default.qubit"),  # 1
+    ({"diff_method": param_shift}, no_shots, "default.qubit"),  # 2
+    ({"diff_method": "backprop"}, no_shots, "default.qubit"),  # 3
+    ({"diff_method": "adjoint"}, no_shots, "default.qubit"),  # 4
+    ({"diff_method": "adjoint", "device_vjp": True}, no_shots, "default.qubit"),  # 5
+    ({"diff_method": "device"}, shots_2_10k, "param_shift.qubit"),  # 6
+    ({"diff_method": param_shift}, no_shots, "reference.qubit"),  # 7
+    ({"diff_method": param_shift}, shots_10k, "reference.qubit"),  # 8
+    ({"diff_method": param_shift}, shots_2_10k, "reference.qubit"),  # 9
 ]
 
 
@@ -173,7 +173,7 @@ class TestJaxExecuteIntegration:
         with device.tracker:
             res = cost(a, b)
 
-        if execute_kwargs.get("gradient_fn", None) == "adjoint":
+        if execute_kwargs.get("diff_method", None) == "adjoint":
             assert device.tracker.totals.get("execute_and_derivative_batches", 0) == 0
         else:
             assert device.tracker.totals["batches"] == 1
@@ -377,7 +377,7 @@ class TestJaxExecuteIntegration:
 
     def test_reusing_quantum_tape(self, execute_kwargs, shots, device_name, seed):
         """Test re-using a quantum tape by passing new parameters"""
-        if execute_kwargs["gradient_fn"] == param_shift:
+        if execute_kwargs["diff_method"] == param_shift:
             pytest.skip("Basic QNode execution wipes out trainable params with param-shift")
 
         device = get_device(device_name, seed)
@@ -502,11 +502,11 @@ class TestJaxExecuteIntegration:
                 [qml.expval(qml.PauliX(0))],
                 shots=shots,
             )
-            gradient_fn = execute_kwargs["gradient_fn"]
-            if gradient_fn is None:
+            diff_method = execute_kwargs["diff_method"]
+            if diff_method is None:
                 _gradient_method = None
-            elif isinstance(gradient_fn, str):
-                _gradient_method = gradient_fn
+            elif isinstance(diff_method, str):
+                _gradient_method = diff_method
             else:
                 _gradient_method = "gradient-transform"
             conf = qml.devices.ExecutionConfig(
@@ -674,7 +674,7 @@ class TestHigherOrderDerivatives:
 
             ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
             tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=2)
+            result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=2)
             return result[0] + result[1][0]
 
         res = cost_fn(params)
@@ -710,7 +710,7 @@ class TestHigherOrderDerivatives:
             ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
             tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
 
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=1)
+            result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=1)
             return result[0] + result[1][0]
 
         res = cost_fn(params)
@@ -818,7 +818,7 @@ class TestHamiltonianWorkflows:
     @pytest.mark.xfail(reason="parameter shift derivatives do not yet support sums.")
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
-        if execute_kwargs["gradient_fn"] == "adjoint":
+        if execute_kwargs["diff_method"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])

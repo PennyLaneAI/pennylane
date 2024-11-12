@@ -114,7 +114,7 @@ class TestEvolution:
         base = qml.S(0) @ qml.X(0)
         op = Evolution(base, 3)
 
-        assert repr(op) == "Evolution(-3j S(wires=[0]) @ X(0))"
+        assert repr(op) == "Evolution(-3j S(0) @ X(0))"
 
     @pytest.mark.parametrize(
         "op,decimals,expected",

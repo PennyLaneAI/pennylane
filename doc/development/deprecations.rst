@@ -9,30 +9,10 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
-  has been deprecated.
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
 
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been deprecated.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
-  argument.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
-  ``qml.shadow_expval`` measurement process.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* ``qml.broadcast`` has been deprecated. Users should use ``for`` loops instead.
+  - Deprecated in v0.40
+  - Will be removed in v0.41
 
   - Deprecated in v0.39
   - Will be removed in v0.40
@@ -42,26 +22,13 @@ Pending deprecations
 
   - Deprecated in v0.39
   - Will be removed in v0.40
-
+  
 * ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
   will be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
   respectively.
 
   - Deprecated top level access in v0.39
   - Top level access will be removed in v0.40
-
-* ``QNode.gradient_fn`` is deprecated. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
-  process the diff method.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* The :class:`~pennylane.BasisStatePreparation` template is deprecated.
-  Instead, use :class:`~pennylane.BasisState`.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
 
@@ -111,6 +78,52 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The :class:`~pennylane.BasisStatePreparation` template has been removed.
+  Instead, use :class:`~pennylane.BasisState`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+  
+* ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
+  has been removed.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been removed. Instead, use the ``'aux_wire'``
+  argument.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+  
+* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been removed.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* The ``qml.workflow.set_shots`` helper function has been removed. We no longer interact with the legacy device interface in our code.
+  Instead, shots should be specified on the tape, and the device should use these shots.
+
+  - Deprecated in v0.38
+  - Removed in v0.40
+
+* ``QNode.gradient_fn`` is removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
+  process the diff method.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+  
+* The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
+  ``qml.shadow_expval`` measurement process.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
 
 * PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
 
