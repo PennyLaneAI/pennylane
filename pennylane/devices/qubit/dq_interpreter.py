@@ -29,7 +29,7 @@ from pennylane.capture.primitives import (
     measure_prim,
     while_loop_prim,
 )
-from pennylane.measurements import MeasurementValue, MidMeasureMP, Shots
+from pennylane.measurements import MidMeasureMP, Shots
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
@@ -56,6 +56,9 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     ...     return qml.expval(qml.Z(0))
     >>> dq(f)(0.5)
     Array(0.54030231, dtype=float64)
+    >>> jaxpr = jax.make_jaxpr(f)(0.5)
+    >>> dq.eval(jaxpr.jaxpr, jaxpr.consts, 0.5)
+    Array(0.54030231, dtype=float64)
 
     This execution can be differentiated via backprop and jitted as normal. Note that finite shot executions
     still cannot be differented with backprop.
@@ -68,7 +71,9 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
     """
 
-    def __init__(self, num_wires: int, shots: int | None, key: None | jax.numpy.ndarray = None):
+    def __init__(
+        self, num_wires: int, shots: int | None = None, key: None | jax.numpy.ndarray = None
+    ):
         self.num_wires = num_wires
         self.shots = Shots(shots)
         if self.shots.has_partitioned_shots:
@@ -104,28 +109,32 @@ class DefaultQubitInterpreter(PlxprInterpreter):
             raise ValueError("execution not yet initialized.")
         self.stateref["key"] = value
 
-    @property
-    def mcms(self) -> None | dict[MeasurementValue, bool]:
-        """The mid circuit measurements. ``NOne`` if not yet initialized."""
-        return self.stateref["mcms"] if self.stateref else None
-
-    def setup(self):
+    def setup(self) -> None:
         if self.stateref is None:
             self.stateref = {
                 "state": create_initial_state(range(self.num_wires), like="jax"),
                 "key": self.initial_key,
-                "mcms": {},
             }
+        # else set by copying a parent interpreter and we need to modify same stateref
 
     def cleanup(self) -> None:
         self.stateref = None
+        # Open question: should we update initial key?
 
     def interpret_operation(self, op):
         self.state = apply_operation(op, self.state)
 
+    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
+        if "mcm" in eqn.primitive.name:
+            raise NotImplementedError(
+                "DefaultQubitInterpreter does not yet support postprocessing mcms"
+            )
+        return super().interpret_measurement_eqn(eqn)
+
     def interpret_measurement(self, measurement):
+        # measurements can sometimes create intermediary mps, but those intermediaries will not work with capture enabled
         disable()
-        try:  # measurements can sometimes create intermediary mps
+        try:
             if self.shots:
                 self.key, new_key = jax.random.split(self.key, 2)
                 # note that this does *not* group commuting measurements
@@ -140,15 +149,26 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         return output
 
 
+@DefaultQubitInterpreter.register_primitive(measure_prim)
+def _(self, *invals, reset, postselect):
+    mp = MidMeasureMP(invals, reset=reset, postselect=postselect)
+    self.key, new_key = jax.random.split(self.key, 2)
+    mcms = {}
+    self.state = apply_operation(mp, self.state, mid_measurements=mcms, prng_key=new_key)
+    return mcms[mp]
+
+
 # pylint: disable=unused-argument
 @DefaultQubitInterpreter.register_primitive(adjoint_transform_prim)
 def _(self, *invals, jaxpr, n_consts, lazy=True):
+    # TODO: requires jaxpr -> list of ops first
     raise NotImplementedError
 
 
 # pylint: disable=too-many-arguments
 @DefaultQubitInterpreter.register_primitive(ctrl_transform_prim)
 def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+    # TODO: requires jaxpr -> list of ops first
     raise NotImplementedError
 
 
@@ -160,7 +180,7 @@ def _(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice)
 
     res = init_state
     for i in range(start, stop, step):
-        res = copy(self).eval(jaxpr_body_fn, consts, i, *init_state)
+        res = copy(self).eval(jaxpr_body_fn, consts, i, *res)
 
     return res
 
@@ -179,14 +199,6 @@ def _(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_
     return fn_res
 
 
-@DefaultQubitInterpreter.register_primitive(measure_prim)
-def _(self, *invals, reset, postselect):
-    mp = MidMeasureMP(invals, reset=reset, postselect=postselect)
-    self.key, new_key = jax.random.split(self.key, 2)
-    self.state = apply_operation(mp, self.state, mid_measurements=self.mcms, prng_key=new_key)
-    return self.mcms[mp]
-
-
 @DefaultQubitInterpreter.register_primitive(cond_prim)
 def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
     n_branches = len(jaxpr_branches)
@@ -196,5 +208,5 @@ def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = invals[const_slice]
         if pred and jaxpr is not None:
-            return copy(self).eval_jaxpr(jaxpr, consts, *args)
+            return copy(self).eval(jaxpr, consts, *args)
     return ()

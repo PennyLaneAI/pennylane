@@ -16,10 +16,12 @@ This module tests the default qubit interpreter.
 """
 import pytest
 
-import pennylane as qml
-
 jax = pytest.importorskip("jax")
 pytestmark = pytest.mark.jax
+
+from jax import numpy as jnp  # pylint: disable=wrong-import-position
+
+import pennylane as qml  # pylint: disable=wrong-import-position
 
 # must be below the importorskip
 # pylint: disable=wrong-import-position
@@ -34,6 +36,7 @@ def enable_disable_plxpr():
 
 
 def test_initialization():
+    """Test that relevant properties are set on initialization."""
     dq = DefaultQubitInterpreter(num_wires=3, shots=None)
     assert dq.num_wires == 3
     assert dq.shots == qml.measurements.Shots(None)
@@ -41,29 +44,36 @@ def test_initialization():
     assert dq.stateref is None
 
 
-def test_setup():
+def test_no_partitioned_shots():
+    """Test that an error is raised if partitioned shots is requested."""
+
+    with pytest.raises(NotImplementedError, match="does not yet support partitioned shots"):
+        DefaultQubitInterpreter(num_wires=1, shots=(100, 100, 100))
+
+
+def test_setup_and_cleanup():
+    """Test setup initializes the stateref dictionary and cleanup removes it."""
     key = jax.random.PRNGKey(1234)
     dq = DefaultQubitInterpreter(num_wires=2, shots=2, key=key)
     assert dq.stateref is None
 
     dq.setup()
     assert isinstance(dq.stateref, dict)
-    assert list(dq.stateref.keys()) == ["state", "key", "mcms"]
+    assert list(dq.stateref.keys()) == ["state", "key"]
 
     assert dq.stateref["key"] is key
     assert dq.key is key
-
-    assert dq.stateref["mcms"] == {}
-    assert dq.mcms is dq.stateref["mcms"]
 
     assert dq.state is dq.stateref["state"]
     expected = jax.numpy.array([[1.0, 0.0], [0.0, 0.0]], dtype=complex)
     assert qml.math.allclose(dq.state, expected)
 
     dq.cleanup()
+    assert dq.stateref is None
 
 
 def test_simple_execution():
+    """Test the execution, jitting, and gradient of a simple quantum circuit."""
 
     @DefaultQubitInterpreter(num_wires=1, shots=None)
     def f(x):
@@ -73,21 +83,269 @@ def test_simple_execution():
     res = f(0.5)
     assert qml.math.allclose(res, jax.numpy.cos(0.5))
 
+    jit_res = jax.jit(f)(0.5)
+    assert qml.math.allclose(jit_res, res)
+
     g = jax.grad(f)(jax.numpy.array(0.5))
     assert qml.math.allclose(g, -jax.numpy.sin(0.5))
 
 
-def test_sampling():
+def test_capture_remains_enabled_if_measurement_error():
+    """Test that capture remains enabled if there is a measurement error."""
 
-    @DefaultQubitInterpreter(num_wires=2, shots=10)
-    def sampler():
-        qml.X(0)
-        return qml.sample(wires=(0, 1))
+    @DefaultQubitInterpreter(num_wires=1, shots=None)
+    def g():
+        return qml.sample(wires=0)  # sampling with analytic execution.
 
-    results = sampler()
+    with pytest.raises(NotImplementedError):
+        g()
 
-    expected0 = jax.numpy.ones((10,))  # zero wire
-    expected1 = jax.numpy.zeros((10,))  # one wire
-    expected = jax.numpy.hstack([expected0, expected1]).T
+    assert qml.capture.enabled()
 
-    assert qml.math.allclose(results, expected)
+
+def test_pytree_function_output():
+    """Test that the results respect the pytree output of the function."""
+
+    @DefaultQubitInterpreter(num_wires=1, shots=None)
+    def g():
+        return {
+            "probs": qml.probs(wires=0),
+            "state": qml.state(),
+            "var_Z": qml.var(qml.Z(0)),
+            "var_X": qml.var(qml.X(0)),
+        }
+
+    res = g()
+    assert qml.math.allclose(res["probs"], [1.0, 0.0])
+    assert qml.math.allclose(res["state"], [1.0, 0.0 + 0j])
+    assert qml.math.allclose(res["var_Z"], 0.0)
+    assert qml.math.allclose(res["var_X"], 1.0)
+
+
+class TestSampling:
+    """Test cases for generating samples."""
+
+    def test_known_sampling(self):
+        """Test sampling output with deterministic sampling output"""
+
+        @DefaultQubitInterpreter(num_wires=2, shots=10)
+        def sampler():
+            qml.X(0)
+            return qml.sample(wires=(0, 1))
+
+        results = sampler()
+
+        expected0 = jax.numpy.ones((10,))  # zero wire
+        expected1 = jax.numpy.zeros((10,))  # one wire
+        expected = jax.numpy.vstack([expected0, expected1]).T
+
+        assert qml.math.allclose(results, expected)
+
+    def test_same_key_same_results(self):
+        """Test that two circuits with the same key give identical results."""
+        key = jax.random.PRNGKey(1234)
+
+        @DefaultQubitInterpreter(num_wires=1, shots=100, key=key)
+        def circuit1():
+            qml.Hadamard(0)
+            return qml.sample(wires=0)
+
+        @DefaultQubitInterpreter(num_wires=1, shots=100, key=key)
+        def circuit2():
+            qml.Hadamard(0)
+            return qml.sample(wires=0)
+
+        res1 = circuit1()
+        res2 = circuit2()
+
+        assert qml.math.allclose(res1, res2)
+
+    @pytest.mark.parametrize("mcm_value", (0, 1))
+    def test_return_mcm(self, mcm_value):
+        """Test that the interpreter can return the result of mid circuit measurements"""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f():
+            if mcm_value:
+                qml.X(0)
+            return qml.measure(0)
+
+        output = f()
+        assert qml.math.allclose(output, mcm_value)
+
+    def test_mcm_depends_on_key(self):
+        """Test that the value of an mcm depends on the key."""
+
+        def get_mcm_from_key(key):
+            @DefaultQubitInterpreter(num_wires=1, key=key)
+            def f():
+                qml.H(0)
+                return qml.measure(0)
+
+            return f()
+
+        for key in range(0, 100, 10):
+            m1 = get_mcm_from_key(jax.random.PRNGKey(key))
+            m2 = get_mcm_from_key(jax.random.PRNGKey(key))
+            assert qml.math.allclose(m1, m2)
+
+        samples = [int(get_mcm_from_key(jax.random.PRNGKey(key))) for key in range(0, 100, 1)]
+        assert set(samples) == {0, 1}
+
+    def test_classical_transformation_mcm_value(self):
+        """Test that mid circuit measurements can be used in classical manipulations."""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f():
+            qml.X(0)
+            m0 = qml.measure(0)  # 1
+            qml.X(0)  # reset to 0
+            qml.RX(2 * m0, wires=0)
+            return qml.expval(qml.Z(0))
+
+        expected = jax.numpy.cos(2.0)
+        assert qml.math.allclose(f(), expected)
+
+    @pytest.mark.parametrize("mp_type", (qml.sample, qml.expval, qml.probs))
+    def test_mcm_measurements_not_yet_implemented(self, mp_type):
+        """Test that measurements of mcms are not yet implemented"""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f():
+            m0 = qml.measure(0)
+            if mp_type == qml.probs:
+                return mp_type(op=m0)
+            return mp_type(m0)
+
+        with pytest.raises(NotImplementedError):
+            f()
+
+
+class TestQuantumHOP:
+    """Tests for the quantum higher order primitives: adjoint and ctrl."""
+
+    def test_adjoint_transform(self):
+        """Test that the adjoint_transform is not yet implemented."""
+
+        @DefaultQubitInterpreter(num_wires=1, shots=None)
+        def circuit(x):
+            qml.adjoint(qml.RX)(x, 0)
+            return 1
+
+        with pytest.raises(NotImplementedError):
+            circuit(0.5)
+
+    def test_ctrl_transform(self):
+        """Test that the ctrl_transform is not yet implemented."""
+
+        @DefaultQubitInterpreter(num_wires=2, shots=None)
+        def circuit():
+            qml.ctrl(qml.X, control=1)(0)
+
+        with pytest.raises(NotImplementedError):
+            circuit()
+
+
+class TestClassicalComponents:
+    """Test execution of classical components."""
+
+    def test_classical_operations_in_circuit(self):
+        """Test that we can have classical operations in the circuit."""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f(x, y, w):
+            qml.RX(2 * x + y, wires=w - 1)
+            return qml.expval(qml.Z(0))
+
+        x = jax.numpy.array(0.5)
+        y = jax.numpy.array(1.2)
+        w = jax.numpy.array(1)
+
+        output = f(x, y, w)
+        expected = jax.numpy.cos(2 * x + y)
+        assert qml.math.allclose(output, expected)
+
+    def test_for_loop(self):
+        """Test that the for loop can be executed."""
+
+        @DefaultQubitInterpreter(num_wires=4)
+        def f(y):
+            @qml.for_loop(4)
+            def f(i, x):
+                qml.RX(x, i)
+                return x + 0.1
+
+            f(y)
+            return [qml.expval(qml.Z(i)) for i in range(4)]
+
+        output = f(1.0)
+        assert len(output) == 4
+        assert qml.math.allclose(output[0], jax.numpy.cos(1.0))
+        assert qml.math.allclose(output[1], jax.numpy.cos(1.1))
+        assert qml.math.allclose(output[2], jax.numpy.cos(1.2))
+        assert qml.math.allclose(output[3], jax.numpy.cos(1.3))
+
+    def test_while_loop(self):
+        """Test that the while loop can be executed."""
+
+        @DefaultQubitInterpreter(num_wires=4)
+        def f():
+            def cond_fn(i):
+                return i < 4
+
+            @qml.while_loop(cond_fn)
+            def f(i):
+                qml.X(i)
+                return i + 1
+
+            f(0)
+            return [qml.expval(qml.Z(i)) for i in range(4)]
+
+        output = f()
+        assert qml.math.allclose(output, [-1, -1, -1, -1])
+
+    def test_cond_boolean(self):
+        """Test that cond can be used with normal classical values."""
+
+        def true_fn(x):
+            qml.RX(x, 0)
+            return x + 1
+
+        def false_fn(x):
+            return 2 * x
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def f(x, val):
+            out = qml.cond(val, true_fn, false_fn)(x)
+            return qml.probs(wires=0), out
+
+        output_true = f(0.5, True)
+        expected0 = [jax.numpy.cos(0.5 / 2) ** 2, jax.numpy.sin(0.5 / 2) ** 2]
+        assert qml.math.allclose(output_true[0], expected0)
+        assert qml.math.allclose(output_true[1], 1.5)  # 0.5 + 1
+
+        output_false = f(0.5, False)
+        assert qml.math.allclose(output_false[0], [1.0, 0.0])
+        assert qml.math.allclose(output_false[1], 1.0)  # 2 * 0.5
+
+    def test_cond_mcm(self):
+        """Test that cond can be used with the output of mcms."""
+
+        def true_fn(y):
+            qml.RX(y, 0)
+
+        # pylint: disable=unused-argument
+        def false_fn(y):
+            qml.X(0)
+
+        @DefaultQubitInterpreter(num_wires=1, shots=None)
+        def g(x):
+            qml.X(0)
+            m0 = qml.measure(0)
+            qml.X(0)
+            qml.cond(m0, true_fn, false_fn)(x)
+            return qml.probs(wires=0)
+
+        output = g(0.5)
+        expected = [jnp.cos(0.5 / 2) ** 2, jnp.sin(0.5 / 2) ** 2]
+        assert qml.math.allclose(output, expected)
