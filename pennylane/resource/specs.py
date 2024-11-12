@@ -214,7 +214,6 @@ def specs(
                 else qnode.diff_method
             )
 
-            # pylint: disable=protected-access
             gradient_fn = qml.QNode.get_gradient_fn(
                 qnode.device,
                 qnode.interface,
