@@ -111,7 +111,7 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         non_commuting_observables (bool): Whether the device supports measuring non-commuting observables on the same tape.
         initial_state_prep (bool): Whether the device supports initial state preparation.
         supported_mcm_methods (list[str]): List of supported methods of mid-circuit measurements.
-        options (dict[str, str]): Additional options for the device.
+        options (dict[str, any]): Additional options for the device.
     """
 
     operations: dict[str, OperatorProperties] = field(default_factory=dict)
@@ -347,9 +347,9 @@ def _get_compilation_options(document: dict, prefix: str = "") -> dict[str, bool
     return section
 
 
-def _get_options(document: dict) -> dict[str, str]:
+def _get_options(document: dict) -> dict[str, any]:
     """Get custom options"""
-    return {k: str(v) for k, v in document.get("options", {}).items()}
+    return document.get("options", {})
 
 
 def parse_toml_document(document: dict) -> DeviceCapabilities:
