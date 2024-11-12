@@ -88,9 +88,6 @@ class Hadamard(Observable, Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
-
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1233,7 +1230,6 @@ class SWAP(Operation):
             )
         return self._pauli_rep
 
-
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1335,7 +1331,6 @@ class ECR(Operation):
                 }
             )
         return self._pauli_rep
-
 
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1470,7 +1465,7 @@ class ISWAP(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.5,
+                    qml.pauli.PauliWord({}): 0.5,
                     qml.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
                     qml.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
                     qml.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
