@@ -20,11 +20,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* ``qml.broadcast`` has been deprecated. Users should use ``for`` loops instead.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * The ``qml.qinfo`` module has been deprecated. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
   modules instead.
 
@@ -111,6 +106,11 @@ Completed deprecation cycles
   - Deprecated in v0.39
   - Removed in v0.40
   
+* ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
 * The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
   has been removed.
 

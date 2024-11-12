@@ -74,7 +74,7 @@ from pennylane.measurements import (
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
-from pennylane.templates import broadcast, layer
+from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.tensornetworks import *
