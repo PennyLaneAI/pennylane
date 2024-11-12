@@ -291,7 +291,7 @@ class TestResources:
             num_wires=2,
             num_gates=12,
             gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
-            gate_sizes=defaultdict(int, {1: 10, 2: 2})
+            gate_sizes=defaultdict(int, {1: 10, 2: 2}),
         ),
         Resources(
             num_wires=2,
