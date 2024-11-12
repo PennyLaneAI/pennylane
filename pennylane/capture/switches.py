@@ -43,12 +43,13 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
     def enable_fn() -> None:
         """Enable the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr)."""
+        # pylint: disable=protected-access
+
         if not has_jax:
             raise ImportError("plxpr requires JAX to be installed.")
         nonlocal _FEATURE_ENABLED
         _FEATURE_ENABLED = True
 
-        # pylint: disable=protected-access
         ar.autoray._BACKEND_ALIASES["pennylane"] = "jax"
         # Cache clearing is required to reflect the update to _BACKEND_ALIASES
         ar.autoray._infer_class_backend_cached.cache_clear()
@@ -56,10 +57,11 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
     def disable_fn() -> None:
         """Disable the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr)."""
+        # pylint: disable=protected-access
+
         nonlocal _FEATURE_ENABLED
         _FEATURE_ENABLED = False
 
-        # pylint: disable=protected-access
         ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
         # Cache clearing is required to reflect the update to _BACKEND_ALIASES
         ar.autoray._infer_class_backend_cached.cache_clear()

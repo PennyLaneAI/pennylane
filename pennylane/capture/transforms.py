@@ -24,6 +24,8 @@ import pennylane as qml
 from .base_interpreter import PlxprInterpreter, jaxpr_to_jaxpr
 from .primitives import qnode_prim
 
+# pylint: disable=missing-function-docstring
+
 
 class TransformTrace(Trace):
     """Trace for processing primitives for PennyLane transforms"""
@@ -189,7 +191,7 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
     """Handle a qnode primitive."""
     consts = invals[:n_consts]
 
-    self._state["shots"] = qml.measurements.Shots(shots)
+    self._state["shots"] = qml.measurements.Shots(shots)  # pylint: disable=protected-access
     new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *invals[n_consts:])
 
     return qnode_prim.bind(
