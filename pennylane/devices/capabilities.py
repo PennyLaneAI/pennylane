@@ -111,7 +111,7 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         non_commuting_observables (bool): Whether the device supports measuring non-commuting observables on the same tape.
         initial_state_prep (bool): Whether the device supports initial state preparation.
         supported_mcm_methods (list[str]): List of supported methods of mid-circuit measurements.
-        options (dict[str, any]): Additional options for the device.
+        options (dict[str, str]): Additional options for the device.
     """
 
     operations: dict[str, OperatorProperties] = field(default_factory=dict)
