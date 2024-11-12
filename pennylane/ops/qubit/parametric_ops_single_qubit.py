@@ -972,13 +972,13 @@ class U2(Operation):
                 {
                     qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
                     * INV_SQRT2
-                    * (1 + qml.math.exp(1j * (self.data[1]  + self.data[0]))),
+                    * (1 + qml.math.exp(1j * (self.data[1] + self.data[0]))),
                     qml.pauli.PauliWord({self.wires[0]: "X"}): 0.5
                     * INV_SQRT2
-                    * (qml.math.exp(1j * self.data[0]) - qml.math.exp(1j * self.data[1] )),
+                    * (qml.math.exp(1j * self.data[0]) - qml.math.exp(1j * self.data[1])),
                     qml.pauli.PauliWord({self.wires[0]: "Y"}): -0.5j
                     * INV_SQRT2
-                    * (qml.math.exp(1j * self.data[0]) + qml.math.exp(1j * self.data[1] )),
+                    * (qml.math.exp(1j * self.data[0]) + qml.math.exp(1j * self.data[1])),
                     qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
                     * INV_SQRT2
                     * (1 - qml.math.exp(1j * (self.data[1] + self.data[0]))),
@@ -1146,7 +1146,7 @@ class U3(Operation):
                     * qml.math.sin(self.data[0] / 2),
                     qml.pauli.PauliWord({self.wires[0]: "Y"}): -0.5j
                     * (qml.math.exp(1j * self.data[2]) + qml.math.exp(1j * self.data[1]))
-                    * qml.math.sin(self.data[0]  / 2),
+                    * qml.math.sin(self.data[0] / 2),
                     qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
                     * (1 - qml.math.exp(1j * (self.data[2] + self.data[1])))
                     * qml.math.cos(self.data[0] / 2),

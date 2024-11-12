@@ -72,13 +72,13 @@ NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
     (qml.Y(0), Y),
     (qml.Z(0), Z),
     (qml.H(0), H),
-    (qml.S(0), S),
-    (qml.T(0), T),
-    (qml.SX(0), SX),
+    (qml.S(10000000), S),
+    (qml.T(10000000), T),
+    (qml.SX("qubit0"), SX),
     (qml.SWAP([0, 1]), SWAP),
     (qml.ISWAP([0, 1]), ISWAP),
-    (qml.ECR([0, 1]), ECR),
-    (qml.SISWAP([0, 1]), SISWAP),
+    (qml.ECR([-1, 1]), ECR),
+    (qml.SISWAP(["qubit0", "qubit1"]), SISWAP),
 ]
 
 STRING_REPR = (
@@ -1331,20 +1331,19 @@ class TestHadamardAlias:
 
 
 class TestPauliRep:
-    @pytest.mark.parametrize("op, _", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED)
-    def test_matrix_and_pauli_rep_equivalence_for_all_non_parametric_ops(self, op):
-        """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
-        import re
+    @pytest.mark.parametrize(
+        "op, rep", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED
+    )
+    def test_lazy_implementation(self, op, rep):
+        """Checks if the ._pauli_rep attribute is only computed when needed."""
+        assert op._pauli_rep is None
+        pauli_rep = op.pauli_rep
+        assert op._pauli_rep is not None
 
-            dim = op.matrix().shape[0]
-            if dim == 2:
-                id_str = "I(0)"
-            if dim == 4:
-                id_str = "I(0)@I(1)"
-            op_in_pauli_decomp = str(op.pauli_rep).replace("\n", " ").replace("I", id_str)
-            for pauli_op in ["I", "X", "Y", "Z"]:
-                op_in_pauli_decomp = re.sub(
-                    rf"{pauli_op}", "qml." + rf"{pauli_op}", op_in_pauli_decomp
-                )
-            op_in_pauli_decomp = eval(op_in_pauli_decomp).matrix()  # pylint: disable=eval-used
-            assert np.allclose(op.matrix(), op_in_pauli_decomp)
+    @pytest.mark.parametrize(
+        "op, rep", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED
+    )
+    def test_matrix_and_pauli_rep_equivalence(self, op, rep):
+        """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
+        assert np.allclose(op.matrix(), qml.matrix(op.pauli_rep, wire_order=op.wires))
+        assert np.allclose(rep, qml.matrix(op.pauli_rep, wire_order=op.wires))
