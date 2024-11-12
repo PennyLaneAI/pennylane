@@ -332,7 +332,9 @@ class TestUpdate:
     def test_update_output_dim(self, m, output_dim, ops, factor):
         """Test setting the output_dim property."""
         qs = QuantumScript(ops, m)
-        assert qs.output_dim == output_dim * factor
+        
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert qs.output_dim == output_dim * factor
 
     def test_lazy_batch_size_and_output_dim(self):
         """Test that batch_size and output_dim are computed lazily."""
@@ -347,7 +349,9 @@ class TestUpdate:
         # now evaluate it
         assert qs.batch_size == 2
         assert qs._output_dim is None  # setting batch_size didn't set output_dim
-        assert qs.output_dim == 2
+        
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert qs.output_dim == 2
         copied = qs.copy()
         assert qs._batch_size == 2
         assert qs._output_dim == 2
@@ -361,7 +365,8 @@ class TestUpdate:
         assert qs._batch_size is _UNSET_BATCH_SIZE
         assert qs._output_dim is None
 
-        assert qs.output_dim == 2  # getting this sets both _output_dim and _batch_size
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert qs.output_dim == 2  # getting this sets both _output_dim and _batch_size
         assert qs._output_dim == 2
         assert qs._batch_size == 2
 
@@ -573,7 +578,8 @@ class TestScriptCopying:
         assert qs.shots is copied_qs.shots
 
         # check that the output dim is identical
-        assert qs.output_dim == copied_qs.output_dim
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert qs.output_dim == copied_qs.output_dim
 
     # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
@@ -608,7 +614,8 @@ class TestScriptCopying:
         assert qs.shots is copied_qs.shots
 
         # check that the output dim is identical
-        assert qs.output_dim == copied_qs.output_dim
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert qs.output_dim == copied_qs.output_dim
 
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
@@ -628,7 +635,8 @@ class TestScriptCopying:
         assert copied_qs.shots is qs.shots
 
         # check that the output dim is identical
-        assert qs.output_dim == copied_qs.output_dim
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert qs.output_dim == copied_qs.output_dim
 
         # The underlying operation data has also been copied
         assert copied_qs.operations[0].wires is not qs.operations[0].wires
@@ -743,7 +751,8 @@ class TestScriptCopying:
         tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
 
         assert tape.batch_size == 2
-        assert tape.output_dim == 2
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert tape.output_dim == 2
         assert tape.trainable_params == [1]
 
         new_ops = [qml.RX([1.2, 2.3, 3.4], 0)]
@@ -753,7 +762,8 @@ class TestScriptCopying:
         assert new_tape.operations == new_ops
 
         assert new_tape.batch_size == 3
-        assert new_tape.output_dim == 3
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert new_tape.output_dim == 3
         assert new_tape.trainable_params == [0]
 
     def test_cached_properties_when_updating_measurements(self):
@@ -771,7 +781,8 @@ class TestScriptCopying:
 
         assert tape.obs_sharing_wires == []
         assert tape.obs_sharing_wires_id == []
-        assert tape.output_dim == 2
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert tape.output_dim == 2
         assert tape.trainable_params == [1]
 
         new_measurements = [qml.expval(qml.X(0)), qml.var(qml.Y(0))]
@@ -780,7 +791,8 @@ class TestScriptCopying:
         assert tape.measurements == measurements
         assert new_tape.measurements == new_measurements
 
-        assert new_tape.output_dim == 4
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+            assert new_tape.output_dim == 4
         assert new_tape.obs_sharing_wires == [qml.X(0), qml.Y(0)]
         assert new_tape.obs_sharing_wires_id == [0, 1]
         assert new_tape.trainable_params == [0, 1]
