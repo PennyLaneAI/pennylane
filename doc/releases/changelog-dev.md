@@ -71,6 +71,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.broadcast` has been removed. Users should use `for` loops instead.
+  [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
+
 * The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
 
