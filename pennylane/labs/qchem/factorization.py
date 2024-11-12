@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functionality for symmetry shift and compressed double factorization."""
 
+import itertools as it
 from functools import partial
 
 import numpy as np
@@ -155,3 +156,30 @@ def compute_one_norm(one, two):
     term3 = 0.5 * np.sum(np.abs(two))
 
     return term1 + term2 + term3
+
+
+def hamiltonian_from_integrals(core, one, two, chemist=True):
+    """Builds an electronic Hamiltonian from one-body and two-body integrals"""
+    norb = one.shape[0]
+
+    if chemist:
+        fop = core * qml.fermi.FermiWord({})
+        for p, q in it.product(range(norb), repeat=2):
+            for pi in range(2):
+                fop += qml.FermiC(int(2 * p + pi)) * qml.FermiA(int(2 * q + pi)) * float(one[p, q])
+
+            for p, q, r, s in it.product(range(norb), repeat=4):
+                for pi, rho in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+                    fop += (
+                        qml.FermiC(int(2 * p + pi))
+                        * qml.FermiA(int(2 * q + pi))
+                        * qml.FermiC(int(2 * r + rho))
+                        * qml.FermiA(int(2 * s + rho))
+                        * float(two[p, q, r, s])
+                    )
+    else:
+        fop = qml.qchem.fermionic_observable(core, one, two)
+
+    fop.simplify()
+    H = qml.jordan_wigner(fop)
+    return H
