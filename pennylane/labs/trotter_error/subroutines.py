@@ -144,10 +144,7 @@ class PTerrorTensor(PTerror):
                     error_per_state[label] = Y3_j
                 else:
                     error_per_state[label] += Y3_j            
-                    error_per_state[label] += Y3_j            
-        
-                    error_per_state[label] += Y3_j
-        
+
 
         return error_per_state
 
@@ -162,3 +159,27 @@ class H():
         self.h1e = h1e
         self.eri = eri
         self.ecore = ecore
+
+
+def _load_cdf(folder, verbose = False):
+    """
+    Helper function to load the pre-computed cdf one 
+    and two electron integrals.
+    """
+    # load the one-electron integrals
+    UZ0 = np.load(f'{folder}/CDF_onebody.npy', allow_pickle=True)
+    U0, Z0 = UZ0[0], UZ0[1]
+
+    # load the two-electron integrals
+    opt_XZ = np.load(f'{folder}/CDF_twobody.npy', allow_pickle=True)
+    X, Z = opt_XZ[0], opt_XZ[1]
+
+    # load the core constant
+    core_const = np.load(f'{folder}/CDF_core.npy', allow_pickle=True)
+
+    #check whether X is antisymmetric and Z is symmetric
+    if verbose:
+        print(f'Is X antisymmetric', np.isclose(X, -np.transpose(X, (0,2,1))).all())
+        print(f'Is Z symmetric', np.isclose(Z, np.transpose(Z, (0,2,1))).all())
+
+    return X, Z, U0, Z0, core_const
