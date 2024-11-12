@@ -71,6 +71,15 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.broadcast` has been removed. Users should use `for` loops instead.
+  [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
+
+* The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
+  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+
+* The `expand_depth` argument for `qml.compile` has been removed.
+  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
   [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
@@ -84,14 +93,20 @@
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
+* Add reporting of test warnings as failures.
+  [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
 * Add a warning message to Gradients and training documentation about ComplexWarnings
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_deep_interface` now works properly for autograd arrays.
+  [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
+
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -101,6 +116,7 @@ Shiwen An
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
+Austin Huang,
 Christina Lee,
 Andrija Paurevic,
 Justin Pickering
