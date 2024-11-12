@@ -236,74 +236,10 @@ equal_hamiltonians = [
         qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.PauliZ("a")]),
         False,
     ),
-    (qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
-    (qml.Hamiltonian([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
-    (
-        qml.Hamiltonian(
-            [1, 1, 1],
-            [
-                qml.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qml.Identity(7),
-                qml.PauliZ(3),
-                qml.Identity(1.2),
-            ],
-        ),
-        qml.Hamiltonian(
-            [1, 1, 1],
-            [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)],
-        ),
-        True,
-    ),
     (
         qml.Hamiltonian([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
         qml.Hamiltonian([2], [qml.PauliZ(3)]),
         True,
-    ),
-]
-
-equal_tensors = [
-    (qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliX(0), True),
-    (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliX(0) @ qml.PauliZ(2), True),
-    (qml.PauliX(0) @ qml.Identity(2) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
-    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
-    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("a") @ qml.PauliZ("b"), True),
-    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("c") @ qml.PauliZ("d"), False),
-    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("b") @ qml.PauliZ("a"), False),
-    (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.1) @ qml.PauliZ(1.2), True),
-    (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.2) @ qml.PauliZ(0.9), False),
-]
-
-equal_hamiltonians_and_tensors = [
-    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliY(1) @ qml.PauliX(0), True),
-    (
-        qml.Hamiltonian(
-            [0.5, 0.5],
-            [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")],
-        ),
-        qml.PauliZ(0) @ qml.PauliY(1),
-        True,
-    ),
-    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), True),
-    (qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), False),
-    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(4) @ qml.PauliY(1), False),
-    (
-        qml.Hamiltonian([1], [qml.PauliX("a") @ qml.PauliZ("b")]),
-        qml.PauliX("a") @ qml.PauliZ("b"),
-        True,
-    ),
-    (
-        qml.Hamiltonian([1], [qml.PauliX("a") @ qml.PauliZ("b")]),
-        qml.PauliX("b") @ qml.PauliZ("a"),
-        False,
-    ),
-    (
-        qml.Hamiltonian([1], [qml.PauliX(1.2) @ qml.PauliZ(0.2)]),
-        qml.PauliX(1.2) @ qml.PauliZ(0.2),
-        True,
-    ),
-    (
-        qml.Hamiltonian([1], [qml.PauliX(1.2) @ qml.PauliZ(0.2)]),
-        qml.PauliX(1.3) @ qml.PauliZ(2),
-        False,
     ),
 ]
 
@@ -318,10 +254,6 @@ equal_pauli_operators = [
     (qml.PauliY("a"), qml.PauliX("a"), False),
     (qml.PauliZ(0.3), qml.PauliY(0.3), False),
     (qml.PauliZ(0), qml.RX(1.23, 0), False),
-    (qml.Hamiltonian([1], [qml.PauliX("a")]), qml.PauliX("a"), True),
-    (qml.Hamiltonian([1], [qml.PauliX("a")]), qml.PauliX("b"), False),
-    (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.2), True),
-    (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.3), False),
 ]
 
 
@@ -354,6 +286,29 @@ def test_assert_equal_unspecified():
 
 
 class TestEqual:
+
+    def test_identity_equal(self):
+        """Test that comparing two Identities always returns True regardless of wires"""
+        I1 = qml.Identity()
+        I2 = qml.Identity(wires=[-1])
+        I3 = qml.Identity(wires=[0, 1, 2, 3])
+        I4 = qml.Identity(wires=["a", "b"])
+
+        assert qml.equal(I1, I2)
+        assert qml.equal(I1, I3)
+        assert qml.equal(I1, I4)
+        assert qml.equal(I2, I3)
+        assert qml.equal(I2, I4)
+        assert qml.equal(I3, I4)
+
+    @pytest.mark.parametrize(("op1", "op2", "res"), equal_pauli_operators)
+    def test_pauli_operator_equals(self, op1, op2, res):
+        """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators
+        and Hamiltonians"""
+
+        assert qml.equal(op1, op2) == qml.equal(op2, op1)
+        assert qml.equal(op1, op2) == res
+
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_equal_simple_diff_op(self, ops):
         """Test different operators return False"""
@@ -1464,90 +1419,11 @@ class TestMeasurementsEqual:
         assert not qml.equal(m1, m2)
 
 
-# seems to only have been marked as legacy opmath because we didn't get
-# qml.equal fully up to date - leaving the existing to-do below. Should we fix this?
-# TODO update qml.equal with new opmath
-class TestObservablesComparisons:
-    """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
+def test_unsupported_object_type_not_implemented():
+    dev = qml.device("default.qubit", wires=1)
 
-    def test_identity_equal(self):
-        """Test that comparing two Identities always returns True regardless of wires"""
-        I1 = qml.Identity()
-        I2 = qml.Identity(wires=[-1])
-        I3 = qml.Identity(wires=[0, 1, 2, 3])
-        I4 = qml.Identity(wires=["a", "b"])
-
-        assert qml.equal(I1, I2)
-        assert qml.equal(I1, I3)
-        assert qml.equal(I1, I4)
-        assert qml.equal(I2, I3)
-        assert qml.equal(I2, I4)
-        assert qml.equal(I3, I4)
-
-    @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
-    def test_hamiltonian_equal(self, H1, H2, res):
-        """Tests that equality can be checked between Hamiltonians"""
-
-        assert qml.equal(H1, H2) == qml.equal(H2, H1)
-        assert qml.equal(H1, H2) == res
-        if not res:
-            error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not the same")
-            with pytest.raises(AssertionError, match=error_message_pattern):
-                assert_equal(H1, H2)
-
-    @pytest.mark.parametrize(("T1", "T2", "res"), equal_tensors)
-    def test_tensors_equal(self, T1, T2, res):
-        """Tests that equality can be checked between Tensors"""
-        assert qml.equal(T1, T2) == qml.equal(T2, T1)
-        assert qml.equal(T1, T2) == res
-
-    @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
-    def test_hamiltonians_and_tensors_equal(self, H, T, res):
-        """Tests that equality can be checked between a Hamiltonian and a Tensor"""
-
-        assert qml.equal(H, T) == qml.equal(T, H)
-        assert qml.equal(H, T) == res
-
-    @pytest.mark.parametrize(("op1", "op2", "res"), equal_pauli_operators)
-    def test_pauli_operator_equals(self, op1, op2, res):
-        """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators
-        and Hamiltonians"""
-
-        assert qml.equal(op1, op2) == qml.equal(op2, op1)
-        assert qml.equal(op1, op2) == res
-
-    def test_hamiltonian_and_operation_not_equal(self):
-        """Tests that comparing a LinearCombination with an Operation returns False"""
-        op1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
-        op2 = qml.RX(1.2, 0)
-        assert qml.equal(op1, op2) is False
-        assert qml.equal(op2, op1) is False
-        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
-            assert_equal(op1, op2)
-
-    def test_tensor_and_operation_not_equal(self):
-        """Tests that comparing a tensor product with an Operator that is not an Observable returns False"""
-        op1 = qml.PauliX(0) @ qml.PauliY(1)
-        op2 = qml.RX(1.2, 0)
-        assert qml.equal(op1, op2) is False
-        assert qml.equal(op2, op1) is False
-        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
-            assert_equal(op1, op2)
-
-    def test_tensor_and_observable_not_equal(self):
-        """Tests that comparing a tensor product with a single Observable returns False"""
-        op1 = qml.PauliX(0) @ qml.PauliY(1)
-        op2 = qml.Z(0)
-        assert qml.equal(op1, op2) is False
-        assert qml.equal(op2, op1) is False
-        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
-            assert_equal(op1, op2)
-
-    def test_unsupported_object_type_not_implemented(self):
-        dev = qml.device("default.qubit", wires=1)
-
-        with pytest.raises(NotImplementedError, match="Comparison of"):
-            qml.equal(dev, dev)
+    with pytest.raises(NotImplementedError, match="Comparison of"):
+        qml.equal(dev, dev)
 
 
 class TestSymbolicOpComparison:
@@ -2165,6 +2041,22 @@ class TestProdComparisons:
         ),
     ]
 
+    @pytest.mark.parametrize(("T1", "T2", "res"), [
+        (qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliX(0), True),
+        (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliX(0) @ qml.PauliZ(2), True),
+        (qml.PauliX(0) @ qml.Identity(2) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
+        (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
+        (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("a") @ qml.PauliZ("b"), True),
+        (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("c") @ qml.PauliZ("d"), False),
+        (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("b") @ qml.PauliZ("a"), False),
+        (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.1) @ qml.PauliZ(1.2), True),
+        (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.2) @ qml.PauliZ(0.9), False),
+    ])
+    def test_prods_equal(self, T1, T2, res):
+        """Tests that equality can be checked between Prods"""
+        assert qml.equal(T1, T2) == qml.equal(T2, T1)
+        assert qml.equal(T1, T2) == res
+
     def test_non_commuting_order_swap_not_equal(self):
         """Test that changing the order of non-commuting operators is not equal"""
         op1 = qml.prod(qml.PauliX(0), qml.PauliY(0))
@@ -2360,6 +2252,20 @@ class TestSumComparisons:
         op1 = qml.sum(qml.X(0), qml.GlobalPhase(np.pi))
         op2 = qml.sum(qml.GlobalPhase(np.pi), qml.X(0))
         assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
+    def test_hamiltonian_equal(self, H1, H2, res):
+        """Tests that equality can be checked between LinearCombinations"""
+
+        assert qml.equal(H1, H2) == qml.equal(H2, H1)
+        assert qml.equal(H1, H2) == res
+        if not res:
+            if len(H1) != len(H2):
+                error_message = "op1 and op2 have different number of operands"
+            else:
+                error_message = re.compile(r"op1 and op2 have different operands")
+            with pytest.raises(AssertionError, match=error_message):
+                assert_equal(H1, H2)
 
 
 def f1(p, t):
