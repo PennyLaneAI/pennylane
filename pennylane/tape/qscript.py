@@ -325,6 +325,11 @@ class QuantumScript:
     @property
     def output_dim(self) -> int:
         """The (inferred) output dimension of the quantum script."""
+        import warnings
+        warnings.warn(
+            "The 'output_dim' property is deprecated and will be removed in version 0.41",
+            qml.PendingDeprecationWarning
+        )
         if self._output_dim is None:
             self._update_output_dim()  # this will set _batch_size if it isn't already
         return self._output_dim
