@@ -85,11 +85,9 @@ def _(bose_operator: BoseWord, d, ps=False, wire_map=None, tol=None):
 
     d_mat = {"+": cr, "-": cr.T}
 
-    if len(bose_operator) == 0:
-        qubit_operator = PauliSentence({PauliWord({}): 1.0})
+    qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
-    else:
-        qubit_operator = PauliSentence({PauliWord({}): 1.0})
+    if len(bose_operator) != 0:
         for item in bose_operator.items():
             (_, boson), sign = item
             oper = PauliSentence()
