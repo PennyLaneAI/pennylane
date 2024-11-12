@@ -339,7 +339,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     Args:
 
-        device (Union[pennylane.devices.LegacyDevice, pennylane.devices.Device]): the device for execution and derivatives.
+        device (pennylane.devices.Device): the device for execution and derivatives.
             Must support first order gradients with the requested configuration.
         execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the options needed to fully
            describe the execution. Only used with :class:`pennylane.devices.Device` from the new device interface.
