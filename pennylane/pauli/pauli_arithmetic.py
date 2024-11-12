@@ -993,11 +993,7 @@ class PauliSentence(dict):
                 csr_data = qml.math.convert_like(csr_data, coeff)
             data += coeff * csr_data if np.isscalar(coeff) else np.outer(self[pw], csr_data)
 
-        return (
-            qml.math.einsum("ij,i->ij", base_matrix, data)
-            if np.isscalar(coeff)
-            else qml.math.einsum("ij,ki->kij", base_matrix, data)
-        )
+        return qml.math.einsum("ij,...i->...ij", base_matrix, data)
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
