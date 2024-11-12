@@ -135,11 +135,11 @@ jobs:
           EXISTING_PR="$(gh pr list --state open --base master --head $HEAD_BRANCH_NAME --json 'url' --jq '.[].url' | head -n 1)"
           EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
 
-          if [ ${{ steps.prep_commit.outputs.branch_exists }}=='false' ]; then
+          if [ '${{ steps.prep_commit.outputs.branch_exists }}' = 'false' ]; then
             echo "Creating PR..."
             gh pr create --title "$PR_TITLE" --body "$PR_BODY"
             exit 0
-          elif [ -n $EXISTING_PR]; then
+          elif [ -n $EXISTING_PR ]; then
             echo "Open PR already exists ==> $EXISTING_PR"
             echo "Editing with provided title and body..."
             gh pr edit --title "$PR_TITLE" --body "$PR_BODY"
