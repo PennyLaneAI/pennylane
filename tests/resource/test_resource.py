@@ -33,6 +33,7 @@ from pennylane.resource.resource import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
+    substitute,
 )
 from pennylane.tape import QuantumScript
 
@@ -291,7 +292,7 @@ class TestResources:
             num_wires=2,
             num_gates=12,
             gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
-            gate_sizes=defaultdict(int, {1: 10, 2: 2})
+            gate_sizes=defaultdict(int, {1: 10, 2: 2}),
         ),
         Resources(
             num_wires=2,
@@ -369,6 +370,66 @@ class TestResources:
 
         resultant_obj = mul_in_parallel(resource_obj, scalar)
         assert resultant_obj == expected_res_obj
+
+    gate_info = (("RX", 1), ("RZ", 1))
+    expected_results_sub = (
+        Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=14,
+            gate_types=defaultdict(int, {"RX": 10, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 13, 2: 1}),
+        ),
+    )
+
+    @pytest.mark.parametrize("gate_info, expected_res_obj", zip(gate_info, expected_results_sub))
+    def test_substitute(self, gate_info, expected_res_obj):
+        """Test the substitute function"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+        )
+
+        sub_obj = Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+        )
+
+        resultant_obj = substitute(resource_obj, gate_info, sub_obj)
+        assert resultant_obj == expected_res_obj
+
+    def test_substitute_error(self):
+        """Test the substitute function raises an error when differing gate numbers are given."""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+        )
+
+        gate_info = ("CNOT", 2)
+
+        sub_obj = Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Replacement resources must act on the name number of wires. Got 2 and 1.",
+        ):
+            substitute(resource_obj, gate_info, sub_obj)
 
 
 class TestResourcesOperation:  # pylint: disable=too-few-public-methods

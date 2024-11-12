@@ -214,7 +214,10 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
 
-def substitute(primary_resources: Resources, gate_info: Tuple[str, int], replacement_resources: Resources):
+
+def substitute(
+    primary_resources: Resources, gate_info: Tuple[str, int], replacement_resources: Resources
+):
     """Replaces a gate with the contents of another Resource object.
 
     Args:
@@ -227,11 +230,21 @@ def substitute(primary_resources: Resources, gate_info: Tuple[str, int], replace
     """
 
     gate_name, num_wires = gate_info
+
+    if num_wires != replacement_resources.num_wires:
+        raise ValueError(
+            f"Replacement resources must act on the name number of wires. Got {num_wires} and {replacement_resources.num_wires}."
+        )
+
     gate_count = primary_resources.gate_types.pop(gate_name, 0)
 
     if gate_count > 0:
         new_wires = primary_resources.num_wires
-        new_gates = primary_resources.num_gates - gate_count + (gate_count * replacement_resources.num_gates)
+        new_gates = (
+            primary_resources.num_gates
+            - gate_count
+            + (gate_count * replacement_resources.num_gates)
+        )
 
         replacement_gate_types = _scale_dict(replacement_resources.gate_types, gate_count)
         replacement_gate_sizes = _scale_dict(replacement_resources.gate_sizes, gate_count)
@@ -245,6 +258,7 @@ def substitute(primary_resources: Resources, gate_info: Tuple[str, int], replace
         return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
 
     return primary_resources
+
 
 def _combine_dict(dict1: defaultdict, dict2: defaultdict):
     r"""Private function which combines two dictionaries together."""
