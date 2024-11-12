@@ -324,7 +324,16 @@ class QuantumScript:
 
     @property
     def output_dim(self) -> int:
-        """The (inferred) output dimension of the quantum script."""
+        """The (inferred) output dimension of the quantum script.
+
+        .. warning::
+
+            ``QuantumScript.output_dim`` is being deprecated. Instead, considering 
+            using method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` 
+            to get the same information. See ``qml.gradients.parameter_shift_cv.py::_get_output_dim`` 
+            for an example.
+            
+        """
         import warnings
         warnings.warn(
             "The 'output_dim' property is deprecated and will be removed in version 0.41",
