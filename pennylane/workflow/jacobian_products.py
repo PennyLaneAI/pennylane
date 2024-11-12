@@ -343,8 +343,6 @@ class DeviceDerivatives(JacobianProductCalculator):
             Must support first order gradients with the requested configuration.
         execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the options needed to fully
            describe the execution. Only used with :class:`pennylane.devices.Device` from the new device interface.
-        gradient_kwargs (dict): a dictionary of keyword arguments for the gradients. Only used with a :class:`~.pennylane.devices.LegacyDevice`
-            from the old device interface.
 
     **Examples:**
 
