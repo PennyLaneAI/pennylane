@@ -144,6 +144,6 @@ from .resource import (
     mul_in_series,
     mul_in_parallel,
     substitute,
-
+)
 from .second_quantization import DoubleFactorization
 from .specs import specs
