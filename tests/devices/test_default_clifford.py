@@ -218,10 +218,10 @@ def test_meas_expval(shots, ops, seed):
         qml.sum(qml.PauliZ(0), qml.s_prod(2.0, qml.PauliY(1))),
     ],
 )
-def test_meas_var(shots, ops):
+def test_meas_var(shots, ops, seed):
     """Test that variance measurements with `default.clifford` is possible
     and agrees with `default.qubit`."""
-    dev_c = qml.device("default.clifford", shots=shots)
+    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
