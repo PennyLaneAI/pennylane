@@ -817,6 +817,7 @@ def param_shift_cv(
 
     return gradient_tapes, processing_fn
 
+
 def _get_output_dim(tape):
     """Update the dimension of the output of the quantum script.
 
