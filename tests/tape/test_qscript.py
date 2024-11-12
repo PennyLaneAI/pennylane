@@ -1714,3 +1714,12 @@ def test_jax_pytree_integration(qscript_type):
     assert data[3] == 3.4
     assert data[4] == 2.0
     assert qml.math.allclose(data[5], eye_mat)
+
+@pytest.mark.parametrize("qscript_type", (QuantumScript, qml.tape.QuantumTape))
+@pytest.mark.parametrize("shots", [None, 1, 10])
+def test_output_dim_is_deprecated(qscript_type, shots):
+    """Test that the output_dim property is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"):
+        qscript = qscript_type([], [], shots=shots)
+        qscript.output_dim
+        
