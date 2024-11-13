@@ -91,7 +91,7 @@
 
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been deprecated. 
   Instead, use the ``qml.workflow.construct_tape`` function.
-  [(#)]()
+  [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
 
 * The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
   Instead, use the `qml.workflow.get_best_diff_method` function.
