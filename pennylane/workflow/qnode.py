@@ -727,6 +727,7 @@ class QNode:
         .. warning::
 
             This method is deprecated in v0.40 and will be removed in v0.41.
+            Instead, use the :func:`qml.workflow.get_best_diff_method <.workflow.get_best_diff_method>` function.
 
         Returns the 'best' differentiation method
         for a particular device and interface combination.
@@ -779,7 +780,8 @@ class QNode:
         """
         .. warning::
 
-            ``QNode.best_method_str`` is deprecated in v0.40 and will be removed in v0.41.
+            This method is deprecated in v0.40 and will be removed in v0.41.
+            Instead, use the :func:`qml.workflow.get_best_diff_method <.workflow.get_best_diff_method>` function.
 
 
         Similar to :meth:`~.get_best_method`, except return the
