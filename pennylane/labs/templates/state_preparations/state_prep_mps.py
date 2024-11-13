@@ -45,7 +45,7 @@ class MPSPrep(Operation):
         @qml.qnode(dev)
         def circuit():
             labs.MPSPrep(mps, wires = [0,1,2])
-            return qml.sample(wires=x_wires)
+            return qml.state()
     """
 
     def __init__(self, mps, wires, id=None):
