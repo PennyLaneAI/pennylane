@@ -131,8 +131,9 @@ circuit batch produced by the program should be run via ``Device.execute`` witho
 
 PennyLane can potentially provide a default implementation of the preprocessing program which should
 be sufficient for most plugin devices. This requires that a TOML-formatted configuration file is
-defined for your device. The details of this configuration file is described the next section. The
+defined for your device. The details of this configuration file is described :ref:`the next section <device_capabilities>`. The
 default preprocessing program will be constructed based on what is declared in this file if provided.
+
 Alternatively, you could override the :meth:`~.devices.Device.preprocess` method with a completely
 customized implementation.
 
