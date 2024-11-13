@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Trace implementations for program capture"""
+from copy import copy
 from typing import Any
 
 import jax
@@ -21,11 +22,18 @@ from jax.core import MainTrace, Primitive, ShapedArray, Trace, Tracer
 import pennylane as qml
 
 from .base_interpreter import PlxprInterpreter, jaxpr_to_jaxpr
-from .primitives import qnode_prim
+from .primitives import adjoint_transform_prim, ctrl_transform_prim, qnode_prim
 
 
 class TransformTrace(Trace):
-    """Trace for processing primitives for PennyLane transforms"""
+    """Trace for processing primitives for PennyLane transforms.
+
+    Args:
+        main (jax.core.MainTrace): Active interpreter that this ``Trace`` belongs to
+        sublevel (int): Sublevel for this ``Trace``
+        transform_program (pennylane.transforms.core.TransformProgram): ``TransformProgram``
+            containing the transforms to apply to the primitives being interpreted
+    """
 
     def __init__(
         self,
@@ -38,34 +46,56 @@ class TransformTrace(Trace):
         self._state = None
 
     def pure(self, val: Any):
+        """Create a new ``TransformTracer``"""
         return TransformTracer(self, val, 0)
 
     lift = sublift = pure
 
     @property
     def state(self):
+        """Dictionary containing environment information for transforms to use."""
         return self._state
 
     @state.setter
     def state(self, state):
+        """Setter for the state attribute."""
         self._state = state
 
     def process_primitive(self, primitive: Primitive, tracers: tuple[Tracer], params: dict):
+        """Interpret a given primitive.
+
+        Args:
+            primitive (jax.core.Primitive): Primitive to interpret
+            tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive
+            params (dict): Keyword arguments/metadata for the primitive
+
+        Returns:
+            Any: The result of the interpretation
+        """
         idx = max(t.idx for t in tracers if isinstance(t, TransformTracer))
         is_qml_primitive = primitive.__class__.__module__.split(".")[0] == "pennylane"
 
         if idx >= len(self._transform_program) or not is_qml_primitive:
+            # Either all transforms have been applied or the primitive is not an operator or measurement
             tracers = [t.val if isinstance(t, TransformTracer) else t for t in tracers]
             return primitive.bind(*tracers, **params)
 
         transform: "qml.transforms.core.TransformContainer" = self._transform_program[idx]
         bind_fn = transform.plxpr_transform
         targs, tkwargs = transform.args, transform.kwargs
+
         return bind_fn(primitive, tracers, params, targs, tkwargs, state=self.state)
 
 
 class TransformTracer(Tracer):
-    """Tracer for tracing PennyLane transforms"""
+    """Tracer for tracing PennyLane transforms
+
+    Args:
+        trace (pennylane.capture.TransformTrace): TransformTrace that boxed up inputs into this
+            ``TransformTracer``
+        val (Any): Input value to box inside this ``TransformTracer``
+        idx (int): Index into the transform program to track which transform to apply
+    """
 
     def __init__(self, trace: TransformTrace, val: Any, idx: int):
         super().__init__(trace=trace)
@@ -84,18 +114,99 @@ class TransformTracer(Tracer):
             self._aval = ShapedArray(qml.math.shape(val), val.dtype)
 
     def __repr__(self):
-        return f"TransformTracer({self._trace}, {self.val}, {self.idx})"
+        return f"TransformTracer({self._trace}, val={self.val}, idx={self.idx})"
 
     @property
     def aval(self):
+        """Abstract value of this ``TransformTracer``"""
         return self._aval
 
-    def full_lower(self):
+    def full_lower(self):  # pylint: disable=missing-function-docstring
         return self
 
 
 class TransformInterpreter(PlxprInterpreter):
-    """Interpreter for transforming PLxPR."""
+    r"""Interpreter for transforming PLxPR.
+
+    This interpreter can be used to apply transforms to PLxPR natively without having to create
+    ``QuantumTape``\ s as an intermediate step.
+
+    Args:
+        transform_program (pennylane.transforms.core.TransformProgram): Transform program containing
+            all transforms to be applied to the input function.
+
+    **Example**
+
+    Let's say a user has defined a transform that converts all ``qml.RX`` gates into ``qml.RY``
+    gates. First, a PLxPR compatible version of the transform needs to be implemented. This can
+    be done as shown below:
+
+    .. code-block:: python
+
+        @qml.transforms.core.transform
+        def convert_rx_to_ry(tape):
+            new_ops = [
+                qml.RY(op.data[0], op.wires) if isinstance(op, qml.RX) else op for op in tape.operations
+            ]
+            new_tape = qml.tape.QuantumScript(
+                new_ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+            )
+            return [new_tape], lambda results: results[0]
+
+
+        @convert_rx_to_ry.custom_plxpr_transform
+        def _(self, primitive, tracers, params, targs, tkwargs, state):
+            from pennylane.capture import TransformTracer
+
+            # Step 1: Transform primitive
+            primitive = qml.RY._primitive if primitive.name == "RX" else primitive
+            # Step 2: Update tracers
+            tracers = [
+                TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
+                for t in tracers
+            ]
+            # Step 3: Return the result of the transformation
+            return primitive.bind(*tracers, **params)
+
+    Using ``@convert_rx_to_ry.custom_plxpr_transform`` will register the decorated function as the interpreter
+    that processes primitives when the transform is included in the transform program.
+
+    We can now use this to transform user functions:
+
+    .. code-block:: python
+
+        def func(x, y):
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            qml.RY(y, 1)
+            return qml.expval(qml.Z(1))
+
+    >>> print(qml.capture.make_plxpr(func)(1.2, 3.4))
+    { lambda ; a:f32[] b:f32[]. let
+        _:AbstractOperator() = RX[n_wires=1] a 0
+        _:AbstractOperator() = CNOT[n_wires=2] 0 1
+        _:AbstractOperator() = RY[n_wires=1] b 1
+        c:AbstractOperator() = PauliZ[n_wires=1] 1
+        d:AbstractMeasurement(n_wires=None) = expval_obs c
+      in (d,) }
+
+    .. code-block:: python
+
+        program = qml.transforms.core.TransformProgram()
+        program.add_transform(convert_rx_to_ry)
+        transform_interpreter = TransformInterpreter(program)
+        transformed_func = transform_interpreter(func)
+
+    >>> print(qml.capture.make_plxpr(transformed_func)(1.2, 3.4))
+    { lambda ; a:f32[] b:f32[]. let
+        _:AbstractOperator() = RY[n_wires=1] a 0
+        _:AbstractOperator() = CNOT[n_wires=2] 0 1
+        _:AbstractOperator() = RY[n_wires=1] b 1
+        c:AbstractOperator() = PauliZ[n_wires=1] 1
+        d:AbstractMeasurement(n_wires=None) = expval_obs c
+      in (d,) }
+
+    """
 
     _trace: TransformTrace
     _transform_program: "qml.transforms.core.TransformProgram"
@@ -118,7 +229,8 @@ class TransformInterpreter(PlxprInterpreter):
         self._state = {}
 
     def read_with_trace(self, var):
-        """Extract the value corresponding to a variable."""
+        """Extract the value corresponding to a variable and box it in a ``TransformTracer``
+        if not already boxed."""
         if getattr(var, "_trace", None) is self._trace:
             return var
 
@@ -147,19 +259,18 @@ class TransformInterpreter(PlxprInterpreter):
 
         return op
 
-    def interpret_measure_eqn(self, primitive, *invals, **params):
+    def interpret_measure_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
 
         Args:
-            primitive (jax.core.Primitive): a jax primitive corresponding to a measurement.
-            *invals (Any): the positional input variables for the equation
+            eqn (jax.core.JaxprEqn)
 
-        Keyword Args:
-            **params: The equations parameters dictionary
+        See also :meth:`~.interpret_measurement`.
 
         """
+        invals = [self.read(invar) for invar in eqn.invars]
         invals = [self.read_with_trace(self.read(inval)) for inval in invals]
-        return primitive.bind(*invals, **params)
+        return eqn.primitive.bind(*invals, **eqn.params)
 
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
         """Evaluate a jaxpr.
@@ -180,13 +291,13 @@ class TransformInterpreter(PlxprInterpreter):
         return [r.val if isinstance(r, TransformTracer) else r for r in tracers_out]
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument, too-many-arguments, protected-access
 @TransformInterpreter.register_primitive(qnode_prim)
 def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
     consts = invals[:n_consts]
 
-    self._state["shots"] = qml.measurements.Shots(shots)
+    self._state["shots"] = qml.measurements.Shots(shots)  # pylint: disable=protected-access
     new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *invals[n_consts:])
 
     return qnode_prim.bind(
@@ -198,3 +309,26 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
         qfunc_jaxpr=new_qfunc_jaxpr,
         n_consts=n_consts,
     )
+
+
+@PlxprInterpreter.register_primitive(adjoint_transform_prim)
+def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
+    """Interpret an adjoint transform primitive."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+
+    def wrapper():
+        return adjoint_transform_prim.impl(*invals, jaxpr, lazy, n_consts)
+
+    unwrapped_jaxpr = qml.make_jaxpr(wrapper)()
+    _ = jaxpr_to_jaxpr(copy(self), unwrapped_jaxpr, consts, *args)
+
+    return []
+
+
+# pylint: disable=too-many-arguments
+@PlxprInterpreter.register_primitive(ctrl_transform_prim)
+def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+    """Interpret a ctrl transform primitive."""
+
+    return []

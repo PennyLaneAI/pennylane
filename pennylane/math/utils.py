@@ -269,7 +269,7 @@ def _get_interface_of_single_tensor(tensor):
     """
     namespace = tensor.__class__.__module__.split(".")[0]
 
-    if namespace in ("pennylane", "autograd"):
+    if namespace == "autograd":
         return "autograd"
 
     res = ar.infer_backend(tensor)
@@ -308,9 +308,9 @@ def get_deep_interface(value):
     itr = value
     while isinstance(itr, (list, tuple)):
         if len(itr) == 0:
-            return "builtins"
+            return "numpy"
         itr = itr[0]
-    return ar.infer_backend(itr)
+    return _get_interface_of_single_tensor(itr)
 
 
 def is_abstract(tensor, like=None):
@@ -404,6 +404,8 @@ def is_abstract(tensor, like=None):
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
+        from pennylane.capture import TransformTracer
+
         if isinstance(
             tensor,
             (
@@ -417,7 +419,7 @@ def is_abstract(tensor, like=None):
             # Otherwise, it will be abstract.
             return not isinstance(tensor.aval, jax.core.ConcreteArray)
 
-        return isinstance(tensor, jax.core.Tracer)
+        return isinstance(tensor, (DynamicJaxprTracer, TransformTracer))
 
     if interface == "tensorflow":
         import tensorflow as tf

@@ -29,7 +29,7 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
-class TransformDispatcher:
+class TransformDispatcher:  # pylint: disable=too-many-instance-attributes, too-many-positional-arguments
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
     :class:`pennylane.devices.Device`.
@@ -236,9 +236,22 @@ class TransformDispatcher:
         self._plxpr_transform = types.MethodType(fn, self)
 
     def default_plxpr_transform(
-        self, primitive, params, targs, tkwargs, state=None
+        self, primitive, tracers, params, targs, tkwargs, state
     ):  # pylint: disable=unused-argument
-        """Default implementation for a function for processing primitives to transform PLxPR."""
+        """Default implementation for a function for processing primitives to transform PLxPR.
+
+        Args:
+            primitive (jax.core.Primitive): Primitive to transform
+            tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive
+            params (dict): Dictionary containing keyword arguments/metadata for the primitive
+            targs (Sequence[Any]): Arguments for the transform
+            tkwargs (dict): Keyword arguments for the transform
+            state (dict): Dictionary containing auxiliary information about the environment/state
+                needed to apply the transform
+
+        Returns:
+            Any: The results of the transformed primitive
+        """
         raise ValueError(f"{self._transform.__name__} cannot be used to transform PLxPR.")
 
     @property
@@ -368,7 +381,7 @@ class TransformDispatcher:
         return tuple(execution_tapes), processing_fn
 
 
-class TransformContainer:
+class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-many-positional-arguments
     """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
     :func:`~.pennylane.transform`.
 
