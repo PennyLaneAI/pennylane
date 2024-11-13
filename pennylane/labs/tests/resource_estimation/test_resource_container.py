@@ -31,28 +31,45 @@ from pennylane.labs.resource_estimation.resource_container import (
     mul_in_parallel,
     mul_in_series,
 )
+from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
+
+
+class ResourceDummyX(ResourceOperator):
+    pass
+
+
+class ResourceDummyQFT(ResourceOperator):
+    pass
+
+
+class ResourceDummyQSVT(ResourceOperator):
+    pass
+
+
+class ResourceDummyTrotterProduct(ResourceOperator):
+    pass
 
 
 class TestCompressedResourceOp:
     """Testing the methods and attributes of the CompressedResourceOp class"""
 
-    hamiltonian_arg = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
+    test_hamiltonian = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
     compressed_op_args_lst = (
-        ("PauliX", qml.X, {"num_wires": 1}),
-        ("QFT", qml.QFT, {"num_wires": 5}),
-        ("QSVT", qml.QSVT, {"num_wires": 3, "num_angles": 5}),
+        ("DummyX", ResourceDummyX, {"num_wires": 1}),
+        ("DummyQFT", ResourceDummyQFT, {"num_wires": 5}),
+        ("DummyQSVT", ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5}),
         (
-            "TrotterProduct",
-            qml.TrotterProduct,
-            {"Hamiltonian": hamiltonian_arg, "num_steps": 5, "order": 2},
+            "DummyTrotterProduct",
+            ResourceDummyTrotterProduct,
+            {"Hamiltonian": test_hamiltonian, "num_steps": 5, "order": 2},
         ),
     )
 
     compressed_op_reprs = (
-        "PauliX(num_wires=1)",
-        "QFT(num_wires=5)",
-        "QSVT(num_wires=3, num_angles=5)",
-        "TrotterProduct(Hamiltonian=X(0) + -1 * Y(1) + 0.5 * (Z(0) @ Z(1)), num_steps=5, order=2)",
+        "DummyX(num_wires=1)",
+        "DummyQFT(num_wires=5)",
+        "DummyQSVT(num_wires=3, num_angles=5)",
+        "DummyTrotterProduct(Hamiltonian=X(0) + -1 * Y(1) + 0.5 * (Z(0) @ Z(1)), num_steps=5, order=2)",
     )
 
     @pytest.mark.parametrize("name, op_type, parameters", compressed_op_args_lst)
@@ -67,9 +84,9 @@ class TestCompressedResourceOp:
 
     def test_hash(self):
         """Test that the hash method behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(qml.QSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT2 = CompressedResourceOp(qml.QSVT, {"num_wires": 3, "num_angles": 5})
-        Other = CompressedResourceOp(qml.QFT, {"num_wires": 3})
+        CmprssedQSVT1 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT2 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
+        Other = CompressedResourceOp(ResourceDummyQFT, {"num_wires": 3})
 
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT1)  # compare same object
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT2)  # compare identical instance
@@ -77,10 +94,10 @@ class TestCompressedResourceOp:
 
     def test_equality(self):
         """Test that the equality methods behaves as expected"""
-        CmprssedQSVT1 = CompressedResourceOp(qml.QSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT2 = CompressedResourceOp(qml.QSVT, {"num_wires": 3, "num_angles": 5})
-        CmprssedQSVT3 = CompressedResourceOp(qml.QSVT, {"num_angles": 5, "num_wires": 3})
-        Other = CompressedResourceOp(qml.QFT, {"num_wires": 3})
+        CmprssedQSVT1 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT2 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
+        CmprssedQSVT3 = CompressedResourceOp(ResourceDummyQSVT, {"num_angles": 5, "num_wires": 3})
+        Other = CompressedResourceOp(ResourceDummyQFT, {"num_wires": 3})
 
         assert CmprssedQSVT1 == CmprssedQSVT2  # compare identical instance
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
