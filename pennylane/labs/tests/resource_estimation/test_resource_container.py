@@ -14,7 +14,7 @@
 """
 Test base Resource class and its associated methods
 """
-# pylint:disable=protected-access, no-self-use
+# pylint:disable=protected-access, no-self-use, too-few-public-methods
 import copy
 from collections import defaultdict
 
