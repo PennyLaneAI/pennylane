@@ -189,12 +189,6 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
-def test_deprecated_access():
-    """Test that accessing via top-level is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
-        qml.Device  # pylint: disable=pointless-statement
-
-
 # pylint: disable=pointless-statement
 def test_invalid_attribute_in_devices_raises_error():
     with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):

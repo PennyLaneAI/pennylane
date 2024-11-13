@@ -538,7 +538,7 @@ def param_shift_cv(
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
-        dev (pennylane.Device): device the parameter-shift method is to be computed on
+        dev (pennylane.devices.LegacyDeviceFacade): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
