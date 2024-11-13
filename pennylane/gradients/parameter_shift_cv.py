@@ -452,7 +452,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         if not results:
             results = [np.array(0.)]
 
-
         interface = qml.math.get_interface(results[0])
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
 
