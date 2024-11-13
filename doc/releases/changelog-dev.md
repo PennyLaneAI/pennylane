@@ -36,18 +36,6 @@
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
-  - A new API for mixed-state operations
-  - An `apply_operation` helper function featuring:
-    - Two density matrix contraction methods using `einsum` and `tensordot`
-    - Optimized handling of special cases including:
-      - Diagonal operators
-      - Identity operators 
-      - CX (controlled-X)
-      - Multi-controlled X gates
-      - Grover operators
-  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
-
 <h4>Capturing and representing hybrid programs</h4>
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
@@ -70,6 +58,23 @@
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
 <h3>Breaking changes 💔</h3>
+
+* The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
+  [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
+
+* The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
+  [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
+
+* The `qml.workflow.set_shots` helper function has been removed. We no longer interact with the legacy device interface in our code.
+  Instead, shots should be specified on the tape, and the device should use these shots.
+  [(#6534)](https://github.com/PennyLaneAI/pennylane/pull/6534)
+
+* `QNode.gradient_fn` has been removed. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
+  process the diff method.
+  [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
+ 
+* `qml.broadcast` has been removed. Users should use `for` loops instead.
+  [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
 
 * The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
@@ -98,17 +103,22 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_deep_interface` now works properly for autograd arrays.
+  [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
+
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
+
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Shiwen An
+Shiwen An,
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
+Austin Huang,
 Christina Lee,
 Andrija Paurevic,
 Justin Pickering
