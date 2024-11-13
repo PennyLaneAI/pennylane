@@ -544,6 +544,10 @@ class PauliWord(dict):
         """Return a new PauliWord with the wires mapped."""
         return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
 
+    def __gt__(self, other):
+        """Greater than comparison for sorting of keywords in PauliSentence"""
+        return str(self) > str(other)
+
 
 pw_id = PauliWord({})  # empty pauli word to be re-used
 
@@ -604,9 +608,6 @@ class PauliSentence(dict):
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
-
-    def __gt__(self, other):
-        return str(self) > str(other)
 
     @property
     def pauli_rep(self):
