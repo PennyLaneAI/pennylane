@@ -169,7 +169,7 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
     h_as_op = qchem.qubit_observable(f_observable)
-    ops = [op for op in map(qml.simplify, q_observable[1])]
+    ops = list(map(qml.simplify, q_observable[1]))
     h_ref = qml.Hamiltonian(q_observable[0], ops)
 
     assert h_ref.compare(h_as_op)

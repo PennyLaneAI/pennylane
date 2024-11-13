@@ -187,7 +187,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-    dops = [op for op in map(qml.simplify, ops)]
+    dops = list(map(qml.simplify, ops))
     d_ref = qml.Hamiltonian(coeffs, dops)
 
     d_coeff, d_ops = d.terms()
