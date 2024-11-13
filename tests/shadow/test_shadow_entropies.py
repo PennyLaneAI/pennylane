@@ -100,7 +100,7 @@ class TestShadowEntropies:
 
         bitstrings, recipes = qnode(x)
         shadow = ClassicalShadow(bitstrings, recipes)
-        
+
         # Get the full dm of the qnode_exact
         state = qnode_exact(x)
         rho = qml.math.dm_from_state_vector(state)

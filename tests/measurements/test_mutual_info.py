@@ -241,7 +241,6 @@ class TestIntegration:
     def test_qnode_state_jax_jit(self, params):
         """Test that the mutual information transform works for QNodes by comparing
         against analytic values, for the JAX-jit interface"""
-        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
