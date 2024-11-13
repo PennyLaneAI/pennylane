@@ -86,7 +86,6 @@ from .dense_util import (
     check_all_commuting,
     apply_basis_change,
 )
-
 from .involutions import (
     khaneja_glaser_involution,
     AI,
