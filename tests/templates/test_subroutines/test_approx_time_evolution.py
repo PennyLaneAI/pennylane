@@ -459,7 +459,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
             tape = dev.expand_fn(tape)
             return qml.execute([tape], dev, diff_method)[0]
         program, _ = dev.preprocess()
-        return qml.execute([tape], dev, gradient_fn=diff_method, transform_program=program)[0]
+        return qml.execute([tape], dev, diff_method=diff_method, transform_program=program)[0]
 
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
