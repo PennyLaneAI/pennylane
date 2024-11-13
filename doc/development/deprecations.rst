@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been deprecated. 
+  Instead, use the ``qml.workflow.get_best_diff_method``. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
 
   - Deprecated in v0.40
