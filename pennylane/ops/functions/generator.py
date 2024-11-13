@@ -27,7 +27,7 @@ from pennylane.ops import LinearCombination, Prod, SProd, Sum
 
 # pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
-    """Return the generator as type :class:`~.Hamiltonian`."""
+    """Return the generator as type :class:`~.ops.LinearCombination`."""
     wires = op.wires
 
     if isinstance(gen, LinearCombination):
@@ -134,10 +134,10 @@ def generator(op: qml.operation.Operator, format="prefactor"):
 
         * ``"observable"``: Return the generator as a single observable as directly defined
           by ``op``. Returned generators may be any type of observable, including
-          :class:`~.Hermitian`, :class:`~.SparseHamiltonian`, or :class:`~.Hamiltonian`.
+          :class:`~.Hermitian`, :class:`~.SparseHamiltonian`, or :class:`~.ops.LinearCombination`.
 
         * ``"hamiltonian"``: Similar to ``"observable"``, however the returned observable
-          will always be converted into :class:`~.Hamiltonian` regardless of how ``op``
+          will always be converted into :class:`~.ops.LinearCombination` regardless of how ``op``
           encodes the generator.
 
         * ``"arithmetic"``: Similar to ``"hamiltonian"``, however the returned observable
