@@ -79,7 +79,7 @@ class OperatorProperties:
         )
 
 
-def _supports_operator(op_name: str, op_dict: dict[str, OperatorProperties]) -> str | None:
+def _supports_operator(op_name: str, op_dict: dict[str, OperatorProperties]) -> Optional[str]:
     """Checks if the given operator is supported by name, returns the base op for nested ops"""
 
     if op_name in op_dict:
