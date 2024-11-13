@@ -137,7 +137,7 @@ def _get_num_executions_for_sum(obs):
 
     _, ops = obs.terms()
     with qml.QueuingManager.stop_recording():
-        op_groups = qml.pauli.group_observables(ops)
+        op_groups = qml.pauli.compute_partition_indices(ops)
     return len(op_groups)
 
 
