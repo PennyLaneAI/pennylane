@@ -84,7 +84,7 @@ def _(bose_operator: BoseWord, d, ps=False, wire_map=None, tol=None):
     qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
     for item in bose_operator.items():
-        (_, boson), sign = item
+        (_, b_idx), sign = item
         oper = PauliSentence()
         non_zero_d = np.nonzero(d_mat[sign])
         for i, j in zip(*non_zero_d):
