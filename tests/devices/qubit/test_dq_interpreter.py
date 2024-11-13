@@ -72,6 +72,23 @@ def test_setup_and_cleanup():
     assert dq.stateref is None
 
 
+def test_working_state_key_before_setup():
+    """Test that state and key can't be accessed before setup."""
+
+    key = jax.random.PRNGKey(9876)
+
+    dq = DefaultQubitInterpreter(num_wires=1, key=key)
+
+    assert dq.state is None
+    assert dq.key is key
+
+    with pytest.raises(AttributeError, match="execution not yet initialized"):
+        dq.state = [1.0, 0.0]
+
+    with pytest.raises(AttributeError, match="execution not yet initialized"):
+        dq.key = jax.random.PRNGKey(8765)
+
+
 def test_simple_execution():
     """Test the execution, jitting, and gradient of a simple quantum circuit."""
 
@@ -120,6 +137,34 @@ def test_pytree_function_output():
     assert qml.math.allclose(res["state"], [1.0, 0.0 + 0j])
     assert qml.math.allclose(res["var_Z"], 0.0)
     assert qml.math.allclose(res["var_X"], 1.0)
+
+
+def test_mcm_reset():
+    """Test that mid circuit measurements can reset the state."""
+
+    @DefaultQubitInterpreter(num_wires=1)
+    def f():
+        qml.X(0)
+        qml.measure(0, reset=True)
+        return qml.state()
+
+    out = f()
+    assert qml.math.allclose(out, jnp.array([1.0, 0.0]))  # reset into zero state.
+
+
+def test_operator_arithmetic():
+    """Test that dq can execute operator arithmetic."""
+
+    @DefaultQubitInterpreter(num_wires=2)
+    def f(x):
+        qml.RY(1.0, 0)
+        qml.adjoint(qml.RY(x, 0))
+        _ = qml.SX(1) ** 2
+        return qml.expval(qml.Z(0) + 2 * qml.Z(1))
+
+    output = f(0.5)
+    expected = jnp.cos(1 - 0.5) - 2 * 1
+    assert qml.math.allclose(output, expected)
 
 
 class TestSampling:
@@ -220,6 +265,38 @@ class TestSampling:
         with pytest.raises(NotImplementedError):
             f()
 
+    def test_mcms_not_all_same_key(self):
+        """Test that each mid circuit measurement has a different key and can have different options."""
+
+        @DefaultQubitInterpreter(num_wires=1, shots=None, key=jax.random.PRNGKey(87665))
+        def g():
+            qml.Hadamard(0)
+            m0 = qml.measure(0, reset=0)
+            qml.Hadamard(0)
+            m1 = qml.measure(0, reset=0)
+            qml.Hadamard(0)
+            m2 = qml.measure(0, reset=0)
+            qml.Hadamard(0)
+            m3 = qml.measure(0, reset=0)
+            qml.Hadamard(0)
+            m4 = qml.measure(0, reset=0)
+            return m0, m1, m2, m3, m4
+
+        output = g()
+        assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 5))
+        # only way we could different values for some mcms is if they had different seeds
+
+    def test_each_measurement_has_different_key(self):
+        """Test that each sampling measurement is performed with a different key."""
+
+        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(87665))
+        def g():
+            qml.Hadamard(0)
+            return qml.sample(wires=0), qml.sample(wires=0)
+
+        res1, res2 = g()
+        assert not qml.math.allclose(res1, res2)
+
 
 class TestQuantumHOP:
     """Tests for the quantum higher order primitives: adjoint and ctrl."""
@@ -285,6 +362,23 @@ class TestClassicalComponents:
         assert qml.math.allclose(output[2], jax.numpy.cos(1.2))
         assert qml.math.allclose(output[3], jax.numpy.cos(1.3))
 
+    def test_for_loop_consts(self):
+        """Test that the for_loop can be executed properly when it has closure variables."""
+
+        @DefaultQubitInterpreter(num_wires=2)
+        def g(x):
+            @qml.for_loop(2)
+            def f(i):
+                qml.RX(x, i)  # x is closure variable
+
+            f()
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        res1, res2 = g(jax.numpy.array(-0.654))
+        expected = jnp.cos(-0.654)
+        assert qml.math.allclose(res1, expected)
+        assert qml.math.allclose(res2, expected)
+
     def test_while_loop(self):
         """Test that the while loop can be executed."""
 
@@ -303,6 +397,26 @@ class TestClassicalComponents:
 
         output = f()
         assert qml.math.allclose(output, [-1, -1, -1, -1])
+
+    def test_while_loop_with_consts(self):
+        """Test that both the cond_fn and body_fn can contain constants with the while loop."""
+
+        @DefaultQubitInterpreter(num_wires=2, shots=None, key=jax.random.PRNGKey(87665))
+        def g(x, target):
+            def cond_fn(i):
+                return i < target
+
+            @qml.while_loop(cond_fn)
+            def f(i):
+                qml.RX(x, 0)
+                return i + 1
+
+            f(0)
+            return qml.expval(qml.Z(0))
+
+        output = g(jnp.array(1.2), jnp.array(2))
+
+        assert qml.math.allclose(output, jnp.cos(2 * 1.2))
 
     def test_cond_boolean(self):
         """Test that cond can be used with normal classical values."""
@@ -349,3 +463,49 @@ class TestClassicalComponents:
         output = g(0.5)
         expected = [jnp.cos(0.5 / 2) ** 2, jnp.sin(0.5 / 2) ** 2]
         assert qml.math.allclose(output, expected)
+
+    def test_cond_false_no_false_fn(self):
+        """Test nothing is returned when the false_fn is not provided but the condition is false."""
+
+        def true_fn(w):
+            qml.X(w)
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def g(condition):
+            qml.cond(condition, true_fn)(0)
+            return qml.expval(qml.Z(0))
+
+        out = g(False)
+        assert qml.math.allclose(out, 1.0)
+
+    def test_condition_with_consts(self):
+        """Test that each branch in a condition can contain consts."""
+
+        @DefaultQubitInterpreter(num_wires=1)
+        def circuit(x, y, z, condition0, condition1):
+
+            def true_fn():
+                qml.RX(x, 0)
+
+            def false_fn():
+                qml.RX(y, 0)
+
+            def elif_fn():
+                qml.RX(z, 0)
+
+            qml.cond(condition0, true_fn, false_fn=false_fn, elifs=((condition1, elif_fn),))()
+
+            return qml.expval(qml.Z(0))
+
+        x = jax.numpy.array(0.3)
+        y = jax.numpy.array(0.6)
+        z = jax.numpy.array(1.2)
+
+        res0 = circuit(x, y, z, True, False)
+        assert qml.math.allclose(res0, jnp.cos(x))
+
+        res1 = circuit(x, y, z, False, True)
+        assert qml.math.allclose(res1, jnp.cos(z))  # elif branch = z
+
+        res2 = circuit(x, y, z, False, False)
+        assert qml.math.allclose(res2, jnp.cos(y))  # false fn = y

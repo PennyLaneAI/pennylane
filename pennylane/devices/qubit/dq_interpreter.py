@@ -95,7 +95,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     @state.setter
     def state(self, value: jax.numpy.ndarray | None):
         if self.stateref is None:
-            raise ValueError("execution not yet initialized.")
+            raise AttributeError("execution not yet initialized.")
         self.stateref["state"] = value
 
     @property
@@ -106,7 +106,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     @key.setter
     def key(self, value):
         if self.stateref is None:
-            raise ValueError("execution not yet initialized.")
+            raise AttributeError("execution not yet initialized.")
         self.stateref["key"] = value
 
     def setup(self) -> None:
