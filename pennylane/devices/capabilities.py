@@ -19,6 +19,7 @@ import sys
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
+from typing import Optional
 
 if sys.version_info >= (3, 11):
     import tomllib as toml  # pragma: no cover
