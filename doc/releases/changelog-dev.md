@@ -50,6 +50,11 @@
 * Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
+<h3>Labs 🧪</h3>
+
+* Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
+  [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
 <h3>Breaking changes 💔</h3>
 
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
@@ -78,4 +83,5 @@ Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
 Andrija Paurevic,
-Justin Pickering
+Justin Pickering,
+Jay Soni,
