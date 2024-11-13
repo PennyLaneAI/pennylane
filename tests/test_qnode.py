@@ -36,6 +36,20 @@ def dummyfunc():
     return None
 
 
+def test_get_best_method_is_deprecated():
+    """Test that is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"):
+        dev = qml.device("default.qubit", wires=2)
+        _ = QNode.get_best_method(dev, "jax")
+
+
+def test_best_method_str_is_deprecated():
+    """Test that is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"):
+        dev = qml.device("default.qubit", wires=2)
+        _ = QNode.best_method_str(dev, "jax")
+
+
 # pylint: disable=unused-argument
 class CustomDevice(qml.devices.Device):
     """A null device that just returns 0."""
@@ -176,11 +190,17 @@ class TestValidation:
 
         dev = CustomDeviceWithDiffMethod()
 
-        res = QNode.get_best_method(dev, "jax")
-        assert res == ("device", {}, dev)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "jax")
+            assert res == ("device", {}, dev)
 
-        res = QNode.get_best_method(dev, None)
-        assert res == ("device", {}, dev)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, None)
+            assert res == ("device", {}, dev)
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
@@ -191,8 +211,11 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
-        res = QNode.get_best_method(dev, interface)
-        assert res == ("backprop", {}, dev)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, interface)
+            assert res == ("backprop", {}, dev)
 
     # pylint: disable=protected-access
     def test_best_method_is_param_shift(self):
@@ -202,14 +225,20 @@ class TestValidation:
 
         # null device has no info - fall back on parameter-shift
         dev = CustomDevice()
-        res = QNode.get_best_method(dev, None)
-        assert res == (qml.gradients.param_shift, {}, dev)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, None)
+            assert res == (qml.gradients.param_shift, {}, dev)
 
         # no interface - fall back on parameter-shift
         dev2 = qml.device("default.qubit", wires=1)
         tape = qml.tape.QuantumScript([], [], shots=50)
-        res2 = QNode.get_best_method(dev2, None, tape=tape)
-        assert res2 == (qml.gradients.param_shift, {}, dev2)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res2 = QNode.get_best_method(dev2, None, tape=tape)
+            assert res2 == (qml.gradients.param_shift, {}, dev2)
 
     # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
@@ -1439,6 +1468,13 @@ class TestNewDeviceIntegration:
         assert gradient_fn is qml.gradients.param_shift
         assert not kwargs
         assert new_dev is self.dev
+
+    def test_get_gradient_fn_with_best_method_and_cv_ops(self):
+        """Test that get_gradient_fn returns 'parameter-shift-cv' when CV operations are present on tape"""
+        dev = qml.device("default.gaussian", wires=1)
+        tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
+        res = qml.QNode.get_gradient_fn(dev, interface="autograd", diff_method="best", tape=tape)
+        assert res == (qml.gradients.param_shift_cv, {"dev": dev}, dev)
 
     def test_get_gradient_fn_default_qubit(self):
         """Tests the get_gradient_fn is backprop for best for default qubit2."""
