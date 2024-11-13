@@ -264,6 +264,7 @@ def test_eval_jaxpr_not_implmented():
     def f(x):
         return x + 1
 
+    # pylint: disable=too-few-public-methods
     class NormalDevice(Device):
 
         def execute(self, circuits, execution_config=None):
