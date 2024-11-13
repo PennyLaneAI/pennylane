@@ -89,6 +89,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
+  Instead, use the `qml.workflow.get_best_diff_method` function.
+  [(#6418)](https://github.com/PennyLaneAI/pennylane/pull/6418)
+
 * The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,
   to better align with the termionology used by the `QNode`.
   `gradient_fn` will be removed in v0.41.
