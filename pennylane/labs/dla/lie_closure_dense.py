@@ -68,11 +68,11 @@ def lie_closure_dense(
     verbose: bool = False,
     tol: float = None,
 ):
-    r"""Compute the dynamical Lie algebra :math:`frak{g}` from a set of generators using their dense matrix representation.
+    r"""Compute the dynamical Lie algebra :math:`\mathfrak{g}` from a set of generators using their dense matrix representation.
 
     This function computes the Lie closure of a set of generators using their dense matrix representation.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
-    `~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
+    :class:`~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
     that are sums of many Paulis.
 
     .. seealso:: For details on the mathematical definitions, see :func:`~lie_closure` and our `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
@@ -91,7 +91,7 @@ def lie_closure_dense(
 
     **Example**
 
-    Compute the Lie closure of the isotropic Heisenberg model with generators :math:`\{X_i X_{i+1} + Y_i Y_{i+1} + Z_i Z_{i+1}}_{i=0}^{n-1}`.
+    Compute the Lie closure of the isotropic Heisenberg model with generators :math:`\{X_i X_{i+1} + Y_i Y_{i+1} + Z_i Z_{i+1}\}_{i=0}^{n-1}`.
 
     >>> n = 5
     >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]

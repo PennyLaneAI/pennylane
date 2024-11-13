@@ -110,7 +110,7 @@ class TestDatasetOperatorObservable:
 
     def test_bind_init(self, attribute_cls, obs_in, recwarn):
         """Test that DatasetOperator can be initialized from a HDF5 group
-        that contains a operator attribute."""
+        that contains an operator attribute."""
         if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
             obs_in = qml.operation.convert_to_legacy_H(obs_in)
 

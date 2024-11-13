@@ -57,11 +57,10 @@ class BasisState(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        state (tensor_like): binary input of shape ``(len(wires), )``, e.g., for ``state=np.array([0, 1, 0])`` or ``state=2`` (binary 010), the quantum system will be prepared in state :math:`|010 \rangle`.
+        state (tensor_like): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])`` or ``state=2`` (equivalent to 010 in binary), the quantum system will be prepared in the state :math:`|010 \rangle`.
 
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+        id (str): Custom label given to an operator instance. Can be useful for some applications where the instance has to be identified.
 
     **Example**
 

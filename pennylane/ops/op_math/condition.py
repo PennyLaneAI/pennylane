@@ -20,7 +20,7 @@ from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
-from pennylane.capture.capture_diff import create_non_jvp_primitive
+from pennylane.capture.capture_diff import create_non_interpreted_prim
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
@@ -220,53 +220,47 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         cond_prim = _get_cond_qfunc_prim()
 
         elifs = (
-            (self.orig_elifs,)
+            [self.orig_elifs]
             if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
-            else self.orig_elifs
+            else list(self.orig_elifs)
         )
+        flat_true_fn = FlatFn(self.true_fn)
+        branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
-        flat_fn = FlatFn(functools.partial(self.true_fn, **kwargs))
-        jaxpr_true = jax.make_jaxpr(flat_fn)(*args)
-        jaxpr_false = (
-            jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
-            if self.otherwise_fn
-            else None
-        )
+        end_const_ind = len(
+            branches
+        )  # consts go after the len(branches) conditions, first const at len(branches)
+        conditions = []
+        jaxpr_branches = []
+        consts = []
+        consts_slices = []
 
-        # We extract each condition (or predicate) from the elifs argument list
-        # since these are traced by JAX and are passed as positional arguments to the primitive
-        elifs_conditions = []
-        jaxpr_elifs = []
-
-        for pred, elif_fn in elifs:
-            elifs_conditions.append(pred)
-            jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
-
-        conditions = [self.condition, *elifs_conditions, True]
-
-        jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
-        jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
-        jaxpr_branches = [j.jaxpr if j else None for j in jaxpr_branches]
-
-        # We need to flatten the constants since JAX does not allow
-        # to pass lists as positional arguments
-        consts_flat = [const for sublist in jaxpr_consts for const in sublist]
-        n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
+        for pred, fn in branches:
+            conditions.append(pred)
+            if fn is None:
+                jaxpr_branches.append(None)
+                consts_slices.append(slice(0, 0))
+            else:
+                jaxpr = jax.make_jaxpr(functools.partial(fn, **kwargs))(*args)
+                jaxpr_branches.append(jaxpr.jaxpr)
+                consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
+                consts += jaxpr.consts
+                end_const_ind += len(jaxpr.consts)
 
         flat_args, _ = jax.tree_util.tree_flatten(args)
         results = cond_prim.bind(
             *conditions,
+            *consts,
             *flat_args,
-            *consts_flat,
             jaxpr_branches=jaxpr_branches,
-            n_consts_per_branch=n_consts_per_branch,
-            n_args=len(flat_args),
+            consts_slices=consts_slices,
+            args_slice=slice(end_const_ind, None),
         )
-        assert flat_fn.out_tree is not None
-        if flat_fn.out_tree.num_leaves != len(results):
+        assert flat_true_fn.out_tree is not None
+        if flat_true_fn.out_tree.num_leaves != len(results):
             # undefined false fn leads to empty results
             return results
-        return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
+        return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
 
@@ -690,19 +684,20 @@ def _get_cond_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    cond_prim = create_non_jvp_primitive()("cond")
+    cond_prim = create_non_interpreted_prim()("cond")
     cond_prim.multiple_results = True
 
     @cond_prim.def_impl
-    def _(*all_args, jaxpr_branches, n_consts_per_branch, n_args):
+    def _(*all_args, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = all_args[:n_branches]
-        args = all_args[n_branches : n_branches + n_args]
-        consts_flat = all_args[n_branches + n_args :]
+        args = all_args[args_slice]
 
         # Find predicates that use mid-circuit measurements. We don't check the last
         # condition as that is always `True`.
-        mcm_conditions = [pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue)]
+        mcm_conditions = tuple(
+            pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue)
+        )
         if len(mcm_conditions) != 0:
             if len(mcm_conditions) != len(conditions) - 1:
                 raise ConditionalTransformError(
@@ -711,10 +706,8 @@ def _get_cond_qfunc_prim():
                 )
             conditions = _get_mcm_predicates(mcm_conditions)
 
-        start = 0
-        for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):
-            consts = consts_flat[start : start + n_consts]
-            start += n_consts
+        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+            consts = all_args[const_slice]
             if jaxpr is None:
                 continue
             if isinstance(pred, qml.measurements.MeasurementValue):
