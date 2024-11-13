@@ -286,51 +286,45 @@ class BoseWord(dict):
         >>> bw.normal_order()
         BoseSentence({BoseWord({(0, 0): '+', (1, 0): '-'}): 4.0, BoseWord({}): 2.0, BoseWord({(0, 0): '+', (1, 0): '+', (2, 0): '-', (3, 0): '-'}): 1.0})
         """
-
         bw_terms = sorted(self)
         len_op = len(bw_terms)
-        double_occupancy = False
         bw_comm = BoseSentence({BoseWord({}): 0.0}, cform=self.cform)
-        for i in range(1, len_op):
-            for j in range(i, 0, -1):
-                key_r = bw_terms[j]
-                key_l = bw_terms[j - 1]
 
-                if self[key_l] == "-" and self[key_r] == "+":
-                    bw_terms[j] = key_l
-                    bw_terms[j - 1] = key_r
+        if len_op == 0:
+            return 1 * BoseWord({})
 
-                    # Add the term for commutator
-                    if key_r[1] == key_l[1]:
-                        term_dict_comm = {}
-                        j = 0
-                        for key in bw_terms:
-                            if key not in [key_r, key_l]:
-                                term_dict_comm[(j, key[1])] = self[key]
-                                j += 1
+        bs, bw = self, self
 
-                        bw_comm += BoseWord(term_dict_comm, cform=self.cform).normal_order()
+        l = 0
+        for r in range(len_op):
+            if self[bw_terms[r]] == "+":
+                if l == r:
+                    l += 1
+                    continue
 
-                elif self[key_l] == self[key_r]:
-                    if key_r[1] < key_l[1]:
-                        bw_terms[j] = key_l
-                        bw_terms[j - 1] = key_r
+                bs = bw.shift_operator(r, l)
+                bs_as_list = sorted(list(bs.items()), key=lambda x: len(x[0].keys()), reverse=True)
+                bw = bs_as_list[0][0]
+                if l > 0:
+                    bw_as_list = sorted(list(bw.keys()))
+                    if bw_as_list[l - 1][1] > bw_as_list[l][1]:
+                        temp_bs = bw.shift_operator(l - 1, l)
+                        bw = list(temp_bs.items())[0][0]
 
-                    if self.cform:
-                        if key_r[1] == key_l[1]:
-                            double_occupancy = True
-                            break
-            if double_occupancy:
-                break
+                for i in range(1, len(bs_as_list)):
+                    bw_comm += bs_as_list[i][0] * bs_as_list[i][1]
 
-        if double_occupancy:
-            ordered_op = bw_comm
-        else:
-            bose_dict = {}
-            for i, term in enumerate(bw_terms):
-                bose_dict[(i, term[1])] = self[term]
+                l += 1
 
-            ordered_op = BoseWord(bose_dict, cform=self.cform) + bw_comm
+        ordered_op = bw + bw_comm.normal_order()
+        ordered_op.simplify(tol=1e-8)
+
+        if self.cform:
+            for bw, _ in ordered_op.items():
+                bw_arr = list(bw.keys())
+                indice_arr = [x[1] for x in bw_arr]
+                if len(indice_arr) != len(set(indice_arr)):
+                    ordered_op[bw] = 0
 
         ordered_op.simplify(tol=1e-8)
         return ordered_op
