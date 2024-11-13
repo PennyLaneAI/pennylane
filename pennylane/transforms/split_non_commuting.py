@@ -709,10 +709,6 @@ def _sum_terms(
 ) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
-    # Trivially return the original result
-    if coeffs == [1] and offset == 0:
-        return res[0]
-
     # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
     for c, r in zip(coeffs, res):

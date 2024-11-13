@@ -470,9 +470,8 @@ def execute(
     finite_shots = any(tape.shots for tape in tapes)
     _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
-    is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
     transform_program, inner_transform = _make_transform_programs(
-        device, config, inner_transform, transform_program, is_gradient_transform
+        device, config, inner_transform, transform_program, gradient_fn
     )
 
     # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
@@ -630,18 +629,19 @@ def execute(
     return post_processing(results)
 
 
-def _make_transform_programs(
-    device, config, inner_transform, transform_program, is_gradient_transform
-):
+def _make_transform_programs(device, config, inner_transform, transform_program, diff_method):
     """helper function to make the transform programs."""
 
     # If gradient_fn is a gradient transform, device preprocessing should happen in
     # inner execute (inside the ml boundary).
-    if is_gradient_transform:
+    if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
         if inner_transform is None:
             inner_transform = device.preprocess(config)[0]
         if transform_program is None:
             transform_program = qml.transforms.core.TransformProgram()
+            transform_program.add_transform(
+                qml.transform(diff_method.expand_transform), **config.gradient_keyword_arguments
+            )
     else:
         if inner_transform is None:
             inner_transform = qml.transforms.core.TransformProgram()
