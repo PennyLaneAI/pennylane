@@ -20,9 +20,30 @@ from .non_parametric_ops import (
     ResourceT,
 )
 
+from .parametric_ops_multi_qubit import (
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourcePSWAP,
+)
+
 from .parametric_ops_single_qubit import (
     ResourceRot,
     ResourceRX,
     ResourceRY,
     ResourceRZ,
+)
+
+from .qchem_ops import (
+    ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
+    ResourceFermionicSWAP,
+    ResourceOrbitalRotation,
+    ResourceSingleExcitation,
+    ResourceSingleExcitationMinus,
+    ResourceSingleExcitationPlus,
 )

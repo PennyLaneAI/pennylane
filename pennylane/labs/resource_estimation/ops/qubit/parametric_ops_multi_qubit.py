@@ -94,7 +94,7 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
     def resource_rep(cls, *args, **kwargs):
         return
 
-class PSWAP(qml.PSWAP, re.ResourceOperator):
+class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
     """Resource class for PSWAP"""
 
     @staticmethod
