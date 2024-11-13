@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 import copy
+
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
 from dataclasses import replace
