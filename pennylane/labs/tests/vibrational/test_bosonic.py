@@ -21,7 +21,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.labs.vibrational_ham.bosonic import (
+from pennylane.labs.vibrational.bosonic import (
     BoseWord,
     BoseSentence,
 )

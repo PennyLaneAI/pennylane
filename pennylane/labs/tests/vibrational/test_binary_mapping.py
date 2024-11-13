@@ -15,7 +15,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.labs.vibrational_ham import BoseWord, BoseSentence, binary_mapping
+from pennylane.labs.vibrational import BoseWord, BoseSentence, binary_mapping
 from pennylane import I, X, Y, Z
 from pennylane.pauli.conversion import pauli_sentence
 
@@ -492,6 +492,26 @@ def test_binary_mapping_wiremap(bose_op, wire_map, result):
     """Test that the binary_mapping function returns the correct qubit operator."""
     # convert BoseWord to PauliSentence and simplify
     qubit_op = binary_mapping(bose_op, d=4, wire_map=wire_map)
+    qubit_op.simplify(tol=1e-8)
+
+    # get expected op as PauliSentence and simplify
+    expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
+    expected_op.simplify(tol=1e-8)
+    assert qubit_op == expected_op
+
+
+def test_d_error_binary():
+    """Test that an error is raised if invalid value of d is provided."""
+    bw = BoseWord({(0, 0): "-"})
+    with pytest.raises(
+        ValueError, match="Number of bosonic states cannot be less than 2, provided 1."
+    ):
+        binary_mapping(bw, d=1)
+
+def test_unary_mapping_wiremap(bose_op, wire_map, result):
+    """Test that the unary_mapping function returns the correct qubit operator."""
+    # convert BoseWord to PauliSentence and simplify
+    qubit_op = unary_mapping(bose_op, d=2, wire_map=wire_map)
     qubit_op.simplify(tol=1e-8)
 
     # get expected op as PauliSentence and simplify

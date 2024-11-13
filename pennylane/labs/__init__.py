@@ -32,6 +32,6 @@ Modules
 
 
 """
-import pennylane.labs.vibrational_ham
+import pennylane.labs.vibrational
 
 __all__ = []
