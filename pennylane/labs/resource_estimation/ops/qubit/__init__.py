@@ -31,6 +31,7 @@ from .parametric_ops_multi_qubit import (
 )
 
 from .parametric_ops_single_qubit import (
+    ResourcePhaseShift,
     ResourceRot,
     ResourceRX,
     ResourceRY,

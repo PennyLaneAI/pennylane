@@ -21,6 +21,7 @@ from .identity import (
 from .qubit import (
     ResourceHadamard,
     ResourceMultiRZ,
+    ResourcePhaseShift,
     ResourceRot,
     ResourceRX,
     ResourceRY,
