@@ -728,7 +728,8 @@ def param_shift_cv(
         fns.append(data[1])
 
     if all(g == "0" for g in method_map.values()):
-        _output_dim = _get_output_dim(tape)
+        _output_dim = 1
+
         return [], lambda _: np.zeros([_output_dim, len(tape.trainable_params)])
 
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
