@@ -628,6 +628,7 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     1.0
 
     .. seealso:: :func:`pennylane.vn_entropy`
+    
     """
     density_matrix = reduce_dm(state, indices, check_state, c_dtype)
     entropy = _compute_vn_entropy(density_matrix, base)
@@ -725,6 +726,7 @@ def mutual_info(
     0.4682351577408206
 
     .. seealso:: :func:`~.math.vn_entropy` and :func:`pennylane.mutual_info`
+    
     """
 
     # the subsystems cannot overlap
