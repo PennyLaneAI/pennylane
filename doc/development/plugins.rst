@@ -344,12 +344,8 @@ how to fill these fields. All headers and fields are generally required, unless 
     # that the device does not support mid-circuit measurements.
     supported_mcm_methods = [ ]
 
-    # These options represent custom runtime parameters that can be passed to the
-    # device upon initialization. A dictionary will be constructed at run time
-    # containing the entries below.
-    [options]
-
-    option_key = "option_field"
+This TOML configuration file is optional for PennyLane but required for Catalyst integration,
+i.e., compatibility with ``qml.qjit``. For more details, see `Custom Devices <https://docs.pennylane.ai/projects/catalyst/en/stable/dev/custom_devices.html>`_.
 
 Mid Circuit Measurements
 ~~~~~~~~~~~~~~~~~~~~~~~~

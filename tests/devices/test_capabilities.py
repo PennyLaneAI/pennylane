@@ -31,7 +31,6 @@ from pennylane.devices.capabilities import (
     _get_measurement_processes,
     _get_observables,
     _get_operations,
-    _get_options,
     _get_toml_section,
     load_toml_file,
     parse_toml_document,
@@ -70,11 +69,6 @@ class TestTOML:
 
             qjit_compatible = false
             supported_mcm_methods = ["one-shot", "device"]
-
-            [options]
-            
-            option_key = "option_field"
-            
             """
         ],
         indirect=True,
@@ -104,9 +98,6 @@ class TestTOML:
         compilation = document.get("compilation")
         assert compilation.get("qjit_compatible") is False
         assert compilation.get("supported_mcm_methods") == ["one-shot", "device"]
-
-        options = document.get("options")
-        assert options.get("option_key") == "option_field"
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -220,28 +211,6 @@ class TestTOML:
         assert compilation_flags.get("qjit_compatible") is True
         assert compilation_flags.get("supported_mcm_methods") == ["one-shot"]
         assert compilation_flags.get("runtime_code_generation") is False
-
-    @pytest.mark.usefixtures("create_temporary_toml_file")
-    @pytest.mark.parametrize(
-        "create_temporary_toml_file",
-        [
-            """
-            [options]
-            
-            option_key = "option_value"
-            option_boolean = true
-            """
-        ],
-        indirect=True,
-    )
-    def test_get_options(self, request):
-        """Tests parsing options."""
-
-        document = load_toml_file(request.node.toml_file)
-        options = _get_options(document)
-        assert len(options) == 2
-        assert options.get("option_key") == "option_value"
-        assert options.get("option_boolean") is True
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -548,9 +517,6 @@ initial_state_prep = true
 non_commuting_observables = true
 supported_mcm_methods = ["one-shot"]
 
-[options]
-
-option_key = "option_field"
 """
 
 
@@ -587,7 +553,6 @@ class TestDeviceCapabilities:
         assert device_capabilities.overlapping_observables is True
         assert device_capabilities.non_commuting_observables is False
         assert device_capabilities.initial_state_prep is True
-        assert device_capabilities.options == {"option_key": "option_field"}
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
@@ -682,7 +647,6 @@ class TestDeviceCapabilities:
             non_commuting_observables=True,
             initial_state_prep=True,
             supported_mcm_methods=["one-shot"],
-            options={"option_key": "option_field"},
         )
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
@@ -715,7 +679,6 @@ class TestDeviceCapabilities:
             non_commuting_observables=False,
             initial_state_prep=True,
             supported_mcm_methods=[],
-            options={"option_key": "option_field"},
         )
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
@@ -731,6 +694,8 @@ class TestDeviceCapabilities:
             qml.RZ(0.5, wires=0),
             qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1]),
             qml.adjoint(qml.RZ(0.5, wires=0)),
+            qml.ops.Adjoint(qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1])),
+            qml.ops.Controlled(qml.ops.Adjoint(qml.RZ(0.5, wires=0)), control_wires=[1]),
             qml.CNOT(wires=[0, 1]),
             qml.adjoint(qml.CNOT),
         ]:
@@ -739,6 +704,8 @@ class TestDeviceCapabilities:
         for op in [
             qml.X(0),
             qml.adjoint(qml.RY(0.5, wires=0)),
+            qml.adjoint(qml.ops.Controlled(qml.RY(0.5, wires=0), control_wires=[1])),
+            qml.ops.Controlled(qml.ops.Adjoint(qml.RY(0.5, wires=0)), control_wires=[1]),
             qml.ops.Controlled(qml.CNOT(wires=[0, 1]), control_wires=[2]),
         ]:
             assert capabilities.supports_operation(op.name) is False

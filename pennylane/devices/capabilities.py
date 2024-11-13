@@ -79,21 +79,25 @@ class OperatorProperties:
         )
 
 
-def _supports_operator(op_name: str, op_dict: dict[str, OperatorProperties]) -> bool:
-    """Checks if the given operator is supported by name."""
+def _supports_operator(op_name: str, op_dict: dict[str, OperatorProperties]) -> str | None:
+    """Checks if the given operator is supported by name, returns the base op for nested ops"""
 
     if op_name in op_dict:
-        return True
+        return op_name
 
     if match := re.match(r"Adjoint\((.*)\)", op_name):
         base_op_name = match.group(1)
-        return base_op_name in op_dict and op_dict[base_op_name].invertible
+        deep_supported_base = _supports_operator(base_op_name, op_dict)
+        if deep_supported_base and op_dict[deep_supported_base].invertible:
+            return deep_supported_base
 
     if match := re.match(r"C\((.*)\)", op_name):
         base_op_name = match.group(1)
-        return base_op_name in op_dict and op_dict[base_op_name].controllable
+        deep_supported_base = _supports_operator(base_op_name, op_dict)
+        if deep_supported_base and op_dict[deep_supported_base].controllable:
+            return deep_supported_base
 
-    return False
+    return None
 
 
 @dataclass
@@ -111,7 +115,6 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         non_commuting_observables (bool): Whether the device supports measuring non-commuting observables on the same tape.
         initial_state_prep (bool): Whether the device supports initial state preparation.
         supported_mcm_methods (list[str]): List of supported methods of mid-circuit measurements.
-        options (dict[str, any]): Additional options for the device.
     """
 
     operations: dict[str, OperatorProperties] = field(default_factory=dict)
@@ -124,7 +127,6 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     non_commuting_observables: bool = False
     initial_state_prep: bool = False
     supported_mcm_methods: list[str] = field(default_factory=list)
-    options: dict[str, any] = field(default_factory=dict)
 
     def filter(self, finite_shots: bool) -> "DeviceCapabilities":
         """Returns the device capabilities conditioned on the given program features."""
@@ -171,11 +173,11 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
 
     def supports_operation(self, operation_name: str) -> bool:
         """Checks if the given operation is supported by name."""
-        return _supports_operator(operation_name, self.operations)
+        return bool(_supports_operator(operation_name, self.operations))
 
     def supports_observable(self, observable_name: str) -> bool:
         """Checks if the given observable is supported by name."""
-        return _supports_operator(observable_name, self.observables)
+        return bool(_supports_operator(observable_name, self.observables))
 
 
 VALID_COMPILATION_OPTIONS = {
@@ -347,11 +349,6 @@ def _get_compilation_options(document: dict, prefix: str = "") -> dict[str, bool
     return section
 
 
-def _get_options(document: dict) -> dict[str, any]:
-    """Get custom options"""
-    return document.get("options", {})
-
-
 def parse_toml_document(document: dict) -> DeviceCapabilities:
     """Parses a TOML document into a DeviceCapabilities object.
 
@@ -372,7 +369,6 @@ def parse_toml_document(document: dict) -> DeviceCapabilities:
         observables=observables,
         measurement_processes=measurement_processes,
         **compilation_options,
-        options=_get_options(document),
     )
 
 
