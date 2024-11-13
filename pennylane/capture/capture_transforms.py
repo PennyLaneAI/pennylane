@@ -46,7 +46,7 @@ class TransformTrace(Trace):
         self._state = None
 
     def pure(self, val: Any):
-        """Create a ``TransformTracer``"""
+        """Create a new ``TransformTracer``"""
         return TransformTracer(self, val, 0)
 
     lift = sublift = pure
