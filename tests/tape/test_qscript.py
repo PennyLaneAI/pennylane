@@ -1744,4 +1744,4 @@ def test_output_dim_is_deprecated(qscript_type, shots):
         qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
     ):
         qscript = qscript_type([], [], shots=shots)
-        qscript.output_dim
+        _ = qscript.output_dim
