@@ -78,6 +78,7 @@ class RX(Operation):
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+        print(f"RX __init__ called with phi={phi}, wires={wires}, id={id}")
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod

@@ -39,7 +39,8 @@ def _get_abstract_operator() -> type:
         """An operator captured into plxpr."""
 
         def __init__(self, abstract_batch_size: int = None):
-            
+            print("__init__ di AbstractOperator called")
+
             self._batch_size = abstract_batch_size
 
         # pylint: disable=missing-function-docstring
@@ -111,6 +112,9 @@ def create_operator_primitive(
 
     @primitive.def_impl
     def _(*args, **kwargs):
+
+        print(f"primitive.def_impl called")
+
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
@@ -131,6 +135,8 @@ def create_operator_primitive(
 
     @primitive.def_abstract_eval
     def _(*args, **kwargs):
+
+        print(f"primitive.def_abstract_eval called")
 
         batch_size = None
 

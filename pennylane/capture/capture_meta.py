@@ -78,15 +78,22 @@ class CaptureMeta(type):
             " gain integration with plxpr program capture."
         )
 
+    # Questa funzione e' chiamata quando si crea una istanza della classe Operator, di cui questa classe e' metaclass
     def __call__(cls, *args, **kwargs):
+        print(f"__call__ method in CaptureMeta called with {cls}")
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
 
         if enabled():
             # when tracing is enabled, we want to
             # use bind to construct the class if we want class construction to add it to the jaxpr
+            print(f"Tracing is enabled, using bind to construct the class")
             return cls._primitive_bind_call(*args, **kwargs)
         return type.__call__(cls, *args, **kwargs)
+
+    def __new__(mcs, name, bases, class_dict):
+        print(f"__new__ method of CaptureMeta called for class: {name}")
+        return super().__new__(mcs, name, bases, class_dict)
 
 
 # pylint: disable=abstract-method

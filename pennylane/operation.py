@@ -355,6 +355,7 @@ class ClassPropertyDescriptor:  # pragma: no cover
 
     # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
+        print(f"ClassPropertyDescriptor initialized with fget: {fget} and fset: {fset}")
         self.fget = fget
         self.fset = fset
 
@@ -707,7 +708,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     Optional[jax.core.Primitive]
     """
 
+    def __new__(cls, *args, **kwargs):
+        print(f"__new__ method of Operator called for instance of {cls}")
+        return super(Operator, cls).__new__(cls)  # Call parent __new__
+
     def __init_subclass__(cls, **_):
+        print(f"__init_subclass__ di Operator called for {cls}")
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
 
@@ -719,17 +725,23 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         to the primitive via ``cls._primitive.bind``.
 
         """
-
-        print("primitive_bind_call")
-
+        print(f"primitive_bind_call with {cls}")
         # Avoid recursion by bypassing _primitive_bind_call during instance creation
+        # (create instance without invoking _primitive_bind_call)
         instance = super(cls, cls).__new__(
             cls
-        )  # Create instance without invoking _primitive_bind_call
+        )
+
+        # This line raises an error because it calls the __repr__ method of the Operator class
+        # print(f"instance created: {instance}")
+
         instance.__init__(*args, **kwargs)  # Explicitly call the constructor
 
         # Force calculation of batch size if it hasn't been set
-        batch_size = instance.batch_size  # This will invoke _check_batching if necessary
+        # (this will invoke _check_batching if necessary)
+        batch_size = instance.batch_size  
+
+        print(f"calculated batch size: {batch_size}")
 
         if batch_size is not None:
             kwargs["batch_size"] = batch_size
@@ -1259,6 +1271,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     def __repr__(self) -> str:
         """Constructor-call-like representation."""
+        print(f"__repr__ method of Operator called")
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
             return f"{self.name}({params}, wires={self.wires.tolist()})"
