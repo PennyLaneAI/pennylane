@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Tensor
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.conversion import _generalized_pauli_decompose
@@ -114,21 +113,21 @@ class TestDecomposition:
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
         _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
         for tensor in tensors:
-            all_identities = all(isinstance(o, Identity) for o in tensor.obs)
-            no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
+            all_identities = all(isinstance(o, Identity) for o in tensor.operands)
+            no_identities = not any(isinstance(o, Identity) for o in tensor.operands)
             assert all_identities or no_identities
 
     def test_hide_identity_true_all_identities(self):
         """Tests that the all identity operator remains even with hide_identity = True."""
         H = np.eye(4)
         _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
         for tensor in tensors:
-            assert all(isinstance(o, Identity) for o in tensor.obs)
+            assert all(isinstance(o, Identity) for o in tensor.operands)
 
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
@@ -146,8 +145,8 @@ class TestDecomposition:
         _, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
         n = int(np.log2(len(hamiltonian)))
 
-        tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-        assert all(len(tensor.obs) == n for tensor in tensors)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), decomposed_obs)
+        assert all(len(tensor.operands) == n for tensor in tensors)
 
     # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
@@ -246,21 +245,21 @@ class TestPhasedDecomposition:
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
         _, obs_list = qml.pauli_decompose(H, hide_identity=True, check_hermitian=False).terms()
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
         for tensor in tensors:
-            all_identities = all(isinstance(o, Identity) for o in tensor.obs)
-            no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
+            all_identities = all(isinstance(o, Identity) for o in tensor.operands)
+            no_identities = not any(isinstance(o, Identity) for o in tensor.operands)
             assert all_identities or no_identities
 
     def test_hide_identity_true_all_identities(self):
         """Tests that the all identity operator remains even with hide_identity = True."""
         H = np.eye(4)
         _, obs_list = qml.pauli_decompose(H, hide_identity=True, check_hermitian=False).terms()
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
         for tensor in tensors:
-            assert all(isinstance(o, Identity) for o in tensor.obs)
+            assert all(isinstance(o, Identity) for o in tensor.operands)
 
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
@@ -281,8 +280,8 @@ class TestPhasedDecomposition:
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, check_hermitian=False).terms()
         n = int(np.log2(len(hamiltonian)))
 
-        tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-        assert all(len(tensor.obs) == n for tensor in tensors)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), decomposed_obs)
+        assert all(len(tensor.operands) == n for tensor in tensors)
 
     # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)

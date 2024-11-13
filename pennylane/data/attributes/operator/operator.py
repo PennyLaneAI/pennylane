@@ -252,7 +252,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 op_key = f"op_{i}"
 
                 op_cls = self._supported_ops_dict()[op_class_name]
-                if op_cls in qml.ops.LinearCombination:
+                if op_cls is qml.ops.LinearCombination:
                     ops.append(
                         qml.Hamiltonian(
                             coeffs=list(bind[op_key]["hamiltonian_coeffs"]),

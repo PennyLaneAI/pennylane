@@ -22,7 +22,6 @@ from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-from pennylane.operation import Tensor
 
 
 @pytest.mark.parametrize(
@@ -41,14 +40,14 @@ from pennylane.operation import Tensor
             np.array(
                 [
                     [
-                        [0.95622463, -0.7827277, -0.53222294],
-                        [-0.7827277, 1.42895581, -0.23469918],
-                        [-0.53222294, -0.23469918, 0.48381955],
+                        [0.95622463, 0.7827277, -0.53222294],
+                        [0.7827277, 1.42895581, 0.23469918],
+                        [-0.53222294, 0.23469918, 0.48381955],
                     ],
                     [
-                        [0.55538736, 0.53229398, -0.78262324],
-                        [0.53229398, 0.3203965, -0.47233426],
-                        [-0.78262324, -0.47233426, 0.79021614],
+                        [0.55538736, -0.53229398, -0.78262324],
+                        [-0.53229398, 0.3203965, 0.47233426],
+                        [-0.78262324, 0.47233426, 0.79021614],
                     ],
                     [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
                 ]
@@ -68,12 +67,12 @@ from pennylane.operation import Tensor
             np.array(
                 [
                     [
-                        [1.42895581, -0.23469918],
-                        [-0.23469918, 0.48381955],
+                        [1.42895581, 0.23469918],
+                        [0.23469918, 0.48381955],
                     ],
                     [
-                        [0.3203965, -0.47233426],
-                        [-0.47233426, 0.79021614],
+                        [0.3203965, 0.47233426],
+                        [0.47233426, 0.79021614],
                     ],
                     [[0.0, 0.0], [0.0, 0.0]],
                 ]
@@ -188,7 +187,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-    dops = [Tensor(*op) if isinstance(op, qml.ops.Prod) else op for op in map(qml.simplify, ops)]
+    dops = [op for op in map(qml.simplify, ops)]
     d_ref = qml.Hamiltonian(coeffs, dops)
 
     d_coeff, d_ops = d.terms()

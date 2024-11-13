@@ -24,7 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.data.attributes import DatasetOperator, DatasetPyTree
 from pennylane.data.base.typing_util import get_type_str
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 
 pytestmark = pytest.mark.data
 
@@ -71,13 +71,13 @@ hamiltonians = [
     ]
 ]
 
-tensors = [Tensor(qml.PauliX(1), qml.PauliY(2))]
+tensors = [qml.prod(qml.PauliX(1), qml.PauliY(2))]
 
 
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
 @pytest.mark.parametrize("obs_in", [*hermitian_ops, *pauli_ops, *identity, *hamiltonians, *tensors])
 class TestDatasetOperatorObservable:
-    """Tests serializing Observable operators using the ``compare()`` method."""
+    """Tests serializing Observable operators using the ``qml.equal`` function."""
 
     def test_value_init(self, attribute_cls, obs_in):
         """Test that a DatasetOperator can be value-initialized
@@ -91,7 +91,6 @@ class TestDatasetOperatorObservable:
 
         obs_out = dset_op.get_value()
         qml.assert_equal(obs_out, obs_in)
-        assert obs_in.compare(obs_out)
 
     def test_bind_init(self, attribute_cls, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
@@ -106,7 +105,6 @@ class TestDatasetOperatorObservable:
 
         obs_out = dset_op.get_value()
         qml.assert_equal(obs_out, obs_in)
-        assert obs_in.compare(obs_out)
 
 
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
