@@ -44,6 +44,7 @@ from .ops import (
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+    ResourceMultiRZ,
     ResourceRot,
     ResourceRX,
     ResourceRZ,

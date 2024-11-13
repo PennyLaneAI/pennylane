@@ -20,6 +20,7 @@ from .identity import (
 
 from .qubit import (
     ResourceHadamard,
+    ResourceMultiRZ,
     ResourceRot,
     ResourceRX,
     ResourceRY,
