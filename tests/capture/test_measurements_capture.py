@@ -545,14 +545,14 @@ class TestSample:
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
-def test_shadow_expval(x64_mode):
+def test_shadow_expval(x64_mode, seed):
     """Test that the shadow expval of an observable can be captured."""
 
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 
     def f():
-        return qml.shadow_expval(qml.X(0), seed=887, k=4)
+        return qml.shadow_expval(qml.X(0), seed=seed, k=4)
 
     jaxpr = jax.make_jaxpr(f)()
 
@@ -561,7 +561,7 @@ def test_shadow_expval(x64_mode):
 
     assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
-    assert jaxpr.eqns[1].params == {"seed": 887, "k": 4}
+    assert jaxpr.eqns[1].params == {"seed": seed, "k": 4}
 
     am = jaxpr.eqns[1].outvars[0].aval
     assert isinstance(am, AbstractMeasurement)
@@ -638,11 +638,11 @@ def test_mutual_info(x64_mode):
     jax.config.update("jax_enable_x64", initial_mode)
 
 
-def test_ClassicalShadow():
+def test_ClassicalShadow(seed):
     """Test that the classical shadow measurement can be captured."""
 
     def f():
-        return qml.classical_shadow(wires=(0, 1, 2), seed=95)
+        return qml.classical_shadow(wires=(0, 1, 2), seed=seed)
 
     jaxpr = jax.make_jaxpr(f)()
 
@@ -650,7 +650,7 @@ def test_ClassicalShadow():
     assert len(jaxpr.eqns) == 1
 
     assert jaxpr.eqns[0].primitive == ClassicalShadowMP._wires_primitive
-    assert jaxpr.eqns[0].params == {"seed": 95}
+    assert jaxpr.eqns[0].params == {"seed": seed}
     assert len(jaxpr.eqns[0].invars) == 3
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)

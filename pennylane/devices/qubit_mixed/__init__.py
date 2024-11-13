@@ -12,22 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Module test files for validation of qml.labs import
+Submodule for performing qubit mixed-state simulations of quantum circuits.
+
+This submodule is internal and subject to change without a deprecation cycle. Use
+at your own discretion.
+
+.. currentmodule:: pennylane.devices.qubit_mixed
+.. autosummary::
+    :toctree: api
+
+    apply_operation
 """
-# pylint: disable=import-outside-toplevel, unused-import
-import pytest
-
-
-def test_module_access():
-    "labs module should not be visible without explicit import"
-    import pennylane as qml
-
-    with pytest.raises(Exception):
-        print(qml.labs)
-
-
-def test_module_import(import_labs):
-    "Validate that explicitly importing the module makes it available under the `qml` alias."
-    import pennylane as qml
-
-    print(qml.labs)
+from .apply_operation import apply_operation
+from .initialize_state import create_initial_state

@@ -60,4 +60,17 @@ repos:
           "-sn", # Don't display the score
           "--rcfile=tests/.pylintrc", # Link to your config file
         ]
-      files: ^(tests/|labs/tests/)
+      files: ^tests/
+    - id: labs-pylint-test
+      name: labs-pylint-test
+      entry: pylint
+      language: system
+      types: [python]
+      args:
+        [
+          "-rn", # Only display messages
+          "-sn", # Don't display the score
+          "--rcfile=tests/.pylintrc", # Link to your config file
+        ]
+      files: ^pennylane/labs/tests/
+

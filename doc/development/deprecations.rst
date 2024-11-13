@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
   has been deprecated.
 
@@ -26,12 +31,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
-  ``qml.shadow_expval`` measurement process.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
 * ``qml.broadcast`` has been deprecated. Users should use ``for`` loops instead.
 
   - Deprecated in v0.39
@@ -44,7 +43,7 @@ Pending deprecations
   - Will be removed in v0.40
 
 * ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
-  we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  will be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
   respectively.
 
   - Deprecated top level access in v0.39
@@ -56,19 +55,11 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
-  Instead, ``qml.simplify()`` can be called on the constructed operator.
-
-  - Deprecated in v0.37
-  - Will be removed in v0.39
-
 * The :class:`~pennylane.BasisStatePreparation` template is deprecated.
   Instead, use :class:`~pennylane.BasisState`.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
@@ -131,6 +122,12 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
+* The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
+  ``qml.shadow_expval`` measurement process.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
@@ -160,7 +157,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
 
   - Deprecated in v0.38
   - Removed in v0.39

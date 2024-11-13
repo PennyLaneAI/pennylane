@@ -511,11 +511,11 @@ class TestHasReprProperties:
         assert MyOp.has_matrix is False
         assert MyOp(wires=0).has_matrix is False
 
-    def test_has_matrix_false_concrete_template(self):
+    def test_has_matrix_false_concrete_template(self, seed):
         """Test has_matrix with a concrete operation (StronglyEntanglingLayers)
         that does not have a matrix defined."""
 
-        rng = qml.numpy.random.default_rng(seed=42)
+        rng = qml.numpy.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
         op = qml.StronglyEntanglingLayers(params, wires=range(2))

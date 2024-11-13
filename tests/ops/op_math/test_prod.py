@@ -1425,6 +1425,18 @@ class TestWrapperFunc:
         assert len(q) == 1
         assert q.queue[0] is prod2
 
+    def test_correct_queued_operators(self):
+        """Test that args and kwargs do not add operators to the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.prod(qml.QSVT)(qml.X(1), [qml.Z(1)])
+            qml.prod(qml.QSVT(qml.X(1), [qml.Z(1)]))
+
+        for op in q.queue:
+            assert op.name == "QSVT"
+
+        assert len(q.queue) == 2
+
 
 class TestIntegration:
     """Integration tests for the Prod class."""
