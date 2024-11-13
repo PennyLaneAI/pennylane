@@ -43,7 +43,7 @@ def complementary_poly(P):
     """
     poly_degree = len(P) - 1
 
-    # Build the polynomial R(z) = z^degree * (1 - conj(P(z)) * P(z)), deduced from (eq.33) and (eq.34)
+    # Build the polynomial R(z) = z^degree * (1 - conj(P(1/z)) * P(z)), deduced from (eq.33) and (eq.34)
     R = Polynomial.basis(poly_degree) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
     r_roots = R.roots()
 
