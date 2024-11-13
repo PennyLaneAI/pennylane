@@ -59,6 +59,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.qinfo` module has been removed. Please see the respective functions in the `qml.math` and `qml.measurements`
+  modules instead.
+  [(#6584)](https://github.com/PennyLaneAI/pennylane/pull/6584)
+
 * The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
   [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
 
