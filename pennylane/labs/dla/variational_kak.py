@@ -146,12 +146,13 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
     .. code-block:: python
 
-        Kc_m = jnp.eye(2**n)
-
         assert len(theta_opt) == len(k)
-        for th, op in zip(theta_opt, k):
-            opm = qml.matrix(op.operation(), wire_order=range(n))
-            Kc_m @= jax.scipy.linalg.expm(-1j * th * opm)
+        def Kc():
+            # note the reverse order of the multiplication because this is a circuit
+            for th, op in zip(theta_opt[::-1], k[::-1]):
+                qml.exp(-1j * th * op.operation())
+
+        Kc_m = qml.matrix(Kc, wire_order=range(n))()
 
         # check Unitary property of Kc
         assert np.allclose(Kc_m.conj().T @ Kc_m, np.eye(2**n))
