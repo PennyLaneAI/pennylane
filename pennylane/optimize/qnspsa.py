@@ -370,9 +370,11 @@ class QNSPSAOptimizer:
             args_minus[index] = arg - self.finite_diff_step * direction
 
         cost.construct(args_plus, kwargs)
-        tape_plus = cost.tape.copy(copy_operations=True)
+        tape = qml.workflow.construct_tape(cost)(*args_plus, **kwargs)
+        tape_plus = tape.copy(copy_operations=True)
         cost.construct(args_minus, kwargs)
-        tape_minus = cost.tape.copy(copy_operations=True)
+        tape = qml.workflow.construct_tape(cost)(*args_minus, **kwargs)
+        tape_minus = tape.copy(copy_operations=True)
         return [tape_plus, tape_minus], dirs
 
     def _update_tensor(self, tensor_raw):
@@ -425,22 +427,26 @@ class QNSPSAOptimizer:
         op_inv = self._get_operations(cost, args2, kwargs)
 
         new_ops = op_forward + [qml.adjoint(op) for op in reversed(op_inv)]
-        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=cost.tape.wires.labels)])
+        tape = qml.workflow.construct_tape(cost)()
+        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=tape.wires.labels)])
 
     @staticmethod
     def _get_operations(cost, args, kwargs):
         cost.construct(args, kwargs)
-        return cost.tape.operations
+        tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
+        return tape.operations
 
     def _apply_blocking(self, cost, args, kwargs, params_next):
         cost.construct(args, kwargs)
-        tape_loss_curr = cost.tape.copy(copy_operations=True)
+        tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
+        tape_loss_curr = tape.copy(copy_operations=True)
 
         if not isinstance(params_next, list):
             params_next = [params_next]
 
         cost.construct(params_next, kwargs)
-        tape_loss_next = cost.tape.copy(copy_operations=True)
+        tape = qml.workflow.construct_tape(cost)(*params_next, **kwargs)
+        tape_loss_next = tape.copy(copy_operations=True)
 
         program, _ = cost.device.preprocess()
 

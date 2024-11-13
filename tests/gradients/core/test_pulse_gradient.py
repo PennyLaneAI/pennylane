@@ -31,6 +31,13 @@ from pennylane.gradients.pulse_gradient import (
 )
 
 
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
+
 # pylint: disable=too-few-public-methods
 @pytest.mark.jax
 class TestSplitEvolOps:

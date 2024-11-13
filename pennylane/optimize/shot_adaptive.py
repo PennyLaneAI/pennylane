@@ -309,7 +309,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         self.check_device(qnode.device)
 
         qnode.construct(args, kwargs)
-        tape = qnode.tape
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
         [expval] = tape.measurements
         coeffs, observables = (
             expval.obs.terms()

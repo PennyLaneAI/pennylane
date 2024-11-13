@@ -522,7 +522,7 @@ def param_shift_hessian(
         results of these tapes into the Hessian:
 
         >>> circuit(x)  # generate the QuantumTape inside the QNode
-        >>> tape = circuit.qtape
+        >>> tape = qml.workflow.construct_tape(circuit)(x)
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
         >>> len(hessian_tapes)
         13

@@ -387,7 +387,7 @@ class TransformProgram:
             kwargs.pop("shots", None)
             kwargs.pop("argnums", None)
             qnode.construct(args, kwargs)
-            tape = qnode.qtape
+            tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
             tapes, _ = program((tape,))
             res = tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
             if len(tapes) == 1:
@@ -457,7 +457,8 @@ class TransformProgram:
                     classical_preprocessing, sub_program, argnums, *args, **kwargs
                 )
                 qnode.construct(args, kwargs)
-                tapes, _ = sub_program((qnode.tape,))
+                tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
+                tapes, _ = sub_program((tape,))
                 multi_tapes = len(tapes) > 1
                 if not multi_tapes:
                     classical_jacobian = [classical_jacobian]

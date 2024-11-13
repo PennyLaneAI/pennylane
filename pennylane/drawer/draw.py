@@ -340,8 +340,9 @@ def _draw_qnode(
                 return "\n\n".join(res) + mat_str
             return "\n\n".join(res)
 
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
         return tape_text(
-            qnode.qtape,
+            tape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,

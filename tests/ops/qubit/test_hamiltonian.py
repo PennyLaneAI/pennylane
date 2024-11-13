@@ -33,6 +33,13 @@ pytestmark = pytest.mark.filterwarnings(
 )
 
 
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
+
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
     ([-0.05, 0.17], 1.7, "autograd"),
