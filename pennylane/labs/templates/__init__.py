@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+"""
+This module contains templates, which are pre-coded routines that can be used in a quantum node.
+"""
 from .state_preparations import *

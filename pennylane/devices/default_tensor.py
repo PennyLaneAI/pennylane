@@ -110,7 +110,6 @@ _operations = frozenset(
         "PauliRot",
         "MultiRZ",
         "TrotterProduct",
-        "MPSPrep",
     }
 )
 # The set of supported operations.
@@ -680,16 +679,7 @@ class DefaultTensor(Device):
         # is established at runtime to match the circuit if not provided.
         wires = circuit.wires if self.wires is None else self.wires
         operations = copy.deepcopy(circuit.operations)
-        if operations and isinstance(operations[0], qml.MPSPrep):
-            op = operations.pop(0)
-            self._quimb_circuit = self._initial_quimb_circuit(
-                wires,
-                psi0=self._initial_mps(
-                    op.wires,
-                    basis_state="1" * len(op.wires),
-                ),
-            )
-        elif operations and isinstance(operations[0], qml.BasisState):
+        if operations and isinstance(operations[0], qml.BasisState):
             op = operations.pop(0)
             self._quimb_circuit = self._initial_quimb_circuit(
                 wires,

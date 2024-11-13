@@ -26,6 +26,7 @@ def test_standard_validity():
 
 
 def test_access_to_param():
+    """tests that the parameter is accessible."""
     mps = [np.ones([2, 2]), np.ones([3, 3]), np.ones([1])]
     op = qml.labs.MPSPrep(mps=mps, wires=[0, 1, 2])
 

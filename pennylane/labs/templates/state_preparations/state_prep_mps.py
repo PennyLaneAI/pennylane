@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the StatePrepMPS template.
+Contains the MPSPrep template.
 """
 
-import pennylane.math as math
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
@@ -57,6 +56,7 @@ class MPSPrep(Operation):
 
     @property
     def mps(self):
+        """list representing the MPS input"""
         return self.hyperparameters["mps"]
 
     def _flatten(self):
