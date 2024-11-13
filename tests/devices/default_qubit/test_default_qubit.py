@@ -1844,6 +1844,9 @@ class TestPostselection:
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
+        if isinstance(mp, qml.measurements.ClassicalShadowMP):
+            mp.seed = seed
+
         dev = qml.device("default.qubit", seed=seed)
         param = qml.math.asarray(param, like=interface)
 
