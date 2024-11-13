@@ -528,14 +528,8 @@ if LinearCombination._primitive is not None:
         return type.__call__(LinearCombination, coeffs, observables, **kwargs)
 
 
-def Hamiltonian(
-    coeffs,
-    observables: list[Operator],
-    grouping_type=None,
-    _grouping_indices=None,
-    method="rlf",
-    id=None,
-):
+# this just exists for the docs build for now, since we're waiting until the next PR to fix the docs
+class Hamiltonian:
     r"""Returns an operator representing a Hamiltonian.
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,
@@ -686,11 +680,3 @@ def Hamiltonian(
         using the :func:`compute_grouping <pennylane.Hamiltonian.compute_grouping>` method.
 
     """
-    return qml.LinearCombination(
-        coeffs,
-        observables,
-        grouping_type=grouping_type,
-        method=method,
-        _grouping_indices=_grouping_indices,
-        id=id,
-    )

@@ -74,6 +74,7 @@ from pennylane.measurements import (
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
+from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -167,8 +168,6 @@ class PennyLaneDeprecationWarning(UserWarning):
 
 
 def __getattr__(name):
-    if name == "Hamiltonian":
-        return pennylane.ops.LinearCombination
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
