@@ -829,7 +829,7 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(self, execute_kwargs, cost_fn, shots):
+    def test_multiple_hamiltonians_not_trainable(self, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
 
         coeffs1 = pnp.array([0.1, 0.2, 0.3], requires_grad=False)
