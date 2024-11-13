@@ -79,4 +79,14 @@ from .dense_util import (
     check_commutation,
     apply_basis_change,
 )
-from .involutions import khaneja_glaser_involution, AIII, BDI, CI, CII, DIII, ClassB, AI, AII
+from .involutions import (
+    khaneja_glaser_involution,
+    AI,
+    AII,
+    AIII,
+    BDI,
+    CI,
+    CII,
+    DIII,
+    ClassB,
+)
