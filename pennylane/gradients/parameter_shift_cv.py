@@ -831,11 +831,7 @@ def _get_output_dim(tape):
     _output_dim = 0
     for m in tape.measurements:
         # attempt to infer the output dimension
-        if isinstance(m, ProbabilityMP):
-            _output_dim += m.shape()
-        elif not isinstance(m, StateMP):
+        if not isinstance(m, StateMP):
             _output_dim += 1
-    if tape.batch_size:
-        _output_dim *= tape.batch_size
 
     return _output_dim
