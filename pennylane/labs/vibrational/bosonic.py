@@ -282,23 +282,8 @@ class BoseWord(dict):
 
         bw_terms = sorted(self)
         len_op = len(bw_terms)
-        # if len_op == 0:
-        #     return BoseWord({})
-        # l = 0
-        # bs = self
-        # bw = self
         double_occupancy = False
         bw_comm = BoseSentence({BoseWord({}): 0.0}, cform=self.cform)
-        # for r in range(1, len_op):
-        #     if self[bw_terms[r]] == "+":
-        #         bs = bw.shift_operator(r, l)
-        #         bs_as_list = list(bs.keys())
-        #         bw = bs_as_list[0]
-        #         for i in range(1, len(bs_as_list)):
-        #             bw_comm += bs_as_list[i]
-        #         l += 1
-
-        # return bs + bw_comm.normal_order()
         for i in range(1, len_op):
             for j in range(i, 0, -1):
                 key_r = bw_terms[j]
