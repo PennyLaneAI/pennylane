@@ -69,14 +69,19 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        return
+        cnot = re.ResourceCNOT.resource_rep(**kwargs)
+        rx = re.ResourceRX.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[cnot] = 2
+        gate_types[rx] = 1
 
     def resource_params(self):
-        return
+        return {}
 
     @classmethod
     def resource_rep(cls, *args, **kwargs):
-        return
+        return re.CompressedResourceOp(cls, {})
 
 class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
     """Resource class for IsingYY"""
