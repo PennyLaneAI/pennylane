@@ -528,7 +528,7 @@ def apply(op, context=QueuingManager):
                 qml.CNOT(wires=[0, 1])
 
         >>> tape1.operations
-        [Hadamard(wires=[1]), <QuantumTape: wires=[0], params=1>, X(0), CNOT(wires=[0, 1])]
+        [H(1), <QuantumTape: wires=[0], params=1>, X(0), CNOT(wires=[0, 1])]
         >>> tape2.operations
         [X(0), RZ(0.2, wires=[0])]
     """
