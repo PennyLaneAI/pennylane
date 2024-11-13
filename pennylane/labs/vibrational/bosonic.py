@@ -293,7 +293,7 @@ class BoseWord(dict):
         if len_op == 0:
             return 1 * BoseWord({})
 
-        bs, bw = self, self
+        bw = self
 
         l = 0
         for r in range(len_op):
