@@ -16,6 +16,7 @@ Tests for the MPSPrep template.
 """
 
 import numpy as np
+
 import pennylane as qml
 from pennylane import labs
 
