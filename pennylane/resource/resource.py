@@ -64,7 +64,7 @@ class Resources:
     shots: Shots = field(default_factory=Shots)
 
     def __str__(self):
-        keys = ["wires", "gates", "depth"]
+        keys = ["num_wires", "num_gates", "depth"]
         vals = [self.num_wires, self.num_gates, self.depth]
         items = "\n".join([str(i) for i in zip(keys, vals)])
         items = items.replace("('", "")
