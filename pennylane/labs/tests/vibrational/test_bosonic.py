@@ -107,6 +107,23 @@ class TestBoseWord:
                     }
                 ),
             ),
+            (
+                BoseWord({(0, 0): "-", (1, 1): "+"}),
+                0,
+                1,
+                BoseSentence({BoseWord({(0, 1): "+", (1, 0): "-"}): 1}),
+            ),
+            (
+                BoseWord({(0, 0): "-", (1, 0): "+", (2, 0): "+", (3, 0): "-"}),
+                0,
+                2,
+                BoseSentence(
+                    {
+                        BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "-", (3, 0): "-"}): 1.0,
+                        BoseWord({(0, 0): "+", (1, 0): "-"}): 2.0,
+                    }
+                ),
+            ),
         ],
     )
     def test_shift_operator(self, bw, i, j, bs):
