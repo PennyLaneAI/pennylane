@@ -36,10 +36,17 @@
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
+* Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
+  [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
+
+* `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
+  pennylane variant jaxpr.
+  [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
 
 <h4>Other Improvements</h4>
 
@@ -55,6 +62,29 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
+  [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
+
+* The `qml.BasisStatePreparation` template has been removed. Instead, use `qml.BasisState`.
+  [(#6528)](https://github.com/PennyLaneAI/pennylane/pull/6528)
+
+* The `qml.workflow.set_shots` helper function has been removed. We no longer interact with the legacy device interface in our code.
+  Instead, shots should be specified on the tape, and the device should use these shots.
+  [(#6534)](https://github.com/PennyLaneAI/pennylane/pull/6534)
+
+* `QNode.gradient_fn` has been removed. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
+  process the diff method.
+  [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
+ 
+* `qml.broadcast` has been removed. Users should use `for` loops instead.
+  [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
+
+* The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
+  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+
+* The `expand_depth` argument for `qml.compile` has been removed.
+  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
   [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
@@ -62,24 +92,41 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
+  Instead, use the `qml.workflow.get_best_diff_method` function.
+  [(#6418)](https://github.com/PennyLaneAI/pennylane/pull/6418)
+
+* The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,
+  to better align with the termionology used by the `QNode`.
+  `gradient_fn` will be removed in v0.41.
+  [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
+
 <h3>Documentation 📝</h3>
+* Add reporting of test warnings as failures.
+  [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
 * Add a warning message to Gradients and training documentation about ComplexWarnings
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.math.get_deep_interface` now works properly for autograd arrays.
+  [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
+
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
+
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso
+Guillermo Alonso,
 Shiwen An,
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
+Austin Huang,
+Christina Lee,
 Andrija Paurevic,
 Justin Pickering
