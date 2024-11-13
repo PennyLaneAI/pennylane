@@ -1494,6 +1494,13 @@ class TestNewDeviceIntegration:
         assert not kwargs
         assert new_dev is self.dev
 
+    def test_get_gradient_fn_with_best_method_and_cv_ops(self):
+        """Test that get_gradient_fn returns 'parameter-shift-cv' when CV operations are present on tape"""
+        dev = qml.device("default.gaussian", wires=1)
+        tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
+        res = qml.QNode.get_gradient_fn(dev, interface="autograd", diff_method="best", tape=tape)
+        assert res == (qml.gradients.param_shift_cv, {"dev": dev}, dev)
+
     def test_get_gradient_fn_default_qubit(self):
         """Tests the get_gradient_fn is backprop for best for default qubit2."""
         dev = qml.devices.DefaultQubit()

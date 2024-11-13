@@ -177,6 +177,13 @@ class TestGetGradientFn:
         gradient_fn = _get_gradient_fn(dev, diff_method="parameter-shift", tape=tape)
         assert gradient_fn is qml.gradients.param_shift_cv
 
+    def test_best_method_with_cv_ops(self):
+        """Test that get_gradient_fn returns 'parameter-shift-cv' when CV operations are present on tape"""
+        dev = qml.device("default.gaussian", wires=1)
+        tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
+        gradient_fn = _get_gradient_fn(dev, diff_method="best", tape=tape)
+        assert gradient_fn is qml.gradients.param_shift_cv
+
     def test_invalid_diff_method(self):
         """Test that get_gradient_fn raises an error for invalid diff method"""
         dev = qml.device("default.qubit", wires=1)
