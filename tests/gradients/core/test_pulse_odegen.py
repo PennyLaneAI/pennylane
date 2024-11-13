@@ -386,11 +386,11 @@ class TestNonzeroCoeffsAndWords:
         assert words == []
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3])
-    def test_separate_nonzero(self, num_wires):
+    def test_separate_nonzero(self, num_wires, seed):
         """Test that a single coefficient in any of the coefficients is sufficient
         to keep the Pauli word in the filter."""
         # Create many coefficients, each greater or equal ``1`` at distinct places.
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
         coeffs = tuple(rng.uniform(1, 2, size=(4**num_wires - 1, 4**num_wires - 1)))
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
 
@@ -1001,13 +1001,13 @@ class TestPulseOdegenTape:
     """Test that differentiating tapes with ``pulse_odegen`` works."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), (1000, 0.05), ([1000, 100], 0.05)])
-    def test_single_pulse_single_term(self, shots, tol):
+    def test_single_pulse_single_term(self, shots, tol, seed):
         """Test that a single pulse with a single Hamiltonian term is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(8251)
+        prng_key = jax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
 
         H = jnp.polyval * X(0)
@@ -1036,13 +1036,13 @@ class TestPulseOdegenTape:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), ([1000, 100], 0.05)])
-    def test_single_pulse_multi_term(self, shots, tol):
+    def test_single_pulse_multi_term(self, shots, tol, seed):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(8251)
+        prng_key = jax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, shots=None)
         dev_shots = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
 
@@ -1116,13 +1116,13 @@ class TestPulseOdegenTape:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), ([1000, 100], 0.05)])
-    def test_multi_pulse(self, shots, tol):
+    def test_multi_pulse(self, shots, tol, seed):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
         import jax
         import jax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(8251)
+        prng_key = jax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, shots=None)
         dev_shots = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
 

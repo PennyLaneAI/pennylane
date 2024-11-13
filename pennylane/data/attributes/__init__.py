@@ -20,11 +20,11 @@ from .list import DatasetList
 from .molecule import DatasetMolecule
 from .none import DatasetNone
 from .operator import DatasetOperator
+from .pytree import DatasetPyTree
 from .scalar import DatasetScalar
 from .sparse_array import DatasetSparseArray
 from .string import DatasetString
 from .tuple import DatasetTuple
-from .pytree import DatasetPyTree
 
 __all__ = (
     "DatasetArray",

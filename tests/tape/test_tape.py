@@ -255,7 +255,7 @@ class TestConstruction:
         qml.assert_equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
 
     def test_measurement_before_operation(self):
-        """Test that an exception is raised if a measurement occurs before a operation"""
+        """Test that an exception is raised if a measurement occurs before an operation"""
 
         with pytest.raises(ValueError, match="must occur prior to measurements"):
             with QuantumTape():
@@ -1782,7 +1782,7 @@ class TestHashing:
 
 
 def cost(tape, dev):
-    return qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)
+    return qml.execute([tape], dev, diff_method=qml.gradients.param_shift)
 
 
 measures = [
@@ -1881,7 +1881,7 @@ class TestOutputShape:
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         program, _ = dev.preprocess()
         res = qml.execute(
-            [tape], dev, gradient_fn=qml.gradients.param_shift, transform_program=program
+            [tape], dev, diff_method=qml.gradients.param_shift, transform_program=program
         )[0]
 
         if isinstance(res, tuple):
@@ -2036,7 +2036,7 @@ class TestOutputShape:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         program, _ = dev.preprocess()
-        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
+        expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         assert tape.shape(dev) == expected.shape
 
     @pytest.mark.autograd
@@ -2064,7 +2064,7 @@ class TestOutputShape:
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         program, _ = dev.preprocess()
-        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
+        expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         expected = tuple(i.shape for i in expected)
         assert tape.shape(dev) == expected
 

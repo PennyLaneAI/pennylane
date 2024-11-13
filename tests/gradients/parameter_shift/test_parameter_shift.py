@@ -1797,7 +1797,7 @@ class TestParameterShiftRule:
         # gradients
         exact = np.cos(par)
         gtapes, fn = qml.gradients.param_shift(tape)
-        grad_PS = fn(qml.execute(gtapes, dev, gradient_fn=None))
+        grad_PS = fn(qml.execute(gtapes, dev, diff_method=None))
 
         # different methods must agree
         assert np.allclose(grad_PS, exact, atol=tol, rtol=0)
@@ -2062,10 +2062,10 @@ class TestParameterShiftRule:
         assert gradA[1] == pytest.approx(expected, abs=tol)
         assert gradF[1] == pytest.approx(expected, abs=tol)
 
-    def test_involutory_and_noninvolutory_variance_single_param(self, tol):
+    def test_involutory_and_noninvolutory_variance_single_param(self, tol, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
 
