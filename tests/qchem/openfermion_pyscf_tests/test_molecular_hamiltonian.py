@@ -97,7 +97,7 @@ def test_building_hamiltonian(
 
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(*args, **kwargs)
 
-    assert isinstance(built_hamiltonian, qml.Sum)
+    assert isinstance(built_hamiltonian, qml.ops.Sum)
     assert qubits == 2 * nact_orbs
 
 
@@ -143,7 +143,7 @@ def test_building_hamiltonian_molecule_class(
 
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(args, **kwargs)
 
-    assert isinstance(built_hamiltonian, qml.Sum)
+    assert isinstance(built_hamiltonian, qml.ops.Sum)
     assert qubits == 2 * nact_orbs
 
 
@@ -940,7 +940,7 @@ def test_molecule_as_kwargs(tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    assert isinstance(built_hamiltonian, qml.Sum)
+    assert isinstance(built_hamiltonian, qml.ops.Sum)
     assert qubits == 4
 
 
