@@ -22,12 +22,6 @@ from pennylane.measurements import MutualInfo
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
-DEP_WARNING_MESSAGE_MUTUAL_INFO = (
-    "The qml.qinfo.mutual_info transform is deprecated and will be removed "
-    "in v0.40. Instead, include the qml.mutual_info measurement process in the "
-    "return line of your QNode."
-)
-
 
 class TestMutualInfoUnitTests:
     """Tests for the mutual_info function"""
@@ -239,32 +233,6 @@ class TestIntegration:
         # compare measurement results with transform results
         dm = circuit_state(params)
         expected = qml.math.mutual_info(dm, indices0=[0], indices1=[1])
-
-        assert np.allclose(actual, expected)
-
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    def test_mutual_info_wire_labels(self, device):
-        """Test that mutual_info is correct with custom wire labels"""
-        param = np.array([0.678, 1.234])
-        wires = ["a", 8]
-        dev = qml.device(device, wires=wires)
-
-        @qml.qnode(dev)
-        def circuit(param):
-            qml.RY(param, wires=wires[0])
-            qml.CNOT(wires=wires)
-            return qml.mutual_info(wires0=[wires[0]], wires1=[wires[1]])
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            actual = qml.qinfo.mutual_info(circuit, wires0=[wires[0]], wires1=[wires[1]])(param)
-
-        # compare transform results with analytic values
-        expected = -2 * np.cos(param / 2) ** 2 * np.log(np.cos(param / 2) ** 2) - 2 * np.sin(
-            param / 2
-        ) ** 2 * np.log(np.sin(param / 2) ** 2)
 
         assert np.allclose(actual, expected)
 
