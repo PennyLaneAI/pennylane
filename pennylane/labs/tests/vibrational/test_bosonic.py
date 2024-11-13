@@ -20,6 +20,7 @@ from pennylane.labs.vibrational.bosonic import (
 )
 
 bw1 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"})
+bw2 = BoseWord({(0, 0): "-", (1, 0): "+"})
 
 
 class TestBoseWord:
@@ -75,10 +76,42 @@ class TestBoseWord:
         """Test that normal_order correctly normal orders the BoseWord"""
         assert bose_sentence.normal_order() == expected
 
-    # @pytest.mark.parametrize("fw, i, j, fs", tup_fw_shift)
-    # def test_shift_operator(self, fw, i, j, fs):
-    #     """Test that the shift_operator method correctly applies the anti-commutator relations."""
-    #     assert fw.shift_operator(i, j) == fs
+    @pytest.mark.parametrize(
+        ("bw", "i", "j", "bs"),
+        [
+            (
+                bw2,
+                0,
+                1,
+                BoseSentence({BoseWord({(0, 0): "+", (1, 0): "-"}): 1.0, BoseWord({}): 1.0}),
+            ),
+            (
+                BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"}),
+                3,
+                0,
+                BoseSentence(
+                    {
+                        BoseWord({(0, 0): "+", (1, 0): "-", (2, 0): "-", (3, 0): "+"}): 1.0,
+                        BoseWord({(0, 0): "-", (1, 0): "+"}): 2.0,
+                    }
+                ),
+            ),
+            (
+                BoseWord({(0, 0): "+", (1, 0): "-", (2, 0): "-", (3, 0): "+"}),
+                3,
+                1,
+                BoseSentence(
+                    {
+                        BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "-", (3, 0): "-"}): 1.0,
+                        BoseWord({(0, 0): "+", (1, 0): "-"}): 2.0,
+                    }
+                ),
+            ),
+        ],
+    )
+    def test_shift_operator(self, bw, i, j, bs):
+        """Test that the shift_operator method correctly applies the anti-commutator relations."""
+        assert bw.shift_operator(i, j) == bs
 
     def test_shift_operator_errors(self):
         """Test that the shift_operator method correctly raises exceptions."""
