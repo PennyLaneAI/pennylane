@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""This module contains experimental resource estimation functionality. """
-from .resource_qft import ResourceQFT
+from .subroutines import ResourceQFT
