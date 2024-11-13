@@ -728,7 +728,6 @@ def param_shift_cv(
     if all(g == "0" for g in method_map.values()):
         return [], lambda _: np.zeros([1, len(tape.trainable_params)])
 
-
     var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 
     unsupported_params = []
