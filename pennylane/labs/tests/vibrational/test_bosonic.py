@@ -12,15 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the Boseonic representation classes."""
-import pickle
-from copy import copy, deepcopy
-
-import numpy as np
 import pytest
-from scipy import sparse
 
-import pennylane as qml
-from pennylane import numpy as pnp
 from pennylane.labs.vibrational.bosonic import (
     BoseWord,
     BoseSentence,
@@ -30,6 +23,10 @@ bw1 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+",
 
 
 class TestBoseWord:
+    """
+    Tests for BoseWord
+    """
+
     # Expected bose sentences were computed manually or with openfermion
     @pytest.mark.parametrize(
         ("bose_sentence", "expected"),
@@ -75,6 +72,7 @@ class TestBoseWord:
         ],
     )
     def test_normal_order(self, bose_sentence, expected):
+        """Test that normal_order correctly normal orders the BoseWord"""
         assert bose_sentence.normal_order() == expected
 
     # @pytest.mark.parametrize("fw, i, j, fs", tup_fw_shift)
