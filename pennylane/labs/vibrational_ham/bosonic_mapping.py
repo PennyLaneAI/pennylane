@@ -27,9 +27,7 @@ def _get_pauli_op(i, j, qub_id):
     r"""Returns expression to convert qubit-local term ::math::``\ket{x_j}\bra{x^{'}}``
     to qubit operators as given in Eq. (6-9) <https://www.nature.com/articles/s41534-020-0278-0>"""
 
-    c1, c2 = 0.5, 0.5
-    if i == 1:
-        c2 = -c2
+    c1, c2 = 0.5, -0.5 if i == 1 else 0.5
 
     if i != j:
         return PauliSentence({PauliWord({qub_id: "X"}): c1, PauliWord({qub_id: "Y"}):c2*1j})
