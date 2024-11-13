@@ -30,7 +30,7 @@ class ResourceOperator(ABC):
         **Example**
 
         A PennyLane Operator can be extended for resource estimation by creating a new class that
-        inherits from both the Operator and ``ResourceOperator``. Here is an example showing how to
+        inherits from both the ``Operator`` and ``ResourceOperator``. Here is an example showing how to
         extend ``qml.QFT`` for resource estimation.
 
         .. code-block:: python
@@ -93,9 +93,7 @@ class ResourceOperator(ABC):
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
-        params = self.resource_params()
-        return self.__class__.resource_rep(**params)
-
+        return self.__class__.resource_rep(**self.resource_params())
 
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
