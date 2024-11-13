@@ -188,7 +188,7 @@ class TestIntegration:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state(self, device, interface, params):
-        """Test that the mutual information transform works for QNodes by comparing
+        """Test that the mutual information works for QNodes by comparing
         against analytic values"""
         dev = qml.device(device, wires=2)
 
@@ -198,13 +198,9 @@ class TestIntegration:
         def circuit(params):
             qml.RY(params, wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.state()
+            return qml.mutual_info(wires0=[0], wires1=[1])
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            actual = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])(params)
+        actual = circuit(params)
 
         # compare transform results with analytic values
         expected = -2 * np.cos(params / 2) ** 2 * np.log(
@@ -257,7 +253,7 @@ class TestIntegration:
         def circuit(param):
             qml.RY(param, wires=wires[0])
             qml.CNOT(wires=wires)
-            return qml.state()
+            return qml.mutual_info(wires0=[wires[0]], wires1=[wires[1]])
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
