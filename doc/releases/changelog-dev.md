@@ -59,6 +59,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
+  are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
+  respectively.
+  [(#6537)](https://github.com/PennyLaneAI/pennylane/pull/6537)
+  
 * The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
   [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
 
@@ -81,6 +86,7 @@
 
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+  
 
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
