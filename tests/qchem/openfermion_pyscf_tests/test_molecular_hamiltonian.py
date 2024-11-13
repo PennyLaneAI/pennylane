@@ -69,7 +69,7 @@ test_coordinates = np.array(
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_building_hamiltonian(
     charge,
     mult,
@@ -117,7 +117,7 @@ def test_building_hamiltonian(
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_building_hamiltonian_molecule_class(
     charge,
     mult,
@@ -835,7 +835,7 @@ def test_diff_hamiltonian_error_molecule_class():
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_real_hamiltonian(method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
 
@@ -870,7 +870,7 @@ def test_real_hamiltonian(method, args, tmpdir):
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_real_hamiltonian_molecule_class(method, args, tmpdir):
     r"""Test that the generated Hamiltonian has real coefficients."""
 
@@ -922,7 +922,7 @@ def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     assert np.allclose(two, two_ref)
 
 
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_molecule_as_kwargs(tmpdir):
     r"""Test that molecular_hamiltonian function works with molecule as
     keyword argument
