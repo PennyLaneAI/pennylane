@@ -76,7 +76,12 @@ SINGLE_QUBIT_PARAMETRIZED_OPERATIONS = [
     qml.PhaseShift(np.array([2.133, 1.111, 0]), wires="qubit0"),
     qml.U1(0.123, wires="qubit1"),
     qml.U2([3.556, 1.011, 0.111, 2.345], [2.134, 3.222, 2.666, 1.654], wires="qubit2"),
-    qml.U3(np.array([3.556, 1.011, 0.111, 2.345]), np.array([2.134, 3.222, 2.666, 1.654]), np.array([2.009, 1.894, 0.7789, 0.7789]), wires=1000000),
+    qml.U3(
+        np.array([3.556, 1.011, 0.111, 2.345]),
+        np.array([2.134, 3.222, 2.666, 1.654]),
+        np.array([2.009, 1.894, 0.7789, 0.7789]),
+        wires=1000000,
+    ),
 ]
 
 BROADCASTED_OPERATIONS = [
