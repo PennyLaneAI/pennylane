@@ -18,7 +18,7 @@ import pytest
 
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=abstract-class-instantiated,arguments-differ,missing-function-docstring
+# pylint: disable=abstract-class-instantiated,arguments-differ,missing-function-docstring,too-few-public-methods
 
 
 def test_abstract_resource_decomp():
