@@ -605,6 +605,9 @@ class PauliSentence(dict):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
+    def __gt__(self, other):
+        return str(self) > str(other)
+
     @property
     def pauli_rep(self):
         """Trivial pauli_rep"""
