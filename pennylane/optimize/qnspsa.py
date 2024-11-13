@@ -427,7 +427,7 @@ class QNSPSAOptimizer:
         op_inv = self._get_operations(cost, args2, kwargs)
 
         new_ops = op_forward + [qml.adjoint(op) for op in reversed(op_inv)]
-        tape = qml.workflow.construct_tape(cost)()
+        tape = qml.workflow.construct_tape(cost)(*args1, **kwargs)
         return qml.tape.QuantumScript(new_ops, [qml.probs(wires=tape.wires.labels)])
 
     @staticmethod
