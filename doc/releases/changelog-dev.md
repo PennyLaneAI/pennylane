@@ -87,7 +87,9 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the same information. See `qml.gradients.parameter_shift_cv.py::_get_output_dim` for an example.
+* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. 
+Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
+same information.
   [(#6577)](https://github.com/PennyLaneAI/pennylane/pull/6577)
 
 * The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,
