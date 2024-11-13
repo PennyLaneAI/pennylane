@@ -220,13 +220,28 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     """Resource class for Toffoli
     
     Resources:
-        The resources are obtained from the paper `Novel constructions for the fault-tolerant 
-        Toffoli gate <https://arxiv.org/pdf/1212.5069>`_. We summarize the cost as: 
+        The resources are obtained from (in figure 1.) the paper `Novel constructions for the fault-tolerant 
+        Toffoli gate <https://arxiv.org/pdf/1212.5069>`_. 
     """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        raise re.ResourcesNotDefined
+        gate_types = {}
+
+        cnot = re.ResourceCNOT.resource_rep()
+        t = re.ResourceT.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
+        s = re.ResourceS.resource_rep()
+        cz = re.ResourceCZ.resource_rep()
+
+
+        gate_types[cnot] = 9
+        gate_types[h] = 3
+        gate_types[s] = 1
+        gate_types[cz] = 1
+        gate_types[t] = 4
+
+        return gate_types
 
     @staticmethod
     def textbook_resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
