@@ -14,6 +14,9 @@
   >>> isinstance(capabilities, DeviceCapabilities)
   True
   ```
+  
+* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+  [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -73,7 +76,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Shiwen An
+Guillermo Alonso
+Shiwen An,
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
