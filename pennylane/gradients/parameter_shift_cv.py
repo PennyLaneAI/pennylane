@@ -816,22 +816,3 @@ def param_shift_cv(
         return jacobian
 
     return gradient_tapes, processing_fn
-
-
-def _get_output_dim(tape):
-    """Update the dimension of the output of the quantum script.
-
-    Sets:
-        self._output_dim (int): Size of the quantum script output (when flattened)
-
-    This method makes use of `self.batch_size`, so that `self._batch_size`
-    needs to be up to date when calling it.
-    Call `_update_batch_size` before `_update_output_dim`
-    """
-    _output_dim = 0
-    for m in tape.measurements:
-        # attempt to infer the output dimension
-        if not isinstance(m, StateMP):
-            _output_dim += 1
-
-    return _output_dim
