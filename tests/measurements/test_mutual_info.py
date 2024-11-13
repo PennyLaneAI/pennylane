@@ -268,42 +268,6 @@ class TestIntegration:
 
         assert np.allclose(actual, expected)
 
-    def test_mutual_info_cannot_specify_device(self):
-        """Test that an error is raised if a device or device wires are given
-        to the mutual_info transform manually."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RY(params, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
-            _ = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1], device=dev)
-
-        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
-            _ = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1], device_wires=dev.wires)
-
-    def test_mutual_info_no_state_error(self):
-        """Test that the correct error is raised if the return type is not State."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RY(params, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs()
-
-        transformed_circuit = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
-
-        with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-            ):
-                _ = transformed_circuit(0.1)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state_jax_jit(self, params):
@@ -320,13 +284,9 @@ class TestIntegration:
         def circuit(params):
             qml.RY(params, wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.state()
+            return qml.mutual_info(wires0=[0], wires1=[1])
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            actual = jax.jit(qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1]))(params)
+        actual = circuit(params)
 
         # compare transform results with analytic values
         expected = -2 * jnp.cos(params / 2) ** 2 * jnp.log(
