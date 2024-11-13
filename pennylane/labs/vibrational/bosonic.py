@@ -41,10 +41,10 @@ class BoseWord(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator, christiansen_boson=False):
+    def __init__(self, operator, cform=False):
 
         self.sorted_dic = dict(sorted(operator.items()))
-        self.christiansen_boson = christiansen_boson
+        self.cform = cform
         indices = [i[0] for i in self.sorted_dic.keys()]
 
         if indices:
@@ -282,8 +282,23 @@ class BoseWord(dict):
 
         bw_terms = sorted(self)
         len_op = len(bw_terms)
+        # if len_op == 0:
+        #     return BoseWord({})
+        # l = 0
+        # bs = self
+        # bw = self
         double_occupancy = False
-        bw_comm = BoseSentence({BoseWord({}): 0.0}, christiansen_boson=self.christiansen_boson)
+        bw_comm = BoseSentence({BoseWord({}): 0.0}, cform=self.cform)
+        # for r in range(1, len_op):
+        #     if self[bw_terms[r]] == "+":
+        #         bs = bw.shift_operator(r, l)
+        #         bs_as_list = list(bs.keys())
+        #         bw = bs_as_list[0]
+        #         for i in range(1, len(bs_as_list)):
+        #             bw_comm += bs_as_list[i]
+        #         l += 1
+
+        # return bs + bw_comm.normal_order()
         for i in range(1, len_op):
             for j in range(i, 0, -1):
                 key_r = bw_terms[j]
@@ -302,16 +317,14 @@ class BoseWord(dict):
                                 term_dict_comm[(j, key[1])] = self[key]
                                 j += 1
 
-                        bw_comm += BoseWord(
-                            term_dict_comm, christiansen_boson=self.christiansen_boson
-                        ).normal_order()
+                        bw_comm += BoseWord(term_dict_comm, cform=self.cform).normal_order()
 
                 elif self[key_l] == self[key_r]:
                     if key_r[1] < key_l[1]:
                         bw_terms[j] = key_l
                         bw_terms[j - 1] = key_r
 
-                    if self.christiansen_boson:
+                    if self.cform:
                         if key_r[1] == key_l[1]:
                             double_occupancy = True
                             break
@@ -325,11 +338,11 @@ class BoseWord(dict):
             for i, term in enumerate(bw_terms):
                 bose_dict[(i, term[1])] = self[term]
 
-            ordered_op = BoseWord(bose_dict, christiansen_boson=self.christiansen_boson) + bw_comm
+            ordered_op = BoseWord(bose_dict, cform=self.cform) + bw_comm
 
         ordered_op.simplify(tol=1e-8)
         return ordered_op
-    
+
     def shift_operator(self, initial_position, final_position):
         r"""Shifts an operator in the BoseWord from ``initial_position`` to ``final_position`` by applying the bosonic commutation relations.
 
@@ -432,9 +445,9 @@ class BoseSentence(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator, christiansen_boson=False):
+    def __init__(self, operator, cform=False):
         super().__init__(operator)
-        self.christiansen_boson = christiansen_boson
+        self.cform = cform
 
     def adjoint(self):
         r"""Return the adjoint of BoseSentence."""
@@ -606,7 +619,7 @@ class BoseSentence(dict):
     def normal_order(self):
         r"""Convert a BoseSentence to its normal-ordered form."""
 
-        bose_sen_ordered = BoseSentence({}, christiansen_boson=self.christiansen_boson)
+        bose_sen_ordered = BoseSentence({}, cform=self.cform)
 
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()

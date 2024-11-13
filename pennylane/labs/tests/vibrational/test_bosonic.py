@@ -26,6 +26,8 @@ from pennylane.labs.vibrational.bosonic import (
     BoseSentence,
 )
 
+bw1 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"})
+
 
 class TestBoseWord:
     # Expected bose sentences were computed manually or with openfermion
@@ -51,9 +53,7 @@ class TestBoseWord:
                 ),
             ),
             (
-                BoseWord(
-                    {(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"}
-                ),
+                bw1,
                 BoseSentence(
                     {
                         BoseWord({(0, 0): "+", (1, 2): "+"}): 2.0,
@@ -76,3 +76,19 @@ class TestBoseWord:
     )
     def test_normal_order(self, bose_sentence, expected):
         assert bose_sentence.normal_order() == expected
+
+    # @pytest.mark.parametrize("fw, i, j, fs", tup_fw_shift)
+    # def test_shift_operator(self, fw, i, j, fs):
+    #     """Test that the shift_operator method correctly applies the anti-commutator relations."""
+    #     assert fw.shift_operator(i, j) == fs
+
+    def test_shift_operator_errors(self):
+        """Test that the shift_operator method correctly raises exceptions."""
+        with pytest.raises(TypeError, match="Positions must be integers."):
+            bw1.shift_operator(0.5, 1)
+
+        with pytest.raises(ValueError, match="Positions must be positive integers."):
+            bw1.shift_operator(-1, 0)
+
+        with pytest.raises(ValueError, match="Positions are out of range."):
+            bw1.shift_operator(1, 6)
