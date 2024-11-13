@@ -54,6 +54,8 @@ class BoseWord(dict):
                 )
 
         super().__init__(operator)
+        if cform:
+            self.normal_order()
 
     def adjoint(self):
         r"""Return the adjoint of BoseWord."""
