@@ -22,7 +22,7 @@ from jax.core import MainTrace, Primitive, ShapedArray, Trace, Tracer
 import pennylane as qml
 
 from .base_interpreter import PlxprInterpreter, jaxpr_to_jaxpr
-from .primitives import qnode_prim
+from .primitives import adjoint_transform_prim, ctrl_transform_prim, qnode_prim
 
 
 class TransformTrace(Trace):
@@ -309,3 +309,26 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
         qfunc_jaxpr=new_qfunc_jaxpr,
         n_consts=n_consts,
     )
+
+
+@PlxprInterpreter.register_primitive(adjoint_transform_prim)
+def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
+    """Interpret an adjoint transform primitive."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+
+    def wrapper():
+        return adjoint_transform_prim.impl(*invals, jaxpr, lazy, n_consts)
+
+    unwrapped_jaxpr = qml.make_jaxpr(wrapper)()
+    _ = jaxpr_to_jaxpr(copy(self), unwrapped_jaxpr, consts, *args)
+
+    return []
+
+
+# pylint: disable=too-many-arguments
+@PlxprInterpreter.register_primitive(ctrl_transform_prim)
+def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+    """Interpret a ctrl transform primitive."""
+
+    return []
