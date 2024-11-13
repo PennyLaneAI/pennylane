@@ -54,7 +54,7 @@ class TestCompressedResourceOp:
     """Testing the methods and attributes of the CompressedResourceOp class"""
 
     test_hamiltonian = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
-    compressed_op_args_lst = (
+    compressed_ops_and_params_lst = (
         ("DummyX", ResourceDummyX, {"num_wires": 1}),
         ("DummyQFT", ResourceDummyQFT, {"num_wires": 5}),
         ("DummyQSVT", ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5}),
@@ -72,7 +72,7 @@ class TestCompressedResourceOp:
         "DummyTrotterProduct(Hamiltonian=X(0) + -1 * Y(1) + 0.5 * (Z(0) @ Z(1)), num_steps=5, order=2)",
     )
 
-    @pytest.mark.parametrize("name, op_type, parameters", compressed_op_args_lst)
+    @pytest.mark.parametrize("name, op_type, parameters", compressed_ops_and_params_lst)
     def test_init(self, name, op_type, parameters):
         """Test that we can correctly instantiate CompressedResourceOp"""
         cr_op = CompressedResourceOp(op_type, parameters)
@@ -103,7 +103,7 @@ class TestCompressedResourceOp:
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
         assert CmprssedQSVT1 != Other
 
-    @pytest.mark.parametrize("args, repr", zip(compressed_op_args_lst, compressed_op_reprs))
+    @pytest.mark.parametrize("args, repr", zip(compressed_ops_and_params_lst, compressed_op_reprs))
     def test_repr(self, args, repr):
         """Test that the repr method behaves as expected."""
         _, op_type, parameters = args
