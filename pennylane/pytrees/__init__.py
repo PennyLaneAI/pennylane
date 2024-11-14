@@ -22,8 +22,6 @@ from .pytrees import (
     leaf,
     register_pytree,
     unflatten,
-    flatten_np,
-    unflatten_np,
 )
 
 __all__ = [
@@ -33,6 +31,4 @@ __all__ = [
     "leaf",
     "register_pytree",
     "unflatten",
-    "flatten_np",
-    "unflatten_np",
 ]
