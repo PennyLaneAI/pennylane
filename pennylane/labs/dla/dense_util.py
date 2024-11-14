@@ -302,3 +302,23 @@ def check_orthonormal(g, inner_product):
             norm[i, j] = inner_product(gi, gj)
 
     return np.allclose(norm, np.eye(len(norm)))
+
+
+def trace_inner_product(
+    A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
+):
+    r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`"""
+    if not isinstance(A, type(B)):
+        raise TypeError("Both input operators need to be of the same type")
+
+    if isinstance(A, np.ndarray):
+        assert np.allclose(A.shape, B.shape)
+        return np.trace(A.conj().T @ B) / (len(A))
+
+    if isinstance(A, (PauliSentence, PauliWord)):
+        return (A @ B).trace()
+
+    if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
+        return (A.pauli_rep @ B.pauli_rep).trace()
+
+    return NotImplemented
