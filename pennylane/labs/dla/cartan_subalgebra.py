@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functionality to compute the Cartan subalgebra"""
+from itertools import combinations_with_replacement
+
 # pylint: disable=too-many-arguments
 from typing import Union
 
@@ -291,40 +293,57 @@ def adjvec_to_op(adj_vecs, basis):
     return NotImplementedError
 
 
+def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bool = True):
+    """Pauli sentence branch of ``op_to_adjvec``."""
+    if not all(isinstance(op, PauliSentence) for op in ops):
+        ops = [op.pauli_rep for op in ops]
+
+    res = []
+    if is_orthogonal:
+        norms_squared = [(basis_i @ basis_i).trace() for basis_i in basis]
+    else:
+        # Fake the norm correction if we anyways will apply the inverse Gram matrix later
+        norms_squared = np.ones(len(basis))
+        gram = np.zeros((len(basis), len(basis)))
+        for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
+            gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
+        inv_gram = np.linalg.pinv(gram)
+
+    for op in ops:
+        rep = np.zeros((len(basis),))
+        for i, basis_i in enumerate(basis):
+            # v = ∑ (v · e_j / ||e_j||^2) * e_j
+            rep[i] = (basis_i @ op).trace() / norms_squared[i]
+
+        res.append(rep)
+    res = np.array(res)
+    if not is_orthogonal:
+        res = np.einsum("ij,kj->ik", inv_gram, res)
+
+    return res
+
+
 def op_to_adjvec(
     ops: Union[PauliSentence, Operator, np.ndarray],
     basis: Union[PauliSentence, Operator, np.ndarray],
+    is_orthogonal: bool = True,
 ):
     """Project a batch of ops onto a given basis
 
     The format of the resulting operators is determined by the ``type`` in ``basis``.
+    If ``is_orthogonal=True`` (the default), only normalization is taken into account
+    in the projection. For ``is_orthogonal=False``, orthogonalization also is considered.
     """
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
 
     if all(isinstance(op, Operator) for op in basis):
-
         ops = [op.pauli_rep for op in ops]
         basis = [op.pauli_rep for op in basis]
 
     # PauliSentence branch
     if all(isinstance(op, PauliSentence) for op in basis):
-        if not all(isinstance(op, PauliSentence) for op in ops):
-            ops = [op.pauli_rep for op in ops]
-
-        res = []
-        for op in ops:
-            rep = np.zeros((len(basis),))
-            for i, basis_i in enumerate(basis):
-                # v = ∑ (v · e_j / ||e_j||^2) * e_j
-                value = (basis_i @ op).trace()
-                value = value / (basis_i @ basis_i).trace()
-
-                rep[i] = value
-
-            res.append(rep)
-
-        return np.array(res)
+        return _op_to_adjvec_ps(ops, basis, is_orthogonal)
 
     # dense branch
     if all(isinstance(op, TensorLike) for op in basis):
@@ -334,8 +353,12 @@ def op_to_adjvec(
 
         basis = np.array(basis)
         res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
-        norm = np.einsum("bij,bji->b", basis, basis)  # TODO: gram matrix for non-orthonormal bases
-
-        return res / norm
+        if is_orthogonal:
+            norm = np.einsum(
+                "bij,bji->b", basis, basis
+            )  # TODO: gram matrix for non-orthonormal bases
+            return res / norm
+        gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]])
+        return np.einsum("ij,kj->ik", np.linalg.pinv(gram), res)
 
     return NotImplemented
