@@ -63,6 +63,11 @@ class LinearCombination(Sum):
     >>> print(H)
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
+    The same ``LinearCombination`` can be created using the ``qml.Hamiltonian`` alias:
+
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     The coefficients can be a trainable tensor, for example:
 
