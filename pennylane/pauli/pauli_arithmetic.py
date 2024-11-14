@@ -983,7 +983,7 @@ class PauliSentence(dict):
         ml_interface = qml.math.get_interface(coeff)
         if ml_interface == "torch":
             data0 = qml.math.convert_like(data0, coeff)
-        data = coeff * data0 if np.isscalar(coeff) else np.outer(coeff, data0)
+        data = coeff * data0
 
         for pw in pauli_words[1:]:
             coeff = self[pw]
@@ -991,9 +991,9 @@ class PauliSentence(dict):
             ml_interface = qml.math.get_interface(coeff)
             if ml_interface == "torch":
                 csr_data = qml.math.convert_like(csr_data, coeff)
-            data += coeff * csr_data if np.isscalar(coeff) else np.outer(self[pw], csr_data)
+            data += coeff * csr_data
 
-        return qml.math.einsum("ij,...i->...ij", base_matrix, data)
+        return qml.math.einsum("ij,i->ij", base_matrix, data)
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
