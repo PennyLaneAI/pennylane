@@ -33,7 +33,7 @@
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
-* Added Pauli String representations for the gates X, Y, Z, H, S, T, SX, SWAP, ISWAP, ECR, SISWAP, RX, RY, RZ, Rot, U1, U2, U2.
+* Added Pauli String representations for the gates X, Y, Z, H, S, T, SX, SWAP, ISWAP, ECR, SISWAP, RX, RY, RZ, Rot, PhaseShift, U1, U2, U2.
   [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
@@ -121,6 +121,8 @@
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
 
+* Fixed a shape error in the .matrix() conversion of products of ops with a pauli_rep, occuring when the parameters are tensor-like.
+  [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
 
 <h3>Contributors ✍️</h3>
 

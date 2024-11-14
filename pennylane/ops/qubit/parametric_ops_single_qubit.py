@@ -436,6 +436,19 @@ class PhaseShift(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
+    @property
+    def pauli_rep(self):
+        if self._pauli_rep is None:
+            self._pauli_rep = qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
+                    * (1 + qml.math.exp(1j * self.data[0])),
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
+                    * (1 - qml.math.exp(1j * self.data[0])),
+                }
+            )
+        return self._pauli_rep
+
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
