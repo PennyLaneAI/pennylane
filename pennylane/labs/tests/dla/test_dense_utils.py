@@ -18,7 +18,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.labs.dla import orthonormalize, pauli_coefficients, pauli_decompose
+from pennylane.labs.dla import (
+    check_orthonormal,
+    orthonormalize,
+    pauli_coefficients,
+    pauli_decompose,
+)
 
 # Make an operator matrix on given wire and total wire count
 I_ = lambda w, n: I(w).matrix(wire_order=range(n))
@@ -280,22 +285,26 @@ class TestPauliDecompose:
                 assert qml.equal(_op, e)
 
 
-n = 4
-
-gens1 = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(n - 1)]
+gens1 = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(3)]
 Heisenberg4_sum = qml.lie_closure(gens1)
 Heisenberg4_sum = [op.pauli_rep for op in Heisenberg4_sum]
 
 
 @pytest.mark.parametrize("g", [Heisenberg4_sum])
-def test_orthonormalize(g):
-    """Test orthonormalize"""
+def test_orthonormalize_ps(g):
+    """Test orthonormalize on pauli sentences"""
 
     g = orthonormalize(g)
 
-    norm = np.zeros((len(g), len(g)), dtype=complex)
-    for i, gi in enumerate(g):
-        for j, gj in enumerate(g):
-            norm[i, j] = (gi @ gj).trace()
+    assert check_orthonormal(g, lambda x, y: (x @ y).trace())
 
-    assert np.allclose(norm, np.eye(len(norm)))
+
+@pytest.mark.parametrize("g", [Heisenberg4_sum])
+def test_orthonormalize_op(g):
+    """Test orthonormalize on operators"""
+
+    g = [qml.matrix(op, wire_order=range(4)) for op in g]
+
+    g = orthonormalize(g)
+
+    assert check_orthonormal(g, lambda x, y: np.trace(x @ y))

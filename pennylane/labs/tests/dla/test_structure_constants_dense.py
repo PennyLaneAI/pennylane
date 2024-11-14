@@ -20,7 +20,7 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import orthonormalize, structure_constants_dense
+from pennylane.labs.dla import check_orthonormal, orthonormalize, structure_constants_dense
 from pennylane.pauli import PauliSentence, PauliWord
 
 ## Construct some example DLAs
@@ -82,11 +82,13 @@ class TestAdjointRepr:
         r"""Test relation :math:`[i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma`."""
 
         d = len(dla)
+        dla_dense = np.array([qml.matrix(op, wire_order=range(3)) for op in dla])
 
         if use_orthonormal:
             dla = orthonormalize(dla)
-
-        dla_dense = np.array([qml.matrix(op, wire_order=range(3)) for op in dla])
+            assert check_orthonormal(dla, lambda x, y: (x @ y).trace())
+            dla_dense = orthonormalize(dla_dense)
+            assert check_orthonormal(dla_dense, lambda x, y: np.trace(x @ y))
 
         ad_rep = structure_constants_dense(dla_dense, is_orthonormal=use_orthonormal)
         for i in range(d):

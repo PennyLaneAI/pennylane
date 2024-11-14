@@ -36,10 +36,11 @@ Utility functions
     ~pauli_decompose
     ~pauli_coefficients
     ~orthonormalize
+    ~check_orthonormal
 
 
 """
 
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
-from .dense_util import pauli_coefficients, pauli_decompose, orthonormalize
+from .dense_util import pauli_coefficients, pauli_decompose, orthonormalize, check_orthonormal

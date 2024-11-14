@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-from functools import reduce, singledispatch
-from typing import Optional
+from collections.abc import Iterable
+from functools import reduce
+from typing import Optional, Union
 
 import numpy as np
 import scipy
@@ -228,28 +229,25 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
 
 
 def orthonormalize(basis):
-    """Orthonormalize a list of basis vectors"""
-    return _orthonormalize(basis)
+    r"""Orthonormalize a list of basis vectors"""
 
+    if all(isinstance(op, np.ndarray) for op in basis):
+        return _orthonormalize_np(basis)
 
-@singledispatch
-def _orthonormalize(basis):  # pylint:disable=unused-argument
-    r"""Dummy default implementation"""
+    if all(isinstance(op, (PauliSentence, PauliVSpace, Operator)) for op in basis):
+        return _orthonormalize_ps(basis)
+
     raise NotImplementedError(f"orthonormalize not implemented for {basis} of type {type(basis)}")
 
 
-@_orthonormalize.register(np.ndarray)
-def _orthonormalize_np(basis):
+def _orthonormalize_np(basis: Iterable[np.ndarray]):
     gram_inv = np.linalg.pinv(
         scipy.linalg.sqrtm(np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real)
     )
     return np.tensordot(gram_inv, basis, axes=1)
 
 
-@_orthonormalize.register(PauliSentence)
-@_orthonormalize.register(PauliVSpace)
-@_orthonormalize.register(Operator)
-def _orthonormalize_ps(basis):
+def _orthonormalize_ps(basis: Iterable[Union[PauliSentence, PauliVSpace, Operator]]):
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
 
@@ -294,3 +292,13 @@ def _orthonormalize_ps(basis):
         generators_orthogonal.append(u1)
 
     return generators_orthogonal
+
+
+def check_orthonormal(g, inner_product):
+    """Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``"""
+    norm = np.zeros((len(g), len(g)), dtype=complex)
+    for i, gi in enumerate(g):
+        for j, gj in enumerate(g):
+            norm[i, j] = inner_product(gi, gj)
+
+    return np.allclose(norm, np.eye(len(norm)))
