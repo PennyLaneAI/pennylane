@@ -49,22 +49,65 @@ class TestAdjointRepr:
         assert adjoint.dtype == float
 
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
-    def test_structure_constants_elements(self, dla):
-        r"""Test relation :math:`[i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma`."""
+    @pytest.mark.parametrize("assume_orthogonal", [True, False])
+    @pytest.mark.parametrize("change_norms", [False, True])
+    def test_structure_constants_elements_with_orthogonal_basis(
+        self, dla, assume_orthogonal, change_norms
+    ):
+        r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_` with orthogonal
+        bases.
+        The input ``assume_orthogonal`` toggles whether ``structure_constants`` will assume the
+        input basis to be orthogonal. In this test we only ever pass orthogonal bases, so both
+        options should be valid and return the same result.
+        The input ``change_norms`` applies some random rescaling to the DLA elements to test
+        correctness of ``strucure_constants`` for non-normalized operators.
+        """
 
         d = len(dla)
-        ad_rep = structure_constants(dla, pauli=True)
-        for i in range(d):
-            for j in range(d):
+        if change_norms:
+            # Sample some random new coefficients between 0.5 and 1.5
+            coeffs = np.random.random(d) + 0.5
+            dla = [c * op for c, op in zip(coeffs, dla)]
+        ad_rep = structure_constants(dla, pauli=True, is_orthogonal=assume_orthogonal)
+        for alpha in range(d):
+            for beta in range(d):
 
-                comm_res = 1j * dla[i].commutator(dla[j])
+                comm_res = 1j * dla[alpha].commutator(dla[beta])
 
-                res = sum(
-                    np.array(c, dtype=complex) * dla[gamma]
-                    for gamma, c in enumerate(ad_rep[:, i, j])
-                )
+                res = sum(ad_rep[gamma, alpha, beta] * dla[gamma] for gamma in range(d))
                 res.simplify()
-                assert comm_res == res
+                assert set(comm_res) == set(res)  # Compare keys
+                assert all(np.isclose(comm_res[k], res[k]) for k in res)
+
+    @pytest.mark.parametrize("ortho_dla", [Ising3, XXZ3])
+    def test_structure_constants_elements_with_non_orthogonal(self, ortho_dla):
+        r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_` with
+        non-orthogonal bases.
+        """
+        d = len(ortho_dla)
+
+        coeffs = np.random.random((d, d)) + 0.5
+        dla = [sum(c * op for c, op in zip(_coeffs, ortho_dla)) for _coeffs in coeffs]
+        ad_rep = structure_constants(dla, pauli=True, is_orthogonal=False)
+        for alpha in range(d):
+            for beta in range(d):
+
+                comm_res = 1j * dla[alpha].commutator(dla[beta])
+                comm_res.simplify()
+
+                res = sum(ad_rep[gamma, alpha, beta] * dla[gamma] for gamma in range(d))
+                res.simplify()
+                assert set(comm_res) == set(res)  # Compare keys
+                assert all(np.isclose(comm_res[k], res[k]) for k in res)
+
+        # Manually check the transformation behaviour of the structure constants under basis change
+        ortho_ad_rep = structure_constants(ortho_dla, pauli=True)
+        transf_ortho_ad_rep = np.tensordot(coeffs, ortho_ad_rep, axes=[[1], [2]])
+        transf_ortho_ad_rep = np.tensordot(coeffs, transf_ortho_ad_rep, axes=[[1], [2]])
+        transf_ortho_ad_rep = np.tensordot(
+            np.linalg.pinv(coeffs).T, transf_ortho_ad_rep, axes=[[1], [2]]
+        )
+        assert np.allclose(transf_ortho_ad_rep, ad_rep)
 
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
     def test_use_operators(self, dla):
