@@ -421,7 +421,7 @@ class BoseSentence(dict):
     >>> w1 = BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = BoseWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = BoseSentence({w1 : 1.2, w2: 3.1})
-    >>> s
+    >>> print(s)
     1.2 * b⁺(0) b(1)
     + 3.1 * b⁺(1) b(2)
     """
