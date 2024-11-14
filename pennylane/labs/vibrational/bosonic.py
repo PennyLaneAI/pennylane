@@ -343,8 +343,8 @@ class BoseWord(dict):
 
         Raises:
             TypeError: if ``initial_position`` or ``final_position`` is not an integer
-            ValueError: if ``initial_position`` or ``final_position`` are outside the range ``[0, len(Boseword) - 1]``
-                        where ``len(Boseword)`` is the number of operators in the BoseWord.
+            ValueError: if ``initial_position`` or ``final_position`` are outside the range ``[0, len(BoseWord) - 1]``
+                        where ``len(BoseWord)`` is the number of operators in the BoseWord.
         """
 
         if not isinstance(initial_position, int) or not isinstance(final_position, int):
