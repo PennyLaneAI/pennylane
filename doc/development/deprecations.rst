@@ -109,6 +109,12 @@ Completed deprecation cycles
   - Deprecated in v0.39
   - Removed in v0.40
   
+
+* The ``qml.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
 * ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
 
   - Deprecated in v0.39
