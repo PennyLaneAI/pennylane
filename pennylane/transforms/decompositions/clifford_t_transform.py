@@ -402,6 +402,15 @@ def clifford_t_decomposition(
                     if op.name in basis_set:
                         d_ops = _rot_decompose(op)
                         decomp_ops.extend(d_ops)
+                    else:
+                        d_ops, g_op = _one_qubit_decompose(op)
+                        gphase_ops.append(g_op)
+                    decomp_ops.extend(d_ops)
+
+                # Two qubit unitary decomposition with SU(4) rotations
+                elif op.num_wires == 2:
+                    d_ops = _two_qubit_decompose(op)
+                    decomp_ops.extend(d_ops)
 
                 # If we don't know how to decompose the operation
                 else:
