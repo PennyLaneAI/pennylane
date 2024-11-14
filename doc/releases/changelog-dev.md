@@ -59,6 +59,18 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The legacy remains `qml.utils` module has been removed. Specifically, the
+following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
+
+  * `qml.utils._flatten`, `qml.utils.unflatten` has been moved and renamed to
+   `qml.pytrees.flatten_np` and `qml.pytrees.unflatten_np` respectively.
+
+  * `qml.utils._inv_dict` and `qml._get_default_args` have been removed.
+
+  * `qml.utils.pauli_eigs` has been moved to `qml.pauli.utils`.
+
+  * `qml.utils.expand_vector` has been moved to `qml.math.expand_vector`.
+
 * Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
   are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
   respectively.
