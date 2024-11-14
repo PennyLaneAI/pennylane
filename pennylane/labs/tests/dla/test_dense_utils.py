@@ -25,6 +25,7 @@ from pennylane.labs.dla import (
     pauli_decompose,
     trace_inner_product,
 )
+from pennylane.pauli import PauliVSpace
 
 # Make an operator matrix on given wire and total wire count
 I_ = lambda w, n: I(w).matrix(wire_order=range(n))
@@ -286,26 +287,69 @@ class TestPauliDecompose:
                 assert qml.equal(_op, e)
 
 
-@pytest.mark.parametrize("op1", [X(0), X(0) @ X(1), X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)])
-@pytest.mark.parametrize("op2", [X(0), X(0) @ X(1), X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)])
+@pytest.mark.parametrize("op1", [X(0), -0.8 * X(0) @ X(1), X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)])
+@pytest.mark.parametrize(
+    "op2", [X(0), X(0) + X(0) @ X(1), 0.2 * X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)]
+)
 def test_trace_inner_product_consistency(op1, op2):
     """Test that the trace inner product norm for different operators is consistent"""
     res1 = trace_inner_product(
         qml.matrix(op1, wire_order=range(3)), qml.matrix(op2, wire_order=range(3))
     )
     res2 = trace_inner_product(op1.pauli_rep, op2.pauli_rep)
+    res3 = trace_inner_product(op1, op2)
     assert np.allclose(res1, res2)
+    assert np.allclose(res1, res3)
+
+
+id_pw = qml.pauli.PauliWord({})
+
+
+@pytest.mark.parametrize(
+    "g, inner_product",
+    [
+        (qml.ops.qubit.special_unitary.pauli_basis_matrices(3), trace_inner_product),
+        (qml.pauli.pauli_group(4), lambda A, B: (A @ B).pauli_rep.trace()),
+        (qml.pauli.pauli_group(4), lambda A, B: (A.pauli_rep @ B.pauli_rep).get(id_pw, 0.0)),
+        (list("abcdefghi"), lambda A, B: int(A == B)),
+    ],
+)
+def test_check_orthonormal_True(g, inner_product):
+    """Test check_orthonormal"""
+    assert check_orthonormal(g, inner_product)
+
+
+# The reasons the following are not orthonormal are:
+# Non-normalized ops
+# Non-orthogonal ops
+# Inner product is non-normalized trace inner product
+
+
+@pytest.mark.parametrize(
+    "g, inner_product",
+    [
+        ([np.eye(2), qml.X(0).matrix() + qml.Z(0).matrix()], trace_inner_product),
+        ([qml.X(0).matrix(), qml.X(0).matrix() + qml.Z(0).matrix()], trace_inner_product),
+        (qml.pauli.pauli_group(2), lambda A, B: np.trace((A @ B).matrix())),
+    ],
+)
+def test_check_orthonormal_False(g, inner_product):
+    """Test check_orthonormal"""
+    assert not check_orthonormal(g, inner_product)
 
 
 gens1 = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(3)]
 Heisenberg4_sum_op = qml.lie_closure(gens1)
 Heisenberg4_sum_ps = [op.pauli_rep for op in Heisenberg4_sum_op]
+Heisenberg4_sum_vspace = PauliVSpace(Heisenberg4_sum_ps)
 Heisenberg4_sum_dense = [qml.matrix(op, wire_order=range(4)) for op in Heisenberg4_sum_op]
 
 
-@pytest.mark.parametrize("g", [Heisenberg4_sum_ps, Heisenberg4_sum_dense])
-def test_orthonormalize_ps(g):
-    """Test orthonormalize on pauli sentences"""
+@pytest.mark.parametrize(
+    "g", [Heisenberg4_sum_ps, Heisenberg4_sum_vspace, Heisenberg4_sum_op, Heisenberg4_sum_dense]
+)
+def test_orthonormalize(g):
+    """Test orthonormalize"""
 
     g = orthonormalize(g)
 
