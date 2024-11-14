@@ -369,7 +369,6 @@ class QNSPSAOptimizer:
             args_plus[index] = arg + self.finite_diff_step * direction
             args_minus[index] = arg - self.finite_diff_step * direction
 
-        cost.construct(args_plus, kwargs)
         tape = qml.workflow.construct_tape(cost)(*args_plus, **kwargs)
         tape_plus = tape.copy(copy_operations=True)
         cost.construct(args_minus, kwargs)
