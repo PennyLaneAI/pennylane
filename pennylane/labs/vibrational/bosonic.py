@@ -335,8 +335,8 @@ class BoseWord(dict):
         r"""Shifts an operator in the BoseWord from ``initial_position`` to ``final_position`` by applying the bosonic commutation relations.
 
         Args:
-            initial_position (int): The position of the operator to be shifted.
-            final_position (int): The desired position of the operator.
+            initial_position (int): the position of the operator to be shifted
+            final_position (int): the desired position of the operator
 
         Returns:
             BoseSentence: The ``BoseSentence`` obtained after applying the anti-commutator relations.
