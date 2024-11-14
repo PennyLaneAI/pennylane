@@ -223,7 +223,7 @@ class TestResources:
     )
     def test_add_in_series(self, resource_obj, expected_res_obj):
         """Test the add_in_series function works with Resoruces"""
-        #resource_obj = copy.deepcopy(resource_obj)
+        # resource_obj = copy.deepcopy(resource_obj)
         other_obj = Resources(
             num_wires=2,
             num_gates=6,
