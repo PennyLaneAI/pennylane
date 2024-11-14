@@ -39,9 +39,9 @@ class ResourceS(qml.S, re.ResourceOperator):
     """Resource class for S"""
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
-        t = ResourceT.resource_rep()
+        t = ResourceT.resource_rep(**kwargs)
         gate_types[t] = 2
 
         return gate_types
@@ -79,6 +79,67 @@ class ResourceT(qml.T, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+class ResourceX(qml.X, re.ResourceOperator):
+    """Resource class for X"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+        h = re.ResourceHadamard.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 2
+        gate_types[h] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+class ResourceY(qml.Y, re.ResourceOperator):
+    """Resource class for Y"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+        h = re.ResourceHadamard.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 6
+        gate_types[h] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+class ResourceZ(qml.Z, re.ResourceOperator):
+    """Resource class for Z"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 2
+
+        return gate_types
 
     def resource_params(self) -> dict:
         return {}
