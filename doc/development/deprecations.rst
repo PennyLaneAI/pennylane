@@ -9,30 +9,16 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
-  has been deprecated.
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been deprecated. 
+  Instead, use the ``qml.workflow.get_best_diff_method``. 
 
-  - Deprecated in v0.39
-  - Will be removed in v0.40
+  - Deprecated in v0.40
+  - Will be removed in v0.41
 
-* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been deprecated.
+* The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
 
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
-  argument.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
-  ``qml.shadow_expval`` measurement process.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* ``qml.broadcast`` has been deprecated. Users should use ``for`` loops instead.
+  - Deprecated in v0.40
+  - Will be removed in v0.41
 
   - Deprecated in v0.39
   - Will be removed in v0.40
@@ -42,34 +28,7 @@ Pending deprecations
 
   - Deprecated in v0.39
   - Will be removed in v0.40
-
-* ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
-  we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
-  respectively.
-
-  - Deprecated top level access in v0.39
-  - Top level access will be removed in v0.40
-
-* ``QNode.gradient_fn`` is deprecated. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
-  process the diff method.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
-  Instead, ``qml.simplify()`` can be called on the constructed operator.
-
-  - Deprecated in v0.37
-  - Will be removed in v0.39
-
-* The :class:`~pennylane.BasisStatePreparation` template is deprecated.
-  Instead, use :class:`~pennylane.BasisState`.
-
+  
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
 
@@ -131,6 +90,59 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
+* Top level access to ``Device``, ``QubitDevice``, and ``QutritDevice`` have been removed. Instead, they
+  are available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  respectively.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+  
+* The :class:`~pennylane.BasisStatePreparation` template has been removed.
+  Instead, use :class:`~pennylane.BasisState`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+  
+* ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* The ``max_expansion`` argument for :func:`~pennylane.transforms.decompositions.clifford_t_decomposition`
+  has been removed.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been removed. Instead, use the ``'aux_wire'``
+  argument.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+  
+* The ``expand_depth`` argument for :func:`~pennylane.transforms.compile` has been removed.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* The ``qml.workflow.set_shots`` helper function has been removed. We no longer interact with the legacy device interface in our code.
+  Instead, shots should be specified on the tape, and the device should use these shots.
+
+  - Deprecated in v0.38
+  - Removed in v0.40
+
+* ``QNode.gradient_fn`` is removed. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
+  process the diff method.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+  
+* The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
+  ``qml.shadow_expval`` measurement process.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
@@ -160,7 +172,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
 
   - Deprecated in v0.38
   - Removed in v0.39

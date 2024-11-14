@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for workflow.set_shots
+Submodule for performing qubit mixed-state simulations of quantum circuits.
+
+This submodule is internal and subject to change without a deprecation cycle. Use
+at your own discretion.
+
+.. currentmodule:: pennylane.devices.qubit_mixed
+.. autosummary::
+    :toctree: api
+
+    apply_operation
 """
-
-import pytest
-
-import pennylane as qml
-from pennylane.workflow import set_shots
-
-
-def test_shots_new_device_interface():
-    """Test that calling set_shots on a device implementing the new interface leaves it
-    untouched.
-    """
-    dev = qml.devices.DefaultQubit()
-    with pytest.raises(ValueError):
-        with set_shots(dev, 10):
-            pass
+from .apply_operation import apply_operation
+from .initialize_state import create_initial_state

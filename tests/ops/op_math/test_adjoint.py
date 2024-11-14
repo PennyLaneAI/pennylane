@@ -424,11 +424,11 @@ class TestMiscMethods:
 
     def test_repr(self):
         """Test __repr__ method."""
-        assert repr(Adjoint(qml.S(0))) == "Adjoint(S(wires=[0]))"
+        assert repr(Adjoint(qml.S(0))) == "Adjoint(S(0))"
 
         base = qml.S(0) + qml.T(0)
         op = Adjoint(base)
-        assert repr(op) == "Adjoint(S(wires=[0]) + T(wires=[0]))"
+        assert repr(op) == "Adjoint(S(0) + T(0))"
 
     def test_label(self):
         """Test that the label method for the adjoint class adds a † to the end."""
@@ -883,6 +883,18 @@ class TestAdjointConstructorPreconstructedOp:
 
         qs = qml.tape.QuantumScript.from_queue(q)
         assert len(qs) == 0
+
+    def test_correct_queued_operators(self):
+        """Test that args and kwargs do not add operators to the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.adjoint(qml.QSVT)(qml.X(1), [qml.Z(1)])
+            qml.adjoint(qml.QSVT(qml.X(1), [qml.Z(1)]))
+
+        for op in q.queue:
+            assert op.name == "Adjoint(QSVT)"
+
+        assert len(q.queue) == 2
 
 
 class TestAdjointConstructorDifferentCallableTypes:

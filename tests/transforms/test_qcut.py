@@ -2535,7 +2535,7 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        dev = dev_fn(wires=2, shots=20000)
+        dev = dev_fn(wires=2, shots=20000, seed=seed)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -5580,7 +5580,7 @@ class TestCutCircuitWithHamiltonians:
         assert np.isclose(res, res_expected, atol=1e-8)
         assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
 
-    def test_template_with_hamiltonian(self):
+    def test_template_with_hamiltonian(self, seed):
         """Test cut with MPS Template"""
 
         pytest.importorskip("kahypar")
@@ -5620,9 +5620,7 @@ class TestCutCircuitWithHamiltonians:
         for idx, tape in enumerate(tapes):
             graph = qcut.tape_to_graph(tape)
             cut_graph = qcut.find_and_place_cuts(
-                graph=graph,
-                cut_strategy=cut_strategy,
-                replace_wire_cuts=True,
+                graph=graph, cut_strategy=cut_strategy, replace_wire_cuts=True, seed=seed
             )
             frags, _ = qcut.fragment_graph(cut_graph)
 

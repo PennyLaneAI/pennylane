@@ -17,7 +17,6 @@ from functools import partial
 
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
-from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -508,13 +507,13 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
-    def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast):
+    def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast, seed):
         """Tests that the automatic gradients of Pauli rotations are correct."""
         # pylint: disable=too-many-arguments
 
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=1, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=1, shots=shot_vec, seed=seed)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -1271,11 +1270,10 @@ class TestParameterShiftRule:
             assert gradF[1] == pytest.approx(expected, abs=finite_diff_tol)
             assert gradA[1] == pytest.approx(expected, abs=finite_diff_tol)
 
-    @flaky(max_runs=5)
-    def test_non_involutory_variance_single_param(self, broadcast):
+    def test_non_involutory_variance_single_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory with a single trainable parameter"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=1, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=1, shots=shot_vec, seed=seed)
         a = 0.54
 
         _herm_shot_vec_tol = shot_vec_tol * 100
@@ -1369,12 +1367,11 @@ class TestParameterShiftRule:
             assert gradF[0] == pytest.approx(expected, abs=2)
             assert qml.math.allclose(gradF[1], expected, atol=1.5)
 
-    @flaky(max_runs=8)
-    def test_involutory_and_noninvolutory_variance_single_param(self, broadcast):
+    def test_involutory_and_noninvolutory_variance_single_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
         shot_vec = tuple([1000000] * 3)
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec, seed=seed)
         a = 0.54
 
         _herm_shot_vec_tol = shot_vec_tol * 100
@@ -1423,12 +1420,11 @@ class TestParameterShiftRule:
             assert shot_vec_result[0] == pytest.approx(expected[0], abs=finite_diff_tol)
             assert shot_vec_result[1] == pytest.approx(expected[1], abs=_herm_shot_vec_tol)
 
-    @flaky(max_runs=8)
-    def test_involutory_and_noninvolutory_variance_multi_param(self, broadcast):
+    def test_involutory_and_noninvolutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable."""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec, seed=seed)
         a = 0.54
 
         with qml.queuing.AnnotatedQueue() as q:

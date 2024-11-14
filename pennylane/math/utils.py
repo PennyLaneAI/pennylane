@@ -308,7 +308,7 @@ def get_deep_interface(value):
     itr = value
     while isinstance(itr, (list, tuple)):
         if len(itr) == 0:
-            return "builtins"
+            return "numpy"
         itr = itr[0]
     return _get_interface_of_single_tensor(itr)
 
@@ -466,6 +466,9 @@ def requires_grad(tensor, interface=None):
         interface (str): The name of the interface. Will be determined automatically
             if not provided.
 
+    Returns:
+        bool: whether the tensor is trainable or not.
+
     **Example**
 
     Calling this function on a PennyLane NumPy array:
@@ -538,6 +541,9 @@ def in_backprop(tensor, interface=None):
         tensor (tensor_like): input tensor
         interface (str): The name of the interface. Will be determined automatically
             if not provided.
+
+    Returns:
+        bool: whether the tensor is in a backpropagation environment or not.
 
     **Example**
 

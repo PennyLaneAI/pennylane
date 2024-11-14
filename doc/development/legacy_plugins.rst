@@ -8,11 +8,9 @@ Building a legacy plugin
 
 For adding a plugin that inherits from the new device interface, see :doc:`/development/plugins`.
 
-PennyLane plugins allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane. Writing your own plugin is a simple and easy process. In this section,
-we will walk through the steps for creating your own PennyLane plugin within the legacy device API. In addition, we also
-provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure
-state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic
-continuous-variable simulations.
+PennyLane plugins allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane.
+Writing your own plugin is a simple and easy process. In this section, we will walk through the steps for creating your own
+PennyLane plugin within the legacy device API.
 
 
 What a plugin provides
@@ -61,13 +59,13 @@ and subclassing it:
 
 .. warning::
 
-    The API of PennyLane devices will be updated soon to follow a new interface defined by
+    The API of PennyLane devices is currently being updated to follow a new interface defined by
     the :class:`pennylane.devices.Device` class. This guide describes
-    how to create a device with the current :class:`pennylane.devices.LegacyDevice` and
-    :class:`pennylane.devices.QubitDevice` base classes, and will be updated as we switch to the new API.
-    In the meantime, please reach out to the PennyLane team if you would like help with building
-    a plugin, either by creating an `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or
-    by posting in our `discussion forum <https://discuss.pennylane.ai/>`_.
+    how to create a device with the :class:`pennylane.devices.LegacyDevice` and
+    :class:`pennylane.devices.QubitDevice` base classes, and will be updated as we continue switching
+    to the new API. In the meantime, please reach out to the PennyLane team if you would like help with
+    building a plugin, either by creating an `issue <https://github.com/PennyLaneAI/pennylane/issues>`_
+    or by posting in our `discussion forum <https://discuss.pennylane.ai/>`_.
 
 Here, we have begun defining some important class attributes that allow PennyLane to identify
 and use the device. These include:
@@ -109,8 +107,8 @@ as well as potential further capabilities, by providing the following class attr
               return obj.name in {'CNOT', 'PauliX', 'PauliY', 'PauliZ'}
           return qml.BooleanFn(accepts_obj)
 
-  If the device does *not* inherit from :class:`~.DefaultQubitLegacy`, then supported operations can be determined
-  by the :attr:`pennylane.Device.operations` property. This property is a list of string names for supported operations.
+  Supported operations can also be determined by the :attr:`pennylane.devices.LegacyDevice.operations` property.
+  This property is a list of string names for supported operations.
 
   .. code-block:: python
 
@@ -424,7 +422,7 @@ and similar code in the ``batch_execute`` method:
     self.tracker.update(batches=1, batch_len=len(circuits))
     self.tracker.record()
 
-These functions are called in base :class:`pennylane.Device` and :class:`~.QubitDevice` devices. Unless you are
+These functions are called in base :class:`pennylane.devices.LegacyDevice` and :class:`~.QubitDevice` devices. Unless you are
 overriding the ``execute`` and ``batch_execute`` methods or want to customize the stored
 information, you do not need to add any new code.
 

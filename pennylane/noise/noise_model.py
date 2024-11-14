@@ -43,7 +43,7 @@ class NoiseModel:
           a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
           the ``qml.noise`` module, or their bitwise combination.
         - The definition of ``noise_fn(Union[op, mp], **kwargs)`` should have the operations
-          in the same the order in which they are to be queued for an operation ``op`` or
+          in the same order in which they are to be queued for an operation ``op`` or
           measurement process ``mp``, whenever the corresponding ``conditional`` evaluates
           to ``True``.
         - Each ``conditional`` in ``meas_map`` is evaluated on each measurement process in
