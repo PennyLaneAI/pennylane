@@ -33,7 +33,16 @@ def _rotation_resources(epsilon=10e-3):
 
 
 class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
-    """Resource class for PhaseShift"""
+    r"""Resource class for PhaseShift
+
+    Resources:
+        The resources are defined from the following identity:
+
+        .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                    1 & 0 \\
+                    0 & e^{i\phi}
+                \end{bmatrix}.
+    """
 
     @staticmethod
     def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:

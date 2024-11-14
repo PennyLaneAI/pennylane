@@ -87,6 +87,7 @@ class ResourceT(qml.T, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+
 class ResourceX(qml.X, re.ResourceOperator):
     """Resource class for X"""
 
@@ -108,6 +109,7 @@ class ResourceX(qml.X, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+
 class ResourceY(qml.Y, re.ResourceOperator):
     """Resource class for Y"""
 
@@ -128,6 +130,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
 
 class ResourceZ(qml.Z, re.ResourceOperator):
     """Resource class for Z"""
