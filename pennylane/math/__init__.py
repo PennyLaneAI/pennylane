@@ -34,7 +34,7 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
+from .matrix_manipulation import expand_matrix, expand_vector, reduce_matrices, get_batch_size
 from .multi_dispatch import (
     add,
     array,
@@ -82,7 +82,6 @@ from .quantum import (
     max_entropy,
     min_entropy,
     trace_distance,
-    expand_vector,
 )
 from .fidelity import fidelity, fidelity_statevector
 from .utils import (
