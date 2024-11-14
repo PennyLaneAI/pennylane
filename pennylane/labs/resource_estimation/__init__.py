@@ -37,10 +37,37 @@ Tracking Resources
 
 .. autosummary::
     :toctree: api
-
+    
     ~get_resources
     ~DefaultGateSet
     ~resource_config
+
+Operators
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceCNOT
+    ~ResourceControlledPhaseShift
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceRot
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceS
+    ~ResourceSWAP
+    ~ResourceT
+
+Templates
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceQFT
 
 """
 
@@ -56,8 +83,8 @@ from .ops import (
     ResourceIdentity,
     ResourceRot,
     ResourceRX,
-    ResourceRZ,
     ResourceRY,
+    ResourceRZ,
     ResourceS,
     ResourceSWAP,
     ResourceT,
