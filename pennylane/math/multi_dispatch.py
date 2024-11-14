@@ -1034,7 +1034,6 @@ def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
         for i, arg in enumerate(args)
     ]
 
-    qnode.construct(args_jvp, kwargs)
     tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
     tapes, _ = program((tape,))
     del trace
