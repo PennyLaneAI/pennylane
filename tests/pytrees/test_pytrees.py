@@ -19,7 +19,16 @@ import re
 import pytest
 
 import pennylane as qml
-from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
+from pennylane import numpy as np
+from pennylane.pytrees import (
+    PyTreeStructure,
+    flatten,
+    leaf,
+    register_pytree,
+    unflatten,
+    flatten_np,
+    unflatten_np,
+)
 from pennylane.pytrees.pytrees import get_typename, get_typename_type
 
 
@@ -262,3 +271,66 @@ def test_unflatten_for_structure_is_leaf():
     assert _structure == PyTreeStructure(tuple, None, [leaf, leaf, leaf])
     reconstituted_data = unflatten([5, 6, (7, 8)], _structure)
     assert reconstituted_data == (5, 6, (7, 8))
+
+
+flat_dummy_array = np.linspace(-1, 1, 64)
+test_shapes = [
+    (64,),
+    (64, 1),
+    (32, 2),
+    (16, 4),
+    (8, 8),
+    (16, 2, 2),
+    (8, 2, 2, 2),
+    (4, 2, 2, 2, 2),
+    (2, 2, 2, 2, 2, 2),
+]
+
+
+class TestFlatten:
+    """Tests the flatten and unflatten functions"""
+
+    @pytest.mark.parametrize("shape", test_shapes)
+    def test_flatten(self, shape):
+        """Tests that _flatten successfully flattens multidimensional arrays."""
+
+        reshaped = np.reshape(flat_dummy_array, shape)
+        flattened = np.array(list(flatten_np(reshaped)))
+
+        assert flattened.shape == flat_dummy_array.shape
+        assert np.array_equal(flattened, flat_dummy_array)
+
+    @pytest.mark.parametrize("shape", test_shapes)
+    def test_unflatten(self, shape):
+        """Tests that _unflatten successfully unflattens multidimensional arrays."""
+
+        reshaped = np.reshape(flat_dummy_array, shape)
+        unflattened = np.array(list(unflatten_np(flat_dummy_array, reshaped)))
+
+        assert unflattened.shape == reshaped.shape
+        assert np.array_equal(unflattened, reshaped)
+
+    def test_unflatten_error_unsupported_model(self):
+        """Tests that unflatten raises an error if the given model is not supported"""
+
+        with pytest.raises(TypeError, match="Unsupported type in the model"):
+            model = lambda x: x  # not a valid model for unflatten
+            unflatten_np(flat_dummy_array, model)
+
+    def test_unflatten_error_too_many_elements(self):
+        """Tests that unflatten raises an error if the given iterable has
+        more elements than the model"""
+
+        reshaped = np.reshape(flat_dummy_array, (16, 2, 2))
+
+        with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
+            unflatten_np(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
+
+    def test_flatten_wires(self):
+        """Tests flattening a Wires object."""
+        wires = qml.wires.Wires([3, 4])
+        wires_int = [3, 4]
+
+        wires = flatten_np(wires)
+        for i, wire in enumerate(wires):
+            assert wires_int[i] == wire

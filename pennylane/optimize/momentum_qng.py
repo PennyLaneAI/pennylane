@@ -16,7 +16,7 @@
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
 from pennylane import numpy as pnp
-from pennylane.utils import _flatten, unflatten
+from pennylane.pytrees import flatten_np, unflatten_np
 
 from .qng import QNGOptimizer
 
@@ -131,12 +131,12 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                grad_flat = pnp.array(list(_flatten(grad[trained_index])))
+                grad_flat = pnp.array(list(flatten_np(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
                 qng_update = pnp.linalg.pinv(metric_tensor[trained_index]) @ grad_flat
 
                 self.accumulation[trained_index] *= self.momentum
-                self.accumulation[trained_index] += self.stepsize * unflatten(
+                self.accumulation[trained_index] += self.stepsize * unflatten_np(
                     qng_update, grad[trained_index]
                 )
                 args_new[index] = arg - self.accumulation[trained_index]

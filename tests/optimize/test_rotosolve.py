@@ -23,7 +23,7 @@ from scipy.optimize import shgo
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.optimize import RotosolveOptimizer
-from pennylane.utils import _flatten, unflatten
+from pennylane.pytrees import flatten_np, unflatten_np
 
 
 def expand_num_freq(num_freq, param):
@@ -47,11 +47,11 @@ def expand_num_freq(num_freq, param):
 def successive_params(par1, par2):
     """Return a list of parameter configurations, successively walking from
     par1 to par2 coordinate-wise."""
-    par1_flat = np.fromiter(_flatten(par1), dtype=float)
-    par2_flat = np.fromiter(_flatten(par2), dtype=float)
+    par1_flat = np.fromiter(flatten_np(par1), dtype=float)
+    par2_flat = np.fromiter(flatten_np(par2), dtype=float)
     walking_param = []
     for i in range(len(par1_flat) + 1):
-        walking_param.append(unflatten(np.append(par2_flat[:i], par1_flat[i:]), par1))
+        walking_param.append(unflatten_np(np.append(par2_flat[:i], par1_flat[i:]), par1))
     return walking_param
 
 
@@ -253,8 +253,8 @@ class TestWithClassicalFunction:
 
         assert len(x_min) == len(new_param_step)
         assert np.allclose(
-            np.fromiter(_flatten(x_min), dtype=float),
-            np.fromiter(_flatten(new_param_step), dtype=float),
+            np.fromiter(flatten_np(x_min), dtype=float),
+            np.fromiter(flatten_np(new_param_step), dtype=float),
             atol=1e-5,
         )
 
@@ -271,8 +271,8 @@ class TestWithClassicalFunction:
 
         assert len(x_min) == len(new_param_step_and_cost)
         assert np.allclose(
-            np.fromiter(_flatten(new_param_step_and_cost), dtype=float),
-            np.fromiter(_flatten(new_param_step), dtype=float),
+            np.fromiter(flatten_np(new_param_step_and_cost), dtype=float),
+            np.fromiter(flatten_np(new_param_step), dtype=float),
             atol=1e-5,
         )
         assert np.isclose(old_cost, fun(*param))
@@ -331,8 +331,8 @@ def test_multiple_steps(fun, x_min, param, num_freq):
 
     assert (np.isscalar(x_min) and np.isscalar(param)) or len(x_min) == len(param)
     assert np.allclose(
-        np.fromiter(_flatten(x_min), dtype=float),
-        np.fromiter(_flatten(param), dtype=float),
+        np.fromiter(flatten_np(x_min), dtype=float),
+        np.fromiter(flatten_np(param), dtype=float),
         atol=1e-5,
     )
 
@@ -390,8 +390,8 @@ class TestDeactivatedTrainingWithClassicalFunctions:
 
         assert len(x_min) == len(new_param_step)
         assert np.allclose(
-            np.fromiter(_flatten(x_min), dtype=float),
-            np.fromiter(_flatten(new_param_step), dtype=float),
+            np.fromiter(flatten_np(x_min), dtype=float),
+            np.fromiter(flatten_np(new_param_step), dtype=float),
             atol=1e-5,
         )
 
@@ -407,8 +407,8 @@ class TestDeactivatedTrainingWithClassicalFunctions:
 
         assert len(x_min) == len(new_param_step_and_cost)
         assert np.allclose(
-            np.fromiter(_flatten(new_param_step_and_cost), dtype=float),
-            np.fromiter(_flatten(new_param_step), dtype=float),
+            np.fromiter(flatten_np(new_param_step_and_cost), dtype=float),
+            np.fromiter(flatten_np(new_param_step), dtype=float),
             atol=1e-5,
         )
         assert np.isclose(old_cost, fun(*param))
@@ -517,8 +517,8 @@ class TestWithQNodes:
             new_param_step_and_cost = (new_param_step_and_cost,)
 
         assert np.allclose(
-            np.fromiter(_flatten(new_param_step_and_cost), dtype=float),
-            np.fromiter(_flatten(new_param_step), dtype=float),
+            np.fromiter(flatten_np(new_param_step_and_cost), dtype=float),
+            np.fromiter(flatten_np(new_param_step), dtype=float),
         )
         assert np.isclose(qnode(*param), old_cost)
 
