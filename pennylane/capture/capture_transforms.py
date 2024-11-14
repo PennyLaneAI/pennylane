@@ -45,7 +45,7 @@ class TransformTrace(Trace):
     ):
         super().__init__(main, sublevel)
         self._transform_program = transform_program
-        self._state = state
+        self._state = state or {}
 
     def pure(self, val: Any):
         """Create a new ``TransformTracer``."""
