@@ -40,8 +40,15 @@ Operators
 
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
+    ~ResourceGlobalPhase
     ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceRot
+    ~ResourceRX
+    ~ResourceRY
     ~ResourceRZ
+    ~ResourceS
+    ~ResourceSWAP
     ~ResourceT
 
 Templates
@@ -64,8 +71,8 @@ from .ops import (
     ResourceIdentity,
     ResourceRot,
     ResourceRX,
-    ResourceRZ,
     ResourceRY,
+    ResourceRZ,
     ResourceS,
     ResourceSWAP,
     ResourceT,
