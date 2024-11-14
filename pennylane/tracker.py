@@ -152,8 +152,8 @@ class Tracker:
         ...
         >>> resources_lst = tracker.history['resources']
         >>> print(resources_lst[0])
-        wires: 1
-        gates: 1
+        num_wires: 1
+        num_gates: 1
         depth: 1
         shots: Shots(total=10)
         gate_types:
