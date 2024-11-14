@@ -27,7 +27,7 @@ from pennylane.labs.dla import (
 )
 
 
-@pytest.mark.parametrize("n", [2, 3])
+@pytest.mark.parametrize("n", [2, 3, 4])
 def test_kak_Ising(n):
     """Basic test for khk decomposition on Ising model with two qubits"""
     gens = [X(i) @ X(i + 1) for i in range(n - 1)]
@@ -46,7 +46,7 @@ def test_kak_Ising(n):
     g = k + m
     adj = qml.structure_constants(g)
 
-    g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
+    g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
     khk_res = variational_kak(H, g, dims, adj, verbose=False)

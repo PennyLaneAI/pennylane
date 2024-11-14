@@ -201,7 +201,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
         res = jnp.eye(adj.shape[-1])
 
         for i in range(dim_k):
-            res = jax.scipy.linalg.expm(theta[i] * adj[i])
+            res @= jax.scipy.linalg.expm(theta[i] * adj[i])
 
         return (gammavec @ res @ vec_H).real
 
