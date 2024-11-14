@@ -645,7 +645,7 @@ def test_decorator(tol):
     assert len(tape.observables) == 1
     assert tape.num_params == 2
 
-    expected = qml.execute([tape], dev, None)
+    expected = np.cos(x)
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
     # when called, a new quantum tape is constructed
