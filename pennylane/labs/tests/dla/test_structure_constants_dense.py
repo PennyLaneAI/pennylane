@@ -16,13 +16,13 @@
 
 import numpy as np
 import pytest
-import scipy as sp
 
 import pennylane as qml
 from pennylane import X, Y, Z
 from pennylane.labs.dla import (
     check_orthonormal,
     orthonormalize,
+    pauli_decompose,
     structure_constants_dense,
     trace_inner_product,
 )
@@ -30,6 +30,10 @@ from pennylane.pauli import PauliSentence, PauliWord
 
 ## Construct some example DLAs
 # TFIM
+gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(1)]
+gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(2)]
+Ising2 = qml.lie_closure(gens, pauli=True)
+
 gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(2)]
 gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
 Ising3 = qml.lie_closure(gens, pauli=True)
@@ -68,39 +72,31 @@ class TestAdjointRepr:
 
     def test_structure_constants_with_is_orthonormal(self):
         """Test that the structure constants with is_orthonormal=True/False match for
-        orthogonal inputs."""
+        orthonormal inputs."""
 
-        Ising3_dense = np.array([qml.matrix(op, wire_order=range(3)) for op in Ising3]) / np.sqrt(8)
+        Ising3_dense = np.array([qml.matrix(op, wire_order=range(3)) for op in Ising3])
+        assert check_orthonormal(Ising3_dense, trace_inner_product)
         adjoint_true = structure_constants_dense(Ising3_dense, is_orthonormal=True)
         adjoint_false = structure_constants_dense(Ising3_dense, is_orthonormal=False)
         assert np.allclose(adjoint_true, adjoint_false)
 
-    @pytest.mark.parametrize(
-        "dla, use_orthonormal",
-        [
-            (Ising3, True),
-            (Ising3, False),
-            (XXZ3, True),
-            (XXZ3, False),
-            (Heisenberg3_sum, True),
-            (Heisenberg3_sum, False),
-            (sum_XXZ3, True),
-            (sum_XXZ3, False),
-        ],
-    )
+    @pytest.mark.parametrize("dla", [Ising2, Ising3, XXZ3, Heisenberg3_sum, sum_XXZ3])
+    @pytest.mark.parametrize("use_orthonormal", [True, False])
     def test_structure_constants_elements(self, dla, use_orthonormal):
-        r"""Test relation :math:`[i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma`."""
+        r"""Test relation :math:`[i G_α, i G_β] = \sum_{γ=0}^{d-1} f^γ_{α,β} iG_γ_`."""
 
         d = len(dla)
         dla_dense = np.array([qml.matrix(op, wire_order=range(3)) for op in dla])
 
         if use_orthonormal:
-            dla = orthonormalize(dla)
-            assert check_orthonormal(dla, trace_inner_product)
             dla_dense = orthonormalize(dla_dense)
             assert check_orthonormal(dla_dense, trace_inner_product)
+            dla = pauli_decompose(dla_dense, pauli=True)
+            assert check_orthonormal(dla, trace_inner_product)
 
+        ad_rep_non_dense = qml.structure_constants(dla, is_orthogonal=False)
         ad_rep = structure_constants_dense(dla_dense, is_orthonormal=use_orthonormal)
+        assert np.allclose(ad_rep, ad_rep_non_dense)
         for i in range(d):
             for j in range(d):
 
@@ -116,15 +112,11 @@ class TestAdjointRepr:
     @pytest.mark.parametrize("use_orthonormal", [False, True])
     def test_use_operators(self, dla, use_orthonormal):
         """Test that operators can be passed and lead to the same result"""
+        if use_orthonormal:
+            dla = orthonormalize(dla)
+
         ops = np.array([qml.matrix(op.operation(), wire_order=range(3)) for op in dla])
 
-        if use_orthonormal:
-            gram_inv = sp.linalg.sqrtm(
-                np.linalg.pinv(np.tensordot(ops, ops, axes=[[1, 2], [2, 1]]).real)
-            )
-            ops = np.tensordot(gram_inv, ops, axes=1)
-            dla = [(scale * op).pauli_rep for scale, op in zip(np.diag(gram_inv), dla)]
-
-        ad_rep_true = qml.pauli.dla.structure_constants(dla)
+        ad_rep_true = qml.structure_constants(dla)
         ad_rep = structure_constants_dense(ops, is_orthonormal=use_orthonormal)
         assert qml.math.allclose(ad_rep, ad_rep_true)
