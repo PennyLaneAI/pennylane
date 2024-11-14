@@ -905,6 +905,13 @@ class QNode:
         full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         inner_transform_program = qml.transforms.core.TransformProgram()
 
+        # Add the gradient expand to the program if necessary
+        if getattr(gradient_fn, "expand_transform", False):
+            full_transform_program.add_transform(
+                qml.transform(gradient_fn.expand_transform),
+                **gradient_kwargs,
+            )
+
         config = _make_execution_config(self, gradient_fn, mcm_config)
         device_transform_program, config = self.device.preprocess(execution_config=config)
 
@@ -912,13 +919,6 @@ class QNode:
             full_transform_program += device_transform_program
         else:
             inner_transform_program += device_transform_program
-
-        # Add the gradient expand to the program if necessary
-        if getattr(gradient_fn, "expand_transform", False):
-            full_transform_program.insert_front_transform(
-                qml.transform(gradient_fn.expand_transform),
-                **gradient_kwargs,
-            )
 
         # Calculate the classical jacobians if necessary
         full_transform_program.set_classical_component(self, args, kwargs)
