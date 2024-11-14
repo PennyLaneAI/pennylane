@@ -85,6 +85,9 @@
   process the diff method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
  
+* The `qml.QubitStateVector` template has been removed. Instead, use `qml.StatePrep`.
+  [(#6525)](https://github.com/PennyLaneAI/pennylane/pull/6525)
+
 * `qml.broadcast` has been removed. Users should use `for` loops instead.
   [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
 
