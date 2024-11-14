@@ -339,7 +339,7 @@ class BoseWord(dict):
             final_position (int): the desired position of the operator
 
         Returns:
-            BoseSentence: The ``BoseSentence`` obtained after applying the anti-commutator relations.
+            BoseSentence: The ``BoseSentence`` obtained after applying the commutator relations.
 
         Raises:
             TypeError: if ``initial_position`` or ``final_position`` is not an integer
