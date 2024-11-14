@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
+from collections.abc import Iterable
+from functools import reduce
+
 # pylint: disable=too-many-return-statements, missing-function-docstring
 from itertools import combinations
 from typing import List, Optional, Union
 
 import numpy as np
+import scipy
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
-from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 from pennylane.typing import TensorLike
 
 
@@ -106,32 +110,6 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
            [0.  , 0.  , 0.  , 0.5 ],
            [0.  , 0.  , 0.6 , 0.  ]])
 
-
-    **Examples**
-    Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
-
-    >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
-    >>> mat = H.matrix()
-    array([[ 0.  +0.j,  0.4 +0.j,  0.25+0.j,  0.  +0.j],
-           [ 0.4 +0.j,  0.  +0.j,  0.  +0.j,  0.25+0.j],
-           [ 0.25+0.j,  0.  +0.j,  0.  +0.j, -0.4 +0.j],
-           [ 0.  +0.j,  0.25+0.j, -0.4 +0.j,  0.  +0.j]])
-
-    Then we can obtain the coefficients of :math:`H` in the Pauli basis via
-
-    >>> from pennylane.labs.dla import pauli_coefficients
-    >>> pauli_coefficients(mat)
-    array([ 0.  ,  0.  ,  0.  ,  0.  ,  0.25,  0.  ,  0.  ,  0.  ,  0.  ,
-            0.  , -0.  ,  0.  ,  0.  ,  0.4 ,  0.  ,  0.  ])
-
-    The function can be used on a batch of matrices:
-
-    >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0), 3 / 5 * qml.Y(0)]
-    >>> batch = np.stack([op.matrix() for op in ops])
-    >>> pauli_coefficients(batch)
-    array([[0.  , 0.25, 0.  , 0.  ],
-           [0.  , 0.  , 0.  , 0.5 ],
-           [0.  , 0.  , 0.6 , 0.  ]])
     """
     # Preparations
     shape = H.shape
@@ -331,3 +309,101 @@ def apply_basis_change(change_op, targets):
     if single_target:
         return out[0]
     return out
+
+
+def orthonormalize(basis):
+    r"""Orthonormalize a list of basis vectors"""
+
+    if all(isinstance(op, np.ndarray) for op in basis):
+        return _orthonormalize_np(basis)
+
+    if all(isinstance(op, (PauliSentence, PauliVSpace, Operator)) for op in basis):
+        return _orthonormalize_ps(basis)
+
+    raise NotImplementedError(f"orthonormalize not implemented for {basis} of type {type(basis)}")
+
+
+def _orthonormalize_np(basis: Iterable[np.ndarray]):
+    gram_inv = np.linalg.pinv(
+        scipy.linalg.sqrtm(np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real)
+    )
+    return np.tensordot(gram_inv, basis, axes=1) * np.sqrt(
+        len(basis[0])
+    )  # TODO absolutely not sure about this
+
+
+def _orthonormalize_ps(basis: Iterable[Union[PauliSentence, PauliVSpace, Operator]]):
+    if isinstance(basis, PauliVSpace):
+        basis = basis.basis
+
+    if not all(isinstance(op, PauliSentence) for op in basis):
+        basis = [op.pauli_rep for op in basis]
+
+    if len(basis) == 0:
+        return basis
+
+    all_pws = reduce(set.__or__, [set(ps.keys()) for ps in basis])
+    num_pw = len(all_pws)
+
+    _pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
+    _idx_to_pw = dict(enumerate(all_pws))
+    _M = np.zeros((num_pw, len(basis)), dtype=float)
+
+    for i, gen in enumerate(basis):
+        for pw, value in gen.items():
+            _M[_pw_to_idx[pw], i] = value
+
+    def gram_schmidt(X):
+        Q, _ = np.linalg.qr(X)
+        return Q
+
+    OM = gram_schmidt(_M)
+    for i in range(OM.shape[1]):
+        for j in range(OM.shape[1]):
+            prod = OM[:, i] @ OM[:, j]
+            if i == j:
+                assert np.isclose(prod, 1)
+            else:
+                assert np.isclose(prod, 0)
+
+    # reconstruct normalized operators
+
+    generators_orthogonal = []
+    for i in range(len(basis)):
+        u1 = PauliSentence({})
+        for j in range(num_pw):
+            u1 += _idx_to_pw[j] * OM[j, i]
+        u1.simplify()
+        generators_orthogonal.append(u1)
+
+    return generators_orthogonal
+
+
+def check_orthonormal(g, inner_product):
+    """Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``"""
+    norm = np.zeros((len(g), len(g)), dtype=complex)
+    for i, gi in enumerate(g):
+        for j, gj in enumerate(g):
+            norm[i, j] = inner_product(gi, gj)
+
+    return np.allclose(norm, np.eye(len(norm)))
+
+
+def trace_inner_product(
+    A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
+):
+    r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`"""
+    if not isinstance(A, type(B)):
+        raise TypeError("Both input operators need to be of the same type")
+
+    if isinstance(A, np.ndarray):
+        assert np.allclose(A.shape, B.shape)
+        return np.trace(A.conj().T @ B) / (len(A))
+
+    if isinstance(A, (PauliSentence, PauliWord)):
+        return (A @ B).trace()
+
+    if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
+        return (A.pauli_rep @ B.pauli_rep).trace()
+
+    return NotImplemented

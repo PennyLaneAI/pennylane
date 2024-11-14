@@ -28,9 +28,12 @@ from pennylane.pauli import PauliSentence, PauliWord
 def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis_length: int = 0):
     """Find a linearly independent basis of a list of (skew-) Hermitian matrices
 
+    .. note:: The first ``subbasis_length`` elements of ``matrices`` are assumed to already be orthogonal and Hermitian and will not be changed.
+
     Args:
-        matrices (Iterable[numpy.ndarray]): A list of Hermitian matrices.
+        matrices (Union[numpy.ndarray, Iterable[numpy.ndarray]]): A list of Hermitian matrices.
         tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
+        subbasis_length (int): The first `subbasis_length` elements in `matrices` are left untouched.
 
     Returns:
         np.ndarray: Stacked array of linearly independent basis matrices.
@@ -63,7 +66,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
 def lie_closure_dense(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
-    n=None,
+    n: int = None,
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
@@ -75,7 +78,10 @@ def lie_closure_dense(
     :class:`~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
     that are sums of many Paulis.
 
-    .. seealso:: For details on the mathematical definitions, see :func:`~lie_closure` and our `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
+    .. seealso::
+
+        For details on the mathematical definitions, see :func:`~lie_closure` and our
+        `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
@@ -84,10 +90,10 @@ def lie_closure_dense(
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
             calculation. Default is ``False``.
-        tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
+        tol (float): Numerical tolerance for the linear independence check between algebra elements
 
     Returns:
-        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linear independent basis of the DLA g as dense matrices.
+        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linear independent basis of the DLA :math:`\mathfrak{g}` as dense matrices.
 
     **Example**
 
@@ -106,7 +112,7 @@ def lie_closure_dense(
     The input operators are converted to Hermitian matrices internally. This means
     that we compute the operators :math:`G_\alpha` in the algebra :math:`\{iG_\alpha\}_\alpha`,
     which itself consists of skew-Hermitian objects (commutators produce skew-Hermitian objects,
-    so Hermitian operators alone can not form an algebra).
+    so Hermitian operators alone can not form an algebra with the standard commutator).
     """
 
     if n is None:

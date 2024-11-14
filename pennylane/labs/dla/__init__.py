@@ -41,6 +41,9 @@ Utility functions
     ~check_commutation
     ~check_all_commuting
     ~apply_basis_change
+    ~orthonormalize
+    ~check_orthonormal
+    ~trace_inner_product
 
 Involutions
 ~~~~~~~~~~~
@@ -81,6 +84,9 @@ from .dense_util import (
     check_commutation,
     check_all_commuting,
     apply_basis_change,
+    orthonormalize,
+    check_orthonormal,
+    trace_inner_product,
 )
 from .involutions import (
     khaneja_glaser_involution,

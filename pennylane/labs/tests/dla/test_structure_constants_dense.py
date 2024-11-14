@@ -19,14 +19,20 @@ import pytest
 import scipy as sp
 
 import pennylane as qml
-from pennylane.labs.dla import structure_constants_dense
+from pennylane import X, Y, Z
+from pennylane.labs.dla import (
+    check_orthonormal,
+    orthonormalize,
+    structure_constants_dense,
+    trace_inner_product,
+)
 from pennylane.pauli import PauliSentence, PauliWord
 
 ## Construct some example DLAs
 # TFIM
 gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(2)]
 gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-Ising3 = qml.pauli.lie_closure(gens, pauli=True)
+Ising3 = qml.lie_closure(gens, pauli=True)
 
 # XXZ-type DLA, i.e. with true PauliSentences
 gens2 = [
@@ -39,7 +45,14 @@ gens2 = [
     for i in range(2)
 ]
 gens2 += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-XXZ3 = qml.pauli.lie_closure(gens2, pauli=True)
+XXZ3 = qml.lie_closure(gens2, pauli=True)
+
+gens3 = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(2)]
+Heisenberg3_sum = qml.lie_closure(gens3)
+Heisenberg3_sum = [op.pauli_rep for op in Heisenberg3_sum]
+
+coeffs = np.random.random((len(XXZ3), len(XXZ3)))
+sum_XXZ3 = [qml.sum(*(c * op for c, op in zip(_coeffs, XXZ3))).pauli_rep for _coeffs in coeffs]
 
 
 class TestAdjointRepr:
@@ -62,24 +75,37 @@ class TestAdjointRepr:
         adjoint_false = structure_constants_dense(Ising3_dense, is_orthonormal=False)
         assert np.allclose(adjoint_true, adjoint_false)
 
-    @pytest.mark.parametrize("dla", [Ising3, XXZ3])
-    @pytest.mark.parametrize("use_orthonormal", [False, True])
+    @pytest.mark.parametrize(
+        "dla, use_orthonormal",
+        [
+            (Ising3, True),
+            (Ising3, False),
+            (XXZ3, True),
+            (XXZ3, False),
+            (Heisenberg3_sum, True),
+            (Heisenberg3_sum, False),
+            (sum_XXZ3, True),
+            (sum_XXZ3, False),
+        ],
+    )
     def test_structure_constants_elements(self, dla, use_orthonormal):
         r"""Test relation :math:`[i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma`."""
 
         d = len(dla)
         dla_dense = np.array([qml.matrix(op, wire_order=range(3)) for op in dla])
+
         if use_orthonormal:
-            gram_inv = sp.linalg.sqrtm(
-                np.linalg.pinv(np.tensordot(dla_dense, dla_dense, axes=[[1, 2], [2, 1]]).real)
-            )
-            dla_dense = np.tensordot(gram_inv, dla_dense, axes=1)
-            dla = [(scale * op).pauli_rep for scale, op in zip(np.diag(gram_inv), dla)]
+            dla = orthonormalize(dla)
+            assert check_orthonormal(dla, trace_inner_product)
+            dla_dense = orthonormalize(dla_dense)
+            assert check_orthonormal(dla_dense, trace_inner_product)
+
         ad_rep = structure_constants_dense(dla_dense, is_orthonormal=use_orthonormal)
         for i in range(d):
             for j in range(d):
 
                 comm_res = 1j * dla[i].commutator(dla[j])
+                comm_res.simplify()
                 res = sum((c + 0j) * dla[gamma] for gamma, c in enumerate(ad_rep[:, i, j]))
                 res.simplify()
                 assert set(comm_res) == set(res)  # Assert equal keys

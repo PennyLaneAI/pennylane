@@ -18,7 +18,15 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.labs.dla import lie_closure_dense, pauli_coefficients, pauli_decompose, project
+from pennylane.labs.dla import (
+    check_orthonormal,
+    lie_closure_dense,
+    orthonormalize,
+    pauli_coefficients,
+    pauli_decompose,
+    project,
+    trace_inner_product,
+)
 
 # Make an operator matrix on given wire and total wire count
 I_ = lambda w, n: I(w).matrix(wire_order=range(n))
@@ -299,3 +307,29 @@ def test_project_consistent_with_input_types():
     res2 = np.array(project(m, g))
     assert res1.shape == res2.shape
     assert np.allclose(res1, res2)
+
+
+@pytest.mark.parametrize("op1", [X(0), X(0) @ X(1), X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)])
+@pytest.mark.parametrize("op2", [X(0), X(0) @ X(1), X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)])
+def test_trace_inner_product_consistency(op1, op2):
+    """Test that the trace inner product norm for different operators is consistent"""
+    res1 = trace_inner_product(
+        qml.matrix(op1, wire_order=range(3)), qml.matrix(op2, wire_order=range(3))
+    )
+    res2 = trace_inner_product(op1.pauli_rep, op2.pauli_rep)
+    assert np.allclose(res1, res2)
+
+
+gens1 = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(3)]
+Heisenberg4_sum_op = qml.lie_closure(gens1)
+Heisenberg4_sum_ps = [op.pauli_rep for op in Heisenberg4_sum_op]
+Heisenberg4_sum_dense = [qml.matrix(op, wire_order=range(4)) for op in Heisenberg4_sum_op]
+
+
+@pytest.mark.parametrize("g", [Heisenberg4_sum_ps, Heisenberg4_sum_dense])
+def test_orthonormalize_ps(g):
+    """Test orthonormalize on pauli sentences"""
+
+    g = orthonormalize(g)
+
+    assert check_orthonormal(g, trace_inner_product)
