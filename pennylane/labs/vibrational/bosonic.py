@@ -52,7 +52,7 @@ class BoseWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
-            
+
         super().__init__(operator)
 
     def adjoint(self):
