@@ -440,7 +440,6 @@ class QNSPSAOptimizer:
         if not isinstance(params_next, list):
             params_next = [params_next]
 
-        cost.construct(params_next, kwargs)
         tape = qml.workflow.construct_tape(cost)(*params_next, **kwargs)
         tape_loss_next = tape.copy(copy_operations=True)
 
