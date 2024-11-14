@@ -209,7 +209,7 @@ class TestTransformTrace:
         )
         trace = main.with_cur_sublevel()
 
-        # Tracers are [RX rotation angle=0.5, wire=0]
+        # args are [RX rotation angle=0.5, wire=0]
         args = [0.5, 0]
         tracers = [TransformTracer(trace, a, idx=1) for a in args]
         params = {"n_wires": 1}
