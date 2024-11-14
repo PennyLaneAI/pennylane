@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Trace implementations for program capture"""
-from copy import copy
-from typing import Any
+from typing import Any, Optional
 
 import jax
 import jax.numpy as jnp
@@ -21,18 +20,20 @@ from jax.core import MainTrace, Primitive, ShapedArray, Trace, Tracer
 
 import pennylane as qml
 
-from .base_interpreter import PlxprInterpreter, jaxpr_to_jaxpr
-from .primitives import adjoint_transform_prim, ctrl_transform_prim, qnode_prim
+from .base_interpreter import PlxprInterpreter
+from .primitives import adjoint_transform_prim, ctrl_transform_prim
 
 
 class TransformTrace(Trace):
     """Trace for processing primitives for PennyLane transforms.
 
     Args:
-        main (jax.core.MainTrace): Active interpreter that this ``Trace`` belongs to
-        sublevel (int): Sublevel for this ``Trace``
+        main (jax.core.MainTrace): Active interpreter to which this ``Trace`` belongs.
+        sublevel (int): Sublevel for this ``Trace``.
         transform_program (pennylane.transforms.core.TransformProgram): ``TransformProgram``
-            containing the transforms to apply to the primitives being interpreted
+            containing the transforms to apply to the primitives being interpreted.
+        state (Optional[dict]): Dictionary containing environment information for transforms
+            to use.
     """
 
     def __init__(
@@ -40,13 +41,14 @@ class TransformTrace(Trace):
         main: MainTrace,
         sublevel: int,
         transform_program: "qml.transforms.core.TransformProgram",
+        state: Optional[dict] = None,
     ):
         super().__init__(main, sublevel)
         self._transform_program = transform_program
-        self._state = None
+        self._state = state
 
     def pure(self, val: Any):
-        """Create a new ``TransformTracer``"""
+        """Create a new ``TransformTracer``."""
         return TransformTracer(self, val, 0)
 
     lift = sublift = pure
@@ -56,21 +58,16 @@ class TransformTrace(Trace):
         """Dictionary containing environment information for transforms to use."""
         return self._state
 
-    @state.setter
-    def state(self, state):
-        """Setter for the state attribute."""
-        self._state = state
-
     def process_primitive(self, primitive: Primitive, tracers: tuple[Tracer], params: dict):
         """Interpret a given primitive.
 
         Args:
-            primitive (jax.core.Primitive): Primitive to interpret
-            tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive
-            params (dict): Keyword arguments/metadata for the primitive
+            primitive (jax.core.Primitive): Primitive to interpret.
+            tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive.
+            params (dict): Keyword arguments/metadata for the primitive.
 
         Returns:
-            Any: The result of the interpretation
+            Any: The result of the interpretation.
         """
         idx = max(t.idx for t in tracers if isinstance(t, TransformTracer))
         is_qml_primitive = primitive.__class__.__module__.split(".")[0] == "pennylane"
@@ -88,13 +85,13 @@ class TransformTrace(Trace):
 
 
 class TransformTracer(Tracer):
-    """Tracer for tracing PennyLane transforms
+    """Tracer for tracing PennyLane transforms.
 
     Args:
         trace (pennylane.capture.TransformTrace): TransformTrace that boxed up inputs into this
-            ``TransformTracer``
-        val (Any): Input value to box inside this ``TransformTracer``
-        idx (int): Index into the transform program to track which transform to apply
+            ``TransformTracer``.
+        val (Any): Input value to box inside this ``TransformTracer``.
+        idx (int): Index into the transform program to track which transform to apply.
     """
 
     def __init__(self, trace: TransformTrace, val: Any, idx: int):
@@ -118,7 +115,7 @@ class TransformTracer(Tracer):
 
     @property
     def aval(self):
-        """Abstract value of this ``TransformTracer``"""
+        """Abstract value of this ``TransformTracer``."""
         return self._aval
 
     def full_lower(self):  # pylint: disable=missing-function-docstring
@@ -143,19 +140,9 @@ class TransformInterpreter(PlxprInterpreter):
 
     .. code-block:: python
 
-        @qml.transforms.core.transform
-        def convert_rx_to_ry(tape):
-            new_ops = [
-                qml.RY(op.data[0], op.wires) if isinstance(op, qml.RX) else op for op in tape.operations
-            ]
-            new_tape = qml.tape.QuantumScript(
-                new_ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
-            )
-            return [new_tape], lambda results: results[0]
+        from functools import partial
 
-
-        @convert_rx_to_ry.custom_plxpr_transform
-        def _(self, primitive, tracers, params, targs, tkwargs, state):
+        def _convert_rx_to_ry_plxpr_transform(primitive, tracers, params, targs, tkwargs, state):
             from pennylane.capture import TransformTracer
 
             # Step 1: Transform primitive
@@ -168,8 +155,15 @@ class TransformInterpreter(PlxprInterpreter):
             # Step 3: Return the result of the transformation
             return primitive.bind(*tracers, **params)
 
-    Using ``@convert_rx_to_ry.custom_plxpr_transform`` will register the decorated function as the interpreter
-    that processes primitives when the transform is included in the transform program.
+        @partial(qml.transforms.core.transform, plxpr_transform=_convert_rx_to_ry_plxpr_transform)
+        def convert_rx_to_ry(tape):
+            new_ops = [
+                qml.RY(op.data[0], op.wires) if isinstance(op, qml.RX) else op for op in tape.operations
+            ]
+            new_tape = qml.tape.QuantumScript(
+                new_ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+            )
+            return [new_tape], lambda results: results[0]
 
     We can now use this to transform user functions:
 
@@ -210,6 +204,7 @@ class TransformInterpreter(PlxprInterpreter):
 
     _trace: TransformTrace
     _transform_program: "qml.transforms.core.TransformProgram"
+    _state: dict
 
     def __init__(self, transform_program: "qml.transforms.core.TransformProgram"):
         self._trace = None
@@ -284,31 +279,13 @@ class TransformInterpreter(PlxprInterpreter):
             list[TensorLike]: the results of the execution.
 
         """
-        with jax.core.new_main(TransformTrace, transform_program=self._transform_program) as main:
+        with jax.core.new_main(
+            TransformTrace, transform_program=self._transform_program, state=self._state
+        ) as main:
             self._trace = main.with_cur_sublevel()
             tracers_out = super().eval(jaxpr, consts, *args)
 
         return [r.val if isinstance(r, TransformTracer) else r for r in tracers_out]
-
-
-# pylint: disable=unused-argument, too-many-arguments, protected-access
-@TransformInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr, n_consts):
-    """Handle a qnode primitive."""
-    consts = invals[:n_consts]
-
-    self._state["shots"] = qml.measurements.Shots(shots)  # pylint: disable=protected-access
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *invals[n_consts:])
-
-    return qnode_prim.bind(
-        *invals,
-        shots=shots,
-        qnode=qnode,
-        device=device,
-        qnode_kwargs=qnode_kwargs,
-        qfunc_jaxpr=new_qfunc_jaxpr,
-        n_consts=n_consts,
-    )
 
 
 @TransformInterpreter.register_primitive(adjoint_transform_prim)
