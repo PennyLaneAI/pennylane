@@ -15,10 +15,9 @@ r"""Core resource tracking logic."""
 from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
-from typing import Dict, Iterable, List, Set
+from typing import Dict, Iterable, List, Set, Union
 
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
@@ -63,7 +62,9 @@ resource_config = {
 
 
 @singledispatch
-def get_resources(obj, gate_set: Set = DefaultGateSet, config: Dict = resource_config) -> Resources:
+def get_resources(
+    obj, gate_set: Set = DefaultGateSet, config: Dict = resource_config
+) -> Union[Resources, Callable]:
     r"""Obtain the resources from a quantum circuit or operation in terms of the gates provided
     in the gate_set.
 
@@ -181,7 +182,7 @@ def resources_from_qfunc(
         with AnnotatedQueue() as q:
             obj(*args, **kwargs)
 
-        operations = tuple(op for op in q.queue if not isinstance(op, MeasurementProcess))
+        operations = tuple(op for op in q.queue if isinstance(op, Operation))
         compressed_res_ops_lst = _operations_to_compressed_reps(operations)
 
         initial_gate_set = set.union(gate_set, _StandardGateSet)
@@ -247,7 +248,7 @@ def _counts_from_compressed_res_op(
     Args:
         cp_rep (CompressedResourceOp): operation in compressed representation to extract resources from
         gate_counts_dict (Dict): base dictionary to modify with the resource counts
-        gate_set (Set): the set of operations to track resources with respect too
+        gate_set (Set): the set of operations to track resources with respect to
         scalar (int, optional): optional scalar to multiply the counts. Defaults to 1.
         config (Dict, optional): additional parameters to specify the resources from an operator. Defaults to resource_config.
     """
