@@ -36,18 +36,6 @@
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support. This module introduces:
-  - A new API for mixed-state operations
-  - An `apply_operation` helper function featuring:
-    - Two density matrix contraction methods using `einsum` and `tensordot`
-    - Optimized handling of special cases including:
-      - Diagonal operators
-      - Identity operators 
-      - CX (controlled-X)
-      - Multi-controlled X gates
-      - Grover operators
-  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
-
 <h4>Capturing and representing hybrid programs</h4>
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
@@ -77,6 +65,11 @@
   check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
 
+* Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
+  are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
+  respectively.
+  [(#6537)](https://github.com/PennyLaneAI/pennylane/pull/6537)
+  
 * The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
   [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
 
@@ -99,6 +92,7 @@
 
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+  
 
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
@@ -106,6 +100,10 @@
   [(#6561)](https://github.com/PennyLaneAI/pennylane/pull/6561)
 
 <h3>Deprecations 👋</h3>
+
+* The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
+  Instead, use the `qml.workflow.get_best_diff_method` function.
+  [(#6418)](https://github.com/PennyLaneAI/pennylane/pull/6418)
 
 * The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,
   to better align with the termionology used by the `QNode`.
