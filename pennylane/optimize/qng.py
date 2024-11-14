@@ -14,9 +14,9 @@
 """Quantum natural gradient optimizer"""
 import numbers
 
-import pennylane as qml
-
 from collections.abc import Iterable
+
+import pennylane as qml
 
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments

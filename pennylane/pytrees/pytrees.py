@@ -14,15 +14,11 @@
 """
 An internal module for working with pytrees.
 """
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-import numbers
-
-import pennylane as qml
 import pennylane.queuing
-from pennylane import numpy as np
 
 has_jax = True
 try:
