@@ -521,7 +521,6 @@ def param_shift_hessian(
         the parameter-shifted tapes and a post-processing function to combine the execution
         results of these tapes into the Hessian:
 
-        >>> circuit(x)  # generate the QuantumTape inside the QNode
         >>> tape = qml.workflow.construct_tape(circuit)(x)
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
         >>> len(hessian_tapes)
