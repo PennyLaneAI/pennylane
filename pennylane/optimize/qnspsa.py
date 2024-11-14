@@ -371,7 +371,6 @@ class QNSPSAOptimizer:
 
         tape = qml.workflow.construct_tape(cost)(*args_plus, **kwargs)
         tape_plus = tape.copy(copy_operations=True)
-        cost.construct(args_minus, kwargs)
         tape = qml.workflow.construct_tape(cost)(*args_minus, **kwargs)
         tape_minus = tape.copy(copy_operations=True)
         return [tape_plus, tape_minus], dirs
