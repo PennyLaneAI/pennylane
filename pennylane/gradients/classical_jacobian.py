@@ -141,7 +141,6 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
         """Returns the trainable gate parameters for a given QNode input."""
         kwargs.pop("shots", None)
         kwargs.pop("argnums", None)
-        qnode.construct(args, kwargs)
         tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
 
         if expand_fn is not None:
