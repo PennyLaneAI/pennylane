@@ -401,7 +401,6 @@ def clifford_t_decomposition(
                 if op.num_wires == 1:
                     if op.name in basis_set:
                         d_ops = _rot_decompose(op)
-                        decomp_ops.extend(d_ops)
                     else:
                         d_ops, g_op = _one_qubit_decompose(op)
                         gphase_ops.append(g_op)
