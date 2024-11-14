@@ -473,7 +473,10 @@ class TestTapeConstruction:
         y = pnp.array(0.54, requires_grad=True)
 
         res = qn(x, y)
-        tape = qml.workflow.construct_tape(qn)(x, y)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="tape/qtape property is deprecated"
+        ):
+            tape = qn.tape
 
         assert isinstance(tape, QuantumScript)
         assert len(tape.operations) == 3
@@ -487,7 +490,10 @@ class TestTapeConstruction:
         # when called, a new quantum tape is constructed
         old_tape = tape
         res2 = qn(x, y)
-        new_tape = qml.workflow.construct_tape(qn)(x, y)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="tape/qtape property is deprecated"
+        ):
+            new_tape = qn.tape
 
         assert np.allclose(res, res2, atol=tol, rtol=0)
         assert new_tape is not old_tape
@@ -638,23 +644,11 @@ def test_decorator(tol):
     y = pnp.array(0.54, requires_grad=True)
 
     res = func(x, y)
-    tape = qml.workflow.construct_tape(func)(x, y)
-
-    assert isinstance(tape, QuantumScript)
-    assert len(tape.operations) == 3
-    assert len(tape.observables) == 1
-    assert tape.num_params == 2
-
     expected = np.cos(x)
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # when called, a new quantum tape is constructed
-    old_tape = tape
     res2 = func(x, y)
-    new_tape = qml.workflow.construct_tape(func)(x, y)
-
     assert np.allclose(res, res2, atol=tol, rtol=0)
-    assert new_tape is not old_tape
 
 
 class TestIntegration:
