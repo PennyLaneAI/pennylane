@@ -71,7 +71,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
 
     Args:
         H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
-        of Hermitian matrices of dimension ``(batch, 2**n, 2**n)``.
+            of Hermitian matrices of dimension ``(batch, 2**n, 2**n)``.
 
     Returns:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
