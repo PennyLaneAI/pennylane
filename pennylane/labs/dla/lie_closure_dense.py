@@ -112,7 +112,7 @@ def lie_closure_dense(
     The input operators are converted to Hermitian matrices internally. This means
     that we compute the operators :math:`G_\alpha` in the algebra :math:`\{iG_\alpha\}_\alpha`,
     which itself consists of skew-Hermitian objects (commutators produce skew-Hermitian objects,
-    so Hermitian operators alone can not form an algebra).
+    so Hermitian operators alone can not form an algebra with the standard commutator).
     """
 
     if n is None:

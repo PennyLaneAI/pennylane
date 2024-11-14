@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A function to compute the structure constants that make up the adjoint representation of a Lie algebra"""
+"""A function to compute the structure constants that make up
+the adjoint representation of a Lie algebra in a dense matrix representation."""
 
 import numpy as np
 
