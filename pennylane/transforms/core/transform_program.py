@@ -455,7 +455,6 @@ class TransformProgram:
                 classical_jacobian = jacobian(
                     classical_preprocessing, sub_program, argnums, *args, **kwargs
                 )
-                qnode.construct(args, kwargs)
                 tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
                 tapes, _ = sub_program((tape,))
                 multi_tapes = len(tapes) > 1
