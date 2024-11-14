@@ -533,33 +533,22 @@ class TestShotsIntegration:
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(DefaultQubit())
+        dev = DefaultQubit()
+
+        @qnode(dev)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn == "backprop"  # gets restored to default
-
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
         assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn == "backprop"
         assert spy.call_args[1]["diff_method"] == "backprop"
 
 
