@@ -203,7 +203,7 @@ class TestCliffordCompile:
 
         old_tape = qml.tape.make_qscript(circuit)()
 
-        [new_tape], tape_fn = clifford_t_decomposition(old_tape)
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=3)
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
