@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the BasisStatePreparation template.
+Contains the QutritBasisStatePreparation template.
 """
 
 import numpy as np

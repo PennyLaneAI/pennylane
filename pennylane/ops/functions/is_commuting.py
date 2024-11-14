@@ -266,7 +266,6 @@ non_commuting_operations = [
     "BasisState",
     # Templates
     "ArbitraryStatePreparation",
-    "BasisStatePreparation",
     "MottonenStatePreparation",
     "QubitCarry",
     "QubitSum",
