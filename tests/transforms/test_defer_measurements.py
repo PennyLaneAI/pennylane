@@ -1349,46 +1349,6 @@ class TestExpressionConditionals:
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 
-    @pytest.mark.filterwarnings(
-        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
-    )
-    def test_basis_state_prep(self):
-        """Test the basis state prep template conditioned on mid-circuit
-        measurement outcomes."""
-        template = qml.BasisStatePreparation
-
-        basis_state = [0, 1, 1, 0]
-
-        dev = qml.device("default.qubit", wires=6)
-
-        @qml.qnode(dev)
-        def qnode1():
-            qml.Hadamard(0)
-            qml.ctrl(template, control=0)(basis_state, wires=range(1, 5))
-            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
-
-        @qml.qnode(dev)
-        @qml.defer_measurements
-        def qnode2():
-            qml.Hadamard(0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, template)(basis_state, wires=range(1, 5))
-            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
-
-        assert np.allclose(qnode1(), qnode2())
-
-        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
-        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
-
-        # Check the operations
-        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
-            assert isinstance(op1, type(op2))
-            assert np.allclose(op1.data, op2.data)
-
-        # Check the measurements
-        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
-            assert isinstance(op1, type(op2))
-
     def test_angle_embedding(self):
         """Test the angle embedding template conditioned on mid-circuit
         measurement outcomes."""
