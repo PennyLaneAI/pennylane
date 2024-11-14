@@ -193,12 +193,12 @@ class CompositeOp(Operator):
         for ops in self.overlapping_ops:
             if len(ops) == 1:
                 eigvals.append(
-                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                    math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
                 )
             else:
                 tmp_composite = self.__class__(*ops)
                 eigvals.append(
-                    qml.utils.expand_vector(
+                    math.expand_vector(
                         tmp_composite.eigendecomposition["eigval"],
                         list(tmp_composite.wires),
                         list(self.wires),

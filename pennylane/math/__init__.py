@@ -82,6 +82,7 @@ from .quantum import (
     max_entropy,
     min_entropy,
     trace_distance,
+    expand_vector,
 )
 from .fidelity import fidelity, fidelity_statevector
 from .utils import (
@@ -152,6 +153,7 @@ __all__ = [
     "dot",
     "einsum",
     "expand_matrix",
+    "expand_vector",
     "expectation_value",
     "eye",
     "fidelity",
