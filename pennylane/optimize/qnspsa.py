@@ -430,7 +430,6 @@ class QNSPSAOptimizer:
 
     @staticmethod
     def _get_operations(cost, args, kwargs):
-        cost.construct(args, kwargs)
         tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
         return tape.operations
 
