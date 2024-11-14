@@ -291,7 +291,10 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
 
 
 def _check_requires_grad(basis_param, normalize, args, index):
-    """Helper function that returns differentiability of params"""
+    """Helper function that returns differentiability of params
+    
+    For JAX arrays, only JAX tracers are considered differentiable.
+    """
     return (
         getattr(basis_param, "requires_grad", False)
         or normalize
