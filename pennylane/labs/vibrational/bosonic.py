@@ -41,10 +41,10 @@ class BoseWord(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator, cform=False):
+    def __init__(self, operator, is_hardcore=False):
 
         self.sorted_dic = dict(sorted(operator.items()))
-        self.cform = cform
+        self.is_hardcore = is_hardcore
         indices = [i[0] for i in self.sorted_dic.keys()]
 
         if indices:
@@ -52,7 +52,10 @@ class BoseWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
-
+            
+        if is_hardcore:
+            
+            
         super().__init__(operator)
 
     def adjoint(self):
@@ -288,7 +291,7 @@ class BoseWord(dict):
         """
         bw_terms = sorted(self)
         len_op = len(bw_terms)
-        bw_comm = BoseSentence({BoseWord({}): 0.0}, cform=self.cform)
+        bw_comm = BoseSentence({BoseWord({}): 0.0}, is_hardcore=self.is_hardcore)
 
         if len_op == 0:
             return 1 * BoseWord({})
@@ -319,7 +322,7 @@ class BoseWord(dict):
         ordered_op = bw + bw_comm.normal_order()
         ordered_op.simplify(tol=1e-8)
 
-        if self.cform:
+        if self.is_hardcore:
             for bw, _ in ordered_op.items():
                 bw_arr = list(bw.keys())
                 indice_arr = [x[1] for x in bw_arr]
@@ -431,9 +434,9 @@ class BoseSentence(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator, cform=False):
+    def __init__(self, operator, is_hardcore=False):
         super().__init__(operator)
-        self.cform = cform
+        self.is_hardcore = is_hardcore
 
     def adjoint(self):
         r"""Return the adjoint of BoseSentence."""
@@ -605,7 +608,7 @@ class BoseSentence(dict):
     def normal_order(self):
         r"""Convert a BoseSentence to its normal-ordered form."""
 
-        bose_sen_ordered = BoseSentence({}, cform=self.cform)
+        bose_sen_ordered = BoseSentence({}, is_hardcore=self.is_hardcore)
 
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()
