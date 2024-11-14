@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-from functools import reduce
+from functools import reduce, singledispatch
 from typing import Optional
 
 import numpy as np
+import scipy
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 from pennylane.typing import TensorLike
@@ -225,24 +227,46 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
     return H_ops
 
 
-def orthonormalize(vspace):
-    if isinstance(vspace, PauliVSpace):
-        vspace = vspace.basis
+def orthonormalize(basis):
+    """Orthonormalize a list of basis vectors"""
+    return _orthonormalize(basis)
 
-    if not all(isinstance(op, PauliSentence) for op in vspace):
-        vspace = [op.pauli_rep for op in vspace]
 
-    if len(vspace) == 0:
-        return vspace
+@singledispatch
+def _orthonormalize(basis):  # pylint:disable=unused-argument
+    r"""Dummy default implementation"""
+    raise NotImplementedError(f"orthonormalize not implemented for {basis} of type {type(basis)}")
 
-    all_pws = reduce(set.__or__, [set(ps.keys()) for ps in vspace])
+
+@_orthonormalize.register(np.ndarray)
+def _orthonormalize_np(basis):
+    gram_inv = np.linalg.pinv(
+        scipy.linalg.sqrtm(np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real)
+    )
+    return np.tensordot(gram_inv, basis, axes=1)
+
+
+@_orthonormalize.register(PauliSentence)
+@_orthonormalize.register(PauliVSpace)
+@_orthonormalize.register(Operator)
+def _orthonormalize_ps(basis):
+    if isinstance(basis, PauliVSpace):
+        basis = basis.basis
+
+    if not all(isinstance(op, PauliSentence) for op in basis):
+        basis = [op.pauli_rep for op in basis]
+
+    if len(basis) == 0:
+        return basis
+
+    all_pws = reduce(set.__or__, [set(ps.keys()) for ps in basis])
     num_pw = len(all_pws)
 
     _pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
-    _idx_to_pw = {i: pw for i, pw in enumerate(all_pws)}
-    _M = np.zeros((num_pw, len(vspace)), dtype=float)
+    _idx_to_pw = dict(enumerate(all_pws))
+    _M = np.zeros((num_pw, len(basis)), dtype=float)
 
-    for i, gen in enumerate(vspace):
+    for i, gen in enumerate(basis):
         for pw, value in gen.items():
             _M[_pw_to_idx[pw], i] = value
 
@@ -262,7 +286,7 @@ def orthonormalize(vspace):
     # reconstruct normalized operators
 
     generators_orthogonal = []
-    for i in range(len(vspace)):
+    for i in range(len(basis)):
         u1 = PauliSentence({})
         for j in range(num_pw):
             u1 += _idx_to_pw[j] * OM[j, i]
