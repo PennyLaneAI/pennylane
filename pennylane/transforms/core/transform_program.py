@@ -386,7 +386,6 @@ class TransformProgram:
             """Returns the trainable gate parameters for a given QNode input."""
             kwargs.pop("shots", None)
             kwargs.pop("argnums", None)
-            qnode.construct(args, kwargs)
             tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
             tapes, _ = program((tape,))
             res = tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
