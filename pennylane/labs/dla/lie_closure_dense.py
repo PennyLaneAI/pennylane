@@ -28,6 +28,8 @@ from pennylane.pauli import PauliSentence, PauliWord
 def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis_length: int = 0):
     """Find a linearly independent basis of a list of (skew-) Hermitian matrices
 
+    .. note:: The first ``subbasis_length`` elements of ``matrices`` are assumed to already be orthogonal and Hermitian and will not be changed.
+
     Args:
         matrices (Union[numpy.ndarray, Iterable[numpy.ndarray]]): A list of Hermitian matrices.
         tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
@@ -64,7 +66,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
 def lie_closure_dense(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
-    n: int=None,
+    n: int = None,
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
@@ -76,9 +78,9 @@ def lie_closure_dense(
     :class:`~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
     that are sums of many Paulis.
 
-    .. seealso:: 
-    
-        For details on the mathematical definitions, see :func:`~lie_closure` and our 
+    .. seealso::
+
+        For details on the mathematical definitions, see :func:`~lie_closure` and our
         `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
     Args:
