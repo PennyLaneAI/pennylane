@@ -106,7 +106,8 @@ def metric_tensor(  # pylint:disable=too-many-arguments
         - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
 
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
-    It is closely related to the quantum fisher information matrix, see :func:`~.pennylane.gradients.transforms.quantum_fisher` and eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_.
+    It is closely related to the quantum fisher information matrix, see :func:`~.pennylane.gradients.quantum_fisher` and eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_.
+
 
     .. note::
 
