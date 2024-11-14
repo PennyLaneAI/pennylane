@@ -631,19 +631,30 @@ class Rot(Operation):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
+            I_coeff = qml.math.cos(self.data[1] / 2) * qml.math.cos(
+                (self.data[0] + self.data[2]) / 2
+            )
+            X_coeff = (
+                -1j
+                * qml.math.sin(self.data[1] / 2)
+                * qml.math.sin((self.data[0] - self.data[2]) / 2)
+            )
+            Y_coeff = (
+                -1j
+                * qml.math.cos((self.data[0] - self.data[2]) / 2)
+                * qml.math.sin((self.data[1]) / 2)
+            )
+            Z_coeff = (
+                -1j
+                * qml.math.cos(self.data[1] / 2)
+                * qml.math.sin((self.data[0] + self.data[2]) / 2)
+            )
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): qml.math.cos(self.data[1] / 2)
-                    * qml.math.cos((self.data[0] + self.data[2]) / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): -1j
-                    * qml.math.sin(self.data[1] / 2)
-                    * qml.math.sin((self.data[0] - self.data[2]) / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -1j
-                    * qml.math.cos((self.data[0] - self.data[2]) / 2)
-                    * qml.math.sin((self.data[1]) / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "Z"}): -1j
-                    * qml.math.cos(self.data[1] / 2)
-                    * qml.math.sin((self.data[0] + self.data[2]) / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): I_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): X_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "Y"}): Y_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): Z_coeff,
                 }
             )
         return self._pauli_rep
