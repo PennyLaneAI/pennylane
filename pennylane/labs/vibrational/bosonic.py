@@ -283,8 +283,10 @@ class BoseWord(dict):
         r"""Convert a BoseWord to its normal-ordered form.
 
         >>> bw = BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
-        >>> bw.normal_order()
-        BoseSentence({BoseWord({(0, 0): '+', (1, 0): '-'}): 4.0, BoseWord({}): 2.0, BoseWord({(0, 0): '+', (1, 0): '+', (2, 0): '-', (3, 0): '-'}): 1.0})
+        >>> print(bw.normal_order())
+        4.0 * b⁺(0) b(0)
+        + 2.0 * I
+        + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
         """
         bw_terms = sorted(self)
         len_op = len(bw_terms)
