@@ -21,7 +21,6 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import convert_to_H
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 
 
@@ -41,15 +40,11 @@ def _generator_hamiltonian(gen, op):
 
         return qml.pauli_decompose(mat, wire_order=op.wires, hide_identity=True)
 
-    if isinstance(gen, qml.operation.Observable):
-        return qml.Hamiltonian([1.0], [gen])
-
     if isinstance(gen, (SProd, Prod, Sum)):
-        return convert_to_H(gen)
+        coeffs, ops = gen.terms()
+        return qml.Hamiltonian(coeffs, ops)
 
-    raise TypeError(
-        f"Could not return generator of type {type(gen)} as a :class:`~ops.LinearCombination`"
-    )
+    return qml.Hamiltonian([1.0], [gen])
 
 
 # pylint: disable=no-member
