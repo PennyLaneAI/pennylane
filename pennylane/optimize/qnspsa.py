@@ -434,7 +434,6 @@ class QNSPSAOptimizer:
         return tape.operations
 
     def _apply_blocking(self, cost, args, kwargs, params_next):
-        cost.construct(args, kwargs)
         tape = qml.workflow.construct_tape(cost)(*args, **kwargs)
         tape_loss_curr = tape.copy(copy_operations=True)
 
