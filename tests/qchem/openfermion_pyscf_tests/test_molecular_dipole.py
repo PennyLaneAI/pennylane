@@ -367,7 +367,7 @@ def test_molecular_dipole_error():
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_real_dipole(method, args, tmpdir):
     r"""Test that the generated operator has real coefficients."""
 

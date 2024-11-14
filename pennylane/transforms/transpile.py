@@ -142,10 +142,7 @@ def transpile(
             f"Not all wires present in coupling map! wires: {wires}, coupling map: {coupling_graph.nodes}"
         )
 
-    if any(
-        isinstance(m.obs, (LinearCombination, qml.ops.Prod))
-        for m in tape.measurements
-    ):
+    if any(isinstance(m.obs, (LinearCombination, qml.ops.Prod)) for m in tape.measurements):
         raise NotImplementedError(
             "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
         )

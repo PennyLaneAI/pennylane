@@ -355,9 +355,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         settings = self.settings
         pulses = self.pulses
 
-        if isinstance(
-            other, (qml.ops.LinearCombination, ParametrizedHamiltonian)
-        ):
+        if isinstance(other, (qml.ops.LinearCombination, ParametrizedHamiltonian)):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return HardwareHamiltonian(

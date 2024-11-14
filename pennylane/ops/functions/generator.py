@@ -21,34 +21,30 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import convert_to_H
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 
 
 # pylint: disable=too-many-branches
 def _generator_hamiltonian(gen, op):
-    """Return the generator as type :class:`~.ops.LinearCombination`."""
-    wires = op.wires
+    """Return the generator as type :class:`~ops.LinearCombination`."""
 
     if isinstance(gen, LinearCombination):
-        H = gen
+        return gen
 
-    elif isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
+    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
         if isinstance(gen, qml.Hermitian):
             mat = gen.parameters[0]
 
         elif isinstance(gen, qml.SparseHamiltonian):
             mat = gen.parameters[0].toarray()
 
-        H = qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
+        return qml.pauli_decompose(mat, wire_order=op.wires, hide_identity=True)
 
-    elif isinstance(gen, qml.operation.Observable):
-        H = qml.Hamiltonian([1.0], [gen])
+    if isinstance(gen, (SProd, Prod, Sum)):
+        coeffs, ops = gen.terms()
+        return qml.Hamiltonian(coeffs, ops)
 
-    elif isinstance(gen, (SProd, Prod, Sum)):
-        H = convert_to_H(gen)
-
-    return H
+    return qml.Hamiltonian([1.0], [gen])
 
 
 # pylint: disable=no-member
@@ -64,11 +60,16 @@ def _generator_prefactor(gen):
 
     prefactor = 1.0
 
-    if isinstance(gen, Prod):
-        gen = qml.simplify(gen)
+    # simplify
+    gen = qml.simplify(gen) if isinstance(gen, Prod) else gen
 
     if isinstance(gen, LinearCombination):
         gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
+
+    # return stuff
+    if isinstance(gen, Prod):
+        coeffs, ops = gen.terms()
+        return ops[0], coeffs[0]
 
     if isinstance(gen, Sum):
         ops = [o.base if isinstance(o, SProd) else o for o in gen]
@@ -168,7 +169,7 @@ def generator(op: qml.operation.Operator, format="prefactor"):
     >>> op = qml.RX(0.2, wires=0)
     >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
     (X(0), -0.5)
-    >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
+    >>> qml.generator(op, format="hamiltonian")  # output will be a LinearCombination
     -0.5 * X(0)
     >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])

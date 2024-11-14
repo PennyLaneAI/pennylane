@@ -308,8 +308,9 @@ class TestDotPauliSentence:
         """Test that the coefficients and operators of the returned PauliSentence are correct."""
         ps = qml.dot(coeffs0, ops0, pauli=True)
         h = ps.operation()
-        assert qml.math.allequal(h.coeffs, coeffs0)
-        for _op1, _op2 in zip(h.ops, ops0):
+        hcoeffs, hops = h.terms()
+        assert qml.math.allequal(hcoeffs, coeffs0)
+        for _op1, _op2 in zip(hops, ops0):
             qml.assert_equal(_op1, _op2)
 
     def test_dot_simplifies_linear_combination(self):

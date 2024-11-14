@@ -157,7 +157,9 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int
     num_executions = 0
     num_shots = 0
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, qml.ops.LinearCombination):
+        if isinstance(group[0], ExpectationMP) and isinstance(
+            group[0].obs, qml.ops.LinearCombination
+        ):
             H_executions = _get_num_executions_for_expval_H(group[0].obs)
             num_executions += H_executions
             if tape.shots:
