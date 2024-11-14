@@ -27,12 +27,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-pytestmark = [
-    pytest.mark.jax,
-    pytest.mark.filterwarnings(
-        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
-    ),
-]
+pytestmark = pytest.mark.jax
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 
 
@@ -120,9 +115,6 @@ unmodified_templates_cases = [
     (qml.ArbitraryStatePreparation, (jnp.ones(6), [2, 3]), {}),
     (qml.ArbitraryStatePreparation, (jnp.zeros(14),), {"wires": [3, 2, 0]}),
     (qml.ArbitraryStatePreparation, (), {"weights": jnp.ones(2), "wires": [1]}),
-    (qml.BasisStatePreparation, (jnp.array([0, 1]), [2, 3]), {}),
-    (qml.BasisStatePreparation, (jnp.ones(3),), {"wires": [3, 2, 0]}),
-    (qml.BasisStatePreparation, (), {"basis_state": jnp.ones(1), "wires": [1]}),
     (qml.CosineWindow, ([2, 3],), {}),
     (qml.CosineWindow, (), {"wires": [2, 0, 1]}),
     (qml.MottonenStatePreparation, (jnp.ones(4) / 2, [2, 3]), {}),
