@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-
+from functools import reduce
 from typing import Optional
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
-from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 from pennylane.typing import TensorLike
 
 
@@ -223,3 +223,50 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
     if single_H:
         return H_ops[0]
     return H_ops
+
+
+def orthonormalize(vspace):
+    if isinstance(vspace, PauliVSpace):
+        vspace = vspace.basis
+
+    if not all(isinstance(op, PauliSentence) for op in vspace):
+        vspace = [op.pauli_rep for op in vspace]
+
+    if len(vspace) == 0:
+        return vspace
+
+    all_pws = reduce(set.__or__, [set(ps.keys()) for ps in vspace])
+    num_pw = len(all_pws)
+
+    _pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
+    _idx_to_pw = {i: pw for i, pw in enumerate(all_pws)}
+    _M = np.zeros((num_pw, len(vspace)), dtype=float)
+
+    for i, gen in enumerate(vspace):
+        for pw, value in gen.items():
+            _M[_pw_to_idx[pw], i] = value
+
+    def gram_schmidt(X):
+        Q, _ = np.linalg.qr(X)
+        return Q
+
+    OM = gram_schmidt(_M)
+    for i in range(OM.shape[1]):
+        for j in range(OM.shape[1]):
+            prod = OM[:, i] @ OM[:, j]
+            if i == j:
+                assert np.isclose(prod, 1)
+            else:
+                assert np.isclose(prod, 0)
+
+    # reconstruct normalized operators
+
+    generators_orthogonal = []
+    for i in range(len(vspace)):
+        u1 = PauliSentence({})
+        for j in range(num_pw):
+            u1 += _idx_to_pw[j] * OM[j, i]
+        u1.simplify()
+        generators_orthogonal.append(u1)
+
+    return generators_orthogonal
