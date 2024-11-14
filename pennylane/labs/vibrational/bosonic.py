@@ -265,7 +265,7 @@ class BoseWord(dict):
         r"""Exponentiate a Bose word to an integer power.
 
         >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w**3
+        >>> print(w**3)
         b⁺(0) b(1) b⁺(0) b(1) b⁺(0) b(1)
         """
 
