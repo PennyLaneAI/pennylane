@@ -311,12 +311,8 @@ class TestTransformProgramDunders:
 
     def test_equality(self):
         """Tests that we can compare TransformProgram objects with the '==' and '!=' operators."""
-        t1 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
-        t2 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
+        t1 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
+        t2 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
         t3 = TransformContainer(
             qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
         )
