@@ -90,6 +90,9 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
   process the diff method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
  
+* The `qml.QubitStateVector` template has been removed. Instead, use `qml.StatePrep`.
+  [(#6525)](https://github.com/PennyLaneAI/pennylane/pull/6525)
+
 * `qml.broadcast` has been removed. Users should use `for` loops instead.
   [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
 
@@ -106,6 +109,11 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
   [(#6561)](https://github.com/PennyLaneAI/pennylane/pull/6561)
 
 <h3>Deprecations 👋</h3>
+
+* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. 
+Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
+same information.
+  [(#6577)](https://github.com/PennyLaneAI/pennylane/pull/6577)
 
 * The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
   Instead, use the `qml.workflow.get_best_diff_method` function.
