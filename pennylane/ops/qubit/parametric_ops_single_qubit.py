@@ -829,7 +829,7 @@ class U1(Operation):
         if self._pauli_rep is None:
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
+                    qml.pauli.PauliWord({}): 0.5
                     * (1 + qml.math.exp(1j * self.data[0])),
                     qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
                     * (1 - qml.math.exp(1j * self.data[0])),
