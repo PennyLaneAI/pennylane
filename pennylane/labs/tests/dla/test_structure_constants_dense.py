@@ -20,7 +20,12 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import check_orthonormal, orthonormalize, structure_constants_dense
+from pennylane.labs.dla import (
+    check_orthonormal,
+    orthonormalize,
+    structure_constants_dense,
+    trace_inner_product,
+)
 from pennylane.pauli import PauliSentence, PauliWord
 
 ## Construct some example DLAs
@@ -91,9 +96,9 @@ class TestAdjointRepr:
 
         if use_orthonormal:
             dla = orthonormalize(dla)
-            assert check_orthonormal(dla, lambda x, y: (x @ y).trace())
+            assert check_orthonormal(dla, trace_inner_product)
             dla_dense = orthonormalize(dla_dense)
-            assert check_orthonormal(dla_dense, lambda x, y: np.trace(x @ y))
+            assert check_orthonormal(dla_dense, trace_inner_product)
 
         ad_rep = structure_constants_dense(dla_dense, is_orthonormal=use_orthonormal)
         for i in range(d):
