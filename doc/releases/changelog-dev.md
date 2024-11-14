@@ -36,6 +36,9 @@
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
+* Added functions to add and multiple Resources objects
+  [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
