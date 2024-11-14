@@ -50,7 +50,7 @@ class TestJaxExecuteUnitTests:
             return execute(
                 [tape],
                 device,
-                gradient_fn=param_shift,
+                diff_method=param_shift,
                 gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
             )[0]
 
@@ -77,7 +77,7 @@ class TestJaxExecuteUnitTests:
             return execute(
                 [tape],
                 device,
-                gradient_fn=param_shift,
+                diff_method=param_shift,
                 grad_on_execution=True,
             )[0]
 
@@ -103,7 +103,7 @@ class TestJaxExecuteUnitTests:
             return execute(
                 [tape],
                 device,
-                gradient_fn=param_shift,
+                diff_method=param_shift,
                 interface="None",
             )[0]
 
@@ -126,7 +126,7 @@ class TestJaxExecuteUnitTests:
             return execute(
                 [tape],
                 dev,
-                gradient_fn="adjoint",
+                diff_method="adjoint",
             )[0]
 
         a = jax.numpy.array([0.1, 0.2])
@@ -158,7 +158,7 @@ class TestJaxExecuteUnitTests:
             return execute(
                 [tape],
                 dev,
-                gradient_fn="adjoint",
+                diff_method="adjoint",
                 grad_on_execution=False,
             )[0]
 
@@ -194,7 +194,7 @@ class TestCaching:
             return execute(
                 [tape],
                 dev,
-                gradient_fn=param_shift,
+                diff_method=param_shift,
                 cachesize=cachesize,
             )[0]
 
@@ -222,7 +222,7 @@ class TestCaching:
             return execute(
                 [tape],
                 dev,
-                gradient_fn=param_shift,
+                diff_method=param_shift,
                 cache=cache,
             )[0]
 
@@ -259,7 +259,7 @@ class TestCaching:
             res = execute(
                 [tape1, tape2],
                 dev,
-                gradient_fn=param_shift,
+                diff_method=param_shift,
                 cache=cache,
             )
             return res[0]
@@ -286,7 +286,7 @@ class TestCaching:
             return execute(
                 [tape],
                 dev,
-                gradient_fn=param_shift,
+                diff_method=param_shift,
                 cache=cache,
             )[0]
 
@@ -338,7 +338,7 @@ class TestCaching:
             return execute(
                 [tape],
                 dev,
-                gradient_fn="adjoint",
+                diff_method="adjoint",
                 cache=cache,
                 grad_on_execution=False,
             )[0]
@@ -361,13 +361,13 @@ class TestCaching:
 
 
 execute_kwargs_integration = [
-    {"gradient_fn": param_shift},
+    {"diff_method": param_shift},
     {
-        "gradient_fn": "adjoint",
+        "diff_method": "adjoint",
         "grad_on_execution": True,
     },
     {
-        "gradient_fn": "adjoint",
+        "diff_method": "adjoint",
         "grad_on_execution": False,
     },
 ]
@@ -799,7 +799,7 @@ class TestVectorValuedJIT:
         dev = qml.device("default.qubit", wires=2, shots=10)
         params = jax.numpy.array([0.1, 0.2, 0.3])
 
-        grad_meth = execute_kwargs.get("gradient_fn", "")
+        grad_meth = execute_kwargs.get("diff_method", "")
 
         if grad_meth in ("adjoint", "backprop"):
             pytest.skip("Adjoint does not support probs")
@@ -929,7 +929,7 @@ class TestJitAllCounts:
 
 @pytest.mark.xfail(reason="Need to figure out how to handle this case in a less ambiguous manner")
 def test_diff_method_None_jit():
-    """Test that jitted execution works when `gradient_fn=None`."""
+    """Test that jitted execution works when `diff_method=None`."""
 
     dev = qml.device("default.qubit", wires=1, shots=10)
 
@@ -941,6 +941,6 @@ def test_diff_method_None_jit():
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        return qml.execute([tape], dev, gradient_fn=None)
+        return qml.execute([tape], dev, diff_method=None)
 
     assert jax.numpy.allclose(wrapper(jax.numpy.array(0.0))[0], 1.0)
