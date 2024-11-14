@@ -211,7 +211,7 @@ class BoseWord(dict):
         r"""Multiply a BoseWord with another BoseWord, a BoseSentence, or a constant.
 
         >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w * w
+        >>> print(w * w)
         b⁺(0) b(1) b⁺(0) b(1)
         """
 
