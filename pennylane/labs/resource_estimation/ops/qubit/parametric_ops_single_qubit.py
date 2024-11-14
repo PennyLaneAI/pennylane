@@ -23,6 +23,7 @@ import pennylane.labs.resource_estimation as re
 
 
 def _rotation_resources(epsilon=10e-3):
+    """An estimate on the number of T gates needed to implement a Pauli rotation. The estimate is taken from https://arxiv.org/abs/1404.5320."""
     gate_types = {}
 
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)

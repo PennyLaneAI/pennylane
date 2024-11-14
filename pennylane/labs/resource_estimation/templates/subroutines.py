@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Resource operator for the QFT template."""
+r"""Resource operators for PennyLane subroutine templates."""
 from typing import Dict
 
 import pennylane as qml
