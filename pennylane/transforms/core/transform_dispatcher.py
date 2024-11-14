@@ -29,6 +29,13 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
+def _default_plxpr_transform(transform_name):  # pylint: disable=missing-function-docstring
+    def wrapper(*_, **__):
+        raise ValueError(f"{transform_name} cannot be used to transform PLxPR.")
+
+    return wrapper
+
+
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes, too-many-positional-arguments
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
@@ -71,6 +78,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes, too-
         is_informative=False,
         final_transform=False,
         use_argnum_in_expand=False,
+        plxpr_transform=None,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
@@ -79,7 +87,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes, too-
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
-        self._plxpr_transform = self.default_plxpr_transform
+        self._plxpr_transform = plxpr_transform or _default_plxpr_transform(
+            self._transform.__name__
+        )
+
         self._use_argnum_in_expand = use_argnum_in_expand
         functools.update_wrapper(self, transform)
 
@@ -231,14 +242,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes, too-
         )
         return qnode
 
-    def custom_plxpr_transform(self, fn):
-        """Register a custom function for processing primitives to transform PLxPR"""
-        self._plxpr_transform = types.MethodType(fn, self)
-
-    def default_plxpr_transform(
-        self, primitive, tracers, params, targs, tkwargs, state
-    ):  # pylint: disable=unused-argument
-        """Default implementation for a function for processing primitives to transform PLxPR.
+    def plxpr_transform(self, primitive, tracers, params, targs, tkwargs, state):
+        """Function for processing primitives to transform PLxPR.
 
         Args:
             primitive (jax.core.Primitive): Primitive to transform
@@ -252,12 +257,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes, too-
         Returns:
             Any: The results of the transformed primitive
         """
-        raise ValueError(f"{self._transform.__name__} cannot be used to transform PLxPR.")
-
-    @property
-    def plxpr_transform(self):
-        """Function for processing primitives to transform PLxPR"""
-        return self._plxpr_transform
+        return self._plxpr_transform(primitive, tracers, params, targs, tkwargs, state)
 
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
