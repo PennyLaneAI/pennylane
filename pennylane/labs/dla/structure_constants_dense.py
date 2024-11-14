@@ -92,6 +92,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
         g = np.array(g)
 
     assert g.shape[2] == g.shape[1]
+    chi = g.shape[1]
     # Assert Hermiticity of the input. Otherwise we'll get the sign wrong
     assert np.allclose(g.conj().transpose((0, 2, 1)), g)
 
@@ -103,16 +104,19 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
 
     # project commutators on the basis of g, see docstring for details.
     # Axis ordering is (dimg, _chi_, *chi*) x (dimg, *chi*, dimg, _chi_) -> (dimg, dimg, dimg)
-    adj = (1j * np.tensordot(g, all_coms, axes=[[1, 2], [3, 1]])).real
+    # Normalize trace inner product by dimension chi
+    adj = (1j * np.tensordot(g / chi, all_coms, axes=[[1, 2], [3, 1]])).real
 
     if not is_orthonormal:
         # If the basis is not orthonormal, compute the Gram matrix and apply its
         # (pseudo-)inverse to the obtained projections. See the docstring for details.
         # The Gram matrix is just one additional diagonal contraction of the ``prod`` tensor,
         # across the Hilbert space dimensions. (dimg, _chi_, dimg, _chi_) -> (dimg, dimg)
+        # This contraction is missing the normalization factor 1/chi of the trace inner product.
         gram_inv = np.linalg.pinv(np.sum(np.diagonal(prod, axis1=1, axis2=3), axis=-1).real)
         # Axis ordering for contraction with gamma axis of raw structure constants:
         # (dimg, _dimg_), (_dimg_, dimg, dimg) -> (dimg, dimg, dim)
-        adj = np.tensordot(gram_inv, adj, axes=1)
+        # Here we add the missing normalization factor of the trace inner product (after inversion)
+        adj = np.tensordot(gram_inv * chi, adj, axes=1)
 
     return adj
