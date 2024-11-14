@@ -42,7 +42,6 @@ class BoseWord(dict):
     __array_ufunc__ = None
 
     def __init__(self, operator, is_hardcore=False):
-
         self.sorted_dic = dict(sorted(operator.items()))
         self.is_hardcore = is_hardcore
         indices = [i[0] for i in self.sorted_dic.keys()]
@@ -53,9 +52,13 @@ class BoseWord(dict):
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
             
-        if is_hardcore:
-            
-            
+        if self.is_hardcore:
+            bw_arr = list(self.sorted_dic.keys())
+            indice_arr = [x[1] for x in bw_arr]
+            if len(indice_arr) != len(set(indice_arr)):
+                self.sorted_dic = {}
+                operator = {}
+        
         super().__init__(operator)
 
     def adjoint(self):
