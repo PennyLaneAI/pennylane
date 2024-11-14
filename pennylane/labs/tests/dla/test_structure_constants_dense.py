@@ -46,6 +46,9 @@ gens3 = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(2)]
 Heisenberg3_sum = qml.lie_closure(gens3)
 Heisenberg3_sum = [op.pauli_rep for op in Heisenberg3_sum]
 
+coeffs = np.random.random((len(XXZ3), len(XXZ3)))
+sum_XXZ3 = [qml.sum(*(c * op for c, op in zip(_coeffs, XXZ3))).pauli_rep for _coeffs in coeffs]
+
 
 class TestAdjointRepr:
     """Tests for structure_constants"""
@@ -76,6 +79,8 @@ class TestAdjointRepr:
             (XXZ3, False),
             (Heisenberg3_sum, True),
             (Heisenberg3_sum, False),
+            (sum_XXZ3, True),
+            (sum_XXZ3, False),
         ],
     )
     def test_structure_constants_elements(self, dla, use_orthonormal):
