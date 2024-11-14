@@ -90,8 +90,8 @@ class Tracker:
     >>> tracker.history['results']
     [1.0, -0.3, 0.16]
     >>> print(tracker.history['resources'][0])
-    wires: 1
-    gates: 1
+    num_wires: 1
+    num_gates: 1
     depth: 1
     shots: Shots(total=100)
     gate_types:

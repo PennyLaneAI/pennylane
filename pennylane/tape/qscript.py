@@ -1153,8 +1153,8 @@ class QuantumScript:
         >>> qscript.specs['gate_sizes']
         defaultdict(<class 'int'>, {1: 4, 2: 2})
         >>> print(qscript.specs['resources'])
-        wires: 2
-        gates: 6
+        num_wires: 2
+        num_gates: 6
         depth: 4
         shots: Shots(total=None)
         gate_types:

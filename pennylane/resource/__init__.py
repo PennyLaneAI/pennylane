@@ -110,8 +110,8 @@ We can examine the resources by accessing the :code:`resources` key:
 
 >>> resources_lst = tracker.history['resources']
 >>> print(resources_lst[0])
-wires: 3
-gates: 7
+num_wires: 3
+num_gates: 7
 depth: 5
 shots: Shots(None)
 gate_types:
