@@ -104,32 +104,6 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
            [0.  , 0.  , 0.  , 0.5 ],
            [0.  , 0.  , 0.6 , 0.  ]])
 
-
-    **Examples**
-    Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
-
-    >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
-    >>> mat = H.matrix()
-    array([[ 0.  +0.j,  0.4 +0.j,  0.25+0.j,  0.  +0.j],
-           [ 0.4 +0.j,  0.  +0.j,  0.  +0.j,  0.25+0.j],
-           [ 0.25+0.j,  0.  +0.j,  0.  +0.j, -0.4 +0.j],
-           [ 0.  +0.j,  0.25+0.j, -0.4 +0.j,  0.  +0.j]])
-
-    Then we can obtain the coefficients of :math:`H` in the Pauli basis via
-
-    >>> from pennylane.labs.dla import pauli_coefficients
-    >>> pauli_coefficients(mat)
-    array([ 0.  ,  0.  ,  0.  ,  0.  ,  0.25,  0.  ,  0.  ,  0.  ,  0.  ,
-            0.  , -0.  ,  0.  ,  0.  ,  0.4 ,  0.  ,  0.  ])
-
-    The function can be used on a batch of matrices:
-
-    >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0), 3 / 5 * qml.Y(0)]
-    >>> batch = np.stack([op.matrix() for op in ops])
-    >>> pauli_coefficients(batch)
-    array([[0.  , 0.25, 0.  , 0.  ],
-           [0.  , 0.  , 0.  , 0.5 ],
-           [0.  , 0.  , 0.6 , 0.  ]])
     """
     # Preparations
     shape = H.shape
