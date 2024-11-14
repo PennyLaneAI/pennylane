@@ -64,10 +64,6 @@ def _set_shots(device, shots):
     >>> _set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
-    # note, this function duplicates qml.workflow.set_shots
-    # duplicated here to avoid circular dependency issues
-    # qml.workflow.set_shots can be independently deprecated soon
-    # this version of the function is private to LegacyDeviceFacade
     shots = qml.measurements.Shots(shots)
     shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:
