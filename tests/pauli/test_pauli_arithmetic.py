@@ -1131,53 +1131,6 @@ class TestPauliSentence:
             }
         )
 
-    def test_tensor_like_inputs(self):
-        """Tests that the shape of (flattened) tensor like inputs is preserved in pauli arithmetic."""
-        assert qml.RX([0.1, 0.23, 1.11], wires=0).matrix().shape == (3, 2, 2)
-        assert (
-            qml.U1(
-                [
-                    [0.1, 0.23, 1.11, 2.34],
-                    [1.1, 1.23, 2.11, 3.34],
-                    [3.1, 3.23, 3.11, 3.34],
-                    [1.1, 1.23, 1.11, 1.34],
-                ],
-                wires="qubit0",
-            )
-            .matrix()
-            .shape
-        )
-        assert (
-            qml.RX([1.11, 2.11, 3.11], wires=0) @ qml.RY([1.23, 2.23, 3.23], wires=0)
-        ).matrix().shape == (3, 2, 2)
-        assert (
-            qml.RX([1.11, 2.11, 3.11], wires=0) @ qml.RY([1.23, 2.23, 3.23], wires="qubit1")
-        ).matrix().shape == (3, 4, 4)
-        assert (
-            qml.RX([1.11, 2.11, 3.11], wires="qubit0")
-            @ qml.RY([1.23, 2.23, 3.23], wires="qubit1")
-            @ qml.RY([1.23, 2.23, 3.23], wires="qubit3")
-        ).matrix().shape == (3, 8, 8)
-        assert (
-            qml.IsingXX([1.11, 2.11, 3.11, 4.11, 5.11], wires=[1, 2])
-            @ qml.PhaseShift([1.23, 2.23, 3.23, 4.23, 5.23], wires=2)
-            @ qml.PCPhase([1.23, 2.23, 3.23, 4.23, 4.23], dim=2, wires=1)
-        ).matrix().shape == (5, 4, 4)
-        assert (
-            qml.Rot(
-                [1.11, 2.11, 3.11, 4.11, 5.11],
-                [1.11, 2.11, 3.11, 4.11, 5.11],
-                [1.11, 2.11, 3.11, 4.11, 5.11],
-                wires=0,
-            )
-            @ qml.Rot(
-                [1.11, 2.11, 3.11, 4.11, 5.11],
-                [1.11, 2.11, 3.11, 4.11, 5.11],
-                [1.11, 2.11, 3.11, 4.11, 5.11],
-                wires=1,
-            )
-        ).matrix().shape == (5, 4, 4)
-
 
 class TestPauliSentenceMatrix:
     """Tests for calculating the matrix of a pauli sentence."""

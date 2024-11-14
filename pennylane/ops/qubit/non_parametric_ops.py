@@ -857,6 +857,7 @@ class S(Operation):
                 }
             )
         return self._pauli_rep
+
     def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
@@ -986,6 +987,7 @@ class T(Operation):
                 }
             )
         return self._pauli_rep
+
     def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]
@@ -1113,6 +1115,7 @@ class SX(Operation):
                 }
             )
         return self._pauli_rep
+
     def __repr__(self) -> str:
         """String representation."""
         wire = self.wires[0]

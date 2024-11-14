@@ -988,14 +988,13 @@ class PauliSentence(dict):
         if ml_interface == "torch":
             data0 = qml.math.convert_like(data0, coeff)
         data = coeff * data0
-
         for pw in pauli_words[1:]:
             coeff = self[pw]
             csr_data = pw._get_csr_data(wire_order, 1)
             ml_interface = qml.math.get_interface(coeff)
             if ml_interface == "torch":
                 csr_data = qml.math.convert_like(csr_data, coeff)
-            data += coeff * csr_data
+            data += self[pw] * csr_data
 
         return qml.math.einsum("ij,i->ij", base_matrix, data)
 
