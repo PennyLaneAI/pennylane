@@ -21,6 +21,9 @@ from .qubit import (
 )
 
 from .op_math import (
+    ResourceAdjoint,
     ResourceCNOT,
+    ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourcePow,
 )

@@ -95,5 +95,36 @@ class ResourceOperator(ABC):
         """Returns a compressed representation directly from the operator"""
         return self.__class__.resource_rep(**self.resource_params())
 
+    @classmethod
+    def adjoint_resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
+        """Returns a compressed representation of the adjoint of the operator"""
+        raise CompressedRepNotDefined
+
+    @classmethod
+    def controlled_resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
+        """Returns a compressed representation of the controlled version of the operator"""
+        raise CompressedRepNotDefined
+
+    @classmethod
+    def pow_resource_rep(cls, exponent, *args, **kwargs) -> CompressedResourceOp:
+        """Returns a compressed representation of the operator raised to a power"""
+        raise CompressedRepNotDefined
+
+class ResourceSymbolicOperator(ResourceOperator):
+    def __init__(self, base=None, id=None):
+        if not isinstance(base, ResourceOperator):
+            raise TypeError(f"base must be a subclass of ResourceOperator, got type {type(base)}.")
+
+        super().__init__(base=base, id=id)
+
+    def resource_params(self):
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params()
+        }
+
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
+
+class CompressedRepNotDefined(Exception):
+    """Exception to be raised when a compressed representation is not defined"""
