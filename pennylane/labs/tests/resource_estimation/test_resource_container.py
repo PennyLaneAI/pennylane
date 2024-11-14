@@ -37,6 +37,7 @@ from pennylane.labs.resource_estimation.resource_operator import ResourceOperato
 class ResourceDummyX(ResourceOperator):
     """Dummy testing class representing X gate"""
 
+
 class ResourceDummyQFT(ResourceOperator):
     """Dummy testing class representing QFT gate"""
 
