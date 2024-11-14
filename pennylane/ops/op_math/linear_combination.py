@@ -529,6 +529,7 @@ if LinearCombination._primitive is not None:
 
 
 # this just exists for the docs build for now, since we're waiting until the next PR to fix the docs
+# pylint: disable=too-few-public-methods
 class Hamiltonian:
     r"""Returns an operator representing a Hamiltonian.
 
