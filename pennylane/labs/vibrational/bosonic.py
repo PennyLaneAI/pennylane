@@ -118,7 +118,7 @@ class BoseWord(dict):
 
         >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
-        a⁺(0) a(1)
+        'b⁺(0) b(1)'
         """
         if len(self) == 0:
             return "I"
