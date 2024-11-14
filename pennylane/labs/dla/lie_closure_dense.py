@@ -64,7 +64,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
 def lie_closure_dense(
     generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
-    n=None,
+    n: int=None,
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
@@ -76,7 +76,10 @@ def lie_closure_dense(
     :class:`~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
     that are sums of many Paulis.
 
-    .. seealso:: For details on the mathematical definitions, see :func:`~lie_closure` and our `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
+    .. seealso:: 
+    
+        For details on the mathematical definitions, see :func:`~lie_closure` and our 
+        `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
@@ -85,7 +88,7 @@ def lie_closure_dense(
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
             calculation. Default is ``False``.
-        tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
+        tol (float): Numerical tolerance for the linear independence check between algebra elements
 
     Returns:
         numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linear independent basis of the DLA :math:`\mathfrak{g}` as dense matrices.

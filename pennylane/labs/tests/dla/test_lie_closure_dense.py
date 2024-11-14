@@ -20,27 +20,17 @@ from pennylane import I, X, Y, Z
 from pennylane.labs.dla import lie_closure_dense
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 
+XX = PauliWord({0: "X", 1: "X"})
+YY = PauliWord({0: "Y", 1: "Y"})
 ops1 = [
-    PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
-    PauliSentence(
-        {
-            PauliWord({0: "X", 1: "X"}): 1.0,
-        }
-    ),
-    PauliSentence(
-        {
-            PauliWord({0: "Y", 1: "Y"}): 2.0,
-        }
-    ),
+    PauliSentence({XX: 1.0, YY: 1.0}),
+    PauliSentence({XX: 1.0}),
+    PauliSentence({YY: 2.0}),
 ]
 
 ops2 = [
-    PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
-    PauliSentence(
-        {
-            PauliWord({0: "X", 1: "X"}): 1.0,
-        }
-    ),
+    PauliSentence({XX: 1.0, YY: 1.0}),
+    PauliSentence({XX: 1.0}),
 ]
 
 ops2plusY10 = ops2 + [PauliSentence({PauliWord({10: "Y"}): 1.0})]
@@ -54,10 +44,10 @@ dla11 = [
 ]
 
 
-class TestLieClosure:
+class TestLieClosureDense:
     """Tests for lie_closure_dense()"""
 
-    def test_verbose(self, capsys):
+    def test_verbose_true(self, capsys):
         """Test the verbose output"""
         gen11 = dla11[:-1]
         _ = lie_closure_dense(gen11, verbose=True)
@@ -182,7 +172,8 @@ class TestLieClosure:
 
     @pytest.mark.parametrize("n", range(2, 5))
     def test_lie_closure_dense_transverse_field_ising_1D_open(self, n):
-        """Test the lie closure works correctly for the transverse Field Ising model with open boundary conditions, a8 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
+        """Test the lie closure works correctly for the transverse Field Ising model with open boundary conditions,
+        a8 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
         generators = [
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n - 1)
         ]
@@ -194,7 +185,8 @@ class TestLieClosure:
         assert len(res) == (2 * n - 1) * (2 * n - 2) // 2
 
     def test_lie_closure_dense_transverse_field_ising_1D_cyclic(self):
-        """Test the lie closure works correctly for the transverse Field Ising model with cyclic boundary conditions, a8 in theorem IV.2 in https://arxiv.org/pdf/2309.05690.pdf"""
+        """Test the lie closure works correctly for the transverse Field Ising model with cyclic boundary conditions,
+        a8 in theorem IV.2 in https://arxiv.org/pdf/2309.05690.pdf"""
         n = 3
         generators = [PauliSentence({PauliWord({i: "X", (i + 1) % n: "X"}): 1.0}) for i in range(n)]
         generators += [
@@ -205,7 +197,8 @@ class TestLieClosure:
         assert len(res) == 2 * n * (2 * n - 1)
 
     def test_lie_closure_dense_heisenberg_generators_odd(self):
-        """Test the resulting DLA from Heisenberg generators with odd n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
+        """Test the resulting DLA from Heisenberg generators with odd n,
+        a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
         n = 3
         # dim of su(N) is N ** 2 - 1
         # Heisenberg generates su(2**(n-1)) for n odd            => dim should be (2**(n-1))**2 - 1
@@ -223,7 +216,8 @@ class TestLieClosure:
         assert len(res) == (2 ** (n - 1)) ** 2 - 1
 
     def test_lie_closure_dense_heisenberg_generators_even(self):
-        """Test the resulting DLA from Heisenberg generators with even n, a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
+        """Test the resulting DLA from Heisenberg generators with even n,
+        a7 in theorem IV.1 in https://arxiv.org/pdf/2309.05690.pdf"""
         n = 4
         # dim of su(N) is N ** 2 - 1
         # Heisenberg generates (su(2**(n-2)))**4 for n>=4 even   => dim should be 4*((2**(n-2))**2 - 1)
@@ -241,7 +235,7 @@ class TestLieClosure:
         assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
 
     @pytest.mark.parametrize("n, res", [(3, 4), (4, 12)])
-    def test_lie_closure_dense_heisenberg(self, n, res):
+    def test_lie_closure_dense_heisenberg_isotropic(self, n, res):
         """Test the resulting DLA from Heisenberg model with summed generators"""
         genXX = [X(i) @ X(i + 1) for i in range(n - 1)]
         genYY = [Y(i) @ Y(i + 1) for i in range(n - 1)]
