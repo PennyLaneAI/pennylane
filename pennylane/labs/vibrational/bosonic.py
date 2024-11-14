@@ -52,10 +52,8 @@ class BoseWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
-
+            
         super().__init__(operator)
-        if cform:
-            self.normal_order()
 
     def adjoint(self):
         r"""Return the adjoint of BoseWord."""
