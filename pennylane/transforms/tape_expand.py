@@ -36,7 +36,11 @@ def _update_trainable_params(tape):
 
 
 def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
-    """Create a function for expanding a tape to a given depth, and
+    """
+    .. warning::
+        Please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+
+    Create a function for expanding a tape to a given depth, and
     with a specific stopping criterion. This is a wrapper around
     :meth:`~.QuantumTape.expand`.
 
@@ -234,55 +238,6 @@ expand_invalid_trainable = create_expand_fn(
     docstring=_expand_invalid_trainable_doc,
 )
 
-_expand_invalid_trainable_doc_hadamard = """Expand out a tape so that it supports differentiation
-of requested operations with the Hadamard test gradient.
-
-This is achieved by decomposing all trainable operations that
-are not in the Hadamard compatible list until all resulting operations
-are in the list up to maximum depth ``depth``. Note that this
-might not be possible, in which case the gradient rule will fail to apply.
-
-Args:
-    tape (.QuantumTape): the input tape to expand
-    depth (int) : the maximum expansion depth
-    **kwargs: additional keyword arguments are ignored
-
-Returns:
-    .QuantumTape: the expanded tape
-"""
-
-
-@qml.BooleanFn
-def _is_hadamard_grad_compatible(obj):
-    """Check if the operation is compatible with Hadamard gradient transform."""
-    return obj.name in hadamard_comp_list
-
-
-hadamard_comp_list = [
-    "RX",
-    "RY",
-    "RZ",
-    "Rot",
-    "PhaseShift",
-    "U1",
-    "CRX",
-    "CRY",
-    "CRZ",
-    "IsingXX",
-    "IsingYY",
-    "IsingZZ",
-]
-
-
-expand_invalid_trainable_hadamard_gradient = create_expand_fn(
-    depth=None,
-    stop_at=not_tape
-    | is_measurement
-    | (~is_trainable)
-    | (_is_hadamard_grad_compatible & has_grad_method),
-    docstring=_expand_invalid_trainable_doc_hadamard,
-)
-
 
 @contextlib.contextmanager
 def _custom_decomp_context(custom_decomps):
@@ -324,7 +279,11 @@ def _custom_decomp_context(custom_decomps):
 
 
 def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=None):
-    """Creates a custom expansion function for a device that applies
+    """
+    .. warning::
+        Please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+
+    Creates a custom expansion function for a device that applies
     a set of specified custom decompositions.
 
     Args:
