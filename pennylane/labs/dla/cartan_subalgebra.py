@@ -60,6 +60,17 @@ def _orthogonal_complement_basis(h, m, tol):
     return basis.T  # Transpose to get row vectors
 
 
+def _change_basis_adj(adj, old_g, new_g):
+    # basis change old g @ X = new g => adj_new = contact(adj, X, X, X)
+    basis_change = np.tensordot(new_g, np.linalg.pinv(old_g), axes=[[1], [0]])
+    # Perform the einsum contraction "mnp, mh, ni, pj -> hij" via three einsum steps
+    new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
+    new_adj = np.einsum("mnp,in->mip", new_adj, basis_change)
+    new_adj = np.einsum("mnp,ip->mni", new_adj, basis_change)
+
+    return new_adj
+
+
 def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False):
     r"""
     Compute Cartan subalgebra (CSA) m in g, the odd parity subspace. I.e. the maximal Abelian subalgebra in m.
@@ -239,12 +250,8 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
     # Instead of recomputing the adjoint representation, take the basis transformation
     # oldg -> newg and transform the adjoint representation accordingly
     # TODO: implementation to be tested:
-    # basis change old g @ X = new g => adj_new = contact(adj, X, X, X)
-    basis_change = np.linalg.lstsq(np.vstack([np_k, np_m]).T, np_newg.T, rcond=None)[0]
-    # Perform the einsum contraction "mnp, mh, ni, pj -> hij" via three tensordot steps
-    new_adj = np.einsum("mnp,mi->inp", ad, basis_change)
-    new_adj = np.einsum("mnp,ni->mip", new_adj, basis_change)
-    new_adj = np.einsum("mnp,pi->mni", new_adj, basis_change)
+    np_oldg = np.vstack([np_k, np_m])
+    new_adj = _change_basis_adj(ad, np_oldg, np_newg)
 
     if return_adjvec:
         return np_newg, np_k, np_mtilde, np_h, new_adj
