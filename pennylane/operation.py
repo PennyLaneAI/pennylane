@@ -264,7 +264,6 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .pytrees import register_pytree
-from .utils import pauli_eigs
 
 # =============================================================================
 # Errors
@@ -2346,7 +2345,7 @@ class Tensor(Observable):
         standard_observables = {"PauliX", "PauliY", "PauliZ", "Hadamard"}
 
         # observable should be Z^{\otimes n}
-        self._eigvals_cache = pauli_eigs(len(self.wires))
+        self._eigvals_cache = qml.pauli.pauli_eigs(len(self.wires))
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -2357,7 +2356,7 @@ class Tensor(Observable):
                 if k:
                     # Subgroup g contains only standard observables.
                     self._eigvals_cache = qml.math.kron(
-                        self._eigvals_cache, pauli_eigs(len(list(g)))
+                        self._eigvals_cache, qml.pauli.pauli_eigs(len(list(g)))
                     )
                 else:
                     # Subgroup g contains only non-standard observables.
