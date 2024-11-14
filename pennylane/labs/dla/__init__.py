@@ -36,6 +36,9 @@ Utility functions
     ~pauli_coefficients
     ~pauli_decompose
     ~pauli_coefficients
+    ~orthonormalize
+    ~check_orthonormal
+    ~trace_inner_product
 
 Involutions
 ~~~~~~~~~~~
@@ -54,4 +57,10 @@ Involutions
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
 from .cartan import cartan_decomposition, even_odd_involution, concurrence_involution
-from .dense_util import pauli_decompose, pauli_coefficients
+from .dense_util import (
+    pauli_coefficients,
+    pauli_decompose,
+    orthonormalize,
+    check_orthonormal,
+    trace_inner_product,
+)

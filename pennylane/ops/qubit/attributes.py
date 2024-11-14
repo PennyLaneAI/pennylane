@@ -247,7 +247,6 @@ supports_broadcasting = Attribute(
         "DoubleExcitationMinus",
         "OrbitalRotation",
         "FermionicSWAP",
-        "QubitStateVector",
         "StatePrep",
         "AmplitudeEmbedding",
         "AngleEmbedding",
