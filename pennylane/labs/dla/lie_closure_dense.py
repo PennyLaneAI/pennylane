@@ -31,6 +31,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
     Args:
         matrices (Iterable[numpy.ndarray]): A list of Hermitian matrices.
         tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
+        subbasis_length (int): The first `subbasis_length` elements in `matrices` are left untouched.
 
     Returns:
         np.ndarray: Stacked array of linearly independent basis matrices.
