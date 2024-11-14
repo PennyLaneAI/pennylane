@@ -244,7 +244,9 @@ def _orthonormalize_np(basis: Iterable[np.ndarray]):
     gram_inv = np.linalg.pinv(
         scipy.linalg.sqrtm(np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real)
     )
-    return np.tensordot(gram_inv, basis, axes=1)
+    return np.tensordot(gram_inv, basis, axes=1) * np.sqrt(
+        len(basis[0])
+    )  # TODO absolutely not sure about this
 
 
 def _orthonormalize_ps(basis: Iterable[Union[PauliSentence, PauliVSpace, Operator]]):
