@@ -17,9 +17,9 @@ from typing import Dict
 import pennylane as qml
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
-    ResourceOperator,
     ResourceControlledPhaseShift,
     ResourceHadamard,
+    ResourceOperator,
     ResourceSWAP,
 )
 
