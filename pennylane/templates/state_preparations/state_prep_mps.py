@@ -47,22 +47,21 @@ class MPSPrep(Operation):
     """
 
     def __init__(self, mps, wires, id=None):
-        self.hyperparameters["mps"] = mps
-        super().__init__(wires=wires, id=id)
+        super().__init__(*mps, wires=wires, id=id)
 
     @property
     def mps(self):
         """list representing the MPS input"""
-        return self.hyperparameters["mps"]
+        return self.data
 
     def _flatten(self):
-        hyperparameters = (("mps", tuple(self.hyperparameters["mps"])), ("wires", self.wires))
-        return self.data, hyperparameters
+        hyperparameters = (("wires", self.wires),)
+        return self.mps, hyperparameters
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        hyperparams_dict = {key: list(value) if key == "mps" else value for key, value in metadata}
-        return cls(**hyperparams_dict)
+        hyperparams_dict = {key: value for key, value in metadata}
+        return cls(data, **hyperparams_dict)
 
     def map_wires(self, wire_map):
         new_wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
