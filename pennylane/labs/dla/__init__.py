@@ -1,4 +1,4 @@
-# Copyright 2022 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Differentiable quantum information module"""
+r"""
+Experimental Lie theory features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-from .transforms import (
-    reduced_dm,
-    vn_entropy,
-    purity,
-    mutual_info,
-    fidelity,
-    relative_entropy,
-    trace_distance,
-    vn_entanglement_entropy,
-)
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~lie_closure_dense
+
+
+"""
+
+from .lie_closure_dense import lie_closure_dense
