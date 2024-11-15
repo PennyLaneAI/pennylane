@@ -159,7 +159,6 @@ class TestSupportedObservables:
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
-    @pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
     def test_hamiltonian_diff(self, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
 
