@@ -375,7 +375,6 @@ BOSE_SEN_AND_OPS = [
 def test_binary_mapping_bosesentence(bose_op, d, result):
     """Test that the binary_mapping function returns the correct qubit operator."""
     # convert BoseWord to PauliSentence and simplify
-    print(bose_op)
     qubit_op = binary_mapping(bose_op, d=d)
     qubit_op.simplify(tol=1e-8)
 
