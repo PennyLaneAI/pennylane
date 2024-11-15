@@ -177,32 +177,6 @@ def __getattr__(name):
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
 
-    from warnings import warn  # pylint: disable=import-outside-toplevel
-
-    if name == "QubitDevice":
-        warn(
-            "QubitDevice will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.QubitDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._qubit_device.QubitDevice  # pylint:disable=protected-access
-
-    if name == "QutritDevice":
-        warn(
-            "QutritDevice will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.QutritDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._qutrit_device.QutritDevice  # pylint:disable=protected-access
-
-    if name == "Device":
-        warn(
-            "Device will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.LegacyDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._legacy_device.Device  # pylint:disable=protected-access
-
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 
 

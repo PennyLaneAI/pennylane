@@ -133,24 +133,6 @@ that compute the desired quantity.
     ~draw
     ~draw_mpl
 
-Decorators and utility functions
---------------------------------
-
-The following decorators and convenience functions are provided
-to help build custom QNode, quantum function, and tape transforms:
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.make_tape
-    ~transforms.create_expand_fn
-    ~transforms.create_decomp_expand_fn
-    ~transforms.expand_invalid_trainable
-    ~transforms.expand_invalid_trainable_hadamard_gradient
-    ~transforms.expand_multipar
-    ~transforms.expand_trainable_multipar
-    ~transforms.expand_nonunitary_gen
-
 Transforms developer functions
 ------------------------------
 
@@ -349,7 +331,6 @@ from .commutation_dag import (
 )
 from .tape_expand import (
     expand_invalid_trainable,
-    expand_invalid_trainable_hadamard_gradient,
     expand_multipar,
     expand_nonunitary_gen,
     expand_trainable_multipar,
