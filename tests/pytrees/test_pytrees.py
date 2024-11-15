@@ -19,13 +19,7 @@ import re
 import pytest
 
 import pennylane as qml
-from pennylane.pytrees import (
-    PyTreeStructure,
-    flatten,
-    leaf,
-    register_pytree,
-    unflatten,
-)
+from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 from pennylane.pytrees.pytrees import get_typename, get_typename_type
 
 
