@@ -368,7 +368,6 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
     if gate_count > 0:
         new_wires = initial_resources.num_wires
-        print(initial_resources.num_gates, gate_count, replacement.num_gates)
         new_gates = initial_resources.num_gates - gate_count + (gate_count * replacement.num_gates)
         replacement_gate_types = _scale_dict(replacement.gate_types, gate_count)
         replacement_gate_sizes = _scale_dict(replacement.gate_sizes, gate_count)
