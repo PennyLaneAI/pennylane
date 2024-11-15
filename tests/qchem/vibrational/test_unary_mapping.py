@@ -15,7 +15,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.labs.vibrational import BoseWord, BoseSentence, unary_mapping
+from pennylane.qchem.vibrational import BoseWord, BoseSentence, unary_mapping
 from pennylane import I, X, Y, Z
 from pennylane.pauli.conversion import pauli_sentence
 
@@ -204,11 +204,11 @@ BOSE_WORDS_AND_OPS = [
 ]
 
 
-@pytest.mark.parametrize("bose_op, d, result", BOSE_WORDS_AND_OPS)
-def test_unary_mapping_boseword(bose_op, d, result):
+@pytest.mark.parametrize("bose_op, nstates, result", BOSE_WORDS_AND_OPS)
+def test_unary_mapping_boseword(bose_op, nstates, result):
     """Test that the unary_mapping function returns the correct qubit operator."""
     # convert BoseWord to PauliSentence and simplify
-    qubit_op = unary_mapping(bose_op, d=d)
+    qubit_op = unary_mapping(bose_op, nstates_boson=nstates)
     qubit_op.simplify(tol=1e-8)
 
     # get expected op as PauliSentence and simplify
@@ -381,12 +381,12 @@ BOSE_SEN_AND_OPS = [
 ]
 
 
-@pytest.mark.parametrize("bose_op, d, result", BOSE_SEN_AND_OPS)
-def test_unary_mapping_bosesentence(bose_op, d, result):
+@pytest.mark.parametrize("bose_op, nstates, result", BOSE_SEN_AND_OPS)
+def test_unary_mapping_bosesentence(bose_op, nstates, result):
     """Test that the unary_mapping function returns the correct qubit operator."""
     # convert BoseWord to PauliSentence and simplify
     print(bose_op)
-    qubit_op = unary_mapping(bose_op, d=d)
+    qubit_op = unary_mapping(bose_op, nstates_boson=nstates)
     qubit_op.simplify(tol=1e-8)
 
     # get expected op as PauliSentence and simplify
@@ -458,7 +458,7 @@ def test_return_unary_mapping_ps(bose_op):
 def test_unary_mapping_wiremap(bose_op, wire_map, result):
     """Test that the unary_mapping function returns the correct qubit operator."""
     # convert BoseWord to PauliSentence and simplify
-    qubit_op = unary_mapping(bose_op, d=2, wire_map=wire_map)
+    qubit_op = unary_mapping(bose_op, nstates_boson=2, wire_map=wire_map)
     qubit_op.simplify(tol=1e-8)
 
     # get expected op as PauliSentence and simplify
@@ -467,10 +467,10 @@ def test_unary_mapping_wiremap(bose_op, wire_map, result):
     assert qubit_op == expected_op
 
 
-def test_d_error_unary():
-    """Test that an error is raised if invalid value of d is provided."""
+def test_nstates_error_unary():
+    """Test that an error is raised if invalid number of states is provided."""
     bw = BoseWord({(0, 0): "-"})
     with pytest.raises(
         ValueError, match="Number of bosonic states cannot be less than 2, provided 1."
     ):
-        unary_mapping(bw, d=1)
+        unary_mapping(bw, nstates_boson=1)

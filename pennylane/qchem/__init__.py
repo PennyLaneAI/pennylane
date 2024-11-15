@@ -82,3 +82,5 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
+
+import pennylane.qchem.vibrational

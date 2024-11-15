@@ -32,6 +32,5 @@ Modules
 
 
 """
-import pennylane.labs.vibrational
 
 __all__ = []
