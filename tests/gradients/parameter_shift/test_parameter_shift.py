@@ -1797,7 +1797,7 @@ class TestParameterShiftRule:
         # gradients
         exact = np.cos(par)
         gtapes, fn = qml.gradients.param_shift(tape)
-        grad_PS = fn(qml.execute(gtapes, dev, gradient_fn=None))
+        grad_PS = fn(qml.execute(gtapes, dev, diff_method=None))
 
         # different methods must agree
         assert np.allclose(grad_PS, exact, atol=tol, rtol=0)
