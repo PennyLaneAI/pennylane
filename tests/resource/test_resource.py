@@ -465,7 +465,9 @@ class TestResources:
         ),
     )
 
-    @pytest.mark.parametrize("gate_info, sub_obj, expected_res_obj", zip(gate_info, sub_obj, expected_results_sub))
+    @pytest.mark.parametrize(
+        "gate_info, sub_obj, expected_res_obj", zip(gate_info, sub_obj, expected_results_sub)
+    )
     def test_substitute(self, gate_info, sub_obj, expected_res_obj):
         """Test the substitute function"""
         resource_obj = Resources(
