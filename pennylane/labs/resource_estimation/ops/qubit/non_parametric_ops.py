@@ -36,7 +36,39 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
 
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
-    """Resource class for SWAP"""
+    r"""Resource class for the SWAP gate.
+
+    Resources:
+        The resources come from the following identity expressing SWAP as the product of three CNOT gates:
+
+        .. math::
+
+            SWAP = \begin{bmatrix}
+                        1 & 0 & 0 & 0 \\
+                        0 & 0 & 1 & 0\\
+                        0 & 1 & 0 & 0\\
+                        0 & 0 & 0 & 1
+                    \end{bmatrix}
+            =  \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 1 & 0 & 0\\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0
+                \end{bmatrix}
+                \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0\\
+                    0 & 1 & 0 & 0
+                \end{bmatrix}
+                \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 1 & 0 & 0\\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0
+            \end{bmatrix}.
+
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:

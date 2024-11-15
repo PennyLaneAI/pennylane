@@ -14,7 +14,6 @@
 """
 Tests for parametric single qubit resource operators.
 """
-import numpy as np
 import pytest
 
 import pennylane.labs.resource_estimation as re
@@ -22,17 +21,16 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     _rotation_resources,
 )
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
 
-
-@pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
-def test_rotation_resources(epsilon):
+params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
+@pytest.mark.parametrize("epsilon, expected", params)
+def test_rotation_resources(epsilon, expected):
     """Test the hardcoded resources used for RX, RY, RZ"""
     gate_types = {}
 
-    num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
     t = re.CompressedResourceOp(re.ResourceT, {})
-    gate_types[t] = num_gates
+    gate_types[t] = expected
     assert gate_types == _rotation_resources(epsilon=epsilon)
 
 
@@ -52,6 +50,11 @@ class TestRZ:
         expected = re.CompressedResourceOp(re.ResourceRZ, {})
 
         assert op.resource_rep() == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceRZ(1.24, wires=0)
+        assert op.resource_params() == {}
 
     @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
     def test_resources_from_rep(self, epsilon):
