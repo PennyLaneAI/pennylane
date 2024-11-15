@@ -310,7 +310,6 @@ def sign_expand(  # pylint: disable=too-many-arguments
     hamiltonian = tape.measurements[0].obs
     wires = hamiltonian.wires
 
-    # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     if (
         not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
         or len(tape.measurements) > 1
