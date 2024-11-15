@@ -260,6 +260,7 @@ tested_modified_templates = [
     qml.OutAdder,
     qml.ModExp,
     qml.OutPoly,
+    qml.MPSPrep,
 ]
 
 
@@ -575,6 +576,35 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.QSVT(block_encode, shifts)
+
+    def test_mps_prep(self):
+        """Test the primitive bind call of MPSPrep."""
+
+        mps = [np.array([[0.1]]), np.array([[0, 2, 3, 4]])]
+
+        def qfunc(mps):
+            qml.MPSPrep(mps, wires=[0, 1, 2])
+
+        # Validate inputs
+        qfunc(mps)
+
+        # Actually test primitive bind
+        # jaxpr = jax.make_jaxpr(qfunc)(mps)
+
+        # assert len(jaxpr.eqns) == 2
+
+        # eqn = jaxpr.eqns[1]
+        # assert eqn.primitive == qml.MPSPrep._primitive
+        # assert eqn.invars == jaxpr.eqns[0].outvars
+        # assert eqn.params == {"mps": mps}
+        # assert len(eqn.outvars) == 1
+        # assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        # with qml.queuing.AnnotatedQueue() as q:
+        #    jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, mps)
+
+        # assert len(q) == 1
+        # assert q.queue[0] == qml.MPSPrep(mps, wires = [0,1,2])
 
     def test_quantum_monte_carlo(self):
         """Test the primitive bind call of QuantumMonteCarlo."""

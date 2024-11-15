@@ -69,3 +69,7 @@ class MPSPrep(Operation):
     def map_wires(self, wire_map):
         new_wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return MPSPrep(self.mps, new_wires)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)

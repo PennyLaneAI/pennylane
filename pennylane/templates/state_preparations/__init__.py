@@ -20,3 +20,4 @@ from .arbitrary_state_preparation import ArbitraryStatePreparation
 from .basis_qutrit import QutritBasisStatePreparation
 from .cosine_window import CosineWindow
 from .mottonen import MottonenStatePreparation
+from .state_prep_mps import MPSPrep

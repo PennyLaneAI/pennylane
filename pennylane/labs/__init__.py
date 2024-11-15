@@ -34,5 +34,3 @@ Modules
 """
 
 __all__ = []
-
-from pennylane.labs.templates.state_preparations import *
