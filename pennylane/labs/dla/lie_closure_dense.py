@@ -130,6 +130,7 @@ def lie_closure_dense(
         # and all original generators. This limits the amount of vectorization we are doing but
         # gives us a correspondence between the while loop iteration and the nesting level of
         # the commutators.
+        # [m0, m1] = m0 m1 - m1 m0
         # Implement einsum "aij,bjk->abik" by tensordot and moveaxis
         m0m1 = np.moveaxis(
             np.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[2], [1]]), 1, 2
