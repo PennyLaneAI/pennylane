@@ -15,6 +15,10 @@
   True
   ```
 
+* Added a dense implementation of computing the Lie closure in a new function
+  `lie_closure_dense` in `pennylane.labs.dla`.
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+
 <h4>New API for Qubit Mixed</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
@@ -25,7 +29,7 @@
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
-  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) 
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
 
 <h3>Improvements 🛠</h3>
 
@@ -62,6 +66,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
+  are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
+  respectively.
+  [(#6537)](https://github.com/PennyLaneAI/pennylane/pull/6537)
+  
 * The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
   [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
 
@@ -76,6 +85,9 @@
   process the diff method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
  
+* The `qml.QubitStateVector` template has been removed. Instead, use `qml.StatePrep`.
+  [(#6525)](https://github.com/PennyLaneAI/pennylane/pull/6525)
+
 * `qml.broadcast` has been removed. Users should use `for` loops instead.
   [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
 
@@ -84,6 +96,7 @@
 
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+  
 
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
@@ -91,6 +104,21 @@
   [(#6561)](https://github.com/PennyLaneAI/pennylane/pull/6561)
 
 <h3>Deprecations 👋</h3>
+
+* The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
+  [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
+
+* The `decomp_depth` argument in `qml.transforms.set_decomposition` is deprecated and will be removed in v0.41.
+  [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
+
+* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. 
+Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
+same information.
+  [(#6577)](https://github.com/PennyLaneAI/pennylane/pull/6577)
+
+* The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
+  Instead, use the `qml.workflow.get_best_diff_method` function.
+  [(#6418)](https://github.com/PennyLaneAI/pennylane/pull/6418)
 
 * The `qml.execute` `gradient_fn` keyword argument has been renamed `diff_method`,
   to better align with the termionology used by the `QNode`.
@@ -122,6 +150,7 @@ Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
 Austin Huang,
+Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic,
 Justin Pickering

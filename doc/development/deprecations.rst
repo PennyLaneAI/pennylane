@@ -9,6 +9,27 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` is deprecated. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` is deprecated. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
+* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been deprecated. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been deprecated. 
+  Instead, use the ``qml.workflow.get_best_diff_method``. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
 
   - Deprecated in v0.40
@@ -23,12 +44,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
   
-* ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
-  will be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
-  respectively.
-
-  - Deprecated top level access in v0.39
-  - Top level access will be removed in v0.40
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
 
@@ -90,12 +105,25 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
+* Top level access to ``Device``, ``QubitDevice``, and ``QutritDevice`` have been removed. Instead, they
+  are available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  respectively.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+  
 * The :class:`~pennylane.BasisStatePreparation` template has been removed.
   Instead, use :class:`~pennylane.BasisState`.
 
   - Deprecated in v0.39
   - Removed in v0.40
   
+
+* The ``qml.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
 * ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
 
   - Deprecated in v0.39
