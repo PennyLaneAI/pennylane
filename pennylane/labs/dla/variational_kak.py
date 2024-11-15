@@ -184,7 +184,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     dim_m = dim_mtilde + dim_h
     dim_g = dim_k + dim_m
 
-    adj_cropped = adj[:dim_k]  # [:, -dim_m:][:, :, -dim_m:]
+    adj_cropped = adj[:, :dim_k]  # [:, -dim_m:][:, :, -dim_m:]
 
     ## creating the gamma vector expanded on the whole m
     gammas = [np.pi**i for i in range(dim_h)]
@@ -198,16 +198,14 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
         # should be faster, and most importantly allow for treatment of sums of paulis
 
         # gammavec @ (K_|k| .. K_1) @ vec_H
-        res = jnp.eye(adj.shape[-1])
-
         for i in range(dim_k):
-            res = jax.scipy.linalg.expm(theta[i] * adj[i])
+            vec_H = jax.scipy.linalg.expm(theta[i] * adj[:, i]) @ vec_H
 
-        return (gammavec @ res @ vec_H).real
+        return (gammavec @ vec_H).real
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
-    [vec_H] = op_to_adjvec([H], g)
+    [vec_H] = op_to_adjvec([H], g, is_orthogonal=False)
 
     theta0 = opt_kwargs.pop("theta0", None)
     if theta0 is None:
@@ -229,14 +227,10 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     else:
         theta_opt = thetas[-1]
 
-    M = jnp.eye(dim_g)
+    for i in range(dim_k):
+        vec_H = jax.scipy.linalg.expm(theta_opt[i] * adj_cropped[:, i]) @ vec_H
 
-    for i in range(dim_k):  # TODO make matrix-vector multiplications instead
-        M @= jax.scipy.linalg.expm(theta_opt[i] * adj_cropped[i])
-
-    vec_h = M @ vec_H
-
-    return vec_h, theta_opt
+    return vec_H, theta_opt
 
 
 def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
