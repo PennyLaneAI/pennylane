@@ -314,18 +314,17 @@ def run_opt(
     thetas = []
 
     @jax.jit
-    def partial_step(grad_circuit, opt_state, theta):
+    def step(opt_state, theta):
+        val, grad_circuit = value_and_grad(theta)
         updates, opt_state = optimizer.update(grad_circuit, opt_state)
         theta = optax.apply_updates(theta, updates)
 
-        return opt_state, theta
+        return opt_state, theta, val, grad_circuit
 
     t0 = datetime.now()
     ## Optimization loop
     for n in range(n_epochs):
-        # val, theta, grad_circuit, opt_state = step(theta, opt_state)
-        val, grad_circuit = value_and_grad(theta)
-        opt_state, theta = partial_step(grad_circuit, opt_state, theta)
+        opt_state, theta, val, grad_circuit = step(opt_state, theta)
 
         energy.append(val)
         gradients.append(grad_circuit)
