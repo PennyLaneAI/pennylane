@@ -511,7 +511,11 @@ class PauliWord(dict):
         if len(self) == 0:
             return Identity(wires=wire_order)
 
-        factors = [_make_operation(op, wire) for wire, op in self.items()]
+        if qml.capture.enabled():
+            # cant use lru_cache with program capture
+            factors = [op_map[op](wire) for wire, op in self.items()]
+        else:
+            factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         if get_as_tensor:
             return factors[0] if len(factors) == 1 else Tensor(*factors)
