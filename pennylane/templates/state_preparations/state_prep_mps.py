@@ -37,14 +37,12 @@ class MPSPrep(Operation):
 
     .. code-block::
 
-        from pennylane import labs
-
         mps = # The MPS array
 
         dev = qml.device("lightning.tensor", wires = 3)
         @qml.qnode(dev)
         def circuit():
-            labs.MPSPrep(mps, wires = [0,1,2])
+            qml.MPSPrep(mps, wires = [0,1,2])
             return qml.state()
     """
 
