@@ -19,7 +19,6 @@ import re
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.pytrees import (
     PyTreeStructure,
     flatten,
