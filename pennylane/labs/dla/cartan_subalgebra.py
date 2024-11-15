@@ -12,19 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functionality to compute the Cartan subalgebra"""
-from itertools import combinations_with_replacement
-
 # pylint: disable=too-many-arguments
-from typing import Union
-
 import numpy as np
 from scipy.linalg import null_space
 
 import pennylane as qml
-from pennylane.operation import Operator
-from pennylane.pauli import PauliSentence, PauliVSpace
 from pennylane.pauli.dla.center import _intersect_bases
-from pennylane.typing import TensorLike
+
+from .dense_util import adjvec_to_op, change_basis_ad_rep, op_to_adjvec
 
 
 def _gram_schmidt(X):
@@ -60,17 +55,6 @@ def _orthogonal_complement_basis(h, m, tol):
     basis = U[:, :rank]
 
     return basis.T  # Transpose to get row vectors
-
-
-def _change_basis_adj(adj, old_g, new_g):
-    # basis change old g @ X = new g => adj_new = contact(adj, X, X, X)
-    basis_change = np.tensordot(new_g, np.linalg.pinv(old_g), axes=[[1], [0]])
-    # Perform the einsum contraction "mnp, mh, ni, pj -> hij" via three einsum steps
-    new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
-    new_adj = np.einsum("mnp,in->mip", new_adj, basis_change)
-    new_adj = np.einsum("mnp,ip->mni", new_adj, basis_change)
-
-    return new_adj
 
 
 def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False):
@@ -253,7 +237,8 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
     # oldg -> newg and transform the adjoint representation accordingly
     # TODO: implementation to be tested:
     np_oldg = np.vstack([np_k, np_m])
-    new_adj = _change_basis_adj(ad, np_oldg, np_newg)
+    basis_change = np.tensordot(np_newg, np.linalg.pinv(np_oldg), axes=[[1], [0]])
+    new_adj = change_basis_ad_rep(ad, basis_change)
 
     if return_adjvec:
         return np_newg, np_k, np_mtilde, np_h, new_adj
@@ -261,105 +246,3 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
     newg, k, mtilde, h = [adjvec_to_op(adjvec, g) for adjvec in [np_newg, np_k, np_mtilde, np_h]]
 
     return newg, k, mtilde, h, new_adj
-
-
-def adjvec_to_op(adj_vecs, basis):
-    """Transform adjoint vectors representing operators back into a basis of choice
-
-    Args:
-        adj_vecs (np.ndarray): collection of vectors with shape ``(batch, dim_basis)``
-        basis (List[Union[PauliSentence, Operator, np.ndarray]]): collection of basis operators
-
-    """
-    res = []
-    # currently agnostic to dense or op input, but could be vectorized in the dense case (TODO?)
-    if all(isinstance(op, PauliSentence) for op in basis):
-        for vec in adj_vecs:
-            op_j = sum(c * op for c, op in zip(vec, basis))
-            op_j.simplify()
-            res.append(op_j)
-        return res
-
-    if all(isinstance(op, Operator) for op in basis):
-        for vec in adj_vecs:
-            op_j = sum(c * op for c, op in zip(vec, basis))
-            op_j = qml.simplify(op_j)
-            res.append(op_j)
-        return res
-
-    if all(isinstance(op, np.ndarray) for op in basis):
-        res = np.tensordot(adj_vecs, basis, axes=1)
-        return res
-
-    return NotImplementedError
-
-
-def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bool = True):
-    """Pauli sentence branch of ``op_to_adjvec``."""
-    if not all(isinstance(op, PauliSentence) for op in ops):
-        ops = [op.pauli_rep for op in ops]
-
-    res = []
-    if is_orthogonal:
-        norms_squared = [(basis_i @ basis_i).trace() for basis_i in basis]
-    else:
-        # Fake the norm correction if we anyways will apply the inverse Gram matrix later
-        norms_squared = np.ones(len(basis))
-        gram = np.zeros((len(basis), len(basis)))
-        for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
-            gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
-        inv_gram = np.linalg.pinv(gram)
-
-    for op in ops:
-        rep = np.zeros((len(basis),))
-        for i, basis_i in enumerate(basis):
-            # v = ∑ (v · e_j / ||e_j||^2) * e_j
-            rep[i] = (basis_i @ op).trace() / norms_squared[i]
-
-        res.append(rep)
-    res = np.array(res)
-    if not is_orthogonal:
-        res = np.einsum("ij,kj->ik", inv_gram, res)
-
-    return res
-
-
-def op_to_adjvec(
-    ops: Union[PauliSentence, Operator, np.ndarray],
-    basis: Union[PauliSentence, Operator, np.ndarray],
-    is_orthogonal: bool = True,
-):
-    """Project a batch of ops onto a given basis
-
-    The format of the resulting operators is determined by the ``type`` in ``basis``.
-    If ``is_orthogonal=True`` (the default), only normalization is taken into account
-    in the projection. For ``is_orthogonal=False``, orthogonalization also is considered.
-    """
-    if isinstance(basis, PauliVSpace):
-        basis = basis.basis
-
-    if all(isinstance(op, Operator) for op in basis):
-        ops = [op.pauli_rep for op in ops]
-        basis = [op.pauli_rep for op in basis]
-
-    # PauliSentence branch
-    if all(isinstance(op, PauliSentence) for op in basis):
-        return _op_to_adjvec_ps(ops, basis, is_orthogonal)
-
-    # dense branch
-    if all(isinstance(op, TensorLike) for op in basis):
-        if not all(isinstance(op, TensorLike) for op in ops):
-            _n = int(np.round(np.log2(basis[0].shape[-1])))
-            ops = np.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
-
-        basis = np.array(basis)
-        res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
-        if is_orthogonal:
-            norm = np.einsum(
-                "bij,bji->b", basis, basis
-            )  # TODO: gram matrix for non-orthonormal bases
-            return (res / norm).real
-        gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]])
-        return np.einsum("ij,kj->ik", np.linalg.pinv(gram), res).real
-
-    return NotImplemented
