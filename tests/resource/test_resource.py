@@ -416,12 +416,16 @@ class TestResources:
             num_gates=6,
             gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
             gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
         ),
         Resources(
             num_wires=2,
             num_gates=14,
             gate_types=defaultdict(int, {"RX": 10, "CNOT": 1, "RY": 2, "Hadamard": 1}),
             gate_sizes=defaultdict(int, {1: 13, 2: 1}),
+            depth=3,
+            shots=Shots(10),
         ),
     )
 
@@ -433,6 +437,8 @@ class TestResources:
             num_gates=6,
             gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
             gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
         )
 
         sub_obj = Resources(
@@ -440,34 +446,12 @@ class TestResources:
             num_gates=5,
             gate_types=defaultdict(int, {"RX": 5}),
             gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
         )
 
         resultant_obj = substitute(resource_obj, gate_info, sub_obj)
         assert resultant_obj == expected_res_obj
-
-    def test_substitute_error(self):
-        """Test the substitute function raises an error when differing gate numbers are given."""
-        resource_obj = Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-        )
-
-        gate_info = ("CNOT", 2)
-
-        sub_obj = Resources(
-            num_wires=1,
-            num_gates=5,
-            gate_types=defaultdict(int, {"RX": 5}),
-            gate_sizes=defaultdict(int, {1: 5}),
-        )
-
-        with pytest.raises(
-            ValueError,
-            match="Replacement resources must act on the name number of wires. Got 2 and 1.",
-        ):
-            substitute(resource_obj, gate_info, sub_obj)
 
 
 class TestResourcesOperation:  # pylint: disable=too-few-public-methods

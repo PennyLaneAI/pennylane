@@ -330,49 +330,69 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, r1.depth, new_shots)
 
 
-def substitute(
-    primary_resources: Resources, gate_info: Tuple[str, int], replacement_resources: Resources
-):
-    """Replaces a gate with the contents of another Resource object.
+def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replacement: Resources):
+    """Replaces a specified gate in a Resource object with the contents of another Resource object.
 
     Args:
-        primary_resource (Resources): The Resource object to be modified
-        gate_info (Tuple(str, int)): The name of the gate to be replace and the number of wires it acts on
-        replacement_resource (Resources): The Resource object containing the resources that will replace the gate
+        initial_resources (Resources): The Resource object to be modified
+        gate_info (Tuple(str, int)): The name of the gate to be replaced and the number of wires it acts on
+        replacement (Resources): The Resource object containing the resources that will replace the gate
 
     Returns:
-        Resources: The substituted Resources object
+        Resources: The updated Resources object after substitution
+
+    ..details::
+
+        **Example**
+
+        >>> primary_gates = {"RX": 2, "CNOT": 1}
+        >>> primary_sizes = {1: 2, 2: 1}
+        >>> primary_resources = Resources(num_wires=2, num_gates=3, gate_types=primary_gates, gate_sizes=primary_sizes, depth=1, shots=Shots(10))
+        >>> sub_gates = {"H": 3, "S": 4}
+        >>> sub_sizes = {1: 7}
+        >>> sub_resources = Resources(num_wires=1, num_gates=7, gate_types=sub_gates, gate_sizes=sub_sizes, depth=1, shots=Shots(shots=None))
+        >>> print(substitute(primary_resources, ("RX", 1), sub_resources))
+        wires: 2
+        gates: 15
+        depth: 2
+        shots: Shots(total=10)
+        gate_types:
+        {'CNOT': 1, 'H': 6, 'S': 8}
+        gate_sizes:
+        {1: 14, 2: 1}
     """
 
     gate_name, num_wires = gate_info
 
-    if num_wires != replacement_resources.num_wires:
-        raise ValueError(
-            f"Replacement resources must act on the name number of wires. Got {num_wires} and {replacement_resources.num_wires}."
-        )
-
-    gate_count = primary_resources.gate_types.pop(gate_name, 0)
+    gate_count = initial_resources.gate_types.get(gate_name, 0)
 
     if gate_count > 0:
-        new_wires = primary_resources.num_wires
-        new_gates = (
-            primary_resources.num_gates
-            - gate_count
-            + (gate_count * replacement_resources.num_gates)
-        )
+        new_wires = initial_resources.num_wires
+        print(initial_resources.num_gates, gate_count, replacement.num_gates)
+        new_gates = initial_resources.num_gates - gate_count + (gate_count * replacement.num_gates)
+        replacement_gate_types = _scale_dict(replacement.gate_types, gate_count)
+        replacement_gate_sizes = _scale_dict(replacement.gate_sizes, gate_count)
 
-        replacement_gate_types = _scale_dict(replacement_resources.gate_types, gate_count)
-        replacement_gate_sizes = _scale_dict(replacement_resources.gate_sizes, gate_count)
+        new_gate_types = _combine_dict(initial_resources.gate_types, replacement_gate_types)
+        new_gate_types.pop(gate_name)
 
-        new_gate_types = _combine_dict(primary_resources.gate_types, replacement_gate_types)
-
-        new_gate_sizes = copy.copy(primary_resources.gate_sizes)
+        new_gate_sizes = copy.copy(initial_resources.gate_sizes)
         new_gate_sizes[num_wires] -= gate_count
         new_gate_sizes = _combine_dict(new_gate_sizes, replacement_gate_sizes)
 
-        return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+        new_depth = initial_resources.depth + replacement.depth
 
-    return primary_resources
+        wire_diff = initial_resources.num_wires - replacement.num_wires
+        if wire_diff < 0:
+            new_wires = num_wires + abs(wire_diff)
+        else:
+            new_wires = initial_resources.num_wires
+
+        return Resources(
+            new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, initial_resources.shots
+        )
+
+    return initial_resources
 
 
 def _combine_dict(dict1: dict, dict2: dict):
