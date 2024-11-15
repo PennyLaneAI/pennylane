@@ -17,11 +17,11 @@ Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 import warnings
 
 # pylint: disable=too-few-public-methods,too-many-public-methods
+import functools
+import itertools
 import numpy as np
 import pytest
 
-import functools
-import itertools
 
 import pennylane as qml
 from pennylane import (
@@ -1176,4 +1176,5 @@ class TestPauliEigs:
         """Test that the right number of cachings have been executed after clearing the cache"""
         pauli_eigs.cache_clear()
         pauli_eigs(depth)
+        # pylint: disable=protected-access
         assert functools._CacheInfo(depth - 1, depth, 128, depth) == pauli_eigs.cache_info()
