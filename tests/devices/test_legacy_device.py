@@ -189,12 +189,6 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
-def test_deprecated_access():
-    """Test that accessing via top-level is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
-        qml.Device  # pylint: disable=pointless-statement
-
-
 # pylint: disable=pointless-statement
 def test_invalid_attribute_in_devices_raises_error():
     with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
@@ -658,7 +652,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         assert new_tape.shots is tape.shots
         assert new_tape.wires == tape.wires
         assert new_tape.batch_size == tape.batch_size
-        assert new_tape.output_dim == tape.output_dim
 
     def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
         """Test that default_expand_fn works with an invalid op and some measurement."""

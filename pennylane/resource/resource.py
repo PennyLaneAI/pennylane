@@ -19,6 +19,7 @@ from __future__ import annotations
 import copy
 from abc import abstractmethod
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Tuple
 
@@ -68,9 +69,55 @@ class Resources:
     shots: Shots = field(default_factory=Shots)
 
     def __add__(self, other: Resources):
+        r"""Adds two Resources objects together as if the circuits were executed in series
+
+        Args:
+            other (Resources): The resource object to add
+
+        Returns:
+            Resources: The combined resources
+
+        .. details::
+
+            **Example**
+
+            >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+            >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+            >>> print(r1 + r2)
+            wires: 2
+            gates: 4
+            depth: 0
+            shots: Shots(total=None)
+            gate_types:
+            {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+            gate_sizes:
+            {1: 2, 2: 2}
+        """
         return add_in_series(self, other)
 
     def __mul__(self, scalar: int):
+        r"""Multiply the Resource object by a scalar as if that many copies of the circuit were executed in series
+
+        Args:
+            scalar (int): The scalar to multiply the resource object by
+
+        Returns:
+            Resources: The combined resources
+
+        .. details::
+
+            **Example**
+            >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+            >>> print(r1 * 2)
+            wires: 2
+            gates: 4
+            depth: 0
+            shots: Shots(total=None)
+            gate_types:
+            {'Hadamard': 2, 'CNOT': 2}
+            gate_sizes:
+            {1: 2, 2: 2}
+        """
         return mul_in_series(self, scalar)
 
     __rmul__ = __mul__
@@ -138,7 +185,7 @@ class ResourcesOperation(Operation):
 
 
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
-    """Add two resources assuming the circuits are executed in series.
+    r"""Add two resources assuming the circuits are executed in series.
 
     Args:
         r1 (Resources): A Resources object to add.
@@ -146,18 +193,36 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
     Returns:
         Resources: The combined resources of r1 and r2.
+
+    .. details::
+
+        **Example**
+
+        >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+        >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+        >>> print(r1 + r2)
+        wires: 2
+        gates: 4
+        depth: 0
+        shots: Shots(total=None)
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+        gate_sizes:
+        {1: 2, 2: 2}
     """
 
     new_wires = max(r1.num_wires, r2.num_wires)
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
+    new_shots = _add_shots(r1.shots, r2.shots)
+    new_depth = r1.depth + r2.depth
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
-    """Add two resources assuming the circuits are executed in parallel.
+    r"""Add two resources assuming the circuits are executed in parallel.
 
     Args:
         r1 (Resources): A Resources object to add.
@@ -165,14 +230,32 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
     Returns:
         Resources: The combined resources of r1 and r2.
+
+    .. details::
+
+        **Example**
+
+        >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+        >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+        >>> print(add_in_parallel(r1, r2))
+        wires: 4
+        gates: 4
+        depth: 0
+        shots: Shots(total=None)
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+        gate_sizes:
+        {1: 2, 2: 2}
     """
 
     new_wires = r1.num_wires + r2.num_wires
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
+    new_shots = _add_shots(r1.shots, r2.shots)
+    new_depth = max(r1.depth, r2.depth)
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
 def mul_in_series(r1: Resources, scalar: int) -> Resources:
@@ -185,14 +268,31 @@ def mul_in_series(r1: Resources, scalar: int) -> Resources:
 
     Returns:
         Resources: The combined resources
+
+    .. details::
+
+        **Example**
+
+        >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+        >>> print(r1 * 2)
+        wires: 2
+        gates: 4
+        depth: 0
+        shots: Shots(total=None)
+        gate_types:
+        {'Hadamard': 2, 'CNOT': 2}
+        gate_sizes:
+        {1: 2, 2: 2}
     """
 
     new_wires = r1.num_wires
     new_gates = scalar * r1.num_gates
     new_gate_types = _scale_dict(r1.gate_types, scalar)
     new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
+    new_shots = scalar * r1.shots
+    new_depth = scalar * r1.depth
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
 def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
@@ -205,14 +305,30 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
 
     Returns:
         Resources: The combined resources
+
+    .. details::
+
+        **Example**
+
+        >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
+        >>> print(mul_in_parallel(r1, 2))
+        wires: 4
+        gates: 4
+        depth: 0
+        shots: Shots(total=None)
+        gate_types:
+        {'Hadamard': 2, 'CNOT': 2}
+        gate_sizes:
+        {1: 2, 2: 2}
     """
 
     new_wires = scalar * r1.num_wires
     new_gates = scalar * r1.num_gates
     new_gate_types = _scale_dict(r1.gate_types, scalar)
     new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
+    new_shots = scalar * r1.shots
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, r1.depth, new_shots)
 
 
 def substitute(
@@ -260,7 +376,7 @@ def substitute(
     return primary_resources
 
 
-def _combine_dict(dict1: defaultdict, dict2: defaultdict):
+def _combine_dict(dict1: dict, dict2: dict):
     r"""Private function which combines two dictionaries together."""
     combined_dict = copy.copy(dict1)
 
@@ -318,3 +434,17 @@ def _count_resources(tape) -> Resources:
             num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+
+
+def _add_shots(s1: Shots, s2: Shots) -> Shots:
+    if s1.total_shots is None:
+        return s2
+
+    if s2.total_shots is None:
+        return s1
+
+    shot_vector = []
+    for shot in s1.shot_vector + s2.shot_vector:
+        shot_vector.append((shot.shots, shot.copies))
+
+    return Shots(shots=shot_vector)

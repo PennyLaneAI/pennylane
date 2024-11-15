@@ -225,23 +225,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             [math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol(dev.shots)
         )
 
-    @pytest.mark.filterwarnings(
-        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
-    )
-    def test_BasisStatePreparation(self, device, tol):
-        """Test the BasisStatePreparation template."""
-        dev = device(4)
-
-        @qml.qnode(dev)
-        def circuit(basis_state):
-            qml.BasisStatePreparation(basis_state, wires=range(4))
-            return [qml.expval(qml.Z(i)) for i in range(4)]
-
-        basis_state = [0, 1, 1, 0]
-        res = circuit(basis_state)
-        expected = [1.0, -1.0, -1.0, 1.0]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
-
     @pytest.mark.xfail(reason="most devices do not support CV")
     def test_CVNeuralNetLayers(self, device):
         """Test the CVNeuralNetLayers template."""
