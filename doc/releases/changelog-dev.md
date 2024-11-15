@@ -59,6 +59,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Gradient transforms are now applied after the user's transform program.
+  [(#6590)](https://github.com/PennyLaneAI/pennylane/pull/6590)
+
 * Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
   are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
   respectively.
