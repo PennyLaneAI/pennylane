@@ -409,7 +409,35 @@ class TestResources:
         resultant_obj = mul_in_parallel(resource_obj, scalar)
         assert resultant_obj == expected_res_obj
 
-    gate_info = (("RX", 1), ("RZ", 1))
+    gate_info = (("RX", 1), ("RZ", 1), ("RX", 1))
+
+    sub_obj = (
+        Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        ),
+        Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        ),
+        Resources(
+            num_wires=5,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        ),
+    )
+
     expected_results_sub = (
         Resources(
             num_wires=2,
@@ -427,10 +455,18 @@ class TestResources:
             depth=3,
             shots=Shots(10),
         ),
+        Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
+        ),
     )
 
-    @pytest.mark.parametrize("gate_info, expected_res_obj", zip(gate_info, expected_results_sub))
-    def test_substitute(self, gate_info, expected_res_obj):
+    @pytest.mark.parametrize("gate_info, sub_obj, expected_res_obj", zip(gate_info, sub_obj, expected_results_sub))
+    def test_substitute(self, gate_info, sub_obj, expected_res_obj):
         """Test the substitute function"""
         resource_obj = Resources(
             num_wires=2,
@@ -439,15 +475,6 @@ class TestResources:
             gate_sizes=defaultdict(int, {1: 5, 2: 1}),
             depth=2,
             shots=Shots(10),
-        )
-
-        sub_obj = Resources(
-            num_wires=1,
-            num_gates=5,
-            gate_types=defaultdict(int, {"RX": 5}),
-            gate_sizes=defaultdict(int, {1: 5}),
-            depth=1,
-            shots=Shots(shots=None),
         )
 
         resultant_obj = substitute(resource_obj, gate_info, sub_obj)
