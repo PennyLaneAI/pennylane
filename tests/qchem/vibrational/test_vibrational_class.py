@@ -5,7 +5,7 @@ import pytest
 
 import numpy as np
 import pennylane as qml
-from pennylane.labs import vibrational_ham
+from pennylane.qchem import vibrational
 
 au_to_cm = 219475
 
@@ -23,7 +23,7 @@ def test_es_methoderror():
     with pytest.raises(
         ValueError, match="Specified electronic structure method, ccsd is not available."
     ):
-        vibrational_ham.optimize_geometry(mol, method="ccsd")
+        vibrational.optimize_geometry(mol, method="ccsd")
 
 
 @pytest.mark.parametrize(
@@ -60,7 +60,7 @@ def test_scf_energy(sym, geom, unit, method, basis, expected_energy):
     r"""Test that correct energy is produced for a given molecule."""
 
     mol = qml.qchem.Molecule(sym, geom, unit=unit, basis_name=basis, load_data=True)
-    scf_obj = vibrational_ham.single_point(mol, method=method)
+    scf_obj = vibrational.single_point(mol, method=method)
 
     assert np.isclose(scf_obj.e_tot, expected_energy)
 
@@ -85,7 +85,7 @@ def test_optimize_geometry(sym, geom, expected_geom):
     r"""Test that correct optimized geometry is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
-    mol_eq = vibrational_ham.optimize_geometry(mol)
+    mol_eq = vibrational.optimize_geometry(mol)
     assert np.allclose(mol_eq[0].coordinates, expected_geom)
 
 
@@ -108,8 +108,8 @@ def test_optimize_geometry(sym, geom, expected_geom):
 def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
-    mol_eq = vibrational_ham.optimize_geometry(mol)
-    harmonic_res = vibrational_ham.harmonic_analysis(mol_eq[1])
+    mol_eq = vibrational.optimize_geometry(mol)
+    harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
     assert np.allclose(harmonic_res["norm_mode"], expected_vecs)
 
 
@@ -163,10 +163,10 @@ def test_mode_localization(sym, geom, loc_freqs, exp_results):
     r"""Test that mode localization returns correct results."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational_ham.optimize_geometry(mol)
+    mol_eq = vibrational.optimize_geometry(mol)
 
-    harmonic_res = vibrational_ham.harmonic_analysis(mol_eq[1])
-    loc_res, uloc = vibrational_ham.localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
+    harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
+    loc_res, uloc = vibrational.localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
     freqs = loc_res["freq_wavenumber"] / au_to_cm
 
     nmodes = len(freqs)
@@ -187,9 +187,9 @@ def test_hess_methoderror():
     symbols = ["H", "H"]
     geom = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
     mol = qml.qchem.Molecule(symbols, geom)
-    mol_scf = vibrational_ham.single_point(mol)
+    mol_scf = vibrational.single_point(mol)
 
     with pytest.raises(
         ValueError, match="Specified electronic structure method, ccsd is not available."
     ):
-        vibrational_ham.harmonic_analysis(mol_scf, method="ccsd")
+        vibrational.harmonic_analysis(mol_scf, method="ccsd")
