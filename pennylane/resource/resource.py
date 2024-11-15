@@ -381,9 +381,9 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
         new_depth = initial_resources.depth + replacement.depth
 
-        wire_diff = initial_resources.num_wires - replacement.num_wires
+        wire_diff = num_wires - replacement.num_wires
         if wire_diff < 0:
-            new_wires = num_wires + abs(wire_diff)
+            new_wires = initial_resources.num_wires + abs(wire_diff)
         else:
             new_wires = initial_resources.num_wires
 

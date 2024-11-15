@@ -409,7 +409,7 @@ class TestResources:
         resultant_obj = mul_in_parallel(resource_obj, scalar)
         assert resultant_obj == expected_res_obj
 
-    gate_info = (("RX", 1), ("RZ", 1), ("RX", 1))
+    gate_info = (("RX", 1), ("RZ", 1), ("RZ", 1))
 
     sub_obj = (
         Resources(
@@ -456,11 +456,11 @@ class TestResources:
             shots=Shots(10),
         ),
         Resources(
-            num_wires=2,
-            num_gates=6,
-            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
-            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
-            depth=2,
+            num_wires=6,
+            num_gates=14,
+            gate_types=defaultdict(int, {"RX": 10, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 13, 2: 1}),
+            depth=3,
             shots=Shots(10),
         ),
     )
