@@ -17,6 +17,7 @@ Contains the MPSPrep template.
 
 from pennylane.operation import Operation
 from pennylane.wires import Wires
+import pennylane as qml
 
 
 class MPSPrep(Operation):
@@ -69,5 +70,16 @@ class MPSPrep(Operation):
         return MPSPrep(self.mps, new_wires)
 
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, mps, wires, id=None):
+        # pylint: disable=arguments-differ
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, mps=mps, wires=wires, id=id)  # pragma: no cover
+        return cls._primitive.bind(*mps, wires=wires, id=id)
+
+
+if MPSPrep._primitive is not None:  # pylint: disable=protected-access
+
+    @MPSPrep._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, **kwargs):
+        return type.__call__(MPSPrep, args, **kwargs)

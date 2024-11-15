@@ -22,14 +22,15 @@ import pennylane as qml
 
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
-    op = qml.MPSPrep(mps=[1.0, 2.0, 3.0], wires=[0, 1, 2])
+    mps = [np.ones([2, 2]), np.ones([3, 3]), np.ones([1])]
+    op = qml.MPSPrep(mps, wires=[0, 1, 2])
     qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 def test_access_to_param():
     """tests that the parameter is accessible."""
     mps = [np.ones([2, 2]), np.ones([3, 3]), np.ones([1])]
-    op = qml.MPSPrep(mps=mps, wires=[0, 1, 2])
+    op = qml.MPSPrep(mps, wires=[0, 1, 2])
 
     for arr1, arr2 in zip(mps, op.mps):
         assert np.allclose(arr1, arr2)
