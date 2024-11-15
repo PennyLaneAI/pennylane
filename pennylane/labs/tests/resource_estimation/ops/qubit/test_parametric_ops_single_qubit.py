@@ -22,7 +22,7 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     _rotation_resources,
 )
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
 
 
 @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
@@ -52,6 +52,11 @@ class TestRZ:
         expected = re.CompressedResourceOp(re.ResourceRZ, {})
 
         assert op.resource_rep() == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceRZ(1.24, wires=0)
+        assert op.resource_params() == {}
 
     @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
     def test_resources_from_rep(self, epsilon):

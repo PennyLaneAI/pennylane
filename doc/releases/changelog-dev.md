@@ -62,6 +62,9 @@
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
 
+* Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
+  [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+
 <h3>Breaking changes 💔</h3>
 
 * Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they

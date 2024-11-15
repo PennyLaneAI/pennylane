@@ -18,7 +18,7 @@ import pytest
 
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
 
 
 class TestControlledPhaseShift:
@@ -97,3 +97,8 @@ class TestCNOT:
         op = re.ResourceCNOT([0, 1])
         expected = re.CompressedResourceOp(re.ResourceCNOT, {})
         assert op.resource_rep() == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceCNOT([0, 1])
+        assert op.resource_params() == {}
