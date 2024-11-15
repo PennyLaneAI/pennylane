@@ -60,7 +60,7 @@ class MPSPrep(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        hyperparams_dict = {key: value for key, value in metadata}
+        hyperparams_dict = dict(metadata)
         return cls(data, **hyperparams_dict)
 
     def map_wires(self, wire_map):
