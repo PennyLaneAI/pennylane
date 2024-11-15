@@ -14,7 +14,7 @@
 """Unit Tests for the Boseonic representation classes."""
 import pytest
 
-from pennylane.labs.vibrational.bosonic import (
+from pennylane.qchem.vibrational.bosonic import (
     BoseWord,
     BoseSentence,
 )

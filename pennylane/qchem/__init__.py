@@ -82,3 +82,8 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
+
+from vibrational.bosonic import (
+    BoseSentence,
+    BoseWord
+)
