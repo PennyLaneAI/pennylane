@@ -63,7 +63,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The legacy remains `qml.utils` module has been removed. Specifically, the
+* The developer-facing `qml.utils` module has been removed. Specifically, the
 following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
 
   * `qml.utils._flatten`, `qml.utils.unflatten` has been moved and renamed to
