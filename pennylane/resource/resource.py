@@ -19,7 +19,6 @@ from __future__ import annotations
 import copy
 from abc import abstractmethod
 from collections import defaultdict
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Tuple
 
