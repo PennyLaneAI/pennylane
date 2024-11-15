@@ -51,14 +51,14 @@ class BoseWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
-            
+
         if self.is_hardcore:
             bw_arr = list(self.sorted_dic.keys())
             indice_arr = [x[1] for x in bw_arr]
             if len(indice_arr) != len(set(indice_arr)):
                 self.sorted_dic = {}
                 operator = {}
-        
+
         super().__init__(operator)
 
     def adjoint(self):
