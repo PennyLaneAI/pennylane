@@ -31,6 +31,8 @@ Utility functions
 .. autosummary::
     :toctree: api
 
+    ~adjvec_to_op
+    ~op_to_adjvec
     ~pauli_coefficients
     ~pauli_decompose
 
@@ -38,4 +40,4 @@ Utility functions
 """
 
 from .lie_closure_dense import lie_closure_dense
-from .dense_util import pauli_coefficients, pauli_decompose
+from .dense_util import adjvec_to_op, op_to_adjvec, pauli_coefficients, pauli_decompose
