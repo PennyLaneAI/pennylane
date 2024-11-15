@@ -155,7 +155,7 @@ def lie_closure_dense(
         if epoch == max_iterations:
             warnings.warn(f"reached the maximum number of iterations {max_iterations}", UserWarning)
 
-    if verbose > 0:
+    if verbose:
         print(f"After {epoch} epochs, reached a DLA size of {new_length}")
 
     return vspace
