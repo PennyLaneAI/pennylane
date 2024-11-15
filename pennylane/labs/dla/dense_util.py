@@ -362,8 +362,7 @@ def adjvec_to_op(adj_vecs, basis):
         The operators are in the format specified by the elements in ``basis``.
 
     """
-    assert isinstance(adj_vecs, np.ndarray)
-    assert adj_vecs.shape[1] == len(basis)
+    assert qml.math.shape(adj_vecs)[1] == len(basis)
 
     if all(isinstance(op, PauliSentence) for op in basis):
         res = []
