@@ -835,13 +835,14 @@ class QNode:
 
     @property
     def tape(self) -> QuantumTape:
-        """
+        """The quantum tape
+
         .. warning::
 
             This property is deprecated in v0.40 and will be removed in v0.41.
             Instead, use the :func:`qml.workflow.construct_tape <.workflow.construct_tape>` function.
+            """
 
-        The quantum tape"""
         warnings.warn(
             "The tape/qtape property is deprecated and will be removed in v0.41. "
             "Instead, use the qml.workflow.get_best_diff_method function.",
