@@ -19,6 +19,7 @@ from __future__ import annotations
 import copy
 from abc import abstractmethod
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from pennylane.measurements import Shots
@@ -213,8 +214,10 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
+    new_shots = _add_shots(r1.shots, r2.shots)
+    new_depth = r1.depth + r2.depth
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
@@ -248,8 +251,10 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
+    new_shots = _add_shots(r1.shots, r2.shots)
+    new_depth = max(r1.depth, r2.depth)
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
 def mul_in_series(r1: Resources, scalar: int) -> Resources:
@@ -283,8 +288,10 @@ def mul_in_series(r1: Resources, scalar: int) -> Resources:
     new_gates = scalar * r1.num_gates
     new_gate_types = _scale_dict(r1.gate_types, scalar)
     new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
+    new_shots = scalar * r1.shots
+    new_depth = scalar * r1.depth
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
 def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
@@ -318,8 +325,9 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
     new_gates = scalar * r1.num_gates
     new_gate_types = _scale_dict(r1.gate_types, scalar)
     new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
+    new_shots = scalar * r1.shots
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes)
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, r1.depth, new_shots)
 
 
 def _combine_dict(dict1: dict, dict2: dict):
@@ -380,3 +388,17 @@ def _count_resources(tape) -> Resources:
             num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+
+
+def _add_shots(s1: Shots, s2: Shots) -> Shots:
+    if s1.total_shots is None:
+        return s2
+
+    if s2.total_shots is None:
+        return s1
+
+    shot_vector = []
+    for shot in s1.shot_vector + s2.shot_vector:
+        shot_vector.append((shot.shots, shot.copies))
+
+    return Shots(shots=shot_vector)
