@@ -9,6 +9,16 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` is deprecated. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` is deprecated. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``output_dim`` property of ``qml.tape.QuantumScript`` has been deprecated. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
 
   - Deprecated in v0.40
