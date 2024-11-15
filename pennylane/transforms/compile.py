@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
-import warnings
-
 # pylint: disable=too-many-branches
 from functools import partial
 
@@ -35,7 +33,7 @@ default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove
 
 @transform
 def compile(
-    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1, expand_depth=None
+    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
@@ -47,9 +45,6 @@ def compile(
       (:func:`~pennylane.transforms.cancel_inverses`)
     - merging adjacent rotations of the same type
       (:func:`~pennylane.transforms.merge_rotations`)
-
-    .. warning::
-        The ``expand_depth`` argument is deprecated and will be removed in version 0.40.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -65,7 +60,6 @@ def compile(
             however, doing so may produce a new circuit where applying the set
             of transforms again may yield further improvement, so the number of
             such passes can be adjusted.
-        expand_depth (int): The depth to use for tape expansion into the basis gates.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The compiled circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
@@ -167,13 +161,6 @@ def compile(
         ───RY(-1.57)─╰X─┤
 
     """
-    if expand_depth is not None:
-        warnings.warn(
-            "The expand_depth argument is deprecated and will be removed in version v0.40.",
-            qml.PennyLaneDeprecationWarning,
-        )
-    else:
-        expand_depth = 5
 
     # Ensure that everything in the pipeline is a valid qfunc or tape transform
     if pipeline is None:
@@ -205,7 +192,6 @@ def compile(
         [expanded_tape], _ = qml.devices.preprocess.decompose(
             tape,
             stopping_condition=stop_at,
-            max_expansion=expand_depth,
             name="compile",
             error=qml.operation.DecompositionUndefinedError,
             skip_initial_state_prep=False,

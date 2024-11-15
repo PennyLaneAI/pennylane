@@ -263,7 +263,7 @@ class TestParameterShiftHessian:
         expected = -np.cos(x)
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, np.ndarray)
         assert hessian.shape == ()
@@ -285,7 +285,7 @@ class TestParameterShiftHessian:
         expected = 0.5 * np.cos(x) * np.array([-1, 0, 0, 1])
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, np.ndarray)
         assert hessian.shape == (4,)
@@ -308,7 +308,7 @@ class TestParameterShiftHessian:
         expected = (-np.cos(x), -np.cos(x) / np.sqrt(2))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -335,7 +335,7 @@ class TestParameterShiftHessian:
         expected = (-np.cos(x), 0.5 * np.cos(x) * np.array([-1, 0, 0, 1]))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -362,7 +362,7 @@ class TestParameterShiftHessian:
         expected = (0.5 * np.cos(x) * np.array([-1, 1]), 0.5 * np.cos(x) * np.array([-1, 0, 0, 1]))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -389,7 +389,7 @@ class TestParameterShiftHessian:
         expected = ((-np.cos(x[0]), 0), (0, 0))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -433,7 +433,7 @@ class TestParameterShiftHessian:
         )
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -475,7 +475,7 @@ class TestParameterShiftHessian:
         )
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -524,7 +524,7 @@ class TestParameterShiftHessian:
         )
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -585,7 +585,7 @@ class TestParameterShiftHessian:
         )
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -619,7 +619,7 @@ class TestParameterShiftHessian:
         expected = ((0, 0, 0), (0, 0, 0), (0, 0, -np.cos(x[2] + x[0])))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape, argnum=(1, 2))
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+        hessian = fn(qml.execute(tapes, dev, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 3
@@ -1613,7 +1613,7 @@ class TestParamShiftHessianWithKwargs:
         for _tape, exp_shift in zip(tapes[3:-1], expected_shifts):
             assert np.allclose(_tape.get_parameters(), x + exp_shift)
 
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
+        hessian = fn(qml.execute(tapes, dev, diff_method=qml.gradients.param_shift))
 
         assert np.allclose(expected, hessian)
 
@@ -1666,7 +1666,7 @@ class TestParamShiftHessianWithKwargs:
         for mult, _tape in zip(shift_order, tapes[10:]):
             assert np.allclose(_tape.get_parameters(), x + np.array([0.0, np.pi * mult]))
 
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift))
+        hessian = fn(qml.execute(tapes, dev, diff_method=qml.gradients.param_shift))
         assert np.allclose(expected, hessian)
 
     @pytest.mark.parametrize("argnum", [(0,), (1,), (0, 1)])

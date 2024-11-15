@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,21 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+Experimental Lie theory features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~lie_closure_dense
+
+
 """
-Tests for workflow.set_shots
-"""
 
-import pytest
-
-import pennylane as qml
-from pennylane.workflow import set_shots
-
-
-def test_shots_new_device_interface():
-    """Test that calling set_shots on a device implementing the new interface leaves it
-    untouched.
-    """
-    dev = qml.devices.DefaultQubit()
-    with pytest.raises(ValueError):
-        with set_shots(dev, 10):
-            pass
+from .lie_closure_dense import lie_closure_dense
