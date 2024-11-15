@@ -125,19 +125,6 @@ def tear_down_thermitian():
     qml.THermitian._eigs = {}
 
 
-#######################################################################
-# Fixtures for testing under new and old opmath
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
-    )
-
-
-#######################################################################
-
-
 @pytest.fixture(autouse=True)
 def restore_global_seed():
     original_state = np.random.get_state()
