@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING, Callable, Dict
 if TYPE_CHECKING:
     from pennylane.labs.resource_estimation import CompressedResourceOp
 
+import pennylane.labs.resource_estimation as re
+
 
 class ResourceOperator(ABC):
     r"""This is an abstract class that defines the methods a PennyLane Operator
@@ -111,17 +113,18 @@ class ResourceOperator(ABC):
         raise CompressedRepNotDefined
 
 class ResourceSymbolicOperator(ResourceOperator):
-    def __init__(self, base=None, id=None):
-        if not isinstance(base, ResourceOperator):
-            raise TypeError(f"base must be a subclass of ResourceOperator, got type {type(base)}.")
+    """Base class for resources of symbolic operators"""
 
-        super().__init__(base=base, id=id)
-
+    #pylint: disable=no-member
     def resource_params(self):
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params()
         }
+
+    @classmethod
+    def resource_rep(cls, base_class, base_params, **kwargs):
+        return re.CompressedResourceOp(cls, {"base_class": base_class, "base_params": base_params})
 
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
