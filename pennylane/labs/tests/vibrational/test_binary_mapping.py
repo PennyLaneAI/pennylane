@@ -377,7 +377,6 @@ def test_binary_mapping_bosesentence(bose_op, d, result):
     qubit_op = binary_mapping(bose_op, d=d)
     qubit_op.simplify(tol=1e-8)
 
-    # get expected op as PauliSentence and simplify
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op.simplify(tol=1e-8)
     assert qubit_op == expected_op
