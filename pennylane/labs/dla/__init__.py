@@ -33,6 +33,9 @@ Utility functions
 .. autosummary::
     :toctree: api
 
+    ~adjvec_to_op
+    ~change_basis_ad_rep
+    ~op_to_adjvec
     ~pauli_coefficients
     ~pauli_decompose
     ~pauli_coefficients
@@ -58,8 +61,11 @@ from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
 from .cartan import cartan_decomposition, even_odd_involution, concurrence_involution
 from .dense_util import (
+    adjvec_to_op,
+    change_basis_ad_rep,
     pauli_coefficients,
     pauli_decompose,
+    op_to_adjvec,
     orthonormalize,
     check_orthonormal,
     trace_inner_product,
