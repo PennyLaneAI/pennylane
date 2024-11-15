@@ -197,8 +197,10 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
         # Making use of adjoint representation
         # should be faster, and most importantly allow for treatment of sums of paulis
 
-        # gammavec @ (K_|k| .. K_1) @ vec_H
-        for i in range(dim_k):
+        assert adj.shape == (len(vec_H), len(theta), len(vec_H))
+        # Implement Ad_(K_1 .. K_|k|) (vec_H), so that we get K_1 .. K_|k| H K^†_|k| .. K^†_1
+
+        for i in range(dim_k - 1, -1, -1):
             vec_H = jax.scipy.linalg.expm(theta[i] * adj[:, i]) @ vec_H
 
         return (gammavec @ vec_H).real
@@ -227,7 +229,8 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     else:
         theta_opt = thetas[-1]
 
-    for i in range(dim_k):
+    # Implement Ad_(K_1 .. K_|k|) (vec_H) like in the loss, with optimized parameters now.
+    for i in range(dim_k - 1, -1, -1):
         vec_H = jax.scipy.linalg.expm(theta_opt[i] * adj_cropped[:, i]) @ vec_H
 
     return vec_H, theta_opt
@@ -252,15 +255,17 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
 
     assert np.allclose(h_elem_m, h_elem_m.conj().T), "CSA element h not Hermitian"
 
-    # validate KhK reproduces H
+    # validate K_c^† h K_c reproduces H
+    # Compute the ansatz K_c = K(theta_c) = K_1(theta_1) .. K_|k|(theta_|k|)
     Km = jnp.eye(2**n)
     assert len(theta_opt) == len(k)
     for th, op in zip(theta_opt, k):
         opm = qml.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
-        Km @= jax.scipy.linalg.expm(-1j * th * opm)
+        Km @= jax.scipy.linalg.expm(1j * th * opm)
 
     assert np.allclose(Km @ Km.conj().T, np.eye(2**n))
 
+    # Compute K_c^† h K_c
     H_reconstructed = Km.conj().T @ h_elem_m @ Km
 
     H_m = qml.matrix(H, wire_order=range(len(H.wires)))
