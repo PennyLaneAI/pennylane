@@ -49,6 +49,9 @@
   pennylane variant jaxpr.
   [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
 
+* An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
+[(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
+
 <h4>Other Improvements</h4>
 
 * `qml.BasisRotation` template is now JIT compatible.
