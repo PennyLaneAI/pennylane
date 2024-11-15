@@ -235,7 +235,6 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
 
     # Instead of recomputing the adjoint representation, take the basis transformation
     # oldg -> newg and transform the adjoint representation accordingly
-    # TODO: implementation to be tested:
     np_oldg = np.vstack([np_k, np_m])
     basis_change = np.tensordot(np_newg, np.linalg.pinv(np_oldg), axes=[[1], [0]])
     new_adj = change_basis_ad_rep(ad, basis_change)
