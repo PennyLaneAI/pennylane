@@ -13,7 +13,6 @@
 # limitations under the License.
 """Quantum natural gradient optimizer"""
 import numbers
-
 from collections.abc import Iterable
 
 import pennylane as qml

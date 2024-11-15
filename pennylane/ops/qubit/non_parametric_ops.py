@@ -26,7 +26,6 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane.operation import Observable, Operation
-
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 

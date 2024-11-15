@@ -16,6 +16,7 @@
 import numpy as np
 
 import pennylane as qml
+
 from .qng import _flatten_np, _unflatten_np
 
 
