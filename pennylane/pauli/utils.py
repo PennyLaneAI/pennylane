@@ -112,7 +112,8 @@ def _is_pw_pauli(
 
 @_is_pauli_word.register(Sum)
 def _is_pw_ham(observable: Sum):
-    return False if len(observable.ops) != 1 else is_pauli_word(observable.ops[0])
+    ops = observable.terms()[1]
+    return False if len(ops) != 1 else is_pauli_word(ops[0])
 
 
 @_is_pauli_word.register
