@@ -69,7 +69,11 @@ class TestSWAP:
         cnot = re.ResourceCNOT.resource_rep()
         expected = {cnot: 3}
 
-        assert op.resources(**re.ResourceSWAP.resource_rep().params) == expected
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_params = op_compressed_rep.params
+        op_compressed_rep_type = op_compressed_rep.op_type
+
+        assert op_compressed_rep_type.resources(**op_resource_params) == expected
 
 
 class TestT:

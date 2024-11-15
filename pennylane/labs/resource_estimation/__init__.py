@@ -32,6 +32,35 @@ Base Objects
     ~Resources
     ~CompressedResourceOp
 
+Operators
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceCNOT
+    ~ResourceControlledPhaseShift
+    ~ResourceHadamard
+    ~ResourceRZ
+    ~ResourceSWAP
+    ~ResourceT
+
+Templates
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceQFT
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
+
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined, ResourceSymbolicOperator
