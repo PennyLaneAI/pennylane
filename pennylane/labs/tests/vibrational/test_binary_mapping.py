@@ -485,11 +485,9 @@ def test_return_binary_mapping_ps(bose_op):
 )
 def test_binary_mapping_wiremap(bose_op, wire_map, result):
     """Test that the binary_mapping function returns the correct qubit operator."""
-    # convert BoseWord to PauliSentence and simplify
     qubit_op = binary_mapping(bose_op, d=4, wire_map=wire_map)
     qubit_op.simplify(tol=1e-8)
 
-    # get expected op as PauliSentence and simplify
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op.simplify(tol=1e-8)
     assert qubit_op == expected_op
