@@ -36,6 +36,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added support for non-orthogonal bases in `qml.structure_constants`.
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)

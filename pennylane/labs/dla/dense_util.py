@@ -15,7 +15,7 @@
 # pylint: disable=possibly-used-before-assignment
 from collections.abc import Iterable
 from functools import reduce
-from itertools import combinations_with_replacement
+from itertools import combinations, combinations_with_replacement
 from typing import Optional, Union
 
 import numpy as np
@@ -233,25 +233,26 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
 def orthonormalize(basis):
     r"""Orthonormalize a list of basis vectors"""
 
+    if isinstance(basis, PauliVSpace) or all(
+        isinstance(op, (PauliSentence, Operator)) for op in basis
+    ):
+        return _orthonormalize_ps(basis)
+
     if all(isinstance(op, np.ndarray) for op in basis):
         return _orthonormalize_np(basis)
 
-    if all(isinstance(op, (PauliSentence, PauliVSpace, Operator)) for op in basis):
-        return _orthonormalize_ps(basis)
-
-    raise NotImplementedError(f"orthonormalize not implemented for {basis} of type {type(basis)}")
+    raise NotImplementedError(
+        f"orthonormalize not implemented for basis of type {type(basis[0])}:\n{basis}"
+    )
 
 
 def _orthonormalize_np(basis: Iterable[np.ndarray]):
-    gram_inv = np.linalg.pinv(
-        scipy.linalg.sqrtm(np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real)
-    )
-    return np.tensordot(gram_inv, basis, axes=1) * np.sqrt(
-        len(basis[0])
-    )  # TODO absolutely not sure about this
+    basis = np.array(basis)
+    gram_inv = np.linalg.pinv(scipy.linalg.sqrtm(trace_inner_product(basis, basis).real))
+    return np.tensordot(gram_inv, basis, axes=1)
 
 
-def _orthonormalize_ps(basis: Iterable[Union[PauliSentence, PauliVSpace, Operator]]):
+def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, Operator]]]):
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
 
@@ -300,32 +301,54 @@ def _orthonormalize_ps(basis: Iterable[Union[PauliSentence, PauliVSpace, Operato
 
 def check_orthonormal(g, inner_product):
     """Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``"""
-    norm = np.zeros((len(g), len(g)), dtype=complex)
-    for i, gi in enumerate(g):
-        for j, gj in enumerate(g):
-            norm[i, j] = inner_product(gi, gj)
-
-    return np.allclose(norm, np.eye(len(norm)))
+    for op in g:
+        if not np.isclose(inner_product(op, op), 1.0):
+            return False
+    for opi, opj in combinations(g, r=2):
+        if not np.isclose(inner_product(opi, opj), 0.0):
+            return False
+    return True
 
 
 def trace_inner_product(
     A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
 ):
-    r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`"""
+    r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`.
+    If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
+    inputs.
+    """
+    if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
+        return (A.pauli_rep @ B.pauli_rep).trace()
+
     if not isinstance(A, type(B)):
         raise TypeError("Both input operators need to be of the same type")
 
     if isinstance(A, np.ndarray):
-        assert np.allclose(A.shape, B.shape)
-        return np.trace(A.conj().T @ B) / (len(A))
+        assert A.shape[-2:] == B.shape[-2:]
+        # The axes of the first input are switched, compared to tr[A@B], because we need to
+        # transpose A.
+        return np.tensordot(A.conj(), B, axes=[[-1, -2], [-1, -2]]) / A.shape[-1]
 
     if isinstance(A, (PauliSentence, PauliWord)):
         return (A @ B).trace()
 
-    if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
-        return (A.pauli_rep @ B.pauli_rep).trace()
+    raise NotImplementedError
 
-    return NotImplemented
+
+def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
+    """Apply the basis change between bases of operators to the adjoint representation.
+
+    Args:
+        adj (numpy.ndarray): Adjoint representation in old basis.
+        basis_change (numpy.ndarray): Basis change matrix from old to new basis.
+
+    Returns:
+        numpy.ndarray: Adjoint representation in new basis.
+    """
+    # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
+    new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
+    new_adj = np.einsum("mnp,in->mip", new_adj, basis_change)
+    return np.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
 def adjvec_to_op(adj_vecs, basis):
