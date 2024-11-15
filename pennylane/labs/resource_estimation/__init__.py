@@ -42,6 +42,7 @@ Operators
     ~ResourceControlledPhaseShift
     ~ResourceHadamard
     ~ResourceRZ
+    ~ResourceSWAP
     ~ResourceT
 
 Templates
@@ -51,6 +52,14 @@ Templates
     :toctree: api
 
     ~ResourceQFT
+
+Exceptions
+~~~~~~~~~~
+
+..autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
