@@ -36,7 +36,7 @@
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
-* Added functions to add and multiple Resources objects
+* Added functions, dunder methods, to add and multiply Resources objects in series and in parallel
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 <h4>Capturing and representing hybrid programs</h4>
