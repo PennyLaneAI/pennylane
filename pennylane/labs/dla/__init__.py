@@ -51,6 +51,7 @@ Utility functions
     ~op_to_adjvec
     ~adjvec_to_op
     ~validate_khk
+    ~run_opt
 
 Involutions
 ~~~~~~~~~~~
@@ -110,4 +111,4 @@ from .involutions import (
     ClassB,
 )
 from .cartan_subalgebra import cartan_subalgebra
-from .variational_kak import validate_kak, variational_kak
+from .variational_kak import validate_kak, variational_kak, run_opt
