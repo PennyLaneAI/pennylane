@@ -15,6 +15,10 @@
   True
   ```
 
+* Added a dense implementation of computing the Lie closure in a new function
+  `lie_closure_dense` in `pennylane.labs.dla`.
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+
 <h4>New API for Qubit Mixed</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
@@ -25,7 +29,7 @@
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
-  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503) 
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
 
 <h3>Improvements 🛠</h3>
 
@@ -101,6 +105,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. 
+Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
+same information.
+  [(#6577)](https://github.com/PennyLaneAI/pennylane/pull/6577)
+
 * The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
   Instead, use the `qml.workflow.get_best_diff_method` function.
   [(#6418)](https://github.com/PennyLaneAI/pennylane/pull/6418)
@@ -135,6 +144,7 @@ Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
 Austin Huang,
+Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic,
 Justin Pickering
