@@ -385,7 +385,9 @@ def draw_mpl(
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
-        wire_options (dict): matplotlib formatting options for the wire lines
+        wire_options (dict): matplotlib formatting options for the wire lines. In addition to
+            standard options, options per wire can be specified with ``wire_label: options``
+            pairs, also see examples below.
         label_options (dict): matplotlib formatting options for the wire labels
         show_wire_labels (bool): Whether or not to show the wire labels.
         active_wire_notches (bool): whether or not to add notches indicating active wires.
@@ -458,7 +460,8 @@ def draw_mpl(
 
         **Wires:**
 
-        The keywords ``wire_order`` and ``show_all_wires`` control the location of wires from top to bottom.
+        The keywords ``wire_order`` and ``show_all_wires`` control the location of wires
+        from top to bottom.
 
         .. code-block:: python
 
@@ -470,8 +473,8 @@ def draw_mpl(
                 :width: 60%
                 :target: javascript:void(0);
 
-        If a wire is in ``wire_order``, but not in the ``tape``, it will be omitted by default.  Only by selecting
-        ``show_all_wires=True`` will empty wires be displayed.
+        If a wire is in ``wire_order``, but not in the ``tape``, it will be omitted by default.
+        Only by selecting ``show_all_wires=True`` will empty wires be displayed.
 
         .. code-block:: python
 
@@ -564,6 +567,25 @@ def draw_mpl(
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/wires_labels.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
+
+        Additionally, ``wire_options`` may contain sub-dictionaries of matplotlib options assigned
+        to separate wire labels, which will control the line style for the respective individual wires.
+
+        .. code-block:: python
+
+            wire_options = {
+                'color': 'teal', # all wires but wire 2 will be teal
+                'linewidth': 5, # all wires but wire 2 will be bold
+                2: {'color': 'orange', 'linestyle': '--'}, # wire 2 will be orange and dashed
+            }
+            fig, ax = qml.draw_mpl(circuit, wire_options=wire_options)(1.2345,1.2345)
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/per_wire_options.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
