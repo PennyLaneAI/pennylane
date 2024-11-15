@@ -66,8 +66,7 @@
 * The developer-facing `qml.utils` module has been removed. Specifically, the
 following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
 
-  * `qml.utils._flatten`, `qml.utils.unflatten` has been moved and renamed to
-  and marked as private functions `qml.optimize.qng._flatten_np` and `qml.optimize.qng._unflatten_np` respectively.
+  * `qml.utils._flatten`, `qml.utils.unflatten` has been moved and renamed to `qml.optimize.qng._flatten_np` and `qml.optimize.qng._unflatten_np` respectively.
 
   * `qml.utils._inv_dict` and `qml._get_default_args` have been removed.
 
