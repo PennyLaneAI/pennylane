@@ -105,7 +105,7 @@ bw20cs = bw20c1 + bw20c2 - bw20c3
 bw21 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"})
 bw22 = BoseWord({(0, 0): "-", (1, 0): "+"})
 
-
+# pylint: disable=too-many-public-methods
 class TestBoseWord:
     """
     Tests for BoseWord
