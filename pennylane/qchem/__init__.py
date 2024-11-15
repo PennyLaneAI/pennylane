@@ -82,12 +82,11 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
-
 from .vibrational.bosonic import (
     BoseSentence,
     BoseWord
 )
-
 from .vibrational.bosonic_mapping import (
     binary_mapping
 )
+
