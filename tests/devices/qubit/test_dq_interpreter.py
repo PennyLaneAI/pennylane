@@ -266,7 +266,7 @@ class TestSampling:
             f()
 
     def test_mcms_not_all_same_key(self):
-        """Test that each mid circuit measurement has a different key and can have different options."""
+        """Test that each mid circuit measurement has a different key."""
 
         @DefaultQubitInterpreter(num_wires=1, shots=None, key=jax.random.PRNGKey(87665))
         def g():
@@ -284,7 +284,7 @@ class TestSampling:
 
         output = g()
         assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 5))
-        # only way we could different values for some mcms is if they had different seeds
+        # only way we could get different values between the mcms is if they had different seeds
 
     def test_each_measurement_has_different_key(self):
         """Test that each sampling measurement is performed with a different key."""

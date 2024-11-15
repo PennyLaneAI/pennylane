@@ -38,13 +38,14 @@ from .sampling import measure_with_samples
 
 
 class DefaultQubitInterpreter(PlxprInterpreter):
-    """Implements a class for interpreting plxpr using default qubit.
+    """Implements a class for interpreting plxpr using python simulation tools.
 
     Args:
-        num_wires (int): the numberof wires to initialize the state with
-        shots (int | None): the number of shots to use for the execution
+        num_wires (int): the number of wires to initialize the state with
+        shots (int | None): the number of shots to use for the execution. Shot vectors are not supported yet.
         key (None, jax.numpy.ndarray): the ``PRNGKey`` to use for random number generation.
-
+>>> from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
+>>> qml.capture.enable()
     >>> key = jax.random.PRNGKey(1234)
     >>> dq = DefaultQubitInterpreter(num_wires=2, shots=None, key=key)
     >>> @qml.for_loop(2)
@@ -61,14 +62,12 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     Array(0.54030231, dtype=float64)
 
     This execution can be differentiated via backprop and jitted as normal. Note that finite shot executions
-    still cannot be differented with backprop.
+    still cannot be differentiated with backprop.
 
     >>> jax.grad(dq(f))(jax.numpy.array(0.5))
     Array(-1.68294197, dtype=float64, weak_type=True)
     >>> jax.jit(dq(f))(jax.numpy.array(0.5))
     Array(0.54030231, dtype=float64)
-
-
     """
 
     def __init__(
@@ -89,7 +88,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
 
     @property
     def state(self) -> None | jax.numpy.ndarray:
-        """The current state of the system.  None if not initialized."""
+        """The current state of the system. None if not initialized."""
         return self.stateref["state"] if self.stateref else None
 
     @state.setter
