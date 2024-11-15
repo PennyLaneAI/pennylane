@@ -75,8 +75,7 @@ def lie_closure_dense(
 
     This function computes the Lie closure of a set of generators using their dense matrix representation.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
-    :class:`~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
-    that are sums of many Paulis.
+    :class:`~PauliSentence` employed in :func:`~lie_closure`, e.g., when few generators are sums of many Paulis.
 
     .. seealso::
 
