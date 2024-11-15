@@ -15,7 +15,7 @@
 This submodule provides the functionality to perform quantum chemistry calculations.
 """
 
-from vibrational.bosonic import (
+from .vibrational.bosonic import (
     BoseSentence,
     BoseWord
 )
