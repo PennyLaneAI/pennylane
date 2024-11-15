@@ -37,12 +37,6 @@ Pending deprecations
 
   - Deprecated in v0.39
   - Will be removed in v0.40
-
-* The ``qml.qinfo`` module has been deprecated. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
-  modules instead.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
   
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
@@ -105,13 +99,19 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
+* The ``qml.qinfo`` module has been removed. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
+  modules instead.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
 * Top level access to ``Device``, ``QubitDevice``, and ``QutritDevice`` have been removed. Instead, they
   are available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
   respectively.
 
   - Deprecated in v0.39
   - Removed in v0.40
-  
+
 * The :class:`~pennylane.BasisStatePreparation` template has been removed.
   Instead, use :class:`~pennylane.BasisState`.
 
