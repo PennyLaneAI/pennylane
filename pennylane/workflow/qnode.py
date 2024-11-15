@@ -90,6 +90,7 @@ def _convert_to_interface(res, interface):
 def _make_execution_config(
     circuit: Optional["QNode"], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
+    circuit_interface = getattr(circuit, "interface", None)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
     grad_on_execution = execute_kwargs.get("grad_on_execution")
@@ -98,8 +99,12 @@ def _make_execution_config(
     elif grad_on_execution == "best":
         grad_on_execution = None
 
+    # Mapping numpy to None here because `qml.execute` will map None back into
+    # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
+    # If the user specified interface="numpy", it would've already been converted to
+    # "autograd", and it wouldn't be affected.
     return qml.devices.ExecutionConfig(
-        interface=getattr(circuit, "interface", None),
+        interface=None if circuit_interface == "numpy" else circuit_interface,
         gradient_keyword_arguments=gradient_kwargs,
         gradient_method=diff_method,
         grad_on_execution=grad_on_execution,
@@ -970,13 +975,6 @@ class QNode:
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
 
         config = _make_execution_config(self, self.diff_method, mcm_config=mcm_config)
-
-        # Mapping numpy to None here because `qml.execute` will map None back into
-        # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
-        # If the user specified interface="numpy", it would've already been converted to
-        # "autograd", and it wouldn't be affected.
-        _interface_user_input = None if self.interface == "numpy" else self.interface
-        config.interface = _interface_user_input
         config = _resolve_execution_config(
             (self._tape,), self.device, config, self.transform_program
         )
