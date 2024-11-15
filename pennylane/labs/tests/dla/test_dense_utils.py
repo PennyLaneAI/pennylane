@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane import I, X, Y, Z
 from pennylane.labs.dla import (
+    adjvec_to_op,
     change_basis_ad_rep,
     check_orthonormal,
     op_to_adjvec,
@@ -27,7 +28,7 @@ from pennylane.labs.dla import (
     pauli_decompose,
     trace_inner_product,
 )
-from pennylane.pauli import PauliVSpace
+from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 
 # Make an operator matrix on given wire and total wire count
 I_ = lambda w, n: I(w).matrix(wire_order=range(n))
@@ -173,7 +174,7 @@ class TestPauliDecompose:
         if pauli:
             expected = expected.pauli_rep
             expected.simplify()
-            assert isinstance(op, qml.pauli.PauliSentence)
+            assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
             assert all(np.isclose(op[k], expected[k]) for k in op.keys())
@@ -211,7 +212,7 @@ class TestPauliDecompose:
             for _op, e in zip(op, expected):
                 e = e.pauli_rep
                 e.simplify()
-                assert isinstance(_op, qml.pauli.PauliSentence)
+                assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
@@ -239,7 +240,7 @@ class TestPauliDecompose:
         if pauli:
             expected = expected.pauli_rep
             expected.simplify()
-            assert isinstance(op, qml.pauli.PauliSentence)
+            assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
             assert all(np.isclose(op[k], expected[k]) for k in op.keys())
@@ -279,7 +280,7 @@ class TestPauliDecompose:
             for _op, e in zip(op, expected):
                 e = e.pauli_rep
                 e.simplify()
-                assert isinstance(_op, qml.pauli.PauliSentence)
+                assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
@@ -433,9 +434,102 @@ class TestChangeBasisAdRep:
         assert np.allclose(new_adj, skewed_adj)
 
 
-def test_op_to_adjvec_dense():
-    """Basic test of op_to_adjvec with dense matrices"""
-    basis = [qml.matrix(op, wire_order=range(2)) for op in [X(0), X(1)]]
-    ops = [X(0), X(1)]
-    res = op_to_adjvec(ops, basis)
-    assert np.allclose(res, np.eye(2))
+some_ps = PauliSentence({PauliWord({0: "X", 23: "Y"}): 0.5, PauliWord({3: "Z", 2: "X"}): -1.3})
+x = np.arange(1, 151).reshape((10, 15))
+paulis_2_qubits = [op.pauli_rep for op in qml.pauli.pauli_group(2)]
+ps_basis_0_rot = np.random.random((16, 16))
+ps_basis_0 = [sum(c * op for c, op in zip(_coeffs, paulis_2_qubits)) for _coeffs in ps_basis_0_rot]
+coeffs_0 = np.random.random((13, 16))
+expected_0 = [
+    sum(c * op for c, op in zip(coeffs, paulis_2_qubits)) for coeffs in coeffs_0 @ ps_basis_0_rot
+]
+expected_1 = [sum(c * op for c, op in zip(coeffs, paulis_2_qubits)) for coeffs in coeffs_0]
+
+ps_test_cases = [
+    (x, [some_ps] * 15, [c * some_ps for c in np.sum(x, axis=1)], False),  # linearly dep. "basis"
+    (coeffs_0, ps_basis_0, expected_0, False),  # Non-orthogonal basis
+    (coeffs_0, paulis_2_qubits, expected_1, True),  # Orthonormal basis
+]
+
+op_test_cases = [
+    (adj_vecs, [ps.operation() for ps in basis], [ps.operation() for ps in expected], is_ortho)
+    for adj_vecs, basis, expected, is_ortho in ps_test_cases
+]
+
+wire_orders = ([0, 2, 3, 23], [0, 1])
+dense_test_cases = [
+    (
+        adj_vecs,
+        [qml.matrix(ps, wire_order=wo) for ps in basis],
+        [qml.matrix(ps, wire_order=wo) for ps in expected],
+        is_ortho,
+    )
+    for (adj_vecs, basis, expected, is_ortho), wo in zip(ps_test_cases, wire_orders)
+]
+
+
+class TestAdjvecToOp:
+    """Test adjvec_to_op."""
+
+    @pytest.mark.parametrize("adj_vecs, basis, expected, _", ps_test_cases)
+    def test_with_ps(self, adj_vecs, basis, expected, _):
+        """Test ``adjvec_to_op`` with a basis of ``PauliSentence`` operators."""
+        out = adjvec_to_op(adj_vecs, basis)
+        for out_op, exp_op in zip(out, expected):
+            assert isinstance(out_op, PauliSentence)
+            assert all(c.dtype == np.float64 for c in out_op.values())
+            assert set(out_op) == set(exp_op)
+            assert all(np.isclose(out_op[k], exp_op[k]) for k in out_op)
+
+    @pytest.mark.parametrize("adj_vecs, basis, expected, _", op_test_cases)
+    def test_with_op(self, adj_vecs, basis, expected, _):
+        """Test ``adjvec_to_op`` with a basis of ``Operator`` operators."""
+        out = adjvec_to_op(adj_vecs, basis)
+        for out_op, exp_op in zip(out, expected):
+            assert qml.equal(out_op.simplify(), exp_op.simplify())
+
+    @pytest.mark.parametrize("adj_vecs, basis, expected, _", dense_test_cases)
+    def test_with_dense(self, adj_vecs, basis, expected, _):
+        """Test ``adjvec_to_op`` with a basis of dense operators."""
+        out = adjvec_to_op(adj_vecs, basis)
+        assert qml.math.shape(out) == qml.math.shape(expected)
+        assert np.allclose(out, expected)
+
+
+class TestOpToAdjvec:
+    """Test op_to_adjvec. We reuse the test cases from adjvec_to_op, except
+    for the first one, which uses a linearly dependent "basis"."""
+
+    @pytest.mark.parametrize("expected, basis, ops, is_ortho", ps_test_cases[1:])
+    def test_with_ps(self, ops, basis, expected, is_ortho):
+        """Test ``op_to_adjvec`` with a basis of ``PauliSentence`` operators."""
+        out = op_to_adjvec(ops, basis, is_orthogonal=False)
+        assert qml.math.shape(out) == qml.math.shape(expected)
+        assert np.allclose(out, expected)
+        if is_ortho:
+            out = op_to_adjvec(ops, basis, is_orthogonal=True)
+            assert qml.math.shape(out) == qml.math.shape(expected)
+            assert np.allclose(out, expected)
+
+    @pytest.mark.parametrize("expected, basis, ops, is_ortho", op_test_cases[1:])
+    def test_with_op(self, ops, basis, expected, is_ortho):
+        """Test ``op_to_adjvec`` with a basis of ``Operator`` operators."""
+        out = op_to_adjvec(ops, basis, is_orthogonal=False)
+        assert qml.math.shape(out) == qml.math.shape(expected)
+        assert np.allclose(out, expected)
+        if is_ortho:
+            out = op_to_adjvec(ops, basis, is_orthogonal=True)
+            assert qml.math.shape(out) == qml.math.shape(expected)
+            assert np.allclose(out, expected)
+
+    @pytest.mark.parametrize("expected, basis, ops, is_ortho", dense_test_cases[1:])
+    def test_with_dense(self, ops, basis, expected, is_ortho):
+        """Test ``op_to_adjvec`` with a basis of dense operators."""
+        out = op_to_adjvec(ops, basis, is_orthogonal=False)
+        assert qml.math.shape(out) == qml.math.shape(expected)
+        assert np.allclose(out, expected)
+
+        if is_ortho:
+            out = op_to_adjvec(ops, basis, is_orthogonal=True)
+            assert qml.math.shape(out) == qml.math.shape(expected)
+            assert np.allclose(out, expected)

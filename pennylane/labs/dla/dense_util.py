@@ -310,15 +310,6 @@ def apply_basis_change(change_op, targets):
     return out
 
 
-def change_basis_ad_rep(adj, basis_change):
-    """Apply the basis change between bases of operators to the adjoint representation."""
-    # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
-    new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
-    new_adj = np.einsum("mnp,in->mip", new_adj, basis_change)
-    new_adj = np.einsum("mnp,ip->mni", new_adj, basis_change)
-    return new_adj
-
-
 def orthonormalize(basis):
     r"""Orthonormalize a list of basis vectors"""
 
@@ -424,17 +415,39 @@ def trace_inner_product(
     raise NotImplementedError
 
 
-def adjvec_to_op(adj_vecs, basis):
-    """Transform adjoint vectors representing operators back into a basis of choice
+def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
+    """Apply the basis change between bases of operators to the adjoint representation.
 
     Args:
-        adj_vecs (np.ndarray): collection of vectors with shape ``(batch, dim_basis)``
+        adj (numpy.ndarray): Adjoint representation in old basis.
+        basis_change (numpy.ndarray): Basis change matrix from old to new basis.
+
+    Returns:
+        numpy.ndarray: Adjoint representation in new basis.
+    """
+    # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
+    new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
+    new_adj = np.einsum("mnp,in->mip", new_adj, basis_change)
+    return np.einsum("mnp,ip->mni", new_adj, basis_change)
+
+
+def adjvec_to_op(adj_vecs, basis):
+    """Transform vectors representing operators in an operator basis back into operator format.
+
+    Args:
+        adj_vecs (np.ndarray): collection of vectors with shape ``(batch, len(basis))``
         basis (List[Union[PauliSentence, Operator, np.ndarray]]): collection of basis operators
 
+    Returns:
+        list: collection of operators corresponding to the input vectors read in the input basis.
+        The operators are in the format specified by the elements in ``basis``.
+
     """
-    res = []
-    # currently agnostic to dense or op input, but could be vectorized in the dense case (TODO?)
+    assert isinstance(adj_vecs, np.ndarray)
+    assert adj_vecs.shape[1] == len(basis)
+
     if all(isinstance(op, PauliSentence) for op in basis):
+        res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
             op_j.simplify()
@@ -442,17 +455,20 @@ def adjvec_to_op(adj_vecs, basis):
         return res
 
     if all(isinstance(op, Operator) for op in basis):
+        res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
             op_j = qml.simplify(op_j)
             res.append(op_j)
         return res
 
-    if all(isinstance(op, np.ndarray) for op in basis):
-        res = np.tensordot(adj_vecs, basis, axes=1)
-        return res
+    if isinstance(basis, np.ndarray) or all(isinstance(op, np.ndarray) for op in basis):
+        return np.tensordot(adj_vecs, basis, axes=1)
 
-    return NotImplementedError
+    raise NotImplementedError(
+        "At least one operator in the specified basis is of unsupported type, "
+        "or not all operators are of the same type."
+    )
 
 
 def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bool = True):
@@ -480,7 +496,7 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
         res.append(rep)
     res = np.array(res)
     if not is_orthogonal:
-        res = np.einsum("ij,kj->ik", inv_gram, res)
+        res = np.einsum("ij,kj->ki", inv_gram, res)
 
     return res
 
@@ -490,7 +506,17 @@ def op_to_adjvec(
     basis: Union[PauliSentence, Operator, np.ndarray],
     is_orthogonal: bool = True,
 ):
-    """Project a batch of ops onto a given basis
+    """Decompose a batch of operators onto a given operator basis.
+
+    Args:
+        ops (Union[PauliSentence, Operator, np.ndarray]): Operators to decompose
+        basis (Iterable[Union[PauliSentence, Operator, np.ndarray]]): Operator basis
+        is_orthogonal (bool): Whether the basis is orthogonal with respect to the trace inner
+            product. Defaults to ``True``, which allows to skip some computations.
+
+    Returns:
+        np.ndarray: The batch of coefficient vectors of the operators ``ops`` expressed in
+        ``basis``. The shape is ``(len(ops), len(basis)``.
 
     The format of the resulting operators is determined by the ``type`` in ``basis``.
     If ``is_orthogonal=True`` (the default), only normalization is taken into account
@@ -516,11 +542,12 @@ def op_to_adjvec(
         basis = np.array(basis)
         res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
         if is_orthogonal:
-            norm = np.einsum(
-                "bij,bji->b", basis, basis
-            )  # TODO: gram matrix for non-orthonormal bases
+            norm = np.einsum("bij,bji->b", basis, basis)
             return res / norm
         gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]])
-        return np.einsum("ij,kj->ik", np.linalg.pinv(gram), res)
+        return np.einsum("ij,kj->ki", np.linalg.pinv(gram), res)
 
-    return NotImplemented
+    raise NotImplementedError(
+        "At least one operator in the specified basis is of unsupported type, "
+        "or not all operators are of the same type."
+    )

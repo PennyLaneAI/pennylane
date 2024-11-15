@@ -34,6 +34,9 @@ Utility functions
 .. autosummary::
     :toctree: api
 
+    ~adjvec_to_op
+    ~change_basis_ad_rep
+    ~op_to_adjvec
     ~pauli_coefficients
     ~pauli_decompose
     ~pauli_coefficients
@@ -78,18 +81,18 @@ from .cartan import (
 )
 
 from .dense_util import (
-    pauli_decompose,
-    pauli_coefficients,
+    adjvec_to_op,
+    apply_basis_change,
+    change_basis_ad_rep,
+    check_all_commuting,
     check_cartan_decomp,
     check_commutation,
-    check_all_commuting,
-    apply_basis_change,
-    orthonormalize,
     check_orthonormal,
-    trace_inner_product,
-    adjvec_to_op,
+    pauli_coefficients,
+    pauli_decompose,
     op_to_adjvec,
-    change_basis_ad_rep,
+    orthonormalize,
+    trace_inner_product,
 )
 from .involutions import (
     khaneja_glaser_involution,
