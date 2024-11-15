@@ -188,6 +188,9 @@ class BoseWord(dict):
         if isinstance(other, BoseSentence):
             other_bs = BoseSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_bs + other_bs
+        
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract {type(other)} from a BoseWord.")
 
         if qml.math.size(other) > 1:
             raise ValueError(
