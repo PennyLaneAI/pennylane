@@ -87,6 +87,9 @@ from .dense_util import (
     orthonormalize,
     check_orthonormal,
     trace_inner_product,
+    adjvec_to_op,
+    op_to_adjvec,
+    change_basis_ad_rep,
 )
 from .involutions import (
     khaneja_glaser_involution,
@@ -100,4 +103,4 @@ from .involutions import (
     ClassB,
 )
 
-from .cartan_subalgebra import cartan_subalgebra, adjvec_to_op, op_to_adjvec
+from .cartan_subalgebra import cartan_subalgebra
