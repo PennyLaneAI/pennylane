@@ -264,6 +264,7 @@ tested_modified_templates = [
 ]
 
 
+# pylint: disable=too-many-public-methods
 class TestModifiedTemplates:
     """Test that templates with custom primitive binds are captured as expected."""
 
