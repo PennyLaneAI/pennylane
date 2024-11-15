@@ -66,6 +66,8 @@ def _process(wires):
     if (
         qml.math.get_interface(wires) == "jax"
         and not qml.math.is_abstract(wires)
+        # Wires and TransformTracers belong to the "pennylane" namespace, which is
+        # assumed to belong to the "jax" interface when program capture is enabled
         and not isinstance(wires, (Wires, qml.capture.TransformTracer))
     ):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
