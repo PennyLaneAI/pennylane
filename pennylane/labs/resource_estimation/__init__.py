@@ -56,10 +56,11 @@ Templates
 Exceptions
 ~~~~~~~~~~
 
-..autosummary::
+.. autosummary::
     :toctree: api
 
     ~ResourcesNotDefined
+
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined

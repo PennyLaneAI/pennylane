@@ -27,7 +27,12 @@ from pennylane.labs.resource_estimation import (
 
 
 class ResourceQFT(qml.QFT, ResourceOperator):
-    """Resource class for QFT"""
+    """Resource class for QFT
+
+    Resources:
+        The resources are obtained from the textbook decomposition of QFT. See
+        chapter 5 of Quantum Computing and Quantum Information by Nielsen and Chuang for more details.
+    """
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:

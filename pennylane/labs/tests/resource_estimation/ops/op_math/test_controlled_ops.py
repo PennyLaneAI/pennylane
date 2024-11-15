@@ -75,12 +75,11 @@ class TestControlledPhaseShift:
             re.CompressedResourceOp(re.ResourceRZ, {}): 3,
         }
 
-        assert (
-            op.resources(
-                **re.ResourceControlledPhaseShift.resource_rep(**op.resource_params()).params
-            )
-            == expected
-        )
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_params = op_compressed_rep.params
+        op_compressed_rep_type = op_compressed_rep.op_type
+
+        assert op_compressed_rep_type.resources(**op_resource_params) == expected
 
 
 class TestCNOT:
