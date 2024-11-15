@@ -15,7 +15,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.qchem.vibrational import BoseWord, BoseSentence, unary_mapping
+from pennylane.qchem import BoseWord, BoseSentence, unary_mapping
 from pennylane import I, X, Y, Z
 from pennylane.pauli.conversion import pauli_sentence
 

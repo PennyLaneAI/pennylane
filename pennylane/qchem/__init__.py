@@ -83,4 +83,12 @@ from .tapering import (
     taper_operation,
 )
 
-import pennylane.qchem.vibrational
+from .vibrational.bosonic import (
+    BoseSentence,
+    BoseWord
+)
+
+from .vibrational.bosonic_mapping import (
+    binary_mapping,
+    unary_mapping
+)

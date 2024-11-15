@@ -71,17 +71,26 @@ def binary_mapping(
     + (0.3535533905932738+0j) * Y(0) @ Y(1)
     """
 
-    return _binary_mapping_dispatch(bose_operator, nstates_boson, ps, wire_map, tol)
+    qubit_operator = _binary_mapping_dispatch(bose_operator, nstates_boson, tol=tol)
 
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
 
 @singledispatch
-def _binary_mapping_dispatch(bose_operator, nstates_boson, ps=False, wires_map=None, tol=None):
+def _binary_mapping_dispatch(bose_operator, nstates_boson, tol=None):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
     raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
 
 
 @_binary_mapping_dispatch.register
-def _(bose_operator: BoseWord, nstates_boson, ps=False, wire_map=None, tol=None):
+def _(bose_operator: BoseWord, nstates_boson, tol=None):
 
     if nstates_boson < 2:
         raise ValueError(
@@ -118,25 +127,18 @@ def _(bose_operator: BoseWord, nstates_boson, ps=False, wire_map=None, tol=None)
 
             op += coeff * pauliOp
         qubit_operator @= op
-    qubit_operator.simplify()
 
     for pw in qubit_operator:
         if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
             qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
-    wires = list(bose_operator.wires) or [0]
-    identity_wire = wires[0]
-    if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
-
-    if wire_map:
-        return qubit_operator.map_wires(wire_map)
+    qubit_operator.simplify(tol=1e-16)
 
     return qubit_operator
 
 
 @_binary_mapping_dispatch.register
-def _(bose_operator: BoseSentence, nstates_boson, ps=False, wire_map=None, tol=None):
+def _(bose_operator: BoseSentence, nstates_boson, tol=None):
 
     qubit_operator = PauliSentence()
 
@@ -151,16 +153,7 @@ def _(bose_operator: BoseSentence, nstates_boson, ps=False, wire_map=None, tol=N
 
     qubit_operator.simplify(tol=1e-16)
 
-    wires = list(bose_operator.wires) or [0]
-    identity_wire = wires[0]
-    if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
-
-    if wire_map:
-        return qubit_operator.map_wires(wire_map)
-
     return qubit_operator
-
 
 def unary_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
@@ -201,7 +194,17 @@ def unary_mapping(
     + (0.4330127018922193+0j) * Y(2) @ Y(3)
     """
 
-    return _unary_mapping_dispatch(bose_operator, nstates_boson, ps, wire_map, tol)
+    qubit_operator = _unary_mapping_dispatch(bose_operator, nstates_boson, tol=tol)
+
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
 
 
 @singledispatch
@@ -211,7 +214,7 @@ def _unary_mapping_dispatch(bose_operator, nstates_boson, ps=False, wires_map=No
 
 
 @_unary_mapping_dispatch.register
-def _(bose_operator: BoseWord, nstates_boson, ps=False, wire_map=None, tol=None):
+def _(bose_operator: BoseWord, nstates_boson, tol=None):
 
     if nstates_boson < 2:
         raise ValueError(
@@ -255,24 +258,17 @@ def _(bose_operator: BoseWord, nstates_boson, ps=False, wire_map=None, tol=None)
                     )
             op += coeff * pauliOp
         qubit_operator @= op
-    qubit_operator.simplify()
 
     for pw in qubit_operator:
         if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
             qubit_operator[pw] = qml.math.real(qubit_operator[pw])
-
-    wires = list(bose_operator.wires) or [0]
-    identity_wire = wires[0]
-    if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
-    if wire_map:
-        return qubit_operator.map_wires(wire_map)
+    qubit_operator.simplify(tol=1e-16)
 
     return qubit_operator
 
 
 @_unary_mapping_dispatch.register
-def _(bose_operator: BoseSentence, nstates_boson, ps=False, wire_map=None, tol=None):
+def _(bose_operator: BoseSentence, nstates_boson, tol=None):
 
     qubit_operator = PauliSentence()
 
@@ -286,12 +282,5 @@ def _(bose_operator: BoseSentence, nstates_boson, ps=False, wire_map=None, tol=N
                 qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
     qubit_operator.simplify(tol=1e-16)
-
-    wires = list(bose_operator.wires) or [0]
-    identity_wire = wires[0]
-    if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
-    if wire_map:
-        return qubit_operator.map_wires(wire_map)
 
     return qubit_operator
