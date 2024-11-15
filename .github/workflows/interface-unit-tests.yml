@@ -465,7 +465,8 @@ jobs:
       pytest_markers: external
       pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
-        pyzx matplotlib stim quimb mitiq pennylane-qiskit ply
+        pyzx matplotlib stim quimb mitiq ply
+        git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ inputs.additional_python_packages }}

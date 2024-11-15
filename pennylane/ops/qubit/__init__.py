@@ -81,7 +81,6 @@ __ops__ = {
     "IsingXY",
     "BasisState",
     "StatePrep",
-    "QubitStateVector",
     "QubitDensityMatrix",
     "QubitUnitary",
     "BlockEncode",

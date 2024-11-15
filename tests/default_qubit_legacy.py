@@ -115,7 +115,6 @@ class DefaultQubitLegacy(QubitDevice):
         "Snapshot",
         "BasisState",
         "StatePrep",
-        "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
         "BlockEncode",
