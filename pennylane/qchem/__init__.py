@@ -14,6 +14,11 @@
 """
 This submodule provides the functionality to perform quantum chemistry calculations.
 """
+
+from vibrational.bosonic import (
+    BoseSentence,
+    BoseWord
+)
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
@@ -81,9 +86,4 @@ from .tapering import (
     taper,
     taper_hf,
     taper_operation,
-)
-
-from vibrational.bosonic import (
-    BoseSentence,
-    BoseWord
 )
