@@ -279,8 +279,7 @@ Additional information
 ----------------------
 
 Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
-For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qml_gradients>`.
-Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
+For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qml_gradients>`. Finally,
 for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qml_transforms>`.
 """
 
