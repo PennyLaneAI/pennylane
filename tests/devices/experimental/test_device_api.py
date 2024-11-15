@@ -256,7 +256,7 @@ class TestProvidingDerivatives:
 
 
 @pytest.mark.jax
-def test_eval_jaxpr_not_implmented():
+def test_eval_jaxpr_not_implemented():
     """Test that the eval_jaxpr method is not implemented by default."""
 
     import jax
