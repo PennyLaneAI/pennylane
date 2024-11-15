@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
+# pylint: disable=possibly-used-before-assignment
 from collections.abc import Iterable
 from functools import reduce
+from itertools import combinations_with_replacement
 from typing import Optional, Union
 
 import numpy as np
@@ -324,3 +326,124 @@ def trace_inner_product(
         return (A.pauli_rep @ B.pauli_rep).trace()
 
     return NotImplemented
+
+
+def adjvec_to_op(adj_vecs, basis):
+    """Transform vectors representing operators in an operator basis back into operator format.
+
+    Args:
+        adj_vecs (np.ndarray): collection of vectors with shape ``(batch, len(basis))``
+        basis (List[Union[PauliSentence, Operator, np.ndarray]]): collection of basis operators
+
+    Returns:
+        list: collection of operators corresponding to the input vectors read in the input basis.
+        The operators are in the format specified by the elements in ``basis``.
+
+    """
+    assert qml.math.shape(adj_vecs)[1] == len(basis)
+
+    if all(isinstance(op, PauliSentence) for op in basis):
+        res = []
+        for vec in adj_vecs:
+            op_j = sum(c * op for c, op in zip(vec, basis))
+            op_j.simplify()
+            res.append(op_j)
+        return res
+
+    if all(isinstance(op, Operator) for op in basis):
+        res = []
+        for vec in adj_vecs:
+            op_j = sum(c * op for c, op in zip(vec, basis))
+            op_j = qml.simplify(op_j)
+            res.append(op_j)
+        return res
+
+    if isinstance(basis, np.ndarray) or all(isinstance(op, np.ndarray) for op in basis):
+        return np.tensordot(adj_vecs, basis, axes=1)
+
+    raise NotImplementedError(
+        "At least one operator in the specified basis is of unsupported type, "
+        "or not all operators are of the same type."
+    )
+
+
+def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bool = True):
+    """Pauli sentence branch of ``op_to_adjvec``."""
+    if not all(isinstance(op, PauliSentence) for op in ops):
+        ops = [op.pauli_rep for op in ops]
+
+    res = []
+    if is_orthogonal:
+        norms_squared = [(basis_i @ basis_i).trace() for basis_i in basis]
+    else:
+        # Fake the norm correction if we anyways will apply the inverse Gram matrix later
+        norms_squared = np.ones(len(basis))
+        gram = np.zeros((len(basis), len(basis)))
+        for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
+            gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
+        inv_gram = np.linalg.pinv(gram)
+
+    for op in ops:
+        rep = np.zeros((len(basis),))
+        for i, basis_i in enumerate(basis):
+            # v = ∑ (v · e_j / ||e_j||^2) * e_j
+            rep[i] = (basis_i @ op).trace() / norms_squared[i]
+
+        res.append(rep)
+    res = np.array(res)
+    if not is_orthogonal:
+        res = np.einsum("ij,kj->ki", inv_gram, res)
+
+    return res
+
+
+def op_to_adjvec(
+    ops: Union[PauliSentence, Operator, np.ndarray],
+    basis: Union[PauliSentence, Operator, np.ndarray],
+    is_orthogonal: bool = True,
+):
+    """Decompose a batch of operators onto a given operator basis.
+
+    Args:
+        ops (Union[PauliSentence, Operator, np.ndarray]): Operators to decompose
+        basis (Iterable[Union[PauliSentence, Operator, np.ndarray]]): Operator basis
+        is_orthogonal (bool): Whether the basis is orthogonal with respect to the trace inner
+            product. Defaults to ``True``, which allows to skip some computations.
+
+    Returns:
+        np.ndarray: The batch of coefficient vectors of the operators ``ops`` expressed in
+        ``basis``. The shape is ``(len(ops), len(basis)``.
+
+    The format of the resulting operators is determined by the ``type`` in ``basis``.
+    If ``is_orthogonal=True`` (the default), only normalization is taken into account
+    in the projection. For ``is_orthogonal=False``, orthogonalization also is considered.
+    """
+    if isinstance(basis, PauliVSpace):
+        basis = basis.basis
+
+    if all(isinstance(op, Operator) for op in basis):
+        ops = [op.pauli_rep for op in ops]
+        basis = [op.pauli_rep for op in basis]
+
+    # PauliSentence branch
+    if all(isinstance(op, PauliSentence) for op in basis):
+        return _op_to_adjvec_ps(ops, basis, is_orthogonal)
+
+    # dense branch
+    if all(isinstance(op, TensorLike) for op in basis):
+        if not all(isinstance(op, TensorLike) for op in ops):
+            _n = int(np.round(np.log2(basis[0].shape[-1])))
+            ops = np.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
+
+        basis = np.array(basis)
+        res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
+        if is_orthogonal:
+            norm = np.einsum("bij,bji->b", basis, basis)
+            return res / norm
+        gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]])
+        return np.einsum("ij,kj->ki", np.linalg.pinv(gram), res)
+
+    raise NotImplementedError(
+        "At least one operator in the specified basis is of unsupported type, "
+        "or not all operators are of the same type."
+    )

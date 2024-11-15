@@ -32,6 +32,8 @@ Utility functions
 .. autosummary::
     :toctree: api
 
+    ~adjvec_to_op
+    ~op_to_adjvec
     ~pauli_coefficients
     ~pauli_decompose
     ~pauli_coefficients
@@ -50,4 +52,6 @@ from .dense_util import (
     orthonormalize,
     check_orthonormal,
     trace_inner_product,
+    adjvec_to_op,
+    op_to_adjvec,
 )
