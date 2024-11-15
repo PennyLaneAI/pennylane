@@ -71,11 +71,7 @@ def binary_mapping(
     + (0.3535533905932738+0j) * Y(0) @ Y(1)
     """
 
-    qubit_operator = _binary_mapping_dispatch(bose_operator, nstates_boson)
-
-    for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+    qubit_operator = _binary_mapping_dispatch(bose_operator, nstates_boson, tol=tol)
 
     wires = list(bose_operator.wires) or [0]
     identity_wire = wires[0]
@@ -87,6 +83,7 @@ def binary_mapping(
 
     return qubit_operator
 
+
 @singledispatch
 def _binary_mapping_dispatch(bose_operator, nstates_boson):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
@@ -94,7 +91,7 @@ def _binary_mapping_dispatch(bose_operator, nstates_boson):
 
 
 @_binary_mapping_dispatch.register
-def _(bose_operator: BoseWord, nstates_boson):
+def _(bose_operator: BoseWord, nstates_boson, tol=None):
 
     if nstates_boson < 2:
         raise ValueError(
@@ -131,6 +128,11 @@ def _(bose_operator: BoseWord, nstates_boson):
 
             op += coeff * pauliOp
         qubit_operator @= op
+
+    for pw in qubit_operator:
+        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
     qubit_operator.simplify(tol=1e-16)
 
     return qubit_operator
