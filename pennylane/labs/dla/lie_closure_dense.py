@@ -92,7 +92,7 @@ def lie_closure_dense(
         tol (float): Numerical tolerance for the linear independence check between algebra elements
 
     Returns:
-        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linear independent basis of the DLA :math:`\mathfrak{g}` as dense matrices.
+        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linearly independent basis of the DLA :math:`\mathfrak{g}` as dense matrices.
 
     **Example**
 
