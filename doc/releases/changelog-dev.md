@@ -49,6 +49,9 @@
   pennylane variant jaxpr.
   [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
 
+* An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
+[(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
+
 <h4>Other Improvements</h4>
 
 * `qml.BasisRotation` template is now JIT compatible.
@@ -73,12 +76,16 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
   * `qml.utils.pauli_eigs` has been moved to `qml.pauli.utils`.
 
   * `qml.utils.expand_vector` has been moved to `qml.math.expand_vector`.
+  
+* The `qml.qinfo` module has been removed. Please see the respective functions in the `qml.math` and `qml.measurements`
+  modules instead.
+  [(#6584)](https://github.com/PennyLaneAI/pennylane/pull/6584)
 
 * Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
   are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
   respectively.
   [(#6537)](https://github.com/PennyLaneAI/pennylane/pull/6537)
-  
+
 * The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
   [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
 
