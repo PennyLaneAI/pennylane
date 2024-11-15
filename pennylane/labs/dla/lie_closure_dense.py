@@ -143,7 +143,7 @@ def lie_closure_dense(
         m1m0 = np.reshape(m1m0, (-1, chi, chi))
         all_coms = m0m1 - m1m0
 
-        # sub-select linear independent subset
+        # sub-select linearly independent subset
         vspace = np.concatenate([vspace, all_coms])
         vspace = _hermitian_basis(vspace, tol, old_length)
 
