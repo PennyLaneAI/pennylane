@@ -404,7 +404,7 @@ def test_return_binary_mapping_sum(bose_op):
 )
 def test_return_binary_mapping_ps(bose_op):
     """Test that the correct type is returned for binary mapping
-    when ps is set to False."""
+    when ps is set to True."""
 
     qubit_op = binary_mapping(bose_op, ps=True)
     assert isinstance(qubit_op, qml.pauli.PauliSentence)
