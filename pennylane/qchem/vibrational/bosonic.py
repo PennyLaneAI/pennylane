@@ -41,10 +41,9 @@ class BoseWord(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator, christiansen_boson=False):
-
+    def __init__(self, operator, is_hardcore=False):
         self.sorted_dic = dict(sorted(operator.items()))
-        self.christiansen_boson = christiansen_boson
+        self.is_hardcore = is_hardcore
         indices = [i[0] for i in self.sorted_dic.keys()]
 
         if indices:
@@ -52,6 +51,13 @@ class BoseWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
+
+        if self.is_hardcore:
+            bw_arr = list(self.sorted_dic.keys())
+            indice_arr = [x[1] for x in bw_arr]
+            if len(indice_arr) != len(set(indice_arr)):
+                self.sorted_dic = {}
+                operator = {}
 
         super().__init__(operator)
 
@@ -116,7 +122,7 @@ class BoseWord(dict):
 
         >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
-        a⁺(0) a(1)
+        'b⁺(0) b(1)'
         """
         if len(self) == 0:
             return "I"
@@ -209,7 +215,7 @@ class BoseWord(dict):
         r"""Multiply a BoseWord with another BoseWord, a BoseSentence, or a constant.
 
         >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w * w
+        >>> print(w * w)
         b⁺(0) b(1) b⁺(0) b(1)
         """
 
@@ -263,7 +269,7 @@ class BoseWord(dict):
         r"""Exponentiate a Bose word to an integer power.
 
         >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
-        >>> w**3
+        >>> print(w**3)
         b⁺(0) b(1) b⁺(0) b(1) b⁺(0) b(1)
         """
 
@@ -278,72 +284,71 @@ class BoseWord(dict):
         return operator
 
     def normal_order(self):
-        r"""Convert a BoseWord to its normal-ordered form."""
+        r"""Convert a BoseWord to its normal-ordered form.
 
+        >>> bw = BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
+        >>> print(bw.normal_order())
+        4.0 * b⁺(0) b(0)
+        + 2.0 * I
+        + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
+        """
         bw_terms = sorted(self)
         len_op = len(bw_terms)
-        double_occupancy = False
-        bw_comm = BoseSentence({BoseWord({}): 0.0}, christiansen_boson=self.christiansen_boson)
-        for i in range(1, len_op):
-            for j in range(i, 0, -1):
-                key_r = bw_terms[j]
-                key_l = bw_terms[j - 1]
+        bw_comm = BoseSentence({BoseWord({}): 0.0}, is_hardcore=self.is_hardcore)
 
-                if self[key_l] == "-" and self[key_r] == "+":
-                    bw_terms[j] = key_l
-                    bw_terms[j - 1] = key_r
+        if len_op == 0:
+            return 1 * BoseWord({})
 
-                    # Add the term for commutator
-                    if key_r[1] == key_l[1]:
-                        term_dict_comm = {}
-                        j = 0
-                        for key in bw_terms:
-                            if key not in [key_r, key_l]:
-                                term_dict_comm[(j, key[1])] = self[key]
-                                j += 1
+        bw = self
 
-                        bw_comm += BoseWord(
-                            term_dict_comm, christiansen_boson=self.christiansen_boson
-                        ).normal_order()
+        l = 0
+        for r in range(len_op):
+            if self[bw_terms[r]] == "+":
+                if l == r:
+                    l += 1
+                    continue
 
-                elif self[key_l] == self[key_r]:
-                    if key_r[1] < key_l[1]:
-                        bw_terms[j] = key_l
-                        bw_terms[j - 1] = key_r
+                bs = bw.shift_operator(r, l)
+                bs_as_list = sorted(list(bs.items()), key=lambda x: len(x[0].keys()), reverse=True)
+                bw = bs_as_list[0][0]
+                if l > 0:
+                    bw_as_list = sorted(list(bw.keys()))
+                    if bw_as_list[l - 1][1] > bw_as_list[l][1]:
+                        temp_bs = bw.shift_operator(l - 1, l)
+                        bw = list(temp_bs.items())[0][0]
 
-                    if self.christiansen_boson:
-                        if key_r[1] == key_l[1]:
-                            double_occupancy = True
-                            break
-            if double_occupancy:
-                break
+                for i in range(1, len(bs_as_list)):
+                    bw_comm += bs_as_list[i][0] * bs_as_list[i][1]
 
-        if double_occupancy:
-            ordered_op = bw_comm
-        else:
-            bose_dict = {}
-            for i, term in enumerate(bw_terms):
-                bose_dict[(i, term[1])] = self[term]
+                l += 1
 
-            ordered_op = BoseWord(bose_dict, christiansen_boson=self.christiansen_boson) + bw_comm
+        ordered_op = bw + bw_comm.normal_order()
+        ordered_op.simplify(tol=1e-8)
+
+        if self.is_hardcore:
+            for bw, _ in ordered_op.items():
+                bw_arr = list(bw.keys())
+                indice_arr = [x[1] for x in bw_arr]
+                if len(indice_arr) != len(set(indice_arr)):
+                    ordered_op[bw] = 0
 
         ordered_op.simplify(tol=1e-8)
         return ordered_op
-    
+
     def shift_operator(self, initial_position, final_position):
         r"""Shifts an operator in the BoseWord from ``initial_position`` to ``final_position`` by applying the bosonic commutation relations.
 
         Args:
-            initial_position (int): The position of the operator to be shifted.
-            final_position (int): The desired position of the operator.
+            initial_position (int): the position of the operator to be shifted
+            final_position (int): the desired position of the operator
 
         Returns:
-            BoseSentence: The ``BoseSentence`` obtained after applying the anti-commutator relations.
+            BoseSentence: The ``BoseSentence`` obtained after applying the commutator relations.
 
         Raises:
             TypeError: if ``initial_position`` or ``final_position`` is not an integer
-            ValueError: if ``initial_position`` or ``final_position`` are outside the range ``[0, len(Boseword) - 1]``
-                        where ``len(Boseword)`` is the number of operators in the BoseWord.
+            ValueError: if ``initial_position`` or ``final_position`` are outside the range ``[0, len(BoseWord) - 1]``
+                        where ``len(BoseWord)`` is the number of operators in the BoseWord.
         """
 
         if not isinstance(initial_position, int) or not isinstance(final_position, int):
@@ -420,7 +425,7 @@ class BoseSentence(dict):
     >>> w1 = BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = BoseWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = BoseSentence({w1 : 1.2, w2: 3.1})
-    >>> s
+    >>> print(s)
     1.2 * b⁺(0) b(1)
     + 3.1 * b⁺(1) b(2)
     """
@@ -432,9 +437,9 @@ class BoseSentence(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator, christiansen_boson=False):
+    def __init__(self, operator, is_hardcore=False):
         super().__init__(operator)
-        self.christiansen_boson = christiansen_boson
+        self.is_hardcore = is_hardcore
 
     def adjoint(self):
         r"""Return the adjoint of BoseSentence."""
@@ -606,7 +611,7 @@ class BoseSentence(dict):
     def normal_order(self):
         r"""Convert a BoseSentence to its normal-ordered form."""
 
-        bose_sen_ordered = BoseSentence({}, christiansen_boson=self.christiansen_boson)
+        bose_sen_ordered = BoseSentence({}, is_hardcore=self.is_hardcore)
 
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()

@@ -15,7 +15,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.qchem.vibrational import BoseWord, BoseSentence, binary_mapping
+from pennylane.qchem import BoseWord, BoseSentence, binary_mapping
 from pennylane import I, X, Y, Z
 from pennylane.pauli.conversion import pauli_sentence
 
@@ -494,7 +494,7 @@ def test_binary_mapping_wiremap(bose_op, wire_map, result):
 
 
 def test_d_error_binary():
-    """Test that an error is raised if invalid value of d is provided."""
+    """Test that an error is raised if invalid number of states is provided."""
     bw = BoseWord({(0, 0): "-"})
     with pytest.raises(
         ValueError, match="Number of bosonic states cannot be less than 2, provided 1."
