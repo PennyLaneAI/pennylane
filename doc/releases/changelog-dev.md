@@ -108,6 +108,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 
 * The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+  [(#6571)](https://github.com/PennyLaneAI/pennylane/pull/6571)
 
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
