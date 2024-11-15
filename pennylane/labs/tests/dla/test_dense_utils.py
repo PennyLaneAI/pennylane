@@ -19,7 +19,9 @@ import pytest
 import pennylane as qml
 from pennylane import I, X, Y, Z
 from pennylane.labs.dla import (
+    change_basis_ad_rep,
     check_orthonormal,
+    op_to_adjvec,
     orthonormalize,
     pauli_coefficients,
     pauli_decompose,
@@ -354,3 +356,78 @@ def test_orthonormalize(g):
     g = orthonormalize(g)
 
     assert check_orthonormal(g, trace_inner_product)
+
+
+class TestChangeBasisAdRep:
+    """Tests for ``change_basis_ad_rep`` to change the adjoint representation into a new basis."""
+
+    def test_permutation(self):
+        """Test that a permutation is accounted for correctly."""
+        ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1), qml.X(1)]
+        dla = qml.lie_closure(ops)
+        adj = qml.structure_constants(dla)
+        perm = np.random.permutation(len(dla))
+        permuted_dla = [dla[i] for i in perm]
+        permuted_adj = qml.structure_constants(permuted_dla)
+
+        basis_change = op_to_adjvec(permuted_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
+        new_adj = change_basis_ad_rep(adj, basis_change)
+        assert np.allclose(new_adj, permuted_adj)
+
+    def test_tiny_skewed_basis(self):
+        """Test that changing from a tiny orthonormal basis to a skewed basis works."""
+        dla = [qml.X(0), qml.Y(0), qml.Z(0)]
+        adj = qml.structure_constants(dla)
+        coeffs = np.random.random((len(dla), len(dla)))
+        skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
+
+        basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
+        new_adj = change_basis_ad_rep(adj, basis_change)
+        assert np.allclose(new_adj, skewed_adj)
+
+    def test_tiny_skewed_basis_from_non_ortho(self):
+        """Test that changing from a tiny non-orthonormal basis to a skewed basis works."""
+        ortho_dla = [qml.X(0), qml.Y(0), qml.Z(0)]  # only used to create adj rep.
+        dla = [0.2 * qml.X(0) - 0.6 * qml.Y(0), 0.4 * qml.Y(0) + 0.9 * qml.Z(0), qml.Z(0)]
+
+        adj = qml.structure_constants(dla, is_orthogonal=False)
+        coeffs = np.random.random((len(dla), len(dla)))
+        skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
+
+        basis_change = op_to_adjvec(skewed_dla, ortho_dla) @ np.linalg.pinv(
+            op_to_adjvec(dla, ortho_dla)
+        )
+        new_adj = change_basis_ad_rep(adj, basis_change)
+        assert np.allclose(new_adj, skewed_adj)
+
+    def test_skewed_basis(self):
+        """Test that changing from an orthonormal basis to a skewed basis works."""
+        ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1)]
+        dla = qml.lie_closure(ops)
+        adj = qml.structure_constants(dla)
+        coeffs = np.random.random((len(dla), len(dla)))
+        skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
+
+        basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
+        new_adj = change_basis_ad_rep(adj, basis_change)
+        assert np.allclose(new_adj, skewed_adj)
+
+    def test_skewed_basis_from_non_ortho(self):
+        """Test that changing from a non-orthonormal basis to a skewed basis works."""
+        ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1)]
+        ortho_dla = qml.lie_closure(ops)  # only used to create adj rep.
+
+        coeffs = np.random.random((len(ortho_dla), len(ortho_dla)))
+        dla = [qml.sum(*(c * op for c, op in zip(_coeffs, ortho_dla))) for _coeffs in coeffs]
+        adj = qml.structure_constants(dla, is_orthogonal=False)
+
+        coeffs = np.random.random((len(dla), len(dla)))
+        skewed_dla = [qml.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_adj = qml.structure_constants(skewed_dla, is_orthogonal=False)
+
+        basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
+        new_adj = change_basis_ad_rep(adj, basis_change)
+        assert np.allclose(new_adj, skewed_adj)

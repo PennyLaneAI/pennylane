@@ -32,6 +32,7 @@ Utility functions
 .. autosummary::
     :toctree: api
 
+    ~change_basis_ad_rep
     ~pauli_coefficients
     ~pauli_decompose
     ~pauli_coefficients
@@ -45,8 +46,10 @@ Utility functions
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
 from .dense_util import (
+    change_basis_ad_rep,
     pauli_coefficients,
     pauli_decompose,
+    op_to_adjvec,
     orthonormalize,
     check_orthonormal,
     trace_inner_product,

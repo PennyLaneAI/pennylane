@@ -332,3 +332,19 @@ def trace_inner_product(
         return (A @ B).trace()
 
     raise NotImplementedError
+
+
+def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
+    """Apply the basis change between bases of operators to the adjoint representation.
+
+    Args:
+        adj (numpy.ndarray): Adjoint representation in old basis.
+        basis_change (numpy.ndarray): Basis change matrix from old to new basis.
+
+    Returns:
+        numpy.ndarray: Adjoint representation in new basis.
+    """
+    # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
+    new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
+    new_adj = np.einsum("mnp,in->mip", new_adj, basis_change)
+    return np.einsum("mnp,ip->mni", new_adj, basis_change)
