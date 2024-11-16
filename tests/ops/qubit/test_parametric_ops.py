@@ -3245,7 +3245,7 @@ class TestMultiRZ:
 
         qml.assert_equal(gen, qml.Hamiltonian([-0.5], [expected_gen]))
 
-        spy = mocker.spy(qml.utils, "pauli_eigs")
+        spy = mocker.spy(qml.pauli.utils, "pauli_eigs")
 
         op.generator()
         spy.assert_not_called()
