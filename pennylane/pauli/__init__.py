@@ -33,7 +33,6 @@ from .utils import (
     diagonalize_pauli_word,
     diagonalize_qwc_pauli_words,
     diagonalize_qwc_groupings,
-    simplify,
     pauli_eigs,
 )
 
