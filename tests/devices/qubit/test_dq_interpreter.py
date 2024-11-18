@@ -303,7 +303,7 @@ class TestSampling:
         @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(76543))
         def f():
             qml.Hadamard(0)
-            return qml.sample(0)
+            return qml.sample(wires=0)
 
         s1 = f()
         s2 = f()  # should be done with different key, leading to different results.
