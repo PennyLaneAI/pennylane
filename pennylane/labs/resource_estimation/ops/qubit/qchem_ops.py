@@ -1,7 +1,9 @@
 import pennylane as qml
-import pennylane.labs.resource_estimation.resource_constructor as rc
+from pennylane.labs.resource_estimation import ResourceOperator
 
-class ResourceSingleExcitation(qml.SingleExcitation, rc.ResourceConstructor):
+class ResourceSingleExcitation(qml.SingleExcitation, ResourceOperator):
+    """Resource Operator for Single Excitation"""
+
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         return
@@ -13,7 +15,7 @@ class ResourceSingleExcitation(qml.SingleExcitation, rc.ResourceConstructor):
     def resource_rep(cls, **kwargs):
         return
 
-class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, rc.ResourceConstructor):
+class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, ResourceOperator):
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         return
@@ -25,7 +27,7 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, rc.ResourceConstr
     def resource_rep(cls, **kwargs):
         return
 
-class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, rc.ResourceConstructor):
+class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, ResourceOperator):
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         return
@@ -37,7 +39,7 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, rc.ResourceConstruc
     def resource_rep(cls, **kwargs):
         return
 
-class ResourceDoubleExcitation(qml.DoubleExcitation, rc.ResourceConstructor):
+class ResourceDoubleExcitation(qml.DoubleExcitation, ResourceOperator):
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         return
@@ -49,7 +51,7 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, rc.ResourceConstructor):
     def resource_rep(cls, **kwargs):
         return
 
-class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, rc.ResourceConstructor):
+class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, ResourceOperator):
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         return
@@ -61,7 +63,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, rc.ResourceConstr
     def resource_rep(cls, **kwargs):
         return
 
-class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, rc.ResourceConstructor):
+class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, ResourceOperator):
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         return
@@ -73,7 +75,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, rc.ResourceConstruc
     def resource_rep(cls, **kwargs):
         return
 
-class ResourceOrbitalRotation(qml.OrbitalRotation, rc.ResourceConstructor):
+class ResourceOrbitalRotation(qml.OrbitalRotation, ResourceOperator):
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         return
@@ -85,7 +87,7 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, rc.ResourceConstructor):
     def resource_rep(cls, **kwargs):
         return
 
-class ResourceFermionicSWAP(qml.FermionicSWAP, rc.ResourceConstructor):
+class ResourceFermionicSWAP(qml.FermionicSWAP, ResourceOperator):
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         return
