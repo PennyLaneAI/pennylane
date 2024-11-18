@@ -21,8 +21,6 @@ import numpy as np
 
 # pylint: disable= import-outside-toplevel,no-member,too-many-function-args
 import pennylane as qml
-from pennylane.operation import Tensor, active_new_opmath
-from pennylane.pauli import pauli_sentence
 from pennylane.wires import Wires
 
 
@@ -146,9 +144,6 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
     0.2 [Y0 Z2]
     >>> _openfermion_to_pennylane(q_op, wires=['w0','w1','w2','extra_wire'])
     (tensor([0.1, 0.2], requires_grad=False), [X('w0'), Y('w0') @ Z('w2')])
-
-    If the new op-math is active, the list of operators will be cast as :class:`~.Prod` instances instead of
-    :class:`~.Tensor` instances when appropriate.
     """
     n_wires = (
         1 + max(max(i for i, _ in t) if t else 1 for t in qubit_operator.terms)
@@ -165,10 +160,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
     def _get_op(term, wires):
         """A function to compute the PL operator associated with the term string."""
         if len(term) > 1:
-            if active_new_opmath():
-                return qml.prod(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
-
-            return Tensor(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
+            return qml.prod(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
 
         if len(term) == 1:
             return xyz2pauli[term[0][1]](wires=wires[term[0][0]])
@@ -228,8 +220,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
 
     >>> coeffs = np.array([0.1, 0.2, 0.3, 0.4])
     >>> ops = [
-    ...     qml.operation.Tensor(qml.X('w0')),
-    ...     qml.operation.Tensor(qml.Y('w0'), qml.Z('w2')),
+    ...     qml.prod(qml.X('w0')),
+    ...     qml.prod(qml.Y('w0'), qml.Z('w2')),
     ...     qml.sum(qml.Z('w0'), qml.s_prod(-0.5, qml.X('w0'))),
     ...     qml.prod(qml.X('w0'), qml.Z('w1')),
     ... ]
@@ -264,16 +256,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
 
     q_op = openfermion.QubitOperator()
     for coeff, op in zip(coeffs, ops):
-        if isinstance(op, Tensor):
-            try:
-                ps = pauli_sentence(op)
-            except ValueError as e:
-                raise ValueError(
-                    f"Expected a Pennylane operator with a valid Pauli word representation, "
-                    f"but got {op}."
-                ) from e
 
-        elif (ps := op.pauli_rep) is None:
+        if (ps := op.pauli_rep) is None:
             raise ValueError(
                 f"Expected a Pennylane operator with a valid Pauli word representation, but got {op}."
             )
@@ -342,20 +326,9 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
 
     **Example**
 
-    >>> assert qml.operation.active_new_opmath() == True
     >>> h_pl = import_operator(h_of, format='openfermion')
     >>> print(h_pl)
     (-0.0548 * X(0 @ X(1) @ Y(2) @ Y(3))) + (0.14297 * Z(0 @ Z(1)))
-
-    If the new op-math is deactivated, a :class:`~Hamiltonian` is returned instead.
-
-    >>> assert qml.operation.active_new_opmath() == False
-    >>> from openfermion import QubitOperator
-    >>> h_of = QubitOperator('X0 X1 Y2 Y3', -0.0548) + QubitOperator('Z0 Z1', 0.14297)
-    >>> h_pl = import_operator(h_of, format='openfermion')
-    >>> print(h_pl)
-    (0.14297) [Z0 Z1]
-    + (-0.0548) [X0 X1 Y2 Y3]
     """
     if format not in ["openfermion"]:
         raise TypeError(f"Converter does not exist for {format} format.")
@@ -369,10 +342,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
             f" {list(coeffs[np.iscomplex(coeffs)])}"
         )
 
-    if active_new_opmath():
-        return qml.dot(*_openfermion_to_pennylane(qubit_observable, wires=wires))
-
-    return qml.Hamiltonian(*_openfermion_to_pennylane(qubit_observable, wires=wires))
+    return qml.dot(*_openfermion_to_pennylane(qubit_observable, wires=wires))
 
 
 def _excitations(electrons, orbitals):
