@@ -309,7 +309,7 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
         **Example**
 
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-        >>> print(mul_in_parallel(r1, 2))
+        >>> print(qml.resource.mul_in_parallel(r1, 2))
         wires: 4
         gates: 4
         depth: 0
