@@ -14,13 +14,12 @@
 """Utility tools for dense Lie algebra representations"""
 # pylint: disable=missing-function-docstring, possibly-used-before-assignment
 
-from collections.abc import Iterable
 from functools import reduce
 from itertools import combinations, combinations_with_replacement
-from typing import List, Optional, Union
+from typing import Iterable, List, Optional, Union
 
 import numpy as np
-import scipy
+from scipy.linalg import sqrtm
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -294,7 +293,7 @@ def orthonormalize(basis):
 
 def _orthonormalize_np(basis: Iterable[np.ndarray]):
     basis = np.array(basis)
-    gram_inv = np.linalg.pinv(scipy.linalg.sqrtm(trace_inner_product(basis, basis).real))
+    gram_inv = np.linalg.pinv(sqrtm(trace_inner_product(basis, basis).real))
     return np.tensordot(gram_inv, basis, axes=1)
 
 
@@ -397,12 +396,13 @@ def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
     return np.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
-def adjvec_to_op(adj_vecs, basis):
+def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     """Transform vectors representing operators in an operator basis back into operator format.
 
     Args:
         adj_vecs (np.ndarray): collection of vectors with shape ``(batch, len(basis))``
         basis (List[Union[PauliSentence, Operator, np.ndarray]]): collection of basis operators
+        is_orthogonal (bool): Whether the ``basis`` consists of orthogonal elements.
 
     Returns:
         list: collection of operators corresponding to the input vectors read in the input basis.
@@ -412,6 +412,9 @@ def adjvec_to_op(adj_vecs, basis):
     assert qml.math.shape(adj_vecs)[1] == len(basis)
 
     if all(isinstance(op, PauliSentence) for op in basis):
+        if not is_orthogonal:
+            gram = _gram_ps(basis)
+            adj_vecs = np.tensordot(adj_vecs, sqrtm(np.linalg.pinv(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -420,6 +423,10 @@ def adjvec_to_op(adj_vecs, basis):
         return res
 
     if all(isinstance(op, Operator) for op in basis):
+        if not is_orthogonal:
+            basis_ps = [op.pauli_rep for op in basis]
+            gram = _gram_ps(basis_ps)
+            adj_vecs = np.tensordot(adj_vecs, sqrtm(np.linalg.pinv(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -428,12 +435,22 @@ def adjvec_to_op(adj_vecs, basis):
         return res
 
     if isinstance(basis, np.ndarray) or all(isinstance(op, np.ndarray) for op in basis):
+        if not is_orthogonal:
+            gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real / basis[0].shape[0]
+            adj_vecs = np.tensordot(adj_vecs, sqrtm(np.linalg.pinv(gram)), axes=[[1], [0]])
         return np.tensordot(adj_vecs, basis, axes=1)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
         "or not all operators are of the same type."
     )
+
+
+def _gram_ps(basis: Iterable[PauliSentence]):
+    gram = np.zeros((len(basis), len(basis)))
+    for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
+        gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
+    return gram
 
 
 def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bool = True):
@@ -447,10 +464,8 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
     else:
         # Fake the norm correction if we anyways will apply the inverse Gram matrix later
         norms_squared = np.ones(len(basis))
-        gram = np.zeros((len(basis), len(basis)))
-        for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
-            gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
-        inv_gram = np.linalg.pinv(gram)
+        gram = _gram_ps(basis)
+        inv_gram = sqrtm(np.linalg.pinv(gram))
 
     for op in ops:
         rep = np.zeros((len(basis),))
@@ -505,12 +520,12 @@ def op_to_adjvec(
             ops = np.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
 
         basis = np.array(basis)
-        res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]])
+        res = trace_inner_product(np.array(ops), basis).real
         if is_orthogonal:
-            norm = np.einsum("bij,bji->b", basis, basis)
+            norm = np.einsum("bij,bji->b", basis, basis) / basis[0].shape[0]
             return res / norm
-        gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]])
-        return np.einsum("ij,kj->ki", np.linalg.pinv(gram), res)
+        gram = trace_inner_product(basis, basis).real
+        return np.einsum("ij,kj->ki", sqrtm(np.linalg.pinv(gram)), res)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
