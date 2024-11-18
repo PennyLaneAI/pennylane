@@ -90,6 +90,7 @@ jobs:
           echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Prepare Commit Author
+        id: prep_commit
         if: steps.changed.outputs.has_changes != '0'
         env:
           HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
@@ -104,9 +105,11 @@ jobs:
           if git ls-remote --exit-code origin "refs/heads/$HEAD_BRANCH_NAME"; then
             echo "$HEAD_BRANCH_NAME exists! Checking out..."
             git checkout "$HEAD_BRANCH_NAME"
+            echo "branch_exists='true'" >> $GITHUB_OUTPUT
           else
             echo "$HEAD_BRANCH_NAME does not exist! Creating..."
             git checkout -b "$HEAD_BRANCH_NAME"
+            echo "branch_exists='false'" >> $GITHUB_OUTPUT
           fi
 
       - name: Stage changes
@@ -130,20 +133,20 @@ jobs:
           PR_BODY: ${{ inputs.pull_request_body }}
         run: |
           EXISTING_PR="$(gh pr list --state open --base master --head $HEAD_BRANCH_NAME --json 'url' --jq '.[].url' | head -n 1)"
+          EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
 
-          if [ -n "${EXISTING_PR}" ]; then
-            echo "PR already exists ==> ${EXISTING_PR}"
-            exit 0
-          else
+          if [ '${{ steps.prep_commit.outputs.branch_exists }}' = 'false' ]; then
             echo "Creating PR..."
             gh pr create --title "$PR_TITLE" --body "$PR_BODY"
             exit 0
-          fi
-
-          EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json 'mergedAt,url' --jq '.[] | select(.mergedAt == null).url' | head -n 1)"
-
-          if [ -n "${EXISTING_CLOSED_PR}" ]; then
-            echo "Reopening PR... ${EXISTING_CLOSED_PR}"
-            gh pr reopen "${EXISTING_CLOSED_PR}"
+          elif [ -n $EXISTING_PR ]; then
+            echo "Open PR already exists ==> $EXISTING_PR"
+            echo "Editing with provided title and body..."
+            gh pr edit --title "$PR_TITLE" --body "$PR_BODY"
+          else
+            echo "Reopening PR... $EXISTING_CLOSED_PR"
+            gh pr reopen "$EXISTING_CLOSED_PR"
+            echo "Editing with provided title and body..."
+            gh pr edit --title "$PR_TITLE" --body "$PR_BODY"
             exit 0
           fi
