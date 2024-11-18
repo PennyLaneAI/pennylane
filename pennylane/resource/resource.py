@@ -81,7 +81,7 @@ class Resources:
 
             >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
             >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-            >>> print(r1 + r2)
+            >>> print(r1.__add__(r2))
             wires: 2
             gates: 4
             depth: 0
@@ -106,7 +106,7 @@ class Resources:
 
             **Example**
             >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-            >>> print(r1 * 2)
+            >>> print(r1.__mul__(2))
             wires: 2
             gates: 4
             depth: 0
@@ -183,7 +183,7 @@ class ResourcesOperation(Operation):
 
 
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
-    r"""Add two resources assuming the circuits are executed in series.
+    r"""Add two :class:`~resource.Resources` assuming the circuits are executed in series.
 
     Args:
         r1 (Resources): a Resources object to add
@@ -220,7 +220,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
 
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
-    r"""Add two resources assuming the circuits are executed in parallel.
+    r"""Add two :class:`~resource.Resources` assuming the circuits are executed in parallel.
 
     Args:
         r1 (Resources): A Resources object to add.
@@ -257,7 +257,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
 
 def mul_in_series(resources: Resources, scalar: int) -> Resources:
-    """Multiply the Resources object by a scalar as if the circuit was repeated
+    """Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
     that many times in series.
 
     Args:
@@ -294,7 +294,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
 
 def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
-    """Multiply the Resources object by a scalar as if the circuit was repeated
+    """Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
     that many times in parallel.
 
     Args:
@@ -390,6 +390,15 @@ def _count_resources(tape) -> Resources:
 
 
 def _add_shots(s1: Shots, s2: Shots) -> Shots:
+    """Add two :class:`pennylane.measurements.Shots` by concatenating their shot vectors.
+
+    Args:
+        s1 (Shots): a Shots object to add
+        s2 (Shots): a Shots object to add
+
+    Returns:
+        Shots: a Shots object built by concatenating the shot vectors of s1 and s2
+    """
     if s1.total_shots is None:
         return s2
 
