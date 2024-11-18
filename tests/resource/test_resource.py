@@ -243,6 +243,20 @@ class TestResources:
         resultant_obj = add_in_series(resource_obj, other_obj)
         assert resultant_obj == expected_res_obj
 
+    @pytest.mark.parametrize(
+        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
+    )
+    def test_dunder_add(self, resource_obj, expected_res_obj):
+        """Test the __add__ function"""
+        other_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        )
+
         resultant_obj = resource_obj + other_obj
         assert resultant_obj == expected_res_obj
 
@@ -350,10 +364,21 @@ class TestResources:
         resultant_obj = mul_in_series(resource_obj, scalar)
         assert resultant_obj == expected_res_obj
 
-        resultant_obj = resource_obj * scalar
-        assert resultant_obj == expected_res_obj
+    @pytest.mark.parametrize(
+        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series)
+    )
+    def test_dunder_mul(self, scalar, expected_res_obj):
+        """Test the __mul__ function"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        )
 
-        resultant_obj = scalar * resource_obj
+        resultant_obj = resource_obj * scalar
         assert resultant_obj == expected_res_obj
 
     expected_results_mul_parallel = (
