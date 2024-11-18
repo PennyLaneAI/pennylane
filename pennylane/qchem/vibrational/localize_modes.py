@@ -4,9 +4,7 @@ import warnings
 import numpy as np
 import scipy
 
-au_to_cm = 219475
-hbar = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
-c_light = 3 * 10**8  # m/s
+AU_TO_CM = 219475
 
 # pylint: disable=dangerous-default-value, too-many-statements
 
@@ -56,7 +54,7 @@ def _params_cost(params, qmat, nmodes):
     return _pm_cost(qrot)
 
 
-def _q_normalizer(qmat):
+def _normalize_q(qmat):
     r"""Returns the normalized displacement vectors."""
     qnormalized = np.zeros_like(qmat)
     nmodes = qmat.shape[2]
@@ -79,7 +77,7 @@ def _localization_unitary(qmat, rand_start=True):
     else:
         params = np.zeros(num_params)
 
-    qnormalized = _q_normalizer(qmat)
+    qnormalized = _normalize_q(qmat)
 
     optimization_res = scipy.optimize.minimize(_params_cost, params, args=(qnormalized, nmodes))
     if optimization_res.success is False:
@@ -116,7 +114,7 @@ def _localize_modes(freqs, disp_vecs, order=True):
     hess_loc = uloc.transpose() @ hess_normal @ uloc
     loc_freqs = np.sqrt(np.array([hess_loc[m, m] for m in range(nmodes)]))
 
-    if order is True:
+    if order:
         loc_perm = np.argsort(loc_freqs)
         loc_freqs = loc_freqs[loc_perm]
         qloc = qloc[:, :, loc_perm]
@@ -133,7 +131,7 @@ def localize_normal_modes(results, freq_separation=[2600]):
     Returns: new dictionary with information for localized modes
     """
     freqs_in_cm = results["freq_wavenumber"]
-    freqs = freqs_in_cm / au_to_cm
+    freqs = freqs_in_cm / AU_TO_CM
     disp_vecs = results["norm_mode"]
     nmodes = len(freqs)
 
@@ -195,7 +193,7 @@ def localize_normal_modes(results, freq_separation=[2600]):
     for idx in range(num_seps + 1):
         loc_freqs.extend(loc_freqs_arr[idx])
     loc_freqs = np.array(loc_freqs)
-    loc_results["freq_wavenumber"] = loc_freqs * au_to_cm
+    loc_results["freq_wavenumber"] = loc_freqs * AU_TO_CM
     new_disp = []
     for idx in range(num_seps + 1):
         for m in range(len(loc_freqs_arr[idx])):

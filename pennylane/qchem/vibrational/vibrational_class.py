@@ -26,10 +26,7 @@ def harmonic_analysis(scf_result, method="rhf"):
     if method not in ["rhf", "uhf"]:
         raise ValueError(f"Specified electronic structure method, {method} is not available.")
 
-    if method == "rhf":
-        hess = pyscf.hessian.rhf.Hessian(scf_result).kernel()
-    else:
-        hess = pyscf.hessian.uhf.Hessian(scf_result).kernel()
+    hess = getattr(pyscf.hessian, method).Hessian(scf_result).kernel()
 
     harmonic_res = thermo.harmonic_analysis(scf_result.mol, hess)
     return harmonic_res

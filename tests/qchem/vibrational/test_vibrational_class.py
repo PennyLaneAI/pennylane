@@ -7,7 +7,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.qchem import vibrational
 
-au_to_cm = 219475
+AU_TO_CM = 219475
 
 # pylint: disable=too-many-arguments
 
@@ -167,7 +167,7 @@ def test_mode_localization(sym, geom, loc_freqs, exp_results):
 
     harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
     loc_res, uloc = vibrational.localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
-    freqs = loc_res["freq_wavenumber"] / au_to_cm
+    freqs = loc_res["freq_wavenumber"] / AU_TO_CM
 
     nmodes = len(freqs)
     for i in range(nmodes):
