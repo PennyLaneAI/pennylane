@@ -186,8 +186,8 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     r"""Add two resources assuming the circuits are executed in series.
 
     Args:
-        r1 (Resources): A Resources object to add.
-        r2 (Resources): A Resources object to add.
+        r1 (Resources): a Resources object to add
+        r2 (Resources): a Resources object to add
 
     Returns:
         Resources: The combined resources of r1 and r2.
