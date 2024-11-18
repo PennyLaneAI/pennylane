@@ -53,7 +53,6 @@ def test_abstract_operator():
     # arithmetic dunders integration tested
 
 
-@pytest.mark.usefixtures("new_opmath_only")
 def test_operators_constructed_when_plxpr_enabled():
     """Test that normal operators can still be constructed when plxpr is enabled."""
 
@@ -422,7 +421,6 @@ class TestAbstractDunders:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_mul(self):
         """Test that the scalar multiplication dunder works."""
 

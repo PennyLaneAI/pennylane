@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functionality to compute the Cartan subalgebra"""
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+import copy
+
 import numpy as np
 from scipy.linalg import null_space
 
@@ -24,8 +26,8 @@ from .dense_util import adjvec_to_op, change_basis_ad_rep, op_to_adjvec
 
 def _gram_schmidt(X):
     """Orthogonalize basis of column vectors in X"""
-    _, R = np.linalg.qr(X.T, mode="complete")
-    return R.T
+    Q, _ = np.linalg.qr(X, mode="reduced")
+    return Q
 
 
 def _is_independent(v, A, tol=1e-14):
@@ -41,10 +43,14 @@ def _orthogonal_complement_basis(h, m, tol):
     m = np.array(m)
 
     # Compute the orthonormal basis of h using QR decomposition
+
     Q, _ = np.linalg.qr(h.T)
 
     # Step 2: Project each vector in m onto the orthogonal complement of span(h)
     projections = m - np.dot(np.dot(m, Q), Q.T)
+    assert np.allclose(
+        np.tensordot(h, projections, axes=[[1], [1]]), 0.0
+    ), f"{np.tensordot(h, projections, axes=[[1], [1]])}"
 
     # Step 3: Find a basis for the non-zero projections
     # We'll use SVD to find the basis
@@ -53,6 +59,9 @@ def _orthogonal_complement_basis(h, m, tol):
     # Choose columns of U corresponding to non-zero singular values
     rank = np.sum(S > tol)
     basis = U[:, :rank]
+    assert np.allclose(
+        np.tensordot(h, basis, axes=[[1], [0]]), 0.0
+    ), f"{np.tensordot(h, basis, axes=[[1], [0]])}"
 
     return basis.T  # Transpose to get row vectors
 
@@ -200,6 +209,7 @@ def cartan_subalgebra(
         In particular, we can compute commutators between
     """
 
+    g_copy = copy.deepcopy(g)
     np_m = op_to_adjvec(m, g, is_orthogonal=is_orthogonal)
     np_h = op_to_adjvec([m[start_idx]], g, is_orthogonal=is_orthogonal)
 
@@ -248,6 +258,9 @@ def cartan_subalgebra(
     if return_adjvec:
         return np_newg, np_k, np_mtilde, np_h, new_adj
 
-    newg, k, mtilde, h = [adjvec_to_op(adjvec, g) for adjvec in [np_newg, np_k, np_mtilde, np_h]]
+    newg, k, mtilde, h = [
+        adjvec_to_op(adjvec, g_copy, is_orthogonal=is_orthogonal)
+        for adjvec in [np_newg, np_k, np_mtilde, np_h]
+    ]
 
     return newg, k, mtilde, h, new_adj

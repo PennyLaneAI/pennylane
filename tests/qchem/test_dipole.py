@@ -22,7 +22,6 @@ from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-from pennylane.operation import Tensor
 
 
 @pytest.mark.parametrize(
@@ -183,13 +182,12 @@ def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     r"""Test that dipole_moment returns the correct result."""
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
-    dops = [Tensor(*op) if isinstance(op, qml.ops.Prod) else op for op in map(qml.simplify, ops)]
+    dops = list(map(qml.simplify, ops))
     d_ref = qml.Hamiltonian(coeffs, dops)
 
     d_coeff, d_ops = d.terms()
@@ -216,7 +214,6 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     r"""Test that the dipole moment is constructed properly with basis sets having different numbers
     of primitive Gaussian functions."""

@@ -53,6 +53,7 @@ Utility functions
     ~validate_khk
     ~run_opt
 
+
 Involutions
 ~~~~~~~~~~~
 
@@ -99,6 +100,7 @@ from .dense_util import (
     orthonormalize,
     trace_inner_product,
 )
+
 from .involutions import (
     khaneja_glaser_involution,
     AI,
