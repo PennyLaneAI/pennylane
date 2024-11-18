@@ -17,7 +17,7 @@ Tests for symbolic resource operators.
 
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,no-self-use
 
 
 class TestResourceAdjoint:
