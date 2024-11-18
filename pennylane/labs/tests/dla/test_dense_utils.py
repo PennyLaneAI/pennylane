@@ -23,6 +23,7 @@ from pennylane.labs.dla import (
     adjvec_to_op,
     change_basis_ad_rep,
     check_orthonormal,
+    lie_closure_dense,
     op_to_adjvec,
     orthonormalize,
     pauli_coefficients,
@@ -555,3 +556,23 @@ class TestOpToAdjvec:
             out = op_to_adjvec(ops, basis, is_orthogonal=True)
             assert qml.math.shape(out) == qml.math.shape(expected)
             assert np.allclose(out, expected)
+
+    def test_consistent_with_input_types(self):
+        """Test that op_to_adjvec yields the same results independently of the input type"""
+
+        g = list(qml.pauli.pauli_group(3))  # su(8)
+        g = lie_closure_dense(g)
+
+        m = g[:32]
+
+        res1 = op_to_adjvec(m, g)
+
+        g = list(qml.pauli.pauli_group(3))  # su(8)
+        g = qml.lie_closure(g)
+        g = [_.pauli_rep for _ in g]
+
+        m = g[:32]
+
+        res2 = np.array(op_to_adjvec(m, g))
+        assert res1.shape == res2.shape
+        assert np.allclose(res1, res2)
