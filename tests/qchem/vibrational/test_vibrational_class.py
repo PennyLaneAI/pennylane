@@ -171,13 +171,31 @@ def test_mode_localization(sym, geom, loc_freqs, exp_results):
 
     nmodes = len(freqs)
     for i in range(nmodes):
-        assert any(
-            np.allclose(np.abs(loc_res["norm_mode"][i]), np.abs(vec), atol=1e-6)
+        res_in_expvecs = any(
+            (np.allclose(loc_res["norm_mode"][i], vec, atol=1e-6) or
+            np.allclose(loc_res["norm_mode"][i], -1.0*np.array(vec), atol=1e-6))
             for vec in exp_results["vecs"]
         )
+        exp_in_resvecs = any(
+            (np.allclose(exp_results["vecs"][i], vec, atol=1e-6) or
+            np.allclose(exp_results["vecs"][i], -1.0*np.array(vec), atol=1e-6))
+            for vec in loc_res["norm_mode"]
+        )
+
+        res_in_expuloc = any(
+            (np.allclose(uloc[i], u, atol=1e-6) or
+            np.allclose(uloc[i], -1.0*np.array(u), atol=1e-6))
+            for u in exp_results["uloc"]
+        )
+        exp_in_resuloc = any(
+            (np.allclose(exp_results["uloc"][i], u, atol=1e-6) or
+            np.allclose(exp_results["uloc"][i], -1.0*np.array(u), atol=1e-6))
+            for u in uloc
+        )
+        assert(res_in_expvecs and exp_in_resvecs) 
+        assert(res_in_expuloc and exp_in_resuloc) 
 
     assert np.allclose(freqs, exp_results["freqs"])
-    assert np.allclose(np.abs(uloc), np.abs(exp_results["uloc"]))
 
 
 def test_hess_methoderror():
