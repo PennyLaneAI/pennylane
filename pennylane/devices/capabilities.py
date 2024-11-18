@@ -81,7 +81,7 @@ class OperatorProperties:
         )
 
 
-def _supports_operator(op_name: str, op_dict: dict[str, OperatorProperties]) -> Optional[str]:
+def _get_supported_base_op(op_name: str, op_dict: dict[str, OperatorProperties]) -> Optional[str]:
     """Checks if the given operator is supported by name, returns the base op for nested ops"""
 
     if op_name in op_dict:
@@ -89,13 +89,13 @@ def _supports_operator(op_name: str, op_dict: dict[str, OperatorProperties]) -> 
 
     if match := re.match(r"Adjoint\((.*)\)", op_name):
         base_op_name = match.group(1)
-        deep_supported_base = _supports_operator(base_op_name, op_dict)
+        deep_supported_base = _get_supported_base_op(base_op_name, op_dict)
         if deep_supported_base and op_dict[deep_supported_base].invertible:
             return deep_supported_base
 
     if match := re.match(r"C\((.*)\)", op_name):
         base_op_name = match.group(1)
-        deep_supported_base = _supports_operator(base_op_name, op_dict)
+        deep_supported_base = _get_supported_base_op(base_op_name, op_dict)
         if deep_supported_base and op_dict[deep_supported_base].controllable:
             return deep_supported_base
 
@@ -175,11 +175,11 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
 
     def supports_operation(self, operation_name: str) -> bool:
         """Checks if the given operation is supported by name."""
-        return bool(_supports_operator(operation_name, self.operations))
+        return bool(_get_supported_base_op(operation_name, self.operations))
 
     def supports_observable(self, observable_name: str) -> bool:
         """Checks if the given observable is supported by name."""
-        return bool(_supports_operator(observable_name, self.observables))
+        return bool(_get_supported_base_op(observable_name, self.observables))
 
 
 VALID_COMPILATION_OPTIONS = {
