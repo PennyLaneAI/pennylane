@@ -28,7 +28,6 @@ from pathlib import Path
 
 import numpy as onp
 import pytest
-from flaky import flaky
 from networkx import MultiDiGraph
 from networkx import __version__ as networkx_version
 from networkx import number_of_selfloops
@@ -1586,15 +1585,8 @@ class TestGetMeasurements:
         assert obs[0].wires.tolist() == [1, 0, 2]
         assert obs[1].wires.tolist() == [1, 0]
 
-        if qml.operation.active_new_opmath():
-
-            assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
-            assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
-
-        else:
-
-            assert [get_name(o) for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
-            assert [get_name(o) for o in obs[1].obs] == ["PauliZ", "PauliX"]
+        assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
+        assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
 
 
 class TestExpandFragmentTapes:
@@ -2513,14 +2505,13 @@ class TestCutCircuitMCTransform:
     Tests that the `cut_circuit_mc` transform gives the correct results.
     """
 
-    @flaky(max_runs=3)
-    def test_cut_circuit_mc_expval(self, dev_fn):
+    def test_cut_circuit_mc_expval(self, dev_fn, seed):
         """
         Tests that a circuit containing sampling measurements can be cut and
         recombined to give the correct expectation value
         """
 
-        dev_sim = dev_fn(wires=3)
+        dev_sim = dev_fn(wires=3, seed=seed)
 
         @qml.qnode(dev_sim)
         def target_circuit(v):
@@ -2537,7 +2528,7 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        dev = dev_fn(wires=2, shots=20000)
+        dev = dev_fn(wires=2, shots=20000, seed=seed)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -3878,9 +3869,8 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
-    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):
+    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots, seed):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
@@ -3888,7 +3878,7 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -4423,9 +4413,8 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
-    def test_standard_circuit(self, mocker, use_opt_einsum, shots):
+    def test_standard_circuit(self, mocker, use_opt_einsum, shots, seed):
         """
         Tests that the full circuit cutting pipeline returns the correct value for a typical
         scenario. The circuit is drawn below:
@@ -4438,7 +4427,7 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        dev_original = qml.device("default.qubit", wires=4)
+        dev_original = qml.device("default.qubit", wires=4, seed=seed)
 
         # We need a 3-qubit device
         dev_cut = qml.device("default.qubit", wires=3, shots=shots)
@@ -5584,7 +5573,7 @@ class TestCutCircuitWithHamiltonians:
         assert np.isclose(res, res_expected, atol=1e-8)
         assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
 
-    def test_template_with_hamiltonian(self):
+    def test_template_with_hamiltonian(self, seed):
         """Test cut with MPS Template"""
 
         pytest.importorskip("kahypar")
@@ -5624,9 +5613,7 @@ class TestCutCircuitWithHamiltonians:
         for idx, tape in enumerate(tapes):
             graph = qcut.tape_to_graph(tape)
             cut_graph = qcut.find_and_place_cuts(
-                graph=graph,
-                cut_strategy=cut_strategy,
-                replace_wire_cuts=True,
+                graph=graph, cut_strategy=cut_strategy, replace_wire_cuts=True, seed=seed
             )
             frags, _ = qcut.fragment_graph(cut_graph)
 

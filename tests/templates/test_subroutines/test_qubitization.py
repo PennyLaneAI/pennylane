@@ -79,19 +79,6 @@ def test_standard_validity(lcu, control, skip_diff):
     qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_legacy_new_opmath():
-    coeffs, ops = [0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]
-
-    H1 = qml.dot(coeffs, ops)
-    matrix_H1 = qml.matrix(qml.Qubitization(H1, control=[3, 4]), wire_order=[3, 4, 0, 1, 2])
-
-    H2 = qml.Hamiltonian(coeffs, ops)
-    matrix_H2 = qml.matrix(qml.Qubitization(H2, control=[3, 4]), wire_order=[3, 4, 0, 1, 2])
-
-    assert np.allclose(matrix_H1, matrix_H2)
-
-
 @pytest.mark.parametrize(
     "hamiltonian, expected_decomposition",
     (
@@ -176,7 +163,7 @@ class TestDifferentiability:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (False, True))
     @pytest.mark.parametrize("shots", (None, 50000))
-    def test_qnode_jax(self, shots, use_jit):
+    def test_qnode_jax(self, shots, use_jit, seed):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
@@ -191,7 +178,7 @@ class TestDifferentiability:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
@@ -210,7 +197,7 @@ class TestDifferentiability:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_torch(self, shots):
+    def test_qnode_torch(self, shots, seed):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
@@ -219,7 +206,7 @@ class TestDifferentiability:
         if shots is not None:
             pytest.xfail()
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -231,12 +218,12 @@ class TestDifferentiability:
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
     @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots):
+    def test_qnode_tf(self, shots, seed):
         """ "Test that the QNode executes and is differentiable with TensorFlow. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
@@ -247,27 +234,6 @@ class TestDifferentiability:
         jac = tape.gradient(res, params)
         assert qml.math.shape(jac) == (4,)
         assert qml.math.allclose(res, self.exp_grad, atol=0.001)
-
-    @pytest.mark.xfail(reason="see https://github.com/PennyLaneAI/pennylane/issues/5507")
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-    def test_legacy_new_opmath_diff(self):
-        coeffs, ops = np.array([0.1, -0.3, -0.3]), [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]
-
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def circuit_dot(coeffs):
-            H = qml.dot(coeffs, ops)
-            qml.Qubitization(H, control=[3, 4])
-            return qml.expval(qml.PauliZ(0))
-
-        @qml.qnode(dev)
-        def circuit_Hamiltonian(coeffs):
-            H = qml.Hamiltonian(coeffs, ops)
-            qml.Qubitization(H, control=[3, 4])
-            return qml.expval(qml.PauliZ(0))
-
-        assert np.allclose(qml.grad(circuit_dot)(coeffs), qml.grad(circuit_Hamiltonian)(coeffs))
 
 
 def test_copy():

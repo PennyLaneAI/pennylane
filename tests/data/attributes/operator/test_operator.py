@@ -24,7 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.data.attributes import DatasetOperator, DatasetPyTree
 from pennylane.data.base.typing_util import get_type_str
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 
 pytestmark = pytest.mark.data
 
@@ -71,21 +71,18 @@ hamiltonians = [
     ]
 ]
 
-tensors = [Tensor(qml.PauliX(1), qml.PauliY(2))]
+tensors = [qml.prod(qml.PauliX(1), qml.PauliY(2))]
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
 @pytest.mark.parametrize("obs_in", [*hermitian_ops, *pauli_ops, *identity, *hamiltonians, *tensors])
 class TestDatasetOperatorObservable:
-    """Tests serializing Observable operators using the ``compare()`` method."""
+    """Tests serializing Observable operators using the ``qml.equal`` function."""
 
-    def test_value_init(self, attribute_cls, obs_in, recwarn):
+    def test_value_init(self, attribute_cls, obs_in):
         """Test that a DatasetOperator can be value-initialized
         from an observable, and that the deserialized operator
         is equivalent."""
-        if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
-            obs_in = qml.operation.convert_to_legacy_H(obs_in)
 
         dset_op = attribute_cls(obs_in)
 
@@ -93,26 +90,11 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        if (
-            qml.operation.active_new_opmath()
-            and isinstance(obs_in, Tensor)
-            and attribute_cls is DatasetOperator
-        ):
-            assert isinstance(obs_out, qml.ops.Prod)
-            for o1, o2 in zip(obs_in.obs, obs_out.operands):
-                qml.assert_equal(o1, o2)
+        qml.assert_equal(obs_out, obs_in)
 
-            # No Tensor deprecation warnings are raised
-            assert len(recwarn) == 0
-        else:
-            qml.assert_equal(obs_out, obs_in)
-            assert obs_in.compare(obs_out)
-
-    def test_bind_init(self, attribute_cls, obs_in, recwarn):
+    def test_bind_init(self, attribute_cls, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
-        that contains a operator attribute."""
-        if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
-            obs_in = qml.operation.convert_to_legacy_H(obs_in)
+        that contains an operator attribute."""
 
         bind = attribute_cls(obs_in).bind
 
@@ -122,20 +104,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        if (
-            qml.operation.active_new_opmath()
-            and isinstance(obs_in, Tensor)
-            and attribute_cls is DatasetOperator
-        ):
-            assert isinstance(obs_out, qml.ops.Prod)
-            for o1, o2 in zip(obs_in.obs, obs_out.operands):
-                qml.assert_equal(o1, o2)
-
-            # No Tensor deprecation warnings are raised
-            assert len(recwarn) == 0
-        else:
-            qml.assert_equal(obs_out, obs_in)
-            assert obs_in.compare(obs_out)
+        qml.assert_equal(obs_out, obs_in)
 
 
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
@@ -156,8 +125,6 @@ class TestDatasetArithmeticOperators:
         """Test that a DatasetOperator can be value-initialized
         from an observable, and that the deserialized operator
         is equivalent."""
-        if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
-            obs_in = qml.operation.convert_to_legacy_H(obs_in)
 
         dset_op = attribute_cls(obs_in)
 
@@ -170,8 +137,6 @@ class TestDatasetArithmeticOperators:
     def test_bind_init(self, attribute_cls, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
         that contains an operator attribute."""
-        if not qml.operation.active_new_opmath() and isinstance(obs_in, qml.ops.LinearCombination):
-            obs_in = qml.operation.convert_to_legacy_H(obs_in)
 
         bind = attribute_cls(obs_in).bind
 
@@ -200,9 +165,6 @@ class TestDatasetOperator:
         from an operator, and that the deserialized operator
         is equivalent."""
 
-        if not qml.operation.active_new_opmath() and isinstance(op_in, qml.ops.LinearCombination):
-            op_in = qml.operation.convert_to_legacy_H(op_in)
-
         dset_op = attribute_cls(op_in)
 
         assert dset_op.info["type_id"] == attribute_cls.type_id
@@ -226,9 +188,6 @@ class TestDatasetOperator:
         """Test that a DatasetOperator can be bind-initialized
         from an operator, and that the deserialized operator
         is equivalent."""
-
-        if not qml.operation.active_new_opmath() and isinstance(op_in, qml.ops.LinearCombination):
-            op_in = qml.operation.convert_to_legacy_H(op_in)
 
         bind = attribute_cls(op_in).bind
 

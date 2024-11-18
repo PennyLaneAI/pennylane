@@ -68,21 +68,31 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 STRING_REPR = (
     (qml.Identity(0), "I(0)"),
+    (qml.Hadamard(0), "H(0)"),
     (qml.PauliX(0), "X(0)"),
     (qml.PauliY(0), "Y(0)"),
     (qml.PauliZ(0), "Z(0)"),
     (qml.Identity("a"), "I('a')"),
     (qml.Identity(10), "I(10)"),
     (qml.Identity(), "I()"),
+    (qml.Hadamard("a"), "H('a')"),
     (qml.PauliX("a"), "X('a')"),
     (qml.PauliY("a"), "Y('a')"),
     (qml.PauliZ("a"), "Z('a')"),
+    (qml.H("a"), "H('a')"),
     (qml.X("a"), "X('a')"),
     (qml.Y("a"), "Y('a')"),
     (qml.Z("a"), "Z('a')"),
+    (qml.T("a"), "T('a')"),
+    (qml.S("a"), "S('a')"),
+    (qml.SX("a"), "SX('a')"),
+    (qml.H(0), "H(0)"),
     (qml.X(1), "X(1)"),
     (qml.Y(2), "Y(2)"),
     (qml.Z(3), "Z(3)"),
+    (qml.T(0), "T(0)"),
+    (qml.S(0), "S(0)"),
+    (qml.SX(0), "SX(0)"),
 )
 
 
@@ -92,6 +102,7 @@ def test_alias_XYZI(wire):
     assert qml.PauliY(wire) == qml.Y(wire)
     assert qml.PauliZ(wire) == qml.Z(wire)
     assert qml.Identity(wire) == qml.I(wire)
+    assert qml.Hadamard(wire) == qml.H(wire)
 
 
 class TestOperations:
@@ -1288,3 +1299,23 @@ class TestPauliAlias:
 
         assert qml.Z(0).name == "PauliZ"
         assert qml.PauliZ(0).name == "PauliZ"
+
+
+class TestHadamardAlias:
+    def test_H_class_name(self):
+        """Test the class name of H is by default correct"""
+        assert qml.H.__name__ == "Hadamard"
+        assert qml.Hadamard.__name__ == "Hadamard"
+
+        assert qml.H(0).name == "Hadamard"
+        assert qml.Hadamard(0).name == "Hadamard"
+
+    def test_hadamard_alias(self):
+        """Test that qml.H is an alias for qml.Hadamard."""
+        # Verify that qml.H is the same as qml.Hadamard
+        assert qml.H is qml.Hadamard, "qml.H should be an alias for qml.Hadamard"
+
+        # Verify that an instance of qml.H is treated as qml.Hadamard
+        assert isinstance(
+            qml.H(0), qml.Hadamard
+        ), "qml.H(0) should create an instance of qml.Hadamard"

@@ -156,24 +156,17 @@ class TestTransformContainer:
     def test_repr(self):
         """Tests for the repr of a transform container."""
         t1 = qml.transforms.core.TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+            qml.transforms.compile.transform, kwargs={"num_passes": 2}
         )
-        assert repr(t1) == "<compile([], {'num_passes': 2, 'expand_depth': 1})>"
+        assert repr(t1) == "<compile([], {'num_passes': 2})>"
 
     def test_equality(self):
         """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
 
-        t1 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
-        t2 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
+        t1 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
+        t2 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
         t3 = TransformContainer(
             qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
-        )
-        t4 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 2}
         )
 
         t5 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
@@ -186,7 +179,6 @@ class TestTransformContainer:
         assert t1 != t3
         assert t2 != t3
         assert t1 != 2
-        assert t1 != t4
         assert t5 != t6
         assert t5 != t1
 
@@ -636,8 +628,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
 
-        assert len(program) == 4
-        assert len(new_program) == 5
+        assert len(program) == 5
+        assert len(new_program) == 6
 
         assert new_program[-1].transform is valid_transform
 

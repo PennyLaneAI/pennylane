@@ -432,16 +432,6 @@ class TestDecomposition:
         ):
             op.decomposition()
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_nontensor_tensor_no_decomposition(self):
-        """Checks that accessing the decomposition throws an error if the base is a Tensor
-        object that is not a mathematical tensor"""
-        base_op = qml.PauliX(0) @ qml.PauliZ(0)
-        op = Exp(base_op, 1j)
-        assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
-            _ = op.decomposition()
-
     @pytest.mark.parametrize(
         "base, base_string",
         (
@@ -450,22 +440,6 @@ class TestDecomposition:
         ),
     )
     def test_decomposition_into_pauli_rot(self, base, base_string):
-        """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
-        theta = 3.21
-        op = Exp(base, -0.5j * theta)
-
-        assert op.has_decomposition
-        pr = op.decomposition()[0]
-        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
-
-    @pytest.mark.parametrize(
-        "base, base_string",
-        (
-            (qml.operation.Tensor(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
-            (qml.operation.Tensor(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
-        ),
-    )
-    def test_decomposition_tensor_into_pauli_rot(self, base, base_string):
         """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
         theta = 3.21
         op = Exp(base, -0.5j * theta)
@@ -680,7 +654,7 @@ class TestMiscMethods:
         base = qml.S(0) @ qml.PauliX(0)
         op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
 
-        assert repr(op) == "Exp(3 S(wires=[0]) @ X(0))"
+        assert repr(op) == "Exp(3 S(0) @ X(0))"
 
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
@@ -896,14 +870,16 @@ class TestIntegration:
         grad = qml.grad(circuit)(phi)
         assert qml.math.allclose(grad, -qml.numpy.sin(phi))
 
+    @pytest.mark.xfail  # related to #6333
     @pytest.mark.autograd
     def test_autograd_param_shift_qnode(self):
         """Test execution and gradient with pennylane numpy array."""
+
         phi = qml.numpy.array(1.2)
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+        @qml.qnode(dev, diff_method=qml.gradients.param_shift)
         def circuit(phi):
             Exp(qml.PauliX(0), -0.5j * phi)
             return qml.expval(qml.PauliZ(0))

@@ -26,6 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
+from pennylane.measurements import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
@@ -90,12 +91,6 @@ def observable_accepts_sampling(obs: qml.operation.Operator) -> bool:
     if isinstance(obs, qml.ops.SymbolicOp):
         return observable_accepts_sampling(obs.base)
 
-    if isinstance(obs, qml.ops.Hamiltonian):
-        return all(observable_accepts_sampling(o) for o in obs.ops)
-
-    if isinstance(obs, qml.operation.Tensor):
-        return all(observable_accepts_sampling(o) for o in obs.obs)
-
     return obs.has_diagonalizing_gates
 
 
@@ -107,12 +102,6 @@ def observable_accepts_analytic(obs: qml.operation.Operator, is_expval=False) ->
 
     if isinstance(obs, qml.ops.SymbolicOp):
         return observable_accepts_analytic(obs.base, is_expval)
-
-    if isinstance(obs, qml.ops.Hamiltonian):
-        return all(observable_accepts_analytic(o, is_expval) for o in obs.ops)
-
-    if isinstance(obs, qml.operation.Tensor):
-        return all(observable_accepts_analytic(o, is_expval) for o in obs.obs)
 
     if is_expval and isinstance(obs, (qml.ops.SparseHamiltonian, qml.ops.Hermitian)):
         return True
@@ -160,6 +149,16 @@ def all_state_postprocessing(results, measurements, wire_order):
     """Process a state measurement back into the original measurements."""
     result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
     return result[0] if len(measurements) == 1 else result
+
+
+@qml.transform
+def _conditional_broastcast_expand(tape):
+    """Apply conditional broadcast expansion to the tape if needed."""
+    # Currently, default.qubit does not support native parameter broadcasting with
+    # shadow operations. We need to expand the tape to include the broadcasted parameters.
+    if any(isinstance(mp, (ShadowExpvalMP, ClassicalShadowMP)) for mp in tape.measurements):
+        return qml.transforms.broadcast_expand(tape)
+    return (tape,), null_postprocessing
 
 
 @qml.transform
@@ -552,6 +551,7 @@ class DefaultQubit(Device):
             sample_measurements=accepted_sample_measurement,
             name=self.name,
         )
+        transform_program.add_transform(_conditional_broastcast_expand)
         if config.mcm_config.mcm_method == "tree-traversal":
             transform_program.add_transform(qml.transforms.broadcast_expand)
         # Validate multi processing

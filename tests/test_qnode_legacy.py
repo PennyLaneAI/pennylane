@@ -117,7 +117,10 @@ class TestValidation:
 
         spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
 
-        QNode.get_best_method(dev_legacy, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            QNode.get_best_method(dev_legacy, "some_interface")
 
         spy.assert_called_once()
 
@@ -133,11 +136,17 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
         # basic check if the device provides a Jacobian
-        res = QNode.get_best_method(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "another_interface")
         assert res == ("device", {}, dev)
 
         # device is returned even if backpropagation is possible
-        res = QNode.get_best_method(dev, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "some_interface")
         assert res == ("device", {}, dev)
 
     # pylint: disable=protected-access
@@ -148,7 +157,10 @@ class TestValidation:
         dev = qml.device("default.mixed", wires=1)
 
         # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
-        res = QNode.get_best_method(dev, interface)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, interface)
         assert res == ("backprop", {}, dev)
 
     # pylint: disable=protected-access
@@ -158,7 +170,10 @@ class TestValidation:
         dev = qml.device("default.mixed", wires=1)
 
         tape = qml.tape.QuantumScript([], [], shots=50)
-        res = QNode.get_best_method(dev, None, tape=tape)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, None, tape=tape)
         assert res == (qml.gradients.param_shift, {}, dev)
 
     # pylint: disable=protected-access
@@ -178,8 +193,10 @@ class TestValidation:
         dev = qml.device("default.mixed", wires=1)
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
-
-        res = QNode.get_best_method(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
     # pylint: disable=protected-access
@@ -191,11 +208,17 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
         # basic check if the device provides a Jacobian
-        res = QNode.best_method_str(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "another_interface")
         assert res == "device"
 
         # device is returned even if backpropagation is possible
-        res = QNode.best_method_str(dev, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "some_interface")
         assert res == "device"
 
     # pylint: disable=protected-access
@@ -207,7 +230,10 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
 
         # backprop is returned when the interfaces match and Jacobian is not provided
-        res = QNode.best_method_str(dev, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "some_interface")
         assert res == "backprop"
 
     def test_best_method_str_wraps_legacy_device_correctly(self, mocker):
@@ -215,7 +241,10 @@ class TestValidation:
 
         spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
 
-        QNode.best_method_str(dev_legacy, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            QNode.best_method_str(dev_legacy, "some_interface")
 
         spy.assert_called_once()
 
@@ -227,7 +256,10 @@ class TestValidation:
 
         # parameter shift is returned when Jacobian is not provided and
         # the backprop interfaces do not match
-        res = QNode.best_method_str(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "another_interface")
         assert res == "parameter-shift"
 
     # pylint: disable=protected-access
@@ -238,7 +270,10 @@ class TestValidation:
 
         mocker.patch.object(QNode, "get_best_method", return_value=[qml.gradients.finite_diff])
 
-        res = QNode.best_method_str(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "another_interface")
 
         assert res == "finite-diff"
 
@@ -1560,7 +1595,6 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
-    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("grouping", [True, False])
     def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""

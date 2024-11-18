@@ -324,7 +324,23 @@ class QuantumScript:
 
     @property
     def output_dim(self) -> int:
-        """The (inferred) output dimension of the quantum script."""
+        """The (inferred) output dimension of the quantum script.
+
+        .. warning::
+
+            ``QuantumScript.output_dim`` is being deprecated. Instead, considering
+            using method ``shape`` of ``QuantumScript`` or ``MeasurementProcess``
+            to get the same information. See ``qml.gradients.parameter_shift_cv.py::_get_output_dim``
+            for an example.
+
+        """
+        # pylint: disable=import-outside-toplevel
+        import warnings
+
+        warnings.warn(
+            "The 'output_dim' property is deprecated and will be removed in version 0.41",
+            qml.PennyLaneDeprecationWarning,
+        )
         if self._output_dim is None:
             self._update_output_dim()  # this will set _batch_size if it isn't already
         return self._output_dim
@@ -343,13 +359,13 @@ class QuantumScript:
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0))])
         >>> tape.diagonalizing_gates
-        [Hadamard(wires=[0])]
+        [H(0)]
 
         If the tape includes multiple observables, they are each diagonalized individually:
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(1))])
         >>> tape.diagonalizing_gates
-        [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
+        [H(0), Z(1), S(1), H(1)]
 
         .. warning::
             If the tape contains multiple observables acting on the same wire,
@@ -360,7 +376,7 @@ class QuantumScript:
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(0))])
             >>> tape.diagonalizing_gates
-            [Hadamard(wires=[0]), Z(0), S(wires=[0]), Hadamard(wires=[0])]
+            [H(0), Z(0), S(0), H(0)]
 
             If it is relevant for your application, applying
             :func:`~.pennylane.transforms.split_non_commuting` to a tape will split it into multiple
@@ -370,7 +386,7 @@ class QuantumScript:
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)+Y(1))])
         >>> tape.diagonalizing_gates
-        [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
+        [H(0), Z(1), S(1), H(1)]
 
         However, for operators that contain multiple terms on the same wire, a single diagonalizing
         operator will be returned that diagonalizes the full operator as a unit:
@@ -897,11 +913,11 @@ class QuantumScript:
                 measurements will replace the copied measurements on the new tape.
             shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution. If provided, these
                 shots will replace the copied shots on the new tape.
-            trainable_params (None, Sequence[int]): the indices for which parameters are trainable. If provided, these
-                parameter indices will replace the copied parameter indicies on the new tape.
+            trainable_params (None, Sequence[int]): The indices for which parameters are trainable. If provided, these
+                parameter indices will replace the copied parameter indices on the new tape.
 
         Returns:
-            QuantumScript : a copy of the quantum script, with modified attributes if specified by keyword argument.
+            QuantumScript : A copy of the quantum script, with modified attributes if specified by keyword argument.
 
         **Example**
 
@@ -1080,7 +1096,7 @@ class QuantumScript:
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
             >>> tape.expand(expand_measurements=True).circuit
-            [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
+            [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
         """
         return qml.tape.tape.expand_tape(
@@ -1399,7 +1415,7 @@ def make_qscript(
     ...     _ = qml.RY(1.0, wires=0)
     ...     qs = make_qscript(qfunc)(0.5)
     >>> qs.operations
-    [Hadamard(wires=[0]), CNOT(wires=[0, 1]), RX(0.5, wires=[0])]
+    [H(0), CNOT(wires=[0, 1]), RX(0.5, wires=[0])]
 
     Note that the currently recording queue did not queue any of these quantum operations:
 

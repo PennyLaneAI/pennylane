@@ -18,6 +18,91 @@ import scipy as sp
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.optimize.qng import _flatten_np, _unflatten_np
+
+
+class TestBasics:
+    """Test basic properties of the QNGOptimizer."""
+
+    def test_initialization_default(self):
+        """Test that initializing QNGOptimizer with default values works."""
+        opt = qml.QNGOptimizer()
+        assert opt.stepsize == 0.01
+        assert opt.approx == "block-diag"
+        assert opt.lam == 0
+        assert opt.metric_tensor is None
+
+    def test_initialization_custom_values(self):
+        """Test that initializing QNGOptimizer with custom values works."""
+        opt = qml.QNGOptimizer(stepsize=0.05, approx="diag", lam=1e-9)
+        assert opt.stepsize == 0.05
+        assert opt.approx == "diag"
+        assert opt.lam == 1e-9
+        assert opt.metric_tensor is None
+
+
+class TestAttrsAffectingMetricTensor:
+    """Test that the attributes `approx` and `lam`, which affect the metric tensor
+    and its inversion, are used correctly."""
+
+    def test_no_approx(self):
+        """Test that the full metric tensor is used correctly for ``approx=None``."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(eta, wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        opt = qml.QNGOptimizer(approx=None)
+        eta = 0.7
+        params = np.array([0.11, 0.412])
+        new_params_no_approx = opt.step(circuit, params)
+        opt_with_approx = qml.QNGOptimizer()
+        new_params_block_approx = opt_with_approx.step(circuit, params)
+        # Expected result, requires some manual calculation, compare analytic test cases page
+        x = params[0]
+        first_term = np.eye(2) / 4
+        vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
+        second_term = np.real(np.outer(vec_potential.conj(), vec_potential))
+        exp_mt = first_term - second_term
+
+        assert np.allclose(opt.metric_tensor, exp_mt)
+        assert np.allclose(opt_with_approx.metric_tensor, np.diag(np.diag(exp_mt)))
+        assert not np.allclose(new_params_no_approx, new_params_block_approx)
+
+    def test_lam(self):
+        """Test that the regularization ``lam`` is used correctly."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(eta, wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        lam = 1e-9
+        opt = qml.QNGOptimizer(lam=lam, stepsize=1.0)
+        eta = np.pi
+        params = np.array([np.pi / 2, 0.412])
+        new_params_with_lam = opt.step(circuit, params)
+        opt_without_lam = qml.QNGOptimizer(stepsize=1.0)
+        new_params_without_lam = opt_without_lam.step(circuit, params)
+        # Expected result, requires some manual calculation, compare analytic test cases page
+        x, y = params
+        first_term = np.eye(2) / 4
+        vec_potential = np.array([-0.5j * np.sin(eta), 0.5j * np.sin(x) * np.cos(eta)])
+        second_term = np.real(np.outer(vec_potential.conj(), vec_potential))
+        exp_mt = first_term - second_term
+
+        assert np.allclose(opt.metric_tensor, exp_mt + np.eye(2) * lam)
+        assert np.allclose(opt_without_lam.metric_tensor, np.diag(np.diag(exp_mt)))
+        # With regularization, y can be updated. Without regularization it can not.
+        assert np.isclose(new_params_without_lam[1], y)
+        assert not np.isclose(new_params_with_lam[1], y, atol=1e-11, rtol=0.0)
 
 
 class TestExceptions:
@@ -77,7 +162,6 @@ class TestOptimize:
         assert np.allclose(step1, expected_step)
         assert np.allclose(step2, expected_step)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_step_and_cost_autograd_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned via the
         step_and_cost method for the QNG optimizer when the generator
@@ -308,5 +392,67 @@ class TestOptimize:
 
         # check final cost
         assert np.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)
-        if qml.operation.active_new_opmath():
-            assert len(recwarn) == 0
+        assert len(recwarn) == 0
+
+
+flat_dummy_array = np.linspace(-1, 1, 64)
+test_shapes = [
+    (64,),
+    (64, 1),
+    (32, 2),
+    (16, 4),
+    (8, 8),
+    (16, 2, 2),
+    (8, 2, 2, 2),
+    (4, 2, 2, 2, 2),
+    (2, 2, 2, 2, 2, 2),
+]
+
+
+class TestFlatten:
+    """Tests the flatten and unflatten functions"""
+
+    @pytest.mark.parametrize("shape", test_shapes)
+    def test_flatten(self, shape):
+        """Tests that _flatten successfully flattens multidimensional arrays."""
+
+        reshaped = np.reshape(flat_dummy_array, shape)
+        flattened = np.array(list(_flatten_np(reshaped)))
+
+        assert flattened.shape == flat_dummy_array.shape
+        assert np.array_equal(flattened, flat_dummy_array)
+
+    @pytest.mark.parametrize("shape", test_shapes)
+    def test_unflatten(self, shape):
+        """Tests that _unflatten successfully unflattens multidimensional arrays."""
+
+        reshaped = np.reshape(flat_dummy_array, shape)
+        unflattened = np.array(list(_unflatten_np(flat_dummy_array, reshaped)))
+
+        assert unflattened.shape == reshaped.shape
+        assert np.array_equal(unflattened, reshaped)
+
+    def test_unflatten_error_unsupported_model(self):
+        """Tests that unflatten raises an error if the given model is not supported"""
+
+        with pytest.raises(TypeError, match="Unsupported type in the model"):
+            model = lambda x: x  # not a valid model for unflatten
+            _unflatten_np(flat_dummy_array, model)
+
+    def test_unflatten_error_too_many_elements(self):
+        """Tests that unflatten raises an error if the given iterable has
+        more elements than the model"""
+
+        reshaped = np.reshape(flat_dummy_array, (16, 2, 2))
+
+        with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
+            _unflatten_np(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
+
+    def test_flatten_wires(self):
+        """Tests flattening a Wires object."""
+        wires = qml.wires.Wires([3, 4])
+        wires_int = [3, 4]
+
+        wires = _flatten_np(wires)
+        for i, wire in enumerate(wires):
+            assert wires_int[i] == wire
