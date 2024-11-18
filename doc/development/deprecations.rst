@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been deprecated. 
+  Instead, use the ``qml.workflow.construct_tape`` function.
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` is deprecated. 
 
   - Deprecated in v0.40
@@ -25,7 +31,7 @@ Pending deprecations
   - Will be removed in v0.41
 
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been deprecated. 
-  Instead, use the ``qml.workflow.get_best_diff_method``. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
 
   - Deprecated in v0.40
   - Will be removed in v0.41
