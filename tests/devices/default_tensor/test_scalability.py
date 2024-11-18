@@ -113,18 +113,6 @@ class TestMultiQubitMeasurements:
 
         _ = qml.QNode(circuit, dev)()
 
-    def test_tensor(self, method):
-        """Test that the device can compute the expval of a multi-qubit Tensor."""
-
-        wires = 30
-        dev = qml.device("default.tensor", wires=wires, method=method)
-
-        def circuit():
-            return qml.expval(qml.operation.Tensor(*(qml.PauliY(i) for i in range(wires))))
-
-        _ = qml.QNode(circuit, dev)()
-
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_hamiltonian(self, method):
         """Test that the device can compute the expval of a multi-qubit Hamiltonian."""
 
