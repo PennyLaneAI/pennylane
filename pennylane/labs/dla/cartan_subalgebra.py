@@ -57,7 +57,9 @@ def _orthogonal_complement_basis(h, m, tol):
     return basis.T  # Transpose to get row vectors
 
 
-def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False):
+def cartan_subalgebra(
+    g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
+):
     r"""
     Compute Cartan subalgebra (CSA) m in g, the odd parity subspace. I.e. the maximal Abelian subalgebra in m.
 
@@ -73,6 +75,8 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
         verbose (bool): Whether or not to output progress during computation
         return_adjvec (bool): The output format. If ``False``, returns operators in their original
             input format (matrices of :class:`~PauliSentence`). If ``True``, returns the spaces as adjoint representaiton vectors.
+        is_orthogonal (bool): Whether the basis elements are all orthogonal, both within
+            and between ``g``, ``k`` and ``m``.
 
     Returns:
         np.ndarray: Adjoint vectors for new ordered :math:`\mathfrak{g}` of dimension :math:`|\mathfrak{g}| \times |\mathfrak{g}|`, ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \tilde{\mathfrak{m}} \oplus \mathfrak{h}`
@@ -196,8 +200,8 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
         In particular, we can compute commutators between
     """
 
-    np_m = op_to_adjvec(m, g)
-    np_h = op_to_adjvec([m[start_idx]], g)
+    np_m = op_to_adjvec(m, g, is_orthogonal=is_orthogonal)
+    np_h = op_to_adjvec([m[start_idx]], g, is_orthogonal=is_orthogonal)
 
     iteration = 1
     while True:
@@ -227,15 +231,17 @@ def cartan_subalgebra(g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adj
         iteration += 1
 
     np_h = _gram_schmidt(np_h.T).T  # orthogonalize Abelian subalgebra
-    np_k = op_to_adjvec(k, g)  # adjoint vectors of k space for re-ordering
+    np_k = op_to_adjvec(
+        k, g, is_orthogonal=is_orthogonal
+    )  # adjoint vectors of k space for re-ordering
+    np_oldg = np.vstack([np_k, np_m])
+    np_k = _gram_schmidt(np_k.T).T
 
     np_mtilde = _orthogonal_complement_basis(np_h, np_m, tol=tol)  # the "rest" of m without h
     np_newg = np.vstack([np_k, np_mtilde, np_h])
 
     # Instead of recomputing the adjoint representation, take the basis transformation
     # oldg -> newg and transform the adjoint representation accordingly
-    # TODO: implementation to be tested:
-    np_oldg = np.vstack([np_k, np_m])
     basis_change = np.tensordot(np_newg, np.linalg.pinv(np_oldg), axes=[[1], [0]])
     new_adj = change_basis_ad_rep(ad, basis_change)
 
