@@ -67,7 +67,7 @@ class Resources:
     shots: Shots = field(default_factory=Shots)
 
     def __add__(self, other: Resources):
-        r"""Adds two Resources objects together as if the circuits were executed in series
+        r"""Adds two Resources objects together as if the circuits were executed in series.
 
         Args:
             other (Resources): The resource object to add
