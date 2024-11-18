@@ -46,6 +46,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
     if tol is None:
         tol = 1e-10
 
+    # dim = matrices[0].shape[0]
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
         if not np.allclose(A.conj().T, A):
@@ -57,7 +58,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
         if len(basis) > 0:
             B -= np.tensordot(trace_inner_product(np.array(basis), A), basis, axes=[[0], [0]])
         if (norm := np.sqrt(trace_inner_product(B, B))) > tol:  # Tolerance for numerical stability
-            B /= norm
+            B /= norm  # / dim
             basis.append(B)
     return np.array(basis)
 
