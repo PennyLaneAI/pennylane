@@ -221,7 +221,20 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     
     Resources:
         The resources are obtained from (in figure 1.) the paper `Novel constructions for the fault-tolerant 
-        Toffoli gate <https://arxiv.org/pdf/1212.5069>`_. 
+        Toffoli gate <https://arxiv.org/pdf/1212.5069>`_.
+
+        The circuit which applies the Toffoli gate on target wire 'target' with control wires ('c1', 'c2') is 
+        given by:  
+
+        .. code-block:: bash
+
+                c1: ─╭●────╭X──T†────────╭X────╭●───────────────╭●─┤
+                c2: ─│──╭X─│──╭●───T†─╭●─│──╭X─│────────────────╰Z─┤
+              aux1: ─╰X─│──│──╰X───T──╰X─│──│──╰X────────────────║─┤
+              aux2: ──H─╰●─╰●──T─────────╰●─╰●──H──S─╭●──H──┤↗├──║─┤
+            target: ─────────────────────────────────╰X──────║───║─┤
+                                                             ╚═══╝  
+
     """
 
     @staticmethod
@@ -281,14 +294,25 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
 
 class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
-    """Resource class for MultiControlledX"""
+    """Resource class for MultiControlledX
+    
+    Resources: 
+        The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates 
+        without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. The resources are 
+        estimated using the following formulas. 
+
+        If the number of control qubits is 0
+
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
     def resource_params(self) -> dict:
-        return {}
+        num_control = len(self.hyperparameters["control_wires"])
+        num_work_wires = len(self.hyperparameters["work_wires"])
+        return {"num_ctrl_wires": num_control, "num_work_wires": num_work_wires}
 
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
@@ -296,11 +320,36 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
 
 class ResourceCRX(qml.CRX, re.ResourceOperator):
-    """Resource class for CRX"""
+    """Resource class for CRX
+
+    Resources:
+
+        The resources are derived from the following identities:
+
+        .. math:: 
+        
+            \begin{align}
+                \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}, \\
+                \hat{X} &= \hat{H} \dot \hat{Z}  \dot \hat{H}
+            \end{align}
+
+        The expression for controlled-RZ gates is used as defined in (figure 1b.) the paper 
+        `T-count and T-depth of any multi-qubit unitary <https://arxiv.org/pdf/2110.10292>`_. 
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        raise re.ResourcesNotDefined
+        gate_types = {}
+
+        h = re.ResourceHadamard.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
+
+        gate_types[cnot] = 2
+        gate_types[rz] = 2
+        gate_types[h] = 2
+
+        return gate_types 
 
     def resource_params(self) -> dict:
         return {}
@@ -311,11 +360,27 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
 
 class ResourceCRY(qml.CRY, re.ResourceOperator):
-    """Resource class for CRY"""
+    """Resource class for CRY
+
+    Resources:
+        The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit 
+        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
+
+        .. math:: \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}.
+    
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        raise re.ResourcesNotDefined
+        gate_types = {}
+
+        cnot = re.ResourceCNOT.resource_rep()
+        ry = re.ResourceRY.resource_rep()
+
+        gate_types[cnot] = 2
+        gate_types[ry] = 2
+
+        return gate_types 
 
     def resource_params(self) -> dict:
         return {}
@@ -326,11 +391,27 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
 
 class ResourceCRZ(qml.CRZ, re.ResourceOperator):
-    """Resource class for CRZ"""
+    """Resource class for CRZ
+
+    Resources:
+        The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit 
+        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived from the following identity:
+
+        .. math:: \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}.
+    
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        raise re.ResourcesNotDefined
+        gate_types = {}
+
+        cnot = re.ResourceCNOT.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+
+        gate_types[cnot] = 2
+        gate_types[rz] = 2
+
+        return gate_types 
 
     def resource_params(self) -> dict:
         return {}
@@ -341,11 +422,26 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
 
 class ResourceCRot(qml.CRot, re.ResourceOperator):
-    """Resource class for CRot"""
+    """Resource class for CRot
+    
+    Resources:
+        TODO: Add a source for resources! 
+    
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        raise re.ResourcesNotDefined
+        gate_types = {}
+
+        cnot = re.ResourceCNOT.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+        ry = re.ResourceRZ.resource_rep()
+
+        gate_types[cnot] = 2
+        gate_types[rz] = 3
+        gate_types[ry] = 2
+
+        return gate_types 
 
     def resource_params(self) -> dict:
         return {}
@@ -356,7 +452,12 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
-    """Resource class for ControlledPhaseShift"""
+    """Resource class for ControlledPhaseShift
+    
+    Resources: 
+        TODO: Add a source for resources
+    
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
