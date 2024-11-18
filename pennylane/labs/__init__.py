@@ -24,8 +24,8 @@ advanced quantum computing research.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
-Resource Estimation
-~~~~~~~~~~~~~~~~~~~
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -34,12 +34,73 @@ Resource Estimation
     ~CompressedResourceOp
     ~ResourceOperator
 
+Operators
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceCNOT
+    ~ResourceControlledPhaseShift
+    ~ResourceHadamard
+    ~ResourceRZ
+    ~ResourceSWAP
+    ~ResourceT
+
+Templates
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceQFT
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
+
+.. currentmodule:: pennylane.labs
+
+Modules
+~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    dla
+
 """
 
+from pennylane.labs import dla
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
     ResourceOperator,
+    ResourcesNotDefined,
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+    ResourceHadamard,
+    ResourceRZ,
+    ResourceSWAP,
+    ResourceT,
+    ResourceQFT,
 )
 
-__all__ = ["Resources", "CompressedResourceOp"]
+
+__all__ = [
+    "Resources",
+    "CompressedResourceOp",
+    "ResourceOperator",
+    "ResourcesNotDefined",
+    "ResourceCNOT",
+    "ResourceControlledPhaseShift",
+    "ResourceHadamard",
+    "ResourceRZ",
+    "ResourceSWAP",
+    "ResourceT",
+    "ResourceQFT",
+]

@@ -197,31 +197,6 @@ class TestAnnotatedQueue:
             ]
         assert q.queue == ops
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_append_tensor_ops(self):
-        """Test that ops which are used as inputs to `Tensor`
-        are successfully added to the queue, as well as the `Tensor` object."""
-
-        with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = qml.operation.Tensor(A, B)
-        assert q.queue == [tensor_op]
-        assert tensor_op.obs == [A, B]
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_append_tensor_ops_overloaded(self):
-        """Test that Tensor ops created using `@`
-        are successfully added to the queue, as well as the `Tensor` object."""
-
-        with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = A @ B
-        assert q.queue == [tensor_op]
-        assert tensor_op.obs == [A, B]
-
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_append_prod_ops_overloaded(self):
         """Test that Prod ops created using `@`
         are successfully added to the queue, as well as the `Prod` object."""
@@ -293,16 +268,6 @@ class TestAnnotatedQueue:
         q.update_info(B, inv=True)
         assert len(q.queue) == 1
 
-    def test_append_annotating_object(self):
-        """Test appending an object that writes annotations when queuing itself"""
-
-        with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = qml.operation.Tensor(A, B)
-
-        assert q.queue == [tensor_op]
-
     def test_parallel_queues_are_isolated(self):
         """Tests that parallel queues do not queue each other's constituents."""
         q1 = AnnotatedQueue()
@@ -325,8 +290,6 @@ class TestAnnotatedQueue:
 
 test_observables = [
     qml.PauliZ(0) @ qml.PauliZ(1),
-    qml.operation.Tensor(qml.PauliZ(0), qml.PauliX(1)),
-    qml.operation.Tensor(qml.PauliZ(0), qml.PauliX(1)) @ qml.Hadamard(2),
     qml.Hamiltonian(
         [0.1, 0.2, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(1), qml.Identity(2)]
     ),

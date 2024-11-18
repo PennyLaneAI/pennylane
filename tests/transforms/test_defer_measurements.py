@@ -630,7 +630,7 @@ class TestQNode:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.measure(mid_measure_wire)
-            qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
+            qml.expval(qml.prod(*[qml.PauliZ(w) for w in tp_wires]))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape, _ = qml.defer_measurements(tape)
