@@ -68,13 +68,13 @@ class Resources:
     shots: Shots = field(default_factory=Shots)
 
     def __add__(self, other: Resources):
-        r"""Adds two Resources objects together as if the circuits were executed in series
+        r"""Adds two Resources objects together as if the circuits were executed in series.
 
         Args:
-            other (Resources): The resource object to add
+            other (Resources): the resource object to add
 
         Returns:
-            Resources: The combined resources
+            Resources: the combined resources
 
         .. details::
 
@@ -82,7 +82,7 @@ class Resources:
 
             >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
             >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-            >>> print(r1 + r2)
+            >>> print(r1.__add__(r2))
             wires: 2
             gates: 4
             depth: 0
@@ -95,7 +95,7 @@ class Resources:
         return add_in_series(self, other)
 
     def __mul__(self, scalar: int):
-        r"""Multiply the Resource object by a scalar as if that many copies of the circuit were executed in series
+        r"""Multiply the Resources object by a scalar as if that many copies of the circuit were executed in series
 
         Args:
             scalar (int): The scalar to multiply the resource object by
@@ -107,7 +107,7 @@ class Resources:
 
             **Example**
             >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-            >>> print(r1 * 2)
+            >>> print(r1.__mul__(2))
             wires: 2
             gates: 4
             depth: 0
@@ -184,14 +184,14 @@ class ResourcesOperation(Operation):
 
 
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
-    r"""Add two resources assuming the circuits are executed in series.
+    r"""Add two :class:`~resource.Resources` assuming the circuits are executed in series.
 
     Args:
-        r1 (Resources): A Resources object to add.
-        r2 (Resources): A Resources object to add.
+        r1 (Resources): a Resources object to add
+        r2 (Resources): a Resources object to add
 
     Returns:
-        Resources: The combined resources of r1 and r2.
+        Resources: the combined resources of r1 and r2
 
     .. details::
 
@@ -221,7 +221,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
 
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
-    r"""Add two resources assuming the circuits are executed in parallel.
+    r"""Add two :class:`~resource.Resources` assuming the circuits are executed in parallel.
 
     Args:
         r1 (Resources): A Resources object to add.
@@ -236,7 +236,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
         >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-        >>> print(add_in_parallel(r1, r2))
+        >>> print(qml.resource.add_in_parallel(r1, r2))
         wires: 4
         gates: 4
         depth: 0
@@ -257,12 +257,12 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
-def mul_in_series(r1: Resources, scalar: int) -> Resources:
-    """Multiply the Resources object by a scalar as if the circuit was repeated
+def mul_in_series(resources: Resources, scalar: int) -> Resources:
+    """Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
     that many times in series.
 
     Args:
-        r1 (Resources): A Resources object to be scaled.
+        resources (Resources): A Resources object to be scaled.
         scalar (int): The scalar to multiply the Resources object by.
 
     Returns:
@@ -284,18 +284,18 @@ def mul_in_series(r1: Resources, scalar: int) -> Resources:
         {1: 2, 2: 2}
     """
 
-    new_wires = r1.num_wires
-    new_gates = scalar * r1.num_gates
-    new_gate_types = _scale_dict(r1.gate_types, scalar)
-    new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
-    new_shots = scalar * r1.shots
-    new_depth = scalar * r1.depth
+    new_wires = resources.num_wires
+    new_gates = scalar * resources.num_gates
+    new_gate_types = _scale_dict(resources.gate_types, scalar)
+    new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
+    new_shots = scalar * resources.shots
+    new_depth = scalar * resources.depth
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
 def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
-    """Multiply the Resources object by a scalar as if the circuit was repeated
+    """Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
     that many times in parallel.
 
     Args:
@@ -310,7 +310,7 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
         **Example**
 
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-        >>> print(mul_in_parallel(r1, 2))
+        >>> print(qml.resource.mul_in_parallel(r1, 2))
         wires: 4
         gates: 4
         depth: 0
@@ -395,7 +395,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
 
 def _combine_dict(dict1: dict, dict2: dict):
-    r"""Private function which combines two dictionaries together."""
+    r"""Combines two dictionaries and adds values of common keys."""
     combined_dict = copy.copy(dict1)
 
     for k, v in dict2.items():
@@ -408,7 +408,7 @@ def _combine_dict(dict1: dict, dict2: dict):
 
 
 def _scale_dict(dict1: dict, scalar: int):
-    r"""Private function which scales the values in a dictionary."""
+    r"""Scales the values in a dictionary with a scalar."""
 
     combined_dict = copy.copy(dict1)
 
@@ -455,6 +455,15 @@ def _count_resources(tape) -> Resources:
 
 
 def _add_shots(s1: Shots, s2: Shots) -> Shots:
+    """Add two :class:`pennylane.measurements.Shots` by concatenating their shot vectors.
+
+    Args:
+        s1 (Shots): a Shots object to add
+        s2 (Shots): a Shots object to add
+
+    Returns:
+        Shots: a Shots object built by concatenating the shot vectors of s1 and s2
+    """
     if s1.total_shots is None:
         return s2
 

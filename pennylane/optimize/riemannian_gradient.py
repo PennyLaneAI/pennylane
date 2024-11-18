@@ -267,7 +267,7 @@ class RiemannianGradientOptimizer:
         self.circuit = circuit
         self.circuit.construct([], {})
         self.hamiltonian = circuit.func().obs
-        if not isinstance(self.hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if not isinstance(self.hamiltonian, qml.ops.LinearCombination):
             raise TypeError(
                 f"circuit must return the expectation value of a Hamiltonian,"
                 f"received {type(circuit.func().obs)}"
@@ -280,9 +280,7 @@ class RiemannianGradientOptimizer:
                 f"optimizing a {self.nqubits} qubit circuit may be slow.",
                 UserWarning,
             )
-        if restriction is not None and not isinstance(
-            restriction, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
-        ):
+        if restriction is not None and not isinstance(restriction, qml.ops.LinearCombination):
             raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,
@@ -383,8 +381,9 @@ class RiemannianGradientOptimizer:
 
         obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
         # get all circuits we need to calculate the coefficients
+        tape = qml.workflow.construct_tape(self.circuit)()
         circuits = algebra_commutator(
-            self.circuit.qtape,
+            tape,
             obs_groupings,
             self.lie_algebra_basis_names,
             self.nqubits,

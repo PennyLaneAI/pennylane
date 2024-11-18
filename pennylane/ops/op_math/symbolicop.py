@@ -210,7 +210,7 @@ class ScalarSymbolicOp(SymbolicOp):
     @property
     @handle_recursion_error
     def has_matrix(self):
-        return self.base.has_matrix or isinstance(self.base, qml.ops.Hamiltonian)
+        return self.base.has_matrix
 
     @property
     @handle_recursion_error
@@ -259,10 +259,7 @@ class ScalarSymbolicOp(SymbolicOp):
             tensor_like: matrix representation
         """
         # compute base matrix
-        if isinstance(self.base, qml.ops.Hamiltonian):
-            base_matrix = qml.matrix(self.base)
-        else:
-            base_matrix = self.base.matrix()
+        base_matrix = self.base.matrix()
 
         scalar_interface = qml.math.get_interface(self.scalar)
         scalar = self.scalar

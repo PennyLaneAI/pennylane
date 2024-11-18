@@ -14,6 +14,7 @@
 """Unit tests for the QuantumTape"""
 # pylint: disable=protected-access,too-few-public-methods
 import copy
+import warnings
 from collections import defaultdict
 
 import numpy as np
@@ -32,6 +33,13 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def TestOperationMonkeypatching():
@@ -136,23 +144,6 @@ class TestConstruction:
             op_ = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
             t_obs2 = qml.Hadamard(2) @ t_obs1
-            qml.expval(t_obs2)
-
-        assert tape.operations == [op_]
-        assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.measurements.Expectation
-        assert tape.measurements[0].obs is t_obs2
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_tensor_observables_tensor_init(self):
-        """Test that tensor observables are correctly processed from the annotated
-        queue. Here, we test multiple tensor observables constructed via explicit
-        Tensor creation."""
-
-        with QuantumTape() as tape:
-            op_ = qml.RX(1.0, wires=0)
-            t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
-            t_obs2 = qml.operation.Tensor(t_obs1, qml.Hadamard(2))
             qml.expval(t_obs2)
 
         assert tape.operations == [op_]
