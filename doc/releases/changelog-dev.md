@@ -66,6 +66,23 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
+  `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
+  Note that `qml.Hamiltonian` will continue to dispatch to `qml.ops.LinearCombination`. For more information, 
+  check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
+  [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
+
+* The developer-facing `qml.utils` module has been removed. Specifically, the
+following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
+
+  * `qml.utils._flatten`, `qml.utils.unflatten` has been moved and renamed to `qml.optimize.qng._flatten_np` and `qml.optimize.qng._unflatten_np` respectively.
+
+  * `qml.utils._inv_dict` and `qml._get_default_args` have been removed.
+
+  * `qml.utils.pauli_eigs` has been moved to `qml.pauli.utils`.
+
+  * `qml.utils.expand_vector` has been moved to `qml.math.expand_vector`.
+  
 * The `qml.qinfo` module has been removed. Please see the respective functions in the `qml.math` and `qml.measurements`
   modules instead.
   [(#6584)](https://github.com/PennyLaneAI/pennylane/pull/6584)

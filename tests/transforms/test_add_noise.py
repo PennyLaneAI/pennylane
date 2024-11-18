@@ -106,11 +106,8 @@ class TestAddNoise:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -142,11 +139,8 @@ class TestAddNoise:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -245,11 +239,8 @@ class TestAddNoiseInterface:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 2
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
+
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
         assert tape.observables[1].name == "PauliZ"
