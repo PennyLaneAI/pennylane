@@ -313,7 +313,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         [expval] = tape.measurements
         coeffs, observables = (
             expval.obs.terms()
-            if isinstance(expval.obs, (qml.ops.LinearCombination, qml.ops.Hamiltonian))
+            if isinstance(expval.obs, qml.ops.LinearCombination)
             else ([1.0], [expval.obs])
         )
 

@@ -34,6 +34,16 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~ResourceOperator
 
+.. currentmodule:: pennylane.labs
+
+Modules
+~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    dla
+
 """
 
 from .resource_estimation import (
@@ -42,4 +52,8 @@ from .resource_estimation import (
     ResourceOperator,
 )
 
+from pennylane.labs import dla
+
+
 __all__ = ["Resources", "CompressedResourceOp", "ResourceOperator"]
+

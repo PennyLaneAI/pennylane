@@ -310,7 +310,7 @@ class TestToOpenFermion:
         assert q_op == of_op
 
     INVALID_OPS = (
-        qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+        qml.prod(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
         qml.prod(qml.PauliX(0), qml.Hadamard(1)),
         qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
     )
@@ -321,7 +321,7 @@ class TestToOpenFermion:
         _match = "Expected a Pennylane operator with a valid Pauli word representation,"
 
         pl_op = qml.ops.LinearCombination(
-            np.array([0.1 + 0.0j, 0.0]), [qml.operation.Tensor(qml.PauliX(0)), op]
+            np.array([0.1 + 0.0j, 0.0]), [qml.prod(qml.PauliX(0)), op]
         )
         with pytest.raises(ValueError, match=_match):
             qml.to_openfermion(qml.to_openfermion(pl_op))
