@@ -32,8 +32,8 @@ from pennylane.labs.dla import (
 )
 
 
-@pytest.mark.parametrize("n", [2, 3, 4])
 @pytest.mark.parametrize("dense", [False, True])
+@pytest.mark.parametrize("n", [2, 3, 4])
 def test_kak_Ising(n, dense):
     """Basic test for khk decomposition on Ising model"""
     gens = [X(i) @ X(i + 1) for i in range(n - 1)]

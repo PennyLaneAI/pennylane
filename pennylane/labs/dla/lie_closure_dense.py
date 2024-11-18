@@ -24,6 +24,8 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
+from .dense_util import trace_inner_product
+
 
 def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis_length: int = 0):
     """Find a linearly independent basis of a list of (skew-) Hermitian matrices
@@ -44,7 +46,6 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
     if tol is None:
         tol = 1e-10
 
-    dim = matrices[0].shape[0]
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
         if not np.allclose(A.conj().T, A):
@@ -54,13 +55,9 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
         B = A.copy()
         if len(basis) > 0:
-            B -= np.tensordot(
-                np.tensordot(np.array(basis).conj(), A, axes=[[1, 2], [0, 1]]),
-                basis,
-                axes=[[0], [0]],
-            )
-        if (norm := np.linalg.norm(B)) > tol:  # Tolerance for numerical stability
-            B /= norm / dim
+            B -= np.tensordot(trace_inner_product(np.array(basis), A), basis, axes=[[0], [0]])
+        if (norm := np.sqrt(trace_inner_product(B, B))) > tol:  # Tolerance for numerical stability
+            B /= norm
             basis.append(B)
     return np.array(basis)
 
