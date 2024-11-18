@@ -26,7 +26,7 @@ from typing import Optional, Union
 import pennylane as qml
 from pennylane import Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
-from pennylane.operation import StatePrepBase, Tensor
+from pennylane.operation import StatePrepBase
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import WireError
@@ -458,17 +458,10 @@ def validate_observables(
     >>> validate_observables(tape, accepted_observable)
     qml.DeviceError: Observable Z(0) + Y(0) not supported on device
 
-    Note that if the observable is a :class:`~.Tensor`, the validation is run on each object in the
-    ``Tensor`` instead.
-
     """
     for m in tape.measurements:
-        if m.obs is not None:
-            if isinstance(m.obs, Tensor):
-                if any(not stopping_condition(o) for o in m.obs.obs):
-                    raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
-            elif not stopping_condition(m.obs):
-                raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
+        if m.obs is not None and not stopping_condition(m.obs):
+            raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
 
     return (tape,), null_postprocessing
 
