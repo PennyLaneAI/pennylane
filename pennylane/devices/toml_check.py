@@ -21,6 +21,7 @@ Lark grammar reference:
 """
 
 # pragma: no cover
+# pylint: disable=unused-import
 
 from textwrap import dedent
 
