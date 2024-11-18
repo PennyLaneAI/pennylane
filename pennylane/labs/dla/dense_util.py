@@ -555,7 +555,7 @@ def op_to_adjvec(
             ops = np.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
 
         basis = np.array(basis)
-        res = trace_inner_product(ops, basis)
+        res = trace_inner_product(np.array(ops), basis)
         if is_orthogonal:
             norm = np.einsum("bij,bji->b", basis, basis) / basis[0].shape[0]
             return res / norm
