@@ -44,7 +44,7 @@ parser = Lark(
                qjit_measurement_processes_section? \
                compilation_section \
                pennylane_compilation_section? \
-               qjit_compilation_section? \
+               qjit_compilation_section?
         schema_body: schema_decl
         gates_section: "[operators.gates]" operator_decl*
         pennylane_gates_section: "[pennylane.operators.gates]" operator_decl*
@@ -72,8 +72,8 @@ parser = Lark(
             "qjit_compatible" | "runtime_code_generation" | "dynamic_qubit_management" | \
             "overlapping_observables" | "non_commuting_observables" | "initial_state_prep" | \
         ) "=" boolean
-        mcm_option: "supported_mcm_methods" "=" "[" (name ("," name)*)? "]"
-        name: /[a-zA-Z0-9_]+/
+        mcm_option: "supported_mcm_methods" "=" "[" ("\\"" name "\\"" ("," "\\"" name "\\"" )*)? "]"
+        name: /[a-zA-Z0-9_-]+/
         boolean: "true" | "false"
         COMMENT: "#" /./*
         %import common.WS
