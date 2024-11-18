@@ -19,10 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane import numpy as pnp
-from pennylane.qchem.vibrational.bosonic import (
-    BoseWord,
-    BoseSentence,
-)
+from pennylane.qchem.vibrational.bosonic import BoseSentence, BoseWord
 
 
 bw1 = BoseWord({(0, 0): "+", (1, 1): "-"})
@@ -164,6 +161,10 @@ class TestBoseWord:
                         BoseWord({}): 1.0,
                     }
                 ),
+            ),
+            (
+                BoseWord({(0, 0): "-", (1, 1): "-", (2, 2): "+"}, True),
+                BoseSentence({BoseWord({(0, 2): "+", (1, 0): "-", (2, 1): "-"}): 1.0}),
             ),
         ],
     )
