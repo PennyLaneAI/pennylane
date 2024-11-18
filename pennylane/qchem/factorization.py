@@ -14,7 +14,11 @@
 """
 This module contains the functions needed for two-electron tensor factorization.
 """
+
+from functools import partial
+
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 
@@ -413,3 +417,73 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
         chemist_one_body_coeffs += one_body_coeffs
 
     return (x for x in [chemist_one_body_coeffs, chemist_two_body_coeffs] if x is not None)
+
+
+def symmetry_shift(core, one, two, n_elec=None, verbose=False):
+    """Performs a symmetry-shift on the two-electron integral"""
+    norb = one.shape[0]
+    ki_vec = np.array([0.0, 0.0])
+    xi_mat = np.zeros((norb, norb))
+    xi_idx = np.tril_indices_from(xi_mat)
+    xi_vec = xi_mat[xi_idx]
+
+    params = np.hstack((ki_vec, xi_vec))
+    cost_func = partial(
+        _symmetry_shift_two_body_loss, two=two, xi_idx=xi_idx
+    )  # Step 1: Reduce norm of two-body term
+
+    res_two = sp.optimize.minimize(cost_func, params, method="L-BFGS-B")
+    _, k2, xi, _, N2, F_ = _symmetry_shift_terms(res_two.x, xi_idx, norb)
+    new_two = two - k2 * N2 - F_ / 4
+
+    params = np.hstack(([0.0, k2], xi[xi_idx]))
+    cost_func = partial(
+        _symmetry_shift_one_body_loss, one=one, n_elec=n_elec, xi_idx=xi_idx
+    )  # Step 2: Reduce norm of one-body term
+
+    res_one = sp.optimize.minimize(cost_func, params, method="L-BFGS-B")
+    k1, _, _, N1, _, _ = _symmetry_shift_terms(res_one.x, xi_idx, norb)
+    new_core = core + k1 * n_elec + k2 * n_elec**2
+    new_one = one - k1 * N1 + n_elec * xi / 2
+
+    if verbose:
+        step_cost0 = np.linalg.norm(two) + np.linalg.norm(one, ord="fro")
+        step_cost1 = np.linalg.norm(new_two) + np.linalg.norm(one, ord="fro")
+        step_cost2 = np.linalg.norm(new_two) + np.linalg.norm(new_one, ord="fro")
+
+        print(f"Converged? : Step 1 - {res_two.success}, Step 2 - {res_one.success}")
+        print(f"Parameters : [k1, k2, *xi] - {np.hstack(([k1, k2], xi[xi_idx]))}")
+        print(f"Reduction (Step 1): {(step_cost0 - step_cost1) / step_cost0}")
+        print(f"Reduction (Step 2): {(step_cost0 - step_cost2) / step_cost0}")
+
+    return new_core, new_one, new_two
+
+
+def _symmetry_shift_terms(params, xi_idx, norb):
+    """Computes the terms for symmetry shift"""
+    (k1, k2), xi_vec = params[:2], params[2:]
+    if not xi_vec.size:
+        xi_vec = np.zeros_like(xi_idx[0])
+    xi = np.zeros((norb, norb))
+    xi[xi_idx], xi[xi_idx[::-1]] = xi_vec, xi_vec
+
+    N1 = np.eye(norb)
+    N2 = np.einsum("pq,rs->pqrs", N1, N1)
+    T_ = np.einsum("pq,rs->pqrs", xi, N1)
+    F_ = T_ + np.transpose(T_, (2, 3, 0, 1))
+
+    return k1, k2, xi, N1, N2, F_
+
+
+def _symmetry_shift_two_body_loss(params, two, xi_idx):
+    """Two body loss term for symmetry shift"""
+    _, k2, _, _, N2, F_ = _symmetry_shift_terms(params, xi_idx, two.shape[0])
+    new_two = two - k2 * N2 - F_ / 4
+    return np.linalg.norm(new_two)
+
+
+def _symmetry_shift_one_body_loss(params, one, n_elec, xi_idx):
+    """One body loss term for symmetry shift"""
+    k1, _, xi, N1, _, _ = _symmetry_shift_terms(params, xi_idx, one.shape[0])
+    new_one = one - k1 * N1 + n_elec * xi / 2
+    return np.linalg.norm(new_one)
