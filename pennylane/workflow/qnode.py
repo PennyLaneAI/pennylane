@@ -152,17 +152,17 @@ def _resolve_mcm_config(
 
 
 def _resolve_execution_config(
-    tapes: QuantumScriptBatch,
-    device: "qml.devices.Device",
     execution_config: "qml.devices.ExecutionConfig",
+    device: "qml.devices.Device",
+    tapes: QuantumScriptBatch,
     transform_program: TransformProgram,
 ) -> "qml.devices.ExecutionConfig":
     """Resolves the execution configuration for non-device specific properties.
 
     Args:
-        tapes (QuantumScriptBatch): a batch of tapes
-        device (qml.devices.Device): a Pennylane device
         execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
+        device (qml.devices.Device): a Pennylane device
+        tapes (QuantumScriptBatch): a batch of tapes
         transform_program (TransformProgram): a program of transformations to be applied to the tapes
 
     Returns:
@@ -176,16 +176,14 @@ def _resolve_execution_config(
         and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
-        gradient_fn = qml.gradients.param_shift
+        replace(execution_config, gradient_method=qml.gradients.param_shift)
     else:
-        gradient_fn = qml.workflow._get_gradient_fn(
-            device, execution_config.gradient_method, tape=tapes[0]
+        execution_config = qml.workflow._resolve_diff_method(
+            execution_config, device, tape=tapes[0]
         )
 
-    if gradient_fn is qml.gradients.param_shift_cv:
+    if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
-
-    updated_values["gradient_method"] = gradient_fn
 
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
@@ -976,7 +974,7 @@ class QNode:
 
         config = _make_execution_config(self, self.diff_method, mcm_config=mcm_config)
         config = _resolve_execution_config(
-            (self._tape,), self.device, config, self.transform_program
+            config, self.device, (self._tape,), self.transform_program
         )
         device_transform_program, config = self.device.preprocess(execution_config=config)
 

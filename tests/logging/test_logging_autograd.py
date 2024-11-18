@@ -80,8 +80,8 @@ class TestLogging:
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
-                "pennylane.workflow.get_gradient_fn",
-                ["Calling <_get_gradient_fn(device=<default.qubit"],
+                "pennylane.workflow.resolve_diff_method",
+                ["Calling <_resolve_diff_method("],
             ),
             (
                 "pennylane.devices.default_qubit",
