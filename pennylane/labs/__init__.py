@@ -24,8 +24,8 @@ advanced quantum computing research.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
-Resource Estimation
-~~~~~~~~~~~~~~~~~~~
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -42,4 +42,4 @@ from .resource_estimation import (
     ResourceOperator,
 )
 
-__all__ = ["Resources", "CompressedResourceOp"]
+__all__ = ["Resources", "CompressedResourceOp", "ResourceOperator"]
