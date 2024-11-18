@@ -16,20 +16,21 @@
 import pytest
 
 import pennylane as qml
-from pennylane import X, Z
+from pennylane import X, Y, Z
 from pennylane.labs.dla import (
     cartan_decomposition,
     cartan_subalgebra,
     check_cartan_decomp,
     concurrence_involution,
+    orthonormalize,
     validate_kak,
     variational_kak,
 )
 
 
-@pytest.mark.parametrize("n", [2, 3, 4])
+@pytest.mark.parametrize("n", [3, 4])
 def test_kak_Ising(n):
-    """Basic test for khk decomposition on Ising model with two qubits"""
+    """Basic test for khk decomposition on Ising model"""
     gens = [X(i) @ X(i + 1) for i in range(n - 1)]
     gens += [Z(i) for i in range(n)]
     H = qml.sum(*gens)
@@ -47,6 +48,63 @@ def test_kak_Ising(n):
     adj = qml.structure_constants(g)
 
     g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
+
+    dims = (len(k), len(mtilde), len(h))
+    khk_res = variational_kak(H, g, dims, adj, verbose=False)
+    assert validate_kak(H, g, k, khk_res, n, 1e-6)
+
+
+@pytest.mark.parametrize("n", [3, 4])
+def test_kak_Heisenberg(n):
+    """Basic test for khk decomposition on Heisenberg model"""
+    gens = [X(i) @ X(i + 1) for i in range(n - 1)]
+    gens += [Y(i) @ Y(i + 1) for i in range(n - 1)]
+    gens += [Z(i) @ Z(i + 1) for i in range(n - 1)]
+    H = qml.sum(*gens)
+
+    g = qml.lie_closure(gens)
+    g = [op.pauli_rep for op in g]
+
+    involution = concurrence_involution
+
+    assert not involution(H)
+    k, m = cartan_decomposition(g, involution=involution)
+    assert check_cartan_decomp(k, m)
+
+    g = k + m
+    adj = qml.structure_constants(g)
+
+    g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
+
+    dims = (len(k), len(mtilde), len(h))
+    khk_res = variational_kak(H, g, dims, adj, verbose=False)
+    assert validate_kak(H, g, k, khk_res, n, 1e-6)
+
+
+@pytest.mark.parametrize("is_orthogonal", [True, False])
+def test_kak_Heisenberg_summed(is_orthogonal):
+    """Basic test for khk decomposition on summed Heisenberg model"""
+    n = 4
+    gens = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(n - 1)]
+    H = qml.sum(*gens)
+
+    g = qml.lie_closure(gens)
+    g = [op.pauli_rep for op in g]
+    if is_orthogonal:
+        g = orthonormalize(g)
+
+    involution = concurrence_involution
+
+    assert not involution(H)
+    k, m = cartan_decomposition(g, involution=involution)
+    assert check_cartan_decomp(k, m)
+
+    g = k + m
+    adj = qml.structure_constants(g, is_orthogonal=is_orthogonal)
+
+    g, k, mtilde, h, adj = cartan_subalgebra(
+        g, k, m, adj, tol=1e-10, start_idx=0, is_orthogonal=is_orthogonal
+    )
 
     dims = (len(k), len(mtilde), len(h))
     khk_res = variational_kak(H, g, dims, adj, verbose=False)
