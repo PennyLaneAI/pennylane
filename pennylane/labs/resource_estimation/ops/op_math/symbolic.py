@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Resource operators for controlled operations."""
+r"""Resource operators for symbolic operations."""
 from collections import defaultdict
 
-import pennylane as qml
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.resource_container import _combine_dict, _scale_dict
 from pennylane.ops.op_math.adjoint import AdjointOperation
+from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import PowOperation
 
 # pylint: disable=too-many-ancestors,arguments-differ
@@ -51,7 +51,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         )
 
 
-class ResourceControlled(qml.ops.Controlled, re.ResourceOperator):
+class ResourceControlled(ControlledOp, re.ResourceOperator):
     """Resource class for Controlled"""
 
     @staticmethod
