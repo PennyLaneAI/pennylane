@@ -82,11 +82,10 @@ def _get_gradient_fn(
     if diff_method in gradient_transform_map:
         return gradient_transform_map[diff_method]
 
-    if isinstance(diff_method, str):
-        raise qml.QuantumFunctionError(
-            f"Differentiation method {diff_method} not recognized. Allowed "
-            f"options are {tuple(get_args(SupportedDiffMethods))}."
-        )
-
     if isinstance(diff_method, TransformDispatcher):
         return diff_method
+
+    raise qml.QuantumFunctionError(
+        f"Differentiation method {diff_method} not recognized. Allowed "
+        f"options are {tuple(get_args(SupportedDiffMethods))}."
+    )
