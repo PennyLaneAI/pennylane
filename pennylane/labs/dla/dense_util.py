@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-# pylint: disable=too-many-return-statements, missing-function-docstring
+# pylint: disable=too-many-return-statements, missing-function-docstring, possibly-used-before-assignment
 from collections.abc import Iterable
 from functools import reduce
 from itertools import combinations, combinations_with_replacement
