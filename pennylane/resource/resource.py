@@ -256,12 +256,12 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
-def mul_in_series(r1: Resources, scalar: int) -> Resources:
+def mul_in_series(resources: Resources, scalar: int) -> Resources:
     """Multiply the Resources object by a scalar as if the circuit was repeated
     that many times in series.
 
     Args:
-        r1 (Resources): A Resources object to be scaled.
+        resources (Resources): A Resources object to be scaled.
         scalar (int): The scalar to multiply the Resources object by.
 
     Returns:
@@ -283,12 +283,12 @@ def mul_in_series(r1: Resources, scalar: int) -> Resources:
         {1: 2, 2: 2}
     """
 
-    new_wires = r1.num_wires
-    new_gates = scalar * r1.num_gates
-    new_gate_types = _scale_dict(r1.gate_types, scalar)
-    new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
-    new_shots = scalar * r1.shots
-    new_depth = scalar * r1.depth
+    new_wires = resources.num_wires
+    new_gates = scalar * resources.num_gates
+    new_gate_types = _scale_dict(resources.gate_types, scalar)
+    new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
+    new_shots = scalar * resources.shots
+    new_depth = scalar * resources.depth
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
