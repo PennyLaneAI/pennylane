@@ -150,20 +150,3 @@ jobs:
             gh pr edit --title "$PR_TITLE" --body "$PR_BODY"
             exit 0
           fi
-
-          # if [ -n "${EXISTING_PR}" ]; then
-          #   echo "Open PR already exists ==> ${EXISTING_PR}"
-          #   echo "Editing with provided title and body..."
-          #   gh pr edit --title "$PR_TITLE" --body "$PR_BODY"
-          #   exit 0
-          # elif [ -n "${EXISTING_CLOSED_PR}" ] && [ ${{ steps.prep_commit.outputs.branch_exists }}=='true' ]; then
-          #   echo "Reopening PR... ${EXISTING_CLOSED_PR}"
-          #   gh pr reopen "${EXISTING_CLOSED_PR}"
-          #   echo "Editing with provided title and body..."
-          #   gh pr edit --title "$PR_TITLE" --body "$PR_BODY"
-          #   exit 0
-          # else
-          #   echo "Creating PR..."
-          #   gh pr create --title "$PR_TITLE" --body "$PR_BODY"
-          #   exit 0
-          # fi
