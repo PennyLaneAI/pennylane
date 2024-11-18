@@ -113,7 +113,7 @@ def create_operator_primitive(
     @primitive.def_impl
     def _(*args, **kwargs):
 
-        print(f"primitive.def_impl called")
+        print(f"primitive.def_impl called with {args}, {kwargs}")
 
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
@@ -136,7 +136,7 @@ def create_operator_primitive(
     @primitive.def_abstract_eval
     def _(*args, **kwargs):
 
-        print(f"primitive.def_abstract_eval called")
+        print(f"primitive.def_abstract_eval called with {args}, {kwargs}")
 
         batch_size = None
 
