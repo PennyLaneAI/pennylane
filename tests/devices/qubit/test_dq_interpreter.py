@@ -297,6 +297,18 @@ class TestSampling:
         res1, res2 = g()
         assert not qml.math.allclose(res1, res2)
 
+    def test_more_executions_same_interpreter_different_results(self):
+        """Test that if multiple executions occur with the same interpreter, they will have different results."""
+
+        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(76543))
+        def f():
+            qml.Hadamard(0)
+            return qml.sample(0)
+
+        s1 = f()
+        s2 = f()  # should be done with different key, leading to different results.
+        assert not qml.math.allclose(s1, s2)
+
 
 class TestQuantumHOP:
     """Tests for the quantum higher order primitives: adjoint and ctrl."""

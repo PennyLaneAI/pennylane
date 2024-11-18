@@ -44,8 +44,11 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         num_wires (int): the number of wires to initialize the state with
         shots (int | None): the number of shots to use for the execution. Shot vectors are not supported yet.
         key (None, jax.numpy.ndarray): the ``PRNGKey`` to use for random number generation.
->>> from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
->>> qml.capture.enable()
+
+
+    >>> from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
+    >>> qml.capture.enable()
+    >>> import jax
     >>> key = jax.random.PRNGKey(1234)
     >>> dq = DefaultQubitInterpreter(num_wires=2, shots=None, key=key)
     >>> @qml.for_loop(2)
@@ -117,8 +120,8 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         # else set by copying a parent interpreter and we need to modify same stateref
 
     def cleanup(self) -> None:
+        self.initial_key = self.key  # be cautious of leaked tracers, but we should be fine.
         self.stateref = None
-        # Open question: should we update initial key?
 
     def interpret_operation(self, op):
         self.state = apply_operation(op, self.state)
