@@ -465,7 +465,7 @@ def test_operator_properties():
         controllable=True,
         invertible=True,
         differentiable=False,
-        conditions=[ExecutionCondition.ANALYTIC_MODE_ONLY],
+        conditions=[],
     )
     intersection = prop1 & prop2
     assert intersection.controllable is True

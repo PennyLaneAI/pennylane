@@ -72,11 +72,12 @@ class OperatorProperties:
     conditions: list[ExecutionCondition] = field(default_factory=list)
 
     def __and__(self, other: "OperatorProperties") -> "OperatorProperties":
+        # Take the intersection of support but the union of constraints (conditions)
         return OperatorProperties(
             invertible=self.invertible and other.invertible,
             controllable=self.controllable and other.controllable,
             differentiable=self.differentiable and other.differentiable,
-            conditions=list(set(self.conditions) & set(other.conditions)),
+            conditions=list(set(self.conditions) | set(other.conditions)),
         )
 
 
