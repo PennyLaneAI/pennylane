@@ -471,7 +471,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
 
     if isinstance(basis, np.ndarray) or all(isinstance(op, np.ndarray) for op in basis):
         if not is_orthogonal:
-            gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]) / basis[0].shape[0]
+            gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real / basis[0].shape[0]
             adj_vecs = np.tensordot(adj_vecs, sqrtm(np.linalg.pinv(gram)), axes=[[1], [0]])
         return np.tensordot(adj_vecs, basis, axes=1)
 
@@ -559,7 +559,7 @@ def op_to_adjvec(
         if is_orthogonal:
             norm = np.einsum("bij,bji->b", basis, basis) / basis[0].shape[0]
             return res / norm
-        gram = trace_inner_product(basis, basis)
+        gram = trace_inner_product(basis, basis).real
         return np.einsum("ij,kj->ki", sqrtm(np.linalg.pinv(gram)), res)
 
     raise NotImplementedError(
