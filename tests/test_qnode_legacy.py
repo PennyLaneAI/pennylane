@@ -1132,7 +1132,7 @@ class TestShots:
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
-        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
+        dev = qml.device("default.mixed", wires=[0, 1], shots=10)
 
         def ansatz0(a, shots):
             qml.RX(a, wires=shots)
