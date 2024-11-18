@@ -27,7 +27,7 @@ from pennylane.labs.resource_estimation import (
 
 
 class ResourceQFT(qml.QFT, ResourceOperator):
-    """Resource class for QFT
+    """Resource class for QFT.
 
     Resources:
         The resources are obtained from the textbook decomposition of QFT. See
@@ -36,12 +36,6 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
-        if not isinstance(num_wires, int):
-            raise TypeError("num_wires must be an int.")
-
-        if num_wires < 1:
-            raise ValueError("num_wires must be greater than 0.")
-
         gate_types = {}
 
         hadamard = ResourceHadamard.resource_rep()
@@ -54,7 +48,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
     @classmethod
