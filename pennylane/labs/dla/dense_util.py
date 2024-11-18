@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-# pylint: disable=missing-function-docstring, possibly-used-before-assignment
-
+# pylint: disable=too-many-return-statements, missing-function-docstring, possibly-used-before-assignment
 from functools import reduce
 from itertools import combinations, combinations_with_replacement
 from typing import Iterable, List, Optional, Union
@@ -236,9 +235,43 @@ def check_commutation(ops1, ops2, vspace):
     for o1 in ops1:
         for o2 in ops2:
             com = o1.commutator(o2)
-            assert_vals.append(not vspace.is_independent(com))
+            com.simplify()
+            if len(com) != 0:
+                assert_vals.append(not vspace.is_independent(com))
+            else:
+                assert_vals.append(True)
 
     return all(assert_vals)
+
+
+def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
+    """Helper function to check if all operators in a set of operators commute"""
+    if all(isinstance(op, PauliSentence) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj.commutator(oi)
+            com.simplify()
+            if len(com) != 0:
+                return False
+
+        return True
+
+    if all(isinstance(op, Operator) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = qml.simplify(qml.commutator(oj, oi))
+            if not qml.equal(com, 0 * qml.Identity()):
+                return False
+
+        return True
+
+    if all(isinstance(op, np.ndarray) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj @ oi - oi @ oj
+            if not np.allclose(com, np.zeros_like(com)):
+                return False
+
+        return True
+
+    return NotImplemented
 
 
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
@@ -263,6 +296,7 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
 
 
 def apply_basis_change(change_op, targets):
+    """Helper function for recursive Cartan decompositions"""
     if single_target := np.ndim(targets) == 2:
         targets = [targets]
     if isinstance(targets, list):

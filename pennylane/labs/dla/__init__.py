@@ -42,6 +42,7 @@ Utility functions
     ~pauli_coefficients
     ~check_cartan_decomp
     ~check_commutation
+    ~check_all_commuting
     ~apply_basis_change
     ~orthonormalize
     ~check_orthonormal
@@ -79,10 +80,12 @@ from .cartan import (
     concurrence_involution,
     recursive_cartan_decomposition,
 )
+
 from .dense_util import (
     adjvec_to_op,
     apply_basis_change,
     change_basis_ad_rep,
+    check_all_commuting,
     check_cartan_decomp,
     check_commutation,
     check_orthonormal,
@@ -104,3 +107,5 @@ from .involutions import (
     DIII,
     ClassB,
 )
+
+from .cartan_subalgebra import cartan_subalgebra
