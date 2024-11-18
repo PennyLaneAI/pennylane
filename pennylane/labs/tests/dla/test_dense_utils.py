@@ -19,7 +19,13 @@ from scipy.linalg import sqrtm
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.labs.dla import adjvec_to_op, op_to_adjvec, pauli_coefficients, pauli_decompose
+from pennylane.labs.dla import (
+    adjvec_to_op,
+    op_to_adjvec,
+    pauli_coefficients,
+    pauli_decompose,
+    trace_inner_product,
+)
 from pennylane.pauli import PauliSentence
 
 # Make an operator matrix on given wire and total wire count
@@ -280,6 +286,21 @@ class TestPauliDecompose:
             for _op, e in zip(op, expected):
                 assert isinstance(_op, qml.operation.Operator)
                 assert qml.equal(_op, e)
+
+
+@pytest.mark.parametrize("op1", [X(0), -0.8 * X(0) @ X(1), X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)])
+@pytest.mark.parametrize(
+    "op2", [X(0), X(0) + X(0) @ X(1), 0.2 * X(0) @ Y(2), X(0) @ Z(1) + X(1) @ X(2)]
+)
+def test_trace_inner_product_consistency(op1, op2):
+    """Test that the trace inner product norm for different operators is consistent"""
+    res1 = trace_inner_product(
+        qml.matrix(op1, wire_order=range(3)), qml.matrix(op2, wire_order=range(3))
+    )
+    res2 = trace_inner_product(op1.pauli_rep, op2.pauli_rep)
+    res3 = trace_inner_product(op1, op2)
+    assert np.allclose(res1, res2)
+    assert np.allclose(res1, res3)
 
 
 paulis_1_qubit = [op.pauli_rep for op in qml.pauli.pauli_group(1)]

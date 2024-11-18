@@ -205,7 +205,6 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
 
     >>> pauli_decompose(batch, tol=1e-6)
     [0.25 * X(0), 0.5 * Z(0)]
-
     """
     if tol is None:
         tol = 1e-10
@@ -227,6 +226,31 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
     if single_H:
         return H_ops[0]
     return H_ops
+
+
+def trace_inner_product(
+    A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
+):
+    r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`.
+    If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
+    inputs.
+    """
+    if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
+        return (A.pauli_rep @ B.pauli_rep).trace()
+
+    if not isinstance(A, type(B)):
+        raise TypeError("Both input operators need to be of the same type")
+
+    if isinstance(A, np.ndarray):
+        assert A.shape[-2:] == B.shape[-2:]
+        # The axes of the first input are switched, compared to tr[A@B], because we need to
+        # transpose A.
+        return np.tensordot(A.conj(), B, axes=[[-1, -2], [-1, -2]]) / A.shape[-1]
+
+    if isinstance(A, (PauliSentence, PauliWord)):
+        return (A @ B).trace()
+
+    raise NotImplementedError
 
 
 def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
