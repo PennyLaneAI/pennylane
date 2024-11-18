@@ -82,7 +82,7 @@ class Resources:
 
             >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
             >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-            >>> print(r1.__add__(r2))
+            >>> print(r1 + r2)
             wires: 2
             gates: 4
             depth: 0
@@ -107,7 +107,7 @@ class Resources:
 
             **Example**
             >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-            >>> print(r1.__mul__(2))
+            >>> print(r1 * 2)
             wires: 2
             gates: 4
             depth: 0
@@ -199,7 +199,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
         >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-        >>> print(r1 + r2)
+        >>> print(qml.resources.add_in_series(r1, r2))
         wires: 2
         gates: 4
         depth: 0
@@ -273,7 +273,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
         **Example**
 
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-        >>> print(r1 * 2)
+        >>> print(qml.resources.mul_in_series(r1, 2))
         wires: 2
         gates: 4
         depth: 0
@@ -299,8 +299,8 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
     that many times in parallel.
 
     Args:
-        r1 (Resources): a Resources object to be scaled
-        scalar (int): the scalar to multiply the Resources object by
+        r1 (Resources): a :class:`~resource.Resources` to be scaled
+        scalar (int): the scalar to multiply the :class:`~resource.Resources` by
 
     Returns:
         Resources: The combined resources
