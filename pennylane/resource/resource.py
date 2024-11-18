@@ -330,7 +330,7 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
 
 
 def _combine_dict(dict1: dict, dict2: dict):
-    r"""Private function which combines two dictionaries together."""
+    r"""Combines two dictionaries and adds values of common keys."""
     combined_dict = copy.copy(dict1)
 
     for k, v in dict2.items():
