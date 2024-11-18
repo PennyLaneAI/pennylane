@@ -38,9 +38,6 @@ Utility functions
     ~op_to_adjvec
     ~pauli_coefficients
     ~pauli_decompose
-    ~pauli_coefficients
-    ~orthonormalize
-    ~check_orthonormal
     ~trace_inner_product
 
 Involutions
