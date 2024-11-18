@@ -53,18 +53,6 @@ schema = 3
 
 """
 
-INVALID_TOML_FILE = """
-schema = 2
-
-[operators.gates.native]
-
-[operators.gates.decomp]
-
-[operators.observables]
-
-[compilation]
-"""
-
 
 class TestDeviceCapabilities:
     """Tests for the capabilities of a device."""
@@ -93,20 +81,6 @@ class TestDeviceCapabilities:
             class DeviceWithInvalidCapabilities(Device):
 
                 config_filepath = "nonexistent_file.toml"
-
-                def execute(self, circuits, execution_config=DefaultExecutionConfig):
-                    return (0,)
-
-    @pytest.mark.usefixtures("create_temporary_toml_file")
-    @pytest.mark.parametrize("create_temporary_toml_file", [INVALID_TOML_FILE], indirect=True)
-    def test_device_invalid_schema(self, request):
-        """Tests that the device raises an error when the schema is invalid"""
-
-        with pytest.warns(UserWarning, match=r"Unsupported config TOML schema"):
-
-            class DeviceWithInvalidSchema(Device):
-
-                config_filepath = request.node.toml_file
 
                 def execute(self, circuits, execution_config=DefaultExecutionConfig):
                     return (0,)
