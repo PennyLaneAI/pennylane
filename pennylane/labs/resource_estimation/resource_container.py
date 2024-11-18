@@ -38,7 +38,7 @@ class CompressedResourceOp:
         Hadamard(num_wires=1)
     """
 
-    def __init__(self, op_type, params: dict) -> None:
+    def __init__(self, op_type, params: dict, name=None) -> None:
         r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
         Args:
@@ -59,10 +59,10 @@ class CompressedResourceOp:
         if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
 
-        self._name = (op_type.__name__).replace("Resource", "")
         self.op_type = op_type
         self.params = params
-        self._hashable_params = tuple(params.items())
+        self._hashable_params = _make_hashable(params)
+        self._name = name or self.op_type.__name__.replace("Resource", "")
 
     def __hash__(self) -> int:
         return hash((self._name, self._hashable_params))
@@ -257,3 +257,10 @@ def _scale_dict(dict1: defaultdict, scalar: int, in_place=False):
         combined_dict[k] *= scalar
 
     return combined_dict
+
+
+def _make_hashable(d: dict) -> tuple:
+    if isinstance(d, dict):
+        return tuple((name, _make_hashable(value)) for name, value in d.items())
+
+    return d
