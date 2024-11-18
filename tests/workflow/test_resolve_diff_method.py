@@ -83,7 +83,7 @@ class TestCustomDeviceIntegration:
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
         config = ExecutionConfig(gradient_method="adjoint")
         with pytest.raises(
-            qml.QuantumFunctionError, match=r"does not support adjoint with the requested circuit"
+            qml.QuantumFunctionError, match=r"does not support adjoint with requested circuit"
         ):
             _resolve_diff_method(config, self.dev)
 
@@ -91,7 +91,7 @@ class TestCustomDeviceIntegration:
         """Test that an error is raised when backprop is requested for a device that does not support it."""
         config = ExecutionConfig(gradient_method="backprop")
         with pytest.raises(
-            qml.QuantumFunctionError, match=r"does not support backprop with the requested circuit"
+            qml.QuantumFunctionError, match=r"does not support backprop with requested circuit"
         ):
             _resolve_diff_method(config, self.dev)
 

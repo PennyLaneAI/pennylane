@@ -54,7 +54,7 @@ def _resolve_diff_method(
 
     if diff_method in {"backprop", "adjoint", "device"}:
         raise qml.QuantumFunctionError(
-            f"Device {device} does not support {diff_method} with the requested circuit."
+            f"Device {device} does not support {diff_method} with requested circuit."
         )
 
     if diff_method in {"best", "parameter-shift"}:

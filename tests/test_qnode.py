@@ -345,7 +345,7 @@ class TestValidation:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="does not support adjoint with the requested circuit",
+            match="does not support adjoint with requested circuit",
         ):
             circ(shots=1)
 
@@ -361,7 +361,7 @@ class TestValidation:
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="does not support backprop with the requested circuit"
+            qml.QuantumFunctionError, match="does not support backprop with requested circuit"
         ):
             qml.grad(circuit, argnum=0)([0.5])
 
