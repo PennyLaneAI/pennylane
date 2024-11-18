@@ -34,7 +34,7 @@ def _rotation_resources(epsilon=10e-3):
 
 
 class ResourceRZ(qml.RZ, re.ResourceOperator):
-    r"""Resource class for RZ
+    r"""Resource class for the RZ gate.
 
     Resources:
         The resources are estimated by approximating the gate with a series of T gates.
@@ -45,7 +45,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_rz"])
 
-    def resource_params(self):
+    def resource_params(self) -> dict:
         return {}
 
     @classmethod
