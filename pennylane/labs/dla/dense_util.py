@@ -431,12 +431,13 @@ def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
     return np.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
-def adjvec_to_op(adj_vecs, basis):
+def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     """Transform vectors representing operators in an operator basis back into operator format.
 
     Args:
         adj_vecs (np.ndarray): collection of vectors with shape ``(batch, len(basis))``
         basis (List[Union[PauliSentence, Operator, np.ndarray]]): collection of basis operators
+        is_orthogonal (bool): Whether the ``basis`` consists of orthogonal elements.
 
     Returns:
         list: collection of operators corresponding to the input vectors read in the input basis.
@@ -446,6 +447,11 @@ def adjvec_to_op(adj_vecs, basis):
     assert qml.math.shape(adj_vecs)[1] == len(basis)
 
     if all(isinstance(op, PauliSentence) for op in basis):
+        if not is_orthogonal:
+            gram = _gram_ps(basis)
+            adj_vecs = np.tensordot(
+                adj_vecs, np.linalg.pinv(scipy.linalg.sqrtm(gram)), axes=[[1], [1]]
+            )
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -454,6 +460,12 @@ def adjvec_to_op(adj_vecs, basis):
         return res
 
     if all(isinstance(op, Operator) for op in basis):
+        if not is_orthogonal:
+            basis_ps = [op.pauli_rep for op in basis]
+            gram = _gram_ps(basis_ps)
+            adj_vecs = np.tensordot(
+                adj_vecs, np.linalg.pinv(scipy.linalg.sqrtm(gram)), axes=[[1], [1]]
+            )
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -462,12 +474,24 @@ def adjvec_to_op(adj_vecs, basis):
         return res
 
     if isinstance(basis, np.ndarray) or all(isinstance(op, np.ndarray) for op in basis):
+        if not is_orthogonal:
+            gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]])
+            adj_vecs = np.tensordot(
+                adj_vecs, np.linalg.pinv(scipy.linalg.sqrtm(gram)), axes=[[1], [1]]
+            )
         return np.tensordot(adj_vecs, basis, axes=1)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
         "or not all operators are of the same type."
     )
+
+
+def _gram_ps(basis: Iterable[PauliSentence]):
+    gram = np.zeros((len(basis), len(basis)))
+    for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
+        gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
+    return gram
 
 
 def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bool = True):
@@ -481,10 +505,8 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
     else:
         # Fake the norm correction if we anyways will apply the inverse Gram matrix later
         norms_squared = np.ones(len(basis))
-        gram = np.zeros((len(basis), len(basis)))
-        for (i, b_i), (j, b_j) in combinations_with_replacement(enumerate(basis), r=2):
-            gram[i, j] = gram[j, i] = (b_i @ b_j).trace()
-        inv_gram = np.linalg.pinv(gram)
+        gram = _gram_ps(basis)
+        inv_gram = np.linalg.pinv(scipy.linalg.sqrtm(gram))
 
     for op in ops:
         rep = np.zeros((len(basis),))
@@ -544,7 +566,7 @@ def op_to_adjvec(
             norm = np.einsum("bij,bji->b", basis, basis)
             return res / norm
         gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]])
-        return np.einsum("ij,kj->ki", np.linalg.pinv(gram), res)
+        return np.einsum("ij,kj->ki", np.linalg.pinv(scipy.linalg.sqrtm(gram)), res)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "
