@@ -46,9 +46,9 @@ class ResourceOperator(ABC):
                 def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
                     gate_types = {}
 
-                    hadamard = CompressedResourceOp(ResourceHadamard, {})
-                    swap = CompressedResourceOp(ResourceSWAP, {})
-                    ctrl_phase_shift = CompressedResourceOp(ResourceControlledPhaseShift, {})
+                    hadamard = ResourceHadamard.resource_rep()
+                    swap = ResourceSWAP.resource_rep()
+                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
 
                     gate_types[hadamard] = num_wires
                     gate_types[swap] = num_wires // 2
@@ -56,8 +56,8 @@ class ResourceOperator(ABC):
 
                     return gate_types
 
-                def resource_params(self) -> dict:
-                    return {"num_wires": len(self.wires)}
+                def resource_params(self, num_wires) -> dict:
+                    return {"num_wires": num_wires}
 
                 @classmethod
                 def resource_rep(cls, num_wires) -> CompressedResourceOp:
@@ -68,7 +68,7 @@ class ResourceOperator(ABC):
     @staticmethod
     @abstractmethod
     def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        """Returns the Resource object. This method is only to be used inside
+        """Returns a dictionary to be used for internal tracking of resources. This method is only to be used inside
         the methods of classes inheriting from ResourceOperator."""
 
     @classmethod
