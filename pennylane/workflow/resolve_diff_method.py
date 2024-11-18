@@ -49,8 +49,7 @@ def _resolve_diff_method(
 
     if device.supports_derivatives(initial_config, circuit=tape):
         _, new_config = device.preprocess(initial_config)
-        updated_values["gradient_method"] = new_config.gradient_method
-        return replace(initial_config, **updated_values)
+        return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:
         raise qml.QuantumFunctionError(
