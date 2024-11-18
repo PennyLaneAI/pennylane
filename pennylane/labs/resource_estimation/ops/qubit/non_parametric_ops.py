@@ -34,6 +34,10 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @classmethod
+    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
 
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     r"""Resource class for the SWAP gate.
@@ -84,6 +88,10 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls, **kwargs):
+        return {cls.resource_rep(): 1}
 
 
 class ResourceT(qml.T, re.ResourceOperator):

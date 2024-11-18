@@ -98,36 +98,20 @@ class ResourceOperator(ABC):
         return self.__class__.resource_rep(**self.resource_params())
 
     @classmethod
-    def adjoint_resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
+    def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
         """Returns a compressed representation of the adjoint of the operator"""
-        raise CompressedRepNotDefined
+        raise ResourcesNotDefined
 
     @classmethod
-    def controlled_resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
+    def controlled_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
         """Returns a compressed representation of the controlled version of the operator"""
-        raise CompressedRepNotDefined
+        raise ResourcesNotDefined
 
     @classmethod
-    def pow_resource_rep(cls, exponent, *args, **kwargs) -> CompressedResourceOp:
+    def pow_resource_decomp(cls, z, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
         """Returns a compressed representation of the operator raised to a power"""
-        raise CompressedRepNotDefined
+        raise ResourcesNotDefined
 
-class ResourceSymbolicOperator(ResourceOperator):
-    """Base class for resources of symbolic operators"""
-
-    #pylint: disable=no-member
-    def resource_params(self):
-        return {
-            "base_class": type(self.base),
-            "base_params": self.base.resource_params()
-        }
-
-    @classmethod
-    def resource_rep(cls, base_class, base_params, **kwargs):
-        return re.CompressedResourceOp(cls, {"base_class": base_class, "base_params": base_params})
 
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
-
-class CompressedRepNotDefined(Exception):
-    """Exception to be raised when a compressed representation is not defined"""
