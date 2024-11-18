@@ -190,7 +190,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
         r2 (Resources): a Resources object to add
 
     Returns:
-        Resources: The combined resources of r1 and r2.
+        Resources: the combined resources of r1 and r2
 
     .. details::
 
