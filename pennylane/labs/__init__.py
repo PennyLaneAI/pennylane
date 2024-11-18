@@ -17,23 +17,6 @@ r"""
 This module contains experimental features enabling
 advanced quantum computing research.
 
-.. warning::
-
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
-.. currentmodule:: pennylane.labs.resource_estimation
-
-Resource Estimation Base Classes:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~Resources
-    ~CompressedResourceOp
-    ~ResourceOperator
-
 .. currentmodule:: pennylane.labs
 
 Modules
@@ -43,10 +26,12 @@ Modules
     :toctree: api
 
     dla
+    resource_estimation
 
 """
 
 from pennylane.labs import dla
+from pennylane.labs import resource_estimation
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
