@@ -38,10 +38,10 @@ def _get_abstract_operator() -> type:
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
 
-        def __init__(self, abstract_batch_size: int = None):
-            print("__init__ di AbstractOperator called")
+        # def __init__(self, abstract_batch_size: int = None):
+        #    print("__init__ di AbstractOperator called")
 
-            self._batch_size = abstract_batch_size
+        #    self._batch_size = abstract_batch_size
 
         # pylint: disable=missing-function-docstring
         def at_least_vspace(self):
@@ -126,8 +126,8 @@ def create_operator_primitive(
         args = args[:split]
 
         # Do we need to use the batch size here?
-        if "batch_size" in kwargs:
-            batch_size = kwargs.pop("batch_size")
+        # if "batch_size" in kwargs:
+        #    batch_size = kwargs.pop("batch_size")
 
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 
@@ -138,11 +138,11 @@ def create_operator_primitive(
 
         print(f"primitive.def_abstract_eval called with {args}, {kwargs}")
 
-        batch_size = None
+        # batch_size = None
 
-        if "batch_size" in kwargs:
-            batch_size = kwargs.pop("batch_size")
-
-        return abstract_type(batch_size)
+        # if "batch_size" in kwargs:
+        #    batch_size = kwargs.pop("batch_size")
+        # return abstract_type(batch_size)
+        return abstract_type()
 
     return primitive

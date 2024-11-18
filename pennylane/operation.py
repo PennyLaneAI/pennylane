@@ -708,9 +708,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     Optional[jax.core.Primitive]
     """
 
-    def __new__(cls, *args, **kwargs):
-        print(f"__new__ method of Operator called for instance of {cls}")
-        return super(Operator, cls).__new__(cls)  # Call parent __new__
+    # def __new__(cls, *args, **kwargs):
+    #    print(f"__new__ method of Operator called for instance of {cls}")
+    #    return super(Operator, cls).__new__(cls)  # Call parent __new__
 
     def __init_subclass__(cls, **_):
         print(f"__init_subclass__ di Operator called for {cls}")
@@ -728,23 +728,21 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         print(f"primitive_bind_call with {cls}")
         # Avoid recursion by bypassing _primitive_bind_call during instance creation
         # (create instance without invoking _primitive_bind_call)
-        instance = super(cls, cls).__new__(
-            cls
-        )
+        # instance = super(cls, cls).__new__(cls)
 
         # This line raises an error because it calls the __repr__ method of the Operator class
         # print(f"instance created: {instance}")
 
-        instance.__init__(*args, **kwargs)  # Explicitly call the constructor
+        # instance.__init__(*args, **kwargs)  # Explicitly call the constructor
 
         # Force calculation of batch size if it hasn't been set
         # (this will invoke _check_batching if necessary)
-        batch_size = instance.batch_size  
+        # batch_size = instance.batch_size
 
-        print(f"calculated batch size: {batch_size}")
+        # print(f"calculated batch size: {batch_size}")
 
-        if batch_size is not None:
-            kwargs["batch_size"] = batch_size
+        # if batch_size is not None:
+        #    kwargs["batch_size"] = batch_size
 
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.

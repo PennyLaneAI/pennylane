@@ -91,9 +91,9 @@ class CaptureMeta(type):
             return cls._primitive_bind_call(*args, **kwargs)
         return type.__call__(cls, *args, **kwargs)
 
-    def __new__(mcs, name, bases, class_dict):
-        print(f"__new__ method of CaptureMeta called for class: {name}")
-        return super().__new__(mcs, name, bases, class_dict)
+    # def __new__(mcs, name, bases, class_dict):
+    #    print(f"__new__ method of CaptureMeta called for class: {name}")
+    #    return super().__new__(mcs, name, bases, class_dict)
 
 
 # pylint: disable=abstract-method
