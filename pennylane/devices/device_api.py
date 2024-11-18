@@ -133,13 +133,7 @@ class Device(abc.ABC):
 
     def __init_subclass__(cls, **kwargs):
         if cls.config_filepath is not None:
-            # TODO: remove this try-except block once all TOML files are updated to the new schema.
-            try:
-                cls.capabilities = DeviceCapabilities.from_toml_file(cls.config_filepath)
-            except AssertionError as e:
-                if "Unsupported config TOML schema" not in str(e):
-                    raise e  # pragma: no cover
-                warnings.warn(str(e))
+            cls.capabilities = DeviceCapabilities.from_toml_file(cls.config_filepath)
         super().__init_subclass__(**kwargs)
 
     @property
