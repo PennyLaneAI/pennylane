@@ -343,7 +343,7 @@ def _combine_dict(dict1: dict, dict2: dict):
 
 
 def _scale_dict(dict1: dict, scalar: int):
-    r"""Private function which scales the values in a dictionary."""
+    r"""Scales the values in a dictionary with a scalar."""
 
     combined_dict = copy.copy(dict1)
 
