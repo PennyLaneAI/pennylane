@@ -311,7 +311,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     wires = hamiltonian.wires
 
     if (
-        not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
+        not isinstance(hamiltonian, qml.ops.LinearCombination)
         or len(tape.measurements) > 1
         or tape.measurements[0].return_type
         not in [qml.measurements.Expectation, qml.measurements.Variance]

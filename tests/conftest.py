@@ -18,14 +18,12 @@ Pytest configuration file for PennyLane test suite.
 import os
 import pathlib
 import sys
-from warnings import filterwarnings, warn
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
-from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
@@ -125,60 +123,6 @@ def tear_down_hermitian():
 def tear_down_thermitian():
     yield None
     qml.THermitian._eigs = {}
-
-
-#######################################################################
-# Fixtures for testing under new and old opmath
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
-    )
-
-
-# pylint: disable=eval-used
-@pytest.fixture(scope="session", autouse=True)
-def disable_opmath_if_requested(request):
-    disable_opmath = request.config.getoption("--disable-opmath")
-    # value from yaml file is a string, convert to boolean
-    if eval(disable_opmath):
-        warn(
-            "Disabling the new Operator arithmetic system for legacy support. "
-            "If you need help troubleshooting your code, please visit "
-            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
-            UserWarning,
-        )
-        qml.operation.disable_new_opmath(warn=False)
-
-        # Suppressing warnings so that Hamiltonians and Tensors constructed outside tests
-        # don't raise deprecation warnings
-        filterwarnings("ignore", "qml.ops.Hamiltonian", qml.PennyLaneDeprecationWarning)
-        filterwarnings("ignore", "qml.operation.Tensor", qml.PennyLaneDeprecationWarning)
-        filterwarnings("ignore", "qml.pauli.simplify", qml.PennyLaneDeprecationWarning)
-        filterwarnings("ignore", "PauliSentence.hamiltonian", qml.PennyLaneDeprecationWarning)
-        filterwarnings("ignore", "PauliWord.hamiltonian", qml.PennyLaneDeprecationWarning)
-
-
-@pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")
-def use_legacy_and_new_opmath(request):
-    with request.param(warn=False) as cm:
-        yield cm
-
-
-@pytest.fixture
-def new_opmath_only():
-    if not qml.operation.active_new_opmath():
-        pytest.skip("This feature only works with new opmath enabled")
-
-
-@pytest.fixture
-def legacy_opmath_only():
-    if qml.operation.active_new_opmath():
-        pytest.skip("This test exclusively tests legacy opmath")
-
-
-#######################################################################
 
 
 @pytest.fixture(autouse=True)

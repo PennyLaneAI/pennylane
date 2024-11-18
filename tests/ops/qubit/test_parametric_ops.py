@@ -231,7 +231,7 @@ class TestOperations:
 
 
 class TestParameterFrequencies:
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not qml.operation.has_gen(op):
@@ -3011,7 +3011,6 @@ class TestPauliRot:
             ("IIIXYZ"),
         ],
     )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_multirz_generator(self, pauli_word):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
@@ -3054,19 +3053,6 @@ class TestPauliRot:
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
         assert qml.math.allclose(mat, exp)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_pauli_rot_generator_legacy_opmath(self):
-        """Test that the generator of the PauliRot operation
-        is correctly returned."""
-        op = qml.PauliRot(0.65, "ZY", wires=["a", 7])
-        gen, coeff = qml.generator(op)
-        expected = qml.PauliZ("a") @ qml.PauliY(7)
-
-        assert coeff == -0.5
-        assert gen.operands[0].name == expected.obs[0].name
-        assert gen.operands[1].wires == expected.obs[1].wires
-
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
@@ -3246,7 +3232,6 @@ class TestMultiRZ:
         assert np.allclose(qml.jacobian(circuit)(angle), qml.jacobian(decomp_circuit)(angle))
 
     @pytest.mark.parametrize("qubits", range(3, 6))
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_multirz_generator(self, qubits, mocker):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.MultiRZ(0.3, wires=range(qubits))
