@@ -24,8 +24,8 @@ advanced quantum computing research.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
-Resource Estimation
-~~~~~~~~~~~~~~~~~~~
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -34,12 +34,116 @@ Resource Estimation
     ~CompressedResourceOp
     ~ResourceOperator
 
+Operators
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceCNOT
+    ~ResourceControlledPhaseShift
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceRot
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceS
+    ~ResourceSWAP
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+
+Templates
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceQFT
+
+Tracking Resources
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+    
+    ~get_resources
+    ~DefaultGateSet
+    ~resource_config
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
+
+.. currentmodule:: pennylane.labs
+
+Modules
+~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    dla
+
 """
 
+from pennylane.labs import dla
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
     ResourceOperator,
+    ResourcesNotDefined,
+    DefaultGateSet, 
+    get_resources, 
+    resource_config,
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+    ResourceHadamard,
+    ResourceRZ,
+    ResourceSWAP,
+    ResourceT,
+    ResourceQFT,
+    ResourceIdentity,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceS,
+    ResourceGlobalPhase,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
-__all__ = ["Resources", "CompressedResourceOp"]
+
+__all__ = [
+    "Resources",
+    "CompressedResourceOp",
+    "ResourceOperator",
+    "ResourcesNotDefined",
+    "ResourceCNOT",
+    "ResourceControlledPhaseShift",
+    "ResourceHadamard",
+    "ResourceRZ",
+    "ResourceSWAP",
+    "ResourceT",
+    "ResourceQFT",
+    "ResourceIdentity",
+    "ResourceRot",
+    "ResourceRX",
+    "ResourceRY",
+    "ResourceS",
+    "ResourceGlobalPhase",
+    "ResourceX",
+    "ResourceY",
+    "ResourceZ",
+    DefaultGateSet, 
+    resource_config,
+    get_resources,
+]

@@ -21,7 +21,25 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
-    """Resource class for ControlledPhaseShift"""
+    r"""Resource class for ControlledPhaseShift
+        
+        Resources:
+            The resources come from the following identity expressing Controlled Phase Shift
+            as a product of Phase Shifts and CNOTs.
+
+
+        .. math:: 
+
+            CR_\phi(\phi) = \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 1 & 0 & 0 \\
+                    0 & 0 & 1 & 0 \\
+                    0 & 0 & 0 & e^{i\phi}
+                \end{bmatrix} =
+            (R_\phi(\phi/2) \otimes I) \cdot CNOT \cdot (I \otimes R_\phi(-\phi/2)) \cdot CNOT \cdot (I \otimes R_\phi(\phi/2))    
+
+
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:

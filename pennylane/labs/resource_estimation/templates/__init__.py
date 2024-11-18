@@ -11,5 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains experimental resource estimation functionality. """
+r"""This module contains resource operators for PennyLane templates. """
 from .subroutines import ResourceQFT

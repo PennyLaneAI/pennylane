@@ -194,14 +194,11 @@ def _measure_sum_with_samples(
     prng_key=None,
     readout_errors: list[Callable] = None,
 ):
-    """Compute expectation values of Sum or Hamiltonian Observables"""
-    # mp.obs returns is the list of observables for Sum,
-    # mp.obs.terms()[1] returns is the list of observables for Hamiltonian
-    obs_terms = mp.obs if isinstance(mp.obs, Sum) else mp.obs.terms()[1]
+    """Compute expectation values of Sum Observables"""
 
     def _sum_for_single_shot(s):
         results = []
-        for term in obs_terms:
+        for term in mp.obs:
             results.append(
                 measure_with_samples(
                     ExpectationMP(term),
@@ -213,10 +210,6 @@ def _measure_sum_with_samples(
                     readout_errors=readout_errors,
                 )
             )
-
-        if isinstance(mp.obs, qml.ops.Hamiltonian):
-            # If Hamiltonian apply coefficients
-            return sum((c * res for c, res in zip(mp.obs.terms()[0], results)))
 
         return sum(results)
 
@@ -462,7 +455,7 @@ def measure_with_samples(
         TensorLike[Any]: Sample measurement results
     """
 
-    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, (qml.ops.Hamiltonian, Sum)):
+    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, Sum):
         measure_fn = _measure_sum_with_samples
     else:
         # measure with the usual method (rotate into the measurement basis)

@@ -14,61 +14,6 @@
 r"""
 As part of the labs module, this module contains experimental features for
 resource estimation.
-
-.. warning::
-
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
-.. currentmodule:: pennylane.labs.resource_estimation
-
-Base Objects
-~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourceOperator
-    ~Resources
-    ~CompressedResourceOp
-
-Tracking Resources
-~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-    
-    ~get_resources
-    ~DefaultGateSet
-    ~resource_config
-
-Operators
-~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourceCNOT
-    ~ResourceControlledPhaseShift
-    ~ResourceGlobalPhase
-    ~ResourceHadamard
-    ~ResourceIdentity
-    ~ResourceRot
-    ~ResourceRX
-    ~ResourceRY
-    ~ResourceRZ
-    ~ResourceS
-    ~ResourceSWAP
-    ~ResourceT
-
-Templates
-~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourceQFT
-
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
@@ -88,6 +33,9 @@ from .ops import (
     ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 from .templates import (
