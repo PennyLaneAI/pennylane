@@ -127,6 +127,10 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 
 <h3>Deprecations 👋</h3>
 
+* The `tape` and `qtape` properties of `QNode` have been deprecated. 
+  Instead, use the `qml.workflow.construct_tape` function.
+  [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
+
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
