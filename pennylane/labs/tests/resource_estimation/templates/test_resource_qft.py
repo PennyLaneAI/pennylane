@@ -75,7 +75,7 @@ class TestQFT:
         expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
 
         rep = re.ResourceQFT.resource_rep(num_wires)
-        actual = re.ResourceQFT.resources(**rep.params)
+        actual = rep.op_type.resources(**rep.params)
 
         assert actual == expected
 

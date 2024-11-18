@@ -58,6 +58,15 @@ Templates
     :toctree: api
 
     ~ResourceQFT
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
+
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
