@@ -341,7 +341,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
     Returns:
         Resources: the updated :class:`~resource.Resources` after substitution
 
-    ..details::
+    .. details::
 
         **Example**
 
@@ -351,7 +351,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
         >>> sub_gates = {"H": 3, "S": 4}
         >>> sub_sizes = {1: 7}
         >>> sub_resources = Resources(num_wires=1, num_gates=7, gate_types=sub_gates, gate_sizes=sub_sizes, depth=1, shots=Shots(shots=None))
-        >>> print(substitute(primary_resources, ("RX", 1), sub_resources))
+        >>> print(qml.resources.substitute(primary_resources, ("RX", 1), sub_resources))
         wires: 2
         gates: 15
         depth: 2
