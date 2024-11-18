@@ -271,7 +271,6 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     if all(isinstance(op, PauliSentence) for op in basis):
         if not is_orthogonal:
             gram = _gram_ps(basis)
-            print(gram)
             adj_vecs = np.tensordot(adj_vecs, sqrtm(np.linalg.pinv(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
@@ -378,11 +377,11 @@ def op_to_adjvec(
             ops = np.array([qml.matrix(op, wire_order=range(_n)) for op in ops])
 
         basis = np.array(basis)
-        res = np.tensordot(ops, basis, axes=[[1, 2], [2, 1]]) / basis[0].shape[0]
+        res = trace_inner_product(ops, basis)
         if is_orthogonal:
             norm = np.einsum("bij,bji->b", basis, basis) / basis[0].shape[0]
             return res / norm
-        gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]) / basis[0].shape[0]
+        gram = trace_inner_product(basis, basis)
         return np.einsum("ij,kj->ki", sqrtm(np.linalg.pinv(gram)), res)
 
     raise NotImplementedError(
