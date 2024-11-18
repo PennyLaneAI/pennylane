@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.decompositions.clifford_t_transform import (
     _CLIFFORD_T_GATES,
+    _merge_param_gates,
     _one_qubit_decompose,
     _rot_decompose,
     _two_qubit_decompose,
@@ -34,6 +35,24 @@ _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
 
 INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
+
+
+# pylint: disable=too-few-public-methods
+class CustomOneQubitOperation(qml.operation.Operation):
+    num_wires = 1
+
+    @staticmethod
+    def compute_matrix():
+        return qml.math.conj(qml.math.transpose(qml.S.compute_matrix()))
+
+
+# pylint: disable=too-few-public-methods
+class CustomTwoQubitOperation(qml.operation.Operation):
+    num_wires = 2
+
+    @staticmethod
+    def compute_matrix():
+        return qml.math.conj(qml.math.transpose(qml.CNOT.compute_matrix()))
 
 
 def circuit_1():
@@ -80,18 +99,6 @@ def circuit_5():
     return qml.expval(qml.PauliZ(0))
 
 
-def test_max_expansion_is_deprecated():
-    """Tests that max_expansion is deprecated"""
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="The max_expansion argument is deprecated",
-    ):
-        tape = qml.tape.QuantumScript([qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])])
-
-        with pytest.raises(ValueError, match="Cannot unroll"):
-            clifford_t_decomposition(tape, max_expansion=0)
-
-
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -114,20 +121,15 @@ class TestCliffordCompile:
         assert check_clifford_t(op, use_decomposition=True) == res
 
     @pytest.mark.parametrize(
-        ("circuit, max_expansion"),
-        [(circuit_1, 1), (circuit_2, 0), (circuit_3, 0), (circuit_4, 1), (circuit_5, 0)],
+        "circuit",
+        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5],
     )
-    def test_decomposition(self, circuit, max_expansion):
+    def test_decomposition(self, circuit):
         """Test decomposition for the Clifford transform."""
 
         old_tape = qml.tape.make_qscript(circuit)()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
-        ):
-            [new_tape], tape_fn = clifford_t_decomposition(
-                old_tape, max_expansion=max_expansion, max_depth=3
-            )
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=3)
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
@@ -187,6 +189,62 @@ class TestCliffordCompile:
         diff = mat_exact - mat_approx
         error = qml.math.sqrt(qml.math.real(qml.math.trace(qml.math.conj(diff).T @ diff)) / 2)
         assert error < epsilon
+
+    @pytest.mark.parametrize(
+        "op",
+        [CustomOneQubitOperation(wires=0)],
+    )
+    def test_zxz_rotation_decomposition(self, op):
+        """Test single-qubit gates are decomposed correctly using ZXZ rotations"""
+
+        def circuit():
+            qml.apply(op)
+            return qml.probs(wires=0)
+
+        old_tape = qml.tape.make_qscript(circuit)()
+
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=3)
+
+        assert all(
+            isinstance(op, _CLIFFORD_PHASE_GATES)
+            or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
+            for op in new_tape.operations
+        )
+
+        dev = qml.device("default.qubit")
+        transform_program, _ = dev.preprocess()
+        res1, res2 = qml.execute(
+            [old_tape, new_tape], device=dev, transform_program=transform_program
+        )
+        qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
+
+    @pytest.mark.parametrize(
+        "op",
+        [CustomTwoQubitOperation(wires=[0, 1])],
+    )
+    def test_su4_rotation_decomposition(self, op):
+        """Test two-qubit gates are decomposed correctly using SU(4) rotations"""
+
+        def circuit():
+            qml.apply(op)
+            return qml.probs(wires=0)
+
+        old_tape = qml.tape.make_qscript(circuit)()
+
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape)
+
+        assert all(
+            isinstance(op, _CLIFFORD_PHASE_GATES)
+            or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
+            for op in new_tape.operations
+        )
+
+        dev = qml.device("default.qubit")
+        transform_program, _ = dev.preprocess()
+        res1, res2 = qml.execute(
+            [old_tape, new_tape], device=dev, transform_program=transform_program
+        )
+        qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
     @pytest.mark.parametrize(
         "op", [qml.RX(1.0, wires="a"), qml.U3(1, 2, 3, wires=[1]), qml.PhaseShift(1.0, wires=[2])]
@@ -290,16 +348,48 @@ class TestCliffordCompile:
         )[qml.math.nonzero(qml.math.round(matrix_op, 10))]
         assert qml.math.allclose(phase / phase[0], qml.math.ones(qml.math.shape(phase)[0]))
 
+    def test_merge_param_gates(self):
+        """Test _merge_param_gates helper function"""
+        operations = [
+            qml.RX(0.1, wires=0),
+            qml.RX(0.2, wires=0),
+            qml.RY(0.3, wires=1),
+            qml.RY(0.4, wires=1),
+            qml.RX(0.5, wires=0),
+        ]
+
+        merge_ops = {"RX", "RY"}
+
+        merged_ops, number_ops = _merge_param_gates(operations, merge_ops=merge_ops)
+
+        assert len(merged_ops) == 2
+        assert number_ops == 2
+
+        assert isinstance(merged_ops[0], qml.RX)
+        assert merged_ops[0].parameters == [0.8]  # 0.1 + 0.2 + 0.5 for wire 0
+        assert isinstance(merged_ops[1], qml.RY)
+        assert merged_ops[1].parameters == [0.7]  # 0.3 + 0.4 for wire 1
+
+        merge_ops.discard("RY")
+        merged_ops, number_ops = _merge_param_gates(operations, merge_ops=merge_ops)
+
+        assert len(merged_ops) == 3
+        assert number_ops == 1
+
+        assert isinstance(merged_ops[0], qml.RX)
+        assert merged_ops[0].parameters == [0.8]  # 0.1 + 0.2 + 0.5 for wire 0
+        assert isinstance(merged_ops[1], qml.RY)
+        assert merged_ops[1].parameters == [0.3]  # 0.3 for wire 1
+        assert isinstance(merged_ops[1], qml.RY)
+        assert merged_ops[2].parameters == [0.4]  # 0.4 for wire 1
+
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
         tape = qml.tape.QuantumScript([qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])])
 
         with pytest.raises(ValueError, match="Cannot unroll"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
-            ):
-                clifford_t_decomposition(tape, max_expansion=0)
+            clifford_t_decomposition(tape)
 
     @pytest.mark.parametrize("op", [qml.U1(1.0, wires=["b"])])
     def test_raise_with_rot_decomposition(self, op):

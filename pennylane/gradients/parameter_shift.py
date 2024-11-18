@@ -62,15 +62,6 @@ of that observable.
 def _square_observable(obs):
     """Returns the square of an observable."""
 
-    if isinstance(obs, qml.operation.Tensor):
-        # Observable is a tensor, we must consider its
-        # component observables independently. Note that
-        # we assume all component observables are on distinct wires.
-        components_squared = [
-            NONINVOLUTORY_OBS[o.name](o) for o in obs.obs if o.name in NONINVOLUTORY_OBS
-        ]
-        return qml.operation.Tensor(*components_squared)
-
     if isinstance(obs, qml.ops.Prod):
         components_squared = [
             NONINVOLUTORY_OBS[o.name](o) for o in obs if o.name in NONINVOLUTORY_OBS
@@ -380,7 +371,7 @@ def expval_param_shift(
 
         op, op_idx, _ = tape.get_operation(idx)
 
-        if op.name in ["Hamiltonian", "LinearCombination"]:
+        if op.name == "LinearCombination":
             # operation is a Hamiltonian
             if tape[op_idx].return_type is not qml.measurements.Expectation:
                 raise ValueError(
@@ -634,12 +625,7 @@ def _get_non_involuntory_indices(tape, var_indices):
     for i in var_indices:
         obs = tape.measurements[i].obs
 
-        if isinstance(obs, qml.operation.Tensor):
-            # Observable is a tensor product, we must investigate all constituent observables.
-            if any(o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs.obs):
-                non_involutory_indices.append(i)
-
-        elif isinstance(tape.measurements[i].obs, qml.ops.Prod):
+        if isinstance(tape.measurements[i].obs, qml.ops.Prod):
             if any(o.name in NONINVOLUTORY_OBS for o in tape.measurements[i].obs):
                 non_involutory_indices.append(i)
 
@@ -695,7 +681,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     for i in var_indices:
         obs = new_measurements[i].obs
         new_measurements[i] = qml.expval(op=obs)
-        if obs.name in ["Hamiltonian", "LinearCombination", "Sum"]:
+        if obs.name in ["LinearCombination", "Sum"]:
             first_obs_idx = len(tape.operations)
             for t_idx in reversed(range(len(tape.trainable_params))):
                 op, op_idx, _ = tape.get_operation(t_idx)

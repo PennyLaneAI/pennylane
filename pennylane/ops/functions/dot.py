@@ -21,7 +21,7 @@ from collections.abc import Callable, Sequence
 from typing import Union
 
 import pennylane as qml
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse import ParametrizedHamiltonian
 
@@ -164,9 +164,6 @@ def dot(
 
     # Convert possible PauliWord and PauliSentence instances to operation
     ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
-
-    # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
-    ops = (convert_to_opmath(op) for op in ops)
 
     operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
     return (
