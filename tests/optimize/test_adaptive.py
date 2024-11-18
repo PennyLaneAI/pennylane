@@ -15,11 +15,20 @@
 Unit tests for the ``AdaptiveOptimizer``.
 """
 import copy
+import warnings
 
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 symbols = ["H", "H", "H"]
 geometry = np.array(
