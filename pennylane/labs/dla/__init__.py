@@ -40,15 +40,13 @@ Utility functions
     ~pauli_coefficients
     ~pauli_decompose
     ~pauli_coefficients
-<<<<<<< HEAD
     ~check_cartan_decomp
     ~check_commutation
     ~apply_basis_change
-=======
     ~orthonormalize
     ~check_orthonormal
     ~trace_inner_product
->>>>>>> 95a9c6c6d0065f5e793b54ce012bb9bf92ed4ace
+
 
 Involutions
 ~~~~~~~~~~~
@@ -81,6 +79,20 @@ from .cartan import (
     concurrence_involution,
     recursive_cartan_decomposition,
 )
+from .dense_util import (
+    adjvec_to_op,
+    apply_basis_change,
+    change_basis_ad_rep,
+    check_cartan_decomp,
+    check_commutation,
+    check_orthonormal,
+    pauli_coefficients,
+    pauli_decompose,
+    op_to_adjvec,
+    orthonormalize,
+    trace_inner_product,
+)
+
 from .involutions import (
     khaneja_glaser_involution,
     AI,
@@ -91,16 +103,4 @@ from .involutions import (
     CII,
     DIII,
     ClassB,
-)
-from .dense_util import (
-    change_basis_ad_rep,
-    pauli_coefficients,
-    pauli_decompose,
-    orthonormalize,
-    check_orthonormal,
-    trace_inner_product,
-    adjvec_to_op,
-    op_to_adjvec,
-    apply_basis_change,
-    check_cartan_decomp,
 )
