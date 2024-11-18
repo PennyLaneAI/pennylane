@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/dla/lie_closure_dense.py functionality"""
+"""Tests for pennylane/labs/dla/variational_kak.py functionality"""
 # pylint: disable=too-few-public-methods, protected-access, no-self-use
 import pytest
 
@@ -22,6 +22,7 @@ from pennylane.labs.dla import (
     cartan_subalgebra,
     check_cartan_decomp,
     concurrence_involution,
+    lie_closure_dense,
     orthonormalize,
     validate_kak,
     variational_kak,
@@ -35,7 +36,7 @@ def test_kak_Ising(n):
     gens += [Z(i) for i in range(n)]
     H = qml.sum(*gens)
 
-    g = qml.lie_closure(gens)
+    g = lie_closure_dense(gens)
     g = [op.pauli_rep for op in g]
 
     involution = concurrence_involution
