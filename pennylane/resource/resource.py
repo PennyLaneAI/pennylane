@@ -235,7 +235,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
         >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-        >>> print(add_in_parallel(r1, r2))
+        >>> print(qml.resource.add_in_parallel(r1, r2))
         wires: 4
         gates: 4
         depth: 0
