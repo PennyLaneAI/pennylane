@@ -65,6 +65,11 @@
 * Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
+<h3>Labs 🧪</h3>
+
+* Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
+  [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
 <h3>Breaking changes 💔</h3>
 
 * Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
@@ -180,4 +185,5 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 Andrija Paurevic,
-Justin Pickering
+Justin Pickering,
+Jay Soni,
