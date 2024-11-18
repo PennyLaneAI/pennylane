@@ -105,23 +105,20 @@ def _get_qnode_prim():
     qnode_prim = jax.core.Primitive("qnode")
     qnode_prim.multiple_results = True
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
         consts = args[:n_consts]
         non_const_args = args[n_consts:]
 
-        def qfunc(*inner_args):
-            return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
-
-        qnode = qml.QNode(qfunc, device, **qnode_kwargs)
-
         if batch_dims is not None:
             # pylint: disable=protected-access
-            return jax.vmap(partial(qnode._impl_call, shots=shots), batch_dims)(*non_const_args)
+            return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims)(
+                *non_const_args
+            )
 
         # pylint: disable=protected-access
-        return qnode._impl_call(*non_const_args, shots=shots)
+        return device.eval_jaxpr(qfunc_jaxpr, consts, *non_const_args)
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
