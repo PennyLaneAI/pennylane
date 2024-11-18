@@ -51,6 +51,7 @@
 
 * A `DefaultQubitInterpreter` class has been added to provide plxpr execution using python based tools,
   and the `DefaultQubit.eval_jaxpr` method is now implemented.
+  [(#6594)](https://github.com/PennyLaneAI/pennylane/pull/6594)
   [(#6328)](https://github.com/PennyLaneAI/pennylane/pull/6328)
 
 * An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
