@@ -35,9 +35,16 @@ Utility functions
     ~op_to_adjvec
     ~pauli_coefficients
     ~pauli_decompose
+    ~trace_inner_product
 
 
 """
 
 from .lie_closure_dense import lie_closure_dense
-from .dense_util import adjvec_to_op, op_to_adjvec, pauli_coefficients, pauli_decompose
+from .dense_util import (
+    adjvec_to_op,
+    op_to_adjvec,
+    pauli_coefficients,
+    pauli_decompose,
+    trace_inner_product,
+)
