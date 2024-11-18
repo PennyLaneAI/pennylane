@@ -46,14 +46,12 @@ Modules
 
 """
 
+from pennylane.labs import dla
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
     ResourceOperator,
 )
 
-from pennylane.labs import dla
-
 
 __all__ = ["Resources", "CompressedResourceOp", "ResourceOperator"]
-
