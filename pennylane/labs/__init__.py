@@ -61,8 +61,8 @@ Exceptions
 .. autosummary::
     :toctree: api
 
-    ~ResourcesNotDefined    
-    
+    ~ResourcesNotDefined
+
 .. currentmodule:: pennylane.labs
 
 Modules
