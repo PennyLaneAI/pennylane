@@ -207,7 +207,7 @@ ops_h2o.append(
         (h2o, x_h2o, 0, range(4), [4, 5], "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops, tol, tmpdir):
     r"""Tests the correctness of the dipole observable computed by the ``dipole`` function."""
 
@@ -230,15 +230,6 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
         assert np.allclose(calc_coeffs, exp_coeffs, **tol)
 
         r_ops = ops[i]
-        if not qml.operation.active_new_opmath():
-            r_ops = [
-                (
-                    qml.operation.Tensor(*obs.simplify())
-                    if isinstance(obs.simplify(), (qml.ops.op_math.Prod))
-                    else obs.simplify()
-                )
-                for obs in ops[i]
-            ]
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
         for o1, o2 in zip(d_ops, r_ops):
