@@ -14,11 +14,20 @@
 """
 Unit tests for the optimization transform ``merge_amplitude_embedding``.
 """
+import warnings
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.optimization import merge_amplitude_embedding
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestMergeAmplitudeEmbedding:

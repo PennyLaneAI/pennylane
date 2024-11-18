@@ -14,6 +14,8 @@
 """
 Unit tests for the qml.map_wires function
 """
+import warnings
+
 # pylint: disable=too-few-public-methods
 from functools import partial
 
@@ -23,6 +25,13 @@ import pennylane as qml
 from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def build_op():
