@@ -67,7 +67,7 @@ class Resources:
     shots: Shots = field(default_factory=Shots)
 
     def __add__(self, other: Resources):
-        r"""Adds two Resources objects together as if the circuits were executed in series.
+        r"""Adds two :class:`~resource.Resources` objects together as if the circuits were executed in series.
 
         Args:
             other (Resources): the resource object to add
@@ -94,13 +94,13 @@ class Resources:
         return add_in_series(self, other)
 
     def __mul__(self, scalar: int):
-        r"""Multiply the Resources object by a scalar as if that many copies of the circuit were executed in series
+        r"""Multiply the :class:`~resource.Resources` by a scalar as if that many copies of the circuit were executed in series
 
         Args:
-            scalar (int): The scalar to multiply the resource object by
+            scalar (int): the scalar to multiply the resource object by
 
         Returns:
-            Resources: The combined resources
+            Resources: the combined resources
 
         .. details::
 
@@ -186,8 +186,8 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     r"""Add two :class:`~resource.Resources` assuming the circuits are executed in series.
 
     Args:
-        r1 (Resources): a Resources object to add
-        r2 (Resources): a Resources object to add
+        r1 (Resources): a :class:`~resource.Resources` to add
+        r2 (Resources): a :class:`~resource.Resources` to add
 
     Returns:
         Resources: the combined resources of r1 and r2
@@ -223,11 +223,11 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     r"""Add two :class:`~resource.Resources` assuming the circuits are executed in parallel.
 
     Args:
-        r1 (Resources): A Resources object to add.
-        r2 (Resources): A Resources object to add.
+        r1 (Resources): a :class:`~resource.Resources` object to add
+        r2 (Resources): a :class:`~resource.Resources` object to add
 
     Returns:
-        Resources: The combined resources of r1 and r2.
+        Resources: the combined resources of r1 and r2
 
     .. details::
 
@@ -261,11 +261,11 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
     that many times in series.
 
     Args:
-        resources (Resources): A Resources object to be scaled.
-        scalar (int): The scalar to multiply the Resources object by.
+        resources (Resources): a :class:`~resource.Resources` to be scaled
+        scalar (int): the scalar to multiply the :class:`~resource.Resources` by
 
     Returns:
-        Resources: The combined resources
+        Resources: the combined resources
 
     .. details::
 
@@ -298,8 +298,8 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
     that many times in parallel.
 
     Args:
-        r1 (Resources): A Resources object to be scaled.
-        scalar (int): The scalar to multiply the Resources object by.
+        r1 (Resources): a Resources object to be scaled
+        scalar (int): the scalar to multiply the Resources object by
 
     Returns:
         Resources: The combined resources
