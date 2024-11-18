@@ -170,6 +170,12 @@ class TestBoseWord:
                 BoseSentence({BoseWord({(0, 0): "+", (1, 0): "-"}): 1.0, BoseWord({}): 1.0}),
             ),
             (
+                bw22,
+                0,
+                0,
+                BoseSentence({bw22: 1}),
+            ),
+            (
                 BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"}),
                 3,
                 0,
@@ -1217,3 +1223,13 @@ class TestBoseSentenceArithmetic:
         """Test __rsub__ with unsupported type raises an error"""
         with pytest.raises(TypeError, match=f"Cannot multiply {type(bad_type)} by BoseSentence."):
             bad_type * bs  # pylint: disable=pointless-statement
+    
+    @pytest.mark.parametrize(
+        "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")
+    )
+    def test_array_must_not_exceed_length_1(self, method_name):
+        with pytest.raises(
+            ValueError, match="Arithmetic Bose operations can only accept an array of length 1"
+        ):
+            method_to_test = getattr(bs1, method_name)
+            _ = method_to_test(np.array([1, 2]))
