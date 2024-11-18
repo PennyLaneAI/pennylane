@@ -75,6 +75,7 @@ Modules
 
 """
 
+from pennylane.labs import dla
 from .resource_estimation import (
     Resources,
     CompressedResourceOp,
@@ -88,8 +89,6 @@ from .resource_estimation import (
     ResourceT,
     ResourceQFT,
 )
-
-from pennylane.labs import dla
 
 
 __all__ = [
