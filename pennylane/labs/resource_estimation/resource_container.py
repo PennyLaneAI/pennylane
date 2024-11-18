@@ -44,7 +44,7 @@ class CompressedResourceOp:
         Args:
             op_type (Type): the class object for an operation which inherits from '~.ResourceOperator'
             params (dict): a dictionary containing the minimal pairs of parameter names and values
-                        required to compute the resources for the given operator!
+                        required to compute the resources for the given operator
 
         .. details::
 

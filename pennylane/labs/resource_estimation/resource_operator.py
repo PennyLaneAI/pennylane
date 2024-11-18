@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class ResourceOperator(ABC):
-    r"""This is an abstract class that defines the methods a PennyLane Operator
+    r"""Abstract class that defines the methods a PennyLane Operator
     must implement in order to be used for resource estimation.
 
     .. details::
@@ -61,6 +61,15 @@ class ResourceOperator(ABC):
                 def resource_rep(cls, num_wires) -> CompressedResourceOp:
                     params = {"num_wires": num_wires}
                     return CompressedResourceOp(cls, params)
+    
+        Which can be instantiated as a normal operation, but now contains the resources: 
+    
+        .. code-block:: bash
+        
+            >>> op = ResourceQFT(range(3))
+            >>> op.resources(**op.resource_params())
+            {Hadamard(): 3, SWAP(): 1, ControlledPhaseShift(): 3}
+        
     """
 
     @staticmethod
