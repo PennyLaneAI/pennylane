@@ -34,4 +34,6 @@ Modules
 
 """
 
+from pennylane.labs import dla
+
 __all__ = []
