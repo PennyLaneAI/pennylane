@@ -355,6 +355,7 @@ class ClassPropertyDescriptor:  # pragma: no cover
 
     # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
+        print(f"ClassPropertyDescriptor initialized with fget: {fget} and fset: {fset}")
         self.fget = fget
         self.fset = fset
 
@@ -707,7 +708,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     Optional[jax.core.Primitive]
     """
 
+    # def __new__(cls, *args, **kwargs):
+    #    print(f"__new__ method of Operator called for instance of {cls}")
+    #    return super(Operator, cls).__new__(cls)  # Call parent __new__
+
     def __init_subclass__(cls, **_):
+        print(f"__init_subclass__ di Operator called for {cls}")
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
 
@@ -719,6 +725,25 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         to the primitive via ``cls._primitive.bind``.
 
         """
+        print(f"primitive_bind_call with {cls}")
+        # Avoid recursion by bypassing _primitive_bind_call during instance creation
+        # (create instance without invoking _primitive_bind_call)
+        # instance = super(cls, cls).__new__(cls)
+
+        # This line raises an error because it calls the __repr__ method of the Operator class
+        # print(f"instance created: {instance}")
+
+        # instance.__init__(*args, **kwargs)  # Explicitly call the constructor
+
+        # Force calculation of batch size if it hasn't been set
+        # (this will invoke _check_batching if necessary)
+        # batch_size = instance.batch_size
+
+        # print(f"calculated batch size: {batch_size}")
+
+        # if batch_size is not None:
+        #    kwargs["batch_size"] = batch_size
+
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
@@ -737,6 +762,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             args = args[:-1] + tuple(args[-1])
         else:
             kwargs["n_wires"] = 1
+
         return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self) -> "Operator":
@@ -1188,6 +1214,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
+
+        print("check_batching called")
+
         self._batch_size = None
         params = self.data
 
@@ -1202,6 +1231,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
             # an operation with abstract parameters that make `qml.math.ndim` fail.
+
             if any(qml.math.is_abstract(p) for p in params):
                 self._batch_size = None
                 self._ndim_params = (0,) * len(params)
@@ -1239,6 +1269,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     def __repr__(self) -> str:
         """Constructor-call-like representation."""
+        print(f"__repr__ method of Operator called")
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
             return f"{self.name}({params}, wires={self.wires.tolist()})"

@@ -14,7 +14,7 @@
 """
 This submodule defines the abstract classes and primitives for capturing operators.
 """
-
+from collections.abc import Callable
 from functools import lru_cache
 from typing import Optional, Type
 
@@ -37,6 +37,11 @@ def _get_abstract_operator() -> type:
 
     class AbstractOperator(jax.core.AbstractValue):
         """An operator captured into plxpr."""
+
+        # def __init__(self, abstract_batch_size: int = None):
+        #    print("__init__ di AbstractOperator called")
+
+        #    self._batch_size = abstract_batch_size
 
         # pylint: disable=missing-function-docstring
         def at_least_vspace(self):
@@ -107,6 +112,9 @@ def create_operator_primitive(
 
     @primitive.def_impl
     def _(*args, **kwargs):
+
+        print(f"primitive.def_impl called with {args}, {kwargs}")
+
         if "n_wires" not in kwargs:
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
@@ -116,12 +124,25 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         wires = tuple(int(w) for w in args[split:])
         args = args[:split]
+
+        # Do we need to use the batch size here?
+        # if "batch_size" in kwargs:
+        #    batch_size = kwargs.pop("batch_size")
+
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _(*_, **__):
+    def _(*args, **kwargs):
+
+        print(f"primitive.def_abstract_eval called with {args}, {kwargs}")
+
+        # batch_size = None
+
+        # if "batch_size" in kwargs:
+        #    batch_size = kwargs.pop("batch_size")
+        # return abstract_type(batch_size)
         return abstract_type()
 
     return primitive

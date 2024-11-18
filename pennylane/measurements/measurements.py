@@ -233,6 +233,9 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
     ):
+        
+        print(f"__init__ method in MeasurementProcess called with {obs}")
+
         if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
             # Cast sequence of measurement values to list
             self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
