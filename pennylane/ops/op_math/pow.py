@@ -79,7 +79,7 @@ def pow(base, z=1, lazy=True, id=None):
     >>> qml.pow(qml.X(0), 0.5)
     X(0)**0.5
     >>> qml.pow(qml.X(0), 0.5, lazy=False)
-    SX(wires=[0])
+    SX(0)
     >>> qml.pow(qml.X(0), 0.1, lazy=False)
     X(0)**0.1
     >>> qml.pow(qml.X(0), 2, lazy=False)
@@ -118,7 +118,7 @@ class Pow(ScalarSymbolicOp):
 
     >>> sqrt_x = Pow(qml.X(0), 0.5)
     >>> sqrt_x.decomposition()
-    [SX(wires=[0])]
+    [SX(0)]
     >>> qml.matrix(sqrt_x)
     array([[0.5+0.5j, 0.5-0.5j],
                 [0.5-0.5j, 0.5+0.5j]])
@@ -385,13 +385,13 @@ class Pow(ScalarSymbolicOp):
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
-        base = self.base.simplify()
+        base = self.base if qml.capture.enabled() else self.base.simplify()
         try:
             ops = base.pow(z=self.z)
             if not ops:
                 return qml.Identity(self.wires)
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
-            return op.simplify()
+            return op if qml.capture.enabled() else op.simplify()
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
 
