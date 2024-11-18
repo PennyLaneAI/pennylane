@@ -19,7 +19,7 @@ import numpy as np
 import pennylane as qml
 
 
-def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
+def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=True):
     r"""Return the double-factorized form of a two-electron integral tensor in spatial basis.
 
     The two-electron tensor :math:`V`, in
@@ -135,43 +135,71 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
         - Diagonalize the :math:`n \times n` matrices and for each matrix keep the eigenvalues (and
           their corresponding eigenvectors) that are larger than a threshold.
     """
-    shape = two_electron.shape
+    shape = qml.math.shape(two_electron)
 
     if len(shape) != 4 or len(set(shape)) != 1:
         raise ValueError("The two-electron repulsion tensor must have a (N x N x N x N) shape.")
 
-    n = shape[0]
-    two = two_electron.reshape(n * n, n * n)
+    two = qml.math.reshape(two_electron, (shape[0] * shape[1], -1))
+    interface = qml.math.get_interface(two_electron)
 
-    eigvals_r, eigvecs_r = np.linalg.eigh(two)
-    eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol_factor])
+    if cholesky:
+        factors = _double_factorization_cholesky(two, tol_factor, shape, interface)
+    else:
+        factors = _double_factorization_eigen(two, tol_factor, shape, interface)
+
+    eigvals, eigvecs = qml.math.linalg.eigh(factors)
+    eigvals = qml.math.asarray(eigvals, like=interface)
+
+    core_tensors = eigvals[:, :, None] * eigvals[:, None, :]
+    leaf_tensors = eigvecs
+
+    # TODO: Re-add eigenvalue tolerances.
+    _ = tol_eigval
+    return factors, core_tensors, leaf_tensors
+
+
+def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
+    """Double factorization via generalized eigen decomposition"""
+    eigvals_r, eigvecs_r = qml.math.linalg.eigh(two)
+    eigvals_r = qml.math.array([val for val in eigvals_r if abs(val) > tol_factor])
 
     eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
-
     if eigvals_r.size == 0:
         raise ValueError(
             "All factors are discarded. Consider decreasing the first threshold error."
         )
+    vectors = eigvecs_r @ qml.math.diag(qml.math.sqrt(eigvals_r))
 
-    vectors = eigvecs_r @ np.diag(np.sqrt(eigvals_r))
+    n, r = shape[0], len(eigvals_r)
+    factors = qml.math.array(
+        [vectors.restol_eigvalhape(n, n, r)[:, :, k] for k in range(r)], like=interface
+    )
+    return factors
 
-    r = len(eigvals_r)
-    factors = np.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)])
 
-    eigvals, eigvecs = np.linalg.eigh(factors)
-    eigvals_m = []
-    eigvecs_m = []
-    for n, eigval in enumerate(eigvals):
-        idx = [i for i, v in enumerate(eigval) if abs(v) > tol_eigval]
-        eigvals_m.append(eigval[idx])
-        eigvecs_m.append(eigvecs[n][idx])
+def _double_factorization_cholesky(two, tol_factor=1.0e-10, shape=None, interface=None):
+    """Double factorization via Cholesky decomposition"""
+    n2 = shape[0] * shape[1]
+    cholesky_vecs = qml.math.zeros((n2, n2 + 1), like=interface)
+    cholesky_diag = qml.math.array(qml.math.diagonal(two).real, like=interface)
 
-    if np.sum([len(v) for v in eigvecs_m]) == 0:
-        raise ValueError(
-            "All eigenvectors are discarded. Consider decreasing the second threshold error."
-        )
+    for idx in range(n2 + 1):
+        if (max_err := qml.math.max(cholesky_diag)) < tol_factor:
+            cholesky_vecs = cholesky_vecs[:, :idx]
+            break
 
-    return factors, eigvals_m, eigvecs_m
+        max_idx = qml.math.argmax(cholesky_diag)
+        cholesky_mat = cholesky_vecs[:, :idx]
+        cholesky_vec = (
+            two[:, max_idx] - cholesky_mat @ cholesky_mat[max_idx].conj()
+        ) / qml.math.sqrt(max_err)
+
+        cholesky_vecs[:, idx] = cholesky_vec
+        cholesky_diag -= qml.math.abs(cholesky_vec) ** 2
+
+    factors = cholesky_vecs.T.reshape(-1, shape[0], shape[0])
+    return factors
 
 
 def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
