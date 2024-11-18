@@ -172,7 +172,7 @@ def _resolve_execution_config(
     updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
 
     if (
-        device.name == "lightning.qubit"
+        "lightning" in device.name
         and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
