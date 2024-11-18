@@ -335,7 +335,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
     Args:
         initial_resources (Resources): the Resource object to be modified
-        gate_info (Tuple(str, int)): The name of the gate to be replaced and the number of wires it acts on
+        gate_info (Tuple(str, int)): tuple containing the name of the gate to be replaced and the number of wires it acts on
         replacement (Resources): The Resource object containing the resources that will replace the gate
 
     Returns:
