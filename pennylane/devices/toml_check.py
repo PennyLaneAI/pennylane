@@ -1,4 +1,5 @@
-#!/usr/bin/python3
+# pragma: no cover
+
 # Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +21,6 @@ Lark grammar reference:
  * https://lark-parser.readthedocs.io/en/latest/grammar.html
 """
 
-# pragma: no cover
 # pylint: disable=unused-import
 
 from textwrap import dedent
