@@ -749,7 +749,6 @@ class TestExecutingBatches:
         assert qml.math.allclose(jacobian_1, jacobian_3)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestSumOfTermsDifferentiability:
     """Tests Hamiltonian and sum expvals are still differentiable.
     This is a copy of the tests in `test_qutrit_mixed_measure.py`, but using the device instead.
@@ -1142,7 +1141,6 @@ class TestPRNGKeySeed:
         qml.s_prod(0.8, qml.GellMann(0, 3)) + qml.s_prod(0.5, qml.GellMann(0, 1)),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables.
@@ -1151,8 +1149,6 @@ class TestHamiltonianSamples:
 
     def test_hamiltonian_expval(self, obs, seed):
         """Tests that sampling works well for Hamiltonian and Sum observables."""
-        if not qml.operation.active_new_opmath():
-            obs = qml.operation.convert_to_legacy_H(obs)
 
         x, y = np.array(0.67), np.array(0.95)
         ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
@@ -1166,9 +1162,6 @@ class TestHamiltonianSamples:
 
     def test_hamiltonian_expval_shot_vector(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector."""
-
-        if not qml.operation.active_new_opmath():
-            obs = qml.operation.convert_to_legacy_H(obs)
 
         shots = qml.measurements.Shots((10000, 100000))
         x, y = np.array(0.67), np.array(0.95)
@@ -1244,9 +1237,6 @@ class TestIntegration:
     def test_differentiate_jitted_qnode(self, measurement_func):
         """Test that a jitted qnode can be correctly differentiated"""
         import jax
-
-        if measurement_func is qml.var and not qml.operation.active_new_opmath():
-            pytest.skip(reason="Variance for this test circuit not supported with legacy opmath")
 
         dev = qml.device("default.qutrit.mixed")
 

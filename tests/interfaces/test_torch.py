@@ -758,7 +758,6 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
@@ -771,13 +770,11 @@ class TestHamiltonianWorkflows:
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             H1 = qml.Hamiltonian(coeffs1, obs1)
-            if qml.operation.active_new_opmath():
-                H1 = qml.pauli.pauli_sentence(H1).operation()
+            H1 = qml.pauli.pauli_sentence(H1).operation()
 
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
-            if qml.operation.active_new_opmath():
-                H2 = qml.pauli.pauli_sentence(H2).operation()
+            H2 = qml.pauli.pauli_sentence(H2).operation()
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
@@ -827,11 +824,8 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(self, execute_kwargs, cost_fn, shots):
+    def test_multiple_hamiltonians_not_trainable(self, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
-
-        if execute_kwargs["diff_method"] == "adjoint" and not qml.operation.active_new_opmath():
-            pytest.skip("adjoint differentiation does not suppport hamiltonians.")
 
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = torch.tensor([0.7], requires_grad=False)
@@ -853,12 +847,11 @@ class TestHamiltonianWorkflows:
         else:
             assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
+    @pytest.mark.xfail(reason="parameter shift derivatives do not yet support sums.")
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["diff_method"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
-        if qml.operation.active_new_opmath():
-            pytest.skip("parameter shift derivatives do not yet support sums.")
 
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = torch.tensor([0.7], requires_grad=True)
