@@ -522,10 +522,6 @@ class PauliWord(dict):
         """Return a new PauliWord with the wires mapped."""
         return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
 
-    def __gt__(self, other):
-        """Greater than comparison for sorting of keywords in PauliSentence"""
-        return str(self) > str(other)
-
 
 pw_id = PauliWord({})  # empty pauli word to be re-used
 
