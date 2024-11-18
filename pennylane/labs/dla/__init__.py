@@ -24,7 +24,7 @@ Experimental Lie theory features
     ~structure_constants_dense
     ~cartan_decomposition
     ~recursive_cartan_decomposition
-    ~cartan_khk
+    ~variational_kak
 
 
 Utility functions
@@ -48,9 +48,7 @@ Utility functions
     ~orthonormalize
     ~check_orthonormal
     ~trace_inner_product
-    ~op_to_adjvec
-    ~adjvec_to_op
-    ~validate_khk
+    ~validate_kak
     ~run_opt
 
 
