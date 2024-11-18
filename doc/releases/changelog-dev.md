@@ -49,7 +49,8 @@
   pennylane variant jaxpr.
   [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
 
-* A `DefaultQubitInterpreter` class has been added to provide plxpr execution using python based tools.
+* A `DefaultQubitInterpreter` class has been added to provide plxpr execution using python based tools,
+  and the `DefaultQubit.eval_jaxpr` method is now implemented.
   [(#6328)](https://github.com/PennyLaneAI/pennylane/pull/6328)
 
 * An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
