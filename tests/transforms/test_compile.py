@@ -14,6 +14,7 @@
 """
 Unit tests for the ``compile`` transform.
 """
+import warnings
 from functools import partial
 
 import pytest
@@ -31,6 +32,13 @@ from pennylane.transforms.optimization import (
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def build_qfunc(wires):
