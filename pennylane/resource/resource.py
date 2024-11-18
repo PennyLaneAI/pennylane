@@ -334,7 +334,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
     """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
 
     Args:
-        initial_resources (Resources): The Resource object to be modified
+        initial_resources (Resources): the Resource object to be modified
         gate_info (Tuple(str, int)): The name of the gate to be replaced and the number of wires it acts on
         replacement (Resources): The Resource object containing the resources that will replace the gate
 
