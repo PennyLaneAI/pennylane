@@ -30,6 +30,7 @@ Modules
 .. autosummary::
     :toctree: api
 
+    dla
 
 """
 
