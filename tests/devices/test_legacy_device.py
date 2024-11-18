@@ -314,7 +314,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_check_validity_containing_prod(self, mock_device_supporting_prod):
         """Tests that the function Device.check_validity works with Prod"""
 
@@ -332,7 +331,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         dev.check_validity(queue, observables)
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_prod_containing_unsupported_nested_observables(self, mock_device_supporting_prod):
         """Tests that the observables nested within Prod are checked for validity"""
 
@@ -350,24 +348,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(qml.DeviceError, match="Observable PauliY not supported"):
             dev.check_validity(queue, unsupported_nested_observables)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_check_validity_on_tensor_support_legacy_opmath(self, mock_device_supporting_paulis):
-        """Tests the function Device.check_validity with tensor support capability"""
-        dev = mock_device_supporting_paulis()
-
-        queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
-        ]
-
-        observables = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
-
-        # mock device does not support Tensor product
-        with pytest.raises(qml.DeviceError, match="Tensor observables not supported"):
-            dev.check_validity(queue, observables)
-
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_check_validity_on_prod_support(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with prod support capability"""
         dev = mock_device_supporting_paulis()
@@ -383,32 +363,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         # mock device does not support Tensor product
         with pytest.raises(qml.DeviceError, match="Observable Prod not supported"):
             dev.check_validity(queue, observables)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_check_validity_on_invalid_observable_with_tensor_support(self, monkeypatch):
-        """Tests the function Device.check_validity with tensor support capability
-        but with an invalid observable"""
-        queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
-        ]
-
-        observables = [qml.expval(qml.PauliZ(0) @ qml.Hadamard(1))]
-
-        D = Device
-        with monkeypatch.context() as m:
-            m.setattr(D, "__abstractmethods__", frozenset())
-            m.setattr(D, "operations", ["PauliX", "PauliY", "PauliZ"])
-            m.setattr(D, "observables", ["PauliX", "PauliY", "PauliZ"])
-            m.setattr(D, "capabilities", lambda self: {"supports_tensor_observables": True})
-            m.setattr(D, "short_name", "Dummy")
-
-            dev = D()
-
-            # mock device supports Tensor products but not hadamard
-            with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported"):
-                dev.check_validity(queue, observables)
 
     def test_check_validity_on_invalid_queue(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with invalid queue and valid observables"""
@@ -652,7 +606,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         assert new_tape.shots is tape.shots
         assert new_tape.wires == tape.wires
         assert new_tape.batch_size == tape.batch_size
-        assert new_tape.output_dim == tape.output_dim
 
     def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
         """Test that default_expand_fn works with an invalid op and some measurement."""

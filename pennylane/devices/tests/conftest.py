@@ -14,7 +14,6 @@
 """Contains shared fixtures for the device tests."""
 import argparse
 import os
-from warnings import warn
 
 import numpy as np
 import pytest
@@ -230,23 +229,6 @@ def pytest_addoption(parser):
     addoption(
         "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
     )
-
-
-# pylint: disable=eval-used
-@pytest.fixture(scope="session", autouse=True)
-def disable_opmath_if_requested(request):
-    """Check the value of the --disable-opmath option and turn off
-    if True before running the tests"""
-    disable_opmath = request.config.getoption("--disable-opmath")
-    # value from yaml file is a string, convert to boolean
-    if eval(disable_opmath):
-        warn(
-            "Disabling the new Operator arithmetic system for legacy support. "
-            "If you need help troubleshooting your code, please visit "
-            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
-            UserWarning,
-        )
-        qml.operation.disable_new_opmath(warn=False)
 
 
 def pytest_generate_tests(metafunc):

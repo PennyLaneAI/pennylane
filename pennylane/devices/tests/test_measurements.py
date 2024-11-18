@@ -53,7 +53,6 @@ obs = {
         qml.Projector(np.array([0, 1]), wires=[0]),
     ],
     "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
-    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.Z(0), qml.X(0)]),
     "Prod": qml.prod(qml.X(0), qml.Z(1)),
     "SProd": qml.s_prod(0.1, qml.Z(0)),
     "Sum": qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
@@ -161,9 +160,7 @@ class TestSupportedObservables:
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
-    @pytest.mark.parametrize("ham_constructor", [qml.ops.Hamiltonian, qml.ops.LinearCombination])
-    @pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
-    def test_hamiltonian_diff(self, ham_constructor, device_kwargs, tol):
+    def test_hamiltonian_diff(self, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
 
         device_kwargs["wires"] = 1
@@ -176,7 +173,7 @@ class TestHamiltonianSupport:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                ham_constructor(
+                qml.Hamiltonian(
                     coeffs,
                     [qml.X(0), qml.Z(0)],
                 )

@@ -334,3 +334,23 @@ class TestProvidingDerivatives:
         out = dev.execute_and_compute_vjp(qml.tape.QuantumScript(), (1.0,))
         assert out[0] == "a"
         assert out[1] == ("c",)
+
+
+@pytest.mark.jax
+def test_eval_jaxpr_not_implemented():
+    """Test that the eval_jaxpr method is not implemented by default."""
+
+    import jax
+
+    def f(x):
+        return x + 1
+
+    # pylint: disable=too-few-public-methods
+    class NormalDevice(Device):
+
+        def execute(self, circuits, execution_config=None):
+            return 0
+
+    jaxpr = jax.make_jaxpr(f)(2)
+    with pytest.raises(NotImplementedError):
+        NormalDevice().eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
