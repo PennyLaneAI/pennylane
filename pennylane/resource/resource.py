@@ -73,7 +73,7 @@ class Resources:
             other (Resources): the resource object to add
 
         Returns:
-            Resources: The combined resources
+            Resources: the combined resources
 
         .. details::
 
