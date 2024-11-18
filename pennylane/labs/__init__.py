@@ -52,6 +52,9 @@ Operators
     ~ResourceS
     ~ResourceSWAP
     ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
 
 Templates
 ~~~~~~~~~
@@ -100,6 +103,9 @@ from .resource_estimation import (
     ResourceRY,
     ResourceS,
     ResourceGlobalPhase,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 
@@ -121,4 +127,7 @@ __all__ = [
     "ResourceRY",
     "ResourceS",
     "ResourceGlobalPhase",
+    "ResourceX",
+    "ResourceY",
+    "ResourceZ",
 ]

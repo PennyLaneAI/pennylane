@@ -27,6 +27,9 @@ from .qubit import (
     ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 from .op_math import (

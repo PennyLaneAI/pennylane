@@ -32,6 +32,9 @@ from .ops import (
     ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 from .templates import (
