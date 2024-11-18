@@ -235,7 +235,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
         >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-        >>> print(add_in_parallel(r1, r2))
+        >>> print(qml.resource.add_in_parallel(r1, r2))
         wires: 4
         gates: 4
         depth: 0
@@ -309,7 +309,7 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
         **Example**
 
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1})
-        >>> print(mul_in_parallel(r1, 2))
+        >>> print(qml.resource.mul_in_parallel(r1, 2))
         wires: 4
         gates: 4
         depth: 0
@@ -330,7 +330,7 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
 
 
 def _combine_dict(dict1: dict, dict2: dict):
-    r"""Private function which combines two dictionaries together."""
+    r"""Combines two dictionaries and adds values of common keys."""
     combined_dict = copy.copy(dict1)
 
     for k, v in dict2.items():
@@ -343,7 +343,7 @@ def _combine_dict(dict1: dict, dict2: dict):
 
 
 def _scale_dict(dict1: dict, scalar: int):
-    r"""Private function which scales the values in a dictionary."""
+    r"""Scales the values in a dictionary with a scalar."""
 
     combined_dict = copy.copy(dict1)
 
