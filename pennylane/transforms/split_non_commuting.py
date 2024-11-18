@@ -23,7 +23,7 @@ from typing import Optional
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike, Union
@@ -259,12 +259,12 @@ def split_non_commuting(
     if len(tape.measurements) == 0:
         return [tape], null_postprocessing
 
-    # Special case for a single measurement of a Sum or Hamiltonian, in which case
+    # Special case for a single measurement of a Sum, in which case
     # the grouping information can be computed and cached in the observable.
     if (
         len(tape.measurements) == 1
         and isinstance(tape.measurements[0], ExpectationMP)
-        and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
+        and isinstance(tape.measurements[0].obs, Sum)
         and (
             (
                 grouping_strategy in ("default", "qwc")
@@ -292,7 +292,7 @@ def split_non_commuting(
         grouping_strategy == "wires"
         or grouping_strategy == "default"
         and any(
-            isinstance(m, ExpectationMP) and isinstance(m.obs, (LinearCombination, Hamiltonian))
+            isinstance(m, ExpectationMP) and isinstance(m.obs, LinearCombination)
             for m in tape.measurements
         )
         or any(
@@ -306,7 +306,7 @@ def split_non_commuting(
         # compute, but inefficient quantum-wise. If this transform is to be added to a device's
         # `preprocess`, it will be performed for every circuit execution, which can get very
         # expensive if there is a large number of observables. The reasoning here is, large
-        # Hamiltonians typically come in the form of a `LinearCombination` or `Hamiltonian`, so
+        # Hamiltonians typically come in the form of a `LinearCombination`, so
         # if we see one of those, use wires grouping to be safe. Otherwise, use qwc grouping.
         return _split_using_wires_grouping(tape, single_term_obs_mps, offsets)
 
@@ -314,7 +314,7 @@ def split_non_commuting(
 
 
 def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
-    """Splits a tape measuring a single Hamiltonian or Sum and group commuting observables."""
+    """Splits a tape measuring a single Sum and group commuting observables."""
 
     obs = tape.measurements[0].obs
     if obs.grouping_indices is None:
@@ -322,7 +322,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
 
     coeffs, obs_list = obs.terms()
 
-    # The constant offset of the Hamiltonian, typically arising from Identity terms.
+    # The constant offset of the Sum, typically arising from Identity terms.
     offset = 0
 
     # A dictionary for measurements of each unique single-term observable, mapped to the
@@ -348,7 +348,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
             else:
                 new_mp = qml.expval(obs_list[obs_idx])
                 if new_mp in single_term_obs_mps:
-                    # If the Hamiltonian contains duplicate observables, it can be reused,
+                    # If the Sum contains duplicate observables, it can be reused,
                     # and the coefficients for each duplicate should be combined.
                     single_term_obs_mps[new_mp] = (
                         single_term_obs_mps[new_mp][0],
@@ -542,7 +542,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
     for mp_idx, mp in enumerate(tape.measurements):
         obs = mp.obs
         offset = 0
-        if isinstance(mp, ExpectationMP) and isinstance(obs, (Hamiltonian, Sum, Prod, SProd)):
+        if isinstance(mp, ExpectationMP) and isinstance(obs, (Sum, Prod, SProd)):
             # Break the observable into terms, and construct an ExpectationMP with each term.
             for c, o in zip(*obs.terms()):
                 # If the observable is an identity, track it with a constant offset
@@ -561,7 +561,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         else:
             if isinstance(obs, SProd):
                 obs = obs.simplify()
-            if isinstance(obs, (Hamiltonian, Sum)):
+            if isinstance(obs, Sum):
                 raise RuntimeError(
                     f"Cannot split up terms in sums for MeasurementProcess {type(mp)}"
                 )
