@@ -1,5 +1,3 @@
-# pragma: no cover
-
 # Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,14 +21,16 @@ Lark grammar reference:
 
 # pylint: disable=unused-import
 
-from textwrap import dedent
+from textwrap import dedent  # pragma: no cover
 
 try:
-    from lark import Lark, LarkError, UnexpectedInput
-except ImportError as e:
-    raise RuntimeError("toml_check requires `lark` library. Consider `pip install lark`") from e
+    from lark import Lark, LarkError, UnexpectedInput  # pragma: no cover
+except ImportError as e:  # pragma: no cover
+    raise RuntimeError(
+        "toml_check requires `lark` library. Consider `pip install lark`"
+    ) from e  # pragma: no cover
 
-parser = Lark(
+parser = Lark(  # pragma: no cover
     dedent(
         """
         start: schema_body \
