@@ -1,6 +1,7 @@
 """This module contains functions to localize normal modes."""
 
 import warnings
+
 import numpy as np
 import scipy
 
@@ -135,20 +136,17 @@ def localize_normal_modes(results, freq_separation=[2600]):
     disp_vecs = results["norm_mode"]
     nmodes = len(freqs)
 
-    modes_arr = []
-    freqs_arr = []
-    disps_arr = []
     num_seps = len(freq_separation)
     min_modes = np.nonzero(freqs_in_cm <= freq_separation[0])[0]
 
-    modes_arr.append(min_modes)
-    freqs_arr.append(freqs[min_modes])
-    disps_arr.append(disp_vecs[min_modes])
+    modes_arr = [min_modes]
+    freqs_arr = [freqs[min_modes]]
+    disps_arr = [disp_vecs[min_modes]]
 
     for i_sep in range(num_seps - 1):
-        is_bigger = np.array(freq_separation[i_sep] <= freqs_in_cm)
-        is_smaller = np.array(freq_separation[i_sep + 1] >= freqs_in_cm)
-        mid_modes = np.nonzero(is_bigger * is_smaller)[0]
+        mid_modes = np.nonzero(
+            (freq_separation[i_sep] <= freqs_in_cm) & (freq_separation[i_sep + 1] >= freqs_in_cm)
+        )[0]
         modes_arr.append(mid_modes)
         freqs_arr.append(freqs[mid_modes])
         disps_arr.append(disp_vecs[mid_modes])
@@ -190,15 +188,14 @@ def localize_normal_modes(results, freq_separation=[2600]):
 
     loc_results = {}
     loc_freqs = []
-    for idx in range(num_seps + 1):
-        loc_freqs.extend(loc_freqs_arr[idx])
-    loc_freqs = np.array(loc_freqs)
-    loc_results["freq_wavenumber"] = loc_freqs * AU_TO_CM
     new_disp = []
     for idx in range(num_seps + 1):
+        loc_freqs.extend(loc_freqs_arr[idx])
         for m in range(len(loc_freqs_arr[idx])):
             m_disp = qlocs_arr[idx][:, :, m]
             new_disp.append(m_disp)
+    loc_freqs = np.array(loc_freqs)
+    loc_results["freq_wavenumber"] = loc_freqs * AU_TO_CM
     loc_results["norm_mode"] = new_disp
 
     return loc_results, uloc

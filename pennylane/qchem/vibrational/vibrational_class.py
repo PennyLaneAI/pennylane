@@ -3,10 +3,11 @@ This object stores all the necessary information to construct
 vibrational Hamiltonian for a given molecule."""
 
 import numpy as np
-import pennylane as qml
 import pyscf
 from pyscf.geomopt.geometric_solver import optimize
 from pyscf.hessian import thermo
+
+import pennylane as qml
 
 BOHR_TO_ANG = 0.529177
 
