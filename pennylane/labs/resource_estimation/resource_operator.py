@@ -20,8 +20,6 @@ from typing import TYPE_CHECKING, Callable, Dict
 if TYPE_CHECKING:
     from pennylane.labs.resource_estimation import CompressedResourceOp
 
-import pennylane.labs.resource_estimation as re
-
 
 class ResourceOperator(ABC):
     r"""This is an abstract class that defines the methods a PennyLane Operator
