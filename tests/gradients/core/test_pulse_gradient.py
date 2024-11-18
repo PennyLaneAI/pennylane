@@ -189,33 +189,6 @@ class TestSplitEvolOps:
             # Check that the inserted exponential is correct
             qml.assert_equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
 
-    @pytest.mark.usefixtures("legacy_opmath_only")  # this is only an issue with legacy Hamiltonian
-    def test_warnings_legacy_opmath(self):
-        """Test that a warning is raised for computing eigenvalues of a Hamiltonian
-        for more than four wires but not for fewer wires."""
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-        ham = qml.pulse.constant * qml.PauliY(0)
-        op = qml.evolve(ham)([0.3], 2.0)
-        ob = qml.Hamiltonian(
-            [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(5)]), qml.PauliX(0)]
-        )
-        with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            _split_evol_ops(op, ob, tau=0.4)
-
-        ob = qml.Hamiltonian(
-            [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(4)]), qml.PauliX(0)]
-        )
-        with warnings.catch_warnings():
-            warnings.filterwarnings("error")
-            warnings.filterwarnings(
-                "ignore",
-                "qml.operation.Tensor uses the old approach",
-                qml.PennyLaneDeprecationWarning,
-            )
-            _split_evol_ops(op, ob, tau=0.4)
-
 
 @pytest.mark.jax
 class TestSplitEvolTapes:

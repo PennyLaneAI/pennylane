@@ -25,6 +25,22 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
+def test_decomp_depth_argument_is_deprecated():
+    """Test that the decomp_depth argument in set_decomposition context manager is deprecated"""
+
+    dev = qml.device("default.mixed", wires=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(wires=0))
+
+    # Test within the context manager
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="decomp_depth argument is deprecated"):
+        with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev, decomp_depth=10):
+            _ = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
+
+
 class TestCreateExpandFn:
     """Test creating expansion functions from stopping criteria."""
 
@@ -96,28 +112,6 @@ class TestCreateExpandFn:
         assert len(new_tape.operations) == 2
         assert new_tape.operations[0].name == "U1"
         assert new_tape.operations[1].name == "Rot"
-
-    def test_depth_only_expansion(self):
-        """Test that passing a depth simply expands to that depth"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.2, wires=0)
-            qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
-            qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
-            qml.templates.StronglyEntanglingLayers(
-                qml.numpy.ones([2, 2, 3], requires_grad=True), wires=[0, 1]
-            )
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expand_fn = qml.transforms.create_expand_fn(depth=0)
-        new_tape = expand_fn(tape)
-        assert new_tape is tape
-
-        expand_fn = qml.transforms.create_expand_fn(depth=10)
-        new_tape = expand_fn(tape)
-        assert new_tape.operations[0] == tape.operations[0]
-        assert new_tape.operations[1] == tape.operations[1]
-        assert [op.name for op in new_tape.operations[2:5]] == ["RZ", "RY", "RZ"]
-        assert len(new_tape.operations[6:]) == 15
 
 
 class TestExpandMultipar:
@@ -327,7 +321,7 @@ class TestExpandInvalidTrainable:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(tape, "expand")
+        spy = mocker.spy(qml.transforms, "decompose")
         new_tape = qml.transforms.expand_invalid_trainable(tape)
 
         assert new_tape is not tape

@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.operation import Tensor
 from pennylane.wires import Wires
 
 
@@ -62,7 +61,7 @@ class TestCircuitGraphHash:
 
     observable1 = qml.PauliZ(wires=[0])
     observable2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
-    observable3 = Tensor(qml.PauliZ(0), qml.PauliZ(1))
+    observable3 = qml.prod(qml.PauliZ(0), qml.PauliZ(1))
 
     numeric_observable_queue = [
         (returntype1, observable1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),
@@ -74,7 +73,7 @@ class TestCircuitGraphHash:
         (
             returntype1,
             observable3,
-            "|||ObservableReturnTypes.Expectation!['PauliZ', 'PauliZ'][0, 1]",
+            "|||ObservableReturnTypes.Expectation!Prod[0, 1]",
         ),
         (returntype2, observable1, "|||ObservableReturnTypes.Variance!PauliZ[0]"),
         (
@@ -85,7 +84,7 @@ class TestCircuitGraphHash:
         (
             returntype2,
             observable3,
-            "|||ObservableReturnTypes.Variance!['PauliZ', 'PauliZ'][0, 1]",
+            "|||ObservableReturnTypes.Variance!Prod[0, 1]",
         ),
     ]
 

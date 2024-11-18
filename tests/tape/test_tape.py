@@ -93,11 +93,9 @@ class TestConstruction:
         assert len(tape.queue) == 6
         assert tape.operations == ops
         assert tape.observables == obs
-        assert tape.output_dim == 5
         assert tape.batch_size is None
 
         assert tape.wires == qml.wires.Wires([0, "a", 4])
-        assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
 
     def test_observable_processing(self, make_tape):
         """Test that observables are processed correctly"""
@@ -153,23 +151,6 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_tensor_observables_tensor_init(self):
-        """Test that tensor observables are correctly processed from the annotated
-        queue. Here, we test multiple tensor observables constructed via explicit
-        Tensor creation."""
-
-        with QuantumTape() as tape:
-            op_ = qml.RX(1.0, wires=0)
-            t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
-            t_obs2 = qml.operation.Tensor(t_obs1, qml.Hadamard(2))
-            qml.expval(t_obs2)
-
-        assert tape.operations == [op_]
-        assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.measurements.Expectation
-        assert tape.measurements[0].obs is t_obs2
-
     def test_tensor_observables_tensor_matmul(self):
         """Test that tensor observables are correctly processed from the annotated
         queue". Here, wetest multiple tensor observables constructed via matmul
@@ -210,7 +191,6 @@ class TestConstruction:
         assert not tape.operations
         assert tape.measurements == [D]
         assert tape.observables == [C]
-        assert tape.output_dim == 1
         assert tape.batch_size is None
 
     def test_multiple_contexts(self):
@@ -233,7 +213,6 @@ class TestConstruction:
         assert len(tape.queue) == 4
         assert tape.operations == ops
         assert tape.observables == obs
-        assert tape.output_dim == 5
         assert tape.batch_size is None
 
         assert not any(qml.equal(a, op) or qml.equal(b, op) for op in tape.operations)
@@ -1253,7 +1232,6 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        assert tape.output_dim == 1
         assert tape.batch_size is None
 
         # test execution with no parameters
@@ -1292,8 +1270,6 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        assert tape.output_dim == 1
-
         res = dev.execute(tape)
         assert res.shape == ()
 
@@ -1313,8 +1289,6 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
-
-        assert tape.output_dim == 2
 
         res = dev.execute(tape)
         assert isinstance(res, tuple)
@@ -1337,8 +1311,6 @@ class TestExecution:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
-        assert tape.output_dim == 2
-
         res = dev.execute(tape)
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -1360,8 +1332,6 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
-
-        assert tape.output_dim == 5
 
         res = dev.execute(tape)
 
@@ -1469,8 +1439,6 @@ class TestCVExecution:
             qml.Beamsplitter(np.pi / 4, 0, wires=[0, 1])
             qml.expval(qml.NumberOperator(0))
 
-        assert tape.output_dim == 1
-
         res = dev.batch_execute([tape])[0]
         assert res.shape == ()
 
@@ -1505,9 +1473,6 @@ class TestTapeCopying:
         assert tape.wires == copied_tape.wires
         assert tape.data == copied_tape.data
 
-        # check that the output dim is identical
-        assert tape.output_dim == copied_tape.output_dim
-
     @pytest.mark.parametrize("copy_fn", [lambda tape: tape.copy(copy_operations=True), copy.copy])
     def test_shallow_copy_with_operations(self, copy_fn):
         """Test that shallow copying of a tape and operations allows
@@ -1536,9 +1501,6 @@ class TestTapeCopying:
         assert tape.wires == copied_tape.wires
         assert tape.data == copied_tape.data
 
-        # check that the output dim is identical
-        assert tape.output_dim == copied_tape.output_dim
-
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
         with QuantumTape() as tape:
@@ -1555,9 +1517,6 @@ class TestTapeCopying:
         assert all(o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations))
         assert all(o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables))
         assert all(m1 is not m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements))
-
-        # check that the output dim is identical
-        assert tape.output_dim == copied_tape.output_dim
 
         # The underlying operation data has also been copied
         assert copied_tape.operations[0].wires is not tape.operations[0].wires
