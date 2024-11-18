@@ -9,6 +9,27 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` is deprecated. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` is deprecated. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
+* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been deprecated. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been deprecated. 
+  Instead, use the ``qml.workflow.get_best_diff_method``. 
+
+  - Deprecated in v0.40
+  - Will be removed in v0.41
+
 * The ``gradient_fn`` keyword argument to ``qml.execute`` has been renamed ``diff_method``.
 
   - Deprecated in v0.40
@@ -16,70 +37,22 @@ Pending deprecations
 
   - Deprecated in v0.39
   - Will be removed in v0.40
-
-* The ``qml.qinfo`` module has been deprecated. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
-  modules instead.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
   
-* ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
-  will be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
-  respectively.
-
-  - Deprecated top level access in v0.39
-  - Top level access will be removed in v0.40
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
 
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-New operator arithmetic deprecations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In PennyLane v0.39, the legacy operator arithmetic system has been deprecated. Check out the :ref:`Updated operators <new_opmath>` page
-for details on how to port your legacy code to the new system. The old system is still accessible via :func:`~.disable_new_opmath`, though
-it is not recommended, as the old system is deprecated and will be removed in the v0.40 release. The following functionality will explicitly
-raise a deprecation warning when used:
-
-* In PennyLane v0.39, legacy operator arithmetic has been deprecated. This includes :func:`~pennylane.operation.enable_new_opmath`,
-  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
-  that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`;
-  this behaviour is not deprecated.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
-  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* :func:`pennylane.pauli.simplify` is deprecated. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
-
-  - Deprecated in v0.39
-  - Will be removed in v0.40
-
-* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
+* ``op.ops`` and ``op.coeffs`` for ``Sum`` and ``Prod`` will be removed in the future. Use
   :meth:`~.Operator.terms` instead.
 
-  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
+  - deprecated in v0.35
 
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
   - Deprecated in v0.36
-
-
-Other deprecations
-~~~~~~~~~~~~~~~~~~
-
-* PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
-  
-  - Last supported version of ``manylinux2014`` with v0.36
-  - Fully migrated to ``manylinux_2_28`` with v0.37
 
 * ``MultiControlledX`` is the only controlled operation that still supports specifying control
   values with a bit string. In the future, it will no longer accepts strings as control values.
@@ -87,8 +60,46 @@ Other deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
+Completed removal of legacy operator arithmetic
+-----------------------------------------------
+
+In PennyLane v0.40, the legacy operator arithmetic system has been removed, and is fully replaced by the new
+operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
+for details on how to port your legacy code to the new system. The following functionality has been removed:
+
+* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`~pennylane.operation.enable_new_opmath`,
+  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
+  that ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` has been removed. Instead, please use
+  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
 Completed deprecation cycles
 ----------------------------
+
+* The ``qml.qinfo`` module has been removed. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
+  modules instead.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* Top level access to ``Device``, ``QubitDevice``, and ``QutritDevice`` have been removed. Instead, they
+  are available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  respectively.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
 
 * The :class:`~pennylane.BasisStatePreparation` template has been removed.
   Instead, use :class:`~pennylane.BasisState`.
@@ -96,6 +107,12 @@ Completed deprecation cycles
   - Deprecated in v0.39
   - Removed in v0.40
   
+
+* The ``qml.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
 * ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
 
   - Deprecated in v0.39
@@ -135,6 +152,11 @@ Completed deprecation cycles
 
   - Deprecated in v0.39
   - Removed in v0.40
+
+* PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
+
+  - Last supported version of ``manylinux2014`` with v0.36
+  - Fully migrated to ``manylinux_2_28`` with v0.37
 
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
   Instead, ``qml.simplify()`` can be called on the constructed operator.
