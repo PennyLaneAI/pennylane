@@ -94,7 +94,7 @@ class Resources:
         return add_in_series(self, other)
 
     def __mul__(self, scalar: int):
-        r"""Multiply the Resource object by a scalar as if that many copies of the circuit were executed in series
+        r"""Multiply the Resources object by a scalar as if that many copies of the circuit were executed in series
 
         Args:
             scalar (int): The scalar to multiply the resource object by
