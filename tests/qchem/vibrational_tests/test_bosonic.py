@@ -104,6 +104,9 @@ bw20cs = bw20c1 + bw20c2 - bw20c3
 
 bw21 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"})
 bw22 = BoseWord({(0, 0): "-", (1, 0): "+"})
+bw23 = BoseWord(
+    {(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"}, True
+)
 
 
 # pylint: disable=too-many-public-methods
@@ -151,6 +154,14 @@ class TestBoseWord:
                                 (5, 1): "-",
                             }
                         ): 1.0,
+                    }
+                ),
+            ),
+            (
+                bw23,
+                BoseSentence(
+                    {
+                        BoseWord({}): 1.0,
                     }
                 ),
             ),
@@ -321,6 +332,11 @@ class TestBoseWord:
         """Test that an error is raised if the operator orders are not correct."""
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             BoseWord(operator)
+
+    def test_init_hardcore(self):
+        """Test that initializing hardcore boson works as intended"""
+        bw = BoseWord({(0, 0): "+", (1, 0): "-"}, True)
+        assert bw == BoseWord({})
 
     tup_bw_dag = (
         (bw1, bw1_dag),
@@ -1223,7 +1239,7 @@ class TestBoseSentenceArithmetic:
         """Test __rsub__ with unsupported type raises an error"""
         with pytest.raises(TypeError, match=f"Cannot multiply {type(bad_type)} by BoseSentence."):
             bad_type * bs  # pylint: disable=pointless-statement
-    
+
     @pytest.mark.parametrize(
         "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")
     )
