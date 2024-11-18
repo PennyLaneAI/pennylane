@@ -841,7 +841,7 @@ class QNode:
 
             This property is deprecated in v0.40 and will be removed in v0.41.
             Instead, use the :func:`qml.workflow.construct_tape <.workflow.construct_tape>` function.
-            """
+        """
 
         warnings.warn(
             "The tape/qtape property is deprecated and will be removed in v0.41. "
