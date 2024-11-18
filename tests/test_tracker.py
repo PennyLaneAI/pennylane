@@ -14,10 +14,19 @@
 """
 Unit tests for the Tracker and constructor
 """
+import warnings
+
 import pytest
 
 import pennylane as qml
 from pennylane import Tracker
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestTrackerCoreBehavior:

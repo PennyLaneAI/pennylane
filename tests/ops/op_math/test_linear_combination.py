@@ -14,6 +14,8 @@
 """
 Tests for the LinearCombination class.
 """
+import warnings
+
 # pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
 from copy import copy
@@ -28,6 +30,14 @@ from pennylane import numpy as pnp
 from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [

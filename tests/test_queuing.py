@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
+import warnings
 from multiprocessing.dummy import Pool as ThreadPool
 
 import numpy as np
@@ -21,6 +22,13 @@ import pytest
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingError, QueuingManager, WrappedObj
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
