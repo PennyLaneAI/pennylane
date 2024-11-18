@@ -2,6 +2,7 @@
 Unit tests for transpiler function.
 """
 
+import warnings
 from math import isclose
 
 import pytest
@@ -9,6 +10,13 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.transpile import transpile
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def build_qfunc_probs(wires):

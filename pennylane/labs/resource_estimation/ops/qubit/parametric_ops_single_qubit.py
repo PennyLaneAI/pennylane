@@ -94,7 +94,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
 
 class ResourceRZ(qml.RZ, re.ResourceOperator):
-    r"""Resource class for RZ
+    r"""Resource class for the RZ gate.
 
     Resources:
         The resources are estimated by approximating the gate with a series of T gates.

@@ -17,71 +17,6 @@ r"""
 This module contains experimental features enabling
 advanced quantum computing research.
 
-.. warning::
-
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
-
-.. currentmodule:: pennylane.labs.resource_estimation
-
-Resource Estimation Base Classes:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~Resources
-    ~CompressedResourceOp
-    ~ResourceOperator
-
-Operators
-~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourceCNOT
-    ~ResourceControlledPhaseShift
-    ~ResourceGlobalPhase
-    ~ResourceHadamard
-    ~ResourceIdentity
-    ~ResourceRot
-    ~ResourceRX
-    ~ResourceRY
-    ~ResourceRZ
-    ~ResourceS
-    ~ResourceSWAP
-    ~ResourceT
-    ~ResourceX
-    ~ResourceY
-    ~ResourceZ
-
-Templates
-~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourceQFT
-
-Tracking Resources
-~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-    
-    ~get_resources
-    ~DefaultGateSet
-    ~resource_config
-
-Exceptions
-~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~ResourcesNotDefined
-
 .. currentmodule:: pennylane.labs
 
 Modules
@@ -91,59 +26,12 @@ Modules
     :toctree: api
 
     dla
+    resource_estimation
 
 """
 
 from pennylane.labs import dla
-from .resource_estimation import (
-    Resources,
-    CompressedResourceOp,
-    ResourceOperator,
-    ResourcesNotDefined,
-    DefaultGateSet, 
-    get_resources, 
-    resource_config,
-    ResourceCNOT,
-    ResourceControlledPhaseShift,
-    ResourceHadamard,
-    ResourceRZ,
-    ResourceSWAP,
-    ResourceT,
-    ResourceQFT,
-    ResourceIdentity,
-    ResourceRot,
-    ResourceRX,
-    ResourceRY,
-    ResourceS,
-    ResourceGlobalPhase,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-)
+from pennylane.labs import resource_estimation
 
 
-__all__ = [
-    "Resources",
-    "CompressedResourceOp",
-    "ResourceOperator",
-    "ResourcesNotDefined",
-    "ResourceCNOT",
-    "ResourceControlledPhaseShift",
-    "ResourceHadamard",
-    "ResourceRZ",
-    "ResourceSWAP",
-    "ResourceT",
-    "ResourceQFT",
-    "ResourceIdentity",
-    "ResourceRot",
-    "ResourceRX",
-    "ResourceRY",
-    "ResourceS",
-    "ResourceGlobalPhase",
-    "ResourceX",
-    "ResourceY",
-    "ResourceZ",
-    DefaultGateSet, 
-    resource_config,
-    get_resources,
-]
+__all__ = []

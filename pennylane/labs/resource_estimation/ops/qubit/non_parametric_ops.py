@@ -21,7 +21,7 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
-    """Resource class for Hadamard"""
+    """Resource class for the Hadamard gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -106,7 +106,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
 
 class ResourceT(qml.T, re.ResourceOperator):
-    """Resource class for T"""
+    """Resource class for the T gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:

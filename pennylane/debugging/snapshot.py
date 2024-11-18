@@ -219,8 +219,8 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
 
     def get_snapshots(*args, **kwargs):
         # Need to construct to generate the tape and be able to validate
-        qnode.construct(args, kwargs)
-        qml.devices.preprocess.validate_measurements(qnode.tape)
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
+        qml.devices.preprocess.validate_measurements(tape)
 
         old_interface = qnode.interface
         if old_interface == "auto":
