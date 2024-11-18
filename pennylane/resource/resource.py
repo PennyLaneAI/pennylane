@@ -70,7 +70,7 @@ class Resources:
         r"""Adds two Resources objects together as if the circuits were executed in series.
 
         Args:
-            other (Resources): The resource object to add
+            other (Resources): the resource object to add
 
         Returns:
             Resources: The combined resources
