@@ -23,6 +23,7 @@ import functools
 import itertools
 import logging
 from collections import defaultdict
+from dataclasses import replace
 from string import ascii_letters as ABC
 
 import numpy as np
@@ -87,6 +88,8 @@ class DefaultMixed(QubitDevice):
             outcomes of observables. Defaults to ``None`` if not specified, which means that the outcomes are
             without any readout error.
     """
+
+    _device_options = ("rng", "prng_key")  # tuple of string names for all the device options.
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
@@ -188,6 +191,7 @@ class DefaultMixed(QubitDevice):
         res = qnp.cast(array, dtype=dtype)
         return res
 
+    # pylint: disable=too-many-arguments
     @debug_logger_init
     def __init__(
         self,
@@ -713,6 +717,31 @@ class DefaultMixed(QubitDevice):
                 self._apply_channel_tensordot(matrices, wires)
             else:
                 self._apply_channel(matrices, wires)
+
+    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
+        """This is a private helper for ``preprocess`` that sets up the execution config.
+
+        Args:
+            execution_config (ExecutionConfig): an unprocessed execution config.
+
+        Returns:
+            ExecutionConfig: a preprocessed execution config.
+        """
+        updated_values = {}
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
+        if execution_config.gradient_method == "best":
+            updated_values["gradient_method"] = "backprop"
+        updated_values["use_device_gradient"] = False
+        updated_values["grad_on_execution"] = False
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
+        return replace(execution_config, **updated_values)
 
     @debug_logger
     def preprocess(
