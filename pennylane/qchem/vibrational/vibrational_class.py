@@ -41,7 +41,7 @@ def single_point(molecule, method="rhf"):
               Default is restricted Hartree-Fock 'rhf'.
 
     Returns:
-      pyscf object from electronic structure calculation.
+      pyscf object from electronic structure calculation
     """
     method = method.strip().lower()
     if method not in ["rhf", "uhf"]:
