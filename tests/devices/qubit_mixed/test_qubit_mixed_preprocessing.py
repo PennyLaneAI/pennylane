@@ -310,3 +310,53 @@ class TestPreprocessingIntegration:
                     assert "is not affected by readout error" in str(warn.message)
             else:
                 assert len(warning) == 0
+
+    def test_preprocess_linear_combination_observable(self):
+        """Test that the device's preprocessing handles linear combinations of observables correctly."""
+        dev = DefaultMixed(wires=2)
+
+        # Define the linear combination observable
+        obs = qml.PauliX(0) + 2 * qml.PauliZ(1)
+
+        # Define the circuit
+        ops = [qml.Hadamard(0), qml.CNOT(wires=[0, 1])]
+        measurements = [qml.expval(obs)]
+        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+
+        # Preprocess the tape
+        program, _ = dev.preprocess()
+        tapes, _ = program([tape])
+
+        # Check that the measurement is handled correctly during preprocessing
+        # The tape should remain unchanged as the device should accept the observable
+        assert len(tapes) == 1
+        processed_tape = tapes[0]
+
+        # Verify that the operations and measurements are unchanged
+        assert processed_tape.operations == tape.operations
+        assert processed_tape.measurements == tape.measurements
+
+        # Ensure that the linear combination observable is accepted
+        measurement = processed_tape.measurements[0]
+        assert isinstance(measurement.obs, qml.ops.Sum)
+
+    @pytest.mark.jax
+    def test_preprocess_jax_seed(self):
+        """Test that the device's preprocessing correctly handles JAX PRNG keys as seeds."""
+        jax = pytest.importorskip("jax")
+
+        seed = jax.random.PRNGKey(42)
+
+        dev = DefaultMixed(wires=1, seed=seed, shots=100)
+
+        # Preprocess the device
+        _ = dev.preprocess()
+
+        # Since preprocessing does not modify the seed, we check the device's attributes
+        # Verify that the device's _prng_key is set correctly
+        # pylint: disable=protected-access
+        assert dev._prng_key is seed
+
+        # Verify that the device's _rng is initialized appropriately
+        # pylint: disable=protected-access
+        assert dev._rng is not None
