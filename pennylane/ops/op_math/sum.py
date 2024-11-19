@@ -25,7 +25,7 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp, handle_recursion_error
@@ -103,7 +103,6 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
         ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, see
         :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.group_observables`.
     """
-    summands = tuple(convert_to_opmath(op) for op in summands)
     if lazy:
         return Sum(*summands, grouping_type=grouping_type, method=method, id=id)
 
@@ -337,10 +336,7 @@ class Sum(CompositeOp):
         """
         if self.pauli_rep:
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
-        gen = (
-            (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix(), op.wires)
-            for op in self
-        )
+        gen = ((op.matrix(), op.wires) for op in self)
 
         reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 

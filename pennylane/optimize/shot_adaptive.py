@@ -308,12 +308,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """Compute the single shot gradients of a QNode."""
         self.check_device(qnode.device)
 
-        qnode.construct(args, kwargs)
-        tape = qnode.tape
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
         [expval] = tape.measurements
         coeffs, observables = (
             expval.obs.terms()
-            if isinstance(expval.obs, (qml.ops.LinearCombination, qml.ops.Hamiltonian))
+            if isinstance(expval.obs, qml.ops.LinearCombination)
             else ([1.0], [expval.obs])
         )
 
