@@ -17,7 +17,7 @@ This module contains the functions needed for computing the molecular Hamiltonia
 from functools import singledispatch
 
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
-# pylint: disable=consider-using-generator, protected-access
+# pylint: disable=consider-using-generator, protected-access, too-many-positional-arguments
 import pennylane as qml
 
 from .basis_data import atomic_numbers
