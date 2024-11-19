@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 
 from ._wires import wires_to_json
 
@@ -44,8 +44,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
             arguments.
         - Hyperparameters are not used or are automatically derived by ``__init__()``.
 
-    Almost all operators meet these conditions. This type also supports serializing the
-    ``Hamiltonian`` and ``Tensor`` operators.
     """
 
     type_id = "operator"
@@ -56,13 +54,9 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         """Set of supported operators."""
         return frozenset(
             (
-                # pennylane/operation/Tensor
-                Tensor,
                 # pennylane/ops/qubit/arithmetic_qml.py
                 qml.QubitCarry,
                 qml.QubitSum,
-                # pennylane/ops/qubit/hamiltonian.py
-                qml.ops.Hamiltonian,
                 # pennylane/ops/op_math/linear_combination.py
                 qml.ops.LinearCombination,
                 # pennylane/ops/op_math - prod.py, s_prod.py, sum.py
@@ -219,10 +213,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
 
-            if isinstance(op, Tensor):
-                self._ops_to_hdf5(bind, op_key, op.obs)
-                op_wire_labels.append("null")
-            elif isinstance(op, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+            if isinstance(op, qml.ops.LinearCombination):
                 coeffs, ops = op.terms()
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
@@ -260,10 +251,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 op_key = f"op_{i}"
 
                 op_cls = self._supported_ops_dict()[op_class_name]
-                if op_cls is Tensor:
-                    prod_op = qml.ops.Prod if qml.operation.active_new_opmath() else Tensor
-                    ops.append(prod_op(*self._hdf5_to_ops(bind[op_key])))
-                elif op_cls in (qml.ops.Hamiltonian, qml.ops.LinearCombination):
+                if op_cls is qml.ops.LinearCombination:
                     ops.append(
                         qml.Hamiltonian(
                             coeffs=list(bind[op_key]["hamiltonian_coeffs"]),

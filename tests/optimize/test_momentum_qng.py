@@ -81,7 +81,6 @@ class TestOptimize:
             var -= accum
             assert np.allclose([var1, var2], var)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_step_and_cost_autograd_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned after 8 optimization steps via the
         step_and_cost method for the MomentumQNG optimizer when the generator
@@ -304,7 +303,7 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(theta), -1, atol=1e-4)
 
-    def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
+    def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct MomentumQNG value every step, the correct parameter updates, and
         correct cost after a few steps"""
@@ -356,5 +355,3 @@ class TestOptimize:
 
         # check final cost
         assert np.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)
-        if qml.operation.active_new_opmath():
-            assert len(recwarn) == 0

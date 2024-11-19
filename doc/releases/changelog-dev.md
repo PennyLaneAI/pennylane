@@ -44,6 +44,7 @@
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
+  [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
 
 * `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
   pennylane variant jaxpr.
@@ -64,13 +65,42 @@
 * Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
+<h3>Labs 🧪</h3>
+
+* Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
+  [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
+* Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
+  [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+
 <h3>Breaking changes 💔</h3>
+
+* Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
+  `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
+  Note that `qml.Hamiltonian` will continue to dispatch to `qml.ops.LinearCombination`. For more information, 
+  check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
+  [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
+
+* The developer-facing `qml.utils` module has been removed. Specifically, the
+following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
+
+  * `qml.utils._flatten`, `qml.utils.unflatten` has been moved and renamed to `qml.optimize.qng._flatten_np` and `qml.optimize.qng._unflatten_np` respectively.
+
+  * `qml.utils._inv_dict` and `qml._get_default_args` have been removed.
+
+  * `qml.utils.pauli_eigs` has been moved to `qml.pauli.utils`.
+
+  * `qml.utils.expand_vector` has been moved to `qml.math.expand_vector`.
+  
+* The `qml.qinfo` module has been removed. Please see the respective functions in the `qml.math` and `qml.measurements`
+  modules instead.
+  [(#6584)](https://github.com/PennyLaneAI/pennylane/pull/6584)
 
 * Top level access to `Device`, `QubitDevice`, and `QutritDevice` have been removed. Instead, they
   are available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
   respectively.
   [(#6537)](https://github.com/PennyLaneAI/pennylane/pull/6537)
-  
+
 * The `'ancilla'` argument for `qml.iterative_qpe` has been removed. Instead, use the `'aux_wire'` argument.
   [(#6532)](https://github.com/PennyLaneAI/pennylane/pull/6532)
 
@@ -93,6 +123,7 @@
 
 * The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
+  [(#6571)](https://github.com/PennyLaneAI/pennylane/pull/6571)
 
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
@@ -104,6 +135,10 @@
   [(#6561)](https://github.com/PennyLaneAI/pennylane/pull/6561)
 
 <h3>Deprecations 👋</h3>
+
+* The `tape` and `qtape` properties of `QNode` have been deprecated. 
+  Instead, use the `qml.workflow.construct_tape` function.
+  [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
 
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
@@ -152,5 +187,7 @@ Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+William Maxwell,
 Andrija Paurevic,
-Justin Pickering
+Justin Pickering,
+Jay Soni,
