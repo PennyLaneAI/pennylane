@@ -14,6 +14,8 @@
 """Integration tests for using the autograd interface with a QNode"""
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-dict-literal, no-name-in-module
 
+import warnings
+
 import autograd
 import autograd.numpy as anp
 import pytest
@@ -23,6 +25,14 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
@@ -533,34 +543,23 @@ class TestShotsIntegration:
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(DefaultQubit())
+        dev = DefaultQubit()
+
+        @qnode(dev)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn == "backprop"  # gets restored to default
-
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn is qml.gradients.param_shift
+        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn == "backprop"
-        assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert spy.call_args[1]["diff_method"] == "backprop"
 
 
 @pytest.mark.parametrize(

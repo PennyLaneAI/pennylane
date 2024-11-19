@@ -25,7 +25,6 @@ import numpy as np
 import rustworkx as rx
 
 import pennylane as qml
-from pennylane.ops import Prod, SProd
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
@@ -477,8 +476,8 @@ def group_observables(
     graph using graph-colouring heuristic algorithms.
 
     Args:
-        observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
-            operation instances and :class:`~.Tensor` instances thereof)
+        observables (list[Operator]): a list of Pauli word ``Observable`` instances (Pauli
+            operation instances and tensor products thereof)
         coefficients (TensorLike): A tensor or list of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
@@ -537,18 +536,7 @@ def group_observables(
         wires_obs, grouping_type=grouping_type, graph_colourer=method
     )
 
-    # Handles legacy op_math
-    temp_opmath = not qml.operation.active_new_opmath() and any(
-        isinstance(o, (Prod, SProd)) for o in observables
-    )
-    if temp_opmath:
-        qml.operation.enable_new_opmath(warn=False)
-
-    try:
-        partitioned_paulis = pauli_groupper.partition_observables()
-    finally:
-        if temp_opmath:
-            qml.operation.disable_new_opmath(warn=False)
+    partitioned_paulis = pauli_groupper.partition_observables()
 
     # Add observables without wires back to the first partition
     partitioned_paulis[0].extend(no_wires_obs)
@@ -582,15 +570,6 @@ def _partition_coeffs(partitioned_paulis, observables, coefficients):
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for ind, observable in enumerate(observables):
-                if isinstance(observable, qml.ops.Hamiltonian):
-                    # are_identical_pauli_words cannot handle Hamiltonian
-                    coeffs, ops = observable.terms()
-                    # Assuming the Hamiltonian has only one term
-                    observable = qml.s_prod(coeffs[0], ops[0])
-                if isinstance(pauli_word, qml.ops.Hamiltonian):
-                    # Need to add this case because rx methods do not change type of observables.
-                    coeffs, ops = pauli_word.terms()
-                    pauli_word = qml.s_prod(coeffs[0], ops[0])
                 if are_identical_pauli_words(pauli_word, observable):
                     indices.append(coeff_indices[ind])
                     observables.pop(ind)

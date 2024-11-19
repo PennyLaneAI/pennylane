@@ -400,7 +400,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
             )
         # After construction, check whether invalid operations (for a spectrum)
         # are present in the QNode
-        for m in qnode.qtape.measurements:
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
+        for m in tape.measurements:
             if not isinstance(m, (qml.measurements.ExpectationMP, qml.measurements.ProbabilityMP)):
                 raise ValueError(
                     f"The measurement {m.__class__.__name__} is not supported as it likely does "
@@ -408,7 +409,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
         cjacs = jac_fn(*args, **kwargs)
         spectra = {}
-        tape = qml.transforms.expand_multipar(qnode.qtape)
+        tape = qml.transforms.expand_multipar(tape)
         par_info = tape.par_info
 
         # Iterate over jacobians per argument
