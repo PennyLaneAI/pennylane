@@ -22,7 +22,9 @@ qubit-based quantum circuits.
 import functools
 import itertools
 import logging
+import warnings
 from collections import defaultdict
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 from string import ascii_letters as ABC
 
@@ -45,16 +47,90 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.operation import Channel
+from pennylane.ops import _channel__ops__ as channels
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.transforms.core import TransformProgram
 from pennylane.wires import Wires
 
 from .._version import __version__
 from ._qubit_device import QubitDevice
+from .default_qubit import DefaultQubit
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .preprocess import (
+    decompose,
+    no_sampling,
+    null_postprocessing,
+    validate_device_wires,
+    validate_measurements,
+    validate_observables,
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+observables = {
+    "Hadamard",
+    "Hermitian",
+    "Identity",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Prod",
+    "Projector",
+    "SProd",
+    "Sum",
+}
+
+
+def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+    """Specifies whether an observable is accepted by DefaultQubitMixed."""
+    if obs.name in {"Prod", "Sum"}:
+        return all(observable_stopping_condition(observable) for observable in obs.operands)
+    if obs.name == "LinearCombination":
+        return all(observable_stopping_condition(observable) for observable in obs.terms()[1])
+    if obs.name == "SProd":
+        return observable_stopping_condition(obs.base)
+
+    return obs.name in observables
+
+
+def stopping_condition(op: qml.operation.Operator) -> bool:
+    """Specify whether an Operator object is supported by the device."""
+    expected_set = DefaultQubit.operations | {"Snapshot"} | channels
+    return op.name in expected_set
+
+
+def stopping_condition_shots(op: qml.operation.Operator) -> bool:
+    """Specify whether an Operator object is supported by the device with shots."""
+    return stopping_condition(op)
+
+
+def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+    """Specifies whether a measurement is accepted when sampling."""
+    return isinstance(m, qml.measurements.SampleMeasurement)
+
+
+@qml.transform
+def warn_readout_error_state(
+    tape: qml.tape.QuantumTape,
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    """If a measurement in the QNode is an analytic state or density_matrix, and a readout error
+    parameter is defined, warn that readout error will not be applied.
+
+    Args:
+        tape (QuantumTape, .QNode, Callable): a quantum circuit.
+
+    Returns:
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+        The unaltered input circuit.
+    """
+    if not tape.shots:
+        for m in tape.measurements:
+            if isinstance(m, qml.measurements.StateMP):
+                warnings.warn(f"Measurement {m} is not affected by readout error.")
+
+    return (tape,), null_postprocessing
+
 
 ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
@@ -767,6 +843,30 @@ class DefaultMixed(QubitDevice):
         * Supports any qubit channel that provides Kraus matrices
 
         """
+        config = self._setup_execution_config(execution_config)
+        transform_program = TransformProgram()
+
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(
+            decompose,
+            stopping_condition=stopping_condition,
+            stopping_condition_shots=stopping_condition_shots,
+            name=self.name,
+        )
+        transform_program.add_transform(
+            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
+        )
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
+
+        if config.gradient_method == "backprop":
+            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
+
+        if self.readout_err is not None:
+            transform_program.add_transform(warn_readout_error_state)
+
+        return transform_program, config
 
     # pylint: disable=arguments-differ
 
