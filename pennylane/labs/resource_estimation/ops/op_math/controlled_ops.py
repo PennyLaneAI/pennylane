@@ -37,6 +37,7 @@ class ResourceCH(qml.CH, re.ResourceOperator):
         We can control on the Pauli-X gate to obtain our controlled Hadamard gate. 
 
     """
+
     # TODO: Reference this:
     # https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control
 
@@ -131,16 +132,16 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
 
     Resources:
         The resources are taken (figure 1d) from the paper `Shallow unitary decompositions
-        of quantum Fredkin and Toffoli gates for connectivity-aware equivalent circuit averaging 
+        of quantum Fredkin and Toffoli gates for connectivity-aware equivalent circuit averaging
         <https://arxiv.org/pdf/2305.18128>`_.
 
         The circuit which applies the SWAP operation on wires (1, 2) and controlled on wire (0) is
-        given by: 
+        given by:
 
         .. code-block:: bash
 
             0: ────╭●────┤
-            1: ─╭X─├●─╭X─┤   
+            1: ─╭X─├●─╭X─┤
             2: ─╰●─╰X─╰●─┤
 
     """
@@ -167,7 +168,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
 
 class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     r"""Resource class for CCZ
-    
+
     Resources:
         The resources are derived from the following identity:
 
@@ -198,7 +199,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
 
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     r"""Resource class for CNOT
-    
+
     Resources:
         There is no further decomposition provided for this gate.
 
@@ -218,13 +219,13 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
 
 class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     """Resource class for Toffoli
-    
+
     Resources:
-        The resources are obtained from (in figure 1.) the paper `Novel constructions for the fault-tolerant 
+        The resources are obtained from (in figure 1.) the paper `Novel constructions for the fault-tolerant
         Toffoli gate <https://arxiv.org/pdf/1212.5069>`_.
 
-        The circuit which applies the Toffoli gate on target wire 'target' with control wires ('c1', 'c2') is 
-        given by:  
+        The circuit which applies the Toffoli gate on target wire 'target' with control wires ('c1', 'c2') is
+        given by:
 
         .. code-block:: bash
 
@@ -233,7 +234,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
               aux1: ─╰X─│──│──╰X───T──╰X─│──│──╰X────────────────║─┤
               aux2: ──H─╰●─╰●──T─────────╰●─╰●──H──S─╭●──H──┤↗├──║─┤
             target: ─────────────────────────────────╰X──────║───║─┤
-                                                             ╚═══╝  
+                                                             ╚═══╝
 
     """
 
@@ -247,7 +248,6 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         s = re.ResourceS.resource_rep()
         cz = re.ResourceCZ.resource_rep()
 
-
         gate_types[cnot] = 9
         gate_types[h] = 3
         gate_types[s] = 1
@@ -259,18 +259,18 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     @staticmethod
     def textbook_resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         """Resources for the Toffoli gate
-    
+
         Resources:
             The resources are taken (figure 4.9) from the textbook `Quantum Computation and Quantum Information
             <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
-            The circuit is given by: 
-        
+            The circuit is given by:
+
             .. code-block:: bash
 
                 0: ───────────╭●───────────╭●────╭●──T──╭●─┤
-                1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤     
-                2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤  
+                1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+                2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
 
         """
         gate_types = {}
@@ -284,7 +284,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         gate_types[t] = 7
 
         return gate_types
-    
+
     def resource_params(self) -> dict:
         return {}
 
@@ -295,11 +295,11 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
 class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     """Resource class for MultiControlledX
-    
-    Resources: 
-        The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates 
-        without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. The resources are 
-        estimated using the following formulas. 
+
+    Resources:
+        The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
+        without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. The resources are
+        estimated using the following formulas.
 
         If the number of control qubits is 0
 
@@ -349,7 +349,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
         gate_types[rz] = 2
         gate_types[h] = 2
 
-        return gate_types 
+        return gate_types
 
     def resource_params(self) -> dict:
         return {}
@@ -363,11 +363,11 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
     """Resource class for CRY
 
     Resources:
-        The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit 
+        The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
 
         .. math:: \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}.
-    
+
     """
 
     @staticmethod
@@ -380,7 +380,7 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
         gate_types[cnot] = 2
         gate_types[ry] = 2
 
-        return gate_types 
+        return gate_types
 
     def resource_params(self) -> dict:
         return {}
@@ -394,11 +394,11 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
     """Resource class for CRZ
 
     Resources:
-        The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit 
+        The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived from the following identity:
 
         .. math:: \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}.
-    
+
     """
 
     @staticmethod
@@ -411,7 +411,7 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
         gate_types[cnot] = 2
         gate_types[rz] = 2
 
-        return gate_types 
+        return gate_types
 
     def resource_params(self) -> dict:
         return {}
@@ -423,10 +423,10 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
 class ResourceCRot(qml.CRot, re.ResourceOperator):
     """Resource class for CRot
-    
+
     Resources:
-        TODO: Add a source for resources! 
-    
+        TODO: Add a source for resources!
+
     """
 
     @staticmethod
@@ -441,7 +441,7 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
         gate_types[rz] = 3
         gate_types[ry] = 2
 
-        return gate_types 
+        return gate_types
 
     def resource_params(self) -> dict:
         return {}
@@ -452,11 +452,23 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
-    """Resource class for ControlledPhaseShift
-    
-    Resources: 
-        TODO: Add a source for resources
-    
+    r"""Resource class for the ControlledPhaseShift gate.
+
+        Resources:
+            The resources come from the following identity expressing Controlled Phase Shift
+            as a product of Phase Shifts and CNOTs.
+
+
+        .. math::
+
+            CR_\phi(\phi) = \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 1 & 0 & 0 \\
+                    0 & 0 & 1 & 0 \\
+                    0 & 0 & 0 & e^{i\phi}
+                \end{bmatrix} =
+            (R_\phi(\phi/2) \otimes I) \cdot CNOT \cdot (I \otimes R_\phi(-\phi/2)) \cdot CNOT \cdot (I \otimes R_\phi(\phi/2))
+
     """
 
     @staticmethod

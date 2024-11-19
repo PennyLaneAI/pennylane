@@ -23,6 +23,8 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
 
+import pennylane as qml
+
 from . import single_dispatch  # pylint:disable=unused-import
 from .utils import cast, cast_like, get_interface, requires_grad
 
@@ -1032,8 +1034,7 @@ def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
         for i, arg in enumerate(args)
     ]
 
-    qnode.construct(args_jvp, kwargs)
-    tape = qnode.qtape
+    tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
     tapes, _ = program((tape,))
     del trace
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)

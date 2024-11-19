@@ -21,7 +21,7 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
-    """Resource class for Hadamard"""
+    """Resource class for the Hadamard gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -39,9 +39,9 @@ class ResourceS(qml.S, re.ResourceOperator):
     """Resource class for S"""
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
-        t = ResourceT.resource_rep()
+        t = ResourceT.resource_rep(**kwargs)
         gate_types[t] = 2
 
         return gate_types
@@ -55,7 +55,39 @@ class ResourceS(qml.S, re.ResourceOperator):
 
 
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
-    """Resource class for SWAP"""
+    r"""Resource class for the SWAP gate.
+
+    Resources:
+        The resources come from the following identity expressing SWAP as the product of three CNOT gates:
+
+        .. math::
+
+            SWAP = \begin{bmatrix}
+                        1 & 0 & 0 & 0 \\
+                        0 & 0 & 1 & 0\\
+                        0 & 1 & 0 & 0\\
+                        0 & 0 & 0 & 1
+                    \end{bmatrix}
+            =  \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 1 & 0 & 0\\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0
+                \end{bmatrix}
+                \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0\\
+                    0 & 1 & 0 & 0
+                \end{bmatrix}
+                \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & 1 & 0 & 0\\
+                    0 & 0 & 0 & 1\\
+                    0 & 0 & 1 & 0
+            \end{bmatrix}.
+
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -74,11 +106,75 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
 
 class ResourceT(qml.T, re.ResourceOperator):
-    """Resource class for T"""
+    """Resource class for the T gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceX(qml.X, re.ResourceOperator):
+    """Resource class for X"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+        h = re.ResourceHadamard.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 2
+        gate_types[h] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceY(qml.Y, re.ResourceOperator):
+    """Resource class for Y"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+        h = re.ResourceHadamard.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 6
+        gate_types[h] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceZ(qml.Z, re.ResourceOperator):
+    """Resource class for Z"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 2
+
+        return gate_types
 
     def resource_params(self) -> dict:
         return {}

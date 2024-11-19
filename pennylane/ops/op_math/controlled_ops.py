@@ -384,7 +384,7 @@ class CY(ControlledOp):
         **Example:**
 
         >>> print(qml.CY.compute_decomposition([0, 1]))
-        [CRY(3.141592653589793, wires=[0, 1])), S(wires=[0])]
+        [CRY(3.141592653589793, wires=[0, 1])), S(0)]
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.S(wires=wires[0])]
@@ -709,20 +709,20 @@ class CCZ(ControlledOp):
 
         >>> qml.CCZ.compute_decomposition((0,1,2))
         [CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
+         T(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
-         T(wires=[1]),
+         T(2),
+         T(1),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2]),
-         T(wires=[0]),
-         Adjoint(T(wires=[1])),
+         H(2),
+         T(0),
+         Adjoint(T(1)),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2])]
+         H(2)]
 
         """
         return [
@@ -962,20 +962,20 @@ class Toffoli(ControlledOp):
         **Example:**
 
         >>> qml.Toffoli.compute_decomposition((0,1,2))
-        [Hadamard(wires=[2]),
+        [H(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
+         T(2),
          CNOT(wires=[1, 2]),
-         Adjoint(T(wires=[2])),
+         Adjoint(T(2)),
          CNOT(wires=[0, 2]),
-         T(wires=[2]),
-         T(wires=[1]),
+         T(2),
+         T(1),
          CNOT(wires=[0, 1]),
-         Hadamard(wires=[2]),
-         T(wires=[0]),
-         Adjoint(T(wires=[1])),
+         H(2),
+         T(0),
+         Adjoint(T(1)),
          CNOT(wires=[0, 1])]
 
         """
@@ -1381,16 +1381,7 @@ class CRX(ControlledOp):
 
         """
         pi_half = qml.math.ones_like(phi) * (np.pi / 2)
-        
-        # return [
-        #     qml.Hadamard(wires[1]),
-        #     qml.RZ(phi/2, wires=wires[1]),
-        #     qml.CNOT(wires),
-        #     qml.RZ(phi/2, wires=wires[1]),
-        #     qml.CNOT(wires),
-        #     qml.Hadamard(wires[1]),
-        # ]
-        
+
         return [
             qml.RZ(pi_half, wires=wires[1]),
             qml.RY(phi / 2, wires=wires[1]),

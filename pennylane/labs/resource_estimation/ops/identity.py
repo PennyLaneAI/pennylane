@@ -17,7 +17,7 @@ from typing import Dict
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=no-self-use,too-many-ancestors
+# pylint: disable=arguments-differ,no-self-use,too-many-ancestors
 
 
 class ResourceIdentity(qml.Identity, re.ResourceOperator):

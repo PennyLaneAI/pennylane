@@ -20,25 +20,14 @@ from functools import singledispatch
 from typing import Union
 
 import pennylane as qml
-from pennylane import Hermitian
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import (
-    Adjoint,
-    CompositeOp,
-    Conditional,
-    Controlled,
-    Exp,
-    Hamiltonian,
-    LinearCombination,
-    Pow,
-    SProd,
-)
+from pennylane.operation import Observable, Operator
+from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
 from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
@@ -61,17 +50,16 @@ def equal(
     .. Warning::
 
         The ``qml.equal`` function is based on a comparison of the types and attributes of the
-        measurements or operators, not their mathematical representations. While mathematical
-        comparisons between some classes, such as ``Tensor`` and ``Hamiltonian``,  are supported,
-        mathematically equivalent operators defined via different classes may return False when
-        compared via ``qml.equal``. To be more thorough would require the matrix forms to be
-        calculated, which may drastically increase runtime.
+        measurements or operators, not their mathematical representations. Mathematically equivalent
+        operators defined via different classes may return False when compared via ``qml.equal``.
+        To be more thorough would require the matrix forms to be calculated, which may drastically
+        increase runtime.
 
     .. Warning::
 
-        The interfaces and trainability of data within some observables including ``Tensor``,
-        ``Hamiltonian``, ``Prod``, ``Sum`` are sometimes ignored, regardless of what the user
-        specifies for ``check_interface`` and ``check_trainability``.
+        The interfaces and trainability of data within some observables including ``Prod`` and
+        ``Sum`` are sometimes ignored, regardless of what the user specifies for ``check_interface``
+        and ``check_trainability``.
 
     Args:
         op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
@@ -93,15 +81,15 @@ def equal(
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
     (True, False)
 
-    >>> T1 = qml.X(0) @ qml.Y(1)
-    >>> T2 = qml.Y(1) @ qml.X(0)
-    >>> T3 = qml.X(1) @ qml.Y(0)
-    >>> qml.equal(T1, T2), qml.equal(T1, T3)
+    >>> prod1 = qml.X(0) @ qml.Y(1)
+    >>> prod2 = qml.Y(1) @ qml.X(0)
+    >>> prod3 = qml.X(1) @ qml.Y(0)
+    >>> qml.equal(prod1, prod2), qml.equal(prod1, prod3)
     (True, False)
 
-    >>> T = qml.X(0) @ qml.Y(1)
-    >>> H = qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)])
-    >>> qml.equal(T, H)
+    >>> prod = qml.X(0) @ qml.Y(1)
+    >>> ham = qml.Hamiltonian([1], [qml.X(0) @ qml.Y(1)])
+    >>> qml.equal(prod, ham)
     True
 
     >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.Z(0) @ qml.Y(1), qml.Y(1) @ qml.Z(0) @ qml.Identity("a")])
@@ -151,9 +139,6 @@ def equal(
         True
 
     """
-
-    if isinstance(op2, (Hamiltonian, Tensor)):
-        op1, op2 = op2, op1
 
     dispatch_result = _equal(
         op1,
@@ -575,39 +560,6 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + equal_check
 
     return True
-
-
-@_equal_dispatch.register
-# pylint: disable=unused-argument
-def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
-    """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
-
-    if not isinstance(op2, Observable):
-        return f"{op2} is not of type Observable"
-
-    if isinstance(op2, (Hamiltonian, LinearCombination, Hermitian)):
-        return (
-            op2.compare(op1) or f"'{op1}' and '{op2}' are not the same for an unspecified reason."
-        )
-
-    if isinstance(op2, Tensor):
-        return (
-            op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
-            or f"{op1} and {op2} have different _obs_data outputs"
-        )
-
-    return f"{op1} is of type {type(op1)} and {op2} is of type {type(op2)}"
-
-
-@_equal_dispatch.register
-# pylint: disable=unused-argument
-def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
-    """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
-
-    if not isinstance(op2, Observable):
-        return f"{op2} is not of type Observable"
-
-    return op1.compare(op2) or f"'{op1}' and '{op2}' are not the same for an unspecified reason"
 
 
 @_equal_dispatch.register

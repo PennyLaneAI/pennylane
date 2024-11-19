@@ -14,6 +14,7 @@
 """
 Unit tests for the ``compile`` transform.
 """
+import warnings
 from functools import partial
 
 import pytest
@@ -33,17 +34,11 @@ from pennylane.transforms.optimization.optimization_utils import _fuse_global_ph
 from pennylane.wires import Wires
 
 
-def test_expand_depth_is_deprecated():
-    """Tests that expand_depth is deprecated"""
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="The expand_depth argument is deprecated",
-    ):
-        ops = (qml.RX(0.1, 0), qml.RX(0.2, 0), qml.Barrier(only_visual=True), qml.X(0), qml.X(0))
-        ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
-        tape = qml.tape.QuantumScript(ops, ms, shots=50)
-
-        _, _ = qml.compile(tape, expand_depth=2)
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def build_qfunc(wires):

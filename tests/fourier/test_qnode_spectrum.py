@@ -358,7 +358,9 @@ class TestCircuits:
             nondecompRot(0.2, x, 0.4, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
+        with pytest.raises(
+            RecursionError, match="Reached recursion limit trying to decompose operations."
+        ):
             qnode_spectrum(circuit)(1.5)
 
     @pytest.mark.parametrize(
