@@ -31,7 +31,7 @@ class ResourceQFT(qml.QFT, ResourceOperator):
 
     Resources:
         The resources are obtained from the standard decomposition of QFT as presented
-        in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information 
+        in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
         <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
     """
