@@ -386,10 +386,11 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
         >>> primary_gates = {"RX": 2, "CNOT": 1}
         >>> primary_sizes = {1: 2, 2: 1}
-        >>> primary_resources = Resources(num_wires=2, num_gates=3, gate_types=primary_gates, gate_sizes=primary_sizes, depth=1, shots=Shots(10))
+        >>> shots = qml.measurements.Shots(10)
+        >>> primary_resources = Resources(2, 3, primary_gates, primary_sizes, 1, shots)
         >>> sub_gates = {"H": 3, "S": 4}
         >>> sub_sizes = {1: 7}
-        >>> sub_resources = Resources(num_wires=1, num_gates=7, gate_types=sub_gates, gate_sizes=sub_sizes, depth=1, shots=Shots(shots=None))
+        >>> sub_resources = Resources(1, 7, sub_gates, sub_sizes, 1)
         >>> print(qml.resources.substitute(primary_resources, ("RX", 1), sub_resources))
         wires: 2
         gates: 15
