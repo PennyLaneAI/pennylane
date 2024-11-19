@@ -110,22 +110,12 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    qfunc_output_leaves, _ = qml.pytrees.flatten(
-        qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
-    )
-    results_leaves, _ = qml.pytrees.flatten(results)
+    # Special case of single Measurement in a list
+    if isinstance(qfunc_output, Sequence) and len(qfunc_output) == 1:
+        results = (results,)
 
-    if len(results_leaves) != len(qfunc_output_leaves):
-        if qml.math.get_interface(qfunc_output) == "autograd":
-            if isinstance(qfunc_output, Sequence):
-                results = [results]
-            return type(qfunc_output)(results)
-        return results
-
-    if isinstance(qfunc_output, Sequence):
-        results = [results]
-
-    if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
+    # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
         return results
 
     return type(qfunc_output)(results)
