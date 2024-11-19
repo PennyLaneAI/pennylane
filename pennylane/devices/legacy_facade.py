@@ -139,7 +139,7 @@ class LegacyDeviceFacade(Device):
 
     >>> from pennylane.devices import DefaultMixed, LegacyDeviceFacade
     >>> legacy_dev = DefaultMixed(wires=2)
-    >>> new_dev = LegacyDeviceFacade(dev)
+    >>> new_dev = LegacyDeviceFacade(legacy_dev)
     >>> new_dev.preprocess()
     (TransformProgram(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
     ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=None,

@@ -14,26 +14,24 @@
 r"""
 .. currentmodule:: pennylane
 
-This module module contains experimental features enabling
+This module contains experimental features enabling
 advanced quantum computing research.
-
-.. warning::
-
-    This module is experimental. Frequent changes will occur,
-    with no guarantees of stability or backwards compatibility.
 
 .. currentmodule:: pennylane.labs
 
 Modules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
 
 .. autosummary::
     :toctree: api
 
     dla
+    resource_estimation
 
 """
 
 from pennylane.labs import dla
+from pennylane.labs import resource_estimation
+
 
 __all__ = []

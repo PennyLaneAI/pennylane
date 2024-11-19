@@ -16,7 +16,18 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 
+import warnings
+
+import pytest
+
 import pennylane as qml
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def test_pass_positional_wires_to_observable():
