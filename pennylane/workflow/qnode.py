@@ -983,7 +983,7 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             if interface != "numpy":
-                interface = INTERFACE_MAP[interface]
+                interface = INTERFACE_MAP.get(interface, None)
             self._interface = interface
 
         try:
