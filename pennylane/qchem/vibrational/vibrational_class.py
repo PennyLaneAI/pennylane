@@ -21,12 +21,7 @@ import pennylane as qml
 
 from ..openfermion_pyscf import _import_pyscf
 
-# pylint: disable=wrong-import-order, wrong-import-position
-
-
-pyscf = _import_pyscf()
-from pyscf.geomopt.geometric_solver import optimize
-from pyscf.hessian import thermo
+# pylint: disable=import-outside-toplevel, unused-variable
 
 BOHR_TO_ANG = 0.529177
 
@@ -41,6 +36,8 @@ def harmonic_analysis(scf_result, method="rhf"):
     Returns:
        pyscf object containing information about the harmonic analysis
     """
+    pyscf = _import_pyscf()
+    from pyscf.hessian import thermo
 
     method = method.strip().lower()
     if method not in ["rhf", "uhf"]:
@@ -62,6 +59,8 @@ def single_point(molecule, method="rhf"):
     Returns:
       pyscf object from electronic structure calculation
     """
+    pyscf = _import_pyscf()
+
     method = method.strip().lower()
     if method not in ["rhf", "uhf"]:
         raise ValueError(f"Specified electronic structure method, {method}, is not available.")
@@ -96,6 +95,8 @@ def optimize_geometry(molecule, method="rhf"):
       molecule object with optimized geometry
 
     """
+    pyscf = _import_pyscf()
+    from pyscf.geomopt.geometric_solver import optimize
 
     scf_res = single_point(molecule, method)
     geom_eq = optimize(scf_res, maxsteps=100)
