@@ -176,7 +176,7 @@ def _resolve_execution_config(
         and qml.metric_tensor in transform_program
         and execution_config.gradient_method == "best"
     ):
-        replace(execution_config, gradient_method=qml.gradients.param_shift)
+        execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     else:
         execution_config = qml.workflow._resolve_diff_method(
             execution_config, device, tape=tapes[0]

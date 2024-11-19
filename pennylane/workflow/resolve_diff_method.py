@@ -48,7 +48,7 @@ def _resolve_diff_method(
         return initial_config
 
     if device.supports_derivatives(initial_config, circuit=tape):
-        _, new_config = device.preprocess(initial_config)
+        new_config = device.preprocess(initial_config)[1]
         return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:
