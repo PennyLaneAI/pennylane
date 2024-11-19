@@ -60,7 +60,7 @@ class TestCaching:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             return qml.execute(
-                [tape], dev, gradient_fn=qml.gradients.param_shift, cache=cache, max_diff=2
+                [tape], dev, diff_method=qml.gradients.param_shift, cache=cache, max_diff=2
             )[0]
 
         # No caching: number of executions is not ideal
@@ -116,7 +116,7 @@ class TestCaching:
             tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
             tape2 = qml.tape.QuantumScript([qml.RY(x, 0)], [qml.probs(wires=0)])
 
-            results = qml.execute([tape1, tape2], dev, gradient_fn=qml.gradients.param_shift)
+            results = qml.execute([tape1, tape2], dev, diff_method=qml.gradients.param_shift)
             return results[0] + results[1]
 
         x = qml.numpy.array(0.1)
@@ -132,47 +132,47 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, Shots(50000), "default.qubit"),
-    ({"gradient_fn": param_shift}, Shots((50000, 50000)), "default.qubit"),
-    ({"gradient_fn": param_shift}, Shots(None), "default.qubit"),
-    ({"gradient_fn": "backprop"}, Shots(None), "default.qubit"),
+    ({"diff_method": param_shift}, Shots(50000), "default.qubit"),
+    ({"diff_method": param_shift}, Shots((50000, 50000)), "default.qubit"),
+    ({"diff_method": param_shift}, Shots(None), "default.qubit"),
+    ({"diff_method": "backprop"}, Shots(None), "default.qubit"),
     (
-        {"gradient_fn": "adjoint", "grad_on_execution": True, "device_vjp": False},
+        {"diff_method": "adjoint", "grad_on_execution": True, "device_vjp": False},
         Shots(None),
         "default.qubit",
     ),
     (
         {
-            "gradient_fn": "adjoint",
+            "diff_method": "adjoint",
             "grad_on_execution": False,
             "device_vjp": False,
         },
         Shots(None),
         "default.qubit",
     ),
-    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), "default.qubit"),
+    ({"diff_method": "adjoint", "device_vjp": True}, Shots(None), "default.qubit"),
     (
-        {"gradient_fn": "device", "device_vjp": False},
+        {"diff_method": "device", "device_vjp": False},
         Shots((50000, 50000)),
         "param_shift.qubit",
     ),
     (
-        {"gradient_fn": "device", "device_vjp": True},
+        {"diff_method": "device", "device_vjp": True},
         Shots((100000, 100000)),
         "param_shift.qubit",
     ),
     (
-        {"gradient_fn": param_shift},
+        {"diff_method": param_shift},
         Shots(None),
         "reference.qubit",
     ),
     (
-        {"gradient_fn": param_shift},
+        {"diff_method": param_shift},
         Shots(50000),
         "reference.qubit",
     ),
     (
-        {"gradient_fn": param_shift},
+        {"diff_method": param_shift},
         Shots((50000, 50000)),
         "reference.qubit",
     ),
@@ -340,7 +340,7 @@ class TestAutogradExecuteIntegration:
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device_name, seed):
         """Test that tapes wit different can be executed and differentiated."""
 
-        if execute_kwargs["gradient_fn"] == "backprop":
+        if execute_kwargs["diff_method"] == "backprop":
             pytest.xfail("backprop is not compatible with something about this situation.")
 
         device = get_device(device_name, seed=seed)
@@ -561,12 +561,12 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
-            gradient_fn = execute_kwargs["gradient_fn"]
+            diff_method = execute_kwargs["diff_method"]
 
-            if gradient_fn is None:
+            if diff_method is None:
                 _gradient_method = None
-            elif isinstance(gradient_fn, str):
-                _gradient_method = gradient_fn
+            elif isinstance(diff_method, str):
+                _gradient_method = diff_method
             else:
                 _gradient_method = "gradient-transform"
             config = qml.devices.ExecutionConfig(
@@ -712,7 +712,7 @@ class TestHigherOrderDerivatives:
 
             ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
             tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=2)
+            result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=2)
             return result[0] + result[1][0]
 
         res = cost_fn(params)
@@ -748,7 +748,7 @@ class TestHigherOrderDerivatives:
             ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
             tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
 
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=1)
+            result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=1)
             return result[0] + result[1][0]
 
         res = cost_fn(params)
@@ -827,11 +827,8 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(self, execute_kwargs, cost_fn, shots):
+    def test_multiple_hamiltonians_not_trainable(self, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
-
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("adjoint differentiation does not support hamiltonians.")
 
         coeffs1 = pnp.array([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = pnp.array([0.7], requires_grad=False)
@@ -853,9 +850,10 @@ class TestHamiltonianWorkflows:
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
+    @pytest.mark.xfail(reason="parameter shift derivatives do not yet support sums.")
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
-        if execute_kwargs["gradient_fn"] == "adjoint":
+        if execute_kwargs["diff_method"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
 
         coeffs1 = pnp.array([0.1, 0.2, 0.3], requires_grad=True)

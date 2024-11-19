@@ -266,18 +266,6 @@ class ClassicalShadow:
             word = pauli_list_to_word([observable])
             return [(1, word)]
 
-        if isinstance(observable, qml.operation.Tensor):
-            word = pauli_list_to_word(observable.obs)
-            return [(1, word)]
-
-        if isinstance(observable, qml.ops.Hamiltonian):
-            coeffs_and_words = []
-            for coeff, op in zip(observable.data, observable.ops):
-                coeffs_and_words.extend(
-                    [(coeff * c, w) for c, w in self._convert_to_pauli_words(op)]
-                )
-            return coeffs_and_words
-
         # Support for all operators with a valid pauli_rep
         if (pr := observable.pauli_rep) is not None:
             return self._convert_to_pauli_words_with_pauli_rep(pr, num_wires)
