@@ -211,16 +211,20 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         **Example**
 
+        >>> num_wires = 2
+        >>> num_gates = 2
         >>> gate_types = {"Hadamard": 1, "CNOT": 1}
         >>> gate_sizes = {1: 1, 2: 1}
-        >>> num_wires = 2
         >>> depth = 2
         >>> shots = qml.measurements.Shots(10)
-        >>> r1 = Resources(2, 2, gate_types, gate_sizes, 2, shots)
+        >>> r1 = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+        >>> num_wires = 3
+        >>> num_gates = 2
         >>> gate_types = {"RX": 1, "CNOT": 1}
         >>> gate_sizes = {1: 1, 2: 1}
-        >>> shots = qml.measurements.Shots((5, (2, 10))
-        >>> r2 = Resources(3, 2, gate_types, gate_sizes, 1, shots)
+        >>> depth = 1
+        >>> shots = qml.measurements.Shots((5, (2, 10)))
+        >>> r2 = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
         >>> print(add_in_series(r1, r2))
         wires: 3
         gates: 4
@@ -255,16 +259,21 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     .. details::
 
         **Example**
+
+        >>> num_wires = 2
+        >>> num_gates = 2
         >>> gate_types = {"Hadamard": 1, "CNOT": 1}
         >>> gate_sizes = {1: 1, 2: 1}
-        >>> num_wires = 2
         >>> depth = 2
         >>> shots = qml.measurements.Shots(10)
-        >>> r1 = Resources(2, 2, gate_types, gate_sizes, 2, shots)
+        >>> r1 = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+        >>> num_wires = 3
+        >>> num_gates = 2
         >>> gate_types = {"RX": 1, "CNOT": 1}
         >>> gate_sizes = {1: 1, 2: 1}
-        >>> shots = qml.measurements.Shots((5, (2, 10))
-        >>> r2 = Resources(3, 2, gate_types, gate_sizes, 1, shots)
+        >>> depth = 1
+        >>> shots = qml.measurements.Shots((5, (2, 10)))
+        >>> r2 = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
         >>> print(add_in_parallel(r1, r2))
         wires: 5
         gates: 4
@@ -301,12 +310,13 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         **Example**
 
+        >>> num_wires = 2
+        >>> num_gates = 2
         >>> gate_types = {"Hadamard": 1, "CNOT": 1}
         >>> gate_sizes = {1: 1, 2: 1}
-        >>> num_wires = 2
         >>> depth = 2
         >>> shots = qml.measurements.Shots(10)
-        >>> r = Resources(2, 2, gate_types, gate_sizes, 2, shots)
+        >>> r = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
         >>> print(mul_in_series(r, 2))
         wires: 2
         gates: 4
@@ -343,12 +353,14 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
 
         **Example**
 
+        >>> num_wires = 2
+        >>> num_gates = 2
         >>> gate_types = {"Hadamard": 1, "CNOT": 1}
         >>> gate_sizes = {1: 1, 2: 1}
         >>> num_wires = 2
         >>> depth = 2
         >>> shots = qml.measurements.Shots(10)
-        >>> r = Resources(2, 2, gate_types, gate_sizes, 2, shots)
+        >>> r = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
         >>> print(mul_in_parallel(r, 2))
         wires: 4
         gates: 4
