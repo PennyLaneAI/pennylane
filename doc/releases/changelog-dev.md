@@ -75,6 +75,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.math.jax_argnums_to_tape_trainable` is moved and made private to avoid a qnode dependency
+  in the math module.
+
 * Gradient transforms are now applied after the user's transform program.
   [(#6590)](https://github.com/PennyLaneAI/pennylane/pull/6590)
 
