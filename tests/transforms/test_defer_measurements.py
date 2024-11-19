@@ -15,6 +15,7 @@
 Tests for the transform implementing the deferred measurement principle.
 """
 import math
+import warnings
 
 # pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
@@ -26,6 +27,13 @@ import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Controlled
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def test_broadcasted_postselection(mocker):
@@ -630,7 +638,7 @@ class TestQNode:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.measure(mid_measure_wire)
-            qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
+            qml.expval(qml.prod(*[qml.PauliZ(w) for w in tp_wires]))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape, _ = qml.defer_measurements(tape)

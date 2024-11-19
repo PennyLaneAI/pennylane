@@ -79,7 +79,7 @@ Defining a device
 
 To run---and later optimize---a quantum circuit, one needs to first specify a *computational device*.
 
-The device is an instance of the :class:`~.pennylane.Device`
+The device is an instance of the :class:`~.pennylane.devices.Device`
 class, and can represent either a simulator or hardware device. They can be
 instantiated using the :func:`device <pennylane.device>` loader.
 

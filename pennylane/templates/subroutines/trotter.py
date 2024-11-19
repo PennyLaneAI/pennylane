@@ -201,7 +201,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
             )
 
-        if isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(hamiltonian, qml.ops.LinearCombination):
             coeffs, ops = hamiltonian.terms()
             if len(coeffs) < 2:
                 raise ValueError(
@@ -253,11 +253,11 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.append(self)
         return self
 
-    def resources(self) -> Resources:
-        """The resource requirements for a given instance of the Suzuki-Trotter product.
+    def resources(self) -> qml.resource.Resources:
+        r"""The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
-            Resources: The resources for an instance of ``TrotterProduct``.
+            :class:`~.resource.Resources`: The resources for an instance of ``TrotterProduct``.
         """
         with qml.QueuingManager.stop_recording():
             decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
