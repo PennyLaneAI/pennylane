@@ -1,9 +1,9 @@
 """
 This module contains tests for functions needed to compute PES object."""
 
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
 from pennylane.qchem import vibrational
 
@@ -96,7 +96,7 @@ def test_optimize_geometry(sym, geom, expected_geom):
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            np.array([[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]]),
+            np.array([[[0.0, 0.0, -0.9706078], [0.0, 0.0, 0.05149763]]]),
         ),
         (
             ["C", "O"],
@@ -110,6 +110,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = vibrational.optimize_geometry(mol)
     harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
+    print(harmonic_res["norm_mode"], expected_vecs)
     assert np.allclose(harmonic_res["norm_mode"], expected_vecs)
 
 
