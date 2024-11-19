@@ -129,8 +129,6 @@ def compute_vjp_single(dy, jac, num=None):
         if num == 1:
             jac = qml.math.squeeze(jac)
         jac = qml.math.reshape(jac, (-1, 1))
-        print("dy_row: ", dy_row)
-        print("jac: ", jac)
         try:
             res = dy_row @ jac
 
