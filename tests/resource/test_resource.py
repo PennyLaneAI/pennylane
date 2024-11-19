@@ -20,12 +20,11 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Shots
+from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
 from pennylane.resource.resource import (
     Resources,
     ResourcesOperation,
-    _add_shots,
     _combine_dict,
     _count_resources,
     _scale_dict,
@@ -565,23 +564,3 @@ def test_scale_dict(scalar):
     result = _scale_dict(d1, scalar)
 
     assert result == expected
-
-
-@pytest.mark.parametrize(
-    "s1, s2, expected",
-    [
-        (Shots(shots=None), Shots(shots=None), Shots(shots=None)),
-        (Shots(shots=10), Shots(shots=None), Shots(shots=10)),
-        (Shots(shots=None), Shots(shots=10), Shots(shots=10)),
-        (Shots(shots=10), Shots(shots=10), Shots(shots=((10, 2),))),
-        (Shots(shots=(10, 9)), Shots(shots=(8, 7)), Shots(shots=(10, 9, 8, 7))),
-        (Shots(shots=(10, 9)), Shots(shots=None), Shots(shots=(10, 9))),
-        (Shots(shots=None), Shots(shots=(10, 9)), Shots(shots=(10, 9))),
-        (Shots(shots=(10, 9)), Shots(shots=8), Shots(shots=(10, 9, 8))),
-        (Shots(shots=8), Shots(shots=(10, 9)), Shots(shots=(8, 10, 9))),
-        (Shots(shots=(10, (9, 2), 8)), Shots(shots=(5, 1)), Shots(shots=(10, (9, 2), 8, 5, 1))),
-    ],
-)
-def test_add_shots(s1, s2, expected):
-    """Test the private _add_shots method"""
-    assert _add_shots(s1, s2) == expected

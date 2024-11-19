@@ -282,3 +282,26 @@ class Shots:
 
 
 ShotsLike = Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
+
+
+def add_shots(s1: Shots, s2: Shots) -> Shots:
+    """Add two :class:`pennylane.measurements.Shots` by concatenating their shot vectors.
+
+    Args:
+        s1 (Shots): a Shots object to add
+        s2 (Shots): a Shots object to add
+
+    Returns:
+        Shots: a Shots object built by concatenating the shot vectors of s1 and s2
+    """
+    if s1.total_shots is None:
+        return s2
+
+    if s2.total_shots is None:
+        return s1
+
+    shot_vector = []
+    for shot in s1.shot_vector + s2.shot_vector:
+        shot_vector.append((shot.shots, shot.copies))
+
+    return Shots(shots=shot_vector)

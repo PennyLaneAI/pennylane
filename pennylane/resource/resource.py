@@ -21,7 +21,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from pennylane.measurements import Shots
+from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
 
 
@@ -235,7 +235,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = _add_shots(r1.shots, r2.shots)
+    new_shots = add_shots(r1.shots, r2.shots)
     new_depth = r1.depth + r2.depth
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
@@ -279,7 +279,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     new_gates = r1.num_gates + r2.num_gates
     new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
     new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
-    new_shots = _add_shots(r1.shots, r2.shots)
+    new_shots = add_shots(r1.shots, r2.shots)
     new_depth = max(r1.depth, r2.depth)
 
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
@@ -426,26 +426,3 @@ def _count_resources(tape) -> Resources:
             num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
-
-
-def _add_shots(s1: Shots, s2: Shots) -> Shots:
-    """Add two :class:`pennylane.measurements.Shots` by concatenating their shot vectors.
-
-    Args:
-        s1 (Shots): a Shots object to add
-        s2 (Shots): a Shots object to add
-
-    Returns:
-        Shots: a Shots object built by concatenating the shot vectors of s1 and s2
-    """
-    if s1.total_shots is None:
-        return s2
-
-    if s2.total_shots is None:
-        return s1
-
-    shot_vector = []
-    for shot in s1.shot_vector + s2.shot_vector:
-        shot_vector.append((shot.shots, shot.copies))
-
-    return Shots(shots=shot_vector)
