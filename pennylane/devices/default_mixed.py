@@ -47,14 +47,15 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.operation import Channel
-from pennylane.ops import _channel__ops__ as channels
+from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.transforms.core import TransformProgram
 from pennylane.wires import Wires
 
 from .._version import __version__
+
+# from . import Device
 from ._qubit_device import QubitDevice
-from .default_qubit import DefaultQubit
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import (
     decompose,
@@ -96,7 +97,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    expected_set = DefaultQubit.operations | {"Snapshot"} | channels
+    expected_set = DefaultMixed.operations | {"Snapshot"} | channels
     return op.name in expected_set
 
 
@@ -271,12 +272,14 @@ class DefaultMixed(QubitDevice):
     @debug_logger_init
     def __init__(
         self,
-        wires,
         *,
+        wires=1,
+        shots=None,
         r_dtype=np.float64,
         c_dtype=np.complex128,
-        shots=None,
         analytic=None,
+        seed="global",
+        # max_workers=None,
         readout_prob=None,
     ):
         if isinstance(wires, int) and wires > 23:
@@ -296,6 +299,13 @@ class DefaultMixed(QubitDevice):
 
         # call QubitDevice init
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
+        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        if qml.math.get_interface(seed) == "jax":
+            self._prng_key = seed
+            self._rng = np.random.default_rng(None)
+        else:
+            self._prng_key = None
+            self._rng = np.random.default_rng(seed)
         self._debugger = None
 
         # Create the initial state.
