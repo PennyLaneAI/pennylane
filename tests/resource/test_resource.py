@@ -20,7 +20,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Shots, add_shots
+from pennylane.measurements import Shots
 from pennylane.operation import Operation
 from pennylane.resource.resource import (
     Resources,
