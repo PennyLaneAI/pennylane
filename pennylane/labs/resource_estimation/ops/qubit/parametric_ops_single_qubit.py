@@ -51,3 +51,11 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls, config):
+        return cls.resources(config)
+
+    @classmethod
+    def pow_resource_decomp(cls, z, config):
+        return cls.resources(config)

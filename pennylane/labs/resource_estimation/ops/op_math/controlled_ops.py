@@ -78,3 +78,11 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources(**kwargs)
+
+    @classmethod
+    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): z % 2}
