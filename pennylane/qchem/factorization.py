@@ -19,21 +19,23 @@ import numpy as np
 import pennylane as qml
 
 
-def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=True):
+def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False):
     r"""Return the double-factorized form of a two-electron integral tensor in spatial basis.
 
     The two-electron tensor :math:`V`, in
-    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_, is first
-    factorized in terms of symmetric matrices :math:`L^{(r)}` such that
-    :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is determined by a
-    threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized and its eigenvalues (and
-    corresponding eigenvectors) are truncated at a threshold error.
+    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
+    is first factorized in terms of symmetric matrices :math:`L^{(r)}` such that
+    :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is
+    determined by a threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized
+    and its eigenvalues (and corresponding eigenvectors) are truncated at a threshold error.
 
     Args:
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
             basis arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
+        cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
+            :math:`L^{(r)}` instead of eigendecomposition.
 
     Returns:
         tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
@@ -124,8 +126,12 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=True)
         - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
           :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-        - Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
-          corresponding eigenvalues larger than a threshold.
+        - Decompose the resulting matrix either via Cholesky decomposition or
+          via eigenvalue decomposition.
+
+        - For the former, we keep the vectors that result in an approximation error
+          larger than a threshold. While for the latter, we keep the :math:`r`
+          eigenvectors that have corresponding eigenvalues larger than a threshold.
 
         - Multiply the eigenvectors by the square root of the eigenvalues to obtain
           matrices :math:`L^{(r)}`.
@@ -149,14 +155,18 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=True)
         factors = _double_factorization_eigen(two, tol_factor, shape, interface)
 
     eigvals, eigvecs = qml.math.linalg.eigh(factors)
-    eigvals = qml.math.asarray(eigvals, like=interface)
+    eigvals_m, eigvecs_m = [], []
+    for n, eigval in enumerate(eigvals):
+        idx = [i for i, v in enumerate(eigval) if abs(v) > tol_eigval]
+        eigvals_m.append(eigval[idx])
+        eigvecs_m.append(eigvecs[n][idx])
 
-    core_tensors = eigvals[:, :, None] * eigvals[:, None, :]
-    leaf_tensors = eigvecs
+    if np.sum([len(v) for v in eigvecs_m]) == 0:
+        raise ValueError(
+            "All eigenvectors are discarded. Consider decreasing the second threshold error."
+        )
 
-    # TODO: Re-add eigenvalue tolerances.
-    _ = tol_eigval
-    return factors, core_tensors, leaf_tensors
+    return factors, eigvals_m, eigvecs_m
 
 
 def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
@@ -172,9 +182,7 @@ def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=N
     vectors = eigvecs_r @ qml.math.diag(qml.math.sqrt(eigvals_r))
 
     n, r = shape[0], len(eigvals_r)
-    factors = qml.math.array(
-        [vectors.restol_eigvalhape(n, n, r)[:, :, k] for k in range(r)], like=interface
-    )
+    factors = qml.math.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)], like=interface)
     return factors
 
 

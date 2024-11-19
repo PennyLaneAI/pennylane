@@ -114,12 +114,11 @@ def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
 )
 def test_factorize_reproduce(two_tensor):
     r"""Test that factors returned by the factorize function reproduce the two-electron tensor."""
-    factors, _, _ = qml.qchem.factorize(two_tensor, 1e-5, 1e-5)
-    two_computed = np.zeros(two_tensor.shape)
-    for mat in factors:
-        two_computed += np.einsum("ij, lk", mat, mat)
+    factors1, _, _ = qml.qchem.factorize(two_tensor, 1e-5, 1e-5, cholesky=False)
+    factors2, _, _ = qml.qchem.factorize(two_tensor, 1e-5, 1e-5, cholesky=True)
 
-    assert np.allclose(two_computed, two_tensor)
+    assert qml.math.allclose(np.tensordot(factors1, factors1, axes=([0], [0])), two_tensor)
+    assert qml.math.allclose(np.tensordot(factors2, factors2, axes=([0], [0])), two_tensor)
 
 
 @pytest.mark.parametrize(
