@@ -22,7 +22,6 @@ from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-from pennylane.operation import active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -266,10 +265,7 @@ def test_diff_hamiltonian(use_jax, symbols, geometry, h_ref_data):
 
     h = qchem.diff_hamiltonian(mol)(*args)
 
-    ops = [
-        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
-    ]
+    ops = list(map(qml.simplify, h_ref_data[1]))
     h_ref_data = qml.Hamiltonian(h_ref_data[0], ops)
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref_data.terms()[0]))
@@ -277,7 +273,7 @@ def test_diff_hamiltonian(use_jax, symbols, geometry, h_ref_data):
         qml.Hamiltonian(np.ones(len(h_ref_data.terms()[0])), h_ref_data.terms()[1])
     )
 
-    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
+    assert isinstance(h, qml.ops.Sum)
 
     wire_order = h_ref_data.wires
     assert np.allclose(
@@ -286,7 +282,6 @@ def test_diff_hamiltonian(use_jax, symbols, geometry, h_ref_data):
     )
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     "use_jax",
     [
@@ -307,7 +302,7 @@ def test_diff_hamiltonian_active_space(use_jax):
 
     h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
 
-    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
+    assert isinstance(h, qml.ops.Sum)
 
 
 @pytest.mark.parametrize(
@@ -397,7 +392,6 @@ def test_gradient_expvalH():
     assert np.allclose(grad_qml[0][0], grad_finitediff)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.jax
 class TestJax:
     def test_gradient_jax_array(self):

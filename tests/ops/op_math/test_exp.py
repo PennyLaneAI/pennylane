@@ -14,6 +14,7 @@
 """Unit tests for the ``Exp`` class"""
 import copy
 import re
+import warnings
 
 import pytest
 
@@ -27,6 +28,13 @@ from pennylane.operation import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.ops.op_math import Evolution, Exp
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -432,16 +440,6 @@ class TestDecomposition:
         ):
             op.decomposition()
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_nontensor_tensor_no_decomposition(self):
-        """Checks that accessing the decomposition throws an error if the base is a Tensor
-        object that is not a mathematical tensor"""
-        base_op = qml.PauliX(0) @ qml.PauliZ(0)
-        op = Exp(base_op, 1j)
-        assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
-            _ = op.decomposition()
-
     @pytest.mark.parametrize(
         "base, base_string",
         (
@@ -450,22 +448,6 @@ class TestDecomposition:
         ),
     )
     def test_decomposition_into_pauli_rot(self, base, base_string):
-        """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
-        theta = 3.21
-        op = Exp(base, -0.5j * theta)
-
-        assert op.has_decomposition
-        pr = op.decomposition()[0]
-        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
-
-    @pytest.mark.parametrize(
-        "base, base_string",
-        (
-            (qml.operation.Tensor(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
-            (qml.operation.Tensor(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
-        ),
-    )
-    def test_decomposition_tensor_into_pauli_rot(self, base, base_string):
         """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
         theta = 3.21
         op = Exp(base, -0.5j * theta)
