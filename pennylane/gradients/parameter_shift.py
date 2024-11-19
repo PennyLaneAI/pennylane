@@ -778,7 +778,13 @@ def _expand_transform_param_shift(
     if any(
         qml.math.requires_grad(d) for mp in tape.measurements for d in getattr(mp.obs, "data", [])
     ):
-        batch, postprocessing = qml.transforms.split_to_single_terms(new_tape)
+        try:
+            batch, postprocessing = qml.transforms.split_to_single_terms(new_tape)
+        except RuntimeError as e:
+            raise ValueError(
+                "Can only differentiate Hamiltonian "
+                f"coefficients for expectations, not {tape.measurements}."
+            ) from e
     else:
         batch = [new_tape]
     if len(batch) > 1 or batch[0] is not tape:
