@@ -81,6 +81,27 @@ def overlap_matrix(basis_functions):
     >>> args = [alpha]
     >>> overlap_matrix(mol.basis_set)(*args)
     array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
+
+    >>> symbols = ['H', 'H']
+    >>> geometry = jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> alpha = jnp.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [geometry, mol.coeff, alpha]
+    >>> jax.jacobian(overlap_matrix(mol.basis_set), argnums=[2])(*args)[0]
+    Array([[[[ 0.        ,  0.        ,  0.        ],
+          [ 0.        ,  0.        ,  0.        ]],
+
+         [[-0.02055023, -0.6362824 , -1.2615994 ],
+          [-0.02055023, -0.6362824 , -1.2615994 ]]],
+
+
+        [[[-0.02055023, -0.6362824 , -1.2615994 ],
+          [-0.02055023, -0.6362824 , -1.2615994 ]],
+
+         [[ 0.        ,  0.        ,  0.        ],
+          [ 0.        ,  0.        ,  0.        ]]]], dtype=float32)
+
     """
 
     def overlap(*args):
@@ -139,6 +160,27 @@ def moment_matrix(basis_functions, order, idx):
     >>> order, idx = 1, 0
     >>> moment_matrix(mol.basis_set, order, idx)(*args)
     tensor([[0.0, 0.4627777], [0.4627777, 2.0]], requires_grad=True)
+
+    >>> symbols = ['H', 'H']
+    >>> geometry = jnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]])
+    >>> alpha = jnp.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [geometry, mol.coeff, alpha]
+    >>> order, idx = 1, 0
+    >>> jax.jacobian(moment_matrix(mol.basis_set, order, idx), argnums=[2])(*args)[0]
+    Array([[[[ 0.0000000e+00,  0.0000000e+00,  0.0000000e+00],
+         [ 0.0000000e+00,  0.0000000e+00,  0.0000000e+00]],
+
+        [[-2.0389855e-03, -4.3053108e-01, -2.1856945e+00],
+         [-1.2195989e-02, -4.0140808e-01, -3.3551180e-01]]],
+
+
+       [[[-2.0389855e-03, -4.3053108e-01, -2.1856945e+00],
+         [-1.2195989e-02, -4.0140808e-01, -3.3551180e-01]],
+
+        [[ 0.0000000e+00,  0.0000000e+00,  0.0000000e+00],
+         [-1.2751043e-01, -2.7879229e+00, -4.8788576e+00]]]],      dtype=float32)
     """
 
     def _moment_matrix(*args):
@@ -194,6 +236,26 @@ def kinetic_matrix(basis_functions):
     >>> args = [alpha]
     >>> kinetic_matrix(mol.basis_set)(*args)
     array([[0.76003189, 0.38325367], [0.38325367, 0.76003189]])
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> alpha = jnp.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [geometry, mol.coeff, alpha]
+    >>> jax.jacobian(kinetic_matrix(mol.basis_set), argnums=[2])(*args)[0]
+    Array([[[[-0.07746871, -0.27483404,  0.3364207 ],
+         [ 0.        ,  0.        ,  0.        ]],
+
+        [[-0.01695861, -0.23962599,  0.03758302],
+         [-0.01695858, -0.23962605,  0.03758297]]],
+
+
+       [[[-0.01695861, -0.23962599,  0.03758302],
+         [-0.01695858, -0.23962605,  0.03758297]],
+
+        [[ 0.        ,  0.        ,  0.        ],
+         [-0.07746871, -0.27483404,  0.3364207 ]]]], dtype=float32)
     """
 
     def kinetic(*args):
@@ -251,6 +313,27 @@ def attraction_matrix(basis_functions, charges, r):
     >>> args = [alpha]
     >>> attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     array([[-2.03852057, -1.60241667], [-1.60241667, -2.03852057]])
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> alpha = jnp.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [geometry, mol.coeff, alpha]
+    >>> jax.jacobian(attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnums=[2])(*args)[0]
+    Array([[[[0.16252947, 2.074407  , 2.4403477 ],
+         [0.        , 0.        , 0.        ]],
+
+        [[0.05578416, 1.0479885 , 1.3563405 ],
+         [0.05578416, 1.0479885 , 1.3563406 ]]],
+
+
+       [[[0.05578416, 1.0479885 , 1.3563405 ],
+         [0.05578416, 1.0479885 , 1.3563406 ]],
+
+        [[0.        , 0.        , 0.        ],
+         [0.16252947, 2.074407  , 2.4403477 ]]]], dtype=float32)
+
     """
 
     def attraction(*args):
@@ -334,6 +417,26 @@ def repulsion_tensor(basis_functions):
             [[0.56886144, 0.45590152], [0.45590152, 0.56886144]]],
            [[[0.56886144, 0.45590152], [0.45590152, 0.56886144]],
             [[0.65017747, 0.56886144],[0.56886144, 0.77460595]]]])
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> alpha = jnp.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [geometry, mol.coeff, alpha]
+    >>> repulsion_tensor(mol.basis_set)(*args)
+    Array([[[[0.77460593, 0.56886137],
+            [0.56886137, 0.6501774 ]],
+
+            [[0.56886137, 0.45590153],
+            [0.45590153, 0.5688614 ]]],
+
+
+        [[[0.56886137, 0.45590153],
+            [0.45590153, 0.5688614 ]],
+
+            [[0.6501774 , 0.5688614 ],
+            [0.5688614 , 0.77460593]]]], dtype=float32)
     """
 
     def repulsion(*args):
@@ -410,6 +513,16 @@ def core_matrix(basis_functions, charges, r):
     >>> args = [alpha]
     >>> core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]])
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = jnp.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [geometry, mol.coeff, alpha]
+    >>> core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    Array([[-1.2784888, -1.2191634],
+        [-1.2191634, -1.2784888]], dtype=float32)
     """
 
     def core(*args):

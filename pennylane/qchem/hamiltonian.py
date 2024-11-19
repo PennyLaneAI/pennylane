@@ -28,7 +28,6 @@ from .observable_hf import fermionic_observable, qubit_observable
 # pylint: disable=possibly-used-before-assignment
 
 
-
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
 
