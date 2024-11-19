@@ -307,7 +307,7 @@ class BoseWord(dict):
             reaches the leftmost creation `"+"` term. The function then does consecutive adjacent
             swaps on the creation term and the term to its left until the creation term is at the
             left pointer. Any commutation terms picked up after is then normal ordered, hence the
-            recursion. Finally, the left pointer increments. 
+            recursion. Finally, the left pointer increments.
         """
         bw_terms = sorted(self)
         len_op = len(bw_terms)
@@ -345,9 +345,9 @@ class BoseWord(dict):
 
         if self.is_hardcore:
             for bw, _ in ordered_op.items():
-                bw_pos_idx_arr = list(bw.keys())
-                bw_idx_arr = [x[1] for x in bw_pos_idx_arr]
-                if len(bw_idx_arr) != len(set(bw_idx_arr)):
+                bw_array = list(bw.keys())
+                indice_array = [x[1] for x in bw_array]
+                if len(indice_array) != len(set(indice_array)):
                     ordered_op[bw] = 0
 
         ordered_op.simplify(tol=1e-8)
