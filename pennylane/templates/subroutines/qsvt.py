@@ -124,6 +124,7 @@ def qsvt(A, angles, wires, convention=None):
         A = qml.math.reshape(A, [1, 1])
 
     c, r = qml.math.shape(A)
+    global_phase = None
 
     with qml.QueuingManager.stop_recording():
         UA = BlockEncode(A, wires=wires)
@@ -575,7 +576,7 @@ def transform_angles(angles, routine1, routine2):
 
         return angles + update_vals
 
-    elif routine1 == "QSVT" and routine2 == "QSP":
+    if routine1 == "QSVT" and routine2 == "QSP":
         num_angles = len(angles)
         update_vals = np.zeros(num_angles)
 
@@ -614,7 +615,7 @@ def poly_to_angles(P, routine, angle_solver="root-finding"):
             return transform_angles(_QSP_angles_root_finding(P), "QSP", "QSVT")
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 
-    elif routine == "QSP":
+    if routine == "QSP":
         if angle_solver == "root-finding":
             return _QSP_angles_root_finding(P)
         raise AssertionError("Invalid angle solver method")
