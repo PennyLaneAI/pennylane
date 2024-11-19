@@ -21,8 +21,12 @@ from pennylane.typing import TensorLike
 
 
 class BoseWord(dict):
-    r"""Immutable dictionary used to represent a Bose word, a product of bosonic creation and
+    r"""Dictionary used to represent a Bose word, a product of bosonic creation and
     annihilation operators, that can be constructed from a standard dictionary.
+
+    Args:
+        operator(dict): dictionary that represents the bosonic operator
+        is_hardcore(bool): specify if bosons are hardcore bosons
 
     The keys of the dictionary are tuples of two integers. The first integer represents the
     position of the creation/annihilation operator in the Bose word and the second integer
@@ -294,6 +298,16 @@ class BoseWord(dict):
         4.0 * b⁺(0) b(0)
         + 2.0 * I
         + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
+
+        .. details::
+            :title: Developer Notes
+
+            This recursive function uses a two pointer approach. The left pointer is positioned at
+            the leftmost annihilation `"-"` term and the right pointer is incremented until it
+            reaches the leftmost creation `"+"` term. The function then does consecutive adjacent
+            swaps on the creation term and the term to its left until the creation term is at the
+            left pointer. Any commutation terms picked up after is then normal ordered, hence the
+            recursion. Finally, the left pointer increments. 
         """
         bw_terms = sorted(self)
         len_op = len(bw_terms)
@@ -423,7 +437,7 @@ class BoseWord(dict):
 
 # pylint: disable=useless-super-delegation
 class BoseSentence(dict):
-    r"""Immutable dictionary used to represent a Bose sentence, a linear combination of Bose words,
+    r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
 
     >>> w1 = BoseWord({(0, 0) : '+', (1, 1) : '-'})
