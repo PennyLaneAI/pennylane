@@ -20,7 +20,7 @@ def harmonic_analysis(scf_result, method="rhf"):
             for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
 
     Returns:
-       pyscf object containing information about the harmonic analysis.
+       pyscf object containing information about the harmonic analysis
     """
 
     method = method.strip().lower()
