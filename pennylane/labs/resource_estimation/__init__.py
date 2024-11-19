@@ -12,8 +12,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-As part of the labs module, this module contains experimental features for
+This module contains experimental features for
 resource estimation.
+
+.. warning::
+
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
+
+.. currentmodule:: pennylane.labs.resource_estimation
+
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~Resources
+    ~CompressedResourceOp
+    ~ResourceOperator
+
+Operators
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceCNOT
+    ~ResourceControlledPhaseShift
+    ~ResourceHadamard
+    ~ResourceRZ
+    ~ResourceSWAP
+    ~ResourceT
+
+Templates
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceQFT
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined

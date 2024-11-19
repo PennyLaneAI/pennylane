@@ -21,7 +21,7 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
-    r"""Resource class for ControlledPhaseShift
+    r"""Resource class for the ControlledPhaseShift gate.
 
         Resources:
             The resources come from the following identity expressing Controlled Phase Shift
@@ -63,10 +63,9 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
     @classmethod
     def adjoint_resource_decomp(cls, **kwargs):
         return {cls.resource_rep(): 1}
-
-
+      
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
-    """Resource class for CNOT"""
+    """Resource class for the CNOT gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:

@@ -44,6 +44,7 @@
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
+  [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
 
 * `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
   pennylane variant jaxpr.
@@ -135,6 +136,10 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 
 <h3>Deprecations 👋</h3>
 
+* The `tape` and `qtape` properties of `QNode` have been deprecated. 
+  Instead, use the `qml.workflow.construct_tape` function.
+  [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
+
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
@@ -182,6 +187,7 @@ Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
 Jay Soni,
