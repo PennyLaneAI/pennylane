@@ -179,7 +179,7 @@ class HilbertSchmidt(Operation):
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
-        decomp_ops.extend(qml.adjoint(op_v, lazy=False) for op_v in v_tape.operations)
+        decomp_ops.extend(qml.adjoint(op_v, lazy=False) for op_v in reversed(v_tape.operations))
         # CNOT second layer
         decomp_ops.extend(
             qml.CNOT(wires=[wires[i], wires[j]])
