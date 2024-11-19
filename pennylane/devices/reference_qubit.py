@@ -70,7 +70,7 @@ def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
             results.append(
                 tuple(mp.process_samples(sub_samples, tape.wires) for mp in tape.measurements)
             )
-        print(results)
+
         if len(tape.measurements) == 1:
             results = [res[0] for res in results]
         if not tape.shots.has_partitioned_shots:

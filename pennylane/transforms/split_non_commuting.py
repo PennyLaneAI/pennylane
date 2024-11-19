@@ -617,7 +617,6 @@ def _processing_fn_no_grouping(
     res_batch_for_each_mp = [[] for _ in offsets]
     coeffs_for_each_mp = [[] for _ in offsets]
 
-    print(single_term_obs_mps)
     for smp_idx, (_, (mp_indices, coeffs)) in enumerate(single_term_obs_mps.items()):
 
         for mp_idx, coeff in zip(mp_indices, coeffs):
