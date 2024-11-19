@@ -83,10 +83,6 @@ class TestAttribute:
         assert "RY" in new_attribute
         assert len(new_attribute) == 8
 
-    def test_tensor_check(self):
-        """Test that we can ask if a tensor is in the attribute."""
-        assert qml.operation.Tensor(qml.PauliX(wires=0), qml.PauliZ(wires=1)) not in new_attribute
-
 
 single_scalar_single_wire_ops = [
     "RX",
@@ -137,7 +133,6 @@ separately_tested_ops = [
     "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
-    "QubitStateVector",
     "StatePrep",
     "AmplitudeEmbedding",
     "AngleEmbedding",

@@ -14,6 +14,8 @@
 """
 Tests for the ``default.mixed`` device for the JAX interface
 """
+import warnings
+
 # pylint: disable=protected-access
 from functools import partial
 
@@ -23,6 +25,14 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 pytestmark = pytest.mark.jax
 
@@ -154,7 +164,7 @@ class TestQNodeIntegration:
                 qml.RX(x, wires=0)
                 qml.expval(qml.PauliZ(0))
             tape = qml.tape.QuantumScript.from_queue(q)
-            return qml.execute([tape], dev, gradient_fn=gradient_func)
+            return qml.execute([tape], dev, diff_method=gradient_func)
 
         assert jnp.allclose(wrapper(jnp.array(0.0))[0], 1.0)
 
