@@ -12,26 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+This module contains experimental features for
+resource estimation.
 
-This module contains experimental features enabling
-advanced quantum computing research.
+.. warning::
 
-.. currentmodule:: pennylane.labs
+    This module is experimental. Frequent changes will occur,
+    with no guarantees of stability or backwards compatibility.
 
-Modules
-~~~~~~~
+.. currentmodule:: pennylane.labs.resource_estimation
+
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    dla
-    resource_estimation
+    ~Resources
+    ~CompressedResourceOp
+    ~ResourceOperator
 
 """
 
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-
-
-__all__ = []
+from .resource_operator import ResourceOperator
+from .resource_container import CompressedResourceOp, Resources
