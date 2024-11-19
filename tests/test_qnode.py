@@ -1056,6 +1056,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit")
 
+        # pylint: disable=too-few-public-methods
         class DummyCustomGraphOp(qml.operation.Operation):
             """Dummy custom operation for testing purposes."""
 
