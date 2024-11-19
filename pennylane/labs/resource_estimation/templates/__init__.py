@@ -11,27 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-.. currentmodule:: pennylane
-
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    dla
-    resource_estimation
-
-"""
-
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-
-
-__all__ = []
+r"""This module contains resource operators for PennyLane templates. """
+from .subroutines import ResourceQFT

@@ -11,27 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-.. currentmodule:: pennylane
+r"""This module contains resource operators for PennyLane Operators"""
 
-This module contains experimental features enabling
-advanced quantum computing research.
+from .qubit import (
+    ResourceHadamard,
+    ResourceRZ,
+    ResourceSWAP,
+    ResourceT,
+)
 
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    dla
-    resource_estimation
-
-"""
-
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-
-
-__all__ = []
+from .op_math import (
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+)
