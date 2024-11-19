@@ -74,6 +74,7 @@ from pennylane.measurements import (
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
+from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -133,7 +134,6 @@ import pennylane.pulse
 import pennylane.fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
-import pennylane.qinfo
 
 # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
@@ -166,43 +166,10 @@ class PennyLaneDeprecationWarning(UserWarning):
     """Warning raised when a PennyLane feature is being deprecated."""
 
 
-del globals()["Hamiltonian"]
-
-
 def __getattr__(name):
-    if name == "Hamiltonian":
-        if pennylane.operation.active_new_opmath():
-            return pennylane.ops.LinearCombination
-        return pennylane.ops.Hamiltonian
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
-
-    from warnings import warn  # pylint: disable=import-outside-toplevel
-
-    if name == "QubitDevice":
-        warn(
-            "QubitDevice will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.QubitDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._qubit_device.QubitDevice  # pylint:disable=protected-access
-
-    if name == "QutritDevice":
-        warn(
-            "QutritDevice will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.QutritDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._qutrit_device.QutritDevice  # pylint:disable=protected-access
-
-    if name == "Device":
-        warn(
-            "Device will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.LegacyDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._legacy_device.Device  # pylint:disable=protected-access
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

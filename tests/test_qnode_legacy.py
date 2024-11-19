@@ -32,6 +32,21 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 
+def test_legacy_qtape_property_is_deprecated():
+    """Test that the legacy qtape property is deprecated."""
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.PauliY(0)
+
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="The tape/qtape property is deprecated"
+    ):
+        _ = circuit.qtape
+
+
 def dummyfunc():
     """dummy func."""
     return None
@@ -117,7 +132,10 @@ class TestValidation:
 
         spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
 
-        QNode.get_best_method(dev_legacy, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            QNode.get_best_method(dev_legacy, "some_interface")
 
         spy.assert_called_once()
 
@@ -133,11 +151,17 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
         # basic check if the device provides a Jacobian
-        res = QNode.get_best_method(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "another_interface")
         assert res == ("device", {}, dev)
 
         # device is returned even if backpropagation is possible
-        res = QNode.get_best_method(dev, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "some_interface")
         assert res == ("device", {}, dev)
 
     # pylint: disable=protected-access
@@ -148,7 +172,10 @@ class TestValidation:
         dev = qml.device("default.mixed", wires=1)
 
         # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
-        res = QNode.get_best_method(dev, interface)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, interface)
         assert res == ("backprop", {}, dev)
 
     # pylint: disable=protected-access
@@ -158,7 +185,10 @@ class TestValidation:
         dev = qml.device("default.mixed", wires=1)
 
         tape = qml.tape.QuantumScript([], [], shots=50)
-        res = QNode.get_best_method(dev, None, tape=tape)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, None, tape=tape)
         assert res == (qml.gradients.param_shift, {}, dev)
 
     # pylint: disable=protected-access
@@ -178,8 +208,10 @@ class TestValidation:
         dev = qml.device("default.mixed", wires=1)
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
-
-        res = QNode.get_best_method(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
     # pylint: disable=protected-access
@@ -191,11 +223,17 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
         # basic check if the device provides a Jacobian
-        res = QNode.best_method_str(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "another_interface")
         assert res == "device"
 
         # device is returned even if backpropagation is possible
-        res = QNode.best_method_str(dev, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "some_interface")
         assert res == "device"
 
     # pylint: disable=protected-access
@@ -207,7 +245,10 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
 
         # backprop is returned when the interfaces match and Jacobian is not provided
-        res = QNode.best_method_str(dev, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "some_interface")
         assert res == "backprop"
 
     def test_best_method_str_wraps_legacy_device_correctly(self, mocker):
@@ -215,7 +256,10 @@ class TestValidation:
 
         spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
 
-        QNode.best_method_str(dev_legacy, "some_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            QNode.best_method_str(dev_legacy, "some_interface")
 
         spy.assert_called_once()
 
@@ -227,7 +271,10 @@ class TestValidation:
 
         # parameter shift is returned when Jacobian is not provided and
         # the backprop interfaces do not match
-        res = QNode.best_method_str(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "another_interface")
         assert res == "parameter-shift"
 
     # pylint: disable=protected-access
@@ -238,7 +285,10 @@ class TestValidation:
 
         mocker.patch.object(QNode, "get_best_method", return_value=[qml.gradients.finite_diff])
 
-        res = QNode.best_method_str(dev, "another_interface")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"
+        ):
+            res = QNode.best_method_str(dev, "another_interface")
 
         assert res == "finite-diff"
 
@@ -423,22 +473,24 @@ class TestTapeConstruction:
         y = pnp.array(0.54, requires_grad=True)
 
         res = qn(x, y)
+        tape = qml.workflow.construct_tape(qn)(x, y)
 
-        assert isinstance(qn.qtape, QuantumScript)
-        assert len(qn.qtape.operations) == 3
-        assert len(qn.qtape.observables) == 1
-        assert qn.qtape.num_params == 2
-        assert qn.qtape.shots.total_shots is None
+        assert isinstance(tape, QuantumScript)
+        assert len(tape.operations) == 3
+        assert len(tape.observables) == 1
+        assert tape.num_params == 2
+        assert tape.shots.total_shots is None
 
-        expected = qml.execute([qn.tape], dev, None)
+        expected = qml.execute([tape], dev, None)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # when called, a new quantum tape is constructed
-        old_tape = qn.qtape
+        old_tape = tape
         res2 = qn(x, y)
+        new_tape = qml.workflow.construct_tape(qn)(x, y)
 
         assert np.allclose(res, res2, atol=tol, rtol=0)
-        assert qn.qtape is not old_tape
+        assert new_tape is not old_tape
 
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
@@ -525,9 +577,9 @@ class TestTapeConstruction:
             return [m1, m2]
 
         qn = QNode(func, dev)
-        qn(5, 1)  # evaluate the QNode
-        assert qn.qtape.operations == contents[0:3]
-        assert qn.qtape.measurements == contents[3:]
+        tape = qml.workflow.construct_tape(qn)(5, 1)
+        assert tape.operations == contents[0:3]
+        assert tape.measurements == contents[3:]
 
     @pytest.mark.jax
     def test_jit_counts_raises_error(self):
@@ -586,21 +638,23 @@ def test_decorator(tol):
     y = pnp.array(0.54, requires_grad=True)
 
     res = func(x, y)
+    tape = qml.workflow.construct_tape(func)(x, y)
 
-    assert isinstance(func.qtape, QuantumScript)
-    assert len(func.qtape.operations) == 3
-    assert len(func.qtape.observables) == 1
-    assert func.qtape.num_params == 2
+    assert isinstance(tape, QuantumScript)
+    assert len(tape.operations) == 3
+    assert len(tape.observables) == 1
+    assert tape.num_params == 2
 
-    expected = qml.execute([func.tape], dev, None)
+    expected = qml.execute([tape], dev, None)
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
     # when called, a new quantum tape is constructed
-    old_tape = func.qtape
+    old_tape = tape
     res2 = func(x, y)
+    new_tape = qml.workflow.construct_tape(func)(x, y)
 
     assert np.allclose(res, res2, atol=tol, rtol=0)
-    assert func.qtape is not old_tape
+    assert new_tape is not old_tape
 
 
 class TestIntegration:
@@ -786,8 +840,9 @@ class TestIntegration:
         circuit.construct(tuple(), {})
 
         spy.assert_not_called()
-        assert len(circuit.tape.operations) == 2
-        assert isinstance(circuit.tape.operations[1], qml.measurements.MidMeasureMP)
+        tape = qml.workflow.construct_tape(circuit)()
+        assert len(tape.operations) == 2
+        assert isinstance(tape.operations[1], qml.measurements.MidMeasureMP)
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -997,8 +1052,9 @@ class TestIntegration:
         with qml.queuing.AnnotatedQueue() as q:
             circuit()
 
+        tape = qml.workflow.construct_tape(circuit)()
         assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
-        assert len(circuit.tape.operations) == 1
+        assert len(tape.operations) == 1
 
 
 class TestShots:
@@ -1061,13 +1117,16 @@ class TestShots:
             circuit = QNode(circuit, dev)
 
         assert len(circuit(0.8)) == 10
-        assert circuit.qtape.operations[0].wires.labels == (0,)
+        tape = qml.workflow.construct_tape(circuit)(0.8)
+        assert tape.operations[0].wires.labels == (0,)
 
         assert len(circuit(0.8, shots=1)) == 10
-        assert circuit.qtape.operations[0].wires.labels == (1,)
+        tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
+        assert tape.operations[0].wires.labels == (1,)
 
         assert len(circuit(0.8, shots=0)) == 10
-        assert circuit.qtape.operations[0].wires.labels == (0,)
+        tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
+        assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
@@ -1086,7 +1145,8 @@ class TestShots:
             circuit = QNode(ansatz0, dev)
 
         assert len(circuit(0.8, 1)) == 10
-        assert circuit.qtape.operations[0].wires.labels == (1,)
+        tape = qml.workflow.construct_tape(circuit)(0.8, 1)
+        assert tape.operations[0].wires.labels == (1,)
 
         dev = qml.device("default.mixed", wires=2, shots=10)
 
@@ -1100,7 +1160,8 @@ class TestShots:
                 return qml.sample(qml.PauliZ(wires=0))
 
         assert len(ansatz1(0.8, shots=0)) == 10
-        assert ansatz1.qtape.operations[0].wires.labels == (0,)
+        tape = qml.workflow.construct_tape(circuit)(0.8, 0)
+        assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
     def test_shots_setting_does_not_mutate_device(self):
@@ -1212,13 +1273,13 @@ class TestShots:
         qn = QNode(func, dev)
 
         # No override
-        _ = qn(0.1, 0.2)
-        assert qn.tape.shots.total_shots == 5
+        tape = qml.workflow.construct_tape(qn)(0.1, 0.2)
+        assert tape.shots.total_shots == 5
 
         # Override
-        _ = qn(0.1, 0.2, shots=shots)
-        assert qn.tape.shots.total_shots == total_shots
-        assert qn.tape.shots.shot_vector == shot_vector
+        tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
+        assert tape.shots.total_shots == total_shots
+        assert tape.shots.shot_vector == shot_vector
 
         # Decorator syntax
         @qnode(dev)
@@ -1228,13 +1289,13 @@ class TestShots:
             return qml.expval(qml.PauliZ(0))
 
         # No override
-        _ = qn2(0.1, 0.2)
-        assert qn2.tape.shots.total_shots == 5
+        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2)
+        assert tape.shots.total_shots == 5
 
         # Override
-        _ = qn2(0.1, 0.2, shots=shots)
-        assert qn2.tape.shots.total_shots == total_shots
-        assert qn2.tape.shots.shot_vector == shot_vector
+        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
+        assert tape.shots.total_shots == total_shots
+        assert tape.shots.shot_vector == shot_vector
 
 
 class TestTransformProgramIntegration:
@@ -1560,7 +1621,6 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
-    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("grouping", [True, False])
     def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""

@@ -21,6 +21,7 @@ import copy
 import itertools
 import string
 import sys
+import warnings
 from functools import partial, reduce
 from itertools import product
 from os import environ
@@ -38,6 +39,14 @@ from pennylane import numpy as np
 from pennylane import qcut
 from pennylane.queuing import WrappedObj
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 pytestmark = pytest.mark.qcut
 
@@ -1585,15 +1594,8 @@ class TestGetMeasurements:
         assert obs[0].wires.tolist() == [1, 0, 2]
         assert obs[1].wires.tolist() == [1, 0]
 
-        if qml.operation.active_new_opmath():
-
-            assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
-            assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
-
-        else:
-
-            assert [get_name(o) for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
-            assert [get_name(o) for o in obs[1].obs] == ["PauliZ", "PauliX"]
+        assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
+        assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
 
 
 class TestExpandFragmentTapes:
