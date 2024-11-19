@@ -175,18 +175,18 @@ def localize_normal_modes(results, freq_separation=[2600]):
     ulocs_arr = []
     for idx in range(num_seps + 1):
         num_freqs = len(freqs_arr[idx])
-        loc_freqs, qloc, uloc = [], np.zeros((natoms, 3, 0)), np.zeros((0, 0))
+        freqs_block, qloc, uloc_block = [], np.zeros((natoms, 3, 0)), np.zeros((0, 0))
         if num_freqs > 1:
-            loc_freqs, qloc, uloc = _localize_modes(freqs_arr[idx], disps_arr[idx])
+            freqs_block, qloc, uloc_block = _localize_modes(freqs_arr[idx], disps_arr[idx])
         elif num_freqs == 1:
-            loc_freqs = freqs_arr[idx]
+            freqs_block = freqs_arr[idx]
             qloc = np.zeros((natoms, 3, 1))
             qloc[:, :, 0] = disps_arr[idx][0]
-            uloc = np.eye(1)
+            uloc_block = np.eye(1)
 
-        loc_freqs_arr.append(loc_freqs)
+        loc_freqs_arr.append(freqs_block)
         qlocs_arr.append(qloc)
-        ulocs_arr.append(uloc)
+        ulocs_arr.append(uloc_block)
 
     uloc = np.zeros((nmodes, nmodes))
     for idx, indices in enumerate(modes_arr):
