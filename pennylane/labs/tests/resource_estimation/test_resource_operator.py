@@ -101,3 +101,24 @@ def test_set_resources():
     dummy = DummyClass()
     DummyClass.set_resources(lambda _: 5)
     assert DummyClass.resources(10) == 5
+
+
+def test_resource_rep_from_op():
+    """Test that the resource_rep_from_op method is the composition of resource_params and resource_rep"""
+
+    class DummyClass(re.ResourceQFT, re.ResourceOperator):
+        """Dummy class for testing"""
+
+        @staticmethod
+        def _resource_decomp():
+            return
+
+        def resource_params(self):
+            return {"foo": 1, "bar": 2}
+
+        @classmethod
+        def resource_rep(cls, foo, bar):
+            return re.CompressedResourceOp(cls, {"foo": foo, "bar": bar})
+
+    op = DummyClass()
+    assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params())
