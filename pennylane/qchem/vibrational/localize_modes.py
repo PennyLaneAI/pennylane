@@ -129,8 +129,8 @@ def localize_normal_modes(results, freq_separation=[2600]):
     Localizes normal modes by separating frequencies into specified ranges and applying mode localization.
 
     Args:
-        results (dict): Dictionary containing harmonic analysis results.
-        freq_separation (list): List of frequency separation thresholds in cm^-1. Defaults to [2600].
+        results (dict): dictionary containing harmonic analysis results
+        freq_separation (list): list of frequency separation thresholds in cm^-1. Defaults to [2600].
 
     Returns:
         tuple:
