@@ -28,6 +28,7 @@ BOHR_TO_ANG = 0.529177
 
 def harmonic_analysis(scf_result, method="rhf"):
     r"""Performs harmonic analysis by evaluating the Hessian using PySCF routines.
+
     Args:
        scf_result: pyscf object from electronic structure calculations
        method: Electronic structure method to define the level of theory
@@ -51,6 +52,7 @@ def harmonic_analysis(scf_result, method="rhf"):
 
 def single_point(molecule, method="rhf"):
     r"""Runs electronic structure calculation.
+
     Args:
       molecule: Molecule object.
       method: Electronic structure method to define the level of theory.
