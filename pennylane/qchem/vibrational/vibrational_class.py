@@ -45,7 +45,7 @@ def single_point(molecule, method="rhf"):
     """
     method = method.strip().lower()
     if method not in ["rhf", "uhf"]:
-        raise ValueError(f"Specified electronic structure method, {method} is not available.")
+        raise ValueError(f"Specified electronic structure method, {method}, is not available.")
 
     geom = [
         [symbol, tuple(np.array(molecule.coordinates)[i] * BOHR_TO_ANG)]
