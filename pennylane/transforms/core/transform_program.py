@@ -39,7 +39,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
     """
-    import jax
+    import jax  # pylint: disable=import-outside-toplevel
 
     with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
         trace = jax.interpreters.ad.JVPTrace(main, 0)

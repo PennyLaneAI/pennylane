@@ -23,8 +23,6 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
 
-import pennylane as qml
-
 from . import single_dispatch  # pylint:disable=unused-import
 from .utils import cast, cast_like, get_interface, requires_grad
 
