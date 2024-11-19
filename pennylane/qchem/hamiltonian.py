@@ -560,14 +560,10 @@ def _molecular_hamiltonian(
             else qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)()
         )
 
-          h_as_ps = qml.pauli.pauli_sentence(h)
-          coeffs = qml.math.real(qml.math.array(list(h_as_ps.values()), **interface_args))
-          h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
-          h = (
-              qml.s_prod(0, qml.Identity(h.wires[0]))
-              if len(h_as_ps) == 0
-              else h_as_ps.operation()
-          )
+        h_as_ps = qml.pauli.pauli_sentence(h)
+        coeffs = qml.math.real(qml.math.array(list(h_as_ps.values()), **interface_args))
+        h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
+        h = qml.s_prod(0, qml.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
 
         if wires:
             h = qml.map_wires(h, wires_map)

@@ -195,7 +195,6 @@ def test_fermionic_hamiltonian(use_jax, symbols, geometry, alpha, h_ref):
     assert h.keys() == h_ref.keys()
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     "use_jax",
     [
