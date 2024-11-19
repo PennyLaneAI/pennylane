@@ -123,13 +123,13 @@ class TestTransformTracer:
 @transform
 def non_plxpr_transform(tape):
     """Dummy transform that does not provide a way to transform PLxPR."""
-    return [tape], lambda res: res[0]
+    return [tape], lambda results: results[0]
 
 
 def _change_rotations_plxpr_transform(
     primitive, tracers, params, targs, tkwargs, state
 ):  # pylint: disable=unused-argument
-    """Convert RX to RY, RY to RZ, and RZ to RX for PLxPR."""
+    """Convert RX to RY, RY to RZ, and RZ to RX PLxPR transform."""
     # Step 1: Transform primitive
     prim_map = {
         "RX": qml.RY._primitive,
@@ -159,6 +159,35 @@ def change_rotations(tape):
     ]
     new_tape = qml.tape.QuantumScript(
         new_ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
+    return [new_tape], lambda results: results[0]
+
+
+def _expval_to_var_plxpr_transform(
+    primitive, tracers, params, targs, tkwargs, state
+):  # pylint: disable=unused-argument
+    """Convert expval to var PLxPR transform."""
+    # Step 1: Transform primitive
+    if primitive.name == "expval_obs":
+        primitive = qml.measurements.VarianceMP._obs_primitive
+    # Step 2: Update tracers
+    tracers = [
+        TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
+        for t in tracers
+    ]
+    # Step 3: Return the result of the transformation
+    return primitive.bind(*tracers, **params)
+
+
+@partial(transform, plxpr_transform=_expval_to_var_plxpr_transform)
+def expval_to_var(tape):
+    """Covnert expval to var tape transform."""
+    new_measurements = [
+        qml.var(mp.obs) if isinstance(mp, qml.measurements.ExpectationMP) else mp
+        for mp in tape.measurements
+    ]
+    new_tape = qml.tape.QuantumScript(
+        tape.operations, new_measurements, shots=tape.shots, trainable_params=tape.trainable_params
     )
     return [new_tape], lambda results: results[0]
 
