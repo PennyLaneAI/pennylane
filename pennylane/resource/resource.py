@@ -402,7 +402,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
         >>> gate_sizes = {1: 2, 2: 1}
         >>> depth = 2
         >>> shots = qml.measurements.Shots(10)
-        >>> initial_resources = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+        >>> resources = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
         >>>
         >>> # Replace Rx ~ three Hadamard gates and four S gates:
         >>> replace_gate_and_wires = ("RX", 1)  # (gate name, gate wires)
@@ -414,7 +414,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
         >>> depth = 7
         >>> sub_resources = Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
         >>>
-        >>> res = substitute(initial_resources, replace_gate_and_wires, sub_resources)
+        >>> res = substitute(resources, replace_gate_and_wires, sub_resources)
         >>> print(res)
         wires: 2
         gates: 15
