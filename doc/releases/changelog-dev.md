@@ -173,6 +173,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* `QNode` return behaviour is now consistent for lists and tuples.
+  [(#6568)](https://github.com/PennyLaneAI/pennylane/pull/6568)
+
 * `qml.math.get_deep_interface` now works properly for autograd arrays.
   [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
 
