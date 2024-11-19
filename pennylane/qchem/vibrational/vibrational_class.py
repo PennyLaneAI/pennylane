@@ -15,7 +15,7 @@ BOHR_TO_ANG = 0.529177
 def harmonic_analysis(scf_result, method="rhf"):
     r"""Performs harmonic analysis by evaluating the Hessian using PySCF routines.
     Args:
-       scf_result: pyscf object from electronic structure calculations.
+       scf_result: pyscf object from electronic structure calculations
        method: Electronic structure method to define the level of theory
             for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
 
