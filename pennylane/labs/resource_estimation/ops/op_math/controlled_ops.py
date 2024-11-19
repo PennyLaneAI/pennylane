@@ -63,7 +63,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
     @classmethod
     def adjoint_resource_decomp(cls, **kwargs):
         return {cls.resource_rep(): 1}
-      
+
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     """Resource class for the CNOT gate."""
 
