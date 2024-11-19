@@ -38,9 +38,12 @@ Operators
 .. autosummary::
     :toctree: api
 
+    ~ResourceAdjoint
     ~ResourceCNOT
+    ~ResourceControlled
     ~ResourceControlledPhaseShift
     ~ResourceHadamard
+    ~ResourcePow
     ~ResourceRZ
     ~ResourceSWAP
     ~ResourceT
@@ -70,8 +73,8 @@ from .ops import (
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
-    ResourcePow,
     ResourceHadamard,
+    ResourcePow,
     ResourceRZ,
     ResourceSWAP,
     ResourceT,
