@@ -1030,6 +1030,25 @@ class TestIntegration:
         res = circuit(x)
         assert qml.math.get_interface(res) == "numpy"
 
+    def test_qnode_default_interface(self):
+        """Tests that the default interface is set correctly."""
+
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(graph: nx.Graph):
+            for a in graph.nodes:
+                qml.Hadamard(wires=a)
+            for a, b in graph.edges:
+                qml.CZ(wires=[a, b])
+            return qml.expval(qml.PauliZ(0))
+
+        graph = nx.complete_graph(3)
+        res = circuit(graph)
+
+        assert qml.math.get_interface(res) == "numpy"
+
 
 class TestShots:
     """Unit tests for specifying shots per call."""

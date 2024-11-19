@@ -75,7 +75,7 @@ def _convert_to_interface(res, interface):
         "tf-autograph": "tensorflow",
     }
 
-    interface_name = interface_conversion_map[interface]
+    interface_name = interface_conversion_map.get(interface, None)
 
     return qml.math.asarray(res, like=interface_name)
 
