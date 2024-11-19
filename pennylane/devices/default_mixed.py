@@ -54,7 +54,6 @@ from pennylane.wires import Wires
 
 from .._version import __version__
 
-# from . import Device
 from ._qubit_device import QubitDevice
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import (
