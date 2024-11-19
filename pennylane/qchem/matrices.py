@@ -243,7 +243,7 @@ def kinetic_matrix(basis_functions):
     >>>                   [3.42525091, 0.62391373, 0.1688554]])
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [geometry, mol.coeff, alpha]
-    >>> jax.jacobian(kinetic_matrix(mol.basis_set), argnums=[2])(*args)[0]
+    >>> jx.jacobian(kinetic_matrix(mol.basis_set), argnums=[2])(*args)[0]
     Array([[[[-0.07746871, -0.27483404,  0.3364207 ],
          [ 0.        ,  0.        ,  0.        ]],
 
