@@ -269,7 +269,7 @@ def _get_interface_name(tapes, interface):
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
         if interface != "numpy":
-            interface = INTERFACE_MAP[interface]
+            interface = INTERFACE_MAP.get(interface, None)
     if interface == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
     if interface == "jax":
