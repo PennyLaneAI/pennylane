@@ -254,7 +254,7 @@ class TransformInterpreter(PlxprInterpreter):
 
         return op
 
-    def interpret_measure_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
 
         Args:

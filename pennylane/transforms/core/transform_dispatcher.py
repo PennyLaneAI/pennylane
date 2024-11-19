@@ -31,7 +31,7 @@ class TransformError(Exception):
 
 def _default_plxpr_transform(transform_name):  # pylint: disable=missing-function-docstring
     def wrapper(*_, **__):
-        raise ValueError(f"{transform_name} cannot be used to transform PLxPR.")
+        raise TransformError(f"{transform_name} cannot be used to transform PLxPR.")
 
     return wrapper
 
@@ -257,6 +257,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes, too-
         Returns:
             Any: The results of the transformed primitive
         """
+        # Implemented this way rather than using a property so that the correct docstring is used
         return self._plxpr_transform(primitive, tracers, params, targs, tkwargs, state)
 
     def _qfunc_transform(self, qfunc, targs, tkwargs):
