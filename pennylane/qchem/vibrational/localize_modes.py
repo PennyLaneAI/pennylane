@@ -137,7 +137,7 @@ def localize_normal_modes(results, freq_separation=[2600]):
             - loc_results (dict): Dictionary with localized mode information:
                 - "freq_wavenumber": Localized frequencies in cm^-1.
                 - "norm_mode": Corresponding normalized displacement vectors.
-            - uloc (array): Localization matrix indicating the relationship between original and localized modes.
+            - uloc (array): localization matrix indicating the relationship between original and localized modes
     """
     if not freq_separation:
         raise ValueError("The `freq_separation` list cannot be empty.")
