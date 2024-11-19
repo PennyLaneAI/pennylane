@@ -126,26 +126,39 @@ def _localize_modes(freqs, disp_vecs, order=True):
 
 def localize_normal_modes(results, freq_separation=[2600]):
     """
-    Arguments: results dictionary obtained from harmonic_analysis
-    separates frequencies at each point in freq_separation array
+    Localizes normal modes by separating frequencies into specified ranges and applying mode localization.
 
-    Returns: new dictionary with information for localized modes
+    Args:
+        results (dict): Dictionary containing harmonic analysis results.
+        freq_separation (list): List of frequency separation thresholds in cm^-1. Defaults to [2600].
+
+    Returns:
+        tuple:
+            - loc_results (dict): Dictionary with localized mode information:
+                - "freq_wavenumber": Localized frequencies in cm^-1.
+                - "norm_mode": Corresponding normalized displacement vectors.
+            - uloc (array): Localization matrix indicating the relationship between original and localized modes.
     """
+    if not freq_separation:
+        raise ValueError("The `freq_separation` list cannot be empty.")
+
     freqs_in_cm = results["freq_wavenumber"]
     freqs = freqs_in_cm / AU_TO_CM
     disp_vecs = results["norm_mode"]
     nmodes = len(freqs)
 
     num_seps = len(freq_separation)
+    natoms = disp_vecs.shape[1]
     min_modes = np.nonzero(freqs_in_cm <= freq_separation[0])[0]
 
     modes_arr = [min_modes]
     freqs_arr = [freqs[min_modes]]
     disps_arr = [disp_vecs[min_modes]]
 
-    for i_sep in range(num_seps - 1):
+    for sep_idx in range(num_seps - 1):
         mid_modes = np.nonzero(
-            (freq_separation[i_sep] <= freqs_in_cm) & (freq_separation[i_sep + 1] >= freqs_in_cm)
+            (freq_separation[sep_idx] <= freqs_in_cm)
+            & (freq_separation[sep_idx + 1] >= freqs_in_cm)
         )[0]
         modes_arr.append(mid_modes)
         freqs_arr.append(freqs[mid_modes])
@@ -157,45 +170,39 @@ def localize_normal_modes(results, freq_separation=[2600]):
     freqs_arr.append(freqs[max_modes])
     disps_arr.append(disp_vecs[max_modes])
 
-    natoms = np.shape(disp_vecs[0])[0]
-
     loc_freqs_arr = []
     qlocs_arr = []
     ulocs_arr = []
     for idx in range(num_seps + 1):
         num_freqs = len(freqs_arr[idx])
-        loc_freqs = []
-        uloc = []
-        qloc = []
+        loc_freqs, qloc, uloc = [], np.zeros((natoms, 3, 0)), np.zeros((0, 0))
         if num_freqs > 1:
             loc_freqs, qloc, uloc = _localize_modes(freqs_arr[idx], disps_arr[idx])
         elif num_freqs == 1:
             loc_freqs = freqs_arr[idx]
             qloc = np.zeros((natoms, 3, 1))
             qloc[:, :, 0] = disps_arr[idx][0]
-            uloc = np.zeros((1, 1))
-            uloc[0, 0] = 1
+            uloc = np.eye(1)
 
         loc_freqs_arr.append(loc_freqs)
         qlocs_arr.append(qloc)
         ulocs_arr.append(uloc)
 
     uloc = np.zeros((nmodes, nmodes))
-    for idx in range(num_seps + 1):
-        for i_enu, i_str in enumerate(modes_arr[idx]):
-            for j_enu, j_str in enumerate(modes_arr[idx]):
-                uloc[i_str, j_str] = ulocs_arr[idx][i_enu, j_enu]
+    for idx, indices in enumerate(modes_arr):
+        i, j = np.meshgrid(indices, indices, indexing="ij")
+        uloc[i, j] = ulocs_arr[idx]
 
-    loc_results = {}
-    loc_freqs = []
-    new_disp = []
-    for idx in range(num_seps + 1):
-        loc_freqs.extend(loc_freqs_arr[idx])
-        for m in range(len(loc_freqs_arr[idx])):
-            m_disp = qlocs_arr[idx][:, :, m]
-            new_disp.append(m_disp)
-    loc_freqs = np.array(loc_freqs)
-    loc_results["freq_wavenumber"] = loc_freqs * AU_TO_CM
-    loc_results["norm_mode"] = new_disp
+    loc_freqs = np.concatenate(loc_freqs_arr)
+    new_disp = [
+        qlocs_arr[idx][:, :, m]
+        for idx in range(num_seps + 1)
+        for m in range(len(loc_freqs_arr[idx]))
+    ]
+
+    loc_results = {
+        "freq_wavenumber": loc_freqs * AU_TO_CM,
+        "norm_mode": new_disp,
+    }
 
     return loc_results, uloc
