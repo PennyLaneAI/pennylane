@@ -18,6 +18,7 @@ Contains the QSVT template and qsvt wrapper function.
 import copy
 
 import numpy as np
+from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -464,3 +465,163 @@ def _qsp_to_qsvt(angles):
     update_vals = qml.math.convert_like(update_vals, angles)
 
     return angles + update_vals
+
+
+def _complementary_poly(P):
+    r"""
+    Computes the complementary polynomial Q given a polynomial P.
+
+    The polynomial Q is complementary of P if satisfies the following equation:
+
+    .. math:
+
+        |P(e^{i\theta})|^2 + |Q(e^{i\theta})|^2 = 1, \quad \forall \theta \in \left[0, 2\pi\right]
+
+    The method is based on computing an auxiliary polynomial R, finding its roots,
+    and reconstructing Q by using information extracted of those roots.
+    For more details see reference `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
+
+    Args:
+        P (array-like): Coefficients of the complex polynomial P.
+
+    Returns:
+        array-like: Coefficients of the complementary polynomial Q.
+    """
+    poly_degree = len(P) - 1
+
+    # Build the polynomial R(z) = z^degree * (1 - conj(P(1/z)) * P(z)), deduced from (eq.33) and (eq.34)
+    R = Polynomial.basis(poly_degree) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
+    r_roots = R.roots()
+
+    # Categorize the roots based on their magnitude: outside the unit circle or inside the closed unit circle
+    inside_circle = [root for root in r_roots if np.abs(root) <= 1]
+    outside_circle = [root for root in r_roots if np.abs(root) > 1]
+
+    # Compute the scaling factor for Q, which depends on the leading coefficient of R
+    scale_factor = np.sqrt(np.abs(R.coef[-1] * np.prod(outside_circle)))
+
+    # Complementary polynomial Q is built using th roots inside the closed unit circle
+    Q_poly = scale_factor * Polynomial.fromroots(inside_circle)
+
+    return Q_poly.coef
+
+
+def _QSP_angles_root_finding(F):
+    r"""
+    Computes the Quantum Signal Processing (QSP) angles given a polynomial F.
+
+    Args:
+        F (array-like): Coefficients of the input polynomial F.
+
+    Returns:
+        theta (array-like): QSP angles corresponding to the input polynomial F.
+    """
+
+    parity = (len(F) - 1) % 2
+
+    # Construct the auxiliary polynomial P and its complementary Q based on appendix A in [arXiv:2406.04246]
+    primary_poly = np.concatenate([np.zeros(len(F) // 2), chebyshev.poly2cheb(F)[parity::2]]) * (
+        1 - 1e-12
+    )
+    secondary_poly = _complementary_poly(primary_poly)
+
+    polynomial_matrix = np.array([primary_poly, secondary_poly])
+    num_terms = polynomial_matrix.shape[1]
+    rotation_angles = np.zeros(num_terms)
+
+    # This subroutine is an adaptation of Algorithm 1 in [arXiv:2308.01501]
+    # in order to work in the context of QSP.
+    with qml.QueuingManager.stop_recording():
+        for idx in range(num_terms - 1, -1, -1):
+
+            poly_a, poly_b = polynomial_matrix[:, idx]
+            rotation_angles[idx] = np.arctan2(poly_b.real, poly_a.real)
+
+            rotation_op = qml.matrix(qml.RY(-2 * rotation_angles[idx], wires=0))
+
+            updated_poly_matrix = rotation_op @ polynomial_matrix
+            polynomial_matrix = np.array(
+                [updated_poly_matrix[0][1 : idx + 1], updated_poly_matrix[1][0:idx]]
+            )
+
+    return rotation_angles
+
+
+def transform_angles(angles, routine1, routine2):
+    r"""
+    Transforms a set of angles from one routine to another.
+
+    This function adjusts the angles according to the specified transformation
+    between two routines, either from "Quantum Signal Processing" (QSP) to
+    "Quantum Singular Value Transformation" (QSVT), or vice versa.
+
+    Args:
+        angles (array-like): A list or array of angles to be transformed.
+        routine1 (str): The current routine of the angles. Must be either "QSP" or "QSVT".
+        routine2 (str): The target routine to which the angles should be transformed.
+                        Must be either "QSP" or "QSVT".
+
+    Returns:
+        array-like: The transformed angles as an array.
+
+    """
+    if routine1 == "QSP" and routine2 == "QSVT":
+        num_angles = len(angles)
+        update_vals = np.zeros(num_angles)
+
+        update_vals[0] = 3 * np.pi / 4 - (3 + len(angles) % 4) * np.pi / 2
+        update_vals[1:-1] = np.pi / 2
+        update_vals[-1] = -np.pi / 4
+
+        return angles + update_vals
+
+    elif routine1 == "QSVT" and routine2 == "QSP":
+        num_angles = len(angles)
+        update_vals = np.zeros(num_angles)
+
+        update_vals[0] = 3 * np.pi / 4 - (3 + len(angles) % 4) * np.pi / 2
+        update_vals[1:-1] = np.pi / 2
+        update_vals[-1] = -np.pi / 4
+
+        return angles - update_vals
+
+    else:
+        raise AssertionError("Invalid conversion")
+
+
+
+
+def poly_to_angles(P, routine, angle_solver="root-finding"):
+    r"""
+    Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP)
+    or quantum singular value transformation (QSVT) routines.
+
+    Args:
+        P (array-like): Coefficients of the polynomial, ordered from lowest to higher degree.
+                        The polynomial must have defined parity and real coefficients.
+
+        routine (str):  Specifies the type of angle transformation required. Must be either: "QSP" or "QSVT".
+
+    Returns:
+        (array-like): Angles corresponding to the specified transformation routine.
+    """
+
+    parity = (len(P) - 1) % 2
+    assert np.allclose(P[1 - parity :: 2], 0), "Polynomial must have defined parity"
+    assert np.allclose(
+        np.array(P, dtype=np.complex128).imag, 0
+    ), "Array must not have an imaginary part"
+
+    if routine == "QSVT":
+        if angle_solver == "root-finding":
+            return transform_angles(_QSP_angles_root_finding(P), "QSP", "QSVT")
+        else:
+            raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
+
+    elif routine == "QSP":
+        if angle_solver == "root-finding":
+            return _QSP_angles_root_finding(P)
+        else:
+            raise AssertionError("Invalid angle solver method")
+    else:
+        raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
