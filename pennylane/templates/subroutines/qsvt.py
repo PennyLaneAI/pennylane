@@ -124,7 +124,7 @@ def qsvt(A, angles, wires, convention=None):
         A = qml.math.reshape(A, [1, 1])
 
     c, r = qml.math.shape(A)
-    global_phase = None
+    global_phase, global_phase_op = None, None
 
     with qml.QueuingManager.stop_recording():
         UA = BlockEncode(A, wires=wires)
