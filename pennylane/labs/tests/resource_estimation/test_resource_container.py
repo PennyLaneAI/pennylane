@@ -32,7 +32,6 @@ from pennylane.labs.resource_estimation.resource_container import (
     mul_in_series,
     substitute,
 )
-
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 
 
