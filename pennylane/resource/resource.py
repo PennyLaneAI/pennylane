@@ -204,7 +204,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
         r2 (Resources): a :class:`~resource.Resources` to add
 
     Returns:
-        Resources: the combined resources of r1 and r2
+        Resources: the combined resources
 
     .. details::
 
@@ -253,7 +253,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
         r2 (Resources): a :class:`~resource.Resources` object to add
 
     Returns:
-        Resources: the combined resources of r1 and r2
+        Resources: the combined resources
 
     .. details::
 
