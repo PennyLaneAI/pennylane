@@ -67,7 +67,7 @@ Tracking Resources
 
 .. autosummary::
     :toctree: api
-    
+
     ~get_resources
     ~DefaultGateSet
     ~resource_config
