@@ -585,10 +585,7 @@ def transform_angles(angles, routine1, routine2):
 
         return angles - update_vals
 
-    else:
-        raise AssertionError("Invalid conversion")
-
-
+    raise AssertionError("Invalid conversion")
 
 
 def poly_to_angles(P, routine, angle_solver="root-finding"):
@@ -615,13 +612,10 @@ def poly_to_angles(P, routine, angle_solver="root-finding"):
     if routine == "QSVT":
         if angle_solver == "root-finding":
             return transform_angles(_QSP_angles_root_finding(P), "QSP", "QSVT")
-        else:
-            raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
+        raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 
     elif routine == "QSP":
         if angle_solver == "root-finding":
             return _QSP_angles_root_finding(P)
-        else:
-            raise AssertionError("Invalid angle solver method")
-    else:
-        raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
+        raise AssertionError("Invalid angle solver method")
+    raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
