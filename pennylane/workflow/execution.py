@@ -313,6 +313,7 @@ def execute(
     device: SupportedDeviceAPIs,
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[str] = "auto",
+    *,
     transform_program=None,
     inner_transform=None,
     config=None,
