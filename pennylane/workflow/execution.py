@@ -261,7 +261,7 @@ def _get_interface_name(tapes, interface):
             f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
         )
 
-    interface = INTERFACE_MAP.get(interface, None)
+    interface = INTERFACE_MAP[interface]
 
     if interface == "auto":
         params = []
