@@ -45,10 +45,12 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.transforms.core import TransformProgram
 from pennylane.wires import Wires
 
 from .._version import __version__
 from ._qubit_device import QubitDevice
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -711,6 +713,31 @@ class DefaultMixed(QubitDevice):
                 self._apply_channel_tensordot(matrices, wires)
             else:
                 self._apply_channel(matrices, wires)
+
+    @debug_logger
+    def preprocess(
+        self,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> tuple[TransformProgram, ExecutionConfig]:
+        """This function defines the device transform program to be applied and an updated device
+        configuration.
+
+        Args:
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure
+                describing the parameters needed to fully describe the execution.
+
+        Returns:
+            TransformProgram, ExecutionConfig: A transform program that when called returns
+            ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
+            function to be called after execution, and a configuration with unset
+            specifications filled in.
+
+        This device:
+
+        * Supports any qubit operations that provide a matrix
+        * Supports any qubit channel that provides Kraus matrices
+
+        """
 
     # pylint: disable=arguments-differ
 
