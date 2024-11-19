@@ -21,7 +21,7 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     _rotation_resources,
 )
 
-# pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
+# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
 
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 
