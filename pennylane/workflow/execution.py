@@ -481,7 +481,6 @@ def execute(
     finite_shots = any(tape.shots for tape in tapes)
     _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
-    is_gradient_transform = isinstance(diff_method, qml.transforms.core.TransformDispatcher)
     transform_program, inner_transform = _make_transform_programs(
         device, config, inner_transform, transform_program, gradient_fn
     )
