@@ -314,6 +314,7 @@ class BoseWord(dict):
                 bs = bw.shift_operator(r, l)
                 bs_as_list = sorted(list(bs.items()), key=lambda x: len(x[0].keys()), reverse=True)
                 bw = bs_as_list[0][0]
+                # Sort by ascending index order
                 if l > 0:
                     bw_as_list = sorted(list(bw.keys()))
                     if bw_as_list[l - 1][1] > bw_as_list[l][1]:
@@ -330,9 +331,9 @@ class BoseWord(dict):
 
         if self.is_hardcore:
             for bw, _ in ordered_op.items():
-                bw_arr = list(bw.keys())
-                indice_arr = [x[1] for x in bw_arr]
-                if len(indice_arr) != len(set(indice_arr)):
+                bw_pos_idx_arr = list(bw.keys())
+                bw_idx_arr = [x[1] for x in bw_pos_idx_arr]
+                if len(bw_idx_arr) != len(set(bw_idx_arr)):
                     ordered_op[bw] = 0
 
         ordered_op.simplify(tol=1e-8)
