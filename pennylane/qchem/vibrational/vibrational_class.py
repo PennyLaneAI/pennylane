@@ -3,11 +3,17 @@ This object stores all the necessary information to construct
 vibrational Hamiltonian for a given molecule."""
 
 import numpy as np
-import pyscf
-from pyscf.geomopt.geometric_solver import optimize
-from pyscf.hessian import thermo
 
 import pennylane as qml
+
+from ..openfermion_pyscf import _import_pyscf
+
+# pylint: disable=wrong-import-order, wrong-import-position
+
+
+pyscf = _import_pyscf()
+from pyscf.geomopt.geometric_solver import optimize
+from pyscf.hessian import thermo
 
 BOHR_TO_ANG = 0.529177
 

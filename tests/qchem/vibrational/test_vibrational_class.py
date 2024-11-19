@@ -111,7 +111,9 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     mol_eq = vibrational.optimize_geometry(mol)
     harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
     print(harmonic_res["norm_mode"], expected_vecs)
-    assert np.allclose(harmonic_res["norm_mode"], expected_vecs)
+    assert np.allclose(harmonic_res["norm_mode"], expected_vecs) or np.allclose(
+        harmonic_res["norm_mode"], -1 * np.array(expected_vecs)
+    )
 
 
 @pytest.mark.parametrize(
