@@ -315,7 +315,6 @@ def test_empty_error(two_tensor):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_basis_rotation_output(
     one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref
 ):
@@ -363,7 +362,6 @@ def test_basis_rotation_output(
         )
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_basis_rotation_utransform(core, one_electron, two_electron):
     r"""Test that basis_rotation function returns the correct transformation matrices. This test
     constructs the matrix representation of a factorized Hamiltonian and then applies the

@@ -504,9 +504,9 @@ def pulse_odegen(
     Alternatively, we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
-    >>> circuit.construct((params,), {}) # Build the tape of the circuit.
-    >>> circuit.tape.trainable_params = [0, 1, 2]
-    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnum=[0, 1, 2])
+    >>> tape = qml.workflow.construct_tape(circuit)(params) # Build the tape of the circuit.
+    >>> tape.trainable_params = [0, 1, 2]
+    >>> tapes, fun = qml.gradients.pulse_odegen(tape, argnum=[0, 1, 2])
     >>> len(tapes)
     12
 
