@@ -819,8 +819,6 @@ class TestHamiltonianWorkflows:
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["diff_method"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
-        if shots.has_partitioned_shots:
-            pytest.xfail("there are problems here.")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])
