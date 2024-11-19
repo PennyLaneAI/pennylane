@@ -1,5 +1,19 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
-This module contains tests for functions needed to compute PES object."""
+This module contains tests for functions needed to compute PES object.
+"""
 
 import numpy as np
 import pytest
@@ -12,6 +26,7 @@ AU_TO_CM = 219475
 # pylint: disable=too-many-arguments
 
 
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_es_methoderror():
     r"""Test that an error is raised if wrong method is provided for
     geometry optimization."""
@@ -56,6 +71,7 @@ def test_es_methoderror():
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_scf_energy(sym, geom, unit, method, basis, expected_energy):
     r"""Test that correct energy is produced for a given molecule."""
 
@@ -81,6 +97,7 @@ def test_scf_energy(sym, geom, unit, method, basis, expected_energy):
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_optimize_geometry(sym, geom, expected_geom):
     r"""Test that correct optimized geometry is obtained."""
 
@@ -105,6 +122,7 @@ def test_optimize_geometry(sym, geom, expected_geom):
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
@@ -162,6 +180,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_mode_localization(sym, geom, loc_freqs, exp_results):
     r"""Test that mode localization returns correct results."""
 
@@ -209,6 +228,7 @@ def test_mode_localization(sym, geom, loc_freqs, exp_results):
     assert np.allclose(freqs, exp_results["freqs"])
 
 
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_hess_methoderror():
     r"""Test that an error is raised if wrong method is provided for
     harmonic analysis."""
@@ -224,6 +244,7 @@ def test_hess_methoderror():
         vibrational.harmonic_analysis(mol_scf, method="ccsd")
 
 
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_error_mode_localization():
     r"""Test that an error is raised if empty list of frequencies is provided for localization"""
 
