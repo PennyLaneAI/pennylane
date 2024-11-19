@@ -23,7 +23,7 @@ Lark grammar reference:
 
 from textwrap import dedent  # pragma: no cover
 
-try:
+try:  # pragma: no cover
     from lark import Lark, LarkError, UnexpectedInput  # pragma: no cover
 except ImportError as e:  # pragma: no cover
     raise RuntimeError(
