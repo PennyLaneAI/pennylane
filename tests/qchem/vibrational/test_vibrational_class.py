@@ -21,7 +21,7 @@ def test_es_methoderror():
     mol = qml.qchem.Molecule(symbols, geom)
 
     with pytest.raises(
-        ValueError, match="Specified electronic structure method, ccsd is not available."
+        ValueError, match="Specified electronic structure method, ccsd, is not available."
     ):
         vibrational.optimize_geometry(mol, method="ccsd")
 
