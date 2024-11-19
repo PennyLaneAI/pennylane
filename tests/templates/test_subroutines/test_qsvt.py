@@ -751,6 +751,12 @@ class TestRootFindingSolver:
                 "Pitagoras",
                 "Invalid angle solver",
             ),
+            (
+                [0, 1, 0, 3, 0, 2],
+                "QSP",
+                "Pitagoras",
+                "Invalid angle solver",
+            ),
         ],
     )
     def test_raise_error(self, poly, routine, angle_solver, msg_match):
