@@ -157,8 +157,9 @@ class TestBoseWord:
                 bw23,
                 BoseSentence(
                     {
-                        BoseWord({}): 1.0,
-                    }
+                        BoseWord({}): 0,
+                    },
+                    True,
                 ),
             ),
             (
@@ -333,10 +334,21 @@ class TestBoseWord:
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             BoseWord(operator)
 
-    def test_init_hardcore(self):
+    @pytest.mark.parametrize(
+        ["operator", "expected"],
+        [
+            ({(0, 0): "-", (1, 0): "-"}, BoseWord({}, True)),
+            (
+                {(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 3): "+"},
+                BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 3): "+"}),
+            ),
+            ({(0, 0): "-", (1, 0): "+"}, BoseWord({(0, 0): "-", (1, 0): "+"})),
+        ],
+    )
+    def test_init_hardcore(self, operator, expected):
         """Test that initializing hardcore boson works as intended"""
-        bw = BoseWord({(0, 0): "+", (1, 0): "-"}, True)
-        assert bw == BoseWord({})
+        bw = BoseWord(operator, True)
+        assert bw == expected
 
     tup_bw_dag = (
         (bw1, bw1_dag),

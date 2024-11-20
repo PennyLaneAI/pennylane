@@ -42,13 +42,13 @@ class BoseWord(dict):
         :title: Hardcore Bosons
 
         Hardcore Bosons are bosons that follow additional commutation rules and act more similarly
-        to fermions. Namely, they follow the anti-commutation rules of fermions when the indices
+        to fermions. Namely, they follow certain anti-commutation rules when the indices
         :math:`i` and :math:`j` are equal.
 
-        There are three `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
+        There are two `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
 
         .. math::
-            \left\{ a_i, a_i \right\} = 0, \quad \left\{ a^{\dagger}_i, a^{\dagger}_i \right\} = 0, \quad \left\{ a_i, a^{\dagger}_i \right\} = I,
+            \left\{ a_i, a_i \right\} = 0, \quad \left\{ a^{\dagger}_i, a^{\dagger}_i \right\} = 0,
     """
 
     # override the arithmetic dunder methods for numpy arrays so that the
@@ -60,6 +60,7 @@ class BoseWord(dict):
     def __init__(self, operator, is_hardcore=False):
         self.sorted_dic = dict(sorted(operator.items()))
         self.is_hardcore = is_hardcore
+        self._is_zero = False
         indices = [i[0] for i in self.sorted_dic.keys()]
 
         if indices:
@@ -72,9 +73,11 @@ class BoseWord(dict):
             sign_array = list(self.sorted_dic.values())
             bw_array = list(self.sorted_dic.keys())
             index_array = [x[1] for x in bw_array]
-            if len(index_array) != len(set(index_array)) and len(set(sign_array)) < len(sign_array):
+            index_sign_array = list(zip(index_array, sign_array))
+            if len(index_sign_array) != len(set(index_sign_array)):
                 self.sorted_dic = {}
                 operator = {}
+                self._is_zero = True
 
         super().__init__(operator)
 
@@ -142,6 +145,8 @@ class BoseWord(dict):
         'b⁺(0) b(1)'
         """
         if len(self) == 0:
+            if self._is_zero:
+                return "0"
             return "I"
 
         symbol_map = {"+": "\u207a", "-": ""}
@@ -259,7 +264,7 @@ class BoseWord(dict):
 
             dict_self.update(dict_other)
 
-            return BoseWord(dict_self)
+            return BoseWord(dict_self, is_hardcore=self.is_hardcore)
 
         if isinstance(other, BoseSentence):
             return BoseSentence({self: 1}) * other
@@ -292,6 +297,8 @@ class BoseWord(dict):
         >>> print(w**3)
         b⁺(0) b(1) b⁺(0) b(1) b⁺(0) b(1)
         """
+        if self.is_hardcore:
+            return BoseSentence({BoseWord({}): 0}, True)
 
         if value < 0 or not isinstance(value, int):
             raise ValueError("The exponent must be a positive integer.")
@@ -322,12 +329,15 @@ class BoseWord(dict):
             left pointer. Any commutation terms picked up after is then normal ordered, hence the
             recursion. Finally, the left pointer increments.
         """
+        if self._is_zero:
+            return BoseSentence({BoseWord({}): 0.0}, is_hardcore=True)
+
         bw_terms = sorted(self)
         len_op = len(bw_terms)
         bw_comm = BoseSentence({BoseWord({}): 0.0}, is_hardcore=self.is_hardcore)
 
         if len_op == 0:
-            return 1 * BoseWord({})
+            return 1 * BoseWord({}, self.is_hardcore)
 
         bw = self
 
@@ -347,6 +357,7 @@ class BoseWord(dict):
                     if bw_as_list[left_pointer - 1][1] > bw_as_list[left_pointer][1]:
                         temp_bs = bw.shift_operator(left_pointer - 1, left_pointer)
                         bw = list(temp_bs.items())[0][0]
+                bw.is_hardcore = self.is_hardcore
 
                 for i in range(1, len(bs_as_list)):
                     bw_comm += bs_as_list[i][0] * bs_as_list[i][1]
@@ -355,6 +366,7 @@ class BoseWord(dict):
 
         ordered_op = bw + bw_comm.normal_order()
         ordered_op.simplify(tol=1e-8)
+        ordered_op.is_hardcore = self.is_hardcore
         return ordered_op
 
     def shift_operator(self, initial_position, final_position):
