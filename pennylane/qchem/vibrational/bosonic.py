@@ -24,9 +24,6 @@ class BoseWord(dict):
     r"""Dictionary used to represent a Bose word, a product of bosonic creation and
     annihilation operators, that can be constructed from a standard dictionary.
 
-    Args:
-        operator(dict): dictionary that represents the bosonic operator
-
     The keys of the dictionary are tuples of two integers. The first integer represents the
     position of the creation/annihilation operator in the Bose word and the second integer
     represents the mode it acts on. The values of the dictionary are one of ``'+'`` or ``'-'``
@@ -288,16 +285,6 @@ class BoseWord(dict):
         4.0 * b⁺(0) b(0)
         + 2.0 * I
         + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
-
-        .. details::
-            :title: Developer Notes
-
-            This recursive function uses a two pointer approach. The left pointer is positioned at
-            the leftmost annihilation `"-"` term and the right pointer is incremented until it
-            reaches the leftmost creation `"+"` term. The function then does consecutive adjacent
-            swaps on the creation term and the term to its left until the creation term is at the
-            left pointer. Any commutation terms picked up after is then normal ordered, hence the
-            recursion. Finally, the left pointer increments.
         """
         bw_terms = sorted(self)
         len_op = len(bw_terms)
@@ -309,12 +296,16 @@ class BoseWord(dict):
         bw = self
 
         left_pointer = 0
+        # The right pointer iterates through all operators in the BoseWord
         for right_pointer in range(len_op):
+            # The right pointer finds the leftmost creation operator
             if self[bw_terms[right_pointer]] == "+":
+                # This ensures that the left pointer starts at the leftmost annihilation term
                 if left_pointer == right_pointer:
                     left_pointer += 1
                     continue
 
+                # We shift the leftmost creation operator to the position of the left pointer
                 bs = bw.shift_operator(right_pointer, left_pointer)
                 bs_as_list = sorted(list(bs.items()), key=lambda x: len(x[0].keys()), reverse=True)
                 bw = bs_as_list[0][0]
@@ -328,6 +319,7 @@ class BoseWord(dict):
                 for i in range(1, len(bs_as_list)):
                     bw_comm += bs_as_list[i][0] * bs_as_list[i][1]
 
+                # Left pointer now points to the new leftmost annihilation term
                 left_pointer += 1
 
         ordered_op = bw + bw_comm.normal_order()
