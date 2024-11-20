@@ -163,9 +163,9 @@ Summary of the update
 
     **qml.Hamiltonian**
 
-    The classes :class:`~.pennylane.operation.Tensor` and :class:`~.pennylane.ops.Hamiltonian` have been removed. The familiar ``qml.Hamiltonian`` can still be used, which dispatches to ``LinearCombination`` and offers the same usage and functionality but
-      with different implementation details.
-
+    The classes :class:`~.pennylane.operation.Tensor` and :class:`~.pennylane.ops.Hamiltonian` have been removed.
+    The familiar ``qml.Hamiltonian`` can still be used, which dispatches to ``LinearCombination`` and offers the same
+    usage and functionality but with different implementation details.
 
     >>> import pennylane as qml
     >>> from pennylane import X
@@ -210,11 +210,11 @@ To help identify a fix, select the option below that describes your situation.
 
     The API of :class:`~.ops.op_math.LinearCombination` is mostly identical to that of the removed ``qml.ops.Hamiltonian``.
 
-    One small difference is that ``ham.simplify()`` no longer alters the instance in-place. In either case
-    (legacy/new opmath), the following works.
+    One small difference is that ``ham.simplify()`` no longer alters the instance in-place. Instead, you must do the
+    following:
 
     >>> H1 = qml.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(0) @ X(1)])
-    >>> H1 = H1.simplify() # work for new and legacy opmath
+    >>> H1 = H1.simplify()
 
 .. details::
     :title: Sharp bits about the nesting structure of new opmath instances
