@@ -324,7 +324,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
 
 class ResourceCRX(qml.CRX, re.ResourceOperator):
-    """Resource class for CRX
+    r"""Resource class for CRX
 
     Resources:
 
@@ -364,7 +364,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
 
 class ResourceCRY(qml.CRY, re.ResourceOperator):
-    """Resource class for CRY
+    r"""Resource class for CRY
 
     Resources:
         The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
@@ -395,7 +395,7 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
 
 class ResourceCRZ(qml.CRZ, re.ResourceOperator):
-    """Resource class for CRZ
+    r"""Resource class for CRZ
 
     Resources:
         The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
