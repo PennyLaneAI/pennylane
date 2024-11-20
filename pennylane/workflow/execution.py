@@ -19,7 +19,7 @@ differentiation support.
 # pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
 # pylint: disable=invalid-unary-operand-type,isinstance-second-argument-not-valid-type
-# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args
+# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args,too-many-positional-arguments
 
 import inspect
 import logging
@@ -269,7 +269,7 @@ def _get_interface_name(tapes, interface):
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
         if interface != "numpy":
-            interface = INTERFACE_MAP[interface]
+            interface = INTERFACE_MAP.get(interface, None)
     if interface == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
     if interface == "jax":

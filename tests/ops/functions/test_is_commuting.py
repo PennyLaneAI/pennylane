@@ -792,11 +792,6 @@ class TestCommutingFunction:
                 False,
             ),
             (
-                qml.operation.Tensor(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ("d")),
-                qml.operation.Tensor(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
-                False,
-            ),
-            (
                 qml.sum(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
                 qml.sum(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
                 False,
@@ -824,10 +819,6 @@ class TestCommutingFunction:
             (
                 qml.prod(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
                 qml.sum(qml.PauliX(0), qml.PauliY(2)),
-            ),
-            (
-                qml.sum(qml.PauliX(0), qml.PauliY(2)),
-                qml.operation.Tensor(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
             ),
             (qml.PauliX(2), qml.sum(qml.Hadamard(1), qml.prod(qml.PauliX(1), qml.Identity(2)))),
             (qml.prod(qml.PauliX(1), qml.PauliY(2)), qml.s_prod(0.5, qml.Hadamard(1))),
