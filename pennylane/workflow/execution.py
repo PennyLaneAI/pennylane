@@ -16,11 +16,6 @@ Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
 
-# pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
-# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
-# pylint: disable=invalid-unary-operand-type,isinstance-second-argument-not-valid-type
-# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args,too-many-positional-arguments
-
 import inspect
 import logging
 import warnings
@@ -105,6 +100,7 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 """str: warning message to display when cached execution is used with finite shots"""
 
 
+# pylint: disable=import-outside-toplevel
 def _use_tensorflow_autograph():
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
@@ -119,6 +115,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
+# pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
     interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
@@ -294,6 +291,7 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
+# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches, too-many-statements
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
@@ -523,7 +521,7 @@ def execute(
 
         elif config.grad_on_execution:
 
-            def execute_fn(internal_tapes):
+            def wrap_execute_and_compute_derivatives(internal_tapes):
                 """A partial function that wraps the execute_and_compute_derivatives method of the device.
 
                 Closure Variables:
@@ -534,11 +532,13 @@ def execute(
 
                 return device.execute_and_compute_derivatives(numpy_tapes, config)
 
+            execute_fn = wrap_execute_and_compute_derivatives
+
             diff_method = None
 
         else:
 
-            def execute_fn(internal_tapes) -> tuple[ResultBatch, tuple]:
+            def execution_with_dummy_jac(internal_tapes) -> tuple[ResultBatch, tuple]:
                 """A wrapper around device.execute that adds an empty tuple instead of derivatives.
 
                 Closure Variables:
@@ -548,7 +548,9 @@ def execute(
                 numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return device.execute(numpy_tapes, config), tuple()
 
-            def diff_method(internal_tapes):
+            execute_fn = execution_with_dummy_jac
+
+            def device_compute_derivatives(internal_tapes):
                 """A partial function that wraps compute_derivatives method of the device.
 
                 Closure Variables:
@@ -557,6 +559,8 @@ def execute(
                 """
                 numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return device.compute_derivatives(numpy_tapes, config)
+
+            diff_method = device_compute_derivatives
 
     elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled

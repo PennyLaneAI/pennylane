@@ -14,7 +14,6 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument, too-many-positional-arguments, inconsistent-return-statements
 import copy
 import functools
 import inspect
@@ -40,6 +39,7 @@ from .execution import (
     SupportedInterfaceUserInput,
     _get_interface_name,
 )
+from .resolve_diff_method import _resolve_diff_method
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -178,9 +178,7 @@ def _resolve_execution_config(
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     else:
-        execution_config = qml.workflow._resolve_diff_method(
-            execution_config, device, tape=tapes[0]
-        )
+        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
@@ -272,6 +270,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
+# pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -737,7 +736,7 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
     @debug_logger
     def get_gradient_fn(
@@ -796,15 +795,15 @@ class QNode:
         if diff_method == "hadamard":
             return qml.gradients.hadamard_grad, {}, device
 
-        if isinstance(diff_method, str):
-            raise qml.QuantumFunctionError(
-                f"Differentiation method {diff_method} not recognized. Allowed "
-                f"options are {tuple(get_args(SupportedDiffMethods))}."
-            )
-
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
 
+        raise qml.QuantumFunctionError(
+            f"Differentiation method {diff_method} not recognized. Allowed "
+            f"options are {tuple(get_args(SupportedDiffMethods))}."
+        )
+
+    # pylint: disable=unused-argument
     @staticmethod
     @debug_logger
     def get_best_method(
@@ -1064,7 +1063,11 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
+# pylint: disable=missing-docstring  set manually below
+def qnode(device, **kwargs):
+    return functools.partial(QNode, device=device, **kwargs)
+
+
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 
