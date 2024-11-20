@@ -121,8 +121,8 @@ class TestHilbertSchmidt:
             qml.CNOT(wires=[0, 2]),
             qml.CNOT(wires=[1, 3]),
             qml.SWAP(wires=[0, 1]),
-            qml.RZ(-0.1, wires=[2]),
             qml.CNOT(wires=[2, 3]),
+            qml.RZ(-0.1, wires=[2]),
             qml.CNOT(wires=[1, 3]),
             qml.CNOT(wires=[0, 2]),
             qml.Hadamard(wires=[0]),
@@ -161,8 +161,8 @@ class TestHilbertSchmidt:
             qml.CNOT(wires=["a", "c"]),
             qml.CNOT(wires=["b", "d"]),
             qml.SWAP(wires=["a", "b"]),
-            qml.RZ(-0.1, wires=["c"]),
             qml.CNOT(wires=["c", "d"]),
+            qml.RZ(-0.1, wires=["c"]),
             qml.CNOT(wires=["b", "d"]),
             qml.CNOT(wires=["a", "c"]),
             qml.Hadamard(wires=["a"]),
@@ -350,7 +350,7 @@ class TestLocalHilbertSchmidt:
 
     def test_lhs_decomposition_2_qubits(self):
         """Test if the LHS operation is correctly decomposed for 2 qubits."""
-        
+
         with qml.queuing.AnnotatedQueue() as q_U:
             qml.SWAP(wires=[0, 1])
 
@@ -372,8 +372,8 @@ class TestLocalHilbertSchmidt:
             qml.CNOT(wires=[0, 2]),
             qml.CNOT(wires=[1, 3]),
             qml.SWAP(wires=[0, 1]),
-            qml.RZ(-0.1, wires=[2]),
             qml.CNOT(wires=[2, 3]),
+            qml.RZ(-0.1, wires=[2]),
             qml.CNOT(wires=[0, 2]),
             qml.Hadamard(wires=[0]),
         ]

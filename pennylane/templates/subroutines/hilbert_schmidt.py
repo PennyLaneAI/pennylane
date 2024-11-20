@@ -43,7 +43,7 @@ class HilbertSchmidt(Operation):
     Args:
         *params (array): Parameters for the quantum function `V`.
         v_function (callable): Quantum function that represents the approximate compiled unitary `V`.
-        v_wires (int or Iterable[Number, str]]): The wire(s) the approximate compiled unitary act on.
+        v_wires (int or Iterable[Number, str]]): The wire(s) on which the approximate compiled unitary acts.
         u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
@@ -166,6 +166,7 @@ class HilbertSchmidt(Operation):
         first_range = range(n_wires // 2)
         second_range = range(n_wires // 2, n_wires)
 
+        # Hadamard first layer
         decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
@@ -181,20 +182,21 @@ class HilbertSchmidt(Operation):
 
         # Unitary V conjugate
         decomp_ops.extend(qml.adjoint(op_v, lazy=False) for op_v in reversed(v_tape.operations))
+
         # CNOT second layer
         decomp_ops.extend(
             qml.CNOT(wires=[wires[i], wires[j]])
             for i, j in zip(reversed(first_range), reversed(second_range))
         )
-
         # Hadamard second layer
         decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
         return decomp_ops
 
 
 class LocalHilbertSchmidt(HilbertSchmidt):
-    r"""Create a Local Hilbert-Schmidt template that can be used to compute the  Local Hilbert-Schmidt Test (LHST).
-    The result of the LHST is a useful quantity for compiling a unitary ``U`` with an approximate unitary ``V``. The
+    r"""Create a Local Hilbert-Schmidt template that can be used to compute the Local Hilbert-Schmidt Test (LHST).
+
+    The result of the LHST is a useful quantity for compiling a unitary `U` with an approximate unitary `V`. The
     LHST is used as a distance between `U` and `V`. It is similar to the Hilbert-Schmidt test, but the measurement is
     made only on one qubit at the end of the circuit. The LHST cost is always smaller than the HST cost and is useful
     for large unitaries.
@@ -207,7 +209,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     Args:
         params (array): Parameters for the quantum function `V`.
         v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
-        v_wires (int or Iterable[Number, str]]): the wire(s) the approximate compiled unitary act on.
+        v_wires (int or Iterable[Number, str]]): the wire(s) on which the approximate compiled unitary acts.
         u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
@@ -273,6 +275,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         first_range = range(n_wires // 2)
         second_range = range(n_wires // 2, n_wires)
 
+        # Hadamard first layer
         decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
@@ -289,7 +292,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         decomp_ops.extend(
             qml.adjoint(qml.apply, lazy=False)(op_v) for op_v in reversed(v_tape.operations)
         )
-
+        # Single qubit measurement
         decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
 
         return decomp_ops
