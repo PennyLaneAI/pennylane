@@ -52,6 +52,7 @@ class TestResourceControlled:
         assert op.resource_params() == {
             "base_class": re.ResourceQFT,
             "base_params": base.resource_params(),
+            "num_ctrl_wires": 1,
         }
 
     def test_name(self):
@@ -59,7 +60,7 @@ class TestResourceControlled:
 
         base = re.ResourceQFT(wires=[0, 1, 2])
         op = re.ResourceControlled(base=base, control_wires=[3])
-        assert op.resource_rep_from_op()._name == "Controlled(QFT)"
+        assert op.resource_rep_from_op()._name == "Controlled(QFT, wires=1)"
 
 
 class TestResourcePow:
