@@ -815,7 +815,7 @@ class DefaultMixedNewAPI(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+            (``['ancilla', 'q1', 'q2']``).
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
@@ -826,12 +826,11 @@ class DefaultMixedNewAPI(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        readout_relaxation_probs (List[float]): Input probabilities for relaxation errors implemented
-            with the :class:`~.QubitAmplitudeDamping` channel. The input defines the
-            channel's parameters :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`.
-        readout_misclassification_probs (List[float]):  Input probabilities for state readout
-            misclassification events implemented with the :class:`~.BitFlip` channel. The input defines the
-            channel's parameters :math:`[p_{01}, p_{02}, p_{12}]`.
+        r_dtype (numpy.dtype): Real datatype to use for computations. Default is np.float64.
+        c_dtype (numpy.dtype): Complex datatype to use for computations. Default is np.complex128.
+        analytic (bool): Indicates if the device should calculate expectations analytically.
+            If None, the device will automatically determine if shots are being used.
+        readout_prob (float): Probability of readout error for qubit measurements. Must be in :math:`[0,1]`.
     """
 
     _device_options = ("rng", "prng_key")  # tuple of string names for all the device options.
