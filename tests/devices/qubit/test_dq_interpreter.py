@@ -200,10 +200,13 @@ class TestSampling:
             qml.Hadamard(0)
             return qml.sample(wires=0)
 
-        res1 = circuit1()
-        res2 = circuit2()
+        res1_first_exec = circuit1()
+        res2_first_exec = circuit2()
+        res1_second_exec = circuit1()
+        res2_second_exec = circuit2()
 
-        assert qml.math.allclose(res1, res2)
+        assert qml.math.allclose(res1_first_exec, res2_first_exec)
+        assert qml.math.allclose(res1_second_exec, res2_second_exec)
 
     @pytest.mark.parametrize("mcm_value", (0, 1))
     def test_return_mcm(self, mcm_value):
