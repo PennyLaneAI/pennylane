@@ -37,7 +37,6 @@ from .qubit import (
     ResourceRX,
     ResourceRY,
     ResourceRZ,
-    ResourcePhaseShift,
     ResourceS,
     ResourceSingleExcitation,
     ResourceSingleExcitationMinus,
