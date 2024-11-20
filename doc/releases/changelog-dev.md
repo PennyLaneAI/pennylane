@@ -33,7 +33,7 @@
 * Added support for constructing BoseWords and BoseSentences, similar to FermiWords and FermiSentences.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
-* Added the ability to normal order BoseWords, ordering terms so that creation terms come before annihilation terms in the bosonic operator.
+* Added a function to normal order BoseWords, ordering terms so that creation terms come before annihilation terms in the bosonic operator.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
 <h3>Improvements 🛠</h3>
