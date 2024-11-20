@@ -11,20 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tests capture module imports and access.
-"""
-import pytest
+r"""This module contains experimental resource estimation functionality. """
 
-import pennylane as qml
-
-jax = pytest.importorskip("jax")
-
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
-
-
-def test_no_attribute_available():
-    """Test that if we try and access an attribute that doesn't exist, we get an attribute error."""
-
-    with pytest.raises(AttributeError):
-        _ = qml.capture.something
+from .controlled_ops import *
