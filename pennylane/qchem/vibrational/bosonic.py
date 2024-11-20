@@ -34,7 +34,7 @@ class BoseWord(dict):
     :math:`b^{\dagger}_0 b_1` can then be constructed as
 
     >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w
+    >>> print(w)
     b⁺(0) b(1)
     """
 
