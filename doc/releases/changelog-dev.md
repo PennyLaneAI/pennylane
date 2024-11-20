@@ -6,11 +6,10 @@
 
 * Developers of plugin devices now have the option of providing a TOML-formatted configuration file
   to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
-  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
-  [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
   * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
     data class, as well as functions that load and parse the TOML-formatted configuration files.
+    [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
     ```pycon
       >>> from pennylane.devices.capabilities import DeviceCapabilities
@@ -22,6 +21,7 @@
   * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
     that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
     file if it exists. Otherwise, it is set to `None`.
+    [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
     ```python
     from pennylane.devices import Device
@@ -36,6 +36,8 @@
     >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
     True
     ```
+    
+  * The `mid_circuit_measurement` transform now validates the requested `mcm_method` against a device's `capabilities` if it exists.
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.

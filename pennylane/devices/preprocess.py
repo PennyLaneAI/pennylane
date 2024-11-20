@@ -31,6 +31,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import WireError
 
+from .capabilities import DeviceCapabilities
 from .execution_config import MCMConfig
 
 
@@ -178,6 +179,68 @@ def validate_device_wires(
     return (tape,), null_postprocessing
 
 
+def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:
+    """Find the best match for the default mcm method."""
+
+    # If the device does not declare its capabilities in a toml file, support for one-shot
+    # is assumed. On the other hand, "device" native support has to be declared explicitly.
+    supports_one_shot = capabilities is None or "one-shot" in capabilities.supported_mcm_methods
+    has_device_support = capabilities and "device" in capabilities.supported_mcm_methods
+
+    # In finite shots mode, the one-shot method is the default even if there is device support.
+    # This is to ensure consistency with old behaviour. Although I'm not too sure about this.
+    if supports_one_shot and shots_present:
+        return "one-shot"
+
+    if has_device_support:
+        return "device"
+
+    return "deferred"
+
+
+def _validate_mcm_method(mcm_method: Optional[str], device, shots_present: bool) -> None:
+    """Validate the requested MCM method against the device capabilities."""
+
+    # TODO: Ideally, the only mcm methods that PennyLane core is responsible for handling
+    #       should be one-shot and deferred. Every other method, if requiring no transforms
+    #       to be applied, is between the user and the capabilities of the device. The user
+    #       should be able to specify whatever they want as the MCM method as long as the
+    #       device supports it. Tree-traversal, being exclusive to default.qubit, should be
+    #       declared in the capabilities of the default.qubit device, then we will be able
+    #       to validate against it just like any other custom mcm method.
+    if mcm_method == "tree-traversal" and device.name != "default.qubit":
+        raise qml.QuantumFunctionError(
+            "The tree-traversal MCM method is only supported by the 'default.qubit' device."
+        )
+
+    if mcm_method is None or mcm_method == "deferred":
+        return  # no need to validate if requested method is deferred or if no method is requested.
+
+    if device.capabilities is None:
+        # If the device does not declare its supported mcm methods through capabilities,
+        # simply check that the requested mcm method is something we recognize.
+        if mcm_method not in ("deferred", "one-shot", "tree-traversal"):
+            raise qml.QuantumFunctionError(
+                f'Requested MCM method "{mcm_method}" unsupported by the device. Supported methods '
+                f'are: "deferred", "one-shot", and "tree-traversal".'
+            )
+        return
+
+    if mcm_method == "one-shot" and not shots_present:
+        raise qml.QuantumFunctionError(
+            'The "one-shot" MCM method is only supported with finite shots.'
+        )
+
+    if mcm_method not in device.capabilities.supported_mcm_methods:
+
+        supported_methods = device.capabilities.supported_mcm_methods + ["deferred"]
+        supported_method_strings = [f'"{m}"' for m in supported_methods]
+        raise qml.QuantumFunctionError(
+            f'Requested MCM method "{mcm_method}" unsupported by the device. Supported methods '
+            f"are: {', '.join(supported_method_strings)}."
+        )
+
+
 @transform
 def mid_circuit_measurements(
     tape: QuantumScript,
@@ -185,22 +248,19 @@ def mid_circuit_measurements(
     mcm_config=MCMConfig(),
     **kwargs,  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Provide the transform to handle mid-circuit measurements.
+    """Provide the transform to handle mid-circuit measurements."""
 
-    If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
-    and use the ``qml.defer_measurements`` transform otherwise.
-    """
     if isinstance(mcm_config, dict):
         mcm_config = MCMConfig(**mcm_config)
     mcm_method = mcm_config.mcm_method
+    _validate_mcm_method(mcm_method, device, bool(tape.shots))
     if mcm_method is None:
-        mcm_method = "one-shot" if tape.shots else "deferred"
-
+        mcm_method = _default_mcm_method(device.capabilities, bool(tape.shots))
     if mcm_method == "one-shot":
         return qml.dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
-    if mcm_method == "tree-traversal":
-        return (tape,), null_postprocessing
-    return qml.defer_measurements(tape, device=device)
+    if mcm_method == "deferred":
+        return qml.defer_measurements(tape, device=device)
+    return (tape,), null_postprocessing
 
 
 @transform

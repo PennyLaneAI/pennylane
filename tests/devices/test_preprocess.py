@@ -471,6 +471,39 @@ class TestDecomposeTransformations:
         assert new_tape[0] != prep_op
 
 
+EXAMPLE_TOML_FILE_NO_SUPPORT = """
+schema = 3
+
+[operators.gates]
+
+[operators.observables]
+
+[pennylane.operators.observables]
+
+[measurement_processes]
+
+[pennylane.measurement_processes]
+
+[compilation]
+"""
+
+EXAMPLE_TOML_FILE_ONE_SHOT = (
+    EXAMPLE_TOML_FILE_NO_SUPPORT
+    + """
+
+supported_mcm_methods = [ "one-shot" ]
+"""
+)
+
+EXAMPLE_TOML_FILE_ALL_SUPPORT = (
+    EXAMPLE_TOML_FILE_NO_SUPPORT
+    + """
+
+supported_mcm_methods = [ "device", "one-shot" ]
+"""
+)
+
+
 class TestMidCircuitMeasurements:
     """Unit tests for the mid_circuit_measurements preprocessing transform"""
 
@@ -494,17 +527,119 @@ class TestMidCircuitMeasurements:
         _, _ = mid_circuit_measurements(tape, dev, mcm_config)
         spy.assert_called_once()
 
-    def test_error_incompatible_mcm_method(self):
-        """Test that an error is raised if requesting the one-shot transform without shots"""
-        dev = qml.device("default.qubit")
-        shots = None
-        mcm_config = {"postselect_mode": None, "mcm_method": "one-shot"}
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file, shots, expected_transform",
+        [
+            (EXAMPLE_TOML_FILE_NO_SUPPORT, 10, qml.defer_measurements),
+            (EXAMPLE_TOML_FILE_NO_SUPPORT, None, qml.defer_measurements),
+            (EXAMPLE_TOML_FILE_ONE_SHOT, 10, qml.dynamic_one_shot),
+            (EXAMPLE_TOML_FILE_ONE_SHOT, None, qml.defer_measurements),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, qml.dynamic_one_shot),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, None, None),
+        ],
+        indirect=("create_temporary_toml_file",),
+    )
+    def test_default_mcm_method_with_capabilities(self, request, shots, expected_transform, mocker):
+        """Tests that the correct mcm method is selected based on the device capabilities"""
+
+        class CustomDevice(qml.devices.Device):
+            """A device with capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def execute(self, circuit, **kwargs):
+                """The execute method for the custom device."""
+                return 0
+
+        dev = CustomDevice()
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="dynamic_one_shot is only supported with finite shots."
-        ):
+        if expected_transform:
+            spy = mocker.spy(expected_transform, "_transform")
+            _, _ = mid_circuit_measurements(tape, dev)
+            spy.assert_called_once()
+
+        else:
+            spy1 = mocker.spy(qml.defer_measurements, "_transform")
+            spy2 = mocker.spy(qml.dynamic_one_shot, "_transform")
+            _, _ = mid_circuit_measurements(tape, dev)
+            spy1.assert_not_called()
+            spy2.assert_not_called()
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file, mcm_method, shots, expected_transform, expected_error",
+        [
+            (EXAMPLE_TOML_FILE_NO_SUPPORT, "deferred", 10, qml.defer_measurements, None),
+            (EXAMPLE_TOML_FILE_NO_SUPPORT, "deferred", None, qml.defer_measurements, None),
+            (
+                EXAMPLE_TOML_FILE_NO_SUPPORT,
+                "one-shot",
+                None,
+                None,
+                'The "one-shot" MCM method is only supported with finite shots.',
+            ),
+            (
+                EXAMPLE_TOML_FILE_NO_SUPPORT,
+                "one-shot",
+                10,
+                None,
+                'Requested MCM method "one-shot" unsupported by the device.',
+            ),
+            (
+                EXAMPLE_TOML_FILE_ONE_SHOT,
+                "magic",
+                10,
+                None,
+                'Requested MCM method "magic" unsupported by the device.',
+            ),
+            (
+                EXAMPLE_TOML_FILE_ALL_SUPPORT,
+                "tree-traversal",
+                10,
+                None,
+                "The tree-traversal MCM method is only supported by the 'default.qubit' device.",
+            ),
+        ],
+        indirect=("create_temporary_toml_file",),
+    )
+    def test_mcm_method_validation_with_capabilities(
+        self, mcm_method, shots, expected_transform, expected_error, request, mocker
+    ):
+        """Tests that the requested mcm method is validated against the device capabilities"""
+
+        class CustomDevice(qml.devices.Device):
+            """A device with capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def execute(self, circuit, **kwargs):
+                """The execute method for the custom device."""
+                return 0
+
+        dev = CustomDevice()
+        mcm_config = {"mcm_method": mcm_method}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+
+        if expected_error:
+            with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+                _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+            return
+
+        if expected_transform:
+            spy = mocker.spy(expected_transform, "_transform")
             _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+            spy.assert_called_once()
+        else:
+            spy1 = mocker.spy(qml.defer_measurements, "_transform")
+            spy2 = mocker.spy(qml.dynamic_one_shot, "_transform")
+            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+            spy1.assert_not_called()
+            spy2.assert_not_called()
+
+    def test_mcm_method_validation_without_capabilities(self):
+        """Tests that the requested mcm method is validated without device capabilities"""
 
 
 def test_validate_multiprocessing_workers_None():
