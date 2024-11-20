@@ -1040,6 +1040,47 @@ class TestIntegration:
         res = circuit(x)
         assert qml.math.get_interface(res) == "numpy"
 
+    def test_qnode_default_interface(self):
+        """Tests that the default interface is set correctly for a QNode."""
+
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(graph: nx.Graph):
+            for a in graph.nodes:
+                qml.Hadamard(wires=a)
+            for a, b in graph.edges:
+                qml.CZ(wires=[a, b])
+            return qml.expval(qml.PauliZ(0))
+
+        graph = nx.complete_graph(3)
+        res = circuit(graph)
+        assert qml.math.get_interface(res) == "numpy"
+
+    def test_qscript_default_interface(self):
+        """Tests that the default interface is set correctly for a QuantumScript."""
+
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
+
+        dev = qml.device("default.qubit")
+
+        # pylint: disable=too-few-public-methods
+        class DummyCustomGraphOp(qml.operation.Operation):
+            """Dummy custom operation for testing purposes."""
+
+            def __init__(self, graph: nx.Graph):
+                super().__init__(graph, wires=graph.nodes)
+
+            def decomposition(self) -> list:
+                return []
+
+        graph = nx.complete_graph(3)
+        tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
+        res = qml.execute([tape], dev)
+        assert qml.math.get_interface(res) == "numpy"
+
 
 class TestShots:
     """Unit tests for specifying shots per call."""
