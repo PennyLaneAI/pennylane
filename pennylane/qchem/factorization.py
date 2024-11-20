@@ -31,6 +31,8 @@ try:
 except ImportError:
     has_jax_optax = False
 
+# pylint: disable=too-many-arguments
+
 
 def factorize(
     two_electron,
@@ -67,6 +69,7 @@ def factorize(
         num_steps (int): maximum number of epochs for optimizing each factor. Default is ``1000``.
         optimizer (optax.optimizer): an optax optimizer instance. If not provided, Adam is
             used with ``0.001`` learning rate.
+        norm_prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``.
 
     Returns:
         tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
@@ -147,9 +150,9 @@ def factorize(
 
                V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
-        with the rank :math:`R \leq n^2` where :math:`n` is the number of molecular orbitals. The
-        matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
-        smaller than a given threshold (and their corresponding eigenvectors) are discarded.
+        with the rank :math:`R \leq n^2` where :math:`n` is the number of molecular orbitals.
+        The matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that
+        are smaller than a given threshold (and their corresponding eigenvectors) are discarded.
 
         The factorization algorithm has the following steps
         [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
@@ -200,11 +203,18 @@ def factorize(
         optimizer = compression_kwargs.get("optimizer", optax.adam(learning_rate=0.001))
         num_steps = compression_kwargs.get("num_steps", 1000)
         num_factors = compression_kwargs.get("num_factors", 2 * shape[0])
+        prefactor = compression_kwargs.get("norm_prefactor", 1e-5)
 
         core_tensors, leaf_tensors = _double_factorization_compressed(
-            two, norm_order, optimizer, num_factors, num_steps
+            two, norm_order, optimizer, num_factors, num_steps, prefactor
         )
-        factors = None
+        upr_tri, unitary = jsp.linalg.schur(core_tensors)
+        factors = jnp.einsum(
+            "tpk,tqk,tki->tpqi",
+            leaf_tensors,
+            leaf_tensors,
+            unitary @ np.sqrt(upr_tri.astype(jnp.complex64)),
+        )  # "tpqi, trsi -> pqrs"
 
     return factors, core_tensors, leaf_tensors
 
@@ -250,13 +260,14 @@ def _double_factorization_cholesky(two, tol_factor=1.0e-10, shape=None, interfac
     return factors
 
 
-def _double_factorization_compressed(two, norm_order, optimizer, num_factors, num_steps):
+def _double_factorization_compressed(two, norm_order, optimizer, num_factors, num_steps, prefactor):
     """Compressed double factorization with optional regularization"""
     norb = two.shape[0]
     leaf_tensors, core_tensors = np.zeros((2, 0, norb, norb))
 
-    cost_func = value_and_grad(partial(_compressed_cost_fn, two=two, norm_order=norm_order))
-    optimizer = optax.adam(learning_rate=0.001)
+    cost_func = value_and_grad(
+        partial(_compressed_cost_fn, two=two, norm_order=norm_order, prefactor=prefactor)
+    )
 
     @jit
     def _step(params, opt_state, leaf_tensors, core_tensors):
@@ -284,13 +295,12 @@ def _double_factorization_compressed(two, norm_order, optimizer, num_factors, nu
     return core_tensors, leaf_tensors
 
 
-# pylint: disable=too-many-arguments
-def _compressed_cost_fn(params, two, shape, leaf_tensors, core_tensors, norm_order):
+def _compressed_cost_fn(params, two, leaf_tensors, core_tensors, norm_order, prefactor):
     """Loss function for the compressed double factorization.
 
-    It is based on evaluating Frobenius norm of the two-body tensor approximated from
-    leaf and core tensors against the original two-body tensor and optional evaluation
-    of regularization of the core tensors.
+    The loss is computed based on evaluating Frobenius norm of the two-body tensor
+    approximated from leaf and core tensors against the original two-body tensor
+    and optional evaluation of regularization of the core tensors.
     """
     Xs, Zs = params["X"], params["Z"]
     Xs = jnp.concatenate((leaf_tensors, Xs), axis=0)
@@ -302,10 +312,9 @@ def _compressed_cost_fn(params, two, shape, leaf_tensors, core_tensors, norm_ord
 
     two_cdf = jnp.einsum("tpk,tqk,tkl,trl,tsl->pqrs", Us, Us, Zs, Us, Us)
 
-    sub_cdf = (two_cdf - two).reshape(shape)
-    cost = jnp.linalg.norm(sub_cdf, ord="fro")
+    cost = jnp.linalg.norm(two_cdf - two)
     if norm_order is not None:
-        cost += jnp.linalg.norm(Zs, ord=norm_order, axis=(1, 2))[0]
+        cost += prefactor * jnp.linalg.norm(Zs, ord=norm_order, axis=(1, 2))[0]
 
     return cost
 
