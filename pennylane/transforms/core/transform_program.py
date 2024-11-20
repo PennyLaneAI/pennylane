@@ -26,7 +26,7 @@ from .transform_dispatcher import TransformContainer, TransformDispatcher, Trans
 
 
 def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
-    """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
+    """This function gets the tape parameters from the QNode construction given some argnums (only for Jax).
     The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behaviour
     of Jax in order to mark trainable parameters.
 
@@ -34,7 +34,6 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
         qnode(qml.QNode): the quantum node.
         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
         program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
-
 
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
