@@ -26,9 +26,6 @@ import logging
 from collections import defaultdict
 from string import ascii_letters as ABC
 
-# We deliberately separate the imports to avoid confusion with the legacy device
-from typing import Optional
-
 import numpy as np
 
 import pennylane as qml
@@ -49,12 +46,15 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from .._version import __version__
-from . import Device
 from ._qubit_device import QubitDevice
+
+# We deliberately separate the imports to avoid confusion with the legacy device
+from typing import Optional
+from pennylane.tape import QuantumScript
+from . import Device
 from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 
