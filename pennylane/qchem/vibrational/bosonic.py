@@ -342,15 +342,6 @@ class BoseWord(dict):
 
         ordered_op = bw + bw_comm.normal_order()
         ordered_op.simplify(tol=1e-8)
-
-        if self.is_hardcore:
-            for bw, _ in ordered_op.items():
-                bw_array = list(bw.keys())
-                indice_array = [x[1] for x in bw_array]
-                if len(indice_array) != len(set(indice_array)):
-                    ordered_op[bw] = 0
-
-        ordered_op.simplify(tol=1e-8)
         return ordered_op
 
     def shift_operator(self, initial_position, final_position):
