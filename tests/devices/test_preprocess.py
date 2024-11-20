@@ -31,7 +31,7 @@ from pennylane.devices.preprocess import (
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,unused-argument,too-many-arguments
 
 
 class NoMatOp(Operation):
