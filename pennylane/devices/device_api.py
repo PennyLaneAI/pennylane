@@ -330,6 +330,14 @@ class Device(abc.ABC):
             return TransformProgram(), replace(execution_config, gradient_method="device")
         return TransformProgram(), execution_config
 
+    def setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
+        """Sets up an ExecutionConfig that configures the execution behaviour."""
+        return self.preprocess(execution_config)[1]
+
+    def preprocess_transforms(self, execution_config: ExecutionConfig) -> TransformProgram:
+        """Returns the transform program to preprocess a circuit for execution."""
+        return self.preprocess(execution_config)[0]
+
     @abc.abstractmethod
     @overload
     def execute(

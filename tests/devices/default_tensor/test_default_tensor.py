@@ -179,7 +179,7 @@ def test_kwargs_mps(max_bond_dim, cutoff):
 
     dev = qml.device("default.tensor", method=method, max_bond_dim=max_bond_dim, cutoff=cutoff)
 
-    _, config = dev.preprocess()
+    config = dev.setup_execution_config()
     assert config.device_options["method"] == method
     assert config.device_options["max_bond_dim"] == max_bond_dim
     assert config.device_options["cutoff"] == cutoff
@@ -192,7 +192,7 @@ def test_kwargs_tn():
     method = "tn"
     dev = qml.device("default.tensor", method=method)
 
-    _, config = dev.preprocess()
+    config = dev.setup_execution_config()
     assert config.device_options["method"] == method
     assert config.device_options["contract"] == "auto-split-gate"
 

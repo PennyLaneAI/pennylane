@@ -215,7 +215,7 @@ def test_preprocessing_program():
     """Test the population of the preprocessing program."""
 
     dev = DummyDevice(wires=(0, 1))
-    program, _ = LegacyDeviceFacade(dev).preprocess()
+    program, _ = LegacyDeviceFacade(dev).preprocess_transforms()
 
     assert (
         program[0].transform == legacy_device_batch_transform.transform
@@ -252,7 +252,7 @@ def test_preprocessing_program_supports_mid_measure():
         _capabilities = {"supports_mid_measure": True}
 
     dev = MidMeasureDev()
-    program, _ = LegacyDeviceFacade(dev).preprocess()
+    program = LegacyDeviceFacade(dev).preprocess_transforms()
     assert qml.defer_measurements not in program
 
 
@@ -372,7 +372,7 @@ class TestGradientSupport:
         assert dev._validate_device_method(qml.tape.QuantumScript())
 
         config = qml.devices.ExecutionConfig(gradient_method="best")
-        _, processed_config = dev.preprocess(config)
+        processed_config = dev.setup_execution_config(config)
         assert processed_config.use_device_gradient is True
         assert processed_config.grad_on_execution is True
 
@@ -404,4 +404,4 @@ class TestGradientSupport:
         assert dev.supports_derivatives(qml.devices.ExecutionConfig(gradient_method="backprop"))
 
         config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
-        assert dev.preprocess(config)[1] is config  # unchanged
+        assert dev.setup_execution_config(config) is config  # unchanged

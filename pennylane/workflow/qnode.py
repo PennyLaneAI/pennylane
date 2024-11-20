@@ -767,7 +767,7 @@ class QNode:
         config = _make_execution_config(None, diff_method)
 
         if device.supports_derivatives(config, circuit=tape):
-            new_config = device.preprocess(config)[1]
+            new_config = device.setup_execution_config(config)
             return new_config.gradient_method, {}, device
 
         if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
@@ -858,7 +858,7 @@ class QNode:
         config = _make_execution_config(None, "best")
 
         if device.supports_derivatives(config, circuit=tape):
-            new_config = device.preprocess(config)[1]
+            new_config = device.setup_execution_config(config)
             return new_config.gradient_method, {}, device
 
         if tape and any(isinstance(o, qml.operation.CV) for o in tape):
@@ -997,6 +997,10 @@ class QNode:
                 qml.transform(config.gradient_method.expand_transform),
                 **config.gradient_keyword_arguments,
             )
+
+        config = _make_execution_config(self, gradient_fn, mcm_config)
+        config = self.device.setup_execution_config(config)
+        device_transform_program = self.device.preprocess_transforms(config)
 
         if config.use_device_gradient:
             full_transform_program += device_transform_program

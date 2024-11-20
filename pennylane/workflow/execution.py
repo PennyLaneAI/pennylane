@@ -626,14 +626,14 @@ def _make_transform_programs(
     # inner execute (inside the ml boundary).
     if is_gradient_transform:
         if inner_transform is None:
-            inner_transform = device.preprocess(config)[0]
+            inner_transform = device.preprocess_transforms(config)
         if transform_program is None:
             transform_program = qml.transforms.core.TransformProgram()
     else:
         if inner_transform is None:
             inner_transform = qml.transforms.core.TransformProgram()
         if transform_program is None:
-            transform_program = device.preprocess(config)[0]
+            transform_program = device.preprocess_transforms(config)
 
     return transform_program, inner_transform
 
@@ -650,5 +650,4 @@ def _get_execution_config(
         mcm_config=mcm_config,
         gradient_keyword_arguments=gradient_kwargs,
     )
-
-    return device.preprocess(config)[1]
+    return device.setup_execution_config(config)
