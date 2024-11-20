@@ -908,4 +908,5 @@ class DefaultMixedNewAPI(Device):
         circuits: QuantumScript,
         execution_config: Optional[ExecutionConfig] = None,
     ) -> None:
+        # pragma: no cover
         pass
