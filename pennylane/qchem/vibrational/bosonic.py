@@ -320,7 +320,7 @@ class BoseWord(dict):
 
         left_pointer = 0
         for right_pointer in range(len_op):
-            if self[bw_terms[right_pointer]] == "+":
+            if self[bw_terms[right_pointer]] == "+": 
                 if left_pointer == right_pointer:
                     left_pointer += 1
                     continue
