@@ -898,6 +898,7 @@ class DefaultMixedNewAPI(Device):
             return circuit is None or not circuit.shots
         return False
 
+    # pragma: no cover
     @debug_logger
     def execute(
         self,
