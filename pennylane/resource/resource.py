@@ -404,7 +404,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
         >>> shots = qml.measurements.Shots(10)
         >>> resources = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
         >>>
-        >>> # Replace Rx ~ three Hadamard gates and four S gates:
+        >>> # Replace Rx with three Hadamard gates and four S gates:
         >>> replace_gate_and_wires = ("RX", 1)  # (gate name, gate wires)
         >>>
         >>> num_wires = 1
