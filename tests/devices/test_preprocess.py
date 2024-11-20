@@ -638,8 +638,21 @@ class TestMidCircuitMeasurements:
             spy1.assert_not_called()
             spy2.assert_not_called()
 
-    def test_mcm_method_validation_without_capabilities(self):
+    @pytest.mark.parametrize(
+        "mcm_method, shots, expected_error",
+        [
+            ("one-shot", None, 'The "one-shot" MCM method is only supported with finite shots.'),
+            ("magic", None, 'Requested MCM method "magic" unsupported by the device.'),
+        ],
+    )
+    def test_mcm_method_validation_without_capabilities(self, mcm_method, shots, expected_error):
         """Tests that the requested mcm method is validated without device capabilities"""
+
+        dev = qml.device("default.qubit")
+        mcm_config = {"mcm_method": mcm_method}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 
 
 def test_validate_multiprocessing_workers_None():

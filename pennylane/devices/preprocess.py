@@ -216,6 +216,11 @@ def _validate_mcm_method(mcm_method: Optional[str], device, shots_present: bool)
     if mcm_method is None or mcm_method == "deferred":
         return  # no need to validate if requested method is deferred or if no method is requested.
 
+    if mcm_method == "one-shot" and not shots_present:
+        raise qml.QuantumFunctionError(
+            'The "one-shot" MCM method is only supported with finite shots.'
+        )
+
     if device.capabilities is None:
         # If the device does not declare its supported mcm methods through capabilities,
         # simply check that the requested mcm method is something we recognize.
@@ -225,11 +230,6 @@ def _validate_mcm_method(mcm_method: Optional[str], device, shots_present: bool)
                 f'are: "deferred", "one-shot", and "tree-traversal".'
             )
         return
-
-    if mcm_method == "one-shot" and not shots_present:
-        raise qml.QuantumFunctionError(
-            'The "one-shot" MCM method is only supported with finite shots.'
-        )
 
     if mcm_method not in device.capabilities.supported_mcm_methods:
 
