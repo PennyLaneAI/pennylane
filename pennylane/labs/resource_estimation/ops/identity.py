@@ -21,7 +21,7 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceIdentity(qml.Identity, re.ResourceOperator):
-    """Resource class for Identity"""
+    """Resource class for the Identity gate."""
 
     @staticmethod
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -36,7 +36,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 
 
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
-    """Resource class for GlobalPhase"""
+    """Resource class for the GlobalPhase gate."""
 
     @staticmethod
     def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:

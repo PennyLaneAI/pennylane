@@ -34,15 +34,15 @@ def _rotation_resources(epsilon=10e-3):
 
 
 class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
-    r"""Resource class for PhaseShift
+    r"""
+    Resource class for the PhaseShift gate.
 
-    Resources:
-        The resources are defined from the following identity:
+    The resources are defined from the following identity:
 
-        .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
-                    1 & 0 \\
-                    0 & e^{i\phi}
-                \end{bmatrix}.
+    .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                1 & 0 \\
+                0 & e^{i\phi}
+            \end{bmatrix}.
     """
 
     @staticmethod
@@ -64,7 +64,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
 
 
 class ResourceRX(qml.RX, re.ResourceOperator):
-    """Resource class for RX"""
+    """Resource class for the RX gate."""
 
     @staticmethod
     def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
@@ -79,7 +79,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
 
 class ResourceRY(qml.RY, re.ResourceOperator):
-    """Resource class for RY"""
+    """Resource class for the RY gate."""
 
     @staticmethod
     def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
@@ -114,7 +114,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
 
 class ResourceRot(qml.Rot, re.ResourceOperator):
-    """Resource class for Rot"""
+    """Resource class for the Rot gate."""
 
     @staticmethod
     def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:

@@ -25,9 +25,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(
-    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
-):
+def measure(wires: Union[Hashable, Wires], reset: bool = False, postselect: Optional[int] = None):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
