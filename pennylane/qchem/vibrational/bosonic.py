@@ -33,7 +33,7 @@ class BoseWord(dict):
     symbols that denote creation and annihilation operators, respectively. The operator
     :math:`b^{\dagger}_0 b_1` can then be constructed as
 
-    >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
     b⁺(0) b(1)
     """
@@ -115,7 +115,7 @@ class BoseWord(dict):
         represented by the number of the wire it operates on, and a `+` or `-` to indicate either
         a creation or annihilation operator.
 
-        >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
         'b⁺(0) b(1)'
         """
@@ -212,7 +212,7 @@ class BoseWord(dict):
     def __mul__(self, other):
         r"""Multiply a BoseWord with another BoseWord, a BoseSentence, or a constant.
 
-        >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w * w)
         b⁺(0) b(1) b⁺(0) b(1)
         """
@@ -266,7 +266,7 @@ class BoseWord(dict):
     def __pow__(self, value):
         r"""Exponentiate a Bose word to an integer power.
 
-        >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w**3)
         b⁺(0) b(1) b⁺(0) b(1) b⁺(0) b(1)
         """
@@ -283,7 +283,7 @@ class BoseWord(dict):
     def normal_order(self):
         r"""Convert a BoseWord to its normal-ordered form.
 
-        >>> bw = BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
+        >>> bw = qml.qchem.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> print(bw.normal_order())
         4.0 * b⁺(0) b(0)
         + 2.0 * I
@@ -421,8 +421,8 @@ class BoseSentence(dict):
     r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
 
-    >>> w1 = BoseWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = BoseWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> w1 = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.qchem.BoseWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = BoseSentence({w1 : 1.2, w2: 3.1})
     >>> print(s)
     1.2 * b⁺(0) b(1)
