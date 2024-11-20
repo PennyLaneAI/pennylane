@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for default qubit executing jaxpr.."""
+"""Tests for default qubit executing jaxpr."""
 
 import pytest
 
@@ -45,7 +45,7 @@ def test_no_partitioned_shots():
     dev = qml.device("default.qubit", wires=1, shots=(100, 100))
 
     with pytest.raises(qml.DeviceError, match="Shot vectors are unsupported with jaxpr execution."):
-        dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.cosnts, 0.2)
+        dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2)
 
 
 def test_use_device_prng():
@@ -69,6 +69,19 @@ def test_use_device_prng():
     assert qml.math.allclose(samples1, samples2)
 
 
+def test_no_prng_key():
+    """Test that that sampling works without a provided prng key."""
+
+    dev = qml.device("default.qubit", wires=1, shots=100)
+
+    def f():
+        return qml.sample(wires=0)
+
+    jaxpr = jax.make_jaxpr(f)()
+    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+    assert qml.math.allclose(res, jax.numpy.zeros(100))
+
+ 
 def test_simple_execution():
     """Test the execution, jitting, and gradient of a simple quantum circuit."""
 

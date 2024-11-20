@@ -279,6 +279,7 @@ or to check whether two gates causally influence each other.
 
     import pennylane as qml
     from pennylane import CircuitGraph
+    from pennylane.workflow import construct_tape
 
     dev = qml.device('lightning.qubit', wires=(0,1,2,3))
 
@@ -292,7 +293,7 @@ or to check whether two gates causally influence each other.
 
 
     circuit()
-    tape = circuit.qtape
+    tape = construct_tape(circuit)() 
     ops = tape.operations
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)

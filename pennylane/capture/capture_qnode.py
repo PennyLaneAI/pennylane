@@ -48,23 +48,16 @@ def _is_scalar_tensor(arg) -> bool:
         if arg.shape == ():
             return True
 
-        if len(arg.shape) > 1:
-            raise ValueError(
-                "One argument has more than one dimension. "
-                "Currently, only single-dimension batching is supported."
-            )
-
     return False
 
 
-def _get_batch_shape(args, batch_dims):
+def _get_batch_shape(non_const_args, non_const_batch_dims):
     """Calculate the batch shape for the given arguments and batch dimensions."""
 
-    if batch_dims is None:
-        return ()
-
     input_shapes = [
-        (arg.shape[batch_dim],) for arg, batch_dim in zip(args, batch_dims) if batch_dim is not None
+        (arg.shape[batch_dim],)
+        for arg, batch_dim in zip(non_const_args, non_const_batch_dims)
+        if batch_dim is not None
     ]
 
     return jax.lax.broadcast_shapes(*input_shapes)
@@ -112,9 +105,10 @@ def _get_qnode_prim():
         non_const_args = args[n_consts:]
 
         if batch_dims is not None:
+
             # pylint: disable=protected-access
-            return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims)(
-                *non_const_args
+            return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims[n_consts:])(
+                *jax.tree_util.tree_leaves(non_const_args)
             )
 
         # pylint: disable=protected-access
@@ -126,11 +120,14 @@ def _get_qnode_prim():
 
         mps = qfunc_jaxpr.outvars
 
+        batch_shape = (
+            _get_batch_shape(args[n_consts:], batch_dims[n_consts:])
+            if batch_dims is not None
+            else ()
+        )
+
         return _get_shapes_for(
-            *mps,
-            shots=shots,
-            num_device_wires=len(device.wires),
-            batch_shape=_get_batch_shape(args[n_consts:], batch_dims),
+            *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
         )
 
     def _qnode_batching_rule(
@@ -149,28 +146,34 @@ def _get_qnode_prim():
         This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
         """
 
-        for i, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
+        for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
 
             if _is_scalar_tensor(arg):
                 continue
 
-            # Regardless of their shape, jax.vmap treats constants as scalars
-            # by automatically inserting `None` as the batch dimension.
-            if i < n_consts:
-                raise ValueError(
-                    f"Constant argument at index {i} is not scalar. ",
-                    "Only scalar constants are currently supported with jax.vmap.",
-                )
-
-            # To resolve this, we need to add more properties to the AbstractOperator
-            # class to indicate which operators support batching and check them here
-            if arg.size > 1 and batch_dim is None:
+            # Regardless of their shape, jax.vmap automatically inserts `None` as the batch dimension for constants.
+            # However, if the constant is not a standard JAX type, the batch dimension is not inserted at all.
+            # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
+            if idx < n_consts:
                 warn(
-                    f"Argument at index {i} has more than 1 element but is not batched. "
+                    f"Constant argument at index {idx} is not scalar. "
                     "This may lead to unintended behavior or wrong results if the argument is provided "
                     "using parameter broadcasting to a quantum operation that supports batching.",
                     UserWarning,
                 )
+
+            else:
+
+                # To resolve this ambiguity, we might add more properties to the AbstractOperator
+                # class to indicate which operators support batching and check them here.
+                # As above, at this stage we raise a warning and give the user full flexibility.
+                if arg.size > 1 and batch_dim is None:
+                    warn(
+                        f"Argument at index {idx} has size > 1 but its batch dimension is None. "
+                        "This may lead to unintended behavior or wrong results if the argument is provided "
+                        "using parameter broadcasting to a quantum operation that supports batching.",
+                        UserWarning,
+                    )
 
         result = qnode_prim.bind(
             *batched_args,
@@ -180,7 +183,7 @@ def _get_qnode_prim():
             qnode_kwargs=qnode_kwargs,
             qfunc_jaxpr=qfunc_jaxpr,
             n_consts=n_consts,
-            batch_dims=batch_dims[n_consts:],
+            batch_dims=batch_dims,
         )
 
         # The batch dimension is at the front (axis 0) for all elements in the result.
@@ -265,6 +268,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
 
     """
+
     if "shots" in kwargs:
         shots = qml.measurements.Shots(kwargs.pop("shots"))
     else:
@@ -277,7 +281,6 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         raise NotImplementedError("devices must specify wires for integration with plxpr capture.")
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-
     flat_fn = FlatFn(qfunc)
     qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
 
