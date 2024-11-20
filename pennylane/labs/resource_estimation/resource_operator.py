@@ -110,7 +110,7 @@ class ResourceOperator(ABC):
         raise ResourcesNotDefined
 
     @classmethod
-    def controlled_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def controlled_resource_decomp(cls, num_ctrl_wires, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
         """Returns a compressed representation of the controlled version of the operator"""
         raise ResourcesNotDefined
 

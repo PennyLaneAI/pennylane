@@ -55,9 +55,9 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     """Resource class for Controlled"""
 
     @staticmethod
-    def _resource_decomp(base_class, base_params, **kwargs):
+    def _resource_decomp(base_class, base_params, num_ctrl_wires, **kwargs):
         try:
-            return base_class.controlled_resource_decomp(**base_params)
+            return base_class.controlled_resource_decomp(num_ctrl_wires, **base_params)
         except re.ResourcesNotDefined:
             gate_types = defaultdict(int)
             decomp = base_class.resources(**base_params)
@@ -72,10 +72,10 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         return {"base_class": type(self.base), "base_params": self.base.resource_params()}
 
     @classmethod
-    def resource_rep(cls, base_class, base_params, **kwargs):
-        name = f"Controlled({base_class.__name__})".replace("Resource", "")
+    def resource_rep(cls, base_class, base_params, num_ctrl_wires, **kwargs):
+        name = f"Controlled({base_class.__name__}, wires={num_ctrl_wires})".replace("Resource", "")
         return re.CompressedResourceOp(
-            cls, {"base_class": base_class, "base_params": base_params}, name=name
+                cls, {"base_class": base_class, "base_params": base_params, "num_ctrl_wires": num_ctrl_wires}, name=name
         )
 
 
