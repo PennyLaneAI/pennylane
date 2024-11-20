@@ -64,8 +64,8 @@ class TestTransformProgramGetter:
         with pytest.raises(ValueError, match=r"level bah not recognized."):
             get_transform_program(circuit, level="bah")
 
-    def test_get_transform_program_gradient_fn_transform(self):
-        """Tests for the transform program when the gradient_fn is a transform."""
+    def test_get_transform_program_diff_method_transform(self):
+        """Tests for the transform program when the diff_method is a transform."""
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -116,7 +116,7 @@ class TestTransformProgramGetter:
         assert p_sliced[1].transform == qml.devices.preprocess.validate_device_wires.transform
         assert p_sliced[2].transform == qml.devices.preprocess.decompose.transform
 
-    def test_gradient_fn_device_gradient(self):
+    def test_diff_method_device_gradient(self):
         """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
 
         @qml.transforms.cancel_inverses

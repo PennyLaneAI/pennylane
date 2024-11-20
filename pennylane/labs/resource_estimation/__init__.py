@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-As part of the labs module, this module contains experimental features for
+This module contains experimental features for
 resource estimation.
 
 .. warning::
@@ -22,16 +22,53 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
-Base Objects
-~~~~~~~~~~~~
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~ResourceOperator
     ~Resources
     ~CompressedResourceOp
+    ~ResourceOperator
 
+Operators
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceCNOT
+    ~ResourceControlledPhaseShift
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceRot
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceS
+    ~ResourceSWAP
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+
+Templates
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceQFT
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
@@ -46,11 +83,14 @@ from .ops import (
     ResourceMultiRZ,
     ResourceRot,
     ResourceRX,
-    ResourceRZ,
     ResourceRY,
+    ResourceRZ,
     ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 from .templates import (

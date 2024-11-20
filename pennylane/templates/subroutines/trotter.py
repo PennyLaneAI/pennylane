@@ -201,7 +201,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
             )
 
-        if isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(hamiltonian, qml.ops.LinearCombination):
             coeffs, ops = hamiltonian.terms()
             if len(coeffs) < 2:
                 raise ValueError(

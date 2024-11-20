@@ -23,6 +23,7 @@ import pennylane.labs.resource_estimation as re
 
 
 def _rotation_resources(epsilon=10e-3):
+    """An estimate on the number of T gates needed to implement a Pauli rotation. The estimate is taken from https://arxiv.org/abs/1404.5320."""
     gate_types = {}
 
     num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
@@ -33,7 +34,16 @@ def _rotation_resources(epsilon=10e-3):
 
 
 class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
-    """Resource class for PhaseShift"""
+    r"""Resource class for PhaseShift
+
+    Resources:
+        The resources are defined from the following identity:
+
+        .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                    1 & 0 \\
+                    0 & e^{i\phi}
+                \end{bmatrix}.
+    """
 
     @staticmethod
     def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
@@ -84,7 +94,12 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
 
 class ResourceRZ(qml.RZ, re.ResourceOperator):
-    """Resource class for RZ"""
+    r"""Resource class for the RZ gate.
+
+    Resources:
+        The resources are estimated by approximating the gate with a series of T gates.
+        The estimate is taken from https://arxiv.org/abs/1404.5320.
+    """
 
     @staticmethod
     def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:

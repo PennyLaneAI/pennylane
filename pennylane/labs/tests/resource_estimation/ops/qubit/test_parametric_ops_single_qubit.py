@@ -14,7 +14,6 @@
 """
 Tests for parametric single qubit resource operators.
 """
-import numpy as np
 import pytest
 
 import pennylane.labs.resource_estimation as re
@@ -22,26 +21,29 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     _rotation_resources,
 )
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
+
+params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 
 
-@pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
-def test_rotation_resources(epsilon):
+@pytest.mark.parametrize("epsilon, expected", params)
+def test_rotation_resources(epsilon, expected):
     """Test the hardcoded resources used for RX, RY, RZ"""
     gate_types = {}
 
-    num_gates = round(1.149 * np.log2(1 / epsilon) + 9.2)
     t = re.CompressedResourceOp(re.ResourceT, {})
-    gate_types[t] = num_gates
+    gate_types[t] = expected
     assert gate_types == _rotation_resources(epsilon=epsilon)
 
 
 class TestPauliRotation:
     """Test ResourceRX, ResourceRY, and ResourceRZ"""
 
-    params = list(zip([re.ResourceRX, re.ResourceRY, re.ResourceRZ], [10e-3, 10e-4, 10e-5]))
+    params_classes = [re.ResourceRX, re.ResourceRY, re.ResourceRZ]
+    params_errors = [10e-3, 10e-4, 10e-5]
 
-    @pytest.mark.parametrize("resource_class, epsilon", params)
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
     def test_resources(self, resource_class, epsilon):
         """Test the resources method"""
 
@@ -50,14 +52,16 @@ class TestPauliRotation:
         op = resource_class(1.24, wires=0)
         assert op.resources(config) == _rotation_resources(epsilon=epsilon)
 
-    @pytest.mark.parametrize("resource_class, epsilon", params)
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
     def test_resource_rep(self, resource_class, epsilon):  # pylint: disable=unused-argument
         """Test the compact representation"""
         op = resource_class(1.24, wires=0)
         expected = re.CompressedResourceOp(resource_class, {})
         assert op.resource_rep() == expected
 
-    @pytest.mark.parametrize("resource_class, epsilon", params)
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
     def test_resources_from_rep(self, resource_class, epsilon):
         """Test the resources can be obtained from the compact representation"""
 
@@ -65,7 +69,18 @@ class TestPauliRotation:
         config = {label: epsilon}
         op = resource_class(1.24, wires=0)
         expected = _rotation_resources(epsilon=epsilon)
-        assert resource_class.resources(config, **op.resource_rep().params) == expected
+
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.params
+        assert op_resource_type.resources(**op_resource_params, config=config) == expected
+
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
+    def test_resource_params(self, resource_class, epsilon):  # pylint: disable=unused-argument
+        """Test that the resource params are correct"""
+        op = resource_class(1.24, wires=0)
+        assert op.resource_params() == {}
 
 
 class TestRot:
@@ -94,4 +109,13 @@ class TestRot:
         ry = re.CompressedResourceOp(re.ResourceRY, {})
         rz = re.CompressedResourceOp(re.ResourceRZ, {})
         expected = {rx: 1, ry: 1, rz: 1}
-        assert re.ResourceRot.resources(**op.resource_rep().params) == expected
+
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.params
+        assert op_resource_type.resources(**op_resource_params) == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
+        assert op.resource_params() == {}

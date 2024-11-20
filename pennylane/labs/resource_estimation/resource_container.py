@@ -20,12 +20,12 @@ from pennylane.labs.resource_estimation import ResourceOperator
 
 
 class CompressedResourceOp:
-    r"""Instantiate the light weight class corressponding to the operator type and parameters.
+    r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
     Args:
-        op_type: the class object for of an operation which inherits from '~.ResourceOperator'
+        op_type (Type): the class object of an operation which inherits from '~.ResourceOperator'
         params (dict): a dictionary containing the minimal pairs of parameter names and values
-                    required to compute the resources for the given operator!
+                    required to compute the resources for the given operator
 
     .. details::
 
@@ -39,12 +39,12 @@ class CompressedResourceOp:
     """
 
     def __init__(self, op_type, params: dict) -> None:
-        r"""Instantiate the light weight class corressponding to the operator type and parameters.
+        r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
         Args:
-            op_type: the class object for an operation which inherits from '~.ResourceOperator'
+            op_type (Type): the class object for an operation which inherits from '~.ResourceOperator'
             params (dict): a dictionary containing the minimal pairs of parameter names and values
-                        required to compute the resources for the given operator!
+                        required to compute the resources for the given operator
 
         .. details::
 

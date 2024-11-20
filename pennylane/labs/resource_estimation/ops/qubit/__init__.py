@@ -18,6 +18,9 @@ from .non_parametric_ops import (
     ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 from .parametric_ops_multi_qubit import (

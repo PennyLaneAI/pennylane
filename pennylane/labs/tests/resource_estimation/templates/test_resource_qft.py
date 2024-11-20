@@ -75,18 +75,6 @@ class TestQFT:
         expected = {hadamard: num_hadamard, swap: num_swap, ctrl_phase_shift: num_ctrl_phase_shift}
 
         rep = re.ResourceQFT.resource_rep(num_wires)
-        actual = re.ResourceQFT.resources(**rep.params)
+        actual = rep.op_type.resources(**rep.params)
 
         assert actual == expected
-
-    @pytest.mark.parametrize("num_wires", [2.5, -0.5])
-    def test_type_error(self, num_wires):
-        """Test that resources correctly raises a TypeError"""
-        with pytest.raises(TypeError, match="num_wires must be an int."):
-            re.ResourceQFT.resources(num_wires)
-
-    @pytest.mark.parametrize("num_wires", [0, -1])
-    def test_value_error(self, num_wires):
-        """Test that resources correctly raises a ValueError"""
-        with pytest.raises(ValueError, match="num_wires must be greater than 0."):
-            re.ResourceQFT.resources(num_wires)

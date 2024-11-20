@@ -32,7 +32,46 @@ class TestIdentity:
         expected = re.CompressedResourceOp(re.ResourceIdentity, {})
         assert re.ResourceIdentity.resource_rep() == expected
 
+    def test_resource_params(self):
+        """Test the resource params are correct"""
+        op = re.ResourceIdentity(0)
+        assert op.resource_params() == {}
+
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
         op = re.ResourceIdentity()
-        assert op.resources(**re.ResourceIdentity.resource_rep().params) == {}
+        expected = {}
+
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.params
+        assert op_resource_type.resources(**op_resource_params) == expected
+
+
+class TestGlobalPhase:
+    """Test ResourceGlobalPhase"""
+
+    def test_resources(self):
+        """ResourceGlobalPhase should have empty resources"""
+        op = re.ResourceGlobalPhase(0.1, wires=0)
+        assert op.resources() == {}
+
+    def test_resource_rep(self):
+        """Test the compressed representation"""
+        expected = re.CompressedResourceOp(re.ResourceGlobalPhase, {})
+        assert re.ResourceGlobalPhase.resource_rep() == expected
+
+    def test_resource_params(self):
+        """Test the resource params are correct"""
+        op = re.ResourceGlobalPhase(0.1, wires=0)
+        assert op.resource_params() == {}
+
+    def test_resources_from_rep(self):
+        """Test that the resources can be computed from the compressed representation"""
+        op = re.ResourceGlobalPhase(0.1, wires=0)
+        expected = {}
+
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.params
+        assert op_resource_type.resources(**op_resource_params) == expected
