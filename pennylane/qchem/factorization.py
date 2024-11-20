@@ -14,12 +14,32 @@
 """
 This module contains the functions needed for two-electron tensor factorization.
 """
+from functools import partial
+
 import numpy as np
 
 import pennylane as qml
 
+has_jax_optax = True
+try:
+    # pylint: disable=unused-import
+    import optax
+    from jax import jit
+    from jax import numpy as jnp
+    from jax import scipy as jsp
+    from jax import value_and_grad
+except ImportError:
+    has_jax_optax = False
 
-def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False):
+
+def factorize(
+    two_electron,
+    tol_factor=1.0e-5,
+    cholesky=False,
+    compressed=False,
+    regularization=None,
+    **compression_kwargs,
+):
     r"""Return the double-factorized form of a two-electron integral tensor in spatial basis.
 
     The two-electron tensor :math:`V`, in
@@ -33,9 +53,20 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
             basis arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
-        tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
         cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
             :math:`L^{(r)}` instead of eigendecomposition.
+        compressed (bool): use compressed double factorization to optimize the factors returned
+            in the decomposition. Look at keyword arguments for more options.
+        regularization (string | None): type of regularization (``"L1"`` or ``"L2"``) to be used
+            for compressed double factorization. Default is to not include any regularization term.
+
+    Keyword Args:
+        num_factors (int): maximum number of factors that should be optimized for compressed
+            double factorization. Default is :math:`2\times N`, where `N` is the number of
+            dimension of two-electron tensor.
+        num_steps (int): maximum number of epochs for optimizing each factor. Default is ``1000``.
+        optimizer (optax.optimizer): an optax optimizer instance. If not provided, Adam is
+            used with ``0.001`` learning rate.
 
     Returns:
         tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
@@ -149,24 +180,33 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
     two = qml.math.reshape(two_electron, (shape[0] * shape[1], -1))
     interface = qml.math.get_interface(two_electron)
 
-    if cholesky:
-        factors = _double_factorization_cholesky(two, tol_factor, shape, interface)
+    if not compressed:
+        if cholesky:
+            factors = _double_factorization_cholesky(two, tol_factor, shape, interface)
+        else:
+            factors = _double_factorization_eigen(two, tol_factor, shape, interface)
+
+        eigvals, leaf_tensors = qml.math.linalg.eigh(factors)
+        core_tensors = eigvals[:, :, None] * eigvals[:, None, :]
+
     else:
-        factors = _double_factorization_eigen(two, tol_factor, shape, interface)
+        if not has_jax_optax:
+            raise ImportError(
+                "Jax and Optax is required for optimizing the factors. Install using "
+                "pip install jax optax"
+            )  # pragma: no cover
 
-    eigvals, eigvecs = qml.math.linalg.eigh(factors)
-    eigvals_m, eigvecs_m = [], []
-    for n, eigval in enumerate(eigvals):
-        idx = [i for i, v in enumerate(eigval) if abs(v) > tol_eigval]
-        eigvals_m.append(eigval[idx])
-        eigvecs_m.append(eigvecs[n][idx])
+        norm_order = {None: None, "L1": 1, "L2": 2}.get(regularization, None)
+        optimizer = compression_kwargs.get("optimizer", optax.adam(learning_rate=0.001))
+        num_steps = compression_kwargs.get("num_steps", 1000)
+        num_factors = compression_kwargs.get("num_factors", 2 * shape[0])
 
-    if np.sum([len(v) for v in eigvecs_m]) == 0:
-        raise ValueError(
-            "All eigenvectors are discarded. Consider decreasing the second threshold error."
+        core_tensors, leaf_tensors = _double_factorization_compressed(
+            two, norm_order, optimizer, num_factors, num_steps
         )
+        factors = None
 
-    return factors, eigvals_m, eigvecs_m
+    return factors, core_tensors, leaf_tensors
 
 
 def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
@@ -208,6 +248,66 @@ def _double_factorization_cholesky(two, tol_factor=1.0e-10, shape=None, interfac
 
     factors = cholesky_vecs.T.reshape(-1, shape[0], shape[0])
     return factors
+
+
+def _double_factorization_compressed(two, norm_order, optimizer, num_factors, num_steps):
+    """Compressed double factorization with optional regularization"""
+    norb = two.shape[0]
+    leaf_tensors, core_tensors = np.zeros((2, 0, norb, norb))
+
+    cost_func = value_and_grad(partial(_compressed_cost_fn, two=two, norm_order=norm_order))
+    optimizer = optax.adam(learning_rate=0.001)
+
+    @jit
+    def _step(params, opt_state, leaf_tensors, core_tensors):
+        cost, grads = cost_func(params, leaf_tensors=leaf_tensors, core_tensors=core_tensors)
+        updates, opt_state = optimizer.update(grads, opt_state)
+        new_params = optax.apply_updates(params, updates)
+        return new_params, opt_state, cost
+
+    for _ in range(num_factors + 1):
+        leaf_tensor, core_tensor = jnp.zeros((2, 1, norb, norb))
+        params = {"X": leaf_tensor, "Z": core_tensor}
+        opt_state = optimizer.init(params)
+
+        for _ in range(num_steps):
+            params, opt_state, _ = _step(params, opt_state, leaf_tensors, core_tensors)
+
+        Xs, Zs = params["X"], params["Z"]
+        leaf_tensors = jnp.concatenate(
+            (leaf_tensors, 0.5 * (Xs - jnp.transpose(Xs, (0, 2, 1)))), axis=0
+        )
+        core_tensors = jnp.concatenate(
+            (core_tensors, 0.5 * (Zs + jnp.transpose(Zs, (0, 2, 1)))), axis=0
+        )
+
+    return core_tensors, leaf_tensors
+
+
+# pylint: disable=too-many-arguments
+def _compressed_cost_fn(params, two, shape, leaf_tensors, core_tensors, norm_order):
+    """Loss function for the compressed double factorization.
+
+    It is based on evaluating Frobenius norm of the two-body tensor approximated from
+    leaf and core tensors against the original two-body tensor and optional evaluation
+    of regularization of the core tensors.
+    """
+    Xs, Zs = params["X"], params["Z"]
+    Xs = jnp.concatenate((leaf_tensors, Xs), axis=0)
+    Zs = jnp.concatenate((core_tensors, Zs), axis=0)
+
+    Zs = (Zs + jnp.transpose(Zs, (0, 2, 1))) / 2.0
+    Xs = (Xs - jnp.transpose(Xs, (0, 2, 1))) / 2.0
+    Us = jsp.linalg.expm(Xs)
+
+    two_cdf = jnp.einsum("tpk,tqk,tkl,trl,tsl->pqrs", Us, Us, Zs, Us, Us)
+
+    sub_cdf = (two_cdf - two).reshape(shape)
+    cost = jnp.linalg.norm(sub_cdf, ord="fro")
+    if norm_order is not None:
+        cost += jnp.linalg.norm(Zs, ord=norm_order, axis=(1, 2))[0]
+
+    return cost
 
 
 def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
