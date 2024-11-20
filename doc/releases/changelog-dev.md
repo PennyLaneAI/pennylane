@@ -38,6 +38,7 @@
     ```
     
   * The `mid_circuit_measurement` transform now validates the requested `mcm_method` against a device's `capabilities` if it exists.
+  [(#6613)](https://github.com/PennyLaneAI/pennylane/pull/6613)
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
