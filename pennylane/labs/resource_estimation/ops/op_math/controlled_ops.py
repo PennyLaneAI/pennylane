@@ -22,19 +22,19 @@ import pennylane.labs.resource_estimation as re
 
 class ResourceCH(qml.CH, re.ResourceOperator):
     r"""Resource class for CH gate.
-    
+
     Resources:
         The resources are derived from the following identities:
-        
-        .. math:: 
-            
+
+        .. math::
+
             \begin{align}
                 \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \dot \hat{Z}  \dot \hat{R}_{y}(\frac{-\pi}{4}), \\
                 \hat{Z} &= \hat{H} \dot \hat{X}  \dot \hat{H}
             \end{align}
-        
 
-        We can control on the Pauli-X gate to obtain our controlled Hadamard gate. 
+
+        We can control on the Pauli-X gate to obtain our controlled Hadamard gate.
 
     """
 
@@ -218,7 +218,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
 
 
 class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
-    """Resource class for Toffoli
+    r"""Resource class for Toffoli
 
     Resources:
         The resources are obtained from (in figure 1.) the paper `Novel constructions for the fault-tolerant
@@ -258,7 +258,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
     @staticmethod
     def textbook_resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        """Resources for the Toffoli gate
+        r"""Resources for the Toffoli gate
 
         Resources:
             The resources are taken (figure 4.9) from the textbook `Quantum Computation and Quantum Information
@@ -294,7 +294,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
 
 class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
-    """Resource class for MultiControlledX
+    r"""Resource class for MultiControlledX
 
     Resources:
         The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
@@ -320,21 +320,21 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
 
 class ResourceCRX(qml.CRX, re.ResourceOperator):
-    """Resource class for CRX
+    r"""Resource class for CRX
 
     Resources:
 
         The resources are derived from the following identities:
 
-        .. math:: 
-        
+        .. math::
+
             \begin{align}
                 \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}, \\
                 \hat{X} &= \hat{H} \dot \hat{Z}  \dot \hat{H}
             \end{align}
 
-        The expression for controlled-RZ gates is used as defined in (figure 1b.) the paper 
-        `T-count and T-depth of any multi-qubit unitary <https://arxiv.org/pdf/2110.10292>`_. 
+        The expression for controlled-RZ gates is used as defined in (figure 1b.) the paper
+        `T-count and T-depth of any multi-qubit unitary <https://arxiv.org/pdf/2110.10292>`_.
     """
 
     @staticmethod
@@ -360,7 +360,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
 
 class ResourceCRY(qml.CRY, re.ResourceOperator):
-    """Resource class for CRY
+    r"""Resource class for CRY
 
     Resources:
         The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
@@ -391,7 +391,7 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
 
 class ResourceCRZ(qml.CRZ, re.ResourceOperator):
-    """Resource class for CRZ
+    r"""Resource class for CRZ
 
     Resources:
         The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
@@ -422,7 +422,7 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
 
 class ResourceCRot(qml.CRot, re.ResourceOperator):
-    """Resource class for CRot
+    r"""Resource class for CRot
 
     Resources:
         TODO: Add a source for resources!

@@ -41,6 +41,7 @@ Operators
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
     ~ResourceCRY
+    ~ResourceCZ
     ~ResourceGlobalPhase
     ~ResourceHadamard
     ~ResourceIdentity
@@ -52,6 +53,7 @@ Operators
     ~ResourceS
     ~ResourceSWAP
     ~ResourceT
+    ~ResourceToffoli
     ~ResourceX
     ~ResourceY
     ~ResourceZ
@@ -80,6 +82,7 @@ from .ops import (
     ResourceCNOT,
     ResourceControlledPhaseShift,
     ResourceCRY,
+    ResourceCZ,
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
@@ -91,6 +94,7 @@ from .ops import (
     ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceToffoli,
     ResourceX,
     ResourceY,
     ResourceZ,
