@@ -46,6 +46,7 @@ Operators
     ~ResourceDoubleExcitationMinus,
     ~ResourceDoubleExcitationPlus,
     ~ResourceCRY
+    ~ResourceCZ
     ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
@@ -64,6 +65,7 @@ Operators
     ~ResourceSingleExcitationPlus,
     ~ResourceSWAP
     ~ResourceT
+    ~ResourceToffoli
     ~ResourceX
     ~ResourceY
     ~ResourceZ
@@ -94,10 +96,14 @@ from .ops import (
     ResourceControlled,
     ResourceControlledPhaseShift,
     ResourceCRY,
+<<<<<<< HEAD
     ResourceDoubleExcitation,
     ResourceDoubleExcitationMinus,
     ResourceDoubleExcitationPlus,
     ResourceFermionicSWAP,
+=======
+    ResourceCZ,
+>>>>>>> dcea65b0a0ce037ee50c403250762ff8668bc8d2
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
@@ -121,6 +127,7 @@ from .ops import (
     ResourceSingleExcitationPlus,
     ResourceSWAP,
     ResourceT,
+    ResourceToffoli,
     ResourceX,
     ResourceY,
     ResourceZ,
