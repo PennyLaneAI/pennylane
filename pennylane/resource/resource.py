@@ -174,7 +174,7 @@ class Resources:
 
             Now we print the product.
 
-            >>> print(r * 2)
+            >>> print(resources * 2)
             wires: 2
             gates: 4
             depth: 4
@@ -422,7 +422,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(qml.resource.mul_in_series(r, 2))
+        >>> print(qml.resource.mul_in_series(resources, 2))
         wires: 2
         gates: 4
         depth: 4
@@ -480,7 +480,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(qml.resource.mul_in_parallel(r, 2))
+        >>> print(qml.resource.mul_in_parallel(resources, 2))
         wires: 4
         gates: 4
         depth: 2
