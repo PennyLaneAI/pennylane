@@ -103,3 +103,7 @@ class ResourceOperator(ABC):
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
         return self.__class__.resource_rep(**self.resource_params())
+
+
+class ResourcesNotDefined(Exception):
+    """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""

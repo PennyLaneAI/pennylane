@@ -32,7 +32,48 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~ResourceOperator
 
+Operators
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceCNOT
+    ~ResourceControlledPhaseShift
+    ~ResourceHadamard
+    ~ResourceRZ
+    ~ResourceSWAP
+    ~ResourceT
+
+Templates
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceQFT
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
 """
 
-from .resource_operator import ResourceOperator
+from .resource_operator import ResourceOperator, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
+
+from .ops import (
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+    ResourceHadamard,
+    ResourceRZ,
+    ResourceSWAP,
+    ResourceT,
+)
+
+from .templates import (
+    ResourceQFT,
+)
