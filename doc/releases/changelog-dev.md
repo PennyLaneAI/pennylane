@@ -23,7 +23,6 @@
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
 
-
   * Two density matrix contraction methods using `einsum` and `tensordot`
 
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
@@ -136,7 +135,6 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
   
-
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
   [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
@@ -169,13 +167,18 @@ same information.
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
+
 * Add reporting of test warnings as failures.
   [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
-* Add a warning message to Gradients and training documentation about ComplexWarnings
+* Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily 
+  in the list of supported interfaces, such as the `Graph` class defined in `networkx`.
+  [(#6600)](https://github.com/PennyLaneAI/pennylane/pull/6600)
 
 * `qml.math.get_deep_interface` now works properly for autograd arrays.
   [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
