@@ -506,6 +506,32 @@ class TestResources:
         resultant_obj = substitute(resource_obj, gate_info, sub_obj)
         assert resultant_obj == expected_res_obj
 
+    def test_substitute_wire_error(self):
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
+        )
+
+        sub_obj = Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        )
+
+        gate_info = ("RZ", 100)
+
+        with pytest.raises(
+            ValueError, match="initial_resources does not contain a gate acting on 100 wires."
+        ):
+            substitute(resource_obj, gate_info, sub_obj)
+
 
 class TestResourcesOperation:  # pylint: disable=too-few-public-methods
     """Test that the ResourcesOperation class is constructed correctly"""
