@@ -14,25 +14,26 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument
-# pylint: disable=import-outside-toplevel, inconsistent-return-statements
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument, import-outside-toplevel, inconsistent-return-statements, redefined-outer-name
 import copy
 import functools
 import inspect
 import logging
 import warnings
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, MutableMapping, Sequence
 from dataclasses import replace
 from typing import Any, Literal, Optional, Union, get_args
 
-from cachetools import Cache
+from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
+from pennylane.transforms import transform
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
+from pennylane.typing import Result, ResultBatch
 
 from .execution import (
     INTERFACE_MAP,
@@ -57,6 +58,54 @@ SupportedDiffMethods = Literal[
     "finite-diff",
     "spsa",
 ]
+
+
+_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
+    "Cached execution with finite shots detected!\n"
+    "Note that samples as well as all noisy quantities computed via sampling "
+    "will be identical across executions. This situation arises where tapes "
+    "are executed with identical operations, measurements, and parameters.\n"
+    "To avoid this behaviour, provide 'cache=False' to the QNode or execution "
+    "function."
+)
+"""str: warning message to display when cached execution is used with finite shots"""
+
+
+@transform
+def _cache_transform(tape: QuantumScript, cache: MutableMapping):
+    """Caches the result of ``tape`` using the provided ``cache``.
+
+    .. note::
+
+        This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
+    """
+
+    def cache_hit_postprocessing(_results: ResultBatch) -> Result:
+        result = cache[tape.hash]
+        if result is not None:
+            if tape.shots and getattr(cache, "_persistent_cache", True):
+                warnings.warn(_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS, UserWarning)
+            return result
+
+        raise RuntimeError(
+            "Result for tape is missing from the execution cache. "
+            "This is likely the result of a race condition."
+        )
+
+    if tape.hash in cache:
+        return [], cache_hit_postprocessing
+
+    def cache_miss_postprocessing(results: ResultBatch) -> Result:
+        result = results[0]
+        cache[tape.hash] = result
+        return result
+
+    # Adding a ``None`` entry to the cache indicates that a result will eventually be available for
+    # the tape. This assumes that post-processing functions are called in the same order in which
+    # the transforms are invoked. Otherwise, ``cache_hit_postprocessing()`` may be called before the
+    # result of the corresponding tape is placed in the cache by ``cache_miss_postprocessing()``.
+    cache[tape.hash] = None
+    return [tape], cache_miss_postprocessing
 
 
 def _convert_to_interface(res, interface):
@@ -198,6 +247,61 @@ def _resolve_execution_config(
     updated_values["mcm_config"] = mcm_config
 
     return replace(execution_config, **updated_values)
+
+
+def _setup_transform_program(
+    user_transform_program: TransformProgram,
+    device: "qml.devices.Device",
+    resolved_execution_config: "qml.devices.ExecutionConfig",
+    cache=None,
+    cachesize=10000,
+) -> tuple[TransformProgram, TransformProgram]:
+
+    device_transform_program, config = device.preprocess(execution_config=resolved_execution_config)
+
+    full_transform_program = qml.transforms.core.TransformProgram(user_transform_program)
+    inner_transform_program = qml.transforms.core.TransformProgram()
+
+    # Add the gradient expand to the program if necessary
+    if getattr(config.gradient_method, "expand_transform", False):
+        full_transform_program.add_transform(
+            qml.transform(config.gradient_method.expand_transform),
+            **config.gradient_keyword_arguments,
+        )
+    if config.use_device_gradient:
+        full_transform_program += device_transform_program
+    else:
+        inner_transform_program += device_transform_program
+
+    # Making sure dynamic_one_shot occurs at most once between the inner and outer transform programs
+    _prune_dynamic_transform(full_transform_program, inner_transform_program)
+
+    # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
+    if cache is True:
+        cache = LRUCache(maxsize=cachesize)
+        setattr(cache, "_persistent_cache", False)
+
+    # Ensure that ``cache`` is not a Boolean to simplify downstream code.
+    elif cache is False:
+        cache = None
+
+    # changing this set of conditions causes a bunch of tests to break.
+    no_interface_boundary_required = config.interface is None or config.gradient_method in {
+        None,
+        "backprop",
+    }
+    device_supports_interface_data = no_interface_boundary_required and (
+        config.interface is None
+        or config.gradient_method == "backprop"
+        or getattr(device, "short_name", "") == "default.mixed"
+    )
+    numpy_only = not device_supports_interface_data
+    if numpy_only:
+        inner_transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
+    if cache is not None:
+        inner_transform_program.add_transform(_cache_transform, cache=cache)
+
+    return full_transform_program, inner_transform_program
 
 
 def _to_qfunc_output_type(
@@ -988,25 +1092,17 @@ class QNode:
         config = _resolve_execution_config(
             config, self.device, (self._tape,), self.transform_program
         )
-        device_transform_program, config = self.device.preprocess(execution_config=config)
 
-        full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
-        inner_transform_program = qml.transforms.core.TransformProgram()
-        # Add the gradient expand to the program if necessary
-        if getattr(config.gradient_method, "expand_transform", False):
-            full_transform_program.add_transform(
-                qml.transform(config.gradient_method.expand_transform),
-                **config.gradient_keyword_arguments,
-            )
-
-        if config.use_device_gradient:
-            full_transform_program += device_transform_program
-        else:
-            inner_transform_program += device_transform_program
+        outer_transform_program, inner_transform_program = _setup_transform_program(
+            self.transform_program,
+            self.device,
+            config,
+            execute_kwargs["cache"],
+            execute_kwargs["cachesize"],
+        )
 
         # Calculate the classical jacobians if necessary
-        full_transform_program.set_classical_component(self, args, kwargs)
-        _prune_dynamic_transform(full_transform_program, inner_transform_program)
+        outer_transform_program.set_classical_component(self, args, kwargs)
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
@@ -1014,7 +1110,7 @@ class QNode:
             device=self.device,
             diff_method=config.gradient_method,
             interface=config.interface,
-            transform_program=full_transform_program,
+            transform_program=outer_transform_program,
             inner_transform=inner_transform_program,
             config=config,
             gradient_kwargs=config.gradient_keyword_arguments,
