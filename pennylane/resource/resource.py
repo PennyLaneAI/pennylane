@@ -49,8 +49,8 @@ class Resources:
 
         >>> r = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> print(r)
-        wires: 2
-        gates: 2
+        num_wires: 2
+        num_gates: 2
         depth: 2
         shots: Shots(total=None)
         gate_types:
@@ -187,7 +187,7 @@ class Resources:
     __rmul__ = __mul__
 
     def __str__(self):
-        keys = ["wires", "gates", "depth"]
+        keys = ["num_wires", "num_gates", "depth"]
         vals = [self.num_wires, self.num_gates, self.depth]
         items = "\n".join([str(i) for i in zip(keys, vals)])
         items = items.replace("('", "")
@@ -237,8 +237,8 @@ class ResourcesOperation(Operation):
         ...
         >>> op = CustomOp(wires=[0, 1])
         >>> print(op.resources())
-        wires: 2
-        gates: 3
+        num_wires: 2
+        num_gates: 3
         depth: 2
         shots: Shots(total=None)
         gate_types:
