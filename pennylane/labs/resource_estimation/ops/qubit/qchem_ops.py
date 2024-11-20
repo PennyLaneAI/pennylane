@@ -116,14 +116,14 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        return
+        """TODO: implement in resource_symbolic_op branch"""
 
     def resource_params(self):
-        return
+        return {}
 
     @classmethod
     def resource_rep(cls, **kwargs):
-        return
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator):
@@ -131,14 +131,15 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        return
+        """TODO: implement in resource_symbolic_op branch"""
+        raise re.ResourcesNotDefined
 
     def resource_params(self):
-        return
+        return {}
 
     @classmethod
     def resource_rep(cls, **kwargs):
-        return
+        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
