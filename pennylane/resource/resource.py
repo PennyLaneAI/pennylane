@@ -425,7 +425,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
     """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
 
     Args:
-        initial_resources (Resources): the Resource object to be modified
+        initial_resources (Resources): the :class:`~resource.Resources` object to be modified
         gate_info (Tuple(str, int)): tuple containing the name of the gate to be replaced and the number of wires it acts on
         replacement (Resources): the :class:`~resource.Resources` containing the resources that will replace the gate
 
@@ -436,6 +436,8 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
         **Example**
 
+        >>> import pennylane as qml
+        >>> from pennylane.resource import Resources, substitute
         >>> num_wires = 2
         >>> num_gates = 3
         >>> gate_types = {"RX": 2, "CNOT": 1}
