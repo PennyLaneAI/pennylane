@@ -323,20 +323,133 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
-        if self.supports_derivatives(execution_config) and execution_config.gradient_method in {
-            "best",
-            None,
-        }:
-            return TransformProgram(), replace(execution_config, gradient_method="device")
-        return TransformProgram(), execution_config
+        execution_config = self.setup_execution_config(execution_config)
+        transform_program = self.preprocess_transforms(execution_config)
+        return transform_program, execution_config
 
-    def setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
-        """Sets up an ExecutionConfig that configures the execution behaviour."""
-        return self.preprocess(execution_config)[1]
+    def setup_execution_config(
+        self, config: ExecutionConfig = DefaultExecutionConfig
+    ) -> ExecutionConfig:
+        """Sets up an ExecutionConfig that configures the execution behaviour.
 
-    def preprocess_transforms(self, execution_config: ExecutionConfig) -> TransformProgram:
-        """Returns the transform program to preprocess a circuit for execution."""
-        return self.preprocess(execution_config)[0]
+        The execution config stores information on how the device should perform the execution,
+        as well as how PennyLane should interact with the device. See :class:`ExecutionConfig`
+        for all available options and what they mean.
+
+        An ``ExecutionConfig`` is constructed from arguments passed to the ``QNode``, and this
+        method allows the device to update the config object based on device-specific requirements
+        or preferences. See :ref:`execution_config` for more details.
+
+        Args:
+            config (ExecutionConfig): The initial ExecutionConfig object that describes the
+                parameters needed to configure the execution behaviour.
+
+        Returns:
+            ExecutionConfig: The updated ExecutionConfig object
+
+        """
+
+        if self.__class__.preprocess is not Device.preprocess:
+            return self.preprocess(config)[1]
+
+        if self.supports_derivatives(config) and config.gradient_method in ("best", None):
+            return replace(config, gradient_method="device")
+
+        return config
+
+    def preprocess_transforms(
+        self, execution_config: ExecutionConfig = DefaultExecutionConfig
+    ) -> TransformProgram:
+        """Returns the transform program to preprocess a circuit for execution.
+
+        Args:
+            execution_config (ExecutionConfig): The execution configuration object
+
+        Returns:
+            TransformProgram: A transform program that is called before execution
+
+        The transform program is composed of a list of individual transforms, which may include:
+        * Decomposition of operations and measurements to what is supported by the device.
+        * Splitting a circuit with measurements of non-commuting observables or Hamiltonians into multiple executions.
+        * Splitting a circuit with batched parameters into multiple executions.
+        * Validation of wires, measurements, and observables.
+        * Gradient specific preprocessing, such as making sure trainable operators have generators.
+
+        **Example**
+
+        All transforms that are part of the preprocessing transform program need to respect the
+        transform contract defined in :func:`pennylane.transform`.
+
+        .. code-block:: python
+
+            from pennylane.tape import TapeBatch
+            from pennylane.typing import PostprocessingFn
+
+            @transform
+            def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+                # e.g. valid the measurements, expand the tape for the hardware execution, ...
+
+                def blank_processing_fn(results):
+                    return results[0]
+
+                return [tape], processing_fn
+
+        A transform program can hold an arbitrary number of individual transforms:
+
+        .. code-block:: python
+
+            def preprocess(self, config):
+                program = TransformProgram()
+                program.add_transform(my_preprocessing_transform)
+                return program
+
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
+
+        .. details::
+            :title: Post processing function and derivatives
+
+            Derivatives and Jacobian products will be bound to the machine learning library before
+            the postprocessing function is called on the results. Therefore, the machine learning
+            library will be responsible for combining and post-processing derivatives returned from
+            the device.
+
+            .. code-block:: python
+
+                from pennylane.interfaces.jax import execute as jax_boundary
+
+                def f(x):
+                    circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.Z(0))])
+                    config = ExecutionConfig(gradient_method="adjoint")
+                    config = dev.setup_execution_config(config)
+                    program = dev.preprocess_transforms(config)
+                    circuit_batch, postprocessing = program((circuit, ))
+
+                    def execute_fn(tapes):
+                        return dev.execute_and_compute_derivatives(tapes, config)
+
+                    results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
+                    return postprocessing(results)
+
+                x = jax.numpy.array([1.0, 2.0, 3.0])
+                jax.grad(f)(x)
+
+            In the above code, the quantum derivatives are registered with jax in the ``jax_boundary``
+            function. Only then is the classical postprocessing called on the result object.
+
+        """
+
+        # TODO: this is obviously not pretty but it's a temporary solution to ensure backwards
+        #       compatibility. Basically there are three scenarios:
+        #       1. The device does not override anything, then this method returns the default
+        #          transform program, and preprocess calls this method, all good.
+        #       2. The device overrides preprocess, but not this method, then this method will
+        #          return what is returned from the overridden preprocess method.
+        #       3. The device overrides this method and not preprocess (recommended and what we
+        #          are ultimately aiming for), then preprocess calls the overridden method.
+        if self.__class__.preprocess is not Device.preprocess:
+            return self.preprocess(execution_config)[0]
+
+        return TransformProgram()
 
     @abc.abstractmethod
     @overload

@@ -998,10 +998,6 @@ class QNode:
                 **config.gradient_keyword_arguments,
             )
 
-        config = _make_execution_config(self, gradient_fn, mcm_config)
-        config = self.device.setup_execution_config(config)
-        device_transform_program = self.device.preprocess_transforms(config)
-
         if config.use_device_gradient:
             full_transform_program += device_transform_program
         else:

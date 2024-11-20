@@ -342,7 +342,7 @@ class TestPreprocessing:
 
         device = qml.device("default.qubit")
         tape = qml.tape.QuantumScript(measurements=measurements, shots=shots)
-        program = dev.preprocess_transforms()
+        program = device.preprocess_transforms()
 
         if not supported:
             with pytest.raises(qml.DeviceError):
