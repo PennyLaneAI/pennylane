@@ -14,6 +14,7 @@
 """Unit tests for the Clifford+T transform."""
 
 import math
+import warnings
 from functools import reduce
 
 import pytest
@@ -30,11 +31,37 @@ from pennylane.transforms.decompositions.clifford_t_transform import (
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
+
 _SKIP_GATES = (qml.Barrier, qml.Snapshot, qml.WireCut)
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
 
 INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
+
+
+# pylint: disable=too-few-public-methods
+class CustomOneQubitOperation(qml.operation.Operation):
+    num_wires = 1
+
+    @staticmethod
+    def compute_matrix():
+        return qml.math.conj(qml.math.transpose(qml.S.compute_matrix()))
+
+
+# pylint: disable=too-few-public-methods
+class CustomTwoQubitOperation(qml.operation.Operation):
+    num_wires = 2
+
+    @staticmethod
+    def compute_matrix():
+        return qml.math.conj(qml.math.transpose(qml.CNOT.compute_matrix()))
 
 
 def circuit_1():
@@ -81,13 +108,6 @@ def circuit_5():
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_6():
-    """Circuit 6 with skippable operations"""
-    qml.RZ(1.0, wires=[0])
-    qml.Barrier(wires=0)
-    return qml.expval(qml.PauliZ(0))
-
-
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -111,7 +131,7 @@ class TestCliffordCompile:
 
     @pytest.mark.parametrize(
         "circuit",
-        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5, circuit_6],
+        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5],
     )
     def test_decomposition(self, circuit):
         """Test decomposition for the Clifford transform."""
@@ -181,9 +201,7 @@ class TestCliffordCompile:
 
     @pytest.mark.parametrize(
         "op",
-        [
-            qml.RY(qml.numpy.pi / 4, wires=0),
-        ],
+        [CustomOneQubitOperation(wires=0)],
     )
     def test_zxz_rotation_decomposition(self, op):
         """Test single-qubit gates are decomposed correctly using ZXZ rotations"""
@@ -195,6 +213,34 @@ class TestCliffordCompile:
         old_tape = qml.tape.make_qscript(circuit)()
 
         [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=3)
+
+        assert all(
+            isinstance(op, _CLIFFORD_PHASE_GATES)
+            or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
+            for op in new_tape.operations
+        )
+
+        dev = qml.device("default.qubit")
+        transform_program, _ = dev.preprocess()
+        res1, res2 = qml.execute(
+            [old_tape, new_tape], device=dev, transform_program=transform_program
+        )
+        qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
+
+    @pytest.mark.parametrize(
+        "op",
+        [CustomTwoQubitOperation(wires=[0, 1])],
+    )
+    def test_su4_rotation_decomposition(self, op):
+        """Test two-qubit gates are decomposed correctly using SU(4) rotations"""
+
+        def circuit():
+            qml.apply(op)
+            return qml.probs(wires=0)
+
+        old_tape = qml.tape.make_qscript(circuit)()
+
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape)
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)

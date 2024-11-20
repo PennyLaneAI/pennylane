@@ -54,23 +54,3 @@ jobs:
         ```
         git commit --allow-empty -m 'trigger ci'
         ```
-
-  # TODO: This will be added separately in a future PR
-  # upload-durations-files:
-  #   needs: tests
-  #   uses: ./.github/workflows/check_in_artifact.yml
-  #   if: github.event_name == 'push'
-  #   with:
-  #     artifact_name_pattern: '*-durations.json'
-  #     artifact_save_path: '.github/durations/'
-  #     pull_request_head_branch_name: bot/durations-update
-  #     commit_message_description: Durations Update
-  #     pull_request_title: Update durations files
-  #     pull_request_body: |
-  #       Automatic update of durations files to snapshot valid python environments.
-
-  #       Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
-
-  #       ```
-  #       git commit --allow-empty -m 'trigger ci'
-  #       ```

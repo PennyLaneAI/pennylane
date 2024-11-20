@@ -314,41 +314,30 @@ def _draw_qnode(
             except TypeError:
                 _wire_order = tapes[0].wires
 
-        if tapes is not None:
-            cache = {"tape_offset": 0, "matrices": []}
-            res = [
-                tape_text(
-                    t,
-                    wire_order=_wire_order,
-                    show_all_wires=show_all_wires,
-                    decimals=decimals,
-                    show_matrices=False,
-                    show_wire_labels=show_wire_labels,
-                    max_length=max_length,
-                    cache=cache,
-                )
-                for t in tapes
-            ]
-            if show_matrices and cache["matrices"]:
-                mat_str = ""
-                for i, mat in enumerate(cache["matrices"]):
-                    if qml.math.requires_grad(mat) and hasattr(mat, "detach"):
-                        mat = mat.detach()
-                    mat_str += f"\nM{i} = \n{mat}"
-                if mat_str:
-                    mat_str = "\n" + mat_str
-                return "\n\n".join(res) + mat_str
-            return "\n\n".join(res)
-
-        return tape_text(
-            qnode.qtape,
-            wire_order=_wire_order,
-            show_all_wires=show_all_wires,
-            decimals=decimals,
-            show_matrices=show_matrices,
-            show_wire_labels=show_wire_labels,
-            max_length=max_length,
-        )
+        cache = {"tape_offset": 0, "matrices": []}
+        res = [
+            tape_text(
+                t,
+                wire_order=_wire_order,
+                show_all_wires=show_all_wires,
+                decimals=decimals,
+                show_matrices=False,
+                show_wire_labels=show_wire_labels,
+                max_length=max_length,
+                cache=cache,
+            )
+            for t in tapes
+        ]
+        if show_matrices and cache["matrices"]:
+            mat_str = ""
+            for i, mat in enumerate(cache["matrices"]):
+                if qml.math.requires_grad(mat) and hasattr(mat, "detach"):
+                    mat = mat.detach()
+                mat_str += f"\nM{i} = \n{mat}"
+            if mat_str:
+                mat_str = "\n" + mat_str
+            return "\n\n".join(res) + mat_str
+        return "\n\n".join(res)
 
     return wrapper
 

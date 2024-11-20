@@ -1706,7 +1706,7 @@ class QubitDevice(Device):
                     )
                 ops = op.decomposition()
                 expanded_ops.extend(reversed(ops))
-            elif op.name not in ("StatePrep", "QubitStateVector", "BasisState", "Snapshot"):
+            elif op.name not in ("StatePrep", "BasisState", "Snapshot"):
                 expanded_ops.append(op)
 
         trainable_params = []

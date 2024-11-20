@@ -134,7 +134,6 @@ import pennylane.pulse
 import pennylane.fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
-import pennylane.qinfo
 
 # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order

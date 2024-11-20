@@ -121,7 +121,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.SpecialUnitary,
                 # pennylane/ops/state_preparation.py
                 qml.BasisState,
-                qml.QubitStateVector,
                 qml.StatePrep,
                 qml.QubitDensityMatrix,
                 # pennylane/ops/qutrit/matrix_obs.py
@@ -250,7 +249,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         with qml.QueuingManager.stop_recording():
             for i, op_class_name in enumerate(op_class_names):
                 op_key = f"op_{i}"
-
                 op_cls = self._supported_ops_dict()[op_class_name]
                 if op_cls is qml.ops.LinearCombination:
                     ops.append(
@@ -284,4 +282,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
     @lru_cache(1)
     def _supported_ops_dict(cls) -> dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
-        return {op.__name__: op for op in cls.supported_ops()}
+        ops_dict = {op.__name__: op for op in cls.supported_ops()}
+        ops_dict["Hamiltonian"] = qml.ops.LinearCombination
+        ops_dict["Tensor"] = qml.ops.Prod
+        return ops_dict

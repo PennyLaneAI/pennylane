@@ -163,11 +163,9 @@ Summary of the update
 
     **qml.Hamiltonian**
 
-    The classes :class:`~.pennylane.operation.Tensor` and :class:`~.pennylane.Hamiltonian` have been removed.
-    :class:`~.ops.op_math.LinearCombination` offers the same API as :class:`~.pennylane.Hamiltonian` but works well
-    with new opmath classes.
+    The classes :class:`~.pennylane.operation.Tensor` and :class:`~.pennylane.ops.Hamiltonian` have been removed. The familiar ``qml.Hamiltonian`` can still be used, which dispatches to ``LinearCombination`` and offers the same usage and functionality but
+      with different implementation details.
 
-    The familiar ``qml.Hamiltonian`` can still be used, and will dispatch to ``LinearCombination``.
 
     >>> import pennylane as qml
     >>> from pennylane import X
