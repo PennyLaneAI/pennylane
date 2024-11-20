@@ -1315,15 +1315,17 @@ class TestDefaultMixedNewAPIInit:
         assert dev.R_DTYPE == r_dtype
         assert dev.C_DTYPE == c_dtype
 
-    def test_readout_probability_validation(self):
+    @pytest.mark.parametrize("readout_prob", [-0.1, 1.1, 2.0])
+    def test_readout_probability_validation(self, readout_prob):
         """Test readout probability validation during initialization"""
         with pytest.raises(ValueError, match="readout error probability should be in the range"):
-            DefaultMixedNewAPI(wires=1, readout_prob=2.0)
+            DefaultMixedNewAPI(wires=1, readout_prob=readout_prob)
 
-    def test_readout_probability_type_validation(self):
+    @pytest.mark.parametrize("readout_prob", ["0.5", [0.5], (0.5,)])
+    def test_readout_probability_type_validation(self, readout_prob):
         """Test readout probability type validation"""
         with pytest.raises(TypeError, match="readout error probability should be an integer"):
-            DefaultMixedNewAPI(wires=1, readout_prob="0.5")
+            DefaultMixedNewAPI(wires=1, readout_prob=readout_prob)
 
     def test_seed_global(self):
         """Test global seed initialization"""
@@ -1333,6 +1335,7 @@ class TestDefaultMixedNewAPIInit:
 
     def test_seed_jax(self):
         """Test JAX PRNGKey seed initialization"""
+        # pylint: disable=import-outside-toplevel
         import jax
 
         dev = DefaultMixedNewAPI(wires=1, seed=jax.random.PRNGKey(0))
@@ -1348,3 +1351,19 @@ class TestDefaultMixedNewAPIInit:
                 gradient_method="finite-diff"
             )
         )
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3, 10, 22])
+    def test_valid_wire_numbers(self, nr_wires):
+        """Test initialization with different valid wire numbers"""
+        dev = DefaultMixedNewAPI(wires=nr_wires)
+        assert len(dev.wires) == nr_wires
+
+    def test_wire_initialization_list(self):
+        """Test initialization with wire list"""
+        dev = DefaultMixedNewAPI(wires=["a", "b", "c"])
+        assert dev.wires == qml.wires.Wires(["a", "b", "c"])
+
+    def test_too_many_wires(self):
+        """Test error raised when too many wires requested"""
+        with pytest.raises(ValueError, match="This device does not currently support"):
+            DefaultMixedNewAPI(wires=24)
