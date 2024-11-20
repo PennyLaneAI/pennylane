@@ -836,7 +836,7 @@ class DefaultMixedNewAPI(Device):
     @property
     def name(self):
         """The name of the device."""
-        return "default.qubit.mixed"
+        return "default.mixed"
 
     # pylint: disable=too-many-positional-arguments
     @debug_logger_init
@@ -846,8 +846,6 @@ class DefaultMixedNewAPI(Device):
         shots=None,
         seed="global",
         # The following parameters are inherited from DefaultMixed
-        r_dtype=np.float64,
-        c_dtype=np.complex128,
         readout_prob=None,
     ) -> None:
 
@@ -856,8 +854,6 @@ class DefaultMixedNewAPI(Device):
                 "This device does not currently support computations on more than 23 wires"
             )
 
-        self.R_DTYPE = r_dtype
-        self.C_DTYPE = c_dtype
         self.readout_err = readout_prob
         # Check that the readout error probability, if entered, is either integer or float in [0,1]
         if self.readout_err is not None:

@@ -1305,15 +1305,7 @@ class TestDefaultMixedNewAPIInit:
     def test_name_property(self):
         """Test the name property returns correct device name"""
         dev = DefaultMixedNewAPI(wires=1)
-        assert dev.name == "default.qubit.mixed"
-
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
-    def test_dtype_initialization(self, r_dtype, c_dtype):
-        """Test device correctly stores dtype parameters"""
-        dev = DefaultMixedNewAPI(wires=1, r_dtype=r_dtype, c_dtype=c_dtype)
-        assert dev.R_DTYPE == r_dtype
-        assert dev.C_DTYPE == c_dtype
+        assert dev.name == "default.mixed"
 
     @pytest.mark.parametrize("readout_prob", [-0.1, 1.1, 2.0])
     def test_readout_probability_validation(self, readout_prob):
