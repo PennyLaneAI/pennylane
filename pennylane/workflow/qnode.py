@@ -39,24 +39,12 @@ from .execution import (
     SupportedInterfaceUserInput,
     _get_interface_name,
 )
-from .resolve_diff_method import _resolve_diff_method
+from .resolve_diff_method import SupportedDiffMethods, _resolve_diff_method
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
-
-SupportedDiffMethods = Literal[
-    None,
-    "best",
-    "device",
-    "backprop",
-    "adjoint",
-    "parameter-shift",
-    "hadamard",
-    "finite-diff",
-    "spsa",
-]
 
 
 def _convert_to_interface(res, interface):
