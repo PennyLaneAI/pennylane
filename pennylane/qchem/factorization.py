@@ -129,30 +129,33 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
         - Decompose the resulting matrix either via Cholesky decomposition or
           via eigenvalue decomposition.
 
-        - For the former, we keep the vectors that result in an approximation error
-          larger than a threshold. While for the latter, we keep the :math:`r`
-          eigenvectors that have corresponding eigenvalues larger than a threshold.
+        - In the Cholesky decomposition, we build matrices :math:`L^{(r)}` as
+          :math:`v_iv_i^{\dagger}`, where each vector :math:`v_i` is constructed
+          to explain the part of the matrix that hasn't been explained by previous
+          vectors and reduce the error term. We build :math:`r` such matrices that
+          result in an overall approximation error less than the threshold.
 
-        - Multiply the eigenvectors by the square root of the eigenvalues to obtain
+        - In the eigenvalue decomposition, we keep the :math:`r` eigenvectors that
+          have corresponding eigenvalues larger than a threshold and multiply these
+          eigenvectors by the square root of their eigenvalues to obtain
           matrices :math:`L^{(r)}`.
 
-        - Reshape the selected eigenvectors to :math:`n \times n` matrices.
-
-        - Diagonalize the :math:`n \times n` matrices and for each matrix keep the eigenvalues (and
-          their corresponding eigenvectors) that are larger than a threshold.
+        - Diagonalize the :math:`L^{(r)}` (:math:`n \times n`) matrices and for each
+          matrix keep the eigenvalues (and their corresponding eigenvectors) that are
+          larger than a threshold.
     """
     shape = qml.math.shape(two_electron)
 
     if len(shape) != 4 or len(set(shape)) != 1:
         raise ValueError("The two-electron repulsion tensor must have a (N x N x N x N) shape.")
 
-    two = qml.math.reshape(two_electron, (shape[0] * shape[1], -1))
-    interface = qml.math.get_interface(two_electron)
+    two_body_tensor = qml.math.reshape(two_electron, (shape[0] * shape[1], -1))
+    interface = qml.math.get_interface(two_body_tensor)
 
     if cholesky:
-        factors = _double_factorization_cholesky(two, tol_factor, shape, interface)
+        factors = _double_factorization_cholesky(two_body_tensor, tol_factor, shape, interface)
     else:
-        factors = _double_factorization_eigen(two, tol_factor, shape, interface)
+        factors = _double_factorization_eigen(two_body_tensor, tol_factor, shape, interface)
 
     eigvals, eigvecs = qml.math.linalg.eigh(factors)
     eigvals_m, eigvecs_m = [], []
@@ -187,7 +190,7 @@ def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=N
 
 
 def _double_factorization_cholesky(two, tol_factor=1.0e-10, shape=None, interface=None):
-    """Double factorization via Cholesky decomposition"""
+    """Double factorization via `Cholesky decomposition <https://en.wikipedia.org/wiki/Cholesky_decomposition>`_"""
     n2 = shape[0] * shape[1]
     cholesky_vecs = qml.math.zeros((n2, n2 + 1), like=interface)
     cholesky_diag = qml.math.array(qml.math.diagonal(two).real, like=interface)
