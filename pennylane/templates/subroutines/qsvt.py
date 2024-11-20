@@ -472,7 +472,7 @@ def _complementary_poly(P):
     r"""
     Computes the complementary polynomial Q given a polynomial P.
 
-    The polynomial Q is complementary of P if satisfies the following equation:
+    The polynomial Q is complementary to P if it satisfies the following equation:
 
     .. math:
 
@@ -483,10 +483,10 @@ def _complementary_poly(P):
     For more details see reference `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
 
     Args:
-        P (array-like): Coefficients of the complex polynomial P.
+        P (array-like): coefficients of the complex polynomial P
 
     Returns:
-        array-like: Coefficients of the complementary polynomial Q.
+        array-like: coefficients of the complementary polynomial Q
     """
     poly_degree = len(P) - 1
 
@@ -512,10 +512,10 @@ def _QSP_angles_root_finding(F):
     Computes the Quantum Signal Processing (QSP) angles given a polynomial F.
 
     Args:
-        F (array-like): Coefficients of the input polynomial F.
+        F (array-like): coefficients of the input polynomial F
 
     Returns:
-        theta (array-like): QSP angles corresponding to the input polynomial F.
+        theta (array-like): QSP angles corresponding to the input polynomial F
     """
 
     parity = (len(F) - 1) % 2
@@ -557,13 +557,13 @@ def transform_angles(angles, routine1, routine2):
     "Quantum Singular Value Transformation" (QSVT), or vice versa.
 
     Args:
-        angles (array-like): A list or array of angles to be transformed.
-        routine1 (str): The current routine of the angles. Must be either "QSP" or "QSVT".
-        routine2 (str): The target routine to which the angles should be transformed.
-                        Must be either "QSP" or "QSVT".
+        angles (array-like): a list or array of angles to be transformed.
+        routine1 (str): the current routine of the angles, must be either "QSP" or "QSVT"
+        routine2 (str): the target routine to which the angles should be transformed,
+                        must be either "QSP" or "QSVT"
 
     Returns:
-        array-like: The transformed angles as an array.
+        array-like: the transformed angles as an array
 
     """
     if routine1 == "QSP" and routine2 == "QSVT":
@@ -588,24 +588,24 @@ def transform_angles(angles, routine1, routine2):
 
         return angles - update_vals
 
-    raise AssertionError("Invalid conversion")
+    raise AssertionError(f"Invalid conversion. The conversion between {routine1} --> {routine2} is not defined.")
 
 
 def poly_to_angles(poly, routine, angle_solver="root-finding"):
     r"""
-    Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP)
+    Converts a given polynomial into angles for to be used with specific quantum signal processing (QSP)
     or quantum singular value transformation (QSVT) routines.
 
     Args:
-        poly (array-like): Coefficients of the polynomial, ordered from lowest to higher degree.
-                           The polynomial must have defined parity and real coefficients.
+        poly (array-like): coefficients of the polynomial, ordered from lowest to higher degree.
+                           The polynomial must have defined parity and real coefficients
 
-        routine (str):  Specifies the type of angle transformation required. Must be either: "QSP" or "QSVT".
+        routine (str): specifies the type of angle transformation required. Must be either: "QSP" or "QSVT"
 
-        angle_solver (str): Specifies the method used to calculate the angles. Must be "root-finding".
+        angle_solver (str): optional string which specifies the method used to calculate the angles (must be "root-finding")
 
     Returns:
-        (array-like): Angles corresponding to the specified transformation routine.
+        (array-like): angles corresponding to the specified transformation routine
 
     Raises:
         AssertionError: if poly is not valid in the chosen subroutine
@@ -644,11 +644,10 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         P(x) =        0.19610666666666668
     """
 
-    # Leading zeros are removed from the array
-    poly = poly[
-        : len(poly)
-        - next((i for i, x in enumerate(reversed(poly)) if not np.isclose(x, 0.0)), len(poly))
-    ]
+    # Trailing zeros are removed from the array
+    for _ in range(len(poly)): 
+        if not np.isclose(poly[-1], 0.0): break
+        poly.pop()
 
     if len(poly) == 1:
         raise AssertionError("The polynomial must have at least degree 1.")
@@ -678,5 +677,5 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
     if routine == "QSP":
         if angle_solver == "root-finding":
             return _QSP_angles_root_finding(poly)
-        raise AssertionError("Invalid angle solver method")
+        raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
     raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
