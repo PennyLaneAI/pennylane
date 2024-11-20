@@ -100,9 +100,6 @@ bw20cs = bw20c1 + bw20c2 - bw20c3
 
 bw21 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"})
 bw22 = BoseWord({(0, 0): "-", (1, 0): "+"})
-bw23 = BoseWord(
-    {(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+", (5, 2): "+"}, True
-)
 
 
 # pylint: disable=too-many-public-methods
@@ -152,19 +149,6 @@ class TestBoseWord:
                         ): 1.0,
                     }
                 ),
-            ),
-            (
-                bw23,
-                BoseSentence(
-                    {
-                        BoseWord({}): 0,
-                    },
-                    True,
-                ),
-            ),
-            (
-                BoseWord({(0, 0): "-", (1, 1): "-", (2, 2): "+"}, True),
-                BoseSentence({BoseWord({(0, 2): "+", (1, 0): "-", (2, 1): "-"}): 1.0}),
             ),
         ],
     )
@@ -334,22 +318,6 @@ class TestBoseWord:
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             BoseWord(operator)
 
-    @pytest.mark.parametrize(
-        ["operator", "expected"],
-        [
-            ({(0, 0): "-", (1, 0): "-"}, BoseWord({}, True)),
-            (
-                {(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 3): "+"},
-                BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 3): "+"}),
-            ),
-            ({(0, 0): "-", (1, 0): "+"}, BoseWord({(0, 0): "-", (1, 0): "+"})),
-        ],
-    )
-    def test_init_hardcore(self, operator, expected):
-        """Test that initializing hardcore boson works as intended"""
-        bw = BoseWord(operator, True)
-        assert bw == expected
-
     tup_bw_dag = (
         (bw1, bw1_dag),
         (bw2, bw2_dag),
@@ -398,18 +366,6 @@ class TestBoseWordArithmetic:
         (bw1, bw4, bw1, bw1),
         (bw4, bw3, bw3, bw3),
         (bw4, bw4, bw4, bw4),
-        (
-            BoseWord({(0, 0): "+", (1, 0): "-"}, True),
-            BoseWord({(0, 0): "-", (1, 0): "+"}, True),
-            BoseWord({}),
-            BoseWord({})
-        ),
-        (
-            BoseWord({(0, 0): "-"}, True),
-            BoseWord({(0, 0): "+"}, True),
-            BoseWord({(0, 0): "-", (1, 0): "+"}, True),
-            BoseWord({(0, 0): "+", (1, 0): "-"}, True)
-        )
     )
 
     @pytest.mark.parametrize("f1, f2, result_bw_right, result_bw_left", WORDS_MUL)
