@@ -965,20 +965,24 @@ class U2(Operation):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
+            I_coeff = 0.5 * INV_SQRT2 * (1 + qml.math.exp(1j * (self.data[1] + self.data[0])))
+            X_coeff = (
+                0.5
+                * INV_SQRT2
+                * (qml.math.exp(1j * self.data[0]) - qml.math.exp(1j * self.data[1]))
+            )
+            Y_coeff = (
+                -0.5j
+                * INV_SQRT2
+                * (qml.math.exp(1j * self.data[0]) + qml.math.exp(1j * self.data[1]))
+            )
+            Z_coeff = 0.5 * INV_SQRT2 * (1 - qml.math.exp(1j * (self.data[1] + self.data[0])))
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
-                    * INV_SQRT2
-                    * (1 + qml.math.exp(1j * (self.data[1] + self.data[0]))),
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): 0.5
-                    * INV_SQRT2
-                    * (qml.math.exp(1j * self.data[0]) - qml.math.exp(1j * self.data[1])),
-                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -0.5j
-                    * INV_SQRT2
-                    * (qml.math.exp(1j * self.data[0]) + qml.math.exp(1j * self.data[1])),
-                    qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
-                    * INV_SQRT2
-                    * (1 - qml.math.exp(1j * (self.data[1] + self.data[0]))),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): I_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): X_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "Y"}): Y_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): Z_coeff,
                 }
             )
         return self._pauli_rep
@@ -1133,20 +1137,32 @@ class U3(Operation):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
+            I_coeff = (
+                0.5
+                * (1 + qml.math.exp(1j * (self.data[2] + self.data[1])))
+                * qml.math.cos(self.data[0] / 2)
+            )
+            X_coeff = (
+                -0.5
+                * (qml.math.exp(1j * self.data[2]) - qml.math.exp(1j * self.data[1]))
+                * qml.math.sin(self.data[0] / 2)
+            )
+            Y_coeff = (
+                -0.5j
+                * (qml.math.exp(1j * self.data[2]) + qml.math.exp(1j * self.data[1]))
+                * qml.math.sin(self.data[0] / 2)
+            )
+            Z_coeff = (
+                0.5
+                * (1 - qml.math.exp(1j * (self.data[2] + self.data[1])))
+                * qml.math.cos(self.data[0] / 2)
+            )
             self._pauli_rep = qml.pauli.PauliSentence(
                 {
-                    qml.pauli.PauliWord({self.wires[0]: "I"}): 0.5
-                    * (1 + qml.math.exp(1j * (self.data[2] + self.data[1])))
-                    * qml.math.cos(self.data[0] / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): -0.5
-                    * (qml.math.exp(1j * self.data[2]) - qml.math.exp(1j * self.data[1]))
-                    * qml.math.sin(self.data[0] / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "Y"}): -0.5j
-                    * (qml.math.exp(1j * self.data[2]) + qml.math.exp(1j * self.data[1]))
-                    * qml.math.sin(self.data[0] / 2),
-                    qml.pauli.PauliWord({self.wires[0]: "Z"}): 0.5
-                    * (1 - qml.math.exp(1j * (self.data[2] + self.data[1])))
-                    * qml.math.cos(self.data[0] / 2),
+                    qml.pauli.PauliWord({self.wires[0]: "I"}): I_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "X"}): X_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "Y"}): Y_coeff,
+                    qml.pauli.PauliWord({self.wires[0]: "Z"}): Z_coeff,
                 }
             )
         return self._pauli_rep
