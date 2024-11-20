@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit Tests for the Boseonic representation classes."""
+"""Unit Tests for the Bosonic representation classes."""
 import pickle
 from copy import copy, deepcopy
 
