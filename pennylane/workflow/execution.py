@@ -106,7 +106,15 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 
 
 def _use_tensorflow_autograph():
-    import tensorflow as tf
+    """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
+    try:  # pragma: no cover
+        import tensorflow as tf
+    except ImportError as e:  # pragma: no cover
+        raise qml.QuantumFunctionError(  # pragma: no cover
+            "tensorflow not found. Please install the latest "  # pragma: no cover
+            "version of tensorflow supported by Pennylane "  # pragma: no cover
+            "to enable the 'tensorflow' interface."  # pragma: no cover
+        ) from e  # pragma: no cover
 
     return not tf.executing_eagerly()
 
@@ -286,28 +294,6 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
-def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool):
-    """Helper function to update the mid-circuit measurements configuration based on
-    execution parameters"""
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
-        # This is a current limitation of defer_measurements. "hw-like" behaviour is
-        # not yet accessible.
-        if mcm_config.postselect_mode == "hw-like":
-            raise ValueError(
-                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
-                "mcm_method='deferred'."
-            )
-        mcm_config.postselect_mode = "fill-shots"
-
-    if (
-        finite_shots
-        and "jax" in interface
-        and mcm_config.mcm_method in (None, "one-shot")
-        and mcm_config.postselect_mode in (None, "hw-like")
-    ):
-        mcm_config.postselect_mode = "pad-invalid-samples"
-
-
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
@@ -451,7 +437,6 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
-    _interface_user_input = interface
     interface = _get_interface_name(tapes, interface)
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {"jax", "jax-jit"}:
@@ -471,15 +456,6 @@ def execute(
     config = config or _get_execution_config(
         diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
     )
-
-    # Mid-circuit measurement configuration validation
-    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
-    # workflow still needs to know if jax-jit is used
-    mcm_interface = (
-        _get_interface_name(tapes, "auto") if _interface_user_input is None else interface
-    )
-    finite_shots = any(tape.shots for tape in tapes)
-    _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
     is_gradient_transform = isinstance(diff_method, qml.transforms.core.TransformDispatcher)
     transform_program, inner_transform = _make_transform_programs(
@@ -666,15 +642,9 @@ def _get_execution_config(
     diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
 ):
     """Helper function to get the execution config."""
-    if diff_method is None:
-        _gradient_method = None
-    elif isinstance(diff_method, str):
-        _gradient_method = diff_method
-    else:
-        _gradient_method = "gradient-transform"
     config = qml.devices.ExecutionConfig(
         interface=interface,
-        gradient_method=_gradient_method,
+        gradient_method=diff_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
         mcm_config=mcm_config,
