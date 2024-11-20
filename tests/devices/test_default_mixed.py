@@ -1333,6 +1333,7 @@ class TestDefaultMixedNewAPIInit:
         assert dev._rng is not None
         assert dev._prng_key is None
 
+    @pytest.mark.jax
     def test_seed_jax(self):
         """Test JAX PRNGKey seed initialization"""
         # pylint: disable=import-outside-toplevel
