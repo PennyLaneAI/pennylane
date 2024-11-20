@@ -16,6 +16,8 @@ Tests for the ``autograd.numpy`` wrapping functionality. This functionality
 modifies Autograd NumPy arrays so that they have an additional property,
 ``requires_grad``, that marks them as trainable/non-trainable.
 """
+import warnings
+
 import numpy as onp
 import pytest
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -23,6 +25,13 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.numpy.tensor import tensor_to_arraybox
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 @pytest.mark.unit

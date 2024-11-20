@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument, too-many-positional-arguments
 import copy
 import functools
 import inspect
@@ -75,7 +75,7 @@ def _convert_to_interface(res, interface):
         "tf-autograph": "tensorflow",
     }
 
-    interface_name = interface_conversion_map[interface]
+    interface_name = interface_conversion_map.get(interface, None)
 
     return qml.math.asarray(res, like=interface_name)
 
@@ -835,7 +835,19 @@ class QNode:
 
     @property
     def tape(self) -> QuantumTape:
-        """The quantum tape"""
+        """The quantum tape
+
+        .. warning::
+
+            This property is deprecated in v0.40 and will be removed in v0.41.
+            Instead, use the :func:`qml.workflow.construct_tape <.workflow.construct_tape>` function.
+        """
+
+        warnings.warn(
+            "The tape/qtape property is deprecated and will be removed in v0.41. "
+            "Instead, use the qml.workflow.get_best_diff_method function.",
+            qml.PennyLaneDeprecationWarning,
+        )
         return self._tape
 
     qtape = tape  # for backwards compatibility
@@ -859,10 +871,10 @@ class QNode:
 
         self._tape = QuantumScript.from_queue(q, shots)
 
-        params = self.tape.get_parameters(trainable_only=False)
-        self.tape.trainable_params = qml.math.get_trainable_indices(params)
+        params = self._tape.get_parameters(trainable_only=False)
+        self._tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        _validate_qfunc_output(self._qfunc_output, self.tape.measurements)
+        _validate_qfunc_output(self._qfunc_output, self._tape.measurements)
 
     def _execution_component(self, args: tuple, kwargs: dict) -> qml.typing.Result:
         """Construct the transform program and execute the tapes. Helper function for ``__call__``
@@ -883,7 +895,7 @@ class QNode:
             gradient_fn = qml.gradients.param_shift
         else:
             gradient_fn = QNode.get_gradient_fn(
-                self.device, self.interface, self.diff_method, tape=self.tape
+                self.device, self.interface, self.diff_method, tape=self._tape
             )[0]
         execute_kwargs = copy.copy(self.execute_kwargs)
 
@@ -905,6 +917,13 @@ class QNode:
         full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         inner_transform_program = qml.transforms.core.TransformProgram()
 
+        # Add the gradient expand to the program if necessary
+        if getattr(gradient_fn, "expand_transform", False):
+            full_transform_program.add_transform(
+                qml.transform(gradient_fn.expand_transform),
+                **gradient_kwargs,
+            )
+
         config = _make_execution_config(self, gradient_fn, mcm_config)
         device_transform_program, config = self.device.preprocess(execution_config=config)
 
@@ -912,13 +931,6 @@ class QNode:
             full_transform_program += device_transform_program
         else:
             inner_transform_program += device_transform_program
-
-        # Add the gradient expand to the program if necessary
-        if getattr(gradient_fn, "expand_transform", False):
-            full_transform_program.insert_front_transform(
-                qml.transform(gradient_fn.expand_transform),
-                **gradient_kwargs,
-            )
 
         # Calculate the classical jacobians if necessary
         full_transform_program.set_classical_component(self, args, kwargs)
@@ -949,7 +961,7 @@ class QNode:
         # convert result to the interface in case the qfunc has no parameters
 
         if (
-            len(self.tape.get_parameters(trainable_only=False)) == 0
+            len(self._tape.get_parameters(trainable_only=False)) == 0
             and not self.transform_program.is_informative
         ):
             res = _convert_to_interface(res, self.interface)
@@ -971,7 +983,7 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             if interface != "numpy":
-                interface = INTERFACE_MAP[interface]
+                interface = INTERFACE_MAP.get(interface, None)
             self._interface = interface
 
         try:
