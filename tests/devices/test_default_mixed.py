@@ -24,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane import BasisState, DeviceError, StatePrep
 from pennylane.devices import DefaultMixed
+from pennylane.devices.default_mixed import DefaultMixedNewAPI
 from pennylane.ops import (
     CNOT,
     CZ,
@@ -1296,3 +1297,54 @@ class TestInit:
             match=msg,
         ):
             qml.device("default.mixed", wires=1, shots=1, analytic=True)
+
+
+class TestDefaultMixedNewAPIInit:
+    """Unit tests for DefaultMixedNewAPI initialization"""
+
+    def test_name_property(self):
+        """Test the name property returns correct device name"""
+        dev = DefaultMixedNewAPI(wires=1)
+        assert dev.name == "default.qubit.mixed"
+
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+    def test_dtype_initialization(self, r_dtype, c_dtype):
+        """Test device correctly stores dtype parameters"""
+        dev = DefaultMixedNewAPI(wires=1, r_dtype=r_dtype, c_dtype=c_dtype)
+        assert dev.R_DTYPE == r_dtype
+        assert dev.C_DTYPE == c_dtype
+
+    def test_readout_probability_validation(self):
+        """Test readout probability validation during initialization"""
+        with pytest.raises(ValueError, match="readout error probability should be in the range"):
+            DefaultMixedNewAPI(wires=1, readout_prob=2.0)
+
+    def test_readout_probability_type_validation(self):
+        """Test readout probability type validation"""
+        with pytest.raises(TypeError, match="readout error probability should be an integer"):
+            DefaultMixedNewAPI(wires=1, readout_prob="0.5")
+
+    def test_seed_global(self):
+        """Test global seed initialization"""
+        dev = DefaultMixedNewAPI(wires=1, seed="global")
+        assert dev._rng is not None
+        assert dev._prng_key is None
+
+    def test_seed_jax(self):
+        """Test JAX PRNGKey seed initialization"""
+        import jax
+
+        dev = DefaultMixedNewAPI(wires=1, seed=jax.random.PRNGKey(0))
+        assert dev._rng is not None
+        assert dev._prng_key is not None
+
+    def test_supports_derivatives(self):
+        """Test supports_derivatives method"""
+        dev = DefaultMixedNewAPI(wires=1)
+        assert dev.supports_derivatives()
+        assert not dev.supports_derivatives(
+            execution_config=qml.devices.execution_config.ExecutionConfig(
+                gradient_method="finite-diff"
+            )
+        )
