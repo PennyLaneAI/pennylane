@@ -49,8 +49,13 @@
   pennylane variant jaxpr.
   [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
 
+* A `DefaultQubitInterpreter` class has been added to provide plxpr execution using python based tools,
+  and the `DefaultQubit.eval_jaxpr` method is now implemented.
+  [(#6594)](https://github.com/PennyLaneAI/pennylane/pull/6594)
+  [(#6328)](https://github.com/PennyLaneAI/pennylane/pull/6328)
+
 * An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
-[(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
+  [(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
 
 <h4>Other Improvements</h4>
 
@@ -73,6 +78,10 @@
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
 
 <h3>Breaking changes 💔</h3>
+
+* `qml.math.jax_argnums_to_tape_trainable` is moved and made private to avoid a qnode dependency
+  in the math module.
+  [(#6609)](https://github.com/PennyLaneAI/pennylane/pull/6609)
 
 * Gradient transforms are now applied after the user's transform program.
   [(#6590)](https://github.com/PennyLaneAI/pennylane/pull/6590)
