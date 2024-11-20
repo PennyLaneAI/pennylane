@@ -255,7 +255,7 @@ def _setup_transform_program(
     resolved_execution_config: "qml.devices.ExecutionConfig",
     cache=None,
     cachesize=10000,
-) -> tuple[TransformProgram, TransformProgram]:
+) -> tuple[TransformProgram, TransformProgram, "qml.devices.ExecutionConfig"]:
 
     device_transform_program, config = device.preprocess(execution_config=resolved_execution_config)
 
@@ -301,7 +301,7 @@ def _setup_transform_program(
     if cache is not None:
         inner_transform_program.add_transform(_cache_transform, cache=cache)
 
-    return full_transform_program, inner_transform_program
+    return full_transform_program, inner_transform_program, config
 
 
 def _to_qfunc_output_type(
@@ -1093,7 +1093,7 @@ class QNode:
             config, self.device, (self._tape,), self.transform_program
         )
 
-        outer_transform_program, inner_transform_program = _setup_transform_program(
+        outer_transform_program, inner_transform_program, config = _setup_transform_program(
             self.transform_program,
             self.device,
             config,
