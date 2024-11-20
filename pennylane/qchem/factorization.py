@@ -419,8 +419,51 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
     return (x for x in [chemist_one_body_coeffs, chemist_two_body_coeffs] if x is not None)
 
 
-def symmetry_shift(core, one, two, n_elec=None, verbose=False):
-    """Performs a symmetry-shift on the two-electron integral"""
+def symmetry_shift(core, one, two, n_elec=None, method="L-BFGS-B"):
+    r"""Performs a block-invariant symmetry shift (BLISS) on the Hamiltonian.
+
+    This decreases the 1-norm of the one-body :math:`T_{pq}` and two-body
+    components :math:`V_{pqrs}` of the given Hamiltonian :math:`\hat{H}` and also
+    its spectral range, based on the number of electron operator :math:`\hat{N}_e`.
+    The shifted Hamiltonian (:math:`\hat{H}^{\prime}`) will be given by:
+
+    .. math::
+
+        H^{\prime}(k_1, k_2, \vec{\xi}) = \hat{H} - k_1 (\hat{N}_e - N_e) - k_2 (\hat{N}_e^2 - \hat{N}_e^2) + \sum_{ij}\xi_{ij} T_{ij} (\hat{N}_e - N_e),
+
+    where :math:`N_e` is the target number of electrons and :math:`\vec{\xi}` is
+    a real vector with symmetric elements.
+
+    Args:
+        one (array[float]): a one-electron integral tensor giving the :math:`T_{pq}`.
+        two (array[float]): a two-electron integral tensor in the chemist notation giving the :math:`V_{pqrs}`.
+        n_elec (bool): Target number of electrons for selecting the target eigenstates.
+        method (string): Solver method to be used by `scipy.optimize.minimize`.
+
+    Returns:
+        tuple(array[float], array[float]) or tuple(array[float],): symmetry shifted core, one-body tensor and two-body tensor for the provided terms.
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = qml.numpy.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad=False)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name="STO-3G")
+    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> ctwo = np.swapaxes(two, 1, 3)
+    >>> _, _, ntwo = symmetry_shift(core, one, ctwo, n_elec=mol.n_electrons)
+    >>> print(ntwo)
+    [[[[ 1.12461110e-02 -1.70030746e-09]
+    [-1.70030746e-09 -1.12461660e-02]]
+
+    [[-1.70030746e-09  1.81210462e-01]
+    [ 1.81210462e-01 -1.70032620e-09]]]
+
+    [[[-1.70030763e-09  1.81210462e-01]
+    [ 1.81210462e-01 -1.70032598e-09]]
+
+    [[-1.12461660e-02 -1.70032620e-09]
+    [-1.70032620e-09  1.12461854e-02]]]]
+    """
     norb = one.shape[0]
     ki_vec = np.array([0.0, 0.0])
     xi_mat = np.zeros((norb, norb))
@@ -432,7 +475,7 @@ def symmetry_shift(core, one, two, n_elec=None, verbose=False):
         _symmetry_shift_two_body_loss, two=two, xi_idx=xi_idx
     )  # Step 1: Reduce norm of two-body term
 
-    res_two = sp.optimize.minimize(cost_func, params, method="L-BFGS-B")
+    res_two = sp.optimize.minimize(cost_func, params, method=method)
     _, k2, xi, _, N2, F_ = _symmetry_shift_terms(res_two.x, xi_idx, norb)
     new_two = two - k2 * N2 - F_ / 4
 
@@ -441,20 +484,10 @@ def symmetry_shift(core, one, two, n_elec=None, verbose=False):
         _symmetry_shift_one_body_loss, one=one, n_elec=n_elec, xi_idx=xi_idx
     )  # Step 2: Reduce norm of one-body term
 
-    res_one = sp.optimize.minimize(cost_func, params, method="L-BFGS-B")
+    res_one = sp.optimize.minimize(cost_func, params, method=method)
     k1, _, _, N1, _, _ = _symmetry_shift_terms(res_one.x, xi_idx, norb)
     new_core = core + k1 * n_elec + k2 * n_elec**2
     new_one = one - k1 * N1 + n_elec * xi / 2
-
-    if verbose:
-        step_cost0 = np.linalg.norm(two) + np.linalg.norm(one, ord="fro")
-        step_cost1 = np.linalg.norm(new_two) + np.linalg.norm(one, ord="fro")
-        step_cost2 = np.linalg.norm(new_two) + np.linalg.norm(new_one, ord="fro")
-
-        print(f"Converged? : Step 1 - {res_two.success}, Step 2 - {res_one.success}")
-        print(f"Parameters : [k1, k2, *xi] - {np.hstack(([k1, k2], xi[xi_idx]))}")
-        print(f"Reduction (Step 1): {(step_cost0 - step_cost1) / step_cost0}")
-        print(f"Reduction (Step 2): {(step_cost0 - step_cost2) / step_cost0}")
 
     return new_core, new_one, new_two
 

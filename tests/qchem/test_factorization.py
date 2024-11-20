@@ -722,3 +722,49 @@ def test_chemist_transform(
     )
 
     assert np.allclose(one_body_corr, one_body_correction)
+
+
+@pytest.mark.parametrize(
+    ("core_shifted", "one_body_shifted", "two_body_shifted"),
+    [
+        # (Build HeH+ Molecule and Chemist Hamiltonian)
+        # H_chemist = qml.jordan_wigner(
+        #   fermionic_observable(core_shifted, one_body_shifted, 2 * two_body_shifted, chemist=True)
+        # ).matrix()
+        # eigvals, eigvecs = np.linalg.eigh(H_chemist)
+        # for eigval, eigvec in zip(eigvals, eigvecs.T):
+        #     if (eigvec @ qml.matrix(qml.qchem.particle_number(2 * mol.n_orbitals)) @ eigvec.conj().T) == mol.n_electrons:
+        #         print(eigval) # --> -2.688647053431185
+        #         break
+        (
+            np.array([0.14782753]),
+            np.array([[-1.55435269, 0.08134727], [0.08134727, -0.0890333]]),
+            np.array(
+                [
+                    [
+                        [[0.02932015, -0.04067343], [-0.04067343, -0.02931994]],
+                        [[-0.04067343, 0.08211742], [0.08211742, 0.04067303]],
+                    ],
+                    [
+                        [[-0.04067343, 0.08211742], [0.08211742, 0.04067303]],
+                        [[-0.02931994, 0.04067303], [0.04067303, 0.02932037]],
+                    ],
+                ]
+            ),
+        ),
+    ],
+)
+def test_symmetry_shift(core_shifted, one_body_shifted, two_body_shifted):
+    """Test that `symmetry_shift` builds correct two-body tensors with accurate correction terms"""
+    symbols = ["He", "H"]
+    geometry = qml.numpy.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+    mol = qml.qchem.Molecule(symbols, geometry, charge=1, basis_name="STO-3G")
+    core, one, two = qml.qchem.electron_integrals(mol)()
+
+    # pylint: disable=protected-access
+    cone, ctwo = qml.qchem.factorization._chemist_transform(one, two, spatial_basis=True)
+    score, sone, stwo = qml.qchem.symmetry_shift(core, cone, ctwo, n_elec=mol.n_electrons)
+
+    assert np.allclose(score, core_shifted)
+    assert np.allclose(sone, one_body_shifted)
+    assert np.allclose(stwo, two_body_shifted)
