@@ -29,7 +29,7 @@ class MPSPrep(Operation):
 
     Args:
         mps (list(arrays)): The list representing the MPS input. Given that an MPS is a product of MPS site matrices,
-        the input is a list of arrays of rank-3, and rank-2 tensors on the ends.
+                            the input is a list of arrays of rank-3, and rank-2 tensors on the ends.
 
         wires (Sequence[int]): The wires where the initial state is prepared.
 
