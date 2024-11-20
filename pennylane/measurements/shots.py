@@ -122,6 +122,11 @@ class Shots:
     >>> Shots([7, (100, 2)]) * 1.5
     Shots(total_shots=310, shot_vector=(ShotCopies(10 shots x 1), ShotCopies(150 shots x 2)))
 
+    Example constructing a Shots instance by adding two existing instances together:
+
+    >>> Shots(100) + Shots(((10,2),))
+    Shots(total_shots=120, shot_vector=(ShotCopies(100 shots x 1), ShotCopies(10 shots x 2)))
+
     One should also note that specifying a single tuple of length 2 is considered two different
     shot values, and *not* a tuple-pair representing shots and copies to avoid special behaviour
     depending on the iterable type:
@@ -230,6 +235,9 @@ class Shots:
     def __bool__(self):
         return self.total_shots is not None
 
+    def __add__(self, other):
+        return add_shots(self, other)
+
     def __mul__(self, scalar):
         if not isinstance(scalar, (int, float)):
             raise TypeError("Can't multiply Shots with non-integer or float type.")
@@ -292,7 +300,13 @@ def add_shots(s1: Shots, s2: Shots) -> Shots:
         s2 (Shots): a Shots object to add
 
     Returns:
-        Shots: a Shots object built by concatenating the shot vectors of s1 and s2
+        Shots: a :class:`pennylane.measurements.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
+
+    Example:
+        >>> s1 = Shots((5, (10, 2)))
+        >>> s2 = Shots((3, 2, (10, 3)))
+        >>> print(add_shots(s1, s2))
+        Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
     """
     if s1.total_shots is None:
         return s2

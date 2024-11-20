@@ -58,6 +58,29 @@ class Resources:
         {'Hadamard': 1, 'CNOT': 1}
         gate_sizes:
         {1: 1, 2: 1}
+
+        Resources can be added together or multiplied by a scalar.
+
+        >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
+        >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
+        >>> print(r1 + r2)
+        wires: 2
+        gates: 4
+        depth: 4
+        shots: Shots(total=None)
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+        gate_sizes:
+        {1: 2, 2: 2}
+        >>> print(r1 * 2)
+        wires: 2
+        gates: 4
+        depth: 4
+        shots: Shots(total=None)
+        gate_types:
+        {'Hadamard': 2, 'CNOT': 2}
+        gate_sizes:
+        {1: 2, 2: 2}
     """
 
     num_wires: int = 0
@@ -198,14 +221,18 @@ class ResourcesOperation(Operation):
 
 
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
-    r"""Add two :class:`~resource.Resources` assuming the circuits are executed in series.
+    r"""
+    Add two :class:`~.resource.Resources` assuming the circuits are executed in series.
+    The gates in ``r1`` and ``r2`` are assumed to act on the same qubits. The resulting circuit
+    depth is the sum of the depths of ``r1`` and ``r2``. To add resources as if they were executed
+    in parallel see :func:`~.resource.add_in_parallel`.
 
     Args:
         r1 (Resources): a :class:`~resource.Resources` to add
         r2 (Resources): a :class:`~resource.Resources` to add
 
     Returns:
-        Resources: the combined resources of r1 and r2
+        Resources: the combined resources
 
     .. details::
 
@@ -247,14 +274,18 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
 
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
-    r"""Add two :class:`~resource.Resources` assuming the circuits are executed in parallel.
+    r"""
+    Add two :class:`~.resource.Resources` assuming the circuits are executed in parallel.
+    The gates in ``r2`` and ``r2`` are assumed to act on disjoint sets of qubits. The resulting
+    circuit depth is the max depth of ``r1`` and ``r2``. To add resources as if they were executed
+    in series see :func:`~.resource.add_in_series`.
 
     Args:
-        r1 (Resources): a :class:`~resource.Resources` object to add
-        r2 (Resources): a :class:`~resource.Resources` object to add
+        r1 (Resources): a :class:`~.resource.Resources` object to add
+        r2 (Resources): a :class:`~.resource.Resources` object to add
 
     Returns:
-        Resources: the combined resources of r1 and r2
+        Resources: the combined resources
 
     .. details::
 
@@ -296,8 +327,12 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
 
 def mul_in_series(resources: Resources, scalar: int) -> Resources:
-    """Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
-    that many times in series.
+    """
+    Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
+    that many times in series. The repeated copies of ``resources`` are assumed to act on the same
+    wires as ``resources``. The resulting circuit depth is the depth of ``resources`` multiplied by
+    ``scalar``. To multiply as if the circuit was repeated in parallel see
+    :func:`~.resource.mul_in_parallel`.
 
     Args:
         resources (Resources): a :class:`~resource.Resources` to be scaled
@@ -338,12 +373,15 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
     return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
 
 
-def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
-    """Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
-    that many times in parallel.
+def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
+    """
+    Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
+    that many times in parallel. The repeated copies of ``resources`` are assumed to act on
+    disjoint qubits. The resulting circuit depth is equal to the depth of ``resources``. To multiply
+    as if the repeated copies were executed in series see :func:`~.resource.mul_in_series`.
 
     Args:
-        r1 (Resources): a :class:`~resource.Resources` to be scaled
+        resources (Resources): a :class:`~resource.Resources` to be scaled
         scalar (int): the scalar to multiply the :class:`~resource.Resources` by
 
     Returns:
@@ -372,13 +410,15 @@ def mul_in_parallel(r1: Resources, scalar: int) -> Resources:
         {1: 2, 2: 2}
     """
 
-    new_wires = scalar * r1.num_wires
-    new_gates = scalar * r1.num_gates
-    new_gate_types = _scale_dict(r1.gate_types, scalar)
-    new_gate_sizes = _scale_dict(r1.gate_sizes, scalar)
-    new_shots = scalar * r1.shots
+    new_wires = scalar * resources.num_wires
+    new_gates = scalar * resources.num_gates
+    new_gate_types = _scale_dict(resources.gate_types, scalar)
+    new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
+    new_shots = scalar * resources.shots
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, r1.depth, new_shots)
+    return Resources(
+        new_wires, new_gates, new_gate_types, new_gate_sizes, resources.depth, new_shots
+    )
 
 
 def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replacement: Resources):
