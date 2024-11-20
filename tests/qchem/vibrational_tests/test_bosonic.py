@@ -398,6 +398,18 @@ class TestBoseWordArithmetic:
         (bw1, bw4, bw1, bw1),
         (bw4, bw3, bw3, bw3),
         (bw4, bw4, bw4, bw4),
+        (
+            BoseWord({(0, 0): "+", (1, 0): "-"}, True),
+            BoseWord({(0, 0): "-", (1, 0): "+"}, True),
+            BoseWord({}),
+            BoseWord({})
+        ),
+        (
+            BoseWord({(0, 0): "-"}, True),
+            BoseWord({(0, 0): "+"}, True),
+            BoseWord({(0, 0): "-", (1, 0): "+"}, True),
+            BoseWord({(0, 0): "+", (1, 0): "-"}, True)
+        )
     )
 
     @pytest.mark.parametrize("f1, f2, result_bw_right, result_bw_left", WORDS_MUL)
