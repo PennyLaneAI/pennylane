@@ -213,7 +213,7 @@ class TestBoseWord:
         ],
     )
     def test_shift_operator(self, bw, i, j, bs):
-        """Test that the shift_operator method correctly applies the anti-commutator relations."""
+        """Test that the shift_operator method correctly applies the commutator relations."""
         assert bw.shift_operator(i, j) == bs
 
     def test_shift_operator_errors(self):
@@ -784,7 +784,6 @@ class TestBoseSentence:
     @pytest.mark.parametrize("bs, str_rep", tup_bs_str)
     def test_str(self, bs, str_rep):
         """Test the string representation of the BoseSentence."""
-        print(str(bs))
         assert str(bs) == str_rep
         assert repr(bs) == f"BoseSentence({dict(bs)})"
 
