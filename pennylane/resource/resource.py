@@ -516,26 +516,36 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
         **Example**
 
-        >>> import pennylane as qml
-        >>> from pennylane.resource import Resources, substitute
-        >>> num_wires = 2
-        >>> num_gates = 3
-        >>> gate_types = {"RX": 2, "CNOT": 1}
-        >>> gate_sizes = {1: 2, 2: 1}
-        >>> depth = 2
-        >>> shots = qml.measurements.Shots(10)
-        >>> resources = Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
-        >>>
-        >>> # Replace Rx with three Hadamard gates and four S gates:
-        >>> replace_gate_and_wires = ("RX", 1)  # (gate name, gate wires)
-        >>>
-        >>> num_wires = 1
-        >>> num_gates = 7
-        >>> gate_types = {"Hadamard": 3, "S": 4}
-        >>> gate_sizes = {1: 7}
-        >>> depth = 7
-        >>> sub_resources = Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
-        >>>
+        First we build the :class:`~.resource.Resources`.
+
+        .. code-block:: python3
+
+            from pennylane.measurements import Shots
+            from pennylane.resource import Resources
+
+            initial_resources = Resources(
+                num_wires = 2,
+                num_gates = 3,
+                gate_types = {"RX": 2, "CNOT": 1},
+                gate_sizes = {1: 2, 2: 1},
+                depth = 2,
+                shots = Shots(10)
+            )
+
+            # the RX gates will be replaced by the substitution
+            gate_info = ("RX", 1)
+
+            replacement = Resources(
+                num_wires = 1,
+                num_gates = 7,
+                gate_types = {"Hadamard": 3, "S": 4},
+                gate_sizes = {1: 7},
+                depth = 7
+            )
+
+
+        Now we print the result of the substitution.
+
         >>> res = substitute(resources, replace_gate_and_wires, sub_resources)
         >>> print(res)
         wires: 2
