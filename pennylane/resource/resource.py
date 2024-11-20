@@ -222,6 +222,7 @@ class ResourcesOperation(Operation):
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
     r"""
     Add two :class:`~.resource.Resources` assuming the circuits are executed in series.
+
     The gates in ``r1`` and ``r2`` are assumed to act on the same qubits. The resulting circuit
     depth is the sum of the depths of ``r1`` and ``r2``. To add resources as if they were executed
     in parallel see :func:`~.resource.add_in_parallel`.
@@ -275,6 +276,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     r"""
     Add two :class:`~.resource.Resources` assuming the circuits are executed in parallel.
+
     The gates in ``r2`` and ``r2`` are assumed to act on disjoint sets of qubits. The resulting
     circuit depth is the max depth of ``r1`` and ``r2``. To add resources as if they were executed
     in series see :func:`~.resource.add_in_series`.
@@ -327,8 +329,9 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
 def mul_in_series(resources: Resources, scalar: int) -> Resources:
     """
-    Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
-    that many times in series. The repeated copies of ``resources`` are assumed to act on the same
+    Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated that many times in series.
+
+    The repeated copies of ``resources`` are assumed to act on the same
     wires as ``resources``. The resulting circuit depth is the depth of ``resources`` multiplied by
     ``scalar``. To multiply as if the circuit was repeated in parallel see
     :func:`~.resource.mul_in_parallel`.
@@ -374,10 +377,11 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
 def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
     """
-    Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
-    that many times in parallel. The repeated copies of ``resources`` are assumed to act on
-    disjoint qubits. The resulting circuit depth is equal to the depth of ``resources``. To multiply
-    as if the repeated copies were executed in series see :func:`~.resource.mul_in_series`.
+    Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated that many times in parallel. 
+
+    The repeated copies of ``resources`` are assumed to act on disjoint qubits. The resulting circuit 
+    depth is equal to the depth of ``resources``. To multiply as if the repeated copies were 
+    executed in series see :func:`~.resource.mul_in_series`.
 
     Args:
         resources (Resources): a :class:`~resource.Resources` to be scaled
