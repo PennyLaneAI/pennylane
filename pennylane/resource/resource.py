@@ -47,6 +47,7 @@ class Resources:
 
         **Example**
 
+        >>> from pennylane.resource import Resources
         >>> r = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> print(r)
         num_wires: 2
@@ -60,6 +61,7 @@ class Resources:
 
         Resources can be added together or multiplied by a scalar.
 
+        >>> from pennylane.resource import Resources
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> print(r1 + r2)
@@ -294,7 +296,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         Now we print their sum.
 
-        >>> print(add_in_series(r1, r2))
+        >>> print(qml.resource.add_in_series(r1, r2))
         wires: 3
         gates: 4
         depth: 3
@@ -361,7 +363,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         Now we print their sum.
 
-        >>> print(add_in_parallel(r1, r2))
+        >>> print(qml.resource.add_in_parallel(r1, r2))
         wires: 5
         gates: 4
         depth: 2
@@ -420,7 +422,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(mul_in_series(r, 2))
+        >>> print(qml.resource.mul_in_series(r, 2))
         wires: 2
         gates: 4
         depth: 4
@@ -478,7 +480,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(mul_in_parallel(r, 2))
+        >>> print(qml.resource.mul_in_parallel(r, 2))
         wires: 4
         gates: 4
         depth: 2
