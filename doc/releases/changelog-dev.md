@@ -69,6 +69,9 @@
 * Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
+* Fix the string representation of `Resources` instances to match the attribute names.
+  [(#6581)](https://github.com/PennyLaneAI/pennylane/pull/6581)
+
 <h3>Labs 🧪</h3>
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.

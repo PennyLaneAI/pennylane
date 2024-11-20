@@ -40,7 +40,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
 
 class ResourceS(qml.S, re.ResourceOperator):
-    """Resource class for S"""
+    """Resource class for the S gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -142,7 +142,7 @@ class ResourceT(qml.T, re.ResourceOperator):
         return {cls.resource_rep(): z % 8}
 
 class ResourceX(qml.X, re.ResourceOperator):
-    """Resource class for X"""
+    """Resource class for the X gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -164,7 +164,7 @@ class ResourceX(qml.X, re.ResourceOperator):
 
 
 class ResourceY(qml.Y, re.ResourceOperator):
-    """Resource class for Y"""
+    """Resource class for the Y gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -186,7 +186,7 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
 
 class ResourceZ(qml.Z, re.ResourceOperator):
-    """Resource class for Z"""
+    """Resource class for the Z gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
