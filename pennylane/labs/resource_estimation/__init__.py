@@ -40,6 +40,7 @@ Operators
 
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
+    ~ResourceCRY
     ~ResourceGlobalPhase
     ~ResourceHadamard
     ~ResourceIdentity
@@ -77,6 +78,7 @@ from .resource_container import CompressedResourceOp, Resources
 from .ops import (
     ResourceCNOT,
     ResourceControlledPhaseShift,
+    ResourceCRY,
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
