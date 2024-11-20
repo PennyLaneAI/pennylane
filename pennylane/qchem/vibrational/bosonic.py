@@ -37,6 +37,18 @@ class BoseWord(dict):
     >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w
     b⁺(0) b(1)
+
+    .. details::
+        :title: Hardcore Bosons
+
+        Hardcore Bosons are bosons that follow additional commutation rules and act more similarly
+        to fermions. Namely, they follow the anti-commutation rules of fermions when the indices
+        :math:`i` and :math:`j` are equal.
+
+        There are three `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
+
+        .. math::
+            \left\{ a_i, a_i \right\} = 0, \quad \left\{ a^{\dagger}_i, a^{\dagger}_i \right\} = 0, \quad \left\{ a_i, a^{\dagger}_i \right\} = I,
     """
 
     # override the arithmetic dunder methods for numpy arrays so that the
@@ -57,9 +69,10 @@ class BoseWord(dict):
                 )
 
         if self.is_hardcore:
-            bw_arr = list(self.sorted_dic.keys())
-            index_arr = [x[1] for x in bw_arr]
-            if len(index_arr) != len(set(index_arr)):
+            sign_array = list(self.sorted_dic.values())
+            bw_array = list(self.sorted_dic.keys())
+            index_array = [x[1] for x in bw_array]
+            if len(index_array) != len(set(index_array)) and len(set(sign_array)) < len(sign_array):
                 self.sorted_dic = {}
                 operator = {}
 
@@ -320,7 +333,7 @@ class BoseWord(dict):
 
         left_pointer = 0
         for right_pointer in range(len_op):
-            if self[bw_terms[right_pointer]] == "+": 
+            if self[bw_terms[right_pointer]] == "+":
                 if left_pointer == right_pointer:
                     left_pointer += 1
                     continue
