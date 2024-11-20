@@ -58,8 +58,8 @@ class BoseWord(dict):
 
         if self.is_hardcore:
             bw_arr = list(self.sorted_dic.keys())
-            indice_arr = [x[1] for x in bw_arr]
-            if len(indice_arr) != len(set(indice_arr)):
+            index_arr = [x[1] for x in bw_arr]
+            if len(index_arr) != len(set(index_arr)):
                 self.sorted_dic = {}
                 operator = {}
 
