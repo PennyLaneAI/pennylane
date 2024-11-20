@@ -184,6 +184,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply adjoint operators in the correct order.
+  [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
+
 * `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily 
   in the list of supported interfaces, such as the `Graph` class defined in `networkx`.
   [(#6600)](https://github.com/PennyLaneAI/pennylane/pull/6600)

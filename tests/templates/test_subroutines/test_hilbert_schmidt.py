@@ -27,6 +27,7 @@ def global_v_circuit(params):
 @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""
+
     u_tape = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
 
     v_wires = qml.wires.Wires((0, 1))
@@ -68,6 +69,7 @@ class TestHilbertSchmidt:
 
     def test_hs_decomposition_1_qubit(self):
         """Test if the HS operation is correctly decomposed for a 1 qubit unitary."""
+
         with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
 
@@ -97,6 +99,7 @@ class TestHilbertSchmidt:
 
     def test_hs_decomposition_2_qubits(self):
         """Test if the HS operation is correctly decomposed for 2 qubits."""
+
         with qml.queuing.AnnotatedQueue() as q_U:
             qml.SWAP(wires=[0, 1])
 
@@ -133,6 +136,7 @@ class TestHilbertSchmidt:
 
     def test_hs_decomposition_2_qubits_custom_wires(self):
         """Test if the HS operation is correctly decomposed for 2 qubits with custom wires."""
+
         with qml.queuing.AnnotatedQueue() as q_U:
             qml.SWAP(wires=["a", "b"])
 
@@ -346,6 +350,7 @@ class TestLocalHilbertSchmidt:
 
     def test_lhs_decomposition_2_qubits(self):
         """Test if the LHS operation is correctly decomposed for 2 qubits."""
+        
         with qml.queuing.AnnotatedQueue() as q_U:
             qml.SWAP(wires=[0, 1])
 
