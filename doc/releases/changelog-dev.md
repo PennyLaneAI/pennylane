@@ -57,6 +57,9 @@
 * An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
   [(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
 
+* `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
+  [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
+
 <h4>Other Improvements</h4>
 
 * `qml.BasisRotation` template is now JIT compatible.
