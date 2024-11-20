@@ -828,8 +828,6 @@ class DefaultMixedNewAPI(Device):
             ``numpy.random.default_rng``.
         r_dtype (numpy.dtype): Real datatype to use for computations. Default is np.float64.
         c_dtype (numpy.dtype): Complex datatype to use for computations. Default is np.complex128.
-        analytic (bool): Indicates if the device should calculate expectations analytically.
-            If None, the device will automatically determine if shots are being used.
         readout_prob (float): Probability of readout error for qubit measurements. Must be in :math:`[0,1]`.
     """
 
@@ -850,7 +848,6 @@ class DefaultMixedNewAPI(Device):
         # The following parameters are inherited from DefaultMixed
         r_dtype=np.float64,
         c_dtype=np.complex128,
-        analytic=None,
         readout_prob=None,
     ) -> None:
 
@@ -861,7 +858,6 @@ class DefaultMixedNewAPI(Device):
 
         self.R_DTYPE = r_dtype
         self.C_DTYPE = c_dtype
-        self.analytic = analytic
         self.readout_err = readout_prob
         # Check that the readout error probability, if entered, is either integer or float in [0,1]
         if self.readout_err is not None:
