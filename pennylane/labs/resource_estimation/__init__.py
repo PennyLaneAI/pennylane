@@ -43,6 +43,7 @@ Operators
     ~ResourceGlobalPhase
     ~ResourceHadamard
     ~ResourceIdentity
+    ~ResourcePhaseShift
     ~ResourceRot
     ~ResourceRX
     ~ResourceRY
@@ -80,6 +81,7 @@ from .ops import (
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+    ResourcePhaseShift,
     ResourceRot,
     ResourceRX,
     ResourceRY,
