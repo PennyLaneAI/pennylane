@@ -607,6 +607,11 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
     Returns:
         (array-like): Angles corresponding to the specified transformation routine.
 
+    Raises:
+        AssertionError: if poly is not valid in the chosen subroutine
+        AssertionError: if routine or angle_solver specified does not exist
+
+
     **Example**
 
     This example applies the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}` to a block-encoding
@@ -639,11 +644,31 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         P(x) =        0.19610666666666668
     """
 
-    parity = (len(poly) - 1) % 2
-    assert np.allclose(poly[1 - parity :: 2], 0), "Polynomial must have defined parity"
-    assert np.allclose(
-        np.array(poly, dtype=np.complex128).imag, 0
-    ), "Array must not have an imaginary part"
+    # Leading zeros are removed from the array
+    poly = poly[
+        : len(poly)
+        - next((i for i, x in enumerate(reversed(poly)) if not np.isclose(x, 0.0)), len(poly))
+    ]
+
+    if len(poly) == 1:
+        raise AssertionError("The polynomial must have at least degree 1.")
+
+    for x in [-1, 0, 1]:
+        if qml.math.abs(qml.math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
+            # It is not a property that we can check globally but checking these three points is useful
+            raise AssertionError("The polynomial must satisfy that |P(x)| < 1 for all x in [0, 1]")
+
+    if routine in ["QSVT", "QSP"]:
+        if not (
+            np.isclose(qml.math.sum(qml.math.abs(poly[::2])), 0.0)
+            or np.isclose(qml.math.sum(qml.math.abs(poly[1::2])), 0.0)
+        ):
+            raise AssertionError(
+                "The polynomial has no definite parity. All odd or even entries in the array must take a value of zero."
+            )
+        assert np.allclose(
+            np.array(poly, dtype=np.complex128).imag, 0
+        ), "Array must not have an imaginary part"
 
     if routine == "QSVT":
         if angle_solver == "root-finding":

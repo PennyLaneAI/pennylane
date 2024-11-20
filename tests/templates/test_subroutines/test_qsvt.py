@@ -728,34 +728,46 @@ class TestRootFindingSolver:
         ("poly", "routine", "angle_solver", "msg_match"),
         [
             (
-                [0.0, 1.0, 2.0],
+                [0.0, 0.1, 0.2],
                 "QSVT",
                 "root-finding",
-                "Polynomial must have defined parity",
+                "The polynomial has no definite parity",
             ),
             (
-                [0, 1j, 0, 3, 0, 2],
+                [0, 0.1j, 0, 0.3, 0, 0.2],
                 "QSVT",
                 "root-finding",
                 "Array must not have an imaginary part",
             ),
             (
-                [0, 1, 0, 3, 0, 2],
+                [0, 0.1, 0, 0.3, 0, 0.2],
                 "QFT",
                 "root-finding",
                 "Invalid routine",
             ),
             (
-                [0, 1, 0, 3, 0, 2],
+                [0, 0.1, 0, 0.3, 0, 0.2],
                 "QSVT",
                 "Pitagoras",
                 "Invalid angle solver",
             ),
             (
-                [0, 1, 0, 3, 0, 2],
+                [0, 0.1, 0, 0.3, 0, 0.2],
                 "QSP",
                 "Pitagoras",
                 "Invalid angle solver",
+            ),
+            (
+                [0, 2, 0, 0.3, 0, 0.2],
+                "QSP",
+                "root-finding",
+                "The polynomial must satisfy that",
+            ),
+            (
+                [1],
+                "QSP",
+                "root-finding",
+                "The polynomial must have at least degree 1",
             ),
         ],
     )
