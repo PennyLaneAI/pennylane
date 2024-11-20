@@ -31,7 +31,7 @@ try:
 except ImportError:
     has_jax_optax = False
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 
 
 def factorize(
