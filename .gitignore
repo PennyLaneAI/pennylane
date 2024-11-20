@@ -31,4 +31,3 @@ datasets/*
 .benchmarks/*
 *.h5
 *.hdf5
-.venv
