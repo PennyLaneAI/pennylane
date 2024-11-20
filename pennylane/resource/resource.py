@@ -330,7 +330,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
     Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated
     that many times in series. The repeated copies of ``resources`` are assumed to act on the same
     wires as ``resources``. The resulting circuit depth is the depth of ``resources`` multiplied by
-    ``scalar``. To multiply as if the circuit was repeated in parallel see 
+    ``scalar``. To multiply as if the circuit was repeated in parallel see
     :func:`~.resource.mul_in_parallel`.
 
     Args:
@@ -415,7 +415,9 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
     new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
     new_shots = scalar * resources.shots
 
-    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, resources.depth, new_shots)
+    return Resources(
+        new_wires, new_gates, new_gate_types, new_gate_sizes, resources.depth, new_shots
+    )
 
 
 def _combine_dict(dict1: dict, dict2: dict):
