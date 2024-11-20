@@ -40,15 +40,24 @@ Operators
 
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
+    ~ResourceDoubleExcitation,
+    ~ResourceDoubleExcitationMinus,
+    ~ResourceDoubleExcitationPlus,
     ~ResourceCRY
+    ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
     ~ResourceIdentity
+    ~ResourceMultiRZ
+    ~ResourceOrbitalRotation
     ~ResourceRot
     ~ResourceRX
     ~ResourceRY
     ~ResourceRZ
     ~ResourceS
+    ~ResourceSingleExcitation
+    ~ResourceSingleExcitationMinus
+    ~ResourceSingleExcitationPlus,
     ~ResourceSWAP
     ~ResourceT
     ~ResourceX
@@ -79,15 +88,29 @@ from .ops import (
     ResourceCNOT,
     ResourceControlledPhaseShift,
     ResourceCRY,
+    ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
+    ResourceFermionicSWAP,
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
     ResourceMultiRZ,
+    ResourceOrbitalRotation,
+    ResourcePauliRot,
+    ResourcePSWAP,
     ResourceRot,
     ResourceRX,
     ResourceRY,
     ResourceRZ,
     ResourceS,
+    ResourceSingleExcitation,
+    ResourceSingleExcitationMinus,
+    ResourceSingleExcitationPlus,
     ResourceSWAP,
     ResourceT,
     ResourceX,

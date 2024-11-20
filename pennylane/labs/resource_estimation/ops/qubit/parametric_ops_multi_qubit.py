@@ -1,7 +1,8 @@
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-#pylint: disable=arguments-differ
+# pylint: disable=arguments-differ
+
 
 class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     r"""Resource class for MultiRZ
@@ -18,7 +19,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
         rz = re.CompressedResourceOp(re.ops.ResourceRZ, {})
 
         gate_types = {}
-        gate_types[cnot] = 2*(num_wires-1)
+        gate_types[cnot] = 2 * (num_wires - 1)
         gate_types[rz] = 1
 
         return gate_types
@@ -29,6 +30,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, num_wires, **kwargs):
         return re.CompressedResourceOp(cls, {"num_wires": num_wires})
+
 
 class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     r"""Resource class for PauliRot
@@ -74,7 +76,10 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, active_wires, pauli_word, **kwargs):
-        return re.CompressedResourceOp(cls, {"active_wires": active_wires, "pauli_word": pauli_word})
+        return re.CompressedResourceOp(
+            cls, {"active_wires": active_wires, "pauli_word": pauli_word}
+        )
+
 
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
     r"""Resource class for IsingXX
@@ -91,7 +96,6 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
             \end{bmatrix}.
     """
 
-
     @staticmethod
     def _resource_decomp(*args, **kwargs):
         cnot = re.ResourceCNOT.resource_rep(**kwargs)
@@ -107,6 +111,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, *args, **kwargs):
         return re.CompressedResourceOp(cls, {})
+
 
 class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
     r"""Resource class for IsingYY
@@ -140,6 +145,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, *args, **kwargs):
         return re.CompressedResourceOp(cls, {})
+
 
 class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
     r"""Resource class for IsingXY
@@ -178,6 +184,7 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
     def resource_rep(cls, *args, **kwargs):
         return re.CompressedResourceOp(cls, {})
 
+
 class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
     r"""Resource class for IsingZZ
 
@@ -210,6 +217,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, *args, **kwargs):
         return re.CompressedResourceOp(cls, {})
+
 
 class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
     r"""Resource class for PSWAP
