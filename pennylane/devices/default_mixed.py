@@ -905,3 +905,11 @@ class DefaultMixedNewAPI(Device):
         if execution_config is None or execution_config.gradient_method in {"backprop", "best"}:
             return circuit is None or not circuit.shots
         return False
+
+    @debug_logger
+    def execute(
+        self,
+        circuits: QuantumScript,
+        execution_config: Optional[ExecutionConfig] = None,
+    ) -> None:
+        pass
