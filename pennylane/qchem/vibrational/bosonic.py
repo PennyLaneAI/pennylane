@@ -318,27 +318,27 @@ class BoseWord(dict):
 
         bw = self
 
-        l = 0
-        for r in range(len_op):
-            if self[bw_terms[r]] == "+":
-                if l == r:
-                    l += 1
+        left_pointer = 0
+        for right_pointer in range(len_op):
+            if self[bw_terms[right_pointer]] == "+":
+                if left_pointer == right_pointer:
+                    left_pointer += 1
                     continue
 
-                bs = bw.shift_operator(r, l)
+                bs = bw.shift_operator(right_pointer, left_pointer)
                 bs_as_list = sorted(list(bs.items()), key=lambda x: len(x[0].keys()), reverse=True)
                 bw = bs_as_list[0][0]
                 # Sort by ascending index order
-                if l > 0:
+                if left_pointer > 0:
                     bw_as_list = sorted(list(bw.keys()))
-                    if bw_as_list[l - 1][1] > bw_as_list[l][1]:
-                        temp_bs = bw.shift_operator(l - 1, l)
+                    if bw_as_list[left_pointer - 1][1] > bw_as_list[left_pointer][1]:
+                        temp_bs = bw.shift_operator(left_pointer - 1, left_pointer)
                         bw = list(temp_bs.items())[0][0]
 
                 for i in range(1, len(bs_as_list)):
                     bw_comm += bs_as_list[i][0] * bs_as_list[i][1]
 
-                l += 1
+                left_pointer += 1
 
         ordered_op = bw + bw_comm.normal_order()
         ordered_op.simplify(tol=1e-8)
