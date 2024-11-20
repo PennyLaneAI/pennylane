@@ -306,21 +306,27 @@ class TestShotsBins:
         assert list(shots.bins()) == [(0, 1), (1, 2), (2, 5), (5, 9)]
 
 
-@pytest.mark.parametrize(
-    "s1, s2, expected",
-    [
-        (Shots(shots=None), Shots(shots=None), Shots(shots=None)),
-        (Shots(shots=10), Shots(shots=None), Shots(shots=10)),
-        (Shots(shots=None), Shots(shots=10), Shots(shots=10)),
-        (Shots(shots=10), Shots(shots=10), Shots(shots=((10, 2),))),
-        (Shots(shots=(10, 9)), Shots(shots=(8, 7)), Shots(shots=(10, 9, 8, 7))),
-        (Shots(shots=(10, 9)), Shots(shots=None), Shots(shots=(10, 9))),
-        (Shots(shots=None), Shots(shots=(10, 9)), Shots(shots=(10, 9))),
-        (Shots(shots=(10, 9)), Shots(shots=8), Shots(shots=(10, 9, 8))),
-        (Shots(shots=8), Shots(shots=(10, 9)), Shots(shots=(8, 10, 9))),
-        (Shots(shots=(10, (9, 2), 8)), Shots(shots=(5, 1)), Shots(shots=(10, (9, 2), 8, 5, 1))),
-    ],
-)
+shot_tests = [
+    (Shots(shots=None), Shots(shots=None), Shots(shots=None)),
+    (Shots(shots=10), Shots(shots=None), Shots(shots=10)),
+    (Shots(shots=None), Shots(shots=10), Shots(shots=10)),
+    (Shots(shots=10), Shots(shots=10), Shots(shots=((10, 2),))),
+    (Shots(shots=(10, 9)), Shots(shots=(8, 7)), Shots(shots=(10, 9, 8, 7))),
+    (Shots(shots=(10, 9)), Shots(shots=None), Shots(shots=(10, 9))),
+    (Shots(shots=None), Shots(shots=(10, 9)), Shots(shots=(10, 9))),
+    (Shots(shots=(10, 9)), Shots(shots=8), Shots(shots=(10, 9, 8))),
+    (Shots(shots=8), Shots(shots=(10, 9)), Shots(shots=(8, 10, 9))),
+    (Shots(shots=(10, (9, 2), 8)), Shots(shots=(5, 1)), Shots(shots=(10, (9, 2), 8, 5, 1))),
+]
+
+
+@pytest.mark.parametrize("s1, s2, expected", shot_tests)
 def test_add_shots(s1, s2, expected):
     """Test the add_shots function"""
     assert add_shots(s1, s2) == expected
+
+
+@pytest.mark.parametrize("s1, s2, expected", shot_tests)
+def test_add_shots_dunder(s1, s2, expected):
+    """Test the __add__ dunder method for Shots"""
+    assert s1 + s2 == expected
