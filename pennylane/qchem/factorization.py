@@ -420,7 +420,7 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
 
 
 def symmetry_shift(core, one, two, n_elec=None, method="L-BFGS-B"):
-    r"""Performs a block-invariant symmetry shift (BLISS) on the Hamiltonian.
+    r"""Performs a `block-invariant symmetry shift <https://arxiv.org/pdf/2304.13772>`_ (BLISS) on the Hamiltonian.
 
     This decreases the 1-norm of the one-body :math:`T_{pq}` and two-body
     components :math:`V_{pqrs}` of the given Hamiltonian :math:`\hat{H}` and also
@@ -437,11 +437,11 @@ def symmetry_shift(core, one, two, n_elec=None, method="L-BFGS-B"):
     Args:
         one (array[float]): a one-electron integral tensor giving the :math:`T_{pq}`.
         two (array[float]): a two-electron integral tensor in the chemist notation giving the :math:`V_{pqrs}`.
-        n_elec (bool): Target number of electrons for selecting the target eigenstates.
-        method (string): Solver method to be used by `scipy.optimize.minimize`.
+        n_elec (bool): target number of electrons for selecting the target eigenstates.
+        method (string): solver method to be used by ``scipy.optimize.minimize``.
 
     Returns:
-        tuple(array[float], array[float]) or tuple(array[float],): symmetry shifted core, one-body tensor and two-body tensor for the provided terms.
+        tuple(array[float], array[float], array[float]): symmetry shifted core, one-body tensor and two-body tensor for the provided terms.
 
     **Example**
 
@@ -453,16 +453,13 @@ def symmetry_shift(core, one, two, n_elec=None, method="L-BFGS-B"):
     >>> _, _, ntwo = symmetry_shift(core, one, ctwo, n_elec=mol.n_electrons)
     >>> print(ntwo)
     [[[[ 1.12461110e-02 -1.70030746e-09]
-    [-1.70030746e-09 -1.12461660e-02]]
-
-    [[-1.70030746e-09  1.81210462e-01]
-    [ 1.81210462e-01 -1.70032620e-09]]]
-
-    [[[-1.70030763e-09  1.81210462e-01]
-    [ 1.81210462e-01 -1.70032598e-09]]
-
-    [[-1.12461660e-02 -1.70032620e-09]
-    [-1.70032620e-09  1.12461854e-02]]]]
+      [-1.70030746e-09 -1.12461660e-02]]
+     [[-1.70030746e-09  1.81210462e-01]
+      [ 1.81210462e-01 -1.70032620e-09]]]
+     [[[-1.70030763e-09  1.81210462e-01]
+      [ 1.81210462e-01 -1.70032598e-09]]
+     [[-1.12461660e-02 -1.70032620e-09]
+      [-1.70032620e-09  1.12461854e-02]]]]
     """
     norb = one.shape[0]
     ki_vec = np.array([0.0, 0.0])
