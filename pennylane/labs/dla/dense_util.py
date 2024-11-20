@@ -294,7 +294,10 @@ def trace_inner_product(
 
 
 def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
-    """Transform vectors representing operators in an operator basis back into operator format.
+    r"""Transform vectors representing operators in an operator basis back into operator format.
+
+    This function simply reconstructs :math:`\hat{O} = \sum_j c_j \hat{b}_j` given the adjoint vector
+    representation :math:`c_j` and basis :math:`\hat{b}_j`.
 
     Args:
         adj_vecs (np.ndarray): collection of vectors with shape ``(batch, len(basis))``
@@ -304,6 +307,14 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     Returns:
         list: collection of operators corresponding to the input vectors read in the input basis.
         The operators are in the format specified by the elements in ``basis``.
+
+    **Example**
+
+    >>> from pennylane.labs.dla import adjvec_to_op
+    >>> c = np.array([[0.5, 0.3, 0.7]])
+    >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
+    >>> adjvec_to_op(c, basis)
+    [0.5 * X(0) + 0.3 * Y(0) + 0.7 * Z(0)]
 
     """
     assert qml.math.shape(adj_vecs)[1] == len(basis)
@@ -379,14 +390,18 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
 
 
 def op_to_adjvec(
-    ops: Union[PauliSentence, Operator, np.ndarray],
+    ops: Iterable[Union[PauliSentence, Operator, np.ndarray]],
     basis: Union[PauliSentence, Operator, np.ndarray],
     is_orthogonal: bool = True,
 ):
-    """Decompose a batch of operators onto a given operator basis.
+    r"""Decompose a batch of operators onto a given operator basis.
+
+    The adjoint vector representation are the coefficients :math:`c_j` in a given operator
+    basis of the operator :math:`\hat{b}_j` such that the input operator can be written as
+    :math:`\hat{O} = \sum_j c_j \hat{b}_j`.
 
     Args:
-        ops (Union[PauliSentence, Operator, np.ndarray]): Operators to decompose
+        ops (Iterable[Union[PauliSentence, Operator, np.ndarray]]): List of operators to decompose
         basis (Iterable[Union[PauliSentence, Operator, np.ndarray]]): Operator basis
         is_orthogonal (bool): Whether the basis is orthogonal with respect to the trace inner
             product. Defaults to ``True``, which allows to skip some computations.
@@ -398,6 +413,26 @@ def op_to_adjvec(
     The format of the resulting operators is determined by the ``type`` in ``basis``.
     If ``is_orthogonal=True`` (the default), only normalization is taken into account
     in the projection. For ``is_orthogonal=False``, orthogonalization also is considered.
+
+    **Example**
+
+    The basis can be numerical or operators.
+
+    >>> from pennylane.labs.dla import op_to_adjvec
+    >>> op = X(0) + 0.5 * Y(0)
+    >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
+    >>> op_to_adjvec([op], basis)
+    array([[1. , 0.5, 0. ]])
+    >>> op_to_adjvec([op], [op.matrix() for op in basis])
+    array([[1. +0.j, 0.5+0.j, 0. +0.j]])
+
+    Note how the function always expects an ``Iterable`` of operators as input.
+
+    Also the ``ops`` can be numerical, but then basis has to be numerical as well.
+
+    >>> op = op.matrix()
+    >>> op_to_adjvec([op], [op.matrix() for op in basis])
+    array([[1. +0.j, 0.5+0.j, 0. +0.j]])
     """
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
