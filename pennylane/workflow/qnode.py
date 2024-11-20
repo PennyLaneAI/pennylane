@@ -33,6 +33,7 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
+from ._capture_qnode import capture_qnode
 from .execution import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
@@ -1059,7 +1060,7 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         if qml.capture.enabled():
-            return qml.capture.qnode_call(self, *args, **kwargs)
+            return capture_qnode(self, *args, **kwargs)
         return self._impl_call(*args, **kwargs)
 
 
