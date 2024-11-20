@@ -254,9 +254,26 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
 def trace_inner_product(
     A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
 ):
-    r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`.
+    r"""Trace inner product
+
+    Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`
+
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
+
+    Args:
+        A (Union[PauliSentence, Operator, np.ndarray]): First operator
+        B (Union[PauliSentence, Operator, np.ndarray]): Second operator
+
+    Returns:
+        Union[float, np.ndarray]: Result is either a single float or a batch of floats.
+
+    **Example**
+
+    >>> from pennylane.labs.dla import trace_inner_product
+    >>> trace_inner_product(qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0))
+    1.0
+
     """
     if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
         return (A.pauli_rep @ B.pauli_rep).trace()
