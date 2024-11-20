@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument, import-outside-toplevel, inconsistent-return-statements, redefined-outer-name
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument, too-many-positional-arguments, import-outside-toplevel, inconsistent-return-statements, redefined-outer-name
 import copy
 import functools
 import inspect
@@ -131,7 +131,7 @@ def _convert_to_interface(res, interface):
         "tf-autograph": "tensorflow",
     }
 
-    interface_name = interface_conversion_map[interface]
+    interface_name = interface_conversion_map.get(interface, None)
 
     return qml.math.asarray(res, like=interface_name)
 
@@ -1143,7 +1143,7 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             if interface != "numpy":
-                interface = INTERFACE_MAP[interface]
+                interface = INTERFACE_MAP.get(interface, None)
             self._interface = interface
 
         try:
