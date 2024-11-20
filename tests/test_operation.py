@@ -924,20 +924,6 @@ class TestOperationConstruction:
         assert op.is_hermitian is False
 
 
-class TestObservableTensorLegacySupport:
-    """Test legacy support of observables with new opmath types"""
-
-    def test_prod_matmul_with_new_opmath(self):
-        """Test matmul of an Observable with a new opmath instance"""
-        res = qml.Hadamard(0) @ qml.s_prod(0.5, qml.PauliX(0))
-        assert isinstance(res, qml.ops.Prod)
-
-    def test_Observable_sub_with_new_opmath(self):
-        """Test sub of an Observable with a new opmath instance"""
-        res = qml.Hadamard(0) - qml.s_prod(0.5, qml.PauliX(0))
-        assert isinstance(res, qml.ops.Sum)
-
-
 class TestObservableConstruction:
     """Test custom observables construction."""
 

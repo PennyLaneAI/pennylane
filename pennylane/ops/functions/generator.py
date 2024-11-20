@@ -60,13 +60,11 @@ def _generator_prefactor(gen):
 
     prefactor = 1.0
 
-    # simplify
     gen = qml.simplify(gen) if isinstance(gen, Prod) else gen
 
     if isinstance(gen, LinearCombination):
         gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
 
-    # return stuff
     if isinstance(gen, Prod):
         coeffs, ops = gen.terms()
         return ops[0], coeffs[0]

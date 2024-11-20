@@ -606,7 +606,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         assert new_tape.shots is tape.shots
         assert new_tape.wires == tape.wires
         assert new_tape.batch_size == tape.batch_size
-        assert new_tape.output_dim == tape.output_dim
 
     def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
         """Test that default_expand_fn works with an invalid op and some measurement."""

@@ -134,7 +134,7 @@ _ABSTRACT_OR_META_TYPES = {
     PowOpObs,
     PowOperation,
     PowObs,
-    qml.QubitStateVector,
+    qml.StatePrep,
 }
 """Types that should not have actual instances created."""
 

@@ -23,8 +23,9 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.gradients.metric_tensor import _get_aux_wire
+from pennylane.operation import has_grad_method, is_measurement, is_trainable, not_tape
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
+from pennylane.transforms.tape_expand import create_expand_fn
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
@@ -37,7 +38,56 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
 )
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,invalid-unary-operand-type
+
+_expand_invalid_trainable_doc_hadamard = """Expand out a tape so that it supports differentiation
+of requested operations with the Hadamard test gradient.
+
+This is achieved by decomposing all trainable operations that
+are not in the Hadamard compatible list until all resulting operations
+are in the list up to maximum depth ``depth``. Note that this
+might not be possible, in which case the gradient rule will fail to apply.
+
+Args:
+    tape (.QuantumTape): the input tape to expand
+    depth (int) : the maximum expansion depth
+    **kwargs: additional keyword arguments are ignored
+
+Returns:
+    .QuantumTape: the expanded tape
+"""
+
+
+hadamard_comp_list = [
+    "RX",
+    "RY",
+    "RZ",
+    "Rot",
+    "PhaseShift",
+    "U1",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "IsingXX",
+    "IsingYY",
+    "IsingZZ",
+]
+
+
+@qml.BooleanFn
+def _is_hadamard_grad_compatible(obj):
+    """Check if the operation is compatible with Hadamard gradient transform."""
+    return obj.name in hadamard_comp_list
+
+
+expand_invalid_trainable_hadamard_gradient = create_expand_fn(
+    depth=None,
+    stop_at=not_tape
+    | is_measurement
+    | (~is_trainable)
+    | (_is_hadamard_grad_compatible & has_grad_method),
+    docstring=_expand_invalid_trainable_doc_hadamard,
+)
 
 
 def _expand_transform_hadamard(

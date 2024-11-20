@@ -299,7 +299,7 @@ def molecular_hamiltonian(*args, **kwargs):
 
 
     Returns:
-        tuple[pennylane.Sum, int]: the fermionic-to-qubit transformed  Hamiltonian
+        tuple[pennylane.Operator, int]: the fermionic-to-qubit transformed  Hamiltonian
         and the number of qubits
 
     .. note::
@@ -580,7 +580,7 @@ def _molecular_hamiltonian(
         elif mapping == "bravyi_kitaev":
             h_pl = qml.bravyi_kitaev(hf, qubits, wire_map=wires_map, tol=1.0e-10)
 
-        h_pl.simplify()
+        h_pl = h_pl.simplify()
 
         return h_pl, len(h_pl.wires)
 

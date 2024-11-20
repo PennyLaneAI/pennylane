@@ -253,11 +253,11 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.append(self)
         return self
 
-    def resources(self) -> Resources:
-        """The resource requirements for a given instance of the Suzuki-Trotter product.
+    def resources(self) -> qml.resource.Resources:
+        r"""The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
-            Resources: The resources for an instance of ``TrotterProduct``.
+            :class:`~.resource.Resources`: The resources for an instance of ``TrotterProduct``.
         """
         with qml.QueuingManager.stop_recording():
             decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)

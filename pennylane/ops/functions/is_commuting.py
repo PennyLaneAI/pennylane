@@ -262,7 +262,6 @@ unsupported_operations = [
 ]
 non_commuting_operations = [
     # StatePrepBase
-    "QubitStateVector",
     "StatePrep",
     "BasisState",
     # Templates
