@@ -39,6 +39,25 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
         return {cls.resource_rep(): 1}
 
 
+class ResourceS(qml.S, re.ResourceOperator):
+    """Resource class for S"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        gate_types = {}
+        t = ResourceT.resource_rep(**kwargs)
+        gate_types[t] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     r"""Resource class for the SWAP gate.
 
@@ -121,3 +140,66 @@ class ResourceT(qml.T, re.ResourceOperator):
     def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         """Resources obtained from the identity T^8 = I."""
         return {cls.resource_rep(): z % 8}
+
+class ResourceX(qml.X, re.ResourceOperator):
+    """Resource class for X"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+        h = re.ResourceHadamard.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 2
+        gate_types[h] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceY(qml.Y, re.ResourceOperator):
+    """Resource class for Y"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+        h = re.ResourceHadamard.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 6
+        gate_types[h] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceZ(qml.Z, re.ResourceOperator):
+    """Resource class for Z"""
+
+    @staticmethod
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        s = re.ResourceS.resource_rep(**kwargs)
+
+        gate_types = {}
+        gate_types[s] = 2
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})

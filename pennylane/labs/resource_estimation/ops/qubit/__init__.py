@@ -15,10 +15,39 @@ r"""This module contains experimental resource estimation functionality. """
 
 from .non_parametric_ops import (
     ResourceHadamard,
+    ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+)
+
+from .parametric_ops_multi_qubit import (
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourcePSWAP,
 )
 
 from .parametric_ops_single_qubit import (
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
     ResourceRZ,
+)
+
+from .qchem_ops import (
+    ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
+    ResourceFermionicSWAP,
+    ResourceOrbitalRotation,
+    ResourceSingleExcitation,
+    ResourceSingleExcitationMinus,
+    ResourceSingleExcitationPlus,
 )

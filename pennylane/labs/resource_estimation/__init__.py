@@ -42,11 +42,30 @@ Operators
     ~ResourceCNOT
     ~ResourceControlled
     ~ResourceControlledPhaseShift
+    ~ResourceDoubleExcitation,
+    ~ResourceDoubleExcitationMinus,
+    ~ResourceDoubleExcitationPlus,
+    ~ResourceCRY
+    ~ResourceFermionicSWAP
+    ~ResourceGlobalPhase
     ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourceMultiRZ
+    ~ResourceOrbitalRotation
     ~ResourcePow
+    ~ResourceRot
+    ~ResourceRX
+    ~ResourceRY
     ~ResourceRZ
+    ~ResourceS
+    ~ResourceSingleExcitation
+    ~ResourceSingleExcitationMinus
+    ~ResourceSingleExcitationPlus,
     ~ResourceSWAP
     ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
 
 Templates
 ~~~~~~~~~
@@ -73,11 +92,36 @@ from .ops import (
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourceCRY,
+    ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
+    ResourceFermionicSWAP,
+    ResourceGlobalPhase,
     ResourceHadamard,
+    ResourceIdentity,
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
+    ResourceMultiRZ,
+    ResourceOrbitalRotation,
+    ResourcePauliRot,
     ResourcePow,
+    ResourcePSWAP,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
     ResourceRZ,
+    ResourceS,
+    ResourceSingleExcitation,
+    ResourceSingleExcitationMinus,
+    ResourceSingleExcitationPlus,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 from .templates import (

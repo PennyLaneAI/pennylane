@@ -13,15 +13,53 @@
 # limitations under the License.
 r"""This module contains resource operators for PennyLane Operators"""
 
+from .identity import (
+    ResourceGlobalPhase,
+    ResourceIdentity,
+)
+
 from .qubit import (
+    ResourceDoubleExcitation,
+    ResourceDoubleExcitationMinus,
+    ResourceDoubleExcitationPlus,
+    ResourceFermionicSWAP,
     ResourceHadamard,
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
+    ResourceMultiRZ,
+    ResourceOrbitalRotation,
+    ResourcePauliRot,
+    ResourcePhaseShift,
+    ResourcePSWAP,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
     ResourceRZ,
+    ResourceS,
+    ResourceSingleExcitation,
+    ResourceSingleExcitationMinus,
+    ResourceSingleExcitationPlus,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 from .op_math import (
     ResourceAdjoint,
+    ResourceCY,
+    ResourceCH,
+    ResourceCZ,
+    ResourceCSWAP,
+    ResourceCCZ,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceToffoli,
+    ResourceMultiControlledX,
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
