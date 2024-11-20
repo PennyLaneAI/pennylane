@@ -114,3 +114,69 @@ def optimize_geometry(molecule, method="rhf"):
     scf_result = single_point(mol_eq, method)
 
     return mol_eq, scf_result
+
+def _get_rhf_dipole(disp_hf):
+    """
+    Given an restricted Hartree-Fock object, evaluate the dipole moment 
+    in the restricted Hartree-Fock state.
+    """
+
+    charges = disp_hf.mol.atom_charges()
+    coords = disp_hf.mol.atom_coords()
+    masses = disp_hf.mol.atom_mass_list(isotope_avg=True)
+    nuc_mass_center = np.einsum('z,zx->x', masses, coords)\
+        / masses.sum()
+    disp_hf.mol.set_common_orig_(nuc_mass_center)
+    dip_ints = disp_hf.mol.intor('int1e_r', comp=3)
+
+    t_dm1 = disp_hf.make_rdm1()
+    if len(t_dm1.shape) == 3:
+        dipole_e_alpha = np.einsum('xij,ji->x', dip_ints, t_dm1[0,::])
+        dipole_e_beta = np.einsum('xij,ji->x', dip_ints, t_dm1[1,::])
+        dipole_e = dipole_e_alpha + dipole_e_beta
+    else:
+        dipole_e = np.einsum('xij,ji->x', dip_ints, t_dm1)
+
+    centered_coords = np.copy(coords)
+    for num_atom in range(len(charges)):
+        centered_coords[num_atom,:] -= nuc_mass_center
+    dipole_n = np.einsum('z,zx->x', charges, centered_coords)
+
+    dipole = -dipole_e + dipole_n
+    return dipole
+
+def _get_uhf_dipole(disp_hf):
+    """
+    Given an unrestricted Hartree-Fock object, evaluate the dipole moment 
+    in the unrestricted Hartree-Fock state.
+    """
+
+    charges = disp_hf.mol.atom_charges()
+    coords = disp_hf.mol.atom_coords()
+    masses = disp_hf.mol.atom_mass_list(isotope_avg=True)
+    nuc_mass_center = np.einsum('z,zx->x', masses, coords)\
+        / masses.sum()
+    disp_hf.mol.set_common_orig_(nuc_mass_center)
+
+    t_dm1_alpha, t_dm1_beta = disp_hf.make_rdm1()
+
+    dip_ints = disp_hf.mol.intor('int1e_r', comp=3)
+    dipole_e_alpha = np.einsum('xij,ji->x', dip_ints, t_dm1_alpha)
+    dipole_e_beta = np.einsum('xij,ji->x', dip_ints, t_dm1_beta)
+    dipole_e = dipole_e_alpha + dipole_e_beta
+
+    centered_coords = np.copy(coords)
+    for num_atom in range(len(charges)):
+        centered_coords[num_atom,:] -= nuc_mass_center
+    dipole_n = np.einsum('z,zx->x', charges, centered_coords)
+
+    dipole = -dipole_e + dipole_n
+    return dipole
+
+def get_dipole(hf, method):
+    r"""Evaluate the dipole moment for a Hartree-Fock state."""
+    method = method.strip().lower()
+    if method == 'rhf':
+        return _get_rhf_dipole(hf)
+
+    return _get_uhf_dipole(hf)

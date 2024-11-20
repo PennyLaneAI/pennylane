@@ -82,5 +82,6 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
-from .vibrational.vibrational_class import single_point, harmonic_analysis, optimize_geometry
+from .vibrational.vibrational_class import single_point, harmonic_analysis, optimize_geometry, get_dipole
 from .vibrational.localize_modes import localize_normal_modes
+from .vibrational.pes_generator import pes_onemode, pes_twomode, pes_threemode
