@@ -16,6 +16,7 @@ Tests for the gradients.pulse_gradient module.
 """
 
 import copy
+import warnings
 
 import numpy as np
 import pytest
@@ -28,6 +29,13 @@ from pennylane.gradients.pulse_gradient import (
     _split_evol_tape,
     stoch_pulse_grad,
 )
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 # pylint: disable=too-few-public-methods
