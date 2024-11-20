@@ -568,55 +568,90 @@ def transform_angles(angles, routine1, routine2):
     """
     if routine1 == "QSP" and routine2 == "QSVT":
         num_angles = len(angles)
-        update_vals = np.zeros(num_angles)
+        update_vals = np.empty(num_angles)
 
         update_vals[0] = 3 * np.pi / 4 - (3 + len(angles) % 4) * np.pi / 2
         update_vals[1:-1] = np.pi / 2
         update_vals[-1] = -np.pi / 4
+        update_vals = qml.math.convert_like(update_vals, angles)
 
         return angles + update_vals
 
     if routine1 == "QSVT" and routine2 == "QSP":
         num_angles = len(angles)
-        update_vals = np.zeros(num_angles)
+        update_vals = np.empty(num_angles)
 
         update_vals[0] = 3 * np.pi / 4 - (3 + len(angles) % 4) * np.pi / 2
         update_vals[1:-1] = np.pi / 2
         update_vals[-1] = -np.pi / 4
+        update_vals = qml.math.convert_like(update_vals, angles)
 
         return angles - update_vals
 
     raise AssertionError("Invalid conversion")
 
 
-def poly_to_angles(P, routine, angle_solver="root-finding"):
+def poly_to_angles(poly, routine, angle_solver="root-finding"):
     r"""
     Converts a given polynomial's coefficients into angles for specific quantum signal processing (QSP)
     or quantum singular value transformation (QSVT) routines.
 
     Args:
-        P (array-like): Coefficients of the polynomial, ordered from lowest to higher degree.
-                        The polynomial must have defined parity and real coefficients.
+        poly (array-like): Coefficients of the polynomial, ordered from lowest to higher degree.
+                           The polynomial must have defined parity and real coefficients.
 
         routine (str):  Specifies the type of angle transformation required. Must be either: "QSP" or "QSVT".
 
+        angle_solver (str): Specifies the method used to calculate the angles. Must be "root-finding".
+
     Returns:
         (array-like): Angles corresponding to the specified transformation routine.
+
+    **Example**
+
+    This example applies the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}` to a block-encoding
+    of :math:`x = 0.2`.
+
+    .. code-block::
+
+        poly = [0, 1.0, 0, -1/2, 0, 1/3]
+
+        qsvt_angles = qml.poly_to_angles(poly, "QSVT")
+
+        x = 0.2
+        block_encoding = qml.RX(2 * np.arccos(x), wires=0) # Encodes x in the top left of the matrix
+        projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit_qsvt():
+            qml.QSVT(block_encoding, projectors)
+            return qml.state()
+
+        output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
+        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+
+        print("output qsvt: ", output.real)
+        print("P(x) =       ", expected)
+
+    .. code-block:: pycon
+
+        output qsvt:  0.19610666666647059
+        P(x) =        0.19610666666666668
     """
 
-    parity = (len(P) - 1) % 2
-    assert np.allclose(P[1 - parity :: 2], 0), "Polynomial must have defined parity"
+    parity = (len(poly) - 1) % 2
+    assert np.allclose(poly[1 - parity :: 2], 0), "Polynomial must have defined parity"
     assert np.allclose(
-        np.array(P, dtype=np.complex128).imag, 0
+        np.array(poly, dtype=np.complex128).imag, 0
     ), "Array must not have an imaginary part"
 
     if routine == "QSVT":
         if angle_solver == "root-finding":
-            return transform_angles(_QSP_angles_root_finding(P), "QSP", "QSVT")
+            return transform_angles(_QSP_angles_root_finding(poly), "QSP", "QSVT")
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 
     if routine == "QSP":
         if angle_solver == "root-finding":
-            return _QSP_angles_root_finding(P)
+            return _QSP_angles_root_finding(poly)
         raise AssertionError("Invalid angle solver method")
     raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
