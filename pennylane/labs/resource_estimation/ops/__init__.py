@@ -24,6 +24,7 @@ from .qubit import (
     ResourceRX,
     ResourceRY,
     ResourceRZ,
+    ResourcePhaseShift,
     ResourceS,
     ResourceSWAP,
     ResourceT,
