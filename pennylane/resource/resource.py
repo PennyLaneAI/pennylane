@@ -548,7 +548,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
         Now we print the result of the substitution.
 
-        >>> res = qml.resource.substitute(resources, replace_gate_and_wires, sub_resources)
+        >>> res = qml.resource.substitute(resources, gate_info, sub_resources)
         >>> print(res)
         wires: 2
         gates: 15
