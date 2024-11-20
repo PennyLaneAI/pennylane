@@ -898,12 +898,10 @@ class DefaultMixedNewAPI(Device):
             return circuit is None or not circuit.shots
         return False
 
-    # pragma: no cover
     @debug_logger
     def execute(
         self,
         circuits: QuantumScript,
         execution_config: Optional[ExecutionConfig] = None,
     ) -> None:
-        # pragma: no cover
-        pass
+        raise NotImplementedError

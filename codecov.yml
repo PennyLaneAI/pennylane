@@ -1,5 +1,4 @@
 ignore:
-  - "pennylane/devices/default_mixed.py"
   - "pennylane/devices/tests/*"
   - "pennylane/data/base/_lazy_modules.py"
   - "pennylane/logging/*"
