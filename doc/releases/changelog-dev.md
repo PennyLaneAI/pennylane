@@ -78,6 +78,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
+  This helps prevent keyword arguments from being passed in the wrong order.
+  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
+
 * Gradient transforms are now applied after the user's transform program.
   [(#6590)](https://github.com/PennyLaneAI/pennylane/pull/6590)
 
