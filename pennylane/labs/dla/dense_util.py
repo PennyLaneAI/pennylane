@@ -294,7 +294,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     if all(isinstance(op, PauliSentence) for op in basis):
         if not is_orthogonal:
             gram = _gram_ps(basis)
-            adj_vecs = np.tensordot(adj_vecs, sqrtm(np.linalg.pinv(gram)), axes=[[1], [0]])
+            adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -306,7 +306,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
         if not is_orthogonal:
             basis_ps = [op.pauli_rep for op in basis]
             gram = _gram_ps(basis_ps)
-            adj_vecs = np.tensordot(adj_vecs, sqrtm(np.linalg.pinv(gram)), axes=[[1], [0]])
+            adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         res = []
         for vec in adj_vecs:
             op_j = sum(c * op for c, op in zip(vec, basis))
@@ -317,7 +317,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
     if isinstance(basis, np.ndarray) or all(isinstance(op, np.ndarray) for op in basis):
         if not is_orthogonal:
             gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real / basis[0].shape[0]
-            adj_vecs = np.tensordot(adj_vecs, sqrtm(np.linalg.pinv(gram)), axes=[[1], [0]])
+            adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         return np.tensordot(adj_vecs, basis, axes=1)
 
     raise NotImplementedError(
@@ -345,7 +345,7 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
         # Fake the norm correction if we anyways will apply the inverse Gram matrix later
         norms_squared = np.ones(len(basis))
         gram = _gram_ps(basis)
-        inv_gram = sqrtm(np.linalg.pinv(gram))
+        inv_gram = np.linalg.pinv(sqrtm(gram))
 
     for op in ops:
         rep = np.zeros((len(basis),))
@@ -402,10 +402,13 @@ def op_to_adjvec(
         basis = np.array(basis)
         res = trace_inner_product(np.array(ops), basis).real
         if is_orthogonal:
-            norm = np.einsum("bij,bji->b", basis, basis) / basis[0].shape[0]
+            norm = np.einsum("bij,bji->b", basis, basis).real / basis[0].shape[0]
             return res / norm
         gram = trace_inner_product(basis, basis).real
-        return np.einsum("ij,kj->ki", sqrtm(np.linalg.pinv(gram)), res)
+        sqrtm_gram = sqrtm(gram)
+        # Imaginary component is an artefact
+        assert np.allclose(sqrtm_gram.imag, 0.0, atol=1e-16)
+        return np.einsum("ij,kj->ki", np.linalg.pinv(sqrtm_gram.real), res)
 
     raise NotImplementedError(
         "At least one operator in the specified basis is of unsupported type, "

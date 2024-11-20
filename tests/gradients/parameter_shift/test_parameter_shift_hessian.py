@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the gradients.param_shift_hessian module."""
 
+import warnings
 from itertools import product
 
 import pytest
@@ -24,6 +25,13 @@ from pennylane.gradients.parameter_shift_hessian import (
     _generate_offdiag_tapes,
     _process_argnum,
 )
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestProcessArgnum:

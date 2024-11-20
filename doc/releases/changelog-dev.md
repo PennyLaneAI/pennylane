@@ -47,6 +47,7 @@
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
+  [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
 
 * `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
   pennylane variant jaxpr.
@@ -67,13 +68,25 @@
 * Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
+<h3>Labs 🧪</h3>
+
+* Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
+  [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
+* Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
+  [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+
 <h3>Breaking changes 💔</h3>
+
+* Gradient transforms are now applied after the user's transform program.
+  [(#6590)](https://github.com/PennyLaneAI/pennylane/pull/6590)
 
 * Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
   Note that `qml.Hamiltonian` will continue to dispatch to `qml.ops.LinearCombination`. For more information, 
   check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
+  [(#6602)](https://github.com/PennyLaneAI/pennylane/pull/6602)
 
 * The developer-facing `qml.utils` module has been removed. Specifically, the
 following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
@@ -130,6 +143,10 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 
 <h3>Deprecations 👋</h3>
 
+* The `tape` and `qtape` properties of `QNode` have been deprecated. 
+  Instead, use the `qml.workflow.construct_tape` function.
+  [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
+
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
@@ -177,6 +194,8 @@ Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
-David Wierichs
+Jay Soni,
+David Wierichs,

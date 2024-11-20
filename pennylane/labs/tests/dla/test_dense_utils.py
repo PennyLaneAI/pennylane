@@ -395,10 +395,12 @@ class TestOpToAdjvec:
     def test_with_ps(self, ops, basis, expected, is_ortho):
         """Test ``op_to_adjvec`` with a basis of ``PauliSentence`` operators."""
         out = op_to_adjvec(ops, basis, is_orthogonal=False)
+        assert out.dtype == np.float64
         assert qml.math.shape(out) == qml.math.shape(expected)
         assert np.allclose(out, expected)
         if is_ortho:
             out = op_to_adjvec(ops, basis, is_orthogonal=True)
+            assert out.dtype == np.float64
             assert qml.math.shape(out) == qml.math.shape(expected)
             assert np.allclose(out, expected)
 
@@ -406,10 +408,12 @@ class TestOpToAdjvec:
     def test_with_op(self, ops, basis, expected, is_ortho):
         """Test ``op_to_adjvec`` with a basis of ``Operator`` operators."""
         out = op_to_adjvec(ops, basis, is_orthogonal=False)
+        assert out.dtype == np.float64
         assert qml.math.shape(out) == qml.math.shape(expected)
         assert np.allclose(out, expected)
         if is_ortho:
             out = op_to_adjvec(ops, basis, is_orthogonal=True)
+            assert out.dtype == np.float64
             assert qml.math.shape(out) == qml.math.shape(expected)
             assert np.allclose(out, expected)
 
@@ -417,9 +421,11 @@ class TestOpToAdjvec:
     def test_with_dense(self, ops, basis, expected, is_ortho):
         """Test ``op_to_adjvec`` with a basis of dense operators."""
         out = op_to_adjvec(ops, basis, is_orthogonal=False)
+        assert out.dtype == np.float64
         assert qml.math.shape(out) == qml.math.shape(expected)
         assert np.allclose(out, expected)
         if is_ortho:
             out = op_to_adjvec(ops, basis, is_orthogonal=True)
+            assert out.dtype == np.float64
             assert qml.math.shape(out) == qml.math.shape(expected)
             assert np.allclose(out, expected)
