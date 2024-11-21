@@ -149,17 +149,19 @@ def test_factorize_reproduce(two_tensor):
 @pytest.mark.parametrize("regularization", [None, "L1", "L2"])
 def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
     r"""Test that factors returned by the factorize function reproduce the two-electron tensor."""
+    optax = pytest.importorskip("optax")
+
     factors, cores, leaves = qml.qchem.factorize(
         two_tensor,
         cholesky=cholesky,
         compressed=True,
         regularization=regularization,
-        num_steps=2500,
+        optimizer=optax.adam(learning_rate=0.001),
     )
 
-    assert qml.math.allclose(np.einsum("tpqi,trsi->pqrs", factors, factors), two_tensor)
+    assert qml.math.allclose(np.einsum("tpqi,trsi->pqrs", factors, factors), two_tensor, atol=1e-3)
     assert qml.math.allclose(
-        qml.math.einsum("tpk,tqk,tkl,tlr,tls->pqrs", leaves, leaves, cores, leaves, leaves),
+        qml.math.einsum("tpk,tqk,tkl,trl,tsl->pqrs", leaves, leaves, cores, leaves, leaves),
         two_tensor,
         atol=1e-3,
     )

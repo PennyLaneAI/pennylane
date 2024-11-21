@@ -116,7 +116,7 @@ def test_df_factorization(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m
 
     assert np.allclose(est.n, n)
     assert np.allclose(est.factors, factors)
-    assert np.allclose(np.array(est.eigvals), np.array(eigvals))
+    assert np.allclose(np.array(est.eigvals), np.einsum("ti,tj->tij", eigvals, eigvals))
     assert np.allclose(np.array(est.eigvecs), np.array(eigvecs))
     assert np.allclose(est.rank_r, rank_r)
     assert np.allclose(est.rank_m, rank_m)
