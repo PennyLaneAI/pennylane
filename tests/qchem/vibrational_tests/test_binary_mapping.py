@@ -15,10 +15,10 @@
 import pytest
 
 import pennylane as qml
-from pennylane.qchem import BoseWord, BoseSentence, binary_mapping
 from pennylane import I, X, Y, Z
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pauli.conversion import pauli_sentence
+from pennylane.qchem import BoseSentence, BoseWord, binary_mapping
 
 # Expected results were generated manually
 BOSE_WORDS_AND_OPS = [
