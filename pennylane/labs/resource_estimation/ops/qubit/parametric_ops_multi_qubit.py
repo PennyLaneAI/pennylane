@@ -29,8 +29,8 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs):
-        cnot = re.CompressedResourceOp(re.ops.ResourceCNOT, {})
-        rz = re.CompressedResourceOp(re.ops.ResourceRZ, {})
+        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+        rz = re.CompressedResourceOp(re.ResourceRZ, {})
 
         gate_types = {}
         gate_types[cnot] = 2 * (num_wires - 1)
@@ -56,10 +56,12 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(active_wires, pauli_word, **kwargs):
+    def _resource_decomp(pauli_word, **kwargs):
         if set(pauli_word) == {"I"}:
             gp = re.ResourceGlobalPhase.resource_rep(**kwargs)
             return {gp: 1}
+
+        active_wires = len(pauli_word.replace("I", ""))
 
         h = re.ResourceHadamard.resource_rep(**kwargs)
         rx = re.ResourceRX.resource_rep(**kwargs)
@@ -82,17 +84,13 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
         return gate_types
 
     def resource_params(self):
-        pauli_word = self.hyperparameters["pauli_word"]
         return {
-            "active_wires": len(pauli_word.replace("I", "")),
-            "pauli_word": pauli_word,
+            "pauli_word": self.hyperparameters["pauli_word"],
         }
 
     @classmethod
-    def resource_rep(cls, active_wires, pauli_word, **kwargs):
-        return re.CompressedResourceOp(
-            cls, {"active_wires": active_wires, "pauli_word": pauli_word}
-        )
+    def resource_rep(cls, pauli_word, **kwargs):
+        return re.CompressedResourceOp(cls, {"pauli_word": pauli_word})
 
 
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
@@ -118,6 +116,8 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
         gate_types = {}
         gate_types[cnot] = 2
         gate_types[rx] = 1
+
+        return gate_types
 
     def resource_params(self):
         return {}
@@ -178,10 +178,10 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        h = re.ops.ResourceHadamard.resource_rep(**kwargs)
-        cy = re.ops.ResourceCY.resource_rep(**kwargs)
-        ry = re.ops.ResourceRY.resource_rep(**kwargs)
-        rx = re.ops.ResourceRX.resource_rep(**kwargs)
+        h = re.ResourceHadamard.resource_rep(**kwargs)
+        cy = re.ResourceCY.resource_rep(**kwargs)
+        ry = re.ResourceRY.resource_rep(**kwargs)
+        rx = re.ResourceRX.resource_rep(**kwargs)
 
         gate_types = {}
         gate_types[h] = 2
@@ -216,8 +216,8 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        cnot = re.ops.ResourceCNOT.resource_rep(**kwargs)
-        rz = re.ops.ResourceRZ.resource_rep(**kwargs)
+        cnot = re.ResourceCNOT.resource_rep(**kwargs)
+        rz = re.ResourceRZ.resource_rep(**kwargs)
 
         gate_types = {}
         gate_types[cnot] = 2
@@ -247,9 +247,9 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        swap = re.ops.ResourceSWAP.resource_rep(**kwargs)
-        cnot = re.ops.ResourceCNOT.resource_rep(**kwargs)
-        phase = re.ops.ResourcePhaseShift.resource_rep(**kwargs)
+        swap = re.ResourceSWAP.resource_rep(**kwargs)
+        cnot = re.ResourceCNOT.resource_rep(**kwargs)
+        phase = re.ResourcePhaseShift.resource_rep(**kwargs)
 
         gate_types = {}
         gate_types[swap] = 1

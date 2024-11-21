@@ -46,6 +46,7 @@ Operators
     ~ResourceDoubleExcitationMinus,
     ~ResourceDoubleExcitationPlus,
     ~ResourceCRY
+    ~ResourceCY
     ~ResourceCZ
     ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
@@ -96,6 +97,7 @@ from .ops import (
     ResourceControlled,
     ResourceControlledPhaseShift,
     ResourceCRY,
+    ResourceCY,
     ResourceCZ,
     ResourceDoubleExcitation,
     ResourceDoubleExcitationMinus,

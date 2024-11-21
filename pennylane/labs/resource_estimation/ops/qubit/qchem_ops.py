@@ -93,7 +93,7 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
     def _resource_decomp(*args, **kwargs):
         """See https://arxiv.org/abs/2104.05695"""
         h = re.ResourceHadamard.resource_rep(**kwargs)
-        ry = re.ResourceX.resource_rep(**kwargs)
+        ry = re.ResourceRY.resource_rep(**kwargs)
         cnot = re.ResourceCNOT.resource_rep(**kwargs)
 
         gate_types = {}
