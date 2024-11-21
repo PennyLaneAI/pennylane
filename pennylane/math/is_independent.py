@@ -29,8 +29,6 @@ from autograd.tracer import isbox, new_box, trace_stack
 
 from pennylane import numpy as pnp
 
-from .utils import requires_grad
-
 
 def _autograd_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
@@ -209,13 +207,7 @@ def _get_random_args(args, interface, num, seed, bounds):
         ]
         if interface == "autograd":
             # Mark the arguments as trainable with Autograd
-            rnd_args = [
-                tuple(
-                    pnp.array(a, requires_grad=True) if requires_grad(orig_a) else np.array(a)
-                    for orig_a, a in zip(args, arg)
-                )
-                for arg in rnd_args
-            ]
+            rnd_args = [tuple(pnp.array(a, requires_grad=True) for a in arg) for arg in rnd_args]
 
     return rnd_args
 

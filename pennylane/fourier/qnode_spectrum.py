@@ -224,6 +224,12 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         as long as this processing is *linear*. In particular, constant
         prefactors for the encoding arguments are allowed.
 
+    .. warning::
+
+        In order to validate the preprocessing of the QNode arguments, automatic
+        differentiation is used by ``qnode_spectrum``. Therefore, pure Numpy parameters
+        are not supported, but one of the machine learning frameworks has to be used.
+
     **Example**
 
     Consider the following example, which uses non-trainable inputs ``x``, ``y`` and ``z``
@@ -387,7 +393,14 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         old_interface = qnode.interface
 
         if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            new_interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            if new_interface == "numpy":
+                raise ValueError(
+                    "qnode_spectrum requires an automatic differentiation library to validate "
+                    "classical processing in the QNode. Only pure numpy arguments were provided:"
+                    f"\n{args}\n{kwargs}"
+                )
+            qnode.interface = new_interface
 
         jac_fn = qml.gradients.classical_jacobian(
             qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
