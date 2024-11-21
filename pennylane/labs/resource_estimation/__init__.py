@@ -52,10 +52,20 @@ Operators
 
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
+    ~ResourceGlobalPhase
     ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourcePhaseShift
+    ~ResourceRot
+    ~ResourceRX
+    ~ResourceRY
     ~ResourceRZ
+    ~ResourceS
     ~ResourceSWAP
     ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
 
 Templates
 ~~~~~~~~~
@@ -89,10 +99,20 @@ from .resource_container import (
 from .ops import (
     ResourceCNOT,
     ResourceControlledPhaseShift,
+    ResourceGlobalPhase,
     ResourceHadamard,
+    ResourceIdentity,
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
     ResourceRZ,
+    ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
 )
 
 from .templates import (
