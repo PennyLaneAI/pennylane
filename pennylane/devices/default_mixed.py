@@ -1041,9 +1041,7 @@ class DefaultMixedNewAPI(Device):
             stopping_condition=stopping_condition,
             name=self.name,
         )
-        transform_program.add_transform(
-            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
-        )
+        transform_program.add_transform(validate_measurements, name=self.name)
         transform_program.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
