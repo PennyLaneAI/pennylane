@@ -148,6 +148,16 @@ class TestInitialization:
 class TestValidation:
     """Tests for QNode creation and validation"""
 
+    @pytest.mark.parametrize("return_type", (tuple, list))
+    def test_return_behaviour_consistency(self, return_type):
+        """Test that the QNode return typing stays consistent"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(return_type):
+            return return_type([qml.expval(qml.Z(0))])
+
+        assert isinstance(circuit(return_type), return_type)
+
     def test_expansion_strategy_error(self):
         """Test that an error is raised if expansion_strategy is passed to the qnode."""
 
@@ -328,8 +338,8 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Differentiation method 5 must be a gradient transform or a string",
+            ValueError,
+            match="Differentiation method 5 must be a str, TransformDispatcher, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
