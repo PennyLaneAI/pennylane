@@ -71,6 +71,10 @@
 
 <h4>Other Improvements</h4>
 
+* `_cache_transform` transform has been moved to its own file located
+  at `qml.workflow._cache_transform.py`.
+  [(#6624)](https://github.com/PennyLaneAI/pennylane/pull/6624)
+
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
 
