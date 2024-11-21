@@ -14,6 +14,7 @@
 """
 Test base Resource class and its associated methods
 """
+# pylint: disable=unnecessary-dunder-call
 from collections import defaultdict
 from dataclasses import FrozenInstanceError
 
@@ -80,8 +81,8 @@ class TestResources:
 
     test_str_data = (
         (
-            "wires: 0\n"
-            + "gates: 0\n"
+            "num_wires: 0\n"
+            + "num_gates: 0\n"
             + "depth: 0\n"
             + "shots: Shots(total=None)\n"
             + "gate_types:\n"
@@ -90,8 +91,8 @@ class TestResources:
             + "{}"
         ),
         (
-            "wires: 5\n"
-            + "gates: 0\n"
+            "num_wires: 5\n"
+            + "num_gates: 0\n"
             + "depth: 0\n"
             + "shots: Shots(total=None)\n"
             + "gate_types:\n"
@@ -100,8 +101,8 @@ class TestResources:
             + "{}"
         ),
         (
-            "wires: 1\n"
-            + "gates: 3\n"
+            "num_wires: 1\n"
+            + "num_gates: 3\n"
             + "depth: 3\n"
             + "shots: Shots(total=110, vector=[10 shots, 50 shots x 2])\n"
             + "gate_types:\n"
@@ -110,8 +111,8 @@ class TestResources:
             + "{1: 3}"
         ),
         (
-            "wires: 4\n"
-            + "gates: 2\n"
+            "num_wires: 4\n"
+            + "num_gates: 2\n"
             + "depth: 2\n"
             + "shots: Shots(total=100)\n"
             + "gate_types:\n"
