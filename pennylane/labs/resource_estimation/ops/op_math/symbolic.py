@@ -73,10 +73,11 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             "base_class": type(self.base),
             "base_params": self.base.resource_params(),
             "num_ctrl_wires": len(self.control_wires),
+            "num_zeros": len([val for val in self.control_values if not val])
         }
 
     @classmethod
-    def resource_rep(cls, base_class, base_params, num_ctrl_wires, **kwargs):
+    def resource_rep(cls, base_class, base_params, num_ctrl_wires, num_zeros, **kwargs):
         name = f"Controlled({base_class.__name__}, wires={num_ctrl_wires})".replace("Resource", "")
         return re.CompressedResourceOp(
             cls,
@@ -84,6 +85,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                 "base_class": base_class,
                 "base_params": base_params,
                 "num_ctrl_wires": num_ctrl_wires,
+                "num_zeros": num_zeros,
             },
             name=name,
         )

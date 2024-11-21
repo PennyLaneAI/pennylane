@@ -116,7 +116,18 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        """TODO: implement in resource_symbolic_op branch"""
+        phase = re.ResourceGlobalPhase.resource_rep()
+        double = re.ResourceDoubleExcitation.resource_rep()
+        ctrl_z = re.ResourceControlled(re.ResourceZ, {}, 3, 1)
+        ctrl_phase = re.ResourceControlled(re.ResourcePhaseShift, {}, 3, 1)
+
+        gate_types = {}
+        gate_types[phase] = 1
+        gate_types[double] = 1
+        gate_types[ctrl_z] = 2
+        gate_types[ctrl_phase] = 2
+
+        return gate_types
 
     def resource_params(self):
         return {}
@@ -131,8 +142,18 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        """TODO: implement in resource_symbolic_op branch"""
-        raise re.ResourcesNotDefined
+        phase = re.ResourceGlobalPhase.resource_rep()
+        double = re.ResourceDoubleExcitation.resource_rep()
+        ctrl_z = re.ResourceControlled(re.ResourceZ, {}, 3, 1)
+        ctrl_phase = re.ResourceControlled(re.ResourcePhaseShift, {}, 3, 1)
+
+        gate_types = {}
+        gate_types[phase] = 1
+        gate_types[double] = 1
+        gate_types[ctrl_z] = 2
+        gate_types[ctrl_phase] = 2
+
+        return gate_types
 
     def resource_params(self):
         return {}
