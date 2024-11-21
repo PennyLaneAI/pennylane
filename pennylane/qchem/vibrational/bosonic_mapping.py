@@ -42,8 +42,9 @@ def binary_mapping(
     wire_map: dict = None,
     tol: float = None,
 ):
-    r"""Convert a bosonic operator to a qubit operator using the standard-binary mapping
-    as described in `arXiv:1507.03271 <https://arxiv.org/pdf/1507.03271>`_.
+    r"""Convert a bosonic operator to a qubit operator using the standard-binary mapping.
+    
+    The mapping procedure is described in `arXiv:1507.03271 <https://arxiv.org/pdf/1507.03271>`_.
 
     Args:
       bose_operator(BoseWord, BoseSentence): the bosonic operator
