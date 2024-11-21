@@ -23,21 +23,23 @@ import scipy as sp
 import pennylane as qml
 
 
-def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
+def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False):
     r"""Return the double-factorized form of a two-electron integral tensor in spatial basis.
 
     The two-electron tensor :math:`V`, in
-    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_, is first
-    factorized in terms of symmetric matrices :math:`L^{(r)}` such that
-    :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is determined by a
-    threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized and its eigenvalues (and
-    corresponding eigenvectors) are truncated at a threshold error.
+    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
+    is first factorized in terms of symmetric matrices :math:`L^{(r)}` such that
+    :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is
+    determined by a threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized
+    and its eigenvalues (and corresponding eigenvectors) are truncated at a threshold error.
 
     Args:
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
             basis arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
+        cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
+            :math:`L^{(r)}` instead of eigendecomposition.
 
     Returns:
         tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
@@ -128,43 +130,39 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
         - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
           :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-        - Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
-          corresponding eigenvalues larger than a threshold.
+        - Decompose the resulting matrix either via Cholesky decomposition or
+          via eigenvalue decomposition.
 
-        - Multiply the eigenvectors by the square root of the eigenvalues to obtain
+        - In the Cholesky decomposition, we build matrices :math:`L^{(r)}` as
+          :math:`v_iv_i^{\dagger}`, where each vector :math:`v_i` is constructed
+          to explain the part of the matrix that hasn't been explained by previous
+          vectors and reduce the error term. We build :math:`r` such matrices that
+          result in an overall approximation error less than the threshold.
+
+        - In the eigenvalue decomposition, we keep the :math:`r` eigenvectors that
+          have corresponding eigenvalues larger than a threshold and multiply these
+          eigenvectors by the square root of their eigenvalues to obtain
           matrices :math:`L^{(r)}`.
 
-        - Reshape the selected eigenvectors to :math:`n \times n` matrices.
-
-        - Diagonalize the :math:`n \times n` matrices and for each matrix keep the eigenvalues (and
-          their corresponding eigenvectors) that are larger than a threshold.
+        - Diagonalize the :math:`L^{(r)}` (:math:`n \times n`) matrices and for each
+          matrix keep the eigenvalues (and their corresponding eigenvectors) that are
+          larger than a threshold.
     """
-    shape = two_electron.shape
+    shape = qml.math.shape(two_electron)
 
     if len(shape) != 4 or len(set(shape)) != 1:
         raise ValueError("The two-electron repulsion tensor must have a (N x N x N x N) shape.")
 
-    n = shape[0]
-    two = two_electron.reshape(n * n, n * n)
+    two_body_tensor = qml.math.reshape(two_electron, (shape[0] * shape[1], -1))
+    interface = qml.math.get_interface(two_body_tensor)
 
-    eigvals_r, eigvecs_r = np.linalg.eigh(two)
-    eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol_factor])
+    if cholesky:
+        factors = _double_factorization_cholesky(two_body_tensor, tol_factor, shape, interface)
+    else:
+        factors = _double_factorization_eigen(two_body_tensor, tol_factor, shape, interface)
 
-    eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
-
-    if eigvals_r.size == 0:
-        raise ValueError(
-            "All factors are discarded. Consider decreasing the first threshold error."
-        )
-
-    vectors = eigvecs_r @ np.diag(np.sqrt(eigvals_r))
-
-    r = len(eigvals_r)
-    factors = np.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)])
-
-    eigvals, eigvecs = np.linalg.eigh(factors)
-    eigvals_m = []
-    eigvecs_m = []
+    eigvals, eigvecs = qml.math.linalg.eigh(factors)
+    eigvals_m, eigvecs_m = [], []
     for n, eigval in enumerate(eigvals):
         idx = [i for i, v in enumerate(eigval) if abs(v) > tol_eigval]
         eigvals_m.append(eigval[idx])
@@ -176,6 +174,47 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
         )
 
     return factors, eigvals_m, eigvecs_m
+
+
+def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
+    """Double factorization via generalized eigen decomposition"""
+    eigvals_r, eigvecs_r = qml.math.linalg.eigh(two)
+    eigvals_r = qml.math.array([val for val in eigvals_r if abs(val) > tol_factor])
+
+    eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
+    if eigvals_r.size == 0:
+        raise ValueError(
+            "All factors are discarded. Consider decreasing the first threshold error."
+        )
+    vectors = eigvecs_r @ qml.math.diag(qml.math.sqrt(eigvals_r))
+
+    n, r = shape[0], len(eigvals_r)
+    factors = qml.math.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)], like=interface)
+    return factors
+
+
+def _double_factorization_cholesky(two, tol_factor=1.0e-10, shape=None, interface=None):
+    """Double factorization via `Cholesky decomposition <https://en.wikipedia.org/wiki/Cholesky_decomposition>`_"""
+    n2 = shape[0] * shape[1]
+    cholesky_vecs = qml.math.zeros((n2, n2 + 1), like=interface)
+    cholesky_diag = qml.math.array(qml.math.diagonal(two).real, like=interface)
+
+    for idx in range(n2 + 1):
+        if (max_err := qml.math.max(cholesky_diag)) < tol_factor:
+            cholesky_vecs = cholesky_vecs[:, :idx]
+            break
+
+        max_idx = qml.math.argmax(cholesky_diag)
+        cholesky_mat = cholesky_vecs[:, :idx]
+        cholesky_vec = (
+            two[:, max_idx] - cholesky_mat @ cholesky_mat[max_idx].conj()
+        ) / qml.math.sqrt(max_err)
+
+        cholesky_vecs[:, idx] = cholesky_vec
+        cholesky_diag -= qml.math.abs(cholesky_vec) ** 2
+
+    factors = cholesky_vecs.T.reshape(-1, shape[0], shape[0])
+    return factors
 
 
 def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
