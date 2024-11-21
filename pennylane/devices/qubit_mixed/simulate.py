@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,29 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains resource operators for PennyLane Operators"""
+"""Simulate a quantum script for a qubit mixed state device."""
+# pylint: skip-file
+# black: skip-file
+import pennylane as qml
+from pennylane.typing import Result
 
-from .identity import (
-    ResourceGlobalPhase,
-    ResourceIdentity,
-)
 
-from .qubit import (
-    ResourceHadamard,
-    ResourceRot,
-    ResourceRX,
-    ResourceRY,
-    ResourceRZ,
-    ResourcePhaseShift,
-    ResourceS,
-    ResourceSWAP,
-    ResourceT,
-    ResourceX,
-    ResourceY,
-    ResourceZ,
-)
-
-from .op_math import (
-    ResourceCNOT,
-    ResourceControlledPhaseShift,
-)
+def simulate(  # pylint: disable=too-many-arguments
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+    readout_errors=None,
+) -> Result:
+    raise NotImplementedError
