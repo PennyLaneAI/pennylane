@@ -363,7 +363,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         As we can see, the preprocessing in the QNode is not included in the simple spectrum.
         In contrast, the output of ``qnode_spectrum`` is:
 
-        >>> adv_spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"y", "z"})
+        >>> adv_spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"y", "z"})(x, y, z)
         >>> for _id, spec in adv_spec.items():
         ...     print(f"{_id}: {spec}")
         y: {(): [-2.3, 0.0, 2.3]}
