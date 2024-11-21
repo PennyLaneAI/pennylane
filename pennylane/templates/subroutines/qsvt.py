@@ -198,11 +198,6 @@ def qsvt(A, poly, encoding_wires, block_encoding=None):
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the specified encoding and projector phases.
 
-    Raises:
-        ValueError: if the chosen block encoding is not compatible with the A data type
-        ValueError: if the polynomial had not a parity defined
-        ValueError: if it is provided a non-valid polynomial
-
     Example:
 
     .. code-block:: python
@@ -298,29 +293,7 @@ def qsvt(A, poly, encoding_wires, block_encoding=None):
              [-0.0054 -0.      0.0164 -0.0842]]
     """
 
-    # Leading zeros are removed from the array
-    poly = poly[
-        : len(poly)
-        - next((i for i, x in enumerate(reversed(poly)) if not np.isclose(x, 0.0)), len(poly))
-    ]
-
-    if len(poly) == 1:
-        raise ValueError("The polynomial must have at least degree 1.")
-
-    if not (
-        np.isclose(qml.math.sum(qml.math.abs(poly[::2])), 0.0)
-        or np.isclose(qml.math.sum(qml.math.abs(poly[1::2])), 0.0)
-    ):
-        raise ValueError(
-            "The polynomial has no definite parity. All odd or even entries in the array must take a value of zero."
-        )
-
-    for x in [-1, 0, 1]:
-        if qml.math.abs(qml.math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
-            # It is not a property that we can check globally but checking these three points is useful
-            raise ValueError("The polynomial must satisfy that |P(x)| < 1.")
-
-    angles = qml.math.poly_to_angles(poly, "QSVT")
+    angles = qml.poly_to_angles(poly, "QSVT")
     projectors = []
 
     # If the input A is a Hamiltonian
@@ -675,7 +648,6 @@ class QSVT(Operation):
             mat = qml.matrix(qml.prod(*tuple(op_list[::-1])))
 
         return mat
-
 
 
 def _qsp_to_qsvt(angles):

@@ -399,6 +399,248 @@ class TestQSVT:
         assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
 
 
+class Testqsvt_legacy:
+    """Test the qml.qsvt_legacy function."""
+
+    @pytest.mark.parametrize(
+        ("A", "phis", "wires", "true_mat"),
+        [
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                [0.2, 0.3],
+                [0, 1],
+                # mathematical order of gates:
+                qml.matrix(qml.PCPhase(0.2, dim=2, wires=[0, 1]))
+                @ qml.matrix(qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]))
+                @ qml.matrix(qml.PCPhase(0.3, dim=2, wires=[0, 1])),
+            ),
+            (
+                [[0.3, 0.1], [0.2, 0.9]],
+                [0.1, 0.2, 0.3],
+                [0, 1],
+                # mathematical order of gates:
+                qml.matrix(qml.PCPhase(0.1, dim=2, wires=[0, 1]))
+                @ qml.matrix(qml.adjoint(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1])))
+                @ qml.matrix(qml.PCPhase(0.2, dim=2, wires=[0, 1]))
+                @ qml.matrix(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]))
+                @ qml.matrix(qml.PCPhase(0.3, dim=2, wires=[0, 1])),
+            ),
+        ],
+    )
+    def test_output(self, A, phis, wires, true_mat):
+        """Test that qml.qsvt_legacy produces the correct output."""
+        dev = qml.device("default.qubit", wires=len(wires))
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.qsvt_legacy(A, phis, wires)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        observable_mat = np.kron(qml.matrix(qml.PauliZ(0)), np.eye(2))
+        true_expval = (np.conj(true_mat).T @ observable_mat @ true_mat)[0, 0]
+
+        assert np.isclose(circuit(), true_expval)
+        assert np.allclose(qml.matrix(circuit)(), true_mat)
+
+    @pytest.mark.parametrize(
+        ("A", "phis", "wires", "result"),
+        [
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                [-1.520692517929803, 0.05010380886509347],
+                [0, 1],
+                0.01,
+            ),  # angles from pyqsp give 0.1*x
+            (
+                0.3,
+                [-0.8104500678299933, 1.520692517929803, 0.7603462589648997],
+                [0],
+                0.009,
+            ),  # angles from pyqsp give 0.1*x**2
+            (
+                -1,
+                [-1.164, 0.3836, 0.383, 0.406],
+                [0],
+                -1,
+            ),  # angles from pyqsp give 0.5 * (5 * x**3 - 3 * x)
+        ],
+    )
+    def test_output_wx(self, A, phis, wires, result):
+        """Test that qml.qsvt_legacy produces the correct output."""
+        dev = qml.device("default.qubit", wires=len(wires))
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.qsvt_legacy(A, phis, wires, convention="Wx")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert np.isclose(np.real(qml.matrix(circuit)())[0][0], result, rtol=1e-3)
+
+    @pytest.mark.parametrize(
+        ("A", "phis", "wires", "result"),
+        [
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                [-1.520692517929803, 0.05010380886509347],
+                [0, 1],
+                0.01,
+            ),  # angles from pyqsp give 0.1*x
+            (
+                0.3,
+                [-0.8104500678299933, 1.520692517929803, 0.7603462589648997],
+                [0],
+                0.009,
+            ),  # angles from pyqsp give 0.1*x**2
+            (
+                -1,
+                [-1.164, 0.3836, 0.383, 0.406],
+                [0],
+                -1,
+            ),  # angles from pyqsp give 0.5 * (5 * x**3 - 3 * x)
+        ],
+    )
+    def test_matrix_wx(self, A, phis, wires, result):
+        """Assert that the matrix method produces the expected result using both call signatures."""
+        m1 = qml.matrix(qml.qsvt_legacy(A, phis, wires, convention="Wx"))
+        m2 = qml.matrix(qml.qsvt_legacy, wire_order=wires)(A, phis, wires, convention="Wx")
+
+        assert np.isclose(np.real(m1[0, 0]), result, rtol=1e-3)
+        assert np.allclose(m1, m2)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_qsvt_torch(self, input_matrix, angles, wires):
+        """Test that the qsvt_legacy function matrix is correct for torch."""
+        import torch
+
+        default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
+
+        input_matrix = torch.tensor(input_matrix, dtype=float)
+        angles = torch.tensor(angles, dtype=float)
+
+        op = qml.qsvt_legacy(input_matrix, angles, wires)
+
+        assert np.allclose(qml.matrix(op), default_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "torch"
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_qsvt_jax(self, input_matrix, angles, wires):
+        """Test that the qsvt_legacy function matrix is correct for jax."""
+        import jax.numpy as jnp
+
+        default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
+
+        input_matrix = jnp.array(input_matrix)
+        angles = jnp.array(angles)
+
+        op = qml.qsvt_legacy(input_matrix, angles, wires)
+
+        assert np.allclose(qml.matrix(op), default_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "jax"
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_qsvt_tensorflow(self, input_matrix, angles, wires):
+        """Test that the qsvt_legacy function matrix is correct for tensorflow."""
+        import tensorflow as tf
+
+        default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
+
+        input_matrix = tf.Variable(input_matrix)
+        angles = tf.Variable(angles)
+
+        op = qml.qsvt_legacy(input_matrix, angles, wires)
+
+        assert np.allclose(qml.matrix(op), default_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
+
+    def test_qsvt_grad(self):
+        """Test that qml.grad results are the same as finite difference results"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(A, phis):
+            qml.qsvt_legacy(
+                A,
+                phis,
+                wires=[0, 1],
+            )
+            return qml.expval(qml.PauliZ(wires=0))
+
+        A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
+        phis = np.array([0.1, 0.2, 0.3], dtype=complex, requires_grad=True)
+        y = circuit(A, phis)
+
+        mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
+
+        diff = 1e-8
+
+        manual_mat_results = [
+            (circuit(A + np.array([[diff, 0], [0, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, diff], [0, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, 0], [diff, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, 0], [0, diff]]), phis) - y) / diff,
+        ]
+
+        for idx, result in enumerate(manual_mat_results):
+            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-6)
+
+        manual_phi_results = [
+            (circuit(A, phis + np.array([diff, 0, 0])) - y) / diff,
+            (circuit(A, phis + np.array([0, diff, 0])) - y) / diff,
+            (circuit(A, phis + np.array([0, 0, diff])) - y) / diff,
+        ]
+
+        for idx, result in enumerate(manual_phi_results):
+            assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
+
+
+phase_angle_data = (
+    (
+        [0, 0, 0],
+        [3 * np.pi / 4, np.pi / 2, -np.pi / 4],
+    ),
+    (
+        [1.0, 2.0, 3.0, 4.0],
+        [1.0 + 3 * np.pi / 4, 2.0 + np.pi / 2, 3.0 + np.pi / 2, 4.0 - np.pi / 4],
+    ),
+)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("initial_angles, expected_angles", phase_angle_data)
+def test_private_qsp_to_qsvt_jax(initial_angles, expected_angles):
+    """Test that the _qsp_to_qsvt function is jax compatible"""
+    import jax.numpy as jnp
+
+    from pennylane.templates.subroutines.qsvt import _qsp_to_qsvt
+
+    initial_angles = jnp.array(initial_angles)
+    expected_angles = jnp.array(expected_angles)
+
+    computed_angles = _qsp_to_qsvt(initial_angles)
+    jnp.allclose(computed_angles, expected_angles)
+
+
+def test_global_phase_not_alway_applied():
+    """Test that the global phase is not applied if it is 0"""
+
+    decomposition = qml.qsvt_legacy(
+        [1], [0, 1, 2, 3, 4], wires=[0], convention="Wx"
+    ).decomposition()
+    for op in decomposition:
+        assert not isinstance(op, qml.GlobalPhase)
+
+
 class Testqsvt:
     """Test the qml.qsvt function."""
 
@@ -505,28 +747,7 @@ class Testqsvt:
                 "block_encoding should take",
             ),
             (qml.Z(0) - qml.X(0), [0.3, 0, 0.4], "fable", [1], "block_encoding should take"),
-            (
-                [[0.1, 0], [0, -0.1]],
-                [0.3, 0.1, 0.4],
-                "fable",
-                [1],
-                "The polynomial has no definite parity",
-            ),
-            (
-                [[0.1, 0], [0, -0.1]],
-                [0.3],
-                "fable",
-                [1],
-                "The polynomial must have at least degree 1",
-            ),
             (qml.Z(0) - qml.X(0), [0.3, 0, 0.4], "prepselprep", [0], "Control wires in"),
-            (
-                qml.Z(0) - qml.X(0),
-                [1.3, 0, 0.4],
-                "prepselprep",
-                [1],
-                "The polynomial must satisfy that",
-            ),
         ],
     )
     def test_raise_error(
@@ -633,29 +854,6 @@ class Testqsvt:
         jitted_circuit = jax.jit(circuit)
         jitted_output = jitted_circuit(jnp.array(A))
         assert jnp.allclose(not_jitted_output, jitted_output)
-
-
-@pytest.mark.jax
-@pytest.mark.parametrize("initial_angles, expected_angles", phase_angle_data)
-def test_private_qsp_to_qsvt_jax(initial_angles, expected_angles):
-    """Test that the _qsp_to_qsvt function is jax compatible"""
-    import jax.numpy as jnp
-
-    from pennylane.templates.subroutines.qsvt import _qsp_to_qsvt
-
-    initial_angles = jnp.array(initial_angles)
-    expected_angles = jnp.array(expected_angles)
-
-    computed_angles = _qsp_to_qsvt(initial_angles)
-    jnp.allclose(computed_angles, expected_angles)
-
-
-def test_global_phase_not_alway_applied():
-    """Test that the global phase is not applied if it is 0"""
-
-    decomposition = qml.qsvt([1], [0, 1, 2, 3, 4], wires=[0], convention="Wx").decomposition()
-    for op in decomposition:
-        assert not isinstance(op, qml.GlobalPhase)
 
 
 class TestRootFindingSolver:
@@ -810,4 +1008,3 @@ class TestRootFindingSolver:
 
         with pytest.raises(AssertionError, match=msg_match):
             _ = qml.poly_to_angles(poly, routine, angle_solver)
-
