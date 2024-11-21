@@ -334,7 +334,8 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
                     decomp = op.decomposition()
                     cmp_rep_ops.extend(_operations_to_compressed_reps(decomp))
                 except DecompositionUndefinedError:
-                    raise ResourceOperatorNotImplemented(f"No resource operator defined for {op._name}, but {op._name} has no decomposition.") from exc
-
+                    raise ResourceOperatorNotImplemented(
+                        f"No resource operator defined for {op._name}, but {op._name} has no decomposition."
+                    ) from exc
 
     return cmp_rep_ops

@@ -80,7 +80,7 @@ Exceptions
     :toctree: api
 
     ~ResourcesNotDefined
-    ~ResourceOperatorNotImplemented    
+    ~ResourceOperatorNotImplemented
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined, ResourceOperatorNotImplemented
