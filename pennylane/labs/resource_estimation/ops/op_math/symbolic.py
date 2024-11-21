@@ -73,7 +73,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             "base_class": type(self.base),
             "base_params": self.base.resource_params(),
             "num_ctrl_wires": len(self.control_wires),
-            "num_zeros": len([val for val in self.control_values if not val])
+            "num_zeros": len([val for val in self.control_values if not val]),
         }
 
     @classmethod

@@ -23,8 +23,26 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
-        """TODO: implement in resource_symbolic_ops branch"""
-        raise re.ResourcesNotDefined
+        t_dag = re.ResourceAdjoint.resource_rep(re.ResourceT, {})
+        h = re.ResourceHadamard.resource_rep()
+        s = re.ResourceS.resource_rep()
+        s_dag = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
+        cnot = re.ResourceCNOT.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+        ry = re.ResourceRY.resource_rep()
+        t = re.ResourceT.resource_rep()
+
+        gate_types = {}
+        gate_types[t_dag] = 2
+        gate_types[h] = 4
+        gate_types[s] = 2
+        gate_types[s_dag] = 2
+        gate_types[cnot] = 2
+        gate_types[rz] = 1
+        gate_types[ry] = 1
+        gate_types[t] = 2
+
+        return gate_types
 
     def resource_params(self):
         return {}
@@ -118,8 +136,8 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
     def _resource_decomp(*args, **kwargs):
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
-        ctrl_z = re.ResourceControlled(re.ResourceZ, {}, 3, 1)
-        ctrl_phase = re.ResourceControlled(re.ResourcePhaseShift, {}, 3, 1)
+        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1)
+        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1)
 
         gate_types = {}
         gate_types[phase] = 1
@@ -144,8 +162,8 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
     def _resource_decomp(*args, **kwargs):
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
-        ctrl_z = re.ResourceControlled(re.ResourceZ, {}, 3, 1)
-        ctrl_phase = re.ResourceControlled(re.ResourcePhaseShift, {}, 3, 1)
+        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1)
+        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1)
 
         gate_types = {}
         gate_types[phase] = 1
