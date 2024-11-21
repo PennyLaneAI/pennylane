@@ -38,7 +38,7 @@ def _get_pauli_op(i, j, qub_id):
 def binary_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
     nstates: int = 2,
-    ps: bool = True,
+    ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
 ):
@@ -87,7 +87,7 @@ def binary_mapping(
 
 
 @singledispatch
-def _binary_mapping_dispatch(bose_operator, nstates):
+def _binary_mapping_dispatch(bose_operator, nstates, tol):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
     raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
 
