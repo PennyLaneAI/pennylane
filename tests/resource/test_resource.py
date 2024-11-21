@@ -559,7 +559,7 @@ class TestResources:
         gate_info = ("RZ", 2)
         with pytest.raises(
             ValueError,
-            match="Found 2 gates of type RZ, but only 1 gates act on 2 in initial_resources.",
+            match="Found 2 gates of type RZ, but only 1 gates act on 2 wires in initial_resources.",
         ):
             substitute(resource_obj, gate_info, sub_obj)
 
