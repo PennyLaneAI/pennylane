@@ -38,7 +38,7 @@ except ImportError:
 def factorize(
     two_electron,
     tol_factor=1.0e-5,
-    tol_eigvals=1.0e-5,
+    tol_eigval=1.0e-5,
     cholesky=False,
     compressed=False,
     regularization=None,
@@ -58,7 +58,7 @@ def factorize(
             basis arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
             This will be used only when ``compressed==False``
-        tol_eigvals (float): threshold error value for discarding the negligible factor eigenvalues.
+        tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues.
             This will be used only when ``compressed==False``
         cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
             :math:`L^{(r)}` instead of eigendecomposition
@@ -205,7 +205,7 @@ def factorize(
         core_tensors, leaf_tensors = [], []
         feigvals, feigvecs = qml.math.linalg.eigh(factors)
         for feigval, feigvec in zip(feigvals, feigvecs):
-            fidx = qml.math.where(qml.math.abs(feigval) > tol_eigvals)[0]
+            fidx = qml.math.where(qml.math.abs(feigval) > tol_eigval)[0]
             core_tensors.append(qml.math.einsum("i,j->ij", feigval[fidx], feigval[fidx]))
             leaf_tensors.append(feigvec[:, fidx])
 
