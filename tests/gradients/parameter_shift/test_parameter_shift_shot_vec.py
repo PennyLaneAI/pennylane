@@ -507,13 +507,13 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
-    def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast):
+    def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast, seed):
         """Tests that the automatic gradients of Pauli rotations are correct."""
         # pylint: disable=too-many-arguments
 
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=1, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=1, shots=shot_vec, seed=seed)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -2007,7 +2007,8 @@ class TestParameterShiftRule:
 
 
 # TODO: allow broadcast=True
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+
+
 @pytest.mark.parametrize("broadcast", [False])
 class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be

@@ -12,19 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the classical shadows transforms"""
+import warnings
+
 # pylint: disable=too-few-public-methods
-
-from functools import partial
-
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.shadows.transforms import _replace_obs
 
-pytestmark = pytest.mark.filterwarnings(
-    "ignore:qml.shadows.shadow_expval is deprecated:pennylane.PennyLaneDeprecationWarning"
-)
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -324,86 +326,3 @@ class TestStateBackward:
             expected = torch.autograd.functional.jacobian(exact_circuit, x)
 
             assert qml.math.allclose(act, expected, atol=1e-1)
-
-
-@pytest.mark.autograd
-class TestExpvalTransform:
-    """Test that the expval transform is applied correctly"""
-
-    def test_shadow_expval_deprecation(self):
-        """Test that the shadow_expval transform is deprecated"""
-        tape = qml.tape.QuantumScript([], [qml.classical_shadow(wires=[0, 1])])
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="qml.shadows.shadow_expval is deprecated"
-        ):
-            _, _ = qml.shadows.shadow_expval(tape, [qml.Z(0)])
-
-    def test_hadamard_forward(self):
-        """Test that the expval estimation is correct for a uniform
-        superposition of qubits"""
-        obs = [
-            qml.PauliX(1),
-            qml.PauliX(0) @ qml.PauliX(2),
-            qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
-            qml.PauliY(2),
-            qml.PauliY(1) @ qml.PauliZ(2),
-            qml.PauliX(0) @ qml.PauliY(1),
-            qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
-        ]
-        expected = [1, 1, 1, 0, 0, 0, 0]
-
-        circuit = hadamard_circuit(3, shots=100000)
-        circuit = qml.shadows.shadow_expval(circuit, obs)
-
-        actual = circuit()
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
-    def test_basic_entangler_backward(self, seed):
-        """Test the gradient of the expval transform"""
-
-        obs = [
-            qml.PauliX(1),
-            qml.PauliX(0) @ qml.PauliX(2),
-            qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
-            qml.PauliY(2),
-            qml.PauliY(1) @ qml.PauliZ(2),
-            qml.PauliX(0) @ qml.PauliY(1),
-            qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
-        ]
-
-        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
-        shadow_circuit = qml.shadows.shadow_expval(shadow_circuit, obs)
-        exact_circuit = basic_entangler_circuit_exact_expval(3, "autograd")
-
-        rng = np.random.default_rng(seed)
-        x = rng.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
-
-        def shadow_cost(x):
-            res = shadow_circuit(x)
-            return qml.math.stack(res)
-
-        def exact_cost(x, obs):
-            res = exact_circuit(x, obs)
-            return qml.math.stack(res)
-
-        actual = qml.jacobian(shadow_cost)(x)
-        expected = qml.jacobian(exact_cost)(x, obs)
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
-    def test_non_shadow_error(self):
-        """Test that an exception is raised when the decorated QNode does not
-        return shadows"""
-        dev = qml.device("default.qubit", wires=1, shots=100)
-
-        @partial(qml.shadows.shadow_expval, H=qml.PauliZ(0))
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(0)
-            return qml.expval(qml.PauliZ(0))
-
-        msg = "Tape measurement must be ClassicalShadowMP, got 'ExpectationMP'"
-        with pytest.raises(ValueError, match=msg):
-            circuit()

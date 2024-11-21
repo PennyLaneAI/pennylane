@@ -15,12 +15,13 @@
 Unit tests for the `pennylane.qcut` package.
 """
 # pylint: disable=protected-access,too-few-public-methods,too-many-arguments
-# pylint: disable=too-many-public-methods,comparison-with-callable
+# pylint: disable=too-many-public-methods,comparison-with-callable,unused-argument
 # pylint: disable=no-value-for-parameter,no-member,not-callable, use-implicit-booleaness-not-comparison
 import copy
 import itertools
 import string
 import sys
+import warnings
 from functools import partial, reduce
 from itertools import product
 from os import environ
@@ -38,6 +39,14 @@ from pennylane import numpy as np
 from pennylane import qcut
 from pennylane.queuing import WrappedObj
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 pytestmark = pytest.mark.qcut
 
@@ -1585,15 +1594,8 @@ class TestGetMeasurements:
         assert obs[0].wires.tolist() == [1, 0, 2]
         assert obs[1].wires.tolist() == [1, 0]
 
-        if qml.operation.active_new_opmath():
-
-            assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
-            assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
-
-        else:
-
-            assert [get_name(o) for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
-            assert [get_name(o) for o in obs[1].obs] == ["PauliZ", "PauliX"]
+        assert [get_name(o) for o in obs[0].terms()[1]] == ["Prod"]
+        assert [get_name(o) for o in obs[1].terms()[1]] == ["Prod"]
 
 
 class TestExpandFragmentTapes:
@@ -1898,8 +1900,14 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
         fixed_choice = np.array([[4, 0, 1]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
-            m.setattr(onp.random, "choice", lambda a, size, replace: fixed_choice)
+            m.setattr(onp.random, "default_rng", lambda *_: _MockRNG())
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 tapes, communication_graph, 3
             )
@@ -1963,11 +1971,17 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph(frag_edge_data)
 
         fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
             m.setattr(
                 onp.random,
-                "choice",
-                lambda a, size, replace: fixed_choice,
+                "default_rng",
+                lambda *_: _MockRNG(),
             )
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 frags, communication_graph, 2
@@ -2537,7 +2551,7 @@ class TestCutCircuitMCTransform:
 
         dev = dev_fn(wires=2, shots=20000, seed=seed)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn, seed=seed)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
@@ -5580,7 +5594,7 @@ class TestCutCircuitWithHamiltonians:
         assert np.isclose(res, res_expected, atol=1e-8)
         assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices
 
-    def test_template_with_hamiltonian(self):
+    def test_template_with_hamiltonian(self, seed):
         """Test cut with MPS Template"""
 
         pytest.importorskip("kahypar")
@@ -5620,9 +5634,7 @@ class TestCutCircuitWithHamiltonians:
         for idx, tape in enumerate(tapes):
             graph = qcut.tape_to_graph(tape)
             cut_graph = qcut.find_and_place_cuts(
-                graph=graph,
-                cut_strategy=cut_strategy,
-                replace_wire_cuts=True,
+                graph=graph, cut_strategy=cut_strategy, replace_wire_cuts=True, seed=seed
             )
             frags, _ = qcut.fragment_graph(cut_graph)
 

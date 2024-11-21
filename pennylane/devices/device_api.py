@@ -26,9 +26,10 @@ from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
+from .capabilities import DeviceCapabilities
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 
 
@@ -45,7 +46,7 @@ class Device(abc.ABC):
         **Streamlined interface:** Only methods that are required to interact with the rest of PennyLane will be placed in the
         interface. Developers will be able to clearly see what they can change while still having a fully functional device.
 
-        **Reduction of duplicate methods:** Methods that solve similar problems are combined together. Only one place will have
+        **Reduction of duplicate methods:** Methods that solve similar problems are combined. Only one place will have
         to solve each individual problem.
 
         **Support for dynamic execution configurations:** Properties such as shots belong to specific executions.
@@ -57,7 +58,7 @@ class Device(abc.ABC):
     .. details::
         :title: Porting from the old interface
 
-        :meth:`pennylane.Device.batch_execute` and :meth:`~pennylane.Device.execute` are now a single method, :meth:`~.Device.execute`
+        :meth:`pennylane.devices.LegacyDevice.batch_execute` and :meth:`~pennylane.devices.LegacyDevice.execute` are now a single method, :meth:`~.Device.execute`
 
         :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.Device.preprocess`
 
@@ -120,6 +121,19 @@ class Device(abc.ABC):
         * ``derivative_order``: Relevant for requested device derivatives.
 
     """
+
+    config_filepath: Optional[str] = None
+    """A device can use a `toml` file to specify the capabilities of the backend device. If this
+    is provided, the file will be loaded into a :class:`~.DeviceCapabilities` object assigned to
+    the :attr:`capabilities` attribute."""
+
+    capabilities: Optional[DeviceCapabilities] = None
+    """A :class:`~.DeviceCapabilities` object describing the capabilities of the backend device."""
+
+    def __init_subclass__(cls, **kwargs):
+        if cls.config_filepath is not None:
+            cls.capabilities = DeviceCapabilities.from_toml_file(cls.config_filepath)
+        super().__init_subclass__(**kwargs)
 
     @property
     def name(self) -> str:
@@ -706,3 +720,19 @@ class Device(abc.ABC):
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_vjp` is overridden.
         """
         return type(self).compute_vjp != Device.compute_vjp
+
+    def eval_jaxpr(
+        self, jaxpr: "jax.core.Jaxpr", consts: list[TensorLike], *args
+    ) -> list[TensorLike]:
+        """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
+
+        Args:
+            jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
+            consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr
+            *args (TensorLike): the variables to use with the jaxpr'.
+
+        Returns:
+            list[TensorLike]: the result of evaluating the jaxpr with the given parameters.
+
+        """
+        raise NotImplementedError

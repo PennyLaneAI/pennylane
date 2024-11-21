@@ -19,22 +19,22 @@ differentiation support.
 # pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
 # pylint: disable=invalid-unary-operand-type,isinstance-second-argument-not-valid-type
-# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args
+# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args,too-many-positional-arguments
 
 import inspect
 import logging
-import warnings
-from collections.abc import Callable, MutableMapping
+from collections.abc import Callable
 from functools import partial
 from typing import Literal, Optional, Union, get_args
+from warnings import warn
 
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
-from pennylane.typing import Result, ResultBatch
+from pennylane.tape import QuantumScriptBatch
+from pennylane.typing import ResultBatch
 
+from ._cache_transform import _cache_transform
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
 logger = logging.getLogger(__name__)
@@ -93,19 +93,17 @@ INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output)
 SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
-_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
-    "Cached execution with finite shots detected!\n"
-    "Note that samples as well as all noisy quantities computed via sampling "
-    "will be identical across executions. This situation arises where tapes "
-    "are executed with identical operations, measurements, and parameters.\n"
-    "To avoid this behaviour, provide 'cache=False' to the QNode or execution "
-    "function."
-)
-"""str: warning message to display when cached execution is used with finite shots"""
-
 
 def _use_tensorflow_autograph():
-    import tensorflow as tf
+    """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
+    try:  # pragma: no cover
+        import tensorflow as tf
+    except ImportError as e:  # pragma: no cover
+        raise qml.QuantumFunctionError(  # pragma: no cover
+            "tensorflow not found. Please install the latest "  # pragma: no cover
+            "version of tensorflow supported by Pennylane "  # pragma: no cover
+            "to enable the 'tensorflow' interface."  # pragma: no cover
+        ) from e  # pragma: no cover
 
     return not tf.executing_eagerly()
 
@@ -208,43 +206,6 @@ def _make_inner_execute(
     return inner_execute
 
 
-@transform
-def _cache_transform(tape: QuantumScript, cache: MutableMapping):
-    """Caches the result of ``tape`` using the provided ``cache``.
-
-    .. note::
-
-        This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
-    """
-
-    def cache_hit_postprocessing(_results: ResultBatch) -> Result:
-        result = cache[tape.hash]
-        if result is not None:
-            if tape.shots and getattr(cache, "_persistent_cache", True):
-                warnings.warn(_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS, UserWarning)
-            return result
-
-        raise RuntimeError(
-            "Result for tape is missing from the execution cache. "
-            "This is likely the result of a race condition."
-        )
-
-    if tape.hash in cache:
-        return [], cache_hit_postprocessing
-
-    def cache_miss_postprocessing(results: ResultBatch) -> Result:
-        result = results[0]
-        cache[tape.hash] = result
-        return result
-
-    # Adding a ``None`` entry to the cache indicates that a result will eventually be available for
-    # the tape. This assumes that post-processing functions are called in the same order in which
-    # the transforms are invoked. Otherwise, ``cache_hit_postprocessing()`` may be called before the
-    # result of the corresponding tape is placed in the cache by ``cache_miss_postprocessing()``.
-    cache[tape.hash] = None
-    return [tape], cache_miss_postprocessing
-
-
 def _get_interface_name(tapes, interface):
     """Helper function to get the interface name of a list of tapes
 
@@ -268,7 +229,7 @@ def _get_interface_name(tapes, interface):
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
         if interface != "numpy":
-            interface = INTERFACE_MAP[interface]
+            interface = INTERFACE_MAP.get(interface, None)
     if interface == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
     if interface == "jax":
@@ -285,32 +246,10 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
-def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool):
-    """Helper function to update the mid-circuit measurements configuration based on
-    execution parameters"""
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
-        # This is a current limitation of defer_measurements. "hw-like" behaviour is
-        # not yet accessible.
-        if mcm_config.postselect_mode == "hw-like":
-            raise ValueError(
-                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
-                "mcm_method='deferred'."
-            )
-        mcm_config.postselect_mode = "fill-shots"
-
-    if (
-        finite_shots
-        and "jax" in interface
-        and mcm_config.mcm_method in (None, "one-shot")
-        and mcm_config.postselect_mode in (None, "hw-like")
-    ):
-        mcm_config.postselect_mode = "pad-invalid-samples"
-
-
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
-    gradient_fn: Optional[Union[Callable, str]] = None,
+    diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[str] = "auto",
     transform_program=None,
     inner_transform=None,
@@ -322,16 +261,17 @@ def execute(
     max_diff=1,
     device_vjp=False,
     mcm_config=None,
+    gradient_fn="unset",
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for NumPy and does not support shot vectors.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (pennylane.Device): Device to use to execute the batch of tapes.
+        device (pennylane.devices.LegacyDevice): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
-        gradient_fn (None or callable): The gradient transform function to use
+        diff_method (None, str, TransformDispatcher): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
         interface (str): The interface that will be used for classical autodifferentiation.
@@ -356,6 +296,8 @@ def execute(
         device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
             product if it is available.
         mcm_config (dict): Dictionary containing configuration options for handling mid-circuit measurements.
+        gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed ``diff_method`` and will
+            be removed in v0.41.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -385,7 +327,7 @@ def execute(
             tapes = [tape1, tape2]
 
             # execute both tapes in a batch on the given device
-            res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift, max_diff=2)
+            res = qml.execute(tapes, dev, diff_method=qml.gradients.param_shift, max_diff=2)
 
             return res[0] + res[1][0] - res[1][1]
 
@@ -419,15 +361,22 @@ def execute(
     if not isinstance(device, qml.devices.Device):
         device = qml.devices.LegacyDeviceFacade(device)
 
+    if gradient_fn != "unset":
+        warn(
+            "gradient_fn has been renamed to diff_method in qml.execute",
+            qml.PennyLaneDeprecationWarning,
+        )
+        diff_method = gradient_fn
+
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
-            """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s) called by=%s""",
+            """Entry with args=(tapes=%s, device=%s, diff_method=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s) called by=%s""",
             tapes,
             repr(device),
             (
-                gradient_fn
-                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(gradient_fn))
-                else "\n" + inspect.getsource(gradient_fn) + "\n"
+                diff_method
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(diff_method))
+                else "\n" + inspect.getsource(diff_method) + "\n"
             ),
             interface,
             grad_on_execution,
@@ -440,11 +389,10 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
-    _interface_user_input = interface
     interface = _get_interface_name(tapes, interface)
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {"jax", "jax-jit"}:
-        grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
+        grad_on_execution = grad_on_execution if isinstance(diff_method, Callable) else False
 
     if (
         device_vjp
@@ -458,19 +406,10 @@ def execute(
     gradient_kwargs = gradient_kwargs or {}
     mcm_config = mcm_config or {}
     config = config or _get_execution_config(
-        gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
+        diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
     )
 
-    # Mid-circuit measurement configuration validation
-    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
-    # workflow still needs to know if jax-jit is used
-    mcm_interface = (
-        _get_interface_name(tapes, "auto") if _interface_user_input is None else interface
-    )
-    finite_shots = any(tape.shots for tape in tapes)
-    _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
-
-    is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
+    is_gradient_transform = isinstance(diff_method, qml.transforms.core.TransformDispatcher)
     transform_program, inner_transform = _make_transform_programs(
         device, config, inner_transform, transform_program, is_gradient_transform
     )
@@ -547,7 +486,7 @@ def execute(
 
                 return device.execute_and_compute_derivatives(numpy_tapes, config)
 
-            gradient_fn = None
+            diff_method = None
 
         else:
 
@@ -561,7 +500,7 @@ def execute(
                 numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return device.execute(numpy_tapes, config), tuple()
 
-            def gradient_fn(internal_tapes):
+            def diff_method(internal_tapes):
                 """A partial function that wraps compute_derivatives method of the device.
 
                 Closure Variables:
@@ -573,7 +512,7 @@ def execute(
 
     elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
-        # within execute_and_gradients, so providing a gradient_fn
+        # within execute_and_gradients, so providing a diff_method
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
     elif interface in jpc_interfaces:
@@ -586,7 +525,7 @@ def execute(
         # its own jacobian product class
         # this mechanism unpacks the currently existing recursion
         jpc = TransformJacobianProducts(
-            execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian
+            execute_fn, diff_method, gradient_kwargs, cache_full_jacobian
         )
         for i in range(1, max_diff):
             differentiable = i > 1
@@ -599,7 +538,7 @@ def execute(
                 jpc=jpc,
                 device=device,
             )
-            jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
+            jpc = TransformJacobianProducts(execute_fn, diff_method, gradient_kwargs)
 
             if interface == "jax-jit":
                 # no need to use pure callbacks around execute_fn or the jpc when taking
@@ -624,7 +563,7 @@ def execute(
         results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_boundary_execute(
-            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+            tapes, device, execute_fn, diff_method, gradient_kwargs, _n=1, max_diff=max_diff
         )
 
     return post_processing(results)
@@ -635,7 +574,7 @@ def _make_transform_programs(
 ):
     """helper function to make the transform programs."""
 
-    # If gradient_fn is a gradient transform, device preprocessing should happen in
+    # If diff_method is a gradient transform, device preprocessing should happen in
     # inner execute (inside the ml boundary).
     if is_gradient_transform:
         if inner_transform is None:
@@ -652,18 +591,12 @@ def _make_transform_programs(
 
 
 def _get_execution_config(
-    gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
+    diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
 ):
     """Helper function to get the execution config."""
-    if gradient_fn is None:
-        _gradient_method = None
-    elif isinstance(gradient_fn, str):
-        _gradient_method = gradient_fn
-    else:
-        _gradient_method = "gradient-transform"
     config = qml.devices.ExecutionConfig(
         interface=interface,
-        gradient_method=_gradient_method,
+        gradient_method=diff_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
         mcm_config=mcm_config,
