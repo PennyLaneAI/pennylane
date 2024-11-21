@@ -215,7 +215,7 @@ def test_preprocessing_program():
     """Test the population of the preprocessing program."""
 
     dev = DummyDevice(wires=(0, 1))
-    program, _ = LegacyDeviceFacade(dev).preprocess_transforms()
+    program = LegacyDeviceFacade(dev).preprocess_transforms()
 
     assert (
         program[0].transform == legacy_device_batch_transform.transform
