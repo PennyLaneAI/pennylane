@@ -22,14 +22,14 @@ import scipy as sp
 import pennylane as qml
 
 has_jax_optax = True
-try:
+try:  # pragma: no cover
     # pylint: disable=unused-import
     import optax
     from jax import jit
     from jax import numpy as jnp
     from jax import scipy as jsp
     from jax import value_and_grad
-except ImportError:
+except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_jax_optax = False
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
