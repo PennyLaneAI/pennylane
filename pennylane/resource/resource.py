@@ -20,7 +20,7 @@ import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Iterable, Tuple
+from typing import Tuple
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
