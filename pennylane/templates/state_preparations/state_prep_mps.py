@@ -20,18 +20,18 @@ from pennylane.wires import Wires
 
 
 class MPSPrep(Operation):
-    r"""Prepares an initial state using a MPS representation
+    r"""Prepares an initial state using a MPS representation.
 
     .. note::
 
-        This operator is only supported in ``qml.device(“lightning.tensor”)``
+        Currently, this operator can only be used with ``qml.device(“lightning.tensor”)``.
 
 
     Args:
-        mps (list(arrays)): The list representing the MPS input. Given that an MPS is a product of MPS site matrices,
-                            the input is a list of arrays of rank-3, and rank-2 tensors on the ends.
+        mps (list(arrays)):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS 
+        site matrices
 
-        wires (Sequence[int]): The wires where the initial state is prepared.
+        wires (Sequence[int]): wires that the template acts on
 
     **Example**
 
