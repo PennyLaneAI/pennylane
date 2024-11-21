@@ -516,7 +516,7 @@ class TestJax:
         import jax
 
         x = jax.numpy.array([1.0, 2.0, 3.0])
-        w = [[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]]
+        w = jax.numpy.array([[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]])
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit9, dev)

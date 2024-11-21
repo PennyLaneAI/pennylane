@@ -255,7 +255,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     >>> from pennylane import numpy as pnp
     >>> x = pnp.array([1., 2., 3.])
     >>> y = pnp.array([0.1, 0.3, 0.5])
-    >>> z = -1.8
+    >>> z = pnp.array(-1.8)
     >>> w = pnp.random.random((2, n_qubits, 3))
     >>> print(qml.draw(circuit)(x, y, z, w))
     0: ──RX(0.50)──Rot(0.09,0.46,0.54)──RY(0.23)──Rot(0.59,0.22,0.05)──RX(-1.80)─┤  <Z>
@@ -395,7 +395,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
         if old_interface == "auto":
             new_interface = qml.math.get_interface(*args, *list(kwargs.values()))
-            if new_interface == "numpy":
+            interfaces = [qml.math.get_interface(arg) for arg in args]
+            if any(interface == "numpy" for interface in interfaces):
                 raise ValueError(
                     "qnode_spectrum requires an automatic differentiation library to validate "
                     "classical processing in the QNode. Only pure numpy arguments were provided:"
