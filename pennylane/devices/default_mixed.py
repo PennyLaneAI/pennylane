@@ -18,7 +18,8 @@ It implements the necessary :class:`~pennylane.devices.LegacyDevice` methods as 
 qubit :doc:`operations </introduction/operations>`, providing a simple mixed-state simulation of
 qubit-based quantum circuits.
 """
-
+# isort: skip_file
+# pylint: disable=wrong-import-order
 import functools
 import itertools
 import logging
@@ -64,6 +65,13 @@ from .preprocess import (
     validate_measurements,
     validate_observables,
 )
+
+# We deliberately separate the imports to avoid confusion with the legacy device
+from typing import Optional
+from pennylane.tape import QuantumScript
+from . import Device
+from .execution_config import ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -961,3 +969,103 @@ class DefaultMixed(QubitDevice):
             for k in self.measured_wires:
                 bit_flip = qml.BitFlip(self.readout_err, wires=k)
                 self._apply_operation(bit_flip)
+
+
+@simulator_tracking
+@single_tape_support
+class DefaultMixedNewAPI(Device):
+    r"""A PennyLane Python-based device for mixed-state qubit simulation.
+
+    Args:
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``).
+        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
+            to use in executions involving this device.
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
+            a request to seed from numpy's global random number generator.
+            The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
+            will pull a seed from the OS entropy.
+            If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
+            ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
+            ``numpy.random.default_rng``.
+        r_dtype (numpy.dtype): Real datatype to use for computations. Default is np.float64.
+        c_dtype (numpy.dtype): Complex datatype to use for computations. Default is np.complex128.
+        readout_prob (float): Probability of readout error for qubit measurements. Must be in :math:`[0,1]`.
+    """
+
+    _device_options = ("rng", "prng_key")  # tuple of string names for all the device options.
+
+    @property
+    def name(self):
+        """The name of the device."""
+        return "default.mixed"
+
+    # pylint: disable=too-many-positional-arguments
+    @debug_logger_init
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        wires=None,
+        shots=None,
+        seed="global",
+        # The following parameters are inherited from DefaultMixed
+        readout_prob=None,
+    ) -> None:
+
+        if isinstance(wires, int) and wires > 23:
+            raise ValueError(
+                "This device does not currently support computations on more than 23 wires"
+            )
+
+        self.readout_err = readout_prob
+        # Check that the readout error probability, if entered, is either integer or float in [0,1]
+        if self.readout_err is not None:
+            if not isinstance(self.readout_err, float) and not isinstance(self.readout_err, int):
+                raise TypeError(
+                    "The readout error probability should be an integer or a floating-point number in [0,1]."
+                )
+            if self.readout_err < 0 or self.readout_err > 1:
+                raise ValueError("The readout error probability should be in the range [0,1].")
+        super().__init__(wires=wires, shots=shots)
+
+        # Seed setting
+        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        if qml.math.get_interface(seed) == "jax":
+            self._prng_key = seed
+            self._rng = np.random.default_rng(None)
+        else:
+            self._prng_key = None
+            self._rng = np.random.default_rng(seed)
+
+        self._debugger = None
+
+    @debug_logger
+    def supports_derivatives(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumScript] = None,
+    ) -> bool:
+        """Check whether or not derivatives are available for a given configuration and circuit.
+
+        ``DefaultQubitMixed`` supports backpropagation derivatives with analytic results.
+
+        Args:
+            execution_config (ExecutionConfig): The configuration of the desired derivative calculation.
+            circuit (QuantumTape): An optional circuit to check derivatives support for.
+
+        Returns:
+            bool: Whether or not a derivative can be calculated provided the given information.
+
+        """
+        if execution_config is None or execution_config.gradient_method in {"backprop", "best"}:
+            return circuit is None or not circuit.shots
+        return False
+
+    @debug_logger
+    def execute(
+        self,
+        circuits: QuantumScript,
+        execution_config: Optional[ExecutionConfig] = None,
+    ) -> None:
+        raise NotImplementedError
