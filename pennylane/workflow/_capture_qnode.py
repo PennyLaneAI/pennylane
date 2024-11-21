@@ -100,18 +100,19 @@ def _get_qnode_prim():
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
+        if shots != device.shots:
+            raise NotImplementedError(
+                "override shots are not yet supported with the program capture execution."
+            )
+
         consts = args[:n_consts]
         non_const_args = args[n_consts:]
 
-        if batch_dims is not None:
-
-            # pylint: disable=protected-access
-            return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims[n_consts:])(
-                *jax.tree_util.tree_leaves(non_const_args)
-            )
-
-        # pylint: disable=protected-access
-        return device.eval_jaxpr(qfunc_jaxpr, consts, *non_const_args)
+        if batch_dims is None:
+            return device.eval_jaxpr(qfunc_jaxpr, consts, *non_const_args)
+        return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims[n_consts:])(
+            *jax.tree_util.tree_leaves(non_const_args)
+        )
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
@@ -274,6 +275,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         shots = qml.measurements.Shots(kwargs.pop("shots"))
     else:
         shots = qnode.device.shots
+
     if shots.has_partitioned_shots:
         # Questions over the pytrees and the nested result object shape
         raise NotImplementedError("shot vectors are not yet supported with plxpr capture.")

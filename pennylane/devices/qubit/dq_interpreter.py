@@ -89,33 +89,27 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.stateref = None
         super().__init__()
 
-    @property
-    def state(self) -> None | jax.numpy.ndarray:
-        """The current state of the system. None if not initialized."""
-        return self.stateref["state"] if self.stateref else None
+    def __getattr__(self, key):
+        if key in {"state", "key", "is_state_batched"}:
+            if self.stateref is None:
+                raise AttributeError("execution not yet initialized.")
+            return self.stateref[key]
+        return super().__getattr__(key)
 
-    @state.setter
-    def state(self, value: jax.numpy.ndarray | None):
-        if self.stateref is None:
-            raise AttributeError("execution not yet initialized.")
-        self.stateref["state"] = value
-
-    @property
-    def key(self) -> jax.numpy.ndarray:
-        """A jax PRNGKey. ``initial_key`` if not yet initialized."""
-        return self.stateref["key"] if self.stateref else self.initial_key
-
-    @key.setter
-    def key(self, value):
-        if self.stateref is None:
-            raise AttributeError("execution not yet initialized.")
-        self.stateref["key"] = value
+    def __setattr__(self, __name: str, __value) -> None:
+        if __name in {"state", "key", "is_state_batched"}:
+            if self.stateref is None:
+                raise AttributeError("execution not yet initialized")
+            self.stateref[__name] = __value
+        else:
+            super().__setattr__(__name, __value)
 
     def setup(self) -> None:
         if self.stateref is None:
             self.stateref = {
                 "state": create_initial_state(range(self.num_wires), like="jax"),
                 "key": self.initial_key,
+                "is_state_batched": False,
             }
         # else set by copying a parent interpreter and we need to modify same stateref
 
@@ -124,7 +118,9 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.stateref = None
 
     def interpret_operation(self, op):
-        self.state = apply_operation(op, self.state)
+        self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
+        if op.batch_size:
+            self.is_state_batched = True
 
     def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
         if "mcm" in eqn.primitive.name:
@@ -142,10 +138,14 @@ class DefaultQubitInterpreter(PlxprInterpreter):
                 # note that this does *not* group commuting measurements
                 # further work could figure out how to perform multiple measurements at the same time
                 output = measure_with_samples(
-                    [measurement], self.state, shots=self.shots, prng_key=new_key
+                    [measurement],
+                    self.state,
+                    shots=self.shots,
+                    prng_key=new_key,
+                    is_state_batched=self.is_state_batched,
                 )[0]
             else:
-                output = measure(measurement, self.state)
+                output = measure(measurement, self.state, is_state_batched=self.is_state_batched)
         finally:
             enable()
         return output
