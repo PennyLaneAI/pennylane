@@ -225,9 +225,12 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
         plt.show()
 
     if pick_min:
-        theta_opt = thetas[np.argmin(energy)]
+        idx = np.argmin(energy)
     else:
-        theta_opt = thetas[-1]
+        idx = -1
+
+    print(f"Picking entry with index {idx} ({pick_min=}).")
+    theta_opt = thetas[idx]
 
     # Implement Ad_(K_1 .. K_|k|) (vec_H) like in the loss, with optimized parameters now.
     for i in range(dim_k - 1, -1, -1):
