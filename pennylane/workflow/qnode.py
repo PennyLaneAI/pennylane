@@ -211,7 +211,9 @@ def _to_qfunc_output_type(
         qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
     )
 
-    results_leaves = qml.pytrees.flatten(results)[0]
+    results_leaves = qml.pytrees.flatten(results, is_leaf=lambda obj: isinstance(obj, dict))[0]
+    print(qfunc_output)
+    print(results)
 
     if len(results_leaves) != len(qfunc_output_leaves):
         if qml.math.get_interface(qfunc_output) in {"numpy", "autograd"}:
