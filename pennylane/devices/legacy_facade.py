@@ -64,10 +64,6 @@ def _set_shots(device, shots):
     >>> _set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
-    # note, this function duplicates qml.workflow.set_shots
-    # duplicated here to avoid circular dependency issues
-    # qml.workflow.set_shots can be independently deprecated soon
-    # this version of the function is private to LegacyDeviceFacade
     shots = qml.measurements.Shots(shots)
     shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:
@@ -143,7 +139,7 @@ class LegacyDeviceFacade(Device):
 
     >>> from pennylane.devices import DefaultMixed, LegacyDeviceFacade
     >>> legacy_dev = DefaultMixed(wires=2)
-    >>> new_dev = LegacyDeviceFacade(dev)
+    >>> new_dev = LegacyDeviceFacade(legacy_dev)
     >>> new_dev.preprocess()
     (TransformProgram(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
     ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=None,
