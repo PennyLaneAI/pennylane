@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -248,8 +248,11 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             assert args and callable(args[0])
             wrapped_fn = args[0]
 
-            def passthrough_wrapper(*args, **kwargs):
-                return converted_call(wrapped_fn, args, kwargs, caller_fn_scope, options)
+            @functools.wraps(wrapped_fn)
+            def passthrough_wrapper(*inner_args, **inner_kwargs):
+                return converted_call(
+                    wrapped_fn, inner_args, inner_kwargs, caller_fn_scope, options
+                )
 
             return fn(
                 passthrough_wrapper,

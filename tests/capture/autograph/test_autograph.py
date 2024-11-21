@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ class TestIntegration:
             run_autograph(fn)
 
     def test_callable_object(self):
-        """Test qjit applied to a callable object."""
+        """Test run_autograph applied to a callable object."""
 
         class FN:
             """Test object."""

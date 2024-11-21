@@ -13,7 +13,7 @@ autoray>=0.6.11
 matplotlib~=3.5
 opt_einsum~=3.3
 requests~=2.31.0
-typing_extensions~=4.5.0
+typing_extensions>=4.6.0
 tomli~=2.0.0 # Drop once minimum Python version is 3.11
 tach~=0.13.1
 diastatic-malt

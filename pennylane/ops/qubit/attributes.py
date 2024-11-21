@@ -17,7 +17,7 @@ and lists all operators satisfying those criteria.
 """
 from inspect import isclass
 
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 
 
 class Attribute(set):
@@ -73,12 +73,6 @@ class Attribute(set):
         """Check if the attribute contains a given Operator."""
         if isinstance(obj, str):
             return super().__contains__(obj)
-
-        # Hotfix: return False for all tensors.
-        # Can be removed or updated when tensor class is
-        # improved.
-        if isinstance(obj, Tensor):
-            return False
 
         if isinstance(obj, Operator):
             return super().__contains__(obj.name)
@@ -247,7 +241,6 @@ supports_broadcasting = Attribute(
         "DoubleExcitationMinus",
         "OrbitalRotation",
         "FermionicSWAP",
-        "QubitStateVector",
         "StatePrep",
         "AmplitudeEmbedding",
         "AngleEmbedding",

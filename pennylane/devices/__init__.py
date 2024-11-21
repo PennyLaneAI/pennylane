@@ -43,10 +43,7 @@ Next generation devices
 -----------------------
 
 :class:`pennylane.devices.Device` is the latest interface for the next generation of devices that
-replaces :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
-
-While the previous interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.Device` is
-accessible from the ``pennylane.devices`` submodule.
+replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.QubitDevice`.
 
 .. currentmodule:: pennylane.devices
 .. autosummary::

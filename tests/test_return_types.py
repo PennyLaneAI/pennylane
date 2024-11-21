@@ -48,7 +48,7 @@ class TestSingleReturnExecute:
         res = qml.execute(
             tapes=[qnode.tape],
             device=dev,
-            gradient_fn=None,
+            diff_method=None,
             interface=interface,
             transform_program=program,
         )
@@ -72,7 +72,7 @@ class TestSingleReturnExecute:
 
         if dev.shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         assert res[0].shape == (2**d_wires, 2**d_wires)
         assert isinstance(res[0], (np.ndarray, np.float64))
@@ -90,7 +90,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         assert res[0].shape == ()
         assert isinstance(res[0], (np.ndarray, np.float64))
@@ -108,7 +108,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         assert res[0].shape == ()
         assert isinstance(res[0], (np.ndarray, np.float64))
@@ -128,7 +128,7 @@ class TestSingleReturnExecute:
 
         if dev.shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         assert res[0].shape == ()
         assert isinstance(res[0], (np.ndarray, np.float64))
@@ -148,7 +148,7 @@ class TestSingleReturnExecute:
 
         if dev.shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         assert res[0].shape == ()
         assert isinstance(res[0], (np.ndarray, np.float64))
@@ -176,7 +176,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         if wires is None:
             wires = op.wires
@@ -200,7 +200,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         assert isinstance(res[0], (np.ndarray, np.float64))
         assert res[0].shape == (shots,)
@@ -221,7 +221,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         assert isinstance(res[0], dict)
         assert sum(res[0].values()) == shots
@@ -249,7 +249,7 @@ class TestMultipleReturns:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
@@ -273,7 +273,7 @@ class TestMultipleReturns:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
@@ -311,7 +311,7 @@ class TestMultipleReturns:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
@@ -352,7 +352,7 @@ class TestMultipleReturns:
 
         if dev.shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         if wires1 is None:
             wires1 = op1.wires
@@ -391,7 +391,7 @@ class TestMultipleReturns:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == wires
@@ -417,7 +417,7 @@ class TestMultipleReturns:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         # Expval
         assert isinstance(res[0][0], (np.ndarray, np.float64))
@@ -444,7 +444,7 @@ class TestMultipleReturns:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         # Expval
         assert isinstance(res[0][0], (np.ndarray, np.float64))
@@ -500,7 +500,7 @@ class TestShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -521,7 +521,7 @@ class TestShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -545,7 +545,7 @@ class TestShotVector:
 
         if dev.shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -567,7 +567,7 @@ class TestShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shot_copies = [
             shot_tuple.shots
@@ -596,7 +596,7 @@ class TestShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -623,7 +623,7 @@ class TestSameMeasurementShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -655,7 +655,7 @@ class TestSameMeasurementShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -683,7 +683,7 @@ class TestSameMeasurementShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shot_copies = [
             shot_tuple.shots
@@ -710,7 +710,7 @@ class TestSameMeasurementShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -801,7 +801,7 @@ class TestMixMeasurementsShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -843,7 +843,7 @@ class TestMixMeasurementsShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -879,7 +879,7 @@ class TestMixMeasurementsShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -921,7 +921,7 @@ class TestMixMeasurementsShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -964,7 +964,7 @@ class TestMixMeasurementsShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -1008,7 +1008,7 @@ class TestMixMeasurementsShotVector:
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -1062,7 +1062,7 @@ class TestMixMeasurementsShotVector:
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -1122,7 +1122,7 @@ class TestMixMeasurementsShotVector:
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -1170,7 +1170,7 @@ class TestMixMeasurementsShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None)
 
         all_shots = sum(shot_tuple.copies for shot_tuple in dev.shots.shot_vector)
 
@@ -1229,7 +1229,7 @@ class TestDeviceNewUnits:
             qml.DeviceError, match="not accepted for analytic simulation on default.qubit"
         ):
             program, _ = dev.preprocess()
-            qml.execute(tapes=[tape], device=dev, gradient_fn=None, transform_program=program)
+            qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
 
     def test_state_return_with_other_types(self):
         """Test that an exception is raised when a state is returned along with another return
@@ -1243,7 +1243,7 @@ class TestDeviceNewUnits:
             qml.expval(qml.PauliZ(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        res = qml.execute(tapes=[tape], device=dev, gradient_fn=None)[0]
+        res = qml.execute(tapes=[tape], device=dev, diff_method=None)[0]
         assert isinstance(res, tuple) and len(res) == 2
         assert np.array_equal(res[0], [0.0, 0.0, 1.0, 0.0])
         assert res[1] == 1.0
@@ -1259,7 +1259,7 @@ class TestDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         program, _ = dev.preprocess()
-        res = qml.execute(tapes=[tape], device=dev, gradient_fn=None, transform_program=program)
+        res = qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
         assert res == (0,)
 
     def test_custom_wire_labels_error(self):
@@ -1273,5 +1273,5 @@ class TestDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         program, _ = dev.preprocess()
-        res = qml.execute(tapes=[tape], device=dev, gradient_fn=None, transform_program=program)
+        res = qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
         assert res == (0,)

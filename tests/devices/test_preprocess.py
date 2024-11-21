@@ -65,6 +65,17 @@ class InfiniteOp(qml.operation.Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
+def test_max_expansion_is_deprecated():
+    """Test that max_expansion argument is deprecated."""
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="max_expansion argument is deprecated"
+    ):
+        tape = QuantumScript(
+            ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
+        )
+        decompose(tape, lambda obj: obj.has_matrix, max_expansion=1)
+
+
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
 
@@ -221,6 +232,16 @@ class TestValidateDeviceWires:
         ):
             jax.jit(jit_wires_dev)([0, 1])
 
+    def test_fill_in_wires_on_snapshots(self):
+        """Test that validate_device_wires also fills in the wires on snapshots."""
+
+        tape = qml.tape.QuantumScript([qml.Snapshot(), qml.Snapshot(measurement=qml.probs())])
+
+        (output,), _ = validate_device_wires(tape, wires=qml.wires.Wires((0, 1, 2)))
+        mp0 = qml.measurements.StateMP(wires=qml.wires.Wires((0, 1, 2)))
+        qml.assert_equal(output[0], qml.Snapshot(measurement=mp0))
+        qml.assert_equal(output[1], qml.Snapshot(measurement=qml.probs(wires=(0, 1, 2))))
+
 
 class TestDecomposeValidation:
     """Unit tests for helper functions in qml.devices.qubit.preprocess"""
@@ -284,14 +305,6 @@ class TestValidateObservables:
         )
         with pytest.raises(qml.DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
-
-    @pytest.mark.usefixtures("legacy_opmath_only")  # only required for legacy observables
-    def test_valid_tensor_observable_legacy_opmath(self):
-        """Test that a valid tensor ovservable passes without error."""
-        tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
-        assert (
-            validate_observables(tape, lambda obs: obs.name in {"PauliZ", "PauliY"})[0][0] is tape
-        )
 
 
 class TestValidateMeasurements:
