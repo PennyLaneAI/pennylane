@@ -33,6 +33,7 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
+from ._capture_qnode import capture_qnode
 from .execution import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
@@ -207,8 +208,8 @@ def _to_qfunc_output_type(
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
     # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
-        results = [results]
+    if isinstance(qfunc_output, Sequence) and len(qfunc_output) == 1:
+        results = (results,)
 
     # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
@@ -1059,7 +1060,7 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         if qml.capture.enabled():
-            return qml.capture.qnode_call(self, *args, **kwargs)
+            return capture_qnode(self, *args, **kwargs)
         return self._impl_call(*args, **kwargs)
 
 
