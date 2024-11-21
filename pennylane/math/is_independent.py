@@ -28,6 +28,8 @@ from autograd.tracer import isbox, new_box, trace_stack
 
 from pennylane import numpy as pnp
 
+from .utils import requires_grad
+
 
 def _autograd_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
@@ -182,7 +184,10 @@ def _get_random_args(args, interface, num, seed, bounds):
         tf.random.set_seed(seed)
         rnd_args = []
         for _ in range(num):
-            _args = (tf.random.uniform(tf.shape(_arg)) * width + bounds[0] for _arg in args)
+            _args = (
+                tf.random.uniform(tf.shape(_arg), dtype=_arg.dtype) * width + bounds[0]
+                for _arg in args
+            )
             _args = tuple(
                 tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
                 for _arg, arg in zip(_args, args)
@@ -202,7 +207,13 @@ def _get_random_args(args, interface, num, seed, bounds):
         ]
         if interface == "autograd":
             # Mark the arguments as trainable with Autograd
-            rnd_args = [tuple(pnp.array(a, requires_grad=True) for a in arg) for arg in rnd_args]
+            rnd_args = [
+                tuple(
+                    pnp.array(a, requires_grad=True) if requires_grad(a) else np.array(a)
+                    for a in arg
+                )
+                for arg in rnd_args
+            ]
 
     return rnd_args
 

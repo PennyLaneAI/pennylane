@@ -33,7 +33,6 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
-from .is_independent import is_independent
 from .matrix_manipulation import expand_matrix, expand_vector, reduce_matrices, get_batch_size
 from .multi_dispatch import (
     add,
@@ -95,6 +94,7 @@ from .utils import (
     is_abstract,
     requires_grad,
 )
+from .is_independent import is_independent
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
