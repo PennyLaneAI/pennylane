@@ -64,7 +64,9 @@ def test_kak_Ising(n, dense):
     dims = (len(k), len(mtilde), len(h))
     khk_res = variational_kak(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
+    assert khk_res[0].shape == (len(mtilde) + len(h),)
     assert khk_res[0].dtype == np.float64
+    assert khk_res[1].shape == (len(k),)
     assert khk_res[1].dtype == np.float64
     assert validate_kak(H, g, k, khk_res, n, 1e-6)
 
@@ -104,7 +106,9 @@ def test_kak_Heisenberg(n, dense):
     dims = (len(k), len(mtilde), len(h))
     khk_res = variational_kak(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
+    assert khk_res[0].shape == (len(mtilde) + len(h),)
     assert khk_res[0].dtype == np.float64
+    assert khk_res[1].shape == (len(k),)
     assert khk_res[1].dtype == np.float64
     assert validate_kak(H, g, k, khk_res, n, 1e-6)
 
@@ -146,6 +150,8 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
     dims = (len(k), len(mtilde), len(h))
     khk_res = variational_kak(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
+    assert khk_res[0].shape == (len(mtilde) + len(h),)
     assert khk_res[0].dtype == np.float64
+    assert khk_res[1].shape == (len(k),)
     assert khk_res[1].dtype == np.float64
     assert validate_kak(H, g, k, khk_res, n, 1e-6)

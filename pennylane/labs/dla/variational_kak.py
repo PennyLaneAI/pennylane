@@ -131,14 +131,15 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     >>> adjvec_a, theta_opt = variational_kak(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
 
     As a result, we are provided the adjoint representation vector of the CSA element
-    :math:`a \in \mathfrak{a}` and the optimal parameters of dimension :math:`|\mathfrak{k}|`
+    :math:`a \in \mathfrak{a}` with respect to the basis ``mtilde+a`` and the optimal parameters of dimension :math:`|\mathfrak{k}|`
 
     Let us perform some sanity checks to better understand the resulting outputs.
     We can turn that element back to an operator using :func:`adjvec_to_op` and from that to a matrix for which we can check Hermiticity.
     .. code-block:: python
 
-        [a] = adjvec_to_op([adjvec_a], g)
-        a_m = qml.matrix(a, wire_order=range(n))
+        m = mtilde + a
+        [a_op] = adjvec_to_op([adjvec_a], m)
+        a_m = qml.matrix(a_op, wire_order=range(n))
         assert np.allclose(a_m, a_m.conj().T)
 
     Let us now confirm that we get back the original Hamiltonian from the resulting :math:`K_c` and :math:`a`.
@@ -228,7 +229,9 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     else:
         idx = -1
 
-    print(f"Picking entry with index {idx} ({pick_min=}).")
+    if verbose:
+        n_epochs = opt_kwargs.get("n_epochs", 500)
+        print(f"Picking entry with index {idx} out of {n_epochs-1} ({pick_min=}).")
     theta_opt = thetas[idx]
 
     # Implement Ad_(K_1 .. K_|k|) (vec_H) like in the loss, with optimized parameters now.
