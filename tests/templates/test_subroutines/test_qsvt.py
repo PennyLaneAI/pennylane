@@ -225,7 +225,7 @@ class TestQSVT:
         """Test that the qsvt function matrix is correct for torch."""
         import torch
 
-        angles = qml.math.poly_to_angles(poly, "QSVT")
+        angles = qml.poly_to_angles(poly, "QSVT")
         default_matrix = qml.matrix(
             qml.qsvt(input_matrix, poly, encoding_wires=wires, block_encoding="embedding")
         )
@@ -250,7 +250,7 @@ class TestQSVT:
         """Test that the qsvt function matrix is correct for jax."""
         import jax.numpy as jnp
 
-        angles = qml.math.poly_to_angles(poly, "QSVT")
+        angles = qml.poly_to_angles(poly, "QSVT")
         default_matrix = qml.matrix(
             qml.qsvt(input_matrix, poly, encoding_wires=wires, block_encoding="embedding")
         )
@@ -295,7 +295,7 @@ class TestQSVT:
         def get_matrix_with_identity(angles):
             return qml.matrix(identity_and_qsvt, wire_order=wires)(angles)
 
-        angles = qml.math.poly_to_angles(poly, "QSVT")
+        angles = qml.poly_to_angles(poly, "QSVT")
         matrix = qml.matrix(qml.qsvt(input_matrix, poly, wires, "embedding"))
         matrix_with_identity = get_matrix_with_identity(angles)
 
@@ -310,7 +310,7 @@ class TestQSVT:
         """Test that the qsvt function matrix is correct for tensorflow."""
         import tensorflow as tf
 
-        angles = qml.math.poly_to_angles(poly, "QSVT")
+        angles = qml.poly_to_angles(poly, "QSVT")
         default_matrix = qml.matrix(qml.qsvt(input_matrix, poly, wires, "embedding"))
 
         input_matrix = tf.Variable(input_matrix)

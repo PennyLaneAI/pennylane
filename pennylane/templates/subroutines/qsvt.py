@@ -22,6 +22,7 @@ from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
