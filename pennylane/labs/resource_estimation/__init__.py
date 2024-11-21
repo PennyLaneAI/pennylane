@@ -91,14 +91,11 @@ from .ops import (
     ResourceCNOT,
     ResourceControlledPhaseShift,
     ResourceCRY,
-<<<<<<< HEAD
+    ResourceCZ,
     ResourceDoubleExcitation,
     ResourceDoubleExcitationMinus,
     ResourceDoubleExcitationPlus,
     ResourceFermionicSWAP,
-=======
-    ResourceCZ,
->>>>>>> dcea65b0a0ce037ee50c403250762ff8668bc8d2
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
