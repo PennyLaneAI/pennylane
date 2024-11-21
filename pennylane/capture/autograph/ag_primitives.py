@@ -100,7 +100,7 @@ def assert_iteration_inputs(inputs, symbol_names):
 
     The reason is two-fold:
       - the type information from those variables is required for tracing
-      - we want to avoid access of a variable that is uninitialized, or uninitialized in a subset
+      - we want to avoid accessing a variable that is uninitialized, or uninitialized in a subset
         of execution paths
 
     Additionally, these types need to be valid JAX types.
@@ -131,9 +131,9 @@ def assert_iteration_inputs(inputs, symbol_names):
 
 
 def assert_iteration_results(inputs, outputs, symbol_names):
-    """The results of a for loop should have the identical type as the inputs, since they are
-    "passed" as inputs to the next iteration. A mismatch here may indicate that a loop carried
-    variable was initialized with wrong type.
+    """The results of a for loop should have the identical type as the inputs since they are
+    "passed" as inputs to the next iteration. A mismatch here may indicate that a loop-carried
+    variable was initialized with the wrong type.
     """
 
     for i, (inp, out) in enumerate(zip(inputs, outputs)):
