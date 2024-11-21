@@ -30,7 +30,7 @@
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
   
-* Added support for constructing BoseWords and BoseSentences, similar to FermiWords and FermiSentences.
+* Added support for constructing `BoseWords` and `BoseSentences`, similar to `FermiWords` and `FermiSentences`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
 * Added a function to normal order BoseWords, which rearranges the creation and annihilation operators such that all creation operators are to the left of all annihilation operators.
