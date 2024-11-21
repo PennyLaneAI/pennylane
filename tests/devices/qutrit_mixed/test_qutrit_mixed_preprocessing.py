@@ -144,7 +144,6 @@ class TestPreprocessing:
             (qml.QutritDepolarizingChannel(0.4, 0), False),
             (qml.GellMann(0, 1), True),
             (qml.Snapshot(), False),
-            (qml.operation.Tensor(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
             (qml.ops.op_math.SProd(1.2, qml.GellMann(0, 1)), True),
             (qml.sum(qml.ops.op_math.SProd(1.2, qml.GellMann(0, 1)), qml.GellMann(1, 3)), True),
             (qml.ops.op_math.Prod(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),

@@ -14,6 +14,8 @@
 """
 This submodule provides the functionality to perform quantum chemistry calculations.
 """
+
+from .vibrational import BoseSentence, BoseWord
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
@@ -89,4 +91,3 @@ from .vibrational.bosonic import (
 from .vibrational.bosonic_mapping import (
     binary_mapping
 )
-

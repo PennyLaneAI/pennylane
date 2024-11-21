@@ -21,7 +21,7 @@ from pennylane.typing import TensorLike
 
 
 class BoseWord(dict):
-    r"""Immutable dictionary used to represent a Bose word, a product of bosonic creation and
+    r"""Dictionary used to represent a Bose word, a product of bosonic creation and
     annihilation operators, that can be constructed from a standard dictionary.
 
     The keys of the dictionary are tuples of two integers. The first integer represents the
@@ -30,8 +30,8 @@ class BoseWord(dict):
     symbols that denote creation and annihilation operators, respectively. The operator
     :math:`b^{\dagger}_0 b_1` can then be constructed as
 
-    >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w
+    >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> print(w)
     b⁺(0) b(1)
     """
 
@@ -41,9 +41,8 @@ class BoseWord(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator, is_hardcore=False):
+    def __init__(self, operator):
         self.sorted_dic = dict(sorted(operator.items()))
-        self.is_hardcore = is_hardcore
         indices = [i[0] for i in self.sorted_dic.keys()]
 
         if indices:
@@ -51,13 +50,6 @@ class BoseWord(dict):
                 raise ValueError(
                     "The operator indices must belong to the set {0, ..., len(operator)-1}."
                 )
-
-        if self.is_hardcore:
-            bw_arr = list(self.sorted_dic.keys())
-            indice_arr = [x[1] for x in bw_arr]
-            if len(indice_arr) != len(set(indice_arr)):
-                self.sorted_dic = {}
-                operator = {}
 
         super().__init__(operator)
 
@@ -120,7 +112,7 @@ class BoseWord(dict):
         represented by the number of the wire it operates on, and a `+` or `-` to indicate either
         a creation or annihilation operator.
 
-        >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> w.to_string()
         'b⁺(0) b(1)'
         """
@@ -189,6 +181,9 @@ class BoseWord(dict):
             other_bs = BoseSentence(dict(zip(other.keys(), [-v for v in other.values()])))
             return self_bs + other_bs
 
+        if not isinstance(other, TensorLike):
+            raise TypeError(f"Cannot subtract {type(other)} from a BoseWord.")
+
         if qml.math.size(other) > 1:
             raise ValueError(
                 f"Arithmetic Bose operations can only accept an array of length 1, "
@@ -214,7 +209,7 @@ class BoseWord(dict):
     def __mul__(self, other):
         r"""Multiply a BoseWord with another BoseWord, a BoseSentence, or a constant.
 
-        >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w * w)
         b⁺(0) b(1) b⁺(0) b(1)
         """
@@ -268,11 +263,10 @@ class BoseWord(dict):
     def __pow__(self, value):
         r"""Exponentiate a Bose word to an integer power.
 
-        >>> w = BoseWord({(0, 0) : '+', (1, 1) : '-'})
+        >>> w = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
         >>> print(w**3)
         b⁺(0) b(1) b⁺(0) b(1) b⁺(0) b(1)
         """
-
         if value < 0 or not isinstance(value, int):
             raise ValueError("The exponent must be a positive integer.")
 
@@ -286,7 +280,7 @@ class BoseWord(dict):
     def normal_order(self):
         r"""Convert a BoseWord to its normal-ordered form.
 
-        >>> bw = BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
+        >>> bw = qml.qchem.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
         >>> print(bw.normal_order())
         4.0 * b⁺(0) b(0)
         + 2.0 * I
@@ -294,44 +288,41 @@ class BoseWord(dict):
         """
         bw_terms = sorted(self)
         len_op = len(bw_terms)
-        bw_comm = BoseSentence({BoseWord({}): 0.0}, is_hardcore=self.is_hardcore)
+        bw_comm = BoseSentence({BoseWord({}): 0.0})
 
         if len_op == 0:
             return 1 * BoseWord({})
 
         bw = self
 
-        l = 0
-        for r in range(len_op):
-            if self[bw_terms[r]] == "+":
-                if l == r:
-                    l += 1
+        left_pointer = 0
+        # The right pointer iterates through all operators in the BoseWord
+        for right_pointer in range(len_op):
+            # The right pointer finds the leftmost creation operator
+            if self[bw_terms[right_pointer]] == "+":
+                # This ensures that the left pointer starts at the leftmost annihilation term
+                if left_pointer == right_pointer:
+                    left_pointer += 1
                     continue
 
-                bs = bw.shift_operator(r, l)
+                # We shift the leftmost creation operator to the position of the left pointer
+                bs = bw.shift_operator(right_pointer, left_pointer)
                 bs_as_list = sorted(list(bs.items()), key=lambda x: len(x[0].keys()), reverse=True)
                 bw = bs_as_list[0][0]
-                if l > 0:
+                # Sort by ascending index order
+                if left_pointer > 0:
                     bw_as_list = sorted(list(bw.keys()))
-                    if bw_as_list[l - 1][1] > bw_as_list[l][1]:
-                        temp_bs = bw.shift_operator(l - 1, l)
+                    if bw_as_list[left_pointer - 1][1] > bw_as_list[left_pointer][1]:
+                        temp_bs = bw.shift_operator(left_pointer - 1, left_pointer)
                         bw = list(temp_bs.items())[0][0]
 
                 for i in range(1, len(bs_as_list)):
                     bw_comm += bs_as_list[i][0] * bs_as_list[i][1]
 
-                l += 1
+                # Left pointer now points to the new leftmost annihilation term
+                left_pointer += 1
 
         ordered_op = bw + bw_comm.normal_order()
-        ordered_op.simplify(tol=1e-8)
-
-        if self.is_hardcore:
-            for bw, _ in ordered_op.items():
-                bw_arr = list(bw.keys())
-                indice_arr = [x[1] for x in bw_arr]
-                if len(indice_arr) != len(set(indice_arr)):
-                    ordered_op[bw] = 0
-
         ordered_op.simplify(tol=1e-8)
         return ordered_op
 
@@ -419,11 +410,11 @@ class BoseWord(dict):
 
 # pylint: disable=useless-super-delegation
 class BoseSentence(dict):
-    r"""Immutable dictionary used to represent a Bose sentence, a linear combination of Bose words,
+    r"""Dictionary used to represent a Bose sentence, a linear combination of Bose words,
     with the keys as BoseWord instances and the values correspond to coefficients.
 
-    >>> w1 = BoseWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = BoseWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> w1 = qml.qchem.BoseWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.qchem.BoseWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = BoseSentence({w1 : 1.2, w2: 3.1})
     >>> print(s)
     1.2 * b⁺(0) b(1)
@@ -437,9 +428,8 @@ class BoseSentence(dict):
     __numpy_ufunc__ = None
     __array_ufunc__ = None
 
-    def __init__(self, operator, is_hardcore=False):
+    def __init__(self, operator):
         super().__init__(operator)
-        self.is_hardcore = is_hardcore
 
     def adjoint(self):
         r"""Return the adjoint of BoseSentence."""
@@ -611,7 +601,7 @@ class BoseSentence(dict):
     def normal_order(self):
         r"""Convert a BoseSentence to its normal-ordered form."""
 
-        bose_sen_ordered = BoseSentence({}, is_hardcore=self.is_hardcore)
+        bose_sen_ordered = BoseSentence({})
 
         for bw, coeff in self.items():
             bose_word_ordered = bw.normal_order()

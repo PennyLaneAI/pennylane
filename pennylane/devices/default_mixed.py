@@ -14,7 +14,7 @@
 r"""
 The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations.
 
-It implements the necessary :class:`~pennylane.Device` methods as well as some built-in
+It implements the necessary :class:`~pennylane.devices.LegacyDevice` methods as well as some built-in
 qubit :doc:`operations </introduction/operations>`, providing a simple mixed-state simulation of
 qubit-based quantum circuits.
 """
@@ -96,7 +96,6 @@ class DefaultMixed(QubitDevice):
         "Identity",
         "Snapshot",
         "BasisState",
-        "QubitStateVector",
         "StatePrep",
         "QubitDensityMatrix",
         "QubitUnitary",
