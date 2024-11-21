@@ -212,12 +212,14 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
         multi_rz = re.ResourceMultiRZ.resource_rep(num_wires=2, **kwargs)
         rx = re.ResourceRX.resource_rep(**kwargs)
         rz = re.ResourceRZ.resource_rep(**kwargs)
+        phase = re.ResourceGlobalPhase.resource_rep()
 
         gate_types = {}
         gate_types[h] = 4
         gate_types[multi_rz] = 2
         gate_types[rx] = 4
         gate_types[rz] = 2
+        gate_types[phase] = 1
 
         return gate_types
 
