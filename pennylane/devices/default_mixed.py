@@ -178,11 +178,6 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     return op.name in expected_set
 
 
-def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
-    """Specifies whether a measurement is accepted when sampling."""
-    return isinstance(m, qml.measurements.SampleMeasurement)
-
-
 @qml.transform
 def warn_readout_error_state(
     tape: qml.tape.QuantumTape,
@@ -999,7 +994,10 @@ class DefaultMixedNewAPI(Device):
 
         if execution_config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"
-        updated_values["use_device_gradient"] = execution_config.gradient_method in {"backprop", "best"}
+        updated_values["use_device_gradient"] = execution_config.gradient_method in {
+            "backprop",
+            "best",
+        }
         updated_values["grad_on_execution"] = False
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
 
