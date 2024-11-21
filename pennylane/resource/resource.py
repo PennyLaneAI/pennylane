@@ -14,11 +14,14 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from __future__ import annotations
+
+import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from pennylane.measurements import Shots
+from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
 
 
@@ -44,6 +47,7 @@ class Resources:
 
         **Example**
 
+        >>> from pennylane.resource import Resources
         >>> r = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> print(r)
         num_wires: 2
@@ -54,6 +58,30 @@ class Resources:
         {'Hadamard': 1, 'CNOT': 1}
         gate_sizes:
         {1: 1, 2: 1}
+
+        :class:`~.Resources` objects can be added together or multiplied by a scalar.
+
+        >>> from pennylane.resource import Resources
+        >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
+        >>> r2 = Resources(num_wires=2, num_gates=2, gate_types={'RX': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
+        >>> print(r1 + r2)
+        wires: 2
+        gates: 4
+        depth: 4
+        shots: Shots(total=None)
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+        gate_sizes:
+        {1: 2, 2: 2}
+        >>> print(r1 * 2)
+        wires: 2
+        gates: 4
+        depth: 4
+        shots: Shots(total=None)
+        gate_types:
+        {'Hadamard': 2, 'CNOT': 2}
+        gate_sizes:
+        {1: 2, 2: 2}
     """
 
     num_wires: int = 0
@@ -62,6 +90,103 @@ class Resources:
     gate_sizes: dict = field(default_factory=dict)
     depth: int = 0
     shots: Shots = field(default_factory=Shots)
+
+    def __add__(self, other: Resources):
+        r"""Adds two :class:`~resource.Resources` objects together as if the circuits were executed in series.
+
+        Args:
+            other (Resources): the resource object to add
+
+        Returns:
+            Resources: the combined resources
+
+        .. details::
+
+            **Example**
+
+            First we build two :class:`~.resource.Resources` objects.
+
+            .. code-block:: python3
+
+                from pennylane.measurements import Shots
+                from pennylane.resource import Resources
+
+                r1 = Resources(
+                    num_wires = 2,
+                    num_gates = 2,
+                    gate_types = {"Hadamard": 1, "CNOT": 1},
+                    gate_sizes = {1: 1, 2: 1},
+                    depth = 2,
+                    shots = Shots(10)
+                )
+
+                r2 = Resources(
+                    num_wires = 3,
+                    num_gates = 2,
+                    gate_types = {"RX": 1, "CNOT": 1},
+                    gate_sizes = {1: 1, 2: 1},
+                    depth = 1,
+                    shots = Shots((5, (2, 10)))
+                )
+
+            Now we print their sum.
+
+            >>> print(r1 + r2)
+            wires: 3
+            gates: 4
+            depth: 3
+            shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
+            gate_types:
+            {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+            gate_sizes:
+            {1: 2, 2: 2}
+        """
+        return add_in_series(self, other)
+
+    def __mul__(self, scalar: int):
+        r"""Multiply the :class:`~resource.Resources` object by a scalar as if that many copies of the circuit were executed in series
+
+        Args:
+            scalar (int): the scalar to multiply the resource object by
+
+        Returns:
+            Resources: the combined resources
+
+        .. details::
+
+            **Example**
+
+            First we build a :class:`~.resource.Resources` object.
+
+            .. code-block:: python3
+
+                from pennylane.measurements import Shots
+                from pennylane.resource import Resources
+
+                resources = Resources(
+                    num_wires = 2,
+                    num_gates = 2,
+                    gate_types = {"Hadamard": 1, "CNOT": 1},
+                    gate_sizes = {1: 1, 2: 1},
+                    depth = 2,
+                    shots = Shots(10)
+                )
+
+            Now we print the product.
+
+            >>> print(resources * 2)
+            wires: 2
+            gates: 4
+            depth: 4
+            shots: Shots(total=20)
+            gate_types:
+            {'Hadamard': 2, 'CNOT': 2}
+            gate_sizes:
+            {1: 2, 2: 2}
+        """
+        return mul_in_series(self, scalar)
+
+    __rmul__ = __mul__
 
     def __str__(self):
         keys = ["num_wires", "num_gates", "depth"]
@@ -123,6 +248,282 @@ class ResourcesOperation(Operation):
         gate_sizes:
         {}
         """
+
+
+def add_in_series(r1: Resources, r2: Resources) -> Resources:
+    r"""
+    Add two :class:`~.resource.Resources` objects assuming the circuits are executed in series.
+
+    The gates in ``r1`` and ``r2`` are assumed to act on the same qubits. The resulting circuit
+    depth is the sum of the depths of ``r1`` and ``r2``. To add resources as if they were executed
+    in parallel see :func:`~.resource.add_in_parallel`.
+
+    Args:
+        r1 (Resources): a :class:`~resource.Resources` to add
+        r2 (Resources): a :class:`~resource.Resources` to add
+
+    Returns:
+        Resources: the combined resources
+
+    .. details::
+
+        **Example**
+
+        First we build two :class:`~.resource.Resources` objects.
+
+        .. code-block:: python3
+
+            from pennylane.measurements import Shots
+            from pennylane.resource import Resources
+
+            r1 = Resources(
+                num_wires = 2,
+                num_gates = 2,
+                gate_types = {"Hadamard": 1, "CNOT": 1},
+                gate_sizes = {1: 1, 2: 1},
+                depth = 2,
+                shots = Shots(10)
+            )
+
+            r2 = Resources(
+                num_wires = 3,
+                num_gates = 2,
+                gate_types = {"RX": 1, "CNOT": 1},
+                gate_sizes = {1: 1, 2: 1},
+                depth = 1,
+                shots = Shots((5, (2, 10)))
+            )
+
+        Now we print their sum.
+
+        >>> print(qml.resource.add_in_series(r1, r2))
+        wires: 3
+        gates: 4
+        depth: 3
+        shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+        gate_sizes:
+        {1: 2, 2: 2}
+    """
+
+    new_wires = max(r1.num_wires, r2.num_wires)
+    new_gates = r1.num_gates + r2.num_gates
+    new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
+    new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
+    new_shots = add_shots(r1.shots, r2.shots)
+    new_depth = r1.depth + r2.depth
+
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
+
+
+def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
+    r"""
+    Add two :class:`~.resource.Resources` objects assuming the circuits are executed in parallel.
+
+    The gates in ``r2`` and ``r2`` are assumed to act on disjoint sets of qubits. The resulting
+    circuit depth is the max depth of ``r1`` and ``r2``. To add resources as if they were executed
+    in series see :func:`~.resource.add_in_series`.
+
+    Args:
+        r1 (Resources): a :class:`~.resource.Resources` object to add
+        r2 (Resources): a :class:`~.resource.Resources` object to add
+
+    Returns:
+        Resources: the combined resources
+
+    .. details::
+
+        **Example**
+
+        First we build two :class:`~.resource.Resources` objects.
+
+        .. code-block:: python3
+
+            from pennylane.measurements import Shots
+            from pennylane.resource import Resources
+
+            r1 = Resources(
+                num_wires = 2,
+                num_gates = 2,
+                gate_types = {"Hadamard": 1, "CNOT": 1},
+                gate_sizes = {1: 1, 2: 1},
+                depth = 2,
+                shots = Shots(10)
+            )
+
+            r2 = Resources(
+                num_wires = 3,
+                num_gates = 2,
+                gate_types = {"RX": 1, "CNOT": 1},
+                gate_sizes = {1: 1, 2: 1},
+                depth = 1,
+                shots = Shots((5, (2, 10)))
+            )
+
+        Now we print their sum.
+
+        >>> print(qml.resource.add_in_parallel(r1, r2))
+        wires: 5
+        gates: 4
+        depth: 2
+        shots: Shots(total=35, vector=[10 shots, 5 shots, 2 shots x 10])
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 2, 'RX': 1}
+        gate_sizes:
+        {1: 2, 2: 2}
+    """
+
+    new_wires = r1.num_wires + r2.num_wires
+    new_gates = r1.num_gates + r2.num_gates
+    new_gate_types = _combine_dict(r1.gate_types, r2.gate_types)
+    new_gate_sizes = _combine_dict(r1.gate_sizes, r2.gate_sizes)
+    new_shots = add_shots(r1.shots, r2.shots)
+    new_depth = max(r1.depth, r2.depth)
+
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
+
+
+def mul_in_series(resources: Resources, scalar: int) -> Resources:
+    """
+    Multiply the :class:`~resource.Resources` object by a scalar as if the circuit was repeated that many times in series.
+
+    The repeated copies of ``resources`` are assumed to act on the same
+    wires as ``resources``. The resulting circuit depth is the depth of ``resources`` multiplied by
+    ``scalar``. To multiply as if the circuit was repeated in parallel see
+    :func:`~.resource.mul_in_parallel`.
+
+    Args:
+        resources (Resources): a :class:`~resource.Resources` to be scaled
+        scalar (int): the scalar to multiply the :class:`~resource.Resources` by
+
+    Returns:
+        Resources: the combined resources
+
+    .. details::
+
+        **Example**
+
+        First we build a :class:`~.resource.Resources` object.
+
+        .. code-block:: python3
+
+            from pennylane.measurements import Shots
+            from pennylane.resource import Resources
+
+            resources = Resources(
+                num_wires = 2,
+                num_gates = 2,
+                gate_types = {"Hadamard": 1, "CNOT": 1},
+                gate_sizes = {1: 1, 2: 1},
+                depth = 2,
+                shots = Shots(10)
+            )
+
+        Now we print the product.
+
+        >>> print(qml.resource.mul_in_series(resources, 2))
+        wires: 2
+        gates: 4
+        depth: 4
+        shots: Shots(total=20)
+        gate_types:
+        {'Hadamard': 2, 'CNOT': 2}
+        gate_sizes:
+        {1: 2, 2: 2}
+    """
+
+    new_wires = resources.num_wires
+    new_gates = scalar * resources.num_gates
+    new_gate_types = _scale_dict(resources.gate_types, scalar)
+    new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
+    new_shots = scalar * resources.shots
+    new_depth = scalar * resources.depth
+
+    return Resources(new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, new_shots)
+
+
+def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
+    """
+    Multiply the :class:`~resource.Resources` object by a scalar as if the circuit was repeated that many times in parallel.
+
+    The repeated copies of ``resources`` are assumed to act on disjoint qubits. The resulting circuit
+    depth is equal to the depth of ``resources``. To multiply as if the repeated copies were
+    executed in series see :func:`~.resource.mul_in_series`.
+
+    Args:
+        resources (Resources): a :class:`~resource.Resources` to be scaled
+        scalar (int): the scalar to multiply the :class:`~resource.Resources` by
+
+    Returns:
+        Resources: The combined resources
+
+    .. details::
+
+        **Example**
+
+        First we build a :class:`~.resource.Resources` object.
+
+        .. code-block:: python3
+
+            from pennylane.measurements import Shots
+            from pennylane.resource import Resources
+
+            resources = Resources(
+                num_wires = 2,
+                num_gates = 2,
+                gate_types = {"Hadamard": 1, "CNOT": 1},
+                gate_sizes = {1: 1, 2: 1},
+                depth = 2,
+                shots = Shots(10)
+            )
+
+        Now we print the product.
+
+        >>> print(qml.resource.mul_in_parallel(resources, 2))
+        wires: 4
+        gates: 4
+        depth: 2
+        shots: Shots(total=20)
+        gate_types:
+        {'Hadamard': 2, 'CNOT': 2}
+        gate_sizes:
+        {1: 2, 2: 2}
+    """
+
+    new_wires = scalar * resources.num_wires
+    new_gates = scalar * resources.num_gates
+    new_gate_types = _scale_dict(resources.gate_types, scalar)
+    new_gate_sizes = _scale_dict(resources.gate_sizes, scalar)
+    new_shots = scalar * resources.shots
+
+    return Resources(
+        new_wires, new_gates, new_gate_types, new_gate_sizes, resources.depth, new_shots
+    )
+
+
+def _combine_dict(dict1: dict, dict2: dict):
+    r"""Combines two dictionaries and adds values of common keys."""
+    combined_dict = copy.copy(dict1)
+
+    for k, v in dict2.items():
+        try:
+            combined_dict[k] += v
+        except KeyError:
+            combined_dict[k] = v
+
+    return combined_dict
+
+
+def _scale_dict(dict1: dict, scalar: int):
+    r"""Scales the values in a dictionary with a scalar."""
+
+    combined_dict = copy.copy(dict1)
+
+    for k in combined_dict:
+        combined_dict[k] *= scalar
+
+    return combined_dict
 
 
 def _count_resources(tape) -> Resources:
