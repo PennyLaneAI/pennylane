@@ -17,7 +17,8 @@ import pytest
 
 import pennylane.labs.resource_estimation as re
 
-#pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=use-implicit-booleaness-not-comparison
+
 
 class TestMultiRZ:
     """Test the ResourceMultiRZ class."""
@@ -56,6 +57,7 @@ class TestMultiRZ:
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
+
 
 class TestPauliRot:
     """Test the ResourcePauliRot class."""
@@ -114,6 +116,7 @@ class TestPauliRot:
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
 
+
 class TestIsingXX:
     """Test the IsingXX class."""
 
@@ -146,6 +149,7 @@ class TestIsingXX:
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
+
 
 class TestIsingXY:
     """Test the IsingXY class."""
@@ -184,6 +188,7 @@ class TestIsingXY:
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
 
+
 class TestIsingYY:
     """Test the IsingYY class."""
 
@@ -217,6 +222,7 @@ class TestIsingYY:
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
 
+
 class TestIsingZZ:
     """Test the IsingZZ class."""
 
@@ -249,6 +255,7 @@ class TestIsingZZ:
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
+
 
 class TestPSWAP:
     """Test the PSWAP class."""

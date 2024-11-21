@@ -90,9 +90,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, pauli_word, **kwargs):
-        return re.CompressedResourceOp(
-            cls, {"pauli_word": pauli_word}
-        )
+        return re.CompressedResourceOp(cls, {"pauli_word": pauli_word})
 
 
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
