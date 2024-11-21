@@ -193,6 +193,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes `qml.fourier.qnode_spectrum` to work with standard numpy arguments and `interface="auto"`.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
+
 * `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily 
   in the list of supported interfaces, such as the `Graph` class defined in `networkx`.
   [(#6600)](https://github.com/PennyLaneAI/pennylane/pull/6600)
