@@ -33,8 +33,6 @@
 * Added support for constructing `BoseWords` and `BoseSentences`, similar to `FermiWords` and `FermiSentences`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
-* Added a function to normal order BoseWords, which rearranges the creation and annihilation operators such that all creation operators are to the left of all annihilation operators.
-  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
