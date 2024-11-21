@@ -14,6 +14,8 @@
 """
 Unit tests for the compiler subpackage.
 """
+import warnings
+
 # pylint: disable=import-outside-toplevel
 from unittest.mock import patch
 
@@ -25,6 +27,14 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.compiler.compiler import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")

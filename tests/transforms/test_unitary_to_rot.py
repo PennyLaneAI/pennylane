@@ -14,6 +14,7 @@
 """
 Tests for the QubitUnitary decomposition transforms.
 """
+import warnings
 from itertools import product
 
 import pytest
@@ -24,6 +25,14 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import unitary_to_rot
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ)
 single_qubit_decompositions = [
