@@ -761,7 +761,7 @@ class TestRootFindingSolver:
                 [0, 2, 0, 0.3, 0, 0.2],
                 "QSP",
                 "root-finding",
-                "The polynomial must satisfy that",
+                "The polynomial must satisfy that |P(x)| ≤ 1",
             ),
             (
                 [1],
