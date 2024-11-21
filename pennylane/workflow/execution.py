@@ -36,7 +36,6 @@ from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, Transf
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 jpc_interfaces = {
     "autograd",
@@ -292,9 +291,10 @@ def _get_interface_name(tapes, interface):
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches, too-many-statements
+# pylint: disable=too-many-locals
 def execute(
     tapes: QuantumScriptBatch,
-    device: SupportedDeviceAPIs,
+    device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[str] = "auto",
     transform_program=None,
@@ -309,8 +309,8 @@ def execute(
     mcm_config=None,
     gradient_fn="unset",
 ) -> ResultBatch:
-    """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
-    during the project. The current version is supporting forward execution for NumPy and does not support shot vectors.
+    """New function to execute a batch of tapes on a device in an autodifferentiable-compatible
+    manner.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
@@ -324,9 +324,12 @@ def execute(
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
-        inner_transform (.TransformProgram): A transform program to be applied to the tapes in inner execution, inside the ml interface.
-        config (qml.devices.ExecutionConfig): A datastructure describing the parameters needed to fully describe the execution.
-        grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
+        inner_transform (.TransformProgram): A transform program to be applied to the tapes in
+            inner execution, inside the ml interface.
+        config (qml.devices.ExecutionConfig): A datastructure describing the parameters
+            needed to fully describe the execution.
+        grad_on_execution (bool, str): Whether the gradients should be computed
+            on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
@@ -341,9 +344,10 @@ def execute(
             (classical) computational overhead during the backwards pass.
         device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
             product if it is available.
-        mcm_config (dict): Dictionary containing configuration options for handling mid-circuit measurements.
-        gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed ``diff_method`` and will
-            be removed in v0.41.
+        mcm_config (dict): Dictionary containing configuration options for handling
+            mid-circuit measurements.
+        gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed
+            ``diff_method`` and will be removed in v0.41.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -416,7 +420,11 @@ def execute(
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
-            """Entry with args=(tapes=%s, device=%s, diff_method=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s) called by=%s""",
+            (
+                """Entry with args=(tapes=%s, device=%s, diff_method=%s, interface=%s, """
+                """grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s,"""
+                """ max_diff=%s) called by=%s"""
+            ),
             tapes,
             repr(device),
             (
@@ -522,7 +530,8 @@ def execute(
         elif config.grad_on_execution:
 
             def wrap_execute_and_compute_derivatives(internal_tapes):
-                """A partial function that wraps the execute_and_compute_derivatives method of the device.
+                """A partial function that wraps the execute_and_compute_derivatives
+                method of the device.
 
                 Closure Variables:
                     device: The device to execute on
@@ -614,10 +623,9 @@ def execute(
     if interface in jpc_interfaces:
         results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
     else:
-        # pylint: disable=too-many-function-args, unexpected-keyword-arg
         results = ml_boundary_execute(
             tapes, device, execute_fn, diff_method, gradient_kwargs, _n=1, max_diff=max_diff
-        )
+        )  # pylint: disable=too-many-function-args, unexpected-keyword-arg
 
     return post_processing(results)
 
