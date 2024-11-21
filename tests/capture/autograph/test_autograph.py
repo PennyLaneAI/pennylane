@@ -149,7 +149,7 @@ class TestIntegration:
             run_autograph(fn)
 
     def test_callable_object(self):
-        """Test qjit applied to a callable object."""
+        """Test run_autograph applied to a callable object."""
 
         class FN:
             """Test object."""

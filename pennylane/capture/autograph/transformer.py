@@ -158,7 +158,7 @@ def autograph_source(fn):
 
     .. code-block:: python
 
-        from pennylane.capture.autograph import run_autograph
+        from pennylane.capture.autograph import run_autograph, autograph_source
 
         def decide(x):
             if x < 5:
