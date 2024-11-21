@@ -157,6 +157,24 @@ class TestPreprocessing:
         res = observable_stopping_condition(obs)
         assert res == expected
 
+    @pytest.mark.parametrize(
+        "coeffs, ops, expected",
+        [
+            # Simple LinearCombination with valid observables
+            ([1.0, 0.5], [qml.PauliX(0), qml.PauliZ(1)], True),
+            # LinearCombination with mixed valid/invalid ops
+            ([1.0, 0.5], [qml.PauliX(0), qml.DepolarizingChannel(0.4, wires=0)], False),
+            # LinearCombination with all invalid ops
+            ([1.0, 0.5], [qml.Snapshot(), qml.DepolarizingChannel(0.4, wires=0)], False),
+            # Complex LinearCombination
+            ([0.3, 0.7], [qml.prod(qml.PauliX(0), qml.PauliZ(1)), qml.PauliY(2)], True),
+        ],
+    )
+    def test_linear_combination_observable_condition(self, coeffs, ops, expected):
+        """Test observable_stopping_condition for LinearCombination objects"""
+        H = qml.ops.LinearCombination(coeffs, ops)
+        assert observable_stopping_condition(H) == expected
+
 
 class TestPreprocessingIntegration:
     """Test preprocess produces output that can be executed by the device."""
