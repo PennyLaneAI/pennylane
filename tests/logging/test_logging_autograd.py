@@ -20,9 +20,9 @@ import pytest
 import pennylane as qml
 
 _grad_log_map = {
-    "adjoint": "gradient_fn=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "backprop": "gradient_fn=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "parameter-shift": "gradient_fn=<transform: param_shift>",
+    "adjoint": "diff_method=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
+    "backprop": "diff_method=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
+    "parameter-shift": "diff_method=<transform: param_shift>",
 }
 
 
@@ -80,8 +80,8 @@ class TestLogging:
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
-                "pennylane.workflow.qnode",
-                ["Calling <get_gradient_fn(device=<default.qubit"],
+                "pennylane.workflow.resolve_diff_method",
+                ["Calling <_resolve_diff_method("],
             ),
             (
                 "pennylane.devices.default_qubit",
@@ -91,7 +91,7 @@ class TestLogging:
                 "pennylane.workflow.execution",
                 [
                     "device=<default.qubit device (wires=2)",
-                    "gradient_fn=None, interface=None",
+                    "diff_method=None, interface=None",
                 ],
             ),
         ]
@@ -185,7 +185,7 @@ class TestLogging:
                 "pennylane.workflow.execution",
                 [
                     "device=<default.qutrit.mixed device (wires=2)",
-                    "gradient_fn=None, interface=None",
+                    "diff_method=None, interface=None",
                 ],
             ),
         ]

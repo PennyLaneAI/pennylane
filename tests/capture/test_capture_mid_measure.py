@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for capturing mid-circuit measurements."""
-# pylint: disable=ungrouped-imports, wrong-import-order, wrong-import-position
+# pylint: disable=ungrouped-imports, wrong-import-order, wrong-import-position, too-many-positional-arguments
 import pytest
 
 import pennylane as qml
@@ -23,14 +23,7 @@ import jax.numpy as jnp
 
 from pennylane.capture.primitives import AbstractOperator
 
-pytestmark = pytest.mark.jax
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 @pytest.mark.unit

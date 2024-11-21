@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-As part of the labs module, this module contains experimental features for
+This module contains experimental features for
 resource estimation.
 
 .. warning::
@@ -22,23 +22,90 @@ resource estimation.
 
 .. currentmodule:: pennylane.labs.resource_estimation
 
-Base Objects
-~~~~~~~~~~~~
+Resource Estimation Base Classes:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~ResourceOperator
     ~Resources
     ~CompressedResourceOp
+    ~ResourceOperator
 
-Errors
-~~~~~~
+Operators
+~~~~~~~~~
+
+.. autosummary::
     :toctree: api
 
-    ~ResourceOperatorNotImplemented
+    ~ResourceCNOT
+    ~ResourceControlledPhaseShift
+    ~ResourceGlobalPhase
+    ~ResourceHadamard
+    ~ResourceIdentity
+    ~ResourcePhaseShift
+    ~ResourceRot
+    ~ResourceRX
+    ~ResourceRY
+    ~ResourceRZ
+    ~ResourceS
+    ~ResourceSWAP
+    ~ResourceT
+    ~ResourceX
+    ~ResourceY
+    ~ResourceZ
+
+Templates
+~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceQFT
+
+Tracking Resources
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~get_resources
+    ~DefaultGateSet
+    ~resource_config
+
+Exceptions
+~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourcesNotDefined
+    ~ResourceOperatorNotImplemented    
 """
 
-from .resource_operator import ResourceOperator, ResourceOperatorNotImplemented
+from .resource_operator import ResourceOperator, ResourcesNotDefined, ResourceOperatorNotImplemented
 from .resource_container import CompressedResourceOp, Resources
-from .resource_tracking import get_resources, DefaultGateSet, _StandardGateSet
+from .resource_tracking import DefaultGateSet, get_resources, resource_config
+
+from .ops import (
+    ResourceCNOT,
+    ResourceControlledPhaseShift,
+    ResourceGlobalPhase,
+    ResourceHadamard,
+    ResourceIdentity,
+    ResourcePhaseShift,
+    ResourceRot,
+    ResourceRX,
+    ResourceRY,
+    ResourceRZ,
+    ResourceS,
+    ResourceSWAP,
+    ResourceT,
+    ResourceX,
+    ResourceY,
+    ResourceZ,
+)
+
+from .templates import (
+    ResourceQFT,
+)

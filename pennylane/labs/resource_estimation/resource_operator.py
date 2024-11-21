@@ -22,15 +22,16 @@ if TYPE_CHECKING:
 
 
 class ResourceOperator(ABC):
-    r"""This is an abstract class that defines the methods a PennyLane Operator
+    r"""Abstract class that defines the methods a PennyLane Operator
     must implement in order to be used for resource estimation.
 
     .. details::
 
         **Example**
 
-        A PennyLane Operator can be extended for resource estimation by creating a new class that inherits from both the Operator and ``ResourceOperator``.
-        Here is an example showing how to extend ``qml.QFT`` for resource estimation.
+        A PennyLane Operator can be extended for resource estimation by creating a new class that
+        inherits from both the ``Operator`` and ``ResourceOperator``. Here is an example showing how to
+        extend ``qml.QFT`` for resource estimation.
 
         .. code-block:: python
 
@@ -43,9 +44,9 @@ class ResourceOperator(ABC):
                 def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
                     gate_types = {}
 
-                    hadamard = CompressedResourceOp(ResourceHadamard, {})
-                    swap = CompressedResourceOp(ResourceSWAP, {})
-                    ctrl_phase_shift = CompressedResourceOp(ResourceControlledPhaseShift, {})
+                    hadamard = ResourceHadamard.resource_rep()
+                    swap = ResourceSWAP.resource_rep()
+                    ctrl_phase_shift = ResourceControlledPhaseShift.resource_rep()
 
                     gate_types[hadamard] = num_wires
                     gate_types[swap] = num_wires // 2
@@ -53,25 +54,34 @@ class ResourceOperator(ABC):
 
                     return gate_types
 
-                def resource_params(self) -> dict:
-                    return {"num_wires": len(self.wires)}
+                def resource_params(self, num_wires) -> dict:
+                    return {"num_wires": num_wires}
 
                 @classmethod
                 def resource_rep(cls, num_wires) -> CompressedResourceOp:
                     params = {"num_wires": num_wires}
                     return CompressedResourceOp(cls, params)
+
+        Which can be instantiated as a normal operation, but now contains the resources:
+
+        .. code-block:: bash
+
+            >>> op = ResourceQFT(range(3))
+            >>> op.resources(**op.resource_params())
+            {Hadamard(): 3, SWAP(): 1, ControlledPhaseShift(): 3}
+
     """
 
     @staticmethod
     @abstractmethod
     def _resource_decomp(*args, **kwargs) -> Dict[CompressedResourceOp, int]:
-        """Returns the Resource object. This method is only to be used inside
+        """Returns a dictionary to be used for internal tracking of resources. This method is only to be used inside
         the methods of classes inheriting from ResourceOperator."""
 
     @classmethod
-    def resources(cls, *args, **kwargs):
-        """Returns the Resource object. This method is intended to be user facing
-        and overridable."""
+    def resources(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
+        """Returns a dictionary containing the counts of each operator type used to
+        compute the resources of the operator."""
         return cls._resource_decomp(*args, **kwargs)
 
     @classmethod
@@ -82,19 +92,21 @@ class ResourceOperator(ABC):
     @abstractmethod
     def resource_params(self) -> dict:
         """Returns a dictionary containing the minimal information needed to
-        compute a comparessed representation"""
+        compute a comparessed representation."""
 
     @classmethod
     @abstractmethod
-    def resource_rep(cls, **kwargs) -> CompressedResourceOp:
+    def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation."""
 
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
-        params = self.resource_params()
-        return self.__class__.resource_rep(**params)
+        return self.__class__.resource_rep(**self.resource_params())
 
-
+      
+class ResourcesNotDefined(Exception):
+    """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
+    
 class ResourceOperatorNotImplemented(Exception):
     """Exception to be raised when a ResourceOperator has not been defined for a PennyLane Operator"""

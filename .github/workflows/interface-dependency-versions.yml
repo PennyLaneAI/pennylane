@@ -72,6 +72,6 @@ jobs:
     outputs:
       jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
       tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
-      pytorch-version: torch==${{ steps.pytorch.outputs.version }} -f https://download.pytorch.org/whl/torch_stable.html
+      pytorch-version: torch==${{ steps.pytorch.outputs.version }}
       catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
       pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}
