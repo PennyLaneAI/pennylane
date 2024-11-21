@@ -36,6 +36,9 @@
 * Added a function to normal order BoseWords, which orders creation terms before annihilation terms in ascending index order.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
+* Added a function to map BoseWord and BoseSentence to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
 <h3>Improvements 🛠</h3>
 
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
