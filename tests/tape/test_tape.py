@@ -2061,7 +2061,9 @@ class TestNumericType:
             assert np.issubdtype(result[0].dtype, float)
         else:
             assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.numeric_type is float
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is float
 
     @pytest.mark.parametrize(
         "ret", [qml.state(), qml.density_matrix(wires=[0, 1]), qml.density_matrix(wires=[2, 0])]
@@ -2081,7 +2083,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
-        assert circuit.qtape.numeric_type is complex
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is complex
 
     def test_sample_int(self):
         """Test that the tape can correctly determine the output domain for a
@@ -2097,7 +2101,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, int)
-        assert circuit.qtape.numeric_type is int
+
+        tape = qml.workflow.construct_tape(circuit)()
+        assert tape.numeric_type is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -2124,7 +2130,9 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
-        assert circuit.qtape.numeric_type is float
+
+        tape = qml.workflow.construct_tape(circuit)(0.3, 0.2)
+        assert tape.numeric_type is float
 
     @pytest.mark.autograd
     def test_sample_real_and_int_eigvals(self):
@@ -2153,7 +2161,8 @@ class TestNumericType:
         assert result[0].dtype == float
         assert result[1].dtype == int
 
-        assert circuit.qtape.numeric_type == (float, int)
+        tape = qml.workflow.construct_tape(circuit)(0, 3)
+        assert tape.numeric_type == (float, int)
 
     def test_multi_type_measurements_numeric_type_error(self):
         """Test that querying the numeric type of a tape with several types of

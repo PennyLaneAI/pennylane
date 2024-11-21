@@ -14,7 +14,6 @@
 """
 Tests for the LinearCombination class.
 """
-import warnings
 
 # pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
@@ -30,14 +29,6 @@ from pennylane import numpy as pnp
 from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -1593,8 +1584,8 @@ class TestLinearCombinationEvaluation:
             qml.RY(0.1, wires=0)
             return qml.expval(qml.simplify(qml.ops.LinearCombination([1.0, 2.0], [X(1), X(1)])))
 
-        circuit()
-        pars = circuit.qtape.get_parameters(trainable_only=False)
+        tape = qml.workflow.construct_tape(circuit)()
+        pars = tape.get_parameters(trainable_only=False)
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
 
