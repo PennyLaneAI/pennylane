@@ -225,6 +225,7 @@ class TestFermionicSWAP:
             re.ResourceMultiRZ.resource_rep(num_wires=2): 2,
             re.ResourceRX.resource_rep(): 4,
             re.ResourceRZ.resource_rep(): 2,
+            re.ResourceGlobalPhase.resource_rep(): 1,
         }
         assert re.ResourceFermionicSWAP.resources() == expected
 
@@ -246,6 +247,7 @@ class TestFermionicSWAP:
             re.ResourceMultiRZ.resource_rep(num_wires=2): 2,
             re.ResourceRX.resource_rep(): 4,
             re.ResourceRZ.resource_rep(): 2,
+            re.ResourceGlobalPhase.resource_rep(): 1,
         }
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
