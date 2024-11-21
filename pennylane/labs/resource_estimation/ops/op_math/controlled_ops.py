@@ -257,7 +257,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         return gate_types
 
     @staticmethod
-    def textbook_resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def textbook_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         r"""Resources for the Toffoli gate
 
         Resources:
