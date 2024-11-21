@@ -40,9 +40,9 @@ Operators
 
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
-    ~ResourceDoubleExcitation,
-    ~ResourceDoubleExcitationMinus,
-    ~ResourceDoubleExcitationPlus,
+    ~ResourceDoubleExcitation
+    ~ResourceDoubleExcitationMinus
+    ~ResourceDoubleExcitationPlus
     ~ResourceCRY
     ~ResourceCY
     ~ResourceCZ
@@ -50,9 +50,15 @@ Operators
     ~ResourceGlobalPhase
     ~ResourceHadamard
     ~ResourceIdentity
+    ~ResourceIsingXX
+    ~ResourceIsingXY
+    ~ResourceIsingYY
+    ~ResourceIsingZZ
     ~ResourceMultiRZ
     ~ResourceOrbitalRotation
+    ~ResourcePauliRot
     ~ResourcePhaseShift
+    ~ResourcePSWAP
     ~ResourceRot
     ~ResourceRX
     ~ResourceRY
@@ -60,7 +66,7 @@ Operators
     ~ResourceS
     ~ResourceSingleExcitation
     ~ResourceSingleExcitationMinus
-    ~ResourceSingleExcitationPlus,
+    ~ResourceSingleExcitationPlus
     ~ResourceSWAP
     ~ResourceT
     ~ResourceToffoli

@@ -15,7 +15,7 @@
 
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=use-implicit-booleaness-not-comparison,no-self-use
 
 
 # TODO: implement in resource_symbolic_ops branch
