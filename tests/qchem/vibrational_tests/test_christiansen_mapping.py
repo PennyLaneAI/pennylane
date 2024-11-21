@@ -118,6 +118,8 @@ def test_christiansen_mapping_bose_word_ps(bosonic_op, result):
 
 @pytest.mark.parametrize("bosonic_op, result", BOSE_WORDS_AND_OPS)
 def test_christiansen_mapping_bose_word_operation(bosonic_op, result):
+    r"""Test that the christiansen_mapping function returns the correct operator for
+    return type ps=False."""
     wires = bosonic_op.wires or [0]
 
     qubit_op = christiansen_mapping(bosonic_op)
@@ -265,6 +267,7 @@ BOSE_AND_PAULI_SENTENCES = [
 
 @pytest.mark.parametrize("bosonic_op, result", BOSE_AND_PAULI_SENTENCES)
 def test_christiansen_mapping_for_bose_sentence_ps(bosonic_op, result):
+    r"""Test that christiansen_mapping function returns the correct PauliSentence."""
     qubit_op = christiansen_mapping(bosonic_op, ps=True)
     qubit_op.simplify()
 
@@ -273,6 +276,7 @@ def test_christiansen_mapping_for_bose_sentence_ps(bosonic_op, result):
 
 @pytest.mark.parametrize("bosonic_op, result", BOSE_AND_PAULI_SENTENCES)
 def test_christiansen_mapping_for_bose_sentence_operation(bosonic_op, result):
+    r"""Test that christiansen_mapping function returns the correct qubit operator."""
     wires = bosonic_op.wires or [0]
 
     qubit_op = christiansen_mapping(bosonic_op)
@@ -316,6 +320,8 @@ WIRE_MAP_FOR_BOSE_SENTENCE = [
 
 @pytest.mark.parametrize("wire_map, ops", WIRE_MAP_FOR_BOSE_SENTENCE)
 def test_providing_wire_map_bose_sentence_to_operation(wire_map, ops):
+    r"""Test that the christiansen_mapping function returns the correct operator
+    for a given wiremap."""
     bs = BoseSentence(
         {BoseWord({(0, 0): "+", (1, 1): "-"}): 1, BoseWord({(0, 0): "+", (1, 0): "-"}): 1}
     )
@@ -330,6 +336,8 @@ def test_providing_wire_map_bose_sentence_to_operation(wire_map, ops):
 
 @pytest.mark.parametrize("wire_map, ops", WIRE_MAP_FOR_BOSE_SENTENCE)
 def test_providing_wire_map_bose_sentence_to_ps(wire_map, ops):
+    r"""Test that the christiansen_mapping function returns the correct PauliSentence
+    for a given wiremap."""
     bs = BoseSentence(
         {BoseWord({(0, 0): "+", (1, 1): "-"}): 1, BoseWord({(0, 0): "+", (1, 0): "-"}): 1}
     )
@@ -368,6 +376,9 @@ WIRE_MAP_FOR_BOSE_WORDS = [
 
 @pytest.mark.parametrize("wire_map, ops", WIRE_MAP_FOR_BOSE_WORDS)
 def test_providing_wire_map_bose_word_to_operation(wire_map, ops):
+    r"""Test that the christiansen_mapping function returns the correct operator
+    for a given wiremap."""
+
     w = BoseWord({(0, 0): "+", (1, 1): "+"})
 
     op = christiansen_mapping(w, wire_map=wire_map)
@@ -380,6 +391,8 @@ def test_providing_wire_map_bose_word_to_operation(wire_map, ops):
 
 @pytest.mark.parametrize("wire_map, ops", WIRE_MAP_FOR_BOSE_WORDS)
 def test_providing_wire_map_bose_word_to_ps(wire_map, ops):
+    r"""Test that the christiansen_mapping function returns the correct PauliSentence
+    for a given wiremap."""
     w = BoseWord({(0, 0): "+", (1, 1): "+"})
 
     op = christiansen_mapping(w, wire_map=wire_map, ps=True)

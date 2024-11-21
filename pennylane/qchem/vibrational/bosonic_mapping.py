@@ -16,7 +16,6 @@
 from functools import singledispatch
 from typing import Union
 
-import numpy as np
 import pennylane as qml
 from pennylane.pauli import PauliSentence, PauliWord
 
