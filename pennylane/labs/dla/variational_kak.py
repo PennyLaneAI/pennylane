@@ -286,7 +286,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
         )  # Frobenius norm
 
         warnings.warn(
-            f"The reconstructed H is not numerical identical to the original H.\n"
+            "The reconstructed H is not numerical identical to the original H.\n"
             f"We can still check for unitary equivalence: {error}",
             UserWarning,
         )
@@ -322,17 +322,31 @@ def run_opt(
 
     t0 = datetime.now()
     ## Optimization loop
-    for n in range(n_epochs):
-        opt_state, theta, val, grad_circuit = step(opt_state, theta)
+    try:
+        for n in range(n_epochs):
+            opt_state, theta, val, grad_circuit = step(opt_state, theta)
 
-        energy.append(val)
-        gradients.append(grad_circuit)
-        thetas.append(theta)
-        if interrupt_tol is not None and (norm := np.linalg.norm(gradients[-1])) < interrupt_tol:
-            print(
-                f"Interrupting after {n} epochs because gradient norm is {norm} < {interrupt_tol}"
-            )
-            break
+            energy.append(val)
+            gradients.append(grad_circuit)
+            thetas.append(theta)
+            if (
+                interrupt_tol is not None
+                and (norm := np.linalg.norm(gradients[-1])) < interrupt_tol
+            ):
+                print(
+                    f"Interrupting after {n} epochs because gradient norm is {norm} < {interrupt_tol}"
+                )
+                break
+            if verbose:
+                if n == 0:
+                    print("First optimization round performed")
+                if n % (n_epochs // 20) == 0:
+                    print(f"Epoch {n:5d}: {val:.8f}")
+    except KeyboardInterrupt:
+        print(
+            "KeyboardInterrupt received. Cancelled the optimization and will return intermediate result."
+        )
+
     t1 = datetime.now()
     if verbose:
         print(f"final loss: {val}; min loss: {np.min(energy)}; after {t1 - t0}")
