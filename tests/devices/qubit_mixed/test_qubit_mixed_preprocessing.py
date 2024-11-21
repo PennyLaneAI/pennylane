@@ -173,7 +173,8 @@ class TestPreprocessing:
     def test_linear_combination_observable_condition(self, coeffs, ops, expected):
         """Test observable_stopping_condition for LinearCombination objects"""
         H = qml.ops.LinearCombination(coeffs, ops)
-        assert observable_stopping_condition(H) == expected
+        res = observable_stopping_condition(H)
+        assert res == expected
 
 
 class TestPreprocessingIntegration:
