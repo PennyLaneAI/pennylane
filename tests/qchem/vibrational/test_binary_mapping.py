@@ -257,7 +257,7 @@ BOSE_WORDS_AND_OPS = [
 @pytest.mark.parametrize("bose_op, nstates, result", BOSE_WORDS_AND_OPS)
 def test_binary_mapping_boseword(bose_op, nstates, result):
     """Test that the binary_mapping function returns the correct qubit operator."""
-    qubit_op = binary_mapping(bose_op, nstates_boson=nstates)
+    qubit_op = binary_mapping(bose_op, nstates=nstates)
     qubit_op.simplify(tol=1e-8)
 
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
@@ -372,7 +372,7 @@ BOSE_SEN_AND_OPS = [
 @pytest.mark.parametrize("bose_op, nstates, result", BOSE_SEN_AND_OPS)
 def test_binary_mapping_bosesentence(bose_op, nstates, result):
     """Test that the binary_mapping function returns the correct qubit operator."""
-    qubit_op = binary_mapping(bose_op, nstates_boson=nstates)
+    qubit_op = binary_mapping(bose_op, nstates=nstates)
     qubit_op.simplify(tol=1e-8)
 
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
@@ -485,7 +485,7 @@ def test_return_binary_mapping_ps(bose_op):
 )
 def test_binary_mapping_wiremap(bose_op, wire_map, result):
     """Test that the binary_mapping function returns the correct qubit operator."""
-    qubit_op = binary_mapping(bose_op, nstates_boson=4, wire_map=wire_map)
+    qubit_op = binary_mapping(bose_op, nstates=4, wire_map=wire_map)
     qubit_op.simplify(tol=1e-8)
 
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
@@ -499,4 +499,4 @@ def test_d_error_binary():
     with pytest.raises(
         ValueError, match="Number of bosonic states cannot be less than 2, provided 1."
     ):
-        binary_mapping(bw, nstates_boson=1)
+        binary_mapping(bw, nstates=1)
