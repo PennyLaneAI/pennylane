@@ -1047,7 +1047,7 @@ class DefaultMixedNewAPI(Device):
         )
 
         if config.gradient_method == "backprop":
-            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
+            transform_program.add_transform(no_sampling, name="backprop + default.mixed")
 
         if self.readout_err is not None:
             transform_program.add_transform(warn_readout_error_state)
