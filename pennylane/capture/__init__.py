@@ -147,7 +147,6 @@ If needed, developers can also override the implementation method of the primiti
     def _(*args, **kwargs):
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
-from pennylane.capture import autograph
 from .switches import disable, enable, enabled
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .capture_operators import create_operator_primitive
