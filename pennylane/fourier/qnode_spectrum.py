@@ -252,10 +252,11 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
     This circuit looks as follows:
 
-    >>> x = np.array([1., 2., 3.])
-    >>> y = np.array([0.1, 0.3, 0.5])
+    >>> from pennylane import numpy as pnp
+    >>> x = pnp.array([1., 2., 3.])
+    >>> y = pnp.array([0.1, 0.3, 0.5])
     >>> z = -1.8
-    >>> w = np.random.random((2, n_qubits, 3))
+    >>> w = pnp.random.random((2, n_qubits, 3))
     >>> print(qml.draw(circuit)(x, y, z, w))
     0: ──RX(0.50)──Rot(0.09,0.46,0.54)──RY(0.23)──Rot(0.59,0.22,0.05)──RX(-1.80)─┤  <Z>
     1: ──RX(1.00)──Rot(0.98,0.61,0.07)──RY(0.69)──Rot(0.62,0.00,0.28)──RX(-1.80)─┤
@@ -357,7 +358,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         First, note that we assigned ``id`` labels to the gates for which we will use
         ``circuit_spectrum``. This allows us to choose these gates in the computation:
 
-        >>> x, y, z = 0.1, 0.2, 0.3
+        >>> x, y, z = pnp.array(0.1, 0.2, 0.3)
         >>> circuit_spec_fn = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x","y0","y1"])
         >>> circuit_spec = circuit_spec_fn(x, y, z)
         >>> for _id, spec in circuit_spec.items():

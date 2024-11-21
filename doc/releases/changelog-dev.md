@@ -121,6 +121,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
+  Autograd framework. As the function uses automatic differentiation for validation, parameters
+  from an autodiff framework have to be used.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
+
 * `qml.math.jax_argnums_to_tape_trainable` is moved and made private to avoid a qnode dependency
   in the math module.
   [(#6609)](https://github.com/PennyLaneAI/pennylane/pull/6609)
