@@ -158,6 +158,8 @@ def autograph_source(fn):
 
     .. code-block:: python
 
+        from pennylane.capture.autograph import run_autograph
+
         def decide(x):
             if x < 5:
                 y = 15
@@ -165,7 +167,7 @@ def autograph_source(fn):
                 y = 1
             return y
 
-        ag_decide = qml.capture.run_autograph(decide)
+        ag_decide = run_autograph(decide)
 
     >>> print(autograph_source(ag_fn))
     def ag__decide(x):
