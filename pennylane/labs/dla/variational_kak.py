@@ -182,13 +182,12 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
     dim_k, dim_mtilde, dim_h = dims
     dim_m = dim_mtilde + dim_h
-    dim_g = dim_k + dim_m
 
-    adj_cropped = adj[:, :dim_k]  # [:, -dim_m:][:, :, -dim_m:]
+    adj_cropped = adj[-dim_m:, :dim_k, -dim_m:]  # [:, -dim_m:][:, :, -dim_m:]
 
     ## creating the gamma vector expanded on the whole m
     gammas = [np.pi**i for i in range(dim_h)]
-    gammavec = np.zeros(dim_g)
+    gammavec = np.zeros(dim_m)
     gammavec[-dim_h:] = gammas
     gammavec = jnp.array(gammavec)
 
@@ -207,7 +206,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
-    [vec_H] = op_to_adjvec([H], g, is_orthogonal=False)
+    [vec_H] = op_to_adjvec([H], g[-dim_m:], is_orthogonal=False)
 
     theta0 = opt_kwargs.pop("theta0", None)
     if theta0 is None:
@@ -247,7 +246,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     )
 
     vec_h, theta_opt = kak_res
-    [h_elem] = adjvec_to_op([vec_h], g)  # sum(c * op for c, op in zip(vec_h, m))
+    [h_elem] = adjvec_to_op([vec_h], g[len(k) :])  # sum(c * op for c, op in zip(vec_h, m))
 
     if isinstance(h_elem, Operator):
         h_elem_m = qml.matrix(h_elem, wire_order=range(n))
