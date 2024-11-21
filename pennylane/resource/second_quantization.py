@@ -126,6 +126,7 @@ class DoubleFactorization(Operation):
             self.two_electron, self.tol_factor, self.tol_eigval
         )
 
+        self.eigvals = np.linalg.eigvalsh(self.factors)
         self.lamb = self.norm(self.one_electron, self.two_electron, self.eigvals)
 
         if not rank_r:

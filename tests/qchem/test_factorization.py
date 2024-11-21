@@ -81,11 +81,10 @@ from pennylane import numpy as np
 def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
     r"""Test that factorize function returns the correct values."""
     factors, eigvals, eigvecs = qml.qchem.factorize(two_tensor, tol_f, tol_s)
-
     eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
 
     assert np.allclose(factors, factors_ref)
-    assert np.allclose(eigvals, eigvals_ref)
+    assert np.allclose(eigvals, np.einsum("ti,tj->tij", eigvals_ref, eigvals_ref))
     assert np.allclose(eigvecs, eigvecs_ref)
 
 

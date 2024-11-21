@@ -209,6 +209,11 @@ def factorize(
             core_tensors.append(qml.math.einsum("i,j->ij", feigval[fidx], feigval[fidx]))
             leaf_tensors.append(feigvec[:, fidx])
 
+        if np.sum([len(v) for v in core_tensors]) == 0:
+            raise ValueError(
+                "All eigenvectors are discarded. Consider decreasing the second threshold error."
+            )
+
     else:
         if not has_jax_optax:
             raise ImportError(
