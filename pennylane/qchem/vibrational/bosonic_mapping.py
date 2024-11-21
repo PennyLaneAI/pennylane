@@ -35,151 +35,34 @@ def _get_pauli_op(i, j, qub_id):
     return PauliSentence({PauliWord({}): c1, PauliWord({qub_id: "Z"}): c2})
 
 
-def binary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
-    nstates_boson: int = 2,
-    ps: bool = True,
-    wire_map: dict = None,
-    tol: float = None,
-):
-    r"""Convert a bosonic operator to a qubit operator using the standard-binary mapping
-    as described in `arXiv:1507.03271 <https://arxiv.org/pdf/1507.03271>`_.
-
-    Args:
-      bose_operator(BoseWord, BoseSentence): the bosonic operator
-      nstates_boson(int): Number of states in the boson.
-      ps (bool): whether to return the result as a PauliSentence instead of an operator. Defaults to False.
-      wire_map (dict): a dictionary defining how to map the orbitals of
-      the Bose operator to qubit wires. If None, the integers used to
-      order the orbitals will be used as wire labels. Defaults to None.
-      tol (float): tolerance for discarding the imaginary part of the coefficients
-
-    Returns:
-      a linear combination of qubit operators
-
-    **Example**
-
-    >>> w = qml.labs.vibrational.BoseWord({(0, 0): "+"})
-    >>> binary_mapping(w, nstates_boson=4)
-    0.6830127018922193 * X(0)
-    + -0.1830127018922193 * X(0) @ Z(1)
-    + -0.6830127018922193j * Y(0)
-    + 0.1830127018922193j * Y(0) @ Z(1)
-    + 0.3535533905932738 * X(0) @ X(1)
-    + -0.3535533905932738j * X(0) @ Y(1)
-    + 0.3535533905932738j * Y(0) @ X(1)
-    + (0.3535533905932738+0j) * Y(0) @ Y(1)
-    """
-
-    qubit_operator = _binary_mapping_dispatch(bose_operator, nstates_boson, tol=tol)
-
-    wires = list(bose_operator.wires) or [0]
-    identity_wire = wires[0]
-    if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
-
-    if wire_map:
-        return qubit_operator.map_wires(wire_map)
-
-    return qubit_operator
-
-@singledispatch
-def _binary_mapping_dispatch(bose_operator, nstates_boson, tol=None):
-    """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
-    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
-
-
-@_binary_mapping_dispatch.register
-def _(bose_operator: BoseWord, nstates_boson, tol=None):
-
-    if nstates_boson < 2:
-        raise ValueError(
-            f"Number of bosonic states cannot be less than 2, provided {nstates_boson}."
-        )
-    nqub_per_boson = int(np.ceil(np.log2(nstates_boson)))
-
-    cr_op = np.zeros((nstates_boson, nstates_boson))
-    for s in range(nstates_boson - 1):
-        cr_op[s + 1, s] = np.sqrt(s + 1.0)
-
-    op_mat = {"+": cr_op, "-": cr_op.T}
-
-    qubit_operator = PauliSentence({PauliWord({}): 1.0})
-
-    for item in bose_operator.items():
-        (_, b_idx), sign = item
-        op = PauliSentence()
-        sparse_opmat = np.nonzero(op_mat[sign])
-        for i, j in zip(*sparse_opmat):
-            coeff = op_mat[sign][i][j]
-
-            binary_row = list(map(int, bin(i)[2:]))[::-1]
-            if nqub_per_boson > len(binary_row):
-                binary_row += [0] * (nqub_per_boson - len(binary_row))
-
-            binary_col = list(map(int, bin(j)[2:]))[::-1]
-            if nqub_per_boson > len(binary_col):
-                binary_col += [0] * (nqub_per_boson - len(binary_col))
-
-            pauliOp = PauliSentence({PauliWord({}): 1.0})
-            for n in range(nqub_per_boson):
-                pauliOp @= _get_pauli_op(binary_row[n], binary_col[n], n + b_idx * nqub_per_boson)
-
-            op += coeff * pauliOp
-        qubit_operator @= op
-
-    for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
-
-    qubit_operator.simplify(tol=1e-16)
-
-    return qubit_operator
-
-
-@_binary_mapping_dispatch.register
-def _(bose_operator: BoseSentence, nstates_boson, tol=None):
-
-    qubit_operator = PauliSentence()
-
-    for bw, coeff in bose_operator.items():
-        bose_word_as_ps = binary_mapping(bw, nstates_boson=nstates_boson, ps=True)
-
-        for pw in bose_word_as_ps:
-            qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
-
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
-
-    qubit_operator.simplify(tol=1e-16)
-
-    return qubit_operator
-
 def unary_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
-    nstates_boson: int = 2,
+    nstates: int = 2,
     ps: bool = True,
     wire_map: dict = None,
     tol: float = None,
 ):
-    r"""Convert a bosonic operator to a qubit operator using the unary mapping
-    as described in <https://www.nature.com/articles/s41534-020-0278-0>
+    r"""Convert a bosonic operator to a qubit operator using the unary mapping.
+
+    The mapping procedure is described in this `work <https://www.nature.com/articles/s41534-020-0278-0>`_.
+
     Args:
-      bose_operator(BoseWord, BoseSentence): the bosonic operator
-      nstates_boson(int): Number of states in the boson.
-      ps (bool): whether to return the result as a PauliSentence instead of an operator. Defaults to False.
-      wire_map (dict): a dictionary defining how to map the orbitals of
-      the Bose operator to qubit wires. If None, the integers used to
-      order the orbitals will be used as wire labels. Defaults to None.
-      tol (float): tolerance for discarding the imaginary part of the coefficients
+        bose_operator(BoseWord, BoseSentence): the bosonic operator
+        nstates(int): maximum number of states a boson can occupy.
+        ps (bool): whether to return the result as a PauliSentence instead of an
+            operator. Defaults to False.
+        wire_map (dict): a dictionary defining how to map the states of
+            the Bose operator to qubit wires. If None, integers used to
+            label the bosonic states will be used as wire labels. Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-      a linear combination of qubit operators
+        a linear combination of qubit operators
 
     **Example**
 
-    >>> w = qml.vibrational.BoseWord()
-    >>> unary_mapping(w, nstates_boson=4)
+    >>> w = qml.qchem.BoseWord()
+    >>> qml.qchem.unary_mapping(w, nstates=4)
     0.25 * X(0) @ X(1)
     + -0.25j * X(0) @ Y(1)
     + 0.25j * Y(0) @ X(1)
@@ -194,7 +77,7 @@ def unary_mapping(
     + (0.4330127018922193+0j) * Y(2) @ Y(3)
     """
 
-    qubit_operator = _unary_mapping_dispatch(bose_operator, nstates_boson, tol=tol)
+    qubit_operator = _unary_mapping_dispatch(bose_operator, nstates, tol=tol)
 
     wires = list(bose_operator.wires) or [0]
     identity_wire = wires[0]
@@ -208,21 +91,19 @@ def unary_mapping(
 
 
 @singledispatch
-def _unary_mapping_dispatch(bose_operator, nstates_boson, ps=False, wires_map=None, tol=None):
+def _unary_mapping_dispatch(bose_operator, nstates, ps=False, wires_map=None, tol=None):
     """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
     raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
 
 
 @_unary_mapping_dispatch.register
-def _(bose_operator: BoseWord, nstates_boson, tol=None):
+def _(bose_operator: BoseWord, nstates, tol=None):
 
-    if nstates_boson < 2:
-        raise ValueError(
-            f"Number of bosonic states cannot be less than 2, provided {nstates_boson}."
-        )
+    if nstates < 2:
+        raise ValueError(f"Number of bosonic states cannot be less than 2, provided {nstates}.")
 
-    cr_op = np.zeros((nstates_boson, nstates_boson))
-    for i in range(nstates_boson - 1):
+    cr_op = np.zeros((nstates, nstates))
+    for i in range(nstates - 1):
         cr_op[i + 1, i] = np.sqrt(i + 1.0)
 
     op_mat = {"+": cr_op, "-": cr_op.T}
@@ -235,7 +116,7 @@ def _(bose_operator: BoseWord, nstates_boson, tol=None):
         op_prod[b_idx].append(sign)
 
     for b_idx, signs in op_prod.items():
-        op_mat_prod = np.eye(nstates_boson)
+        op_mat_prod = np.eye(nstates)
         for sign in signs:
             op_mat_prod = np.dot(op_mat_prod, op_mat[sign])
 
@@ -244,18 +125,16 @@ def _(bose_operator: BoseWord, nstates_boson, tol=None):
         for i, j in zip(*sparse_opmat):
             coeff = op_mat_prod[i][j]
 
-            binary_row = np.zeros(nstates_boson)
+            binary_row = np.zeros(nstates)
             binary_row[i] = 1
 
-            binary_col = np.zeros(nstates_boson)
+            binary_col = np.zeros(nstates)
             binary_col[j] = 1
 
             pauliOp = PauliSentence({PauliWord({}): 1.0})
-            for n in range(nstates_boson):
+            for n in range(nstates):
                 if binary_row[n] == 1 or binary_col[n] == 1:
-                    pauliOp @= _get_pauli_op(
-                        binary_row[n], binary_col[n], n + b_idx * nstates_boson
-                    )
+                    pauliOp @= _get_pauli_op(binary_row[n], binary_col[n], n + b_idx * nstates)
             op += coeff * pauliOp
         qubit_operator @= op
 
@@ -268,12 +147,12 @@ def _(bose_operator: BoseWord, nstates_boson, tol=None):
 
 
 @_unary_mapping_dispatch.register
-def _(bose_operator: BoseSentence, nstates_boson, tol=None):
+def _(bose_operator: BoseSentence, nstates, tol=None):
 
     qubit_operator = PauliSentence()
 
     for bw, coeff in bose_operator.items():
-        bose_word_as_ps = unary_mapping(bw, nstates_boson=nstates_boson, ps=True)
+        bose_word_as_ps = unary_mapping(bw, nstates=nstates, ps=True)
 
         for pw in bose_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff

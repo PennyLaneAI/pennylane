@@ -91,6 +91,5 @@ from .vibrational.bosonic import (
 )
 
 from .vibrational.bosonic_mapping import (
-    binary_mapping,
     unary_mapping
 )
