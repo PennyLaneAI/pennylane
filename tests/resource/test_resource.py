@@ -508,6 +508,8 @@ class TestResources:
         assert resultant_obj == expected_res_obj
 
     def test_substitute_wire_error(self):
+        """Test that substitute raises an exception when the wire count does not exist in gate_sizes"""
+
         resource_obj = Resources(
             num_wires=2,
             num_gates=6,
@@ -530,6 +532,34 @@ class TestResources:
 
         with pytest.raises(
             ValueError, match="initial_resources does not contain a gate acting on 100 wires."
+        ):
+            substitute(resource_obj, gate_info, sub_obj)
+
+    def test_substitute_gate_count_error(self):
+        """Test that substitute raises an exception when the substitution would result in a negative value in gate_sizes"""
+
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
+        )
+
+        sub_obj = Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        )
+
+        gate_info = ("RZ", 2)
+        with pytest.raises(
+            ValueError,
+            match="Found 2 gates of type RZ, but only 1 gates act on 2 in initial_resources.",
         ):
             substitute(resource_obj, gate_info, sub_obj)
 

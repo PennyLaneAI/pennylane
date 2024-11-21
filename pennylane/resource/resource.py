@@ -567,6 +567,11 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
     gate_count = initial_resources.gate_types.get(gate_name, 0)
 
+    if gate_count > initial_resources.gate_sizes[num_wires]:
+        raise ValueError(
+            f"Found {gate_count} gates of type {gate_name}, but only {initial_resources.gate_sizes[num_wires]} gates act on {num_wires} in initial_resources."
+        )
+
     if gate_count > 0:
         new_wires = initial_resources.num_wires
         new_gates = initial_resources.num_gates - gate_count + (gate_count * replacement.num_gates)
