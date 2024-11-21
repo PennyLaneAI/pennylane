@@ -13,10 +13,12 @@
 # limitations under the License.
 """This module contains functions to map bosonic operators to qubit operators."""
 
+from collections import defaultdict
 from functools import singledispatch
 from typing import Union
-from collections import defaultdict
+
 import numpy as np
+
 import pennylane as qml
 from pennylane.pauli import PauliSentence, PauliWord
 
@@ -38,7 +40,7 @@ def _get_pauli_op(i, j, qub_id):
 def unary_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
     nstates: int = 2,
-    ps: bool = True,
+    ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
 ):
