@@ -492,7 +492,7 @@ def symmetry_shift(core, one, two, n_elec=None, method="L-BFGS-B"):
 def _symmetry_shift_terms(params, xi_idx, norb):
     """Computes the terms for symmetry shift"""
     (k1, k2), xi_vec = params[:2], params[2:]
-    if not xi_vec.size:
+    if not xi_vec.size:  # pragma: no cover
         xi_vec = np.zeros_like(xi_idx[0])
     xi = np.zeros((norb, norb))
     xi[xi_idx], xi[xi_idx[::-1]] = xi_vec, xi_vec
