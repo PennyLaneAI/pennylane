@@ -60,7 +60,7 @@ class Resources:
         gate_sizes:
         {1: 1, 2: 1}
 
-        Resources can be added together or multiplied by a scalar.
+        :class:`~.Resources` objects can be added together or multiplied by a scalar.
 
         >>> from pennylane.resource import Resources
         >>> r1 = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
@@ -145,7 +145,7 @@ class Resources:
         return add_in_series(self, other)
 
     def __mul__(self, scalar: int):
-        r"""Multiply the :class:`~resource.Resources` by a scalar as if that many copies of the circuit were executed in series
+        r"""Multiply the :class:`~resource.Resources` object by a scalar as if that many copies of the circuit were executed in series
 
         Args:
             scalar (int): the scalar to multiply the resource object by
@@ -175,7 +175,7 @@ class Resources:
 
             Now we print the product.
 
-            >>> print(r * 2)
+            >>> print(resources * 2)
             wires: 2
             gates: 4
             depth: 4
@@ -253,7 +253,7 @@ class ResourcesOperation(Operation):
 
 def add_in_series(r1: Resources, r2: Resources) -> Resources:
     r"""
-    Add two :class:`~.resource.Resources` assuming the circuits are executed in series.
+    Add two :class:`~.resource.Resources` objects assuming the circuits are executed in series.
 
     The gates in ``r1`` and ``r2`` are assumed to act on the same qubits. The resulting circuit
     depth is the sum of the depths of ``r1`` and ``r2``. To add resources as if they were executed
@@ -320,7 +320,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
 def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
     r"""
-    Add two :class:`~.resource.Resources` assuming the circuits are executed in parallel.
+    Add two :class:`~.resource.Resources` objects assuming the circuits are executed in parallel.
 
     The gates in ``r2`` and ``r2`` are assumed to act on disjoint sets of qubits. The resulting
     circuit depth is the max depth of ``r1`` and ``r2``. To add resources as if they were executed
@@ -387,7 +387,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
 def mul_in_series(resources: Resources, scalar: int) -> Resources:
     """
-    Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated that many times in series.
+    Multiply the :class:`~resource.Resources` object by a scalar as if the circuit was repeated that many times in series.
 
     The repeated copies of ``resources`` are assumed to act on the same
     wires as ``resources``. The resulting circuit depth is the depth of ``resources`` multiplied by
@@ -423,7 +423,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(qml.resource.mul_in_series(r, 2))
+        >>> print(qml.resource.mul_in_series(resources, 2))
         wires: 2
         gates: 4
         depth: 4
@@ -446,7 +446,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
 def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
     """
-    Multiply the :class:`~resource.Resources` by a scalar as if the circuit was repeated that many times in parallel.
+    Multiply the :class:`~resource.Resources` object by a scalar as if the circuit was repeated that many times in parallel.
 
     The repeated copies of ``resources`` are assumed to act on disjoint qubits. The resulting circuit
     depth is equal to the depth of ``resources``. To multiply as if the repeated copies were
@@ -481,7 +481,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(qml.resource.mul_in_parallel(r, 2))
+        >>> print(qml.resource.mul_in_parallel(resources, 2))
         wires: 4
         gates: 4
         depth: 2

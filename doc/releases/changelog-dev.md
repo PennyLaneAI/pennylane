@@ -30,6 +30,9 @@
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
 
+* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
+  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
+
 <h3>Improvements 🛠</h3>
 
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
@@ -59,6 +62,9 @@
 
 * An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
   [(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
+
+* `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
+  [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
 <h4>Other Improvements</h4>
 

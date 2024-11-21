@@ -293,19 +293,19 @@ ShotsLike = Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
 
 
 def add_shots(s1: Shots, s2: Shots) -> Shots:
-    """Add two :class:`pennylane.measurements.Shots` by concatenating their shot vectors.
+    """Add two :class:`~.Shots` objects by concatenating their shot vectors.
 
     Args:
         s1 (Shots): a Shots object to add
         s2 (Shots): a Shots object to add
 
     Returns:
-        Shots: a :class:`pennylane.measurements.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
+        Shots: a :class:`~.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
 
     Example:
         >>> s1 = Shots((5, (10, 2)))
         >>> s2 = Shots((3, 2, (10, 3)))
-        >>> print(add_shots(s1, s2))
+        >>> print(qml.measurements.add_shots(s1, s2))
         Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
     """
     if s1.total_shots is None:
