@@ -48,7 +48,7 @@ def binary_mapping(
 
     Args:
       bose_operator(BoseWord, BoseSentence): the bosonic operator
-      nstates_boson(int): Number of states in the boson.
+      nstates_boson(int): number of states in the boson
       ps (bool): whether to return the result as a PauliSentence instead of an operator. Defaults to False.
       wire_map (dict): a dictionary defining how to map the orbitals of
       the Bose operator to qubit wires. If None, the integers used to
