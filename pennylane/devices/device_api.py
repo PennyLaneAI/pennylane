@@ -382,10 +382,10 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-            from pennylane.tape import TapeBatch
+            from pennylane.tape import QuantumScriptBatch
             from pennylane.typing import PostprocessingFn
 
-            @transform
+            @qml.transform
             def my_preprocessing_transform(tape: qml.tape.QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                 # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
