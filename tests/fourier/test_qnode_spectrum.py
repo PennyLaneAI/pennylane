@@ -341,6 +341,31 @@ class TestCircuits:
         res_false = qnode_spectrum(circuit, argnum=[0])(x, last_gate=False)
         assert np.allclose(res_false["x"][()], range(-2, 3))
 
+    def test_auto_interface(self):
+        """Test that the spectrum computation works with numpy inputs in the auto interface."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, y, w):
+            qml.RX(x[0], wires=0)
+            qml.S(0)
+            qml.RX(x[1], wires=0)
+            qml.Rot(w[0], w[1], w[2], wires=0)
+            qml.RX(y, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        x = np.array([0.9, 0.7])
+        y = -0.5
+        w = np.array([2.6, 0.7, -0.4])
+        res = qnode_spectrum(circuit, argnum=[0, 1])(x, y, w)
+        assert set(res) == {"x", "y"}
+        assert set(res["x"]) == {(0,), (1,)}
+        assert set(res["y"]) == {()}
+        assert np.allclose(res["x"][(0,)], range(-1, 2))
+        assert np.allclose(res["x"][(1,)], range(-1, 2))
+        assert np.allclose(res["y"][()], range(-1, 2))
+
     def test_multi_par_error(self):
         """Test that an error is thrown if the spectrum of
         a multi-parameter gate that cannot be decomposed is requested."""

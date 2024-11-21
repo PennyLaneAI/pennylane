@@ -209,8 +209,8 @@ def _get_random_args(args, interface, num, seed, bounds):
             # Mark the arguments as trainable with Autograd
             rnd_args = [
                 tuple(
-                    pnp.array(a, requires_grad=True) if requires_grad(a) else np.array(a)
-                    for a in arg
+                    pnp.array(a, requires_grad=True) if requires_grad(orig_a) else np.array(a)
+                    for orig_a, a in zip(args, arg)
                 )
                 for arg in rnd_args
             ]
