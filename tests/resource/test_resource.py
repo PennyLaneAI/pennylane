@@ -23,7 +23,17 @@ import pytest
 import pennylane as qml
 from pennylane.measurements import Shots
 from pennylane.operation import Operation
-from pennylane.resource.resource import Resources, ResourcesOperation, _count_resources
+from pennylane.resource.resource import (
+    Resources,
+    ResourcesOperation,
+    _combine_dict,
+    _count_resources,
+    _scale_dict,
+    add_in_parallel,
+    add_in_series,
+    mul_in_parallel,
+    mul_in_series,
+)
 from pennylane.tape import QuantumScript
 
 
@@ -181,6 +191,248 @@ class TestResources:
         captured = capsys.readouterr()
         assert rep in captured.out
 
+    expected_results_add_series = (
+        Resources(
+            2,
+            6,
+            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            defaultdict(int, {1: 5, 2: 1}),
+            3,
+            Shots(10),
+        ),
+        Resources(
+            5,
+            6,
+            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            defaultdict(int, {1: 5, 2: 1}),
+            3,
+            Shots(10),
+        ),
+        Resources(
+            2,
+            9,
+            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 2, "PauliZ": 2}),
+            defaultdict(int, {1: 8, 2: 1}),
+            6,
+            Shots((10, (50, 2), 10)),
+        ),
+        Resources(
+            4,
+            8,
+            defaultdict(int, {"RZ": 2, "CNOT": 2, "RY": 2, "Hadamard": 2}),
+            defaultdict(int, {1: 6, 2: 2}),
+            5,
+            Shots((100, 10)),
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
+    )
+    def test_add_in_series(self, resource_obj, expected_res_obj):
+        """Test the add_in_series function works with Resoruces"""
+        other_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        )
+
+        resultant_obj = add_in_series(resource_obj, other_obj)
+        assert resultant_obj == expected_res_obj
+
+    @pytest.mark.parametrize(
+        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_series)
+    )
+    def test_dunder_add(self, resource_obj, expected_res_obj):
+        """Test the __add__ function"""
+        other_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        )
+
+        resultant_obj = resource_obj + other_obj
+        assert resultant_obj == expected_res_obj
+
+    expected_results_add_parallel = (
+        Resources(
+            2,
+            6,
+            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            defaultdict(int, {1: 5, 2: 1}),
+            3,
+            Shots(10),
+        ),
+        Resources(
+            7,
+            6,
+            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            defaultdict(int, {1: 5, 2: 1}),
+            3,
+            Shots(10),
+        ),
+        Resources(
+            3,
+            9,
+            defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 2, "PauliZ": 2}),
+            defaultdict(int, {1: 8, 2: 1}),
+            3,
+            Shots((10, (50, 2), 10)),
+        ),
+        Resources(
+            6,
+            8,
+            defaultdict(int, {"RZ": 2, "CNOT": 2, "RY": 2, "Hadamard": 2}),
+            defaultdict(int, {1: 6, 2: 2}),
+            3,
+            Shots((100, 10)),
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "resource_obj, expected_res_obj", zip(resource_quantities, expected_results_add_parallel)
+    )
+    def test_add_in_parallel(self, resource_obj, expected_res_obj):
+        """Test the add_in_parallel function works with Resoruces"""
+        other_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        )
+
+        resultant_obj = add_in_parallel(resource_obj, other_obj)
+        assert resultant_obj == expected_res_obj
+
+    expected_results_mul_series = (
+        Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=12,
+            gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
+            gate_sizes=defaultdict(int, {1: 10, 2: 2}),
+            depth=6,
+            shots=Shots(20),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=18,
+            gate_types=defaultdict(int, {"RZ": 6, "CNOT": 3, "RY": 6, "Hadamard": 3}),
+            gate_sizes=defaultdict(int, {1: 15, 2: 3}),
+            depth=9,
+            shots=Shots(30),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=24,
+            gate_types=defaultdict(int, {"RZ": 8, "CNOT": 4, "RY": 8, "Hadamard": 4}),
+            gate_sizes=defaultdict(int, {1: 20, 2: 4}),
+            depth=12,
+            shots=Shots(40),
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series)
+    )
+    def test_mul_in_series(self, scalar, expected_res_obj):
+        """Test the mul_in_series function works with Resoruces"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        )
+
+        resultant_obj = mul_in_series(resource_obj, scalar)
+        assert resultant_obj == expected_res_obj
+
+    @pytest.mark.parametrize(
+        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_series)
+    )
+    def test_dunder_mul(self, scalar, expected_res_obj):
+        """Test the __mul__ function"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        )
+
+        resultant_obj = resource_obj * scalar
+        assert resultant_obj == expected_res_obj
+
+    expected_results_mul_parallel = (
+        Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        ),
+        Resources(
+            num_wires=4,
+            num_gates=12,
+            gate_types=defaultdict(int, {"RZ": 4, "CNOT": 2, "RY": 4, "Hadamard": 2}),
+            gate_sizes=defaultdict(int, {1: 10, 2: 2}),
+            depth=3,
+            shots=Shots(20),
+        ),
+        Resources(
+            num_wires=6,
+            num_gates=18,
+            gate_types=defaultdict(int, {"RZ": 6, "CNOT": 3, "RY": 6, "Hadamard": 3}),
+            gate_sizes=defaultdict(int, {1: 15, 2: 3}),
+            depth=3,
+            shots=Shots(30),
+        ),
+        Resources(
+            num_wires=8,
+            num_gates=24,
+            gate_types=defaultdict(int, {"RZ": 8, "CNOT": 4, "RY": 8, "Hadamard": 4}),
+            gate_sizes=defaultdict(int, {1: 20, 2: 4}),
+            depth=3,
+            shots=Shots(40),
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "scalar, expected_res_obj", zip((1, 2, 3, 4), expected_results_mul_parallel)
+    )
+    def test_mul_in_parallel(self, scalar, expected_res_obj):
+        """Test the mul_in_parallel function works with Resoruces"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        )
+
+        resultant_obj = mul_in_parallel(resource_obj, scalar)
+        assert resultant_obj == expected_res_obj
+
 
 class TestResourcesOperation:  # pylint: disable=too-few-public-methods
     """Test that the ResourcesOperation class is constructed correctly"""
@@ -291,3 +543,25 @@ def test_count_resources(ops_and_shots, expected_resources):
     ops, shots = ops_and_shots
     computed_resources = _count_resources(QuantumScript(ops=ops, shots=shots))
     assert computed_resources == expected_resources
+
+
+def test_combine_dict():
+    """Test that we can combine dictionaries as expected."""
+    d1 = defaultdict(int, {"a": 2, "b": 4, "c": 6})
+    d2 = defaultdict(int, {"a": 1, "b": 2, "d": 3})
+
+    result = _combine_dict(d1, d2)
+    expected = defaultdict(int, {"a": 3, "b": 6, "c": 6, "d": 3})
+
+    assert result == expected
+
+
+@pytest.mark.parametrize("scalar", (1, 2, 3))
+def test_scale_dict(scalar):
+    """Test that we can scale the values of a dictionary as expected."""
+    d1 = defaultdict(int, {"a": 2, "b": 4, "c": 6})
+
+    expected = defaultdict(int, {k: scalar * v for k, v in d1.items()})
+    result = _scale_dict(d1, scalar)
+
+    assert result == expected
