@@ -178,11 +178,6 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     return op.name in expected_set
 
 
-def stopping_condition_shots(op: qml.operation.Operator) -> bool:
-    """Specify whether an Operator object is supported by the device with shots."""
-    return stopping_condition(op)
-
-
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     """Specifies whether a measurement is accepted when sampling."""
     return isinstance(m, qml.measurements.SampleMeasurement)
@@ -1044,7 +1039,6 @@ class DefaultMixedNewAPI(Device):
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
-            stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
         transform_program.add_transform(
