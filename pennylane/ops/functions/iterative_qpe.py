@@ -15,14 +15,13 @@
 This module contains the qml.iterative_qpe function.
 """
 
-from warnings import warn
 
 import numpy as np
 
 import pennylane as qml
 
 
-def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
+def iterative_qpe(base, aux_wire, iters):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
     Given a unitary :math:`U`, this function applies the circuit for iterative quantum phase
@@ -32,9 +31,6 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
       base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
       aux_wire (Union[Wires, int, str]): the wire to be used for the estimation
       iters (int): the number of measurements to be performed
-      ancilla (Union[Wires, int, str]): the wire to be used for the estimation. This argument
-        is deprecated, and the ``aux_wire`` argument should be used instead. If both arguments
-        are provided, ``aux_wire`` will be used and ``ancilla`` will be ignored.
 
     Returns:
       list[MidMeasureMP]: the list of measurements performed
@@ -79,27 +75,6 @@ def iterative_qpe(base, aux_wire="unset", iters="unset", ancilla="unset"):
                                                                      ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                       ╚═══════╡ ╰Sample[MCM]
     """
-    missing = []
-    if aux_wire == "unset" and ancilla == "unset":
-        missing.append("'aux_wire'")
-    if iters == "unset":
-        missing.append("'iters'")
-
-    if missing:
-        missing_args = " and ".join(missing)
-        raise TypeError(
-            f"iterative_qpe() missing {len(missing)} required positional argument(s): {missing_args}"
-        )
-
-    if ancilla != "unset":
-        warn(
-            "The 'ancilla' argument for qml.iterative_qpe has been deprecated. Please use the "
-            "'aux_wire' argument instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        if aux_wire == "unset":
-            aux_wire = ancilla
-
     measurements = []
 
     for i in range(iters):

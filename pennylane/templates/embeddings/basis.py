@@ -32,9 +32,9 @@ class BasisEmbedding(BasisState):
         gradients with respect to the argument cannot be computed by PennyLane.
 
     Args:
-        features (tensor_like or int): binary input of shape ``(len(wires), )`` or integer
+        features (tensor_like or int): Binary input of shape ``(len(wires), )`` or integer
             that represents the binary input.
-        wires (Any or Iterable[Any]): wires that the template acts on.
+        wires (Any or Iterable[Any]): the wire(s) that the template acts on
 
     Example:
 

@@ -14,6 +14,8 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
+import warnings
+
 # pylint:disable=protected-access, unused-argument
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -25,6 +27,14 @@ from pennylane import math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
@@ -1424,6 +1434,18 @@ class TestWrapperFunc:
 
         assert len(q) == 1
         assert q.queue[0] is prod2
+
+    def test_correct_queued_operators(self):
+        """Test that args and kwargs do not add operators to the queue."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.prod(qml.QSVT)(qml.X(1), [qml.Z(1)])
+            qml.prod(qml.QSVT(qml.X(1), [qml.Z(1)]))
+
+        for op in q.queue:
+            assert op.name == "QSVT"
+
+        assert len(q.queue) == 2
 
 
 class TestIntegration:

@@ -2,6 +2,7 @@
 Unit tests for transpiler function.
 """
 
+import warnings
 from math import isclose
 
 import pytest
@@ -9,6 +10,13 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.transpile import transpile
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def build_qfunc_probs(wires):
@@ -78,24 +86,9 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = "Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
-        with pytest.raises(NotImplementedError, match=err_msg):
-            transpiled_qnode()
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_transpile_raise_not_implemented_tensorproduct_mmt(self):
-        """test that error is raised when measurement is expectation of a Tensor product"""
-        dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
-
-        def circuit():
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[0, 3])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # build circuit
-        transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
-        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
+        err_msg = (
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        )
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
@@ -111,7 +104,9 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(circuit, coupling_map=[(0, 1), (1, 2), (2, 3)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
+        err_msg = (
+            r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        )
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 

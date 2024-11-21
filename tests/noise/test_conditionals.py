@@ -215,7 +215,7 @@ class TestNoiseFunctions:
         ],
     )
     def test_op_in(self, obj, op, result):
-        """Test for checking OpIn work as expected for checking if a operation exist in a set of specified operation"""
+        """Test for checking OpIn work as expected for checking if an operation exist in a set of specified operation"""
 
         func = qml.noise.op_in(obj)
 

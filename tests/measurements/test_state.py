@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the state module"""
+import warnings
+
 import numpy as np
 import pytest
 
@@ -22,6 +24,13 @@ from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
 from pennylane.measurements import DensityMatrixMP, State, StateMP, density_matrix, expval, state
 from pennylane.wires import WireError, Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestStateMP:
@@ -118,8 +127,22 @@ class TestStateMP:
 
     def test_wire_ordering_error(self):
         """Test that a wire order error is raised when unknown wires are given."""
-        with pytest.raises(WireError, match=r"Unexpected unique wires Wires\(\[0, 1, 2\]\) found"):
-            StateMP(wires=[0, 1]).process_state([1, 0], wire_order=Wires(2))
+        with pytest.raises(
+            WireError, match=r"State wire order has wires \[2\] not present in measurement"
+        ):
+            StateMP(wires=[0, 1]).process_state(np.array([1, 0]), wire_order=Wires(2))
+
+    def test_adding_wires(self):
+        """Test that process_state can add wires not present in the original wire order."""
+
+        orig_state = np.array([0, 1])
+        mp = StateMP(wires=Wires([0, 1]))
+        new_state = mp.process_state(orig_state, wire_order=Wires([1]))
+
+        expected = np.zeros((2, 2))
+        expected[0, 1] = 1  # zero for wire order, 1 for wire 1
+        expected = np.reshape(expected, (4,))
+        assert qml.math.allclose(expected, new_state)
 
     @pytest.mark.parametrize(
         "dm",
@@ -854,7 +877,7 @@ class TestDensityMatrix:
         elif len(return_wire_order) == 2:
             i, j = return_wire_order
             exp_statevector = np.kron(single_states[i], single_states[j])
-        elif len(return_wire_order) == 3:
+        else:  # len(return_wire_order) == 3
             i, j, k = return_wire_order
             exp_statevector = np.kron(np.kron(single_states[i], single_states[j]), single_states[k])
 
@@ -885,7 +908,7 @@ class TestDensityMatrix:
         elif len(return_wire_order) == 2:
             i, j = return_wire_order
             exp_statevector = np.kron(single_states[i], single_states[j])
-        elif len(return_wire_order) == 3:
+        else:  # len(return_wire_order) == 3
             i, j, k = return_wire_order
             exp_statevector = np.kron(np.kron(single_states[i], single_states[j]), single_states[k])
 
