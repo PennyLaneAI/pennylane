@@ -73,7 +73,7 @@ class TestPreprocessing:
         _, new_config = dev.preprocess(config)
 
         assert new_config.gradient_method == "backprop"
-        assert not new_config.use_device_gradient
+        assert new_config.use_device_gradient
         assert not new_config.grad_on_execution
 
     def test_circuit_wire_validation(self):
