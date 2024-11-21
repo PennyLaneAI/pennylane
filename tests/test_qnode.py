@@ -472,7 +472,7 @@ class TestPyTreeStructure:
     @pytest.mark.parametrize(
         "measurement",
         [
-            lambda: ({"probs": qml.probs()}),
+            lambda: ({"probs": qml.probs()},),
             lambda: qml.probs(),
             lambda: [
                 [qml.probs(wires=1), {"a": qml.probs(wires=0)}, qml.expval(qml.Z(0))],
