@@ -16,6 +16,7 @@ Tests for the gradients.pulse_gradient module.
 """
 
 import copy
+import warnings
 
 import numpy as np
 import pytest
