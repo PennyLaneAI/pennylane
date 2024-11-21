@@ -332,16 +332,9 @@ class TestQNodeQasmIntegrationTests:
     when circuits are created via QNodes."""
 
     def test_empty_circuit(self):
-        """Test that an empty QNode is properly
+        """Test that an empty tape is properly
         serialized into an empty QASM program."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def qnode():
-            return qml.expval(qml.PauliZ(0))
-
-        # construct the qnode circuit
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         res = tape.to_openqasm()
         expected = dedent(
             """\
@@ -355,23 +348,20 @@ class TestQNodeQasmIntegrationTests:
         assert res == expected
 
     def test_native_qasm_gates(self):
-        """Test that a QNode containing solely native QASM
+        """Test that a tape containing solely native QASM
         gates is properly serialized."""
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def qnode():
-            qml.RX(0.43, wires=0)
-            qml.RY(0.35, wires=1)
-            qml.RZ(0.35, wires=2)
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=2)
-            qml.CNOT(wires=[2, 0])
-            qml.PauliX(wires=1)
-            return qml.expval(qml.PauliZ(0))
-
-        # construct the qnode circuit
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = qml.tape.QuantumScript(
+            [
+                qml.RX(0.43, wires=0),
+                qml.RY(0.35, wires=1),
+                qml.RZ(0.35, wires=2),
+                qml.CNOT(wires=[0, 1]),
+                qml.Hadamard(wires=2),
+                qml.CNOT(wires=[2, 0]),
+                qml.PauliX(wires=1),
+            ],
+            [qml.expval(qml.PauliZ(0))],
+        )
         res = tape.to_openqasm()
 
         expected = dedent(
@@ -471,14 +461,9 @@ class TestQNodeQasmIntegrationTests:
         """Test that unused wires are correctly taken into account"""
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev)
-        def qnode():
-            qml.Hadamard(wires=4)
-            qml.CNOT(wires=[1, 0])
-            return qml.expval(qml.PauliZ(0))
-
-        # construct the qnode circuit
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = qml.tape.QuantumScript(
+            [qml.Hadamard(wires=4), qml.CNOT(wires=[1, 0])], [qml.expval(qml.PauliZ(0))]
+        )
         res = tape.to_openqasm(wires=dev.wires)
 
         expected = dedent(
@@ -504,13 +489,9 @@ class TestQNodeQasmIntegrationTests:
         rotation gate, are correctly decomposed and serialized."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
-        def qnode():
-            qml.Rot(0.3, 0.1, 0.2, wires=1)
-            return qml.expval(qml.PauliZ(0))
-
-        # construct the qnode circuit
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = qml.tape.QuantumScript(
+            [qml.Rot(0.3, 0.1, 0.2, wires=1)], [qml.expval(qml.PauliZ(0))]
+        )
         res = tape.to_openqasm(wires=dev.wires)
 
         expected = dedent(
@@ -598,15 +579,10 @@ class TestQNodeQasmIntegrationTests:
     def test_unsupported_gate(self):
         """Test an exception is raised if an unsupported operation is
         applied."""
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def qnode():
-            qml.S(wires=0)
-            qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
-            return qml.expval(qml.PauliZ(0))
-
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = qml.tape.QuantumScript(
+            [qml.S(wires=0), qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])],
+            [qml.expval(qml.PauliZ(0))],
+        )
 
         with pytest.raises(
             ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
@@ -615,19 +591,14 @@ class TestQNodeQasmIntegrationTests:
 
     def test_rotations(self):
         """Test that observable rotations are correctly applied."""
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def qnode():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return [
+        tape = qml.tape.QuantumScript(
+            [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])],
+            [
                 qml.expval(qml.PauliX(0)),
                 qml.expval(qml.PauliZ(1)),
                 qml.expval(qml.Hadamard(2)),
-            ]
-
-        tape = qml.workflow.construct_tape(qnode)()
+            ],
+        )
         res = tape.to_openqasm()
 
         expected = dedent(
@@ -685,14 +656,7 @@ class TestQNodeQasmIntegrationTests:
 
     def test_precision(self):
         """Test that the QASM serializer takes into account the desired precision."""
-        dev = qml.device("default.qubit", wires=["a"])
-
-        @qml.qnode(dev)
-        def qnode():
-            qml.RX(np.pi, wires="a")
-            return qml.expval(qml.PauliZ("a"))
-
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = qml.tape.QuantumScript([qml.RX(np.pi, 0)], [qml.expval(qml.PauliZ(0))])
         res = tape.to_openqasm(precision=4)
 
         expected = dedent(
