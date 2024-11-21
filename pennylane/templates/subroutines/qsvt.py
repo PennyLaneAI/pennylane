@@ -532,18 +532,18 @@ def _QSP_angles_root_finding(F):
         3. In GQSP, the coefficients can be complex, while in QSP they must be real.
         4. GQSP applies three parameters per iteration, while QSP applies only one.
 
-        Based on (1), in order to calculate the angles for a polynomial :math:`F` in QSP using a GQSP solver, the
+        Based on [1], in order to calculate the angles for a polynomial :math:`F` in QSP using a GQSP solver, the
         polynomial should first be transformed into the Chebyshev basis. This is done via `chebyshev.poly2cheb(F)`.
 
         Theorem 5 of the paper [arXiv:2406.04246] shows that to calculate the complementary polynomial of :math:`F`, we
-        first define :math:`P(z) = z^{\frac{d}{2}}F(\sqrt{z})`. Based on (2), :math:`F` is of the
+        first define :math:`P(z) = z^{\frac{d}{2}}F(\sqrt{z})`. Based on [2], :math:`F` is of the
         form :math:`(a_0, 0, a_2, 0, a_4, \dots)`, so one can
         rewrite :math:`P` as :math:`(0, 0, \dots, a_0, a_2, a_4, \dots)`. This is what is done
         when :math:`P` is defined in the code.
 
         Once we have the coefficients of the polynomial and its complementary,
         we can apply Algorithm 1 in [arXiv:2308.01501], where :math:`\vec{a}` and :math:`\vec{b}` are the
-        coefficients of these polynomials, respectively. By (3), the coefficients are real,
+        coefficients of these polynomials, respectively. By [3], the coefficients are real,
         so the :math:`\vec{\theta}`, :math:`\vec{\phi}`, and :math:`\vec{\lambda}` angles can be combined,
         thus generating ``rotation_angles``. The algorithm is simplified, and instead of working
         with the gate defined in (eq.8) of the previous paper, the RY gate is used.

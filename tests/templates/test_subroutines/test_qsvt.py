@@ -734,7 +734,7 @@ class TestRootFindingSolver:
                 "The polynomial has no definite parity",
             ),
             (
-                [0, 0.1j, 0, 0.3, 0, 0.2],
+                [0, 0.1j, 0, 0.3, 0, 0.2, 0.0],
                 "QSVT",
                 "root-finding",
                 "Array must not have an imaginary part",
