@@ -214,6 +214,8 @@ def _to_qfunc_output_type(
     results_leaves = qml.pytrees.flatten(results)[0]
 
     if len(results_leaves) != len(qfunc_output_leaves):
+        if qml.math.get_interface(qfunc_output) in {"numpy", "autograd"}:
+            return type(qfunc_output)(results)
         return results
 
     if len(qfunc_output_leaves) == 1:
