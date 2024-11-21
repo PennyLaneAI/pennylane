@@ -19,14 +19,11 @@ qubit :doc:`operations </introduction/operations>`, providing a simple mixed-sta
 qubit-based quantum circuits.
 """
 # isort: skip_file
-# pylint: disable=wrong-import-order
+# pylint: disable=wrong-import-order, ungrouped-imports
 import functools
 import itertools
 import logging
-import warnings
 from collections import defaultdict
-from collections.abc import Callable, Sequence
-from dataclasses import replace
 from string import ascii_letters as ABC
 
 import numpy as np
@@ -48,14 +45,23 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.operation import Channel
-from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from pennylane.transforms.core import TransformProgram
 from pennylane.wires import Wires
 
 from .._version import __version__
-
 from ._qubit_device import QubitDevice
+
+# We deliberately separate the imports to avoid confusion with the legacy device
+import warnings
+from collections.abc import Callable, Sequence
+from dataclasses import replace
+from typing import Optional
+
+from pennylane.ops.channel import __qubit_channels__ as channels
+from pennylane.transforms.core import TransformProgram
+from pennylane.tape import QuantumScript
+
+from . import Device
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import (
     decompose,
@@ -65,12 +71,6 @@ from .preprocess import (
     validate_measurements,
     validate_observables,
 )
-
-# We deliberately separate the imports to avoid confusion with the legacy device
-from typing import Optional
-from pennylane.tape import QuantumScript
-from . import Device
-from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 
 logger = logging.getLogger(__name__)
@@ -172,8 +172,6 @@ class DefaultMixed(QubitDevice):
             outcomes of observables. Defaults to ``None`` if not specified, which means that the outcomes are
             without any readout error.
     """
-
-    _device_options = ("rng", "prng_key")  # tuple of string names for all the device options.
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
@@ -279,14 +277,12 @@ class DefaultMixed(QubitDevice):
     @debug_logger_init
     def __init__(
         self,
+        wires,
         *,
-        wires=1,
-        shots=None,
         r_dtype=np.float64,
         c_dtype=np.complex128,
+        shots=None,
         analytic=None,
-        seed="global",
-        # max_workers=None,
         readout_prob=None,
     ):
         if isinstance(wires, int) and wires > 23:
@@ -306,13 +302,6 @@ class DefaultMixed(QubitDevice):
 
         # call QubitDevice init
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
-        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        if qml.math.get_interface(seed) == "jax":
-            self._prng_key = seed
-            self._rng = np.random.default_rng(None)
-        else:
-            self._prng_key = None
-            self._rng = np.random.default_rng(seed)
         self._debugger = None
 
         # Create the initial state.
@@ -811,80 +800,6 @@ class DefaultMixed(QubitDevice):
             else:
                 self._apply_channel(matrices, wires)
 
-    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
-        """This is a private helper for ``preprocess`` that sets up the execution config.
-
-        Args:
-            execution_config (ExecutionConfig): an unprocessed execution config.
-
-        Returns:
-            ExecutionConfig: a preprocessed execution config.
-        """
-        updated_values = {}
-        for option in execution_config.device_options:
-            if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
-
-        if execution_config.gradient_method == "best":
-            updated_values["gradient_method"] = "backprop"
-        updated_values["use_device_gradient"] = False
-        updated_values["grad_on_execution"] = False
-        updated_values["device_options"] = dict(execution_config.device_options)  # copy
-
-        for option in self._device_options:
-            if option not in updated_values["device_options"]:
-                updated_values["device_options"][option] = getattr(self, f"_{option}")
-        return replace(execution_config, **updated_values)
-
-    @debug_logger
-    def preprocess(
-        self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device
-        configuration.
-
-        Args:
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure
-                describing the parameters needed to fully describe the execution.
-
-        Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns
-            ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
-            function to be called after execution, and a configuration with unset
-            specifications filled in.
-
-        This device:
-
-        * Supports any qubit operations that provide a matrix
-        * Supports any qubit channel that provides Kraus matrices
-
-        """
-        config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
-
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(
-            decompose,
-            stopping_condition=stopping_condition,
-            stopping_condition_shots=stopping_condition_shots,
-            name=self.name,
-        )
-        transform_program.add_transform(
-            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
-        )
-        transform_program.add_transform(
-            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
-        )
-
-        if config.gradient_method == "backprop":
-            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
-
-        if self.readout_err is not None:
-            transform_program.add_transform(warn_readout_error_state)
-
-        return transform_program, config
-
     # pylint: disable=arguments-differ
 
     @debug_logger
@@ -1069,3 +984,77 @@ class DefaultMixedNewAPI(Device):
         execution_config: Optional[ExecutionConfig] = None,
     ) -> None:
         raise NotImplementedError
+
+    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
+        """This is a private helper for ``preprocess`` that sets up the execution config.
+
+        Args:
+            execution_config (ExecutionConfig): an unprocessed execution config.
+
+        Returns:
+            ExecutionConfig: a preprocessed execution config.
+        """
+        updated_values = {}
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
+
+        if execution_config.gradient_method == "best":
+            updated_values["gradient_method"] = "backprop"
+        updated_values["use_device_gradient"] = False
+        updated_values["grad_on_execution"] = False
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+
+        for option in self._device_options:
+            if option not in updated_values["device_options"]:
+                updated_values["device_options"][option] = getattr(self, f"_{option}")
+        return replace(execution_config, **updated_values)
+
+    @debug_logger
+    def preprocess(
+        self,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> tuple[TransformProgram, ExecutionConfig]:
+        """This function defines the device transform program to be applied and an updated device
+        configuration.
+
+        Args:
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure
+                describing the parameters needed to fully describe the execution.
+
+        Returns:
+            TransformProgram, ExecutionConfig: A transform program that when called returns
+            ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
+            function to be called after execution, and a configuration with unset
+            specifications filled in.
+
+        This device:
+
+        * Supports any qubit operations that provide a matrix
+        * Supports any qubit channel that provides Kraus matrices
+
+        """
+        config = self._setup_execution_config(execution_config)
+        transform_program = TransformProgram()
+
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(
+            decompose,
+            stopping_condition=stopping_condition,
+            stopping_condition_shots=stopping_condition_shots,
+            name=self.name,
+        )
+        transform_program.add_transform(
+            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
+        )
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
+
+        if config.gradient_method == "backprop":
+            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
+
+        if self.readout_err is not None:
+            transform_program.add_transform(warn_readout_error_state)
+
+        return transform_program, config
