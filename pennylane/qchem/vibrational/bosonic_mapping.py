@@ -43,12 +43,12 @@ def binary_mapping(
     tol: float = None,
 ):
     r"""Convert a bosonic operator to a qubit operator using the standard-binary mapping.
-    
+
     The mapping procedure is described in `arXiv:1507.03271 <https://arxiv.org/pdf/1507.03271>`_.
 
     Args:
         bose_operator(BoseWord, BoseSentence): the bosonic operator
-        nstates(int): number of states a boson can occupy.
+        nstates(int): maximum number of states a boson can occupy
         ps (bool): whether to return the result as a PauliSentence instead of an
             operator. Defaults to False.
         wire_map (dict): a dictionary defining how to map the states of
