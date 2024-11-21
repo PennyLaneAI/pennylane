@@ -20,7 +20,7 @@ import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import Iterable, Tuple
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
@@ -508,7 +508,7 @@ def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replace
 
     Args:
         initial_resources (Resources): the :class:`~resource.Resources` object to be modified
-        gate_info (Tuple(str, int)): tuple containing the name of the gate to be replaced and the number of wires it acts on
+        gate_info (Iterable(str, int)): sequence containing the name of the gate to be replaced and the number of wires it acts on
         replacement (Resources): the :class:`~resource.Resources` containing the resources that will replace the gate
 
     Returns:
