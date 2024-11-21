@@ -17,7 +17,6 @@ Tests for the gradients.pulse_odegen module.
 # pylint:disable=import-outside-toplevel, use-implicit-booleaness-not-comparison
 
 import copy
-import warnings
 
 import numpy as np
 import pytest
@@ -35,14 +34,6 @@ from pennylane.gradients.pulse_gradient_odegen import (
 )
 from pennylane.math import expand_matrix
 from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
@@ -1065,9 +1056,8 @@ class TestPulseOdegenTape:
             qml.evolve(H)(par, t=t)
             return qml.expval(Z(0))
 
-        circuit.construct(([x, y],), {})
         # TODO: remove once #2155 is resolved
-        tape_with_shots = circuit.tape.copy()
+        tape_with_shots = qml.workflow.construct_tape(circuit)([x, y])
         tape_with_shots.trainable_params = [0, 1]
         tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1])
@@ -1148,9 +1138,8 @@ class TestPulseOdegenTape:
             qml.evolve(H1)(par[1:], t=t)
             return qml.expval(Z(0))
 
-        circuit.construct(([x, y, z],), {})
         # TODO: remove once #2155 is resolved
-        tape_with_shots = circuit.tape.copy()
+        tape_with_shots = qml.workflow.construct_tape(circuit)([x, y, z])
         tape_with_shots.trainable_params = [0, 1, 2]
         tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1, 2])
