@@ -20,7 +20,7 @@ import functools
 import inspect
 import logging
 import warnings
-from collections.abc import Callable, MutableMapping, Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Any, Literal, Optional, Union, get_args
 
@@ -31,10 +31,10 @@ from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
-from pennylane.transforms import transform
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
-from pennylane.typing import Result, ResultBatch
 
+from ._cache_transform import _cache_transform
+from ._capture_qnode import capture_qnode
 from .execution import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
@@ -58,54 +58,6 @@ SupportedDiffMethods = Literal[
     "finite-diff",
     "spsa",
 ]
-
-
-_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
-    "Cached execution with finite shots detected!\n"
-    "Note that samples as well as all noisy quantities computed via sampling "
-    "will be identical across executions. This situation arises where tapes "
-    "are executed with identical operations, measurements, and parameters.\n"
-    "To avoid this behaviour, provide 'cache=False' to the QNode or execution "
-    "function."
-)
-"""str: warning message to display when cached execution is used with finite shots"""
-
-
-@transform
-def _cache_transform(tape: QuantumScript, cache: MutableMapping):
-    """Caches the result of ``tape`` using the provided ``cache``.
-
-    .. note::
-
-        This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
-    """
-
-    def cache_hit_postprocessing(_results: ResultBatch) -> Result:
-        result = cache[tape.hash]
-        if result is not None:
-            if tape.shots and getattr(cache, "_persistent_cache", True):
-                warnings.warn(_CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS, UserWarning)
-            return result
-
-        raise RuntimeError(
-            "Result for tape is missing from the execution cache. "
-            "This is likely the result of a race condition."
-        )
-
-    if tape.hash in cache:
-        return [], cache_hit_postprocessing
-
-    def cache_miss_postprocessing(results: ResultBatch) -> Result:
-        result = results[0]
-        cache[tape.hash] = result
-        return result
-
-    # Adding a ``None`` entry to the cache indicates that a result will eventually be available for
-    # the tape. This assumes that post-processing functions are called in the same order in which
-    # the transforms are invoked. Otherwise, ``cache_hit_postprocessing()`` may be called before the
-    # result of the corresponding tape is placed in the cache by ``cache_miss_postprocessing()``.
-    cache[tape.hash] = None
-    return [tape], cache_miss_postprocessing
 
 
 def _convert_to_interface(res, interface):
@@ -312,8 +264,8 @@ def _to_qfunc_output_type(
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
     # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
-        results = [results]
+    if isinstance(qfunc_output, Sequence) and len(qfunc_output) == 1:
+        results = (results,)
 
     # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
@@ -1156,7 +1108,7 @@ class QNode:
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         if qml.capture.enabled():
-            return qml.capture.qnode_call(self, *args, **kwargs)
+            return capture_qnode(self, *args, **kwargs)
         return self._impl_call(*args, **kwargs)
 
 

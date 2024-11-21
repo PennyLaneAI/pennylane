@@ -46,5 +46,6 @@ from .construct_batch import construct_batch, get_transform_program
 from .construct_tape import construct_tape
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, execute
 from .get_best_diff_method import get_best_diff_method
-from .resolve_diff_method import _resolve_diff_method
-from .qnode import QNode, qnode, _setup_transform_program, _cache_transform
+from .qnode import QNode, qnode
+from ._cache_transform import _cache_transform
+from ._resolve_diff_method import _resolve_diff_method
