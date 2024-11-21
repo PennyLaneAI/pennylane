@@ -202,7 +202,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
 
 
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
-    """Resource class for the CNOT gate."""
+    """Resource class for the CNOT gate.
 
     Resources:
         There is no further decomposition provided for this gate.
@@ -453,6 +453,7 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
     r"""Resource class for the ControlledPhaseShift gate.

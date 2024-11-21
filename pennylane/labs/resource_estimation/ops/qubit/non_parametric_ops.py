@@ -141,6 +141,7 @@ class ResourceT(qml.T, re.ResourceOperator):
         """Resources obtained from the identity T^8 = I."""
         return {cls.resource_rep(): z % 8}
 
+
 class ResourceX(qml.X, re.ResourceOperator):
     """Resource class for the X gate."""
 
