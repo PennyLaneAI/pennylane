@@ -170,7 +170,7 @@ def qsvt(A, poly, encoding_wires, block_encoding=None):
 
     The polynomial transformation is encoded as the real part of the top left term after applying the operator.
 
-    This function calculates the required phase angles from the polynomial using :func:`~.math.poly_to_angles`.
+    This function calculates the required phase angles from the polynomial using :func:`~.poly_to_angles`.
 
     .. note::
 
