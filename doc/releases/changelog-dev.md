@@ -23,13 +23,15 @@
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
 
-
   * Two density matrix contraction methods using `einsum` and `tensordot`
 
   * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
+
+* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
+  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
 <h3>Improvements 🛠</h3>
 
@@ -39,6 +41,9 @@
 
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
+
+* Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
+  [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -50,8 +55,16 @@
   pennylane variant jaxpr.
   [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
 
+* A `DefaultQubitInterpreter` class has been added to provide plxpr execution using python based tools,
+  and the `DefaultQubit.eval_jaxpr` method is now implemented.
+  [(#6594)](https://github.com/PennyLaneAI/pennylane/pull/6594)
+  [(#6328)](https://github.com/PennyLaneAI/pennylane/pull/6328)
+
 * An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
-[(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
+  [(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
+
+* `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
+  [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
 <h4>Other Improvements</h4>
 
@@ -65,18 +78,32 @@
 * Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
+* Fix the string representation of `Resources` instances to match the attribute names.
+  [(#6581)](https://github.com/PennyLaneAI/pennylane/pull/6581)
+
 <h3>Labs 🧪</h3>
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
 
+* Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
+  [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+
 <h3>Breaking changes 💔</h3>
+
+* `qml.math.jax_argnums_to_tape_trainable` is moved and made private to avoid a qnode dependency
+  in the math module.
+  [(#6609)](https://github.com/PennyLaneAI/pennylane/pull/6609)
+
+* Gradient transforms are now applied after the user's transform program.
+  [(#6590)](https://github.com/PennyLaneAI/pennylane/pull/6590)
 
 * Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
   Note that `qml.Hamiltonian` will continue to dispatch to `qml.ops.LinearCombination`. For more information, 
   check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
+  [(#6602)](https://github.com/PennyLaneAI/pennylane/pull/6602)
 
 * The developer-facing `qml.utils` module has been removed. Specifically, the
 following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
@@ -125,7 +152,6 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
   
-
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
   [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
@@ -158,13 +184,18 @@ same information.
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
+
 * Add reporting of test warnings as failures.
   [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
-* Add a warning message to Gradients and training documentation about ComplexWarnings
+* Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily 
+  in the list of supported interfaces, such as the `Graph` class defined in `networkx`.
+  [(#6600)](https://github.com/PennyLaneAI/pennylane/pull/6600)
 
 * `qml.math.get_deep_interface` now works properly for autograd arrays.
   [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
@@ -184,6 +215,7 @@ Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
 Jay Soni,

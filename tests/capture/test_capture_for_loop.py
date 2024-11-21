@@ -15,30 +15,20 @@
 Tests for capturing for loops into jaxpr.
 """
 
-# pylint: disable=no-value-for-parameter
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-arguments
-# pylint: disable=no-self-use
+# pylint: disable=no-value-for-parameter, too-few-public-methods, no-self-use
+# pylint: disable=too-many-positional-arguments, too-many-arguments
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
 from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """Enable and disable the PennyLane JAX capture context manager."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 class TestCaptureForLoop:
