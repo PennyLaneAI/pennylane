@@ -46,12 +46,12 @@ def factorize(
 ):
     r"""Return the double-factorized form of a two-electron integral tensor in spatial basis.
 
-    The two-electron tensor :math:`V`, in
+    The two-electron tensor :math:`V`, in the
     `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
     can be decomposed in terms of orthonormal matrices :math:`U` (leaf tensors) and
     symmetric matrices :math:`Z` (core tensors) such that
     :math:`V_{ijkl} \approx \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)}`,
-    where rank :math:`R` is determined by a threshold error.
+    where the rank :math:`R` is determined by a threshold error.
 
     For explicit double factorization, i.e., when ``compressed=False``, the above decomposition
     is done using an eigenvalue or Cholesky decomposition to obtain symmetric matrices
@@ -60,18 +60,23 @@ def factorize(
     and truncating its eigenvalues (and corresponding eigenvectors) are at a threshold error.
     See theory section for more details.
 
-    For compressed double factorization, i.e., when ``compressed=True``, the above
-    decomposition is done by optimizing the following cost function \mathcal{L}:
+    For compressed double factorization (CDF), i.e., when ``compressed=True``, the above
+    decomposition is done by optimizing the following cost function :math:`\mathcal{L}`:
 
     .. math::
 
-       \mathcal{L}(U, Z) = \frac{1}{2} |V_{ijkl} - \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)}|_{\text{F}} + \rho \sum_r^R \sum_{pq} |Z_{pq}^{(r)}|^{\gamma},
+       \mathcal{L}(U, Z) = \frac{1}{2} \bigg|V_{ijkl} - \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)}\bigg|_{\text{F}} + \rho \sum_r^R \sum_{pq} \bigg|Z_{pq}^{(r)}\bigg|^{\gamma},
 
     where leaf tensors :math:`U` are defined by antisymmetric orbital rotations :math:`X` such that
-    :math:`U^{(r)} = \exp{(X^(r))}`, `F` represents Frobenius norm, :math:`\rho` is a constant
-    scaling factor, and :math:`\gammma` represents the optional ``L1`` and ``L2`` regularization.
-    See references `arXiv:2104.08957 <https://arxiv.org/abs/2104.08957>`__ and `arxiv:2212.07957
-    <https://arxiv.org/pdf/2212.07957>`__ for more details.
+    :math:`U^{(r)} = \exp{(X^{(r)})}`, :math:`\text{F}` represents Frobenius norm, :math:`\rho` is
+    a constant scaling factor, and :math:`\gamma` represents the optional ``L1`` and ``L2``
+    regularization. See references `arXiv:2104.08957 <https://arxiv.org/abs/2104.08957>`__
+    and `arxiv:2212.07957 <https://arxiv.org/pdf/2212.07957>`__ for more details.
+
+    .. note::
+
+        Packages JAX and Optax are required when performing CDF with ``compressed=True``.
+        Install them using ``pip install jax optax``.
 
     Args:
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
@@ -117,7 +122,7 @@ def factorize(
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to chemist notation
-    >>> factors, eigvals, eigvecs = factorize(two, 1e-5, 1e-5)
+    >>> factors, cores, leaves = factorize(two, 1e-5, 1e-5)
     >>> print(factors)
     [[[ 1.06723440e-01  9.73575768e-15]
       [ 8.36288956e-15 -1.04898533e-01]]
