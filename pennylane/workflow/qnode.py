@@ -278,7 +278,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
                 if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
             ]
 
-    if measurement_processes is None or not all(
+    if not measurement_processes or not all(
         isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
     ):
         raise qml.QuantumFunctionError(
