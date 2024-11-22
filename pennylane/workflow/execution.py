@@ -565,7 +565,7 @@ def execute(
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    ml_boundary_execute = _get_ml_boundary_execute(
+    ml_execute = _get_ml_boundary_execute(
         interface,
         config.grad_on_execution,
         config.use_device_jacobian_product,
@@ -573,11 +573,11 @@ def execute(
     )
 
     if interface in jpc_interfaces:
-        results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
+        results = ml_execute(tapes, execute_fn, jpc, device=device)
     else:
-        results = ml_boundary_execute(
+        results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
             tapes, device, execute_fn, diff_method, gradient_kwargs, _n=1, max_diff=max_diff
-        )  # pylint: disable=too-many-function-args, unexpected-keyword-arg
+        )
 
     return post_processing(results)
 
