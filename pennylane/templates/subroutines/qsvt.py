@@ -476,11 +476,11 @@ def _complementary_poly(P):
 
     .. math:
 
-        |P(e^{i\theta})|^2 + |Q(e^{i\theta})|^2 = 1, \quad \forall \theta \in \left[0, 2\pi\right]
+        |P(e^{i\theta})|^2 + |Q(e^{i\theta})|^2 = 1, \quad \forall \quad \theta \in \left[0, 2\pi\right]
 
     The method is based on computing an auxiliary polynomial R, finding its roots,
-    and reconstructing Q by using information extracted of those roots.
-    For more details see reference `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
+    and reconstructing Q by using information extracted from the roots.
+    For more details see `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
 
     Args:
         P (array-like): coefficients of the complex polynomial P
@@ -490,7 +490,8 @@ def _complementary_poly(P):
     """
     poly_degree = len(P) - 1
 
-    # Build the polynomial R(z) = z^degree * (1 - conj(P(1/z)) * P(z)), deduced from (eq.33) and (eq.34)
+    # Build the polynomial R(z) = z^degree * (1 - conj(P(1/z)) * P(z)), deduced from (eq.33) and (eq.34) of
+    # `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_
     R = Polynomial.basis(poly_degree) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
     r_roots = R.roots()
 
@@ -510,8 +511,8 @@ def _complementary_poly(P):
 def _QSP_angles_root_finding(F):
     r"""
     Computes the Quantum Signal Processing (QSP) angles given a polynomial F.
-    Generalized-QSP approach will be used and adapted to QSP using ideas
-    described in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_].
+
+    The method for computing the QSP angles is adapted from the approach described in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_] for Generalized-QSP.    
 
     Args:
         F (array-like): coefficients of the input polynomial F
@@ -583,14 +584,14 @@ def transform_angles(angles, routine1, routine2):
     Transforms a set of angles from one routine to another.
 
     This function adjusts the angles according to the specified transformation
-    between two routines, either from "Quantum Signal Processing" (QSP) to
-    "Quantum Singular Value Transformation" (QSVT), or vice versa.
+    between two routines, either from Quantum Signal Processing (QSP) to
+    Quantum Singular Value Transformation (QSVT) or vice versa.
 
     Args:
         angles (array-like): a list or array of angles to be transformed.
-        routine1 (str): the current routine of the angles, must be either "QSP" or "QSVT"
+        routine1 (str): the current routine of the angles, must be either ``"QSP"`` or ``"QSVT"``
         routine2 (str): the target routine to which the angles should be transformed,
-                        must be either "QSP" or "QSVT"
+                        must be either ``"QSP"`` or ``"QSVT"``
 
     Returns:
         array-like: the transformed angles as an array
