@@ -38,7 +38,7 @@ def _get_pauli_op(i, j, qub_id):
 
 def binary_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
-    nstates: int = 2,
+    n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
