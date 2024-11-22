@@ -78,23 +78,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
 
     .. code-block::
 
-        [I(0),
-         Z(1),
-         Z(0),
-         Z(0) @ Z(1),
-         X(1),
-         Y(1),
-         Z(0) @ X(1),
-         Z(0) @ Y(1),
-         X(0),
-         X(0) @ Z(1),
-         Y(0),
-         Y(0) @ Z(1),
-         X(0) @ X(1),
-         X(0) @ Y(1),
-         Y(0) @ X(1),
-         Y(0) @ Y(1)
-        ]
+        [I(0), Z(1), Z(0), Z(0) @ Z(1), X(1), Y(1), Z(0) @ X(1), Z(0) @ Y(1), X(0), X(0) @ Z(1), Y(0), Y(0) @ Z(1), X(0) @ X(1), X(0) @ Y(1), Y(0) @ X(1), Y(0) @ Y(1)]
 
     Args:
         H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
@@ -391,10 +375,12 @@ def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
 
 
 def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
-    r"""Transform vectors representing operators in an operator basis back into operator format.
+    r"""Transform adjoint vector representations back into operator format.
 
     This function simply reconstructs :math:`\hat{O} = \sum_j c_j \hat{b}_j` given the adjoint vector
     representation :math:`c_j` and basis :math:`\hat{b}_j`.
+
+    .. seealso:: :func:`~op_to_adjvec`
 
     Args:
         adj_vecs (np.ndarray): collection of vectors with shape ``(batch, len(basis))``
@@ -496,6 +482,8 @@ def op_to_adjvec(
     The adjoint vector representation are the coefficients :math:`c_j` in a given operator
     basis of the operator :math:`\hat{b}_j` such that the input operator can be written as
     :math:`\hat{O} = \sum_j c_j \hat{b}_j`.
+
+    .. seealso:: :func:`~adjvec_to_op`
 
     Args:
         ops (Iterable[Union[PauliSentence, Operator, np.ndarray]]): List of operators to decompose
