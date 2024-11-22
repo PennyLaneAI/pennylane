@@ -220,6 +220,8 @@ def _to_qfunc_output_type(
             return results
         return type(qfunc_output)(results)
 
+    # result spec squeezes out dim for single measurement value
+    # we need to add it back in
     if len(qfunc_output_leaves) == 1:
         results = (results,)
 
