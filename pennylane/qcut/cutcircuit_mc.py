@@ -463,8 +463,9 @@ def cut_circuit_mc(
         qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
     ]
 
+    seed = kwargs.get("seed", None)
     configurations, settings = expand_fragment_tapes_mc(
-        fragment_tapes, communication_graph, shots=shots
+        fragment_tapes, communication_graph, shots=shots, seed=seed
     )
 
     tapes = tuple(tape for c in configurations for tape in c)
@@ -593,7 +594,7 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: QuantumScriptBatch, communication_graph: MultiDiGraph, shots: int
+    tapes: QuantumScriptBatch, communication_graph: MultiDiGraph, shots: int, seed=None
 ) -> tuple[QuantumScriptBatch, np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
@@ -617,6 +618,7 @@ def expand_fragment_tapes_mc(
         communication_graph (nx.MultiDiGraph): the communication (quotient) graph of the fragmented
             full graph
         shots (int): number of shots
+        seed (int, optional): seed for the random number generator. Defaults to None.
 
     Returns:
         Tuple[Sequence[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
@@ -683,7 +685,7 @@ def expand_fragment_tapes_mc(
 
     """
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
-    settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
+    settings = np.random.default_rng(seed).choice(range(8), size=(len(pairs), shots), replace=True)
 
     meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
     prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}

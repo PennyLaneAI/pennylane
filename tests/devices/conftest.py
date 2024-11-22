@@ -11,8 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A module containing utility functions and mappings for working with bosonic operators. """
+"""
+Pytest configuration file for the devices test module.
+"""
 
-from .bosonic import BoseWord, BoseSentence
+from os import path
+from tempfile import TemporaryDirectory
+from textwrap import dedent
 
-from .bosonic_mapping import binary_mapping
+import pytest
+
+
+@pytest.fixture(scope="function")
+def create_temporary_toml_file(request) -> str:
+    """Create a temporary TOML file with the given content."""
+    content = request.param
+    with TemporaryDirectory() as temp_dir:
+        toml_file = path.join(temp_dir, "test.toml")
+        with open(toml_file, "w", encoding="utf-8") as f:
+            f.write(dedent(content))
+        request.node.toml_file = toml_file
+        yield

@@ -148,6 +148,16 @@ class TestInitialization:
 class TestValidation:
     """Tests for QNode creation and validation"""
 
+    @pytest.mark.parametrize("return_type", (tuple, list))
+    def test_return_behaviour_consistency(self, return_type):
+        """Test that the QNode return typing stays consistent"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(return_type):
+            return return_type([qml.expval(qml.Z(0))])
+
+        assert isinstance(circuit(return_type), return_type)
+
     def test_expansion_strategy_error(self):
         """Test that an error is raised if expansion_strategy is passed to the qnode."""
 
@@ -830,7 +840,7 @@ class TestIntegration:
 
         with pytest.raises(
             TypeError,
-            match="does not support mid-circuit measurements natively, and hence it does not support the dynamic_one_shot transform.",
+            match="does not support mid-circuit measurements and/or one-shot execution mode",
         ):
 
             @qml.transforms.dynamic_one_shot
