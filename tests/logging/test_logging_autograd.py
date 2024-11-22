@@ -80,7 +80,7 @@ class TestLogging:
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
-                "pennylane.workflow._resolve_diff_method",
+                "pennylane.workflow.resolution",
                 ["Calling <_resolve_diff_method("],
             ),
             (
