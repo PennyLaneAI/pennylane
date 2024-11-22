@@ -17,6 +17,7 @@ Tests for the gradients.pulse_odegen module.
 # pylint:disable=import-outside-toplevel, use-implicit-booleaness-not-comparison
 
 import copy
+import warnings
 
 import numpy as np
 import pytest
@@ -34,6 +35,14 @@ from pennylane.gradients.pulse_gradient_odegen import (
 )
 from pennylane.math import expand_matrix
 from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 

@@ -402,11 +402,7 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
     valid_instance, kwargs = valid_instance_and_kwargs
-    if valid_instance.name == "Hamiltonian":
-        with qml.operation.disable_new_opmath_cm(warn=False):
-            assert_valid(valid_instance, **kwargs)
-    else:
-        assert_valid(valid_instance, **kwargs)
+    assert_valid(valid_instance, **kwargs)
 
 
 @pytest.mark.jax

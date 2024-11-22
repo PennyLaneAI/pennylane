@@ -92,11 +92,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -127,11 +123,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -161,11 +153,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -204,11 +192,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -237,11 +221,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -268,11 +248,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -301,11 +277,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -338,11 +310,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -373,11 +341,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -412,11 +376,7 @@ class TestInsert:
             for o1, o2 in zip(tape.operations, tape_exp.operations)
         )
         assert len(tape.measurements) == 1
-        assert (
-            tape.observables[0].name == "Prod"
-            if qml.operation.active_new_opmath()
-            else ["PauliZ", "PauliZ"]
-        )
+        assert tape.observables[0].name == "Prod"
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
@@ -475,7 +435,9 @@ def test_insert_dev(dev_name):
     new_program, _ = new_dev.preprocess()
     tapes, _ = new_program([in_tape])
     tape = tapes[0]
-    res_with_noise = qml.execute([in_tape], new_dev, qml.gradients, transform_program=new_program)
+    res_with_noise = qml.execute(
+        [in_tape], new_dev, qml.gradients.param_shift, transform_program=new_program
+    )
 
     with qml.queuing.AnnotatedQueue() as q_tape_exp:
         qml.RX(0.9, wires=0)
@@ -500,11 +462,7 @@ def test_insert_dev(dev_name):
         for o1, o2 in zip(tape.operations, tape_exp.operations)
     )
     assert len(tape.measurements) == 2
-    assert (
-        tape.observables[0].name == "Prod"
-        if qml.operation.active_new_opmath()
-        else ["PauliZ", "PauliZ"]
-    )
+    assert tape.observables[0].name == "Prod"
     assert tape.observables[0].wires.tolist() == [0, 1]
     assert tape.measurements[0].return_type is Expectation
     assert tape.observables[1].name == "PauliZ"
