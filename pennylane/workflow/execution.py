@@ -16,11 +16,6 @@ Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
 
-# pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
-# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
-# pylint: disable=invalid-unary-operand-type,isinstance-second-argument-not-valid-type
-# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args,too-many-positional-arguments
-
 import inspect
 import logging
 from collections.abc import Callable
@@ -34,6 +29,7 @@ import pennylane as qml
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
+from ._setup_transform_program import _setup_transform_program
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
 logger = logging.getLogger(__name__)
@@ -93,6 +89,7 @@ SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
+# pylint: disable=import-outside-toplevel
 def _use_tensorflow_autograph():
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
@@ -107,6 +104,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
+# pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
     interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
@@ -235,6 +233,7 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
+# pylint: disable=too-many-arguments, too-many-branches, too-many-statements, function-redefined, too-many-function-args, unexpected-keyword-arg
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
@@ -400,7 +399,7 @@ def execute(
 
     # pylint: disable=protected-access
     if transform_program is None or inner_transform is None:
-        transform_program, inner_transform, config = qml.workflow._setup_transform_program(
+        transform_program, inner_transform, config = _setup_transform_program(
             transform_program, device, config, cache, cachesize
         )
 

@@ -14,7 +14,6 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument, too-many-positional-arguments, inconsistent-return-statements, redefined-outer-name
 import copy
 import functools
 import inspect
@@ -24,7 +23,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Any, Literal, Optional, Union, get_args
 
-from cachetools import Cache, LRUCache
+from cachetools import Cache
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
@@ -33,8 +32,9 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from ._cache_transform import _cache_transform
 from ._capture_qnode import capture_qnode
+from ._resolve_diff_method import _resolve_diff_method
+from ._setup_transform_program import _setup_transform_program
 from .execution import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
@@ -179,9 +179,8 @@ def _resolve_execution_config(
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     else:
-        execution_config = qml.workflow._resolve_diff_method(
-            execution_config, device, tape=tapes[0]
-        )
+        # pylint: disable=protected-access
+        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
@@ -199,61 +198,6 @@ def _resolve_execution_config(
     updated_values["mcm_config"] = mcm_config
 
     return replace(execution_config, **updated_values)
-
-
-def _setup_transform_program(
-    user_transform_program: TransformProgram,
-    device: "qml.devices.Device",
-    resolved_execution_config: "qml.devices.ExecutionConfig",
-    cache=None,
-    cachesize=10000,
-) -> tuple[TransformProgram, TransformProgram, "qml.devices.ExecutionConfig"]:
-
-    device_transform_program, config = device.preprocess(execution_config=resolved_execution_config)
-
-    full_transform_program = qml.transforms.core.TransformProgram(user_transform_program)
-    inner_transform_program = qml.transforms.core.TransformProgram()
-
-    # Add the gradient expand to the program if necessary
-    if getattr(config.gradient_method, "expand_transform", False):
-        full_transform_program.add_transform(
-            qml.transform(config.gradient_method.expand_transform),
-            **config.gradient_keyword_arguments,
-        )
-    if config.use_device_gradient:
-        full_transform_program += device_transform_program
-    else:
-        inner_transform_program += device_transform_program
-
-    # Making sure dynamic_one_shot occurs at most once between the inner and outer transform programs
-    _prune_dynamic_transform(full_transform_program, inner_transform_program)
-
-    # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
-    if cache is True:
-        cache = LRUCache(maxsize=cachesize)
-        setattr(cache, "_persistent_cache", False)
-
-    # Ensure that ``cache`` is not a Boolean to simplify downstream code.
-    elif cache is False:
-        cache = None
-
-    # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = config.interface is None or config.gradient_method in {
-        None,
-        "backprop",
-    }
-    device_supports_interface_data = no_interface_boundary_required and (
-        config.interface is None
-        or config.gradient_method == "backprop"
-        or getattr(device, "short_name", "") == "default.mixed"
-    )
-    numpy_only = not device_supports_interface_data
-    if numpy_only:
-        inner_transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
-    if cache is not None:
-        inner_transform_program.add_transform(_cache_transform, cache=cache)
-
-    return full_transform_program, inner_transform_program, config
 
 
 def _to_qfunc_output_type(
@@ -328,6 +272,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
+# pylint: disable=too-many-instance-attributes
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -648,6 +593,7 @@ class QNode:
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         func: Callable,
@@ -793,7 +739,7 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements, unused-argument, inconsistent-return-statements
     @staticmethod
     @debug_logger
     def get_gradient_fn(
@@ -861,6 +807,7 @@ class QNode:
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
 
+    # pylint: disable=unused-argument
     @staticmethod
     @debug_logger
     def get_best_method(
@@ -1045,6 +992,7 @@ class QNode:
             config, self.device, (self._tape,), self.transform_program
         )
 
+        # pylint: disable=protected-access
         outer_transform_program, inner_transform_program, config = _setup_transform_program(
             self.transform_program,
             self.device,
@@ -1115,30 +1063,3 @@ class QNode:
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
-
-
-def _prune_dynamic_transform(outer_transform, inner_transform):
-    """Ensure a single ``dynamic_one_shot`` transform is applied.
-
-    Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
-    be added to the inner transform program. If the user then applies a ``dynamic_one_shot``
-    manually, it will duplicate the ``mid_circuit_measurements`` transform. This function ensures
-    that there is only one ``dynamic_one_shot`` transform in the outer and inner transform
-    programs combined.
-
-    """
-
-    all_transforms = outer_transform + inner_transform
-    type_to_keep = 0
-    if any("mid_circuit_measurements" in str(t) for t in all_transforms):
-        type_to_keep = 2
-    elif any("dynamic_one_shot" in str(t) for t in all_transforms):
-        type_to_keep = 1
-
-    if type_to_keep == 0:
-        return
-
-    dynamic_transform_found = inner_transform.prune_dynamic_transform(type_to_keep)
-    if dynamic_transform_found:
-        type_to_keep = 0
-    outer_transform.prune_dynamic_transform(type_to_keep)
