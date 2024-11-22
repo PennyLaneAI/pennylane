@@ -15,10 +15,10 @@
 Unit tests for the Hilbert-Schmidt templates.
 """
 import pytest
-
+import numpy as np
 import pennylane as qml
 
-import numpy as np
+# pylint: disable=expression-not-assigned
 
 
 def global_v_circuit(params):
@@ -406,7 +406,6 @@ class TestHilbertSchmidt:
     @pytest.mark.jax
     def test_jax_jit(self):
         import jax
-        import numpy as np
 
         with qml.QueuingManager.stop_recording():
             u_tape = qml.tape.QuantumTape([qml.Hadamard(0)])
@@ -428,6 +427,48 @@ class TestHilbertSchmidt:
 
 class TestLocalHilbertSchmidt:
     """Tests for the Local Hilbert-Schmidt template."""
+
+    @pytest.mark.parametrize("param", [0.1, -np.pi / 2])
+    def test_maximal_cost(self, param):
+        """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
+
+        with qml.queuing.AnnotatedQueue() as q_U:
+            qml.Hadamard(wires=0)
+        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+
+        def v_function(param):
+            qml.Identity(wires=1)
+            qml.GlobalPhase(param, wires=1)
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def hilbert_test(v_params, v_function, v_wires, u_tape):
+            qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
+            return qml.probs(u_tape.wires + v_wires)
+
+        result = hilbert_test(param, v_function, [1], u_tape)[0]
+        # This is expected to be 0, since Tr(V†U) = 0
+        assert qml.math.allclose(result, 0)
+
+    @pytest.mark.parametrize("param", [0.1, -np.pi / 2])
+    def test_minimal_cost(self, param):
+        """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
+
+        with qml.queuing.AnnotatedQueue() as q_U:
+            qml.Hadamard(wires=0)
+        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+
+        def v_function(param):
+            qml.Hadamard(wires=1)
+            qml.GlobalPhase(param, wires=1)
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def hilbert_test(v_params, v_function, v_wires, u_tape):
+            qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
+            return qml.probs(u_tape.wires + v_wires)
+
+        result = hilbert_test(param, v_function, [1], u_tape)[0]
+        # This is expected to be 1, since U and V are the same up to a global phase
+        assert qml.math.allclose(result, 1)
 
     def test_lhs_decomposition_1_qubit(self):
         """Test if the LHS operation is correctly decomposed"""
@@ -563,12 +604,14 @@ class TestLocalHilbertSchmidt:
             u_tape=u_tape,
         )
 
+        # The exact analytic expression to be compared against is given by eq. (25) of https://arxiv.org/pdf/1807.00800 with j=1.
+        # Unfortunately, we don't have an immediate way to compute such an expression in PennyLane. However, since the
+        # local Hilbert-Schmidt test is very similar to the Hilbert-Schmidt test, the compare the latter with the
+        # analytic expression and use that as a proxy for correctness.
+
         assert qml.math.allclose(res, 0.5)
         # the answer is currently 0.5, and I'm going to assume that's correct. This test will let us know
         # if the answer changes.
-
-        # The exact analytic expression to be compared against is given by eq. (25) of https://arxiv.org/pdf/1807.00800 with j=1.
-        # unfortunately, we don't have an immediate way to compute such an expression in PennyLane.
 
     def test_v_not_quantum_function(self):
         """Test that we cannot pass a non quantum function to the HS operation"""
@@ -652,7 +695,6 @@ class TestLocalHilbertSchmidt:
     @pytest.mark.jax
     def test_jit(self):
         import jax
-        import numpy as np
 
         with qml.QueuingManager.stop_recording():
             u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0, 1))])
