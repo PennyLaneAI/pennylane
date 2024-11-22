@@ -181,7 +181,13 @@ class HilbertSchmidt(Operation):
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
-        decomp_ops.extend(qml.adjoint(op_v, lazy=False) for op_v in reversed(v_tape.operations))
+        # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
+        # apply the complex conjugate of each operation in the V tape and append it to the decomposition
+        # using the QubitUnitary operation.
+        decomp_ops.extend(
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
+            for op_v in v_tape.operations
+        )
 
         # CNOT second layer
         decomp_ops.extend(
@@ -289,8 +295,12 @@ class LocalHilbertSchmidt(HilbertSchmidt):
             decomp_ops.extend(u_tape.operations)
 
         # Unitary V conjugate
+        # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
+        # apply the complex conjugate of each operation in the V tape and append it to the decomposition
+        # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.adjoint(qml.apply, lazy=False)(op_v) for op_v in reversed(v_tape.operations)
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
+            for op_v in v_tape.operations
         )
         # Single qubit measurement
         decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
