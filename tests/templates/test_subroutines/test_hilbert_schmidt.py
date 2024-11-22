@@ -126,7 +126,7 @@ class TestHilbertSchmidt:
         u_matrix = qml.matrix(u_tape)
 
         with qml.queuing.AnnotatedQueue() as v_queue:
-            v_function(param)  # Example parameter value
+            v_function(param)
         v_tape = qml.tape.QuantumScript.from_queue(v_queue)
         v_matrix = qml.matrix(v_tape).reshape(d, d)
 
