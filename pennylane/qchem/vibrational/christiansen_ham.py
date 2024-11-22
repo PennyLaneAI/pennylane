@@ -11,8 +11,7 @@ from .christiansen_utils import christiansen_integrals, christiansen_integrals_d
 def christiansen_bosonic(
     one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True
 ):
-    r"""Build a vibrational observable in the Christiansen form (C-form) and map it
-    to the Pauli basis
+    r"""Build the bosonic operators in the Christiansen form.
 
     Args:
         one (array): 3D array with one-body matrix elements
@@ -24,7 +23,7 @@ def christiansen_bosonic(
         ordered (bool): set True if matrix elements are ordered, i.e. two[m,n,::] = 0 for all n >= m and three[m,n,l,::] = 0 for all n >= m and l >= n
 
     Returns:
-        tuple[int, Union[PauliSentence, Operator]]: the number of qubits and a linear combination of qubit operators
+        BoseSentence: the constructed bosonic operator
     """
     if modes is None:
         modes = np.shape(one)[0]
