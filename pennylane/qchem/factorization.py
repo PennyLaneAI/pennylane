@@ -96,12 +96,12 @@ def factorize(
         optimizer (optax.optimizer): an optax optimizer instance. If not provided, `Adam
             <https://optax.readthedocs.io/en/latest/api/optimizers.html#optax.adam>`_ is
             used with ``0.001`` learning rate
-        init_params (dict[str, TensorLike] | None): Intial values of the leaf (:math:`X`) and
-            core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as a dictionary with
-            keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of two-electron tensor
-            If not given, by default, zero matrices will be used if ``cholesky=False`` and the
-            core and leaf tensors corresponding to the first ``num_factors`` will be used if
-            ``cholesky=True``
+        init_params (dict[str, TensorLike] | None): Intial values of the orbital rotations
+            (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
+            a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
+            two-electron tensor. If not given, by default, zero matrices will be used if
+            ``cholesky=False`` and the core and leaf tensors corresponding to the first
+            ``num_factors`` will be used if ``cholesky=True``
         norm_prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``
 
     Returns:
