@@ -5,119 +5,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.pauli import PauliSentence, PauliWord
-from .bosonic import BoseSentence, BoseWord
-from .christiansenForm import christiansen_integrals, christiansen_integrals_dipole
-
-
-def christiansen_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
-    ps: bool = False,
-    wire_map: dict = None,
-    tol: float = None,
-):
-    r"""Convert a bosonic operator to a qubit operator using the Christiansen mapping.
-
-    The bosonic creation and annihilation operators are mapped to the Pauli operators as
-
-    .. math::
-
-        a^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
-        a^{\dagger}_n = \frac{X_n - iY_n}{2},
-
-    and
-
-    .. math::
-
-        a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
-        a_n = \frac{X_n + iY_n}{2},
-
-    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
-
-    Args:
-        bose_operator(BoseWord, BoseSentence): the bosonic operator
-        ps (bool): whether to return the result as a PauliSentence instead of an
-            Operator. Defaults to False.
-        wire_map (dict): a dictionary defining how to map the orbitals of
-            the bose operator to qubit wires. If None, the integers used to
-            order the orbitals will be used as wire labels. Defaults to None.
-        tol (float): tolerance for discarding the imaginary part of the coefficients
-
-    Returns:
-        Union[PauliSentence, Operator]: a linear combination of qubit operators
-    """
-    return _christiansen_mapping_dispatch(bose_operator, ps, wire_map, tol)
-
-
-@singledispatch
-def _christiansen_mapping_dispatch(bose_operator, ps, wire_map, tol):
-    """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
-    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
-
-
-@_christiansen_mapping_dispatch.register
-def _(bose_operator: BoseWord, ps=False, wire_map=None, tol=None):
-    wires = list(bose_operator.wires) or [0]
-    identity_wire = wires[0]
-
-    if len(bose_operator) == 0:
-        qubit_operator = PauliSentence({PauliWord({}): 1.0})
-
-    else:
-        coeffs = {"+": -0.5j, "-": 0.5j}
-        qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
-
-        for item in bose_operator.items():
-            (_, wire), sign = item
-
-            # z_string = dict(zip(range(wire), ["Z"] * wire))
-            z_string = {}
-            qubit_operator @= PauliSentence(
-                {
-                    PauliWord({**z_string, **{wire: "X"}}): 0.5,
-                    PauliWord({**z_string, **{wire: "Y"}}): coeffs[sign],
-                }
-            )
-
-    for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
-
-    if not ps:
-        # wire_order specifies wires to use for Identity (PauliWord({}))
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
-
-    if wire_map:
-        return qubit_operator.map_wires(wire_map)
-
-    return qubit_operator
-
-
-@_christiansen_mapping_dispatch.register
-def _(bose_operator: BoseSentence, ps=False, wire_map=None, tol=None):
-    wires = list(bose_operator.wires) or [0]
-    identity_wire = wires[0]
-
-    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
-
-    for fw, coeff in bose_operator.items():
-        bose_word_as_ps = christiansen_mapping(fw, ps=True)
-
-        for pw in bose_word_as_ps:
-            qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
-
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
-
-    qubit_operator.simplify(tol=1e-16)
-
-    if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
-
-    if wire_map:
-        return qubit_operator.map_wires(wire_map)
-
-    return qubit_operator
-
+from pennylane.bose import BoseSentence, BoseWord
+from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
 
 def christiansen_bosonic(
     one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True
@@ -234,40 +123,40 @@ def christiansen_bosonic(
     return obs_sq
 
 
-def christiansen_hamiltonian(pes, nbos=16, do_cubic=False):
+# def christiansen_hamiltonian(pes, nbos=16, do_cubic=False):
 
-    h_arr = christiansen_integrals(pes, nbos=nbos, do_cubic=do_cubic)
+#     h_arr = christiansen_integrals(pes, nbos=nbos, do_cubic=do_cubic)
 
-    one = h_arr[0]
-    two = h_arr[1]
-    three = h_arr[2] if len(h_arr) == 3 else None
-    cform_bosonic = christiansen_bosonic(one=one, two=two, three=three)
-    cform_qubit = christiansen_mapping(cform_bosonic)
+#     one = h_arr[0]
+#     two = h_arr[1]
+#     three = h_arr[2] if len(h_arr) == 3 else None
+#     cform_bosonic = christiansen_bosonic(one=one, two=two, three=three)
+#     cform_qubit = christiansen_mapping(cform_bosonic)
 
-    return cform_qubit
+#     return cform_qubit
 
 
-def christiansen_dipole(pes, nbos=16, do_cubic=False):
+# def christiansen_dipole(pes, nbos=16, do_cubic=False):
 
-    d_arr = christiansen_integrals_dipole(pes, nbos=nbos, do_cubic=do_cubic)
+#     d_arr = christiansen_integrals_dipole(pes, nbos=nbos, do_cubic=do_cubic)
 
-    one_x = d_arr[0][0, :, :, :]
-    two_x = d_arr[1][0, :, :, :, :, :, :] if len(d_arr) > 1 else None
-    three_x = d_arr[2][0, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
-    cform_bosonic_x = christiansen_bosonic(one=one_x, two=two_x, three=three_x)
-    print(cform_bosonic_x)
-    cform_qubit_x = christiansen_mapping(cform_bosonic_x)
+#     one_x = d_arr[0][0, :, :, :]
+#     two_x = d_arr[1][0, :, :, :, :, :, :] if len(d_arr) > 1 else None
+#     three_x = d_arr[2][0, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
+#     cform_bosonic_x = christiansen_bosonic(one=one_x, two=two_x, three=three_x)
+#     print(cform_bosonic_x)
+#     cform_qubit_x = christiansen_mapping(cform_bosonic_x)
 
-    one_y = d_arr[0][1, :, :, :]
-    two_y = d_arr[1][1, :, :, :, :, :, :] if len(d_arr) > 1 else None
-    three_y = d_arr[2][1, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
-    cform_bosonic_y = christiansen_bosonic(one=one_y, two=two_y, three=three_y)
-    cform_qubit_y = christiansen_mapping(cform_bosonic_y)
+#     one_y = d_arr[0][1, :, :, :]
+#     two_y = d_arr[1][1, :, :, :, :, :, :] if len(d_arr) > 1 else None
+#     three_y = d_arr[2][1, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
+#     cform_bosonic_y = christiansen_bosonic(one=one_y, two=two_y, three=three_y)
+#     cform_qubit_y = christiansen_mapping(cform_bosonic_y)
 
-    one_z = d_arr[0][2, :, :, :]
-    two_z = d_arr[1][2, :, :, :, :, :, :] if len(d_arr) > 1 else None
-    three_z = d_arr[2][2, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
-    cform_bosonic_z = christiansen_bosonic(one=one_z, two=two_z, three=three_z)
-    cform_qubit_z = christiansen_mapping(cform_bosonic_z)
+#     one_z = d_arr[0][2, :, :, :]
+#     two_z = d_arr[1][2, :, :, :, :, :, :] if len(d_arr) > 1 else None
+#     three_z = d_arr[2][2, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
+#     cform_bosonic_z = christiansen_bosonic(one=one_z, two=two_z, three=three_z)
+#     cform_qubit_z = christiansen_mapping(cform_bosonic_z)
 
-    return cform_qubit_x, cform_qubit_y, cform_qubit_z
+#     return cform_qubit_x, cform_qubit_y, cform_qubit_z
