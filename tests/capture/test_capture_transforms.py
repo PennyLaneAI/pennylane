@@ -23,30 +23,51 @@ import pytest
 
 import pennylane as qml
 from pennylane.capture import TransformInterpreter, TransformTrace, TransformTracer
+from pennylane.capture.primitives import (
+    cond_prim,
+    for_loop_prim,
+    grad_prim,
+    jacobian_prim,
+    qnode_prim,
+    while_loop_prim,
+)
 from pennylane.transforms.core import TransformError, TransformProgram, transform
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """enable and disable capture around each test."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+class DummyTrace(jax.core.Trace):
+    """Dummy Trace for testing"""
+
+    def pure(self, val):
+        val1 = jnp.array(val)
+        return DummyTracer(self, val, jax.core.ShapedArray(val1.shape, val1.dtype))
+
+    lift = sublift = pure
+
+    def process_primitive(self, primitive, tracers, params):
+        return primitive.bind(*(t.val for t in tracers), **params)
 
 
 class DummyTracer(jax.core.Tracer):
+    """Dummy Tracer for testing"""
+
     # pylint: disable=too-few-public-methods
-    def __init__(self, aval):
+    def __init__(self, trace, val, aval):
+        super().__init__(trace)
+        self.val = val
         self._aval = aval
 
     @property
     def aval(self):
         return self._aval
+
+
+dummy_main = jax.core.MainTrace(level=1, trace_type=DummyTrace)
+dummy_trace = dummy_main.with_cur_sublevel()
 
 
 def init_test_variables(level=0, transforms=()):
@@ -75,7 +96,10 @@ class TestTransformTracer:
     @pytest.mark.parametrize(
         "val, expected_aval",
         [
-            (DummyTracer(1.23), 1.23),
+            (
+                DummyTracer(dummy_trace, 1.23, jax.core.ShapedArray((), float)),
+                jax.core.ShapedArray((), float),
+            ),
             # Multiple by 2 below instead of creating another AbstractValue because both value
             # need to be same instance for equality operator to work how we want
             (jax.core.AbstractValue(),) * 2,
@@ -329,70 +353,18 @@ class TestTransformInterpreter:
             0,
             1 + 0j,
             jnp.array(1.0),
-            # Creates a TransformTracer, but its _trace does not belong to the interpreter
-            init_test_variables()[2].pure(-1),
-            # Creates a nested TransformTracer, but its _trace does not belong to the interpreter
-            init_test_variables()[2].pure(init_test_variables()[2].pure(-2)),
+            DummyTracer(dummy_trace, -1, jax.core.ShapedArray((), int)),
         ],
     )
     def test_read_with_trace_unboxed(self, inval):
         """Test that values that are not boxed into tracers belonging to the interpreter
         are boxed in TransformTracers."""
-        program, _, trace = init_test_variables()
+        program, _, trace = init_test_variables(level=2)
         interpreter = TransformInterpreter(program)
         interpreter._trace = trace
 
         outval = interpreter.read_with_trace(inval)
         assert outval == trace.pure(inval)
-
-    def test_interpret_operation_eqn_dropped(self):
-        """Test that operator equations that output a DropVar are interpreted correctly."""
-
-    def test_interpret_operation_eqn_not_dropped(self):
-        """Test that operator equations that do not output a DropVar are not transformed."""
-
-    def test_interpret_operation_eqn_operator_input(self):
-        """Test that operator equations that include another operator as input are
-        interpreted correctly."""
-
-    def test_interpret_measurement_eqn(self):
-        """Test that measurement equations are interpreted correctly."""
-
-    def test_eval_adjoint_error(self):
-        """Test that an error is raised when trying to interpret Adjoint primitives."""
-
-        def adj_func(x):
-            qml.RX(x, 0)
-
-        def f(x):
-            qml.adjoint(adj_func)(x)
-            return qml.expval(qml.Z(0))
-
-        args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
-        program, _, _ = init_test_variables(transforms=[change_rotations])
-        interpreter = TransformInterpreter(program)
-
-        with pytest.raises(NotImplementedError):
-            _ = interpreter.eval(jaxpr.jaxpr, jaxpr.consts, *args)
-
-    def test_eval_ctrl_error(self):
-        """Test that an error is raised when trying to interpret Control primitives."""
-
-        def ctrl_func(x):
-            qml.RX(x, 0)
-
-        def f(x):
-            qml.ctrl(ctrl_func, [1, 2])(x)
-            return qml.expval(qml.Z(0))
-
-        args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
-        program, _, _ = init_test_variables(transforms=[change_rotations])
-        interpreter = TransformInterpreter(program)
-
-        with pytest.raises(NotImplementedError):
-            _ = interpreter.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
 
 @pytest.mark.integration
@@ -401,32 +373,282 @@ class TestTransformInterpreterIntegration:
 
     def test_call(self):
         """Test that calling an interpreted function gives the correct results."""
+        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+
+        @TransformInterpreter(program)
+        def f(x):
+            qml.RX(x, 0)
+            qml.RY(x, 0)
+            qml.RZ(x, 0)
+            qml.PhaseShift(x, 0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0])
+
+        args = (1.5,)
+        m1, m2 = f(*args)
+        qml.assert_equal(m1, qml.var(qml.Z(0)))
+        qml.assert_equal(m2, qml.probs(wires=[0]))
+
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == qml.RY._primitive
+        assert jaxpr.eqns[1].primitive == qml.RZ._primitive
+        assert jaxpr.eqns[2].primitive == qml.RX._primitive
+        assert jaxpr.eqns[3].primitive == qml.PhaseShift._primitive
+        assert jaxpr.eqns[4].primitive == qml.Z._primitive
+        assert jaxpr.eqns[5].primitive == qml.measurements.VarianceMP._obs_primitive
+        assert jaxpr.eqns[6].primitive == qml.measurements.ProbabilityMP._wires_primitive
+
+        m1, m2 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        qml.assert_equal(m1, qml.var(qml.Z(0)))
+        qml.assert_equal(m2, qml.probs(wires=[0]))
 
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_transform(self, lazy):
         """Test that the correct error is raised if intepreted function contains Adjoint
         primitives."""
+        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+
+        @TransformInterpreter(program)
+        def f(x):
+            def adj_f(x):
+                qml.RX(x, 0)
+
+            qml.adjoint(adj_f, lazy=lazy)(x)
+            return qml.expval(qml.Z(0))
+
+        args = (1.5,)
+        with pytest.raises(NotImplementedError):
+            f(*args)
 
     def test_ctrl_transform(self):
         """Test that the correct error is raised if intepreted function contains Control
         primitives."""
+        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+
+        @TransformInterpreter(program)
+        def f(x):
+            def ctrl_f(x):
+                qml.RX(x, 0)
+
+            qml.ctrl(ctrl_f, control=[1, 2])(x)
+            return qml.expval(qml.Z(0))
+
+        args = (1.5,)
+        with pytest.raises(NotImplementedError):
+            f(*args)
 
     def test_cond(self):
         """Test that calling an interpreted function with cond primitives gives the correct
         results."""
+        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+
+        @TransformInterpreter(program)
+        def f(x):
+            @qml.cond(x > 2)
+            def cond_f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            @cond_f.else_if(x > 1)
+            def _(x):
+                qml.RY(x, 0)
+                return qml.expval(qml.Z(0))
+
+            @cond_f.else_if(x > 0)
+            def _(x):
+                qml.RZ(x, 0)
+                return qml.expval(qml.Z(0))
+
+            @cond_f.otherwise
+            def _(x):
+                qml.PhaseShift(x, 0)
+                return qml.expval(qml.Z(0))
+
+            out = cond_f(x)
+            return out
+
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        # First 3 primitives are the conditions for each of the branches
+        assert jaxpr.eqns[3].primitive == cond_prim
+
+        def validate_branch(branch, args, expected_primitives, expected_queue):
+            assert len(branch.eqns) == len(expected_primitives)
+            for eqn, prim in zip(branch.eqns, expected_primitives):
+                assert eqn.primitive == prim
+
+            with qml.queuing.AnnotatedQueue() as q:
+                jax.core.eval_jaxpr(branch, [], *args)
+
+            assert len(q) == len(expected_queue)
+            for actual, expected in zip(q.queue, expected_queue):
+                qml.assert_equal(actual, expected)
+
+            with qml.queuing.AnnotatedQueue() as q:
+                jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+
+            assert len(q) == len(expected_queue)
+            for actual, expected in zip(q.queue, expected_queue):
+                qml.assert_equal(actual, expected)
+
+        # True branch
+        branch1 = jaxpr.eqns[3].params["jaxpr_branches"][0]
+        args = (2.5,)
+        expected_primitives = [
+            qml.RY._primitive,
+            qml.Z._primitive,
+            qml.measurements.VarianceMP._obs_primitive,
+        ]
+        expected_queue = [qml.RY(*args, 0), qml.var(qml.Z(0))]
+        validate_branch(branch1, args, expected_primitives, expected_queue)
+
+        # Elif branch 1
+        branch2 = jaxpr.eqns[3].params["jaxpr_branches"][1]
+        args = (1.5,)
+        expected_primitives = [
+            qml.RZ._primitive,
+            qml.Z._primitive,
+            qml.measurements.VarianceMP._obs_primitive,
+        ]
+        expected_queue = [qml.RZ(*args, 0), qml.var(qml.Z(0))]
+        validate_branch(branch2, args, expected_primitives, expected_queue)
+
+        # Elif branch 2
+        branch3 = jaxpr.eqns[3].params["jaxpr_branches"][2]
+        args = (0.5,)
+        expected_primitives = [
+            qml.RX._primitive,
+            qml.Z._primitive,
+            qml.measurements.VarianceMP._obs_primitive,
+        ]
+        expected_queue = [qml.RX(*args, 0), qml.var(qml.Z(0))]
+        validate_branch(branch3, args, expected_primitives, expected_queue)
+
+        # Else branch
+        branch4 = jaxpr.eqns[3].params["jaxpr_branches"][3]
+        args = (-0.5,)
+        expected_primitives = [
+            qml.PhaseShift._primitive,
+            qml.Z._primitive,
+            qml.measurements.VarianceMP._obs_primitive,
+        ]
+        expected_queue = [qml.PhaseShift(*args, 0), qml.var(qml.Z(0))]
+        validate_branch(branch4, args, expected_primitives, expected_queue)
 
     def test_for_loop(self):
         """Test that calling an interpreted function with for_loop primitives gives the correct
         results."""
+        program, _, _ = init_test_variables(transforms=[change_rotations])
+
+        @TransformInterpreter(program)
+        def f(x, n):
+            @qml.for_loop(n)
+            def g(i):
+                qml.RX(x, i)
+
+            g()
+
+        args = (1.5, 5)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == for_loop_prim
+
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert len(inner_jaxpr.eqns) == 1
+        assert inner_jaxpr.eqns[0].primitive == qml.RY._primitive
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+
+        assert len(q) == args[1]
+        for i, op in enumerate(q.queue):
+            qml.assert_equal(op, qml.RY(args[0], i))
 
     def test_while_loop(self):
         """Test that calling an interpreted function with while_loop primitives gives the correct
         results."""
+        program, _, _ = init_test_variables(transforms=[change_rotations])
+
+        @TransformInterpreter(program)
+        def f(x, n):
+            @qml.while_loop(lambda i: i < 2 * n)
+            def g(i):
+                qml.RX(x, i)
+                return i + 1
+
+            g(0)
+
+        args = (1.5, 5)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == while_loop_prim
+
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert len(inner_jaxpr.eqns) == 2
+        assert inner_jaxpr.eqns[0].primitive == qml.RY._primitive
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+
+        assert len(q) == 2 * args[1]
+        for i, op in enumerate(q.queue):
+            qml.assert_equal(op, qml.RY(args[0], i))
 
     def test_qnode(self):
         """Test that calling an interpreted function with qnode primitives gives the correct
         results."""
+        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+        dev = qml.device("default.qubit", wires=2)
 
-    def test_grad_and_jac(self):
+        @TransformInterpreter(program)
+        @qml.qnode(dev, diff_method="adjoint", grad_on_execution=False)
+        def f(x):
+            # With RZ and <Z>, the expval will always be 1, so var will always be 0
+            qml.RZ(x, 0)
+            return qml.expval(qml.Z(0))
+
+        args = (1.5,)
+        jaxpr = jax.make_jaxpr(f)(*args)
+        assert jaxpr.eqns[0].primitive == qnode_prim
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        assert len(inner_jaxpr.eqns) == 3
+        assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[1].primitive == qml.Z._primitive
+        assert inner_jaxpr.eqns[2].primitive == qml.measurements.VarianceMP._obs_primitive
+
+        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "adjoint"
+        assert jaxpr.eqns[0].params["qnode_kwargs"]["grad_on_execution"] is False
+        assert jaxpr.eqns[0].params["device"] == dev
+
+        res1 = f(*args)
+        # We end up performing an RX gate and measuring var(Z)
+        expected = jnp.sin(*args) ** 2
+        assert qml.math.allclose(res1, expected)
+        res2 = jax.core.eval_jaxpr(jaxpr.jaxpr, [], *args)
+        assert qml.math.allclose(res2, expected)
+
+    @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
+    def test_grad_and_jac(self, grad_f):
         """Test that calling an interpreted function with qnode primitives gives the correct
         results."""
+        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+        dev = qml.device("default.qubit", wires=2)
+
+        @TransformInterpreter(program)
+        def f(x):
+            @qml.qnode(dev)
+            def circuit(y):
+                qml.RZ(y, 0)
+                return qml.expval(qml.Z(0))
+
+            return grad_f(circuit)(x)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+
+        if grad_f == qml.grad:
+            assert jaxpr.eqns[0].primitive == grad_prim
+        else:
+            assert jaxpr.eqns[0].primitive == jacobian_prim
+        grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.VarianceMP._obs_primitive
