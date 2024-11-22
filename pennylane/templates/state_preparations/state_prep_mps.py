@@ -28,7 +28,7 @@ class MPSPrep(Operation):
 
 
     Args:
-        mps (list(arrays)):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS 
+        mps (list(arrays)):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS
         site matrices
 
         wires (Sequence[int]): wires that the template acts on
@@ -37,7 +37,24 @@ class MPSPrep(Operation):
 
     .. code-block::
 
-        mps = # The MPS array
+        mps = [
+            np.array([[0.0, 0.107], [0.994, 0.0]]),
+            np.array(
+                [
+                    [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                    [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                ]
+            ),
+            np.array(
+                [
+                    [[-1.0, 0.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 1.0]],
+                    [[0.0, -1.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [1.0, 0.0]],
+                ]
+            ),
+            np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
 
         dev = qml.device("lightning.tensor", wires = 3)
         @qml.qnode(dev)
