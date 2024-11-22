@@ -29,7 +29,7 @@ from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow.qnode import _prune_dynamic_transform
+from pennylane.workflow._setup_transform_program import _prune_dynamic_transform
 
 
 def test_tape_property_is_deprecated():

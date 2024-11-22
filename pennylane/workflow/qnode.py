@@ -33,8 +33,6 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
-from ._resolve_diff_method import _resolve_diff_method
-from ._setup_transform_program import _setup_transform_program
 from .execution import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
@@ -152,6 +150,7 @@ def _resolve_mcm_config(
     return replace(mcm_config, **updated_values)
 
 
+# pylint: disable=protected-access
 def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
@@ -179,8 +178,9 @@ def _resolve_execution_config(
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     else:
-        # pylint: disable=protected-access
-        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+        execution_config = qml.workflow._resolve_diff_method(
+            execution_config, device, tape=tapes[0]
+        )
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
@@ -993,12 +993,14 @@ class QNode:
         )
 
         # pylint: disable=protected-access
-        outer_transform_program, inner_transform_program, config = _setup_transform_program(
-            self.transform_program,
-            self.device,
-            config,
-            execute_kwargs["cache"],
-            execute_kwargs["cachesize"],
+        outer_transform_program, inner_transform_program, config = (
+            qml.workflow._setup_transform_program(
+                self.transform_program,
+                self.device,
+                config,
+                execute_kwargs["cache"],
+                execute_kwargs["cachesize"],
+            )
         )
 
         # Calculate the classical jacobians if necessary
