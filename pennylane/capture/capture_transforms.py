@@ -23,6 +23,8 @@ import pennylane as qml
 from .base_interpreter import PlxprInterpreter
 from .primitives import adjoint_transform_prim, ctrl_transform_prim
 
+_mp_return_types = tuple(repr(value) for value in qml.measurements.ObservableReturnTypes)
+
 
 class TransformTrace(Trace):
     """Trace for processing primitives for PennyLane transforms.
@@ -70,7 +72,10 @@ class TransformTrace(Trace):
             Any: The result of the interpretation.
         """
         idx = max(t.idx for t in tracers if isinstance(t, TransformTracer))
-        is_qml_primitive = primitive.__class__.__module__.split(".")[0] == "pennylane"
+        is_qml_primitive = (
+            primitive.__class__.__module__.split(".")[0] == "pennylane"
+            or primitive.name.split("_")[0] in _mp_return_types
+        )
 
         if idx >= len(self._transform_program) or not is_qml_primitive:
             # Either all transforms have been applied or the primitive is not an operator or measurement
@@ -101,14 +106,35 @@ class TransformTracer(Tracer):
 
         # Eagerly setting the abstract eval in __init__ to avoid recursion errors later. If all
         # TransformTracers set abstract eval in __init__, then recursion will never be needed.
+        self._aval = self.get_aval(val)
+
+    @staticmethod
+    def get_aval(val: Any) -> jax.core.AbstractValue:
+        """Get abstract value."""
+        # pylint: disable=protected-access
         if isinstance(val, Tracer):
-            self._aval = val.aval
+            aval = val.aval
         elif isinstance(val, jax.core.AbstractValue):
-            self._aval = val
+            aval = val
+        elif isinstance(val, qml.operation.Operator):
+            aval = qml.capture.AbstractOperator()
+        elif isinstance(val, qml.measurements.MeasurementProcess):
+            if val.obs is not None:
+                kwargs = {"n_wires": None}
+            elif val.mv is not None:
+                kwargs = {"n_wires": len(val.mv) if isinstance(val.mv, list) else 1}
+            else:
+                kwargs = {
+                    "n_wires": len(val.wires),
+                    "has_eigvals": val._eigvals is not None,
+                }
+            aval = qml.capture.AbstractMeasurement(val._abstract_eval, **kwargs)
         else:
             if isinstance(val, (list, tuple, int, float, complex, bool)):
                 val = jnp.array(val)
-            self._aval = ShapedArray(qml.math.shape(val), val.dtype)
+            aval = ShapedArray(qml.math.shape(val), val.dtype)
+
+        return aval
 
     def __repr__(self):
         return f"TransformTracer({self._trace}, val={self.val}, idx={self.idx})"
@@ -229,7 +255,7 @@ class TransformInterpreter(PlxprInterpreter):
         if getattr(var, "_trace", None) is self._trace:
             return var
 
-        return self._trace.pure(var)
+        return self._trace.full_raise(var)
 
     def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
@@ -243,16 +269,10 @@ class TransformInterpreter(PlxprInterpreter):
         invals = [self.read(invar) for invar in eqn.invars]
 
         # We only wrap inputs in tracers if interpreting PennyLane primitive,
-        # and only transform primitives which are being applied in circuit
+        # and, thus, only transform those primitives.
         if isinstance(eqn.outvars[0], jax.core.DropVar):
             invals = [self.read_with_trace(inval) for inval in invals]
-            return eqn.primitive.bind(*invals, **eqn.params)
-
-        # Other operators are created normally and saved to the environment
-        # to be used for later
-        op = eqn.primitive.impl(*invals, **eqn.params)
-
-        return op
+        return eqn.primitive.bind(*invals, **eqn.params)
 
     def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
@@ -264,7 +284,7 @@ class TransformInterpreter(PlxprInterpreter):
 
         """
         invals = [self.read(invar) for invar in eqn.invars]
-        invals = [self.read_with_trace(self.read(inval)) for inval in invals]
+        invals = [self.read_with_trace(inval) for inval in invals]
         return eqn.primitive.bind(*invals, **eqn.params)
 
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
