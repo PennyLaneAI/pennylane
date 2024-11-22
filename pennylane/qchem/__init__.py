@@ -14,8 +14,6 @@
 """
 This submodule provides the functionality to perform quantum chemistry calculations.
 """
-
-from .vibrational import unary_mapping
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
