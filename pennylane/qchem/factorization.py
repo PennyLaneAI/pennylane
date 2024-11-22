@@ -366,7 +366,7 @@ def _compressed_cost_fn(params, two, leaf_tensors, core_tensors, norm_order, pre
     return cost
 
 
-def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
+def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorization_kwargs):
     r"""Return the grouped coefficients and observables of a molecular Hamiltonian and the basis
     rotation unitaries obtained with the basis rotation grouping method.
 
@@ -375,6 +375,17 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
             basis arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
+
+    Keyword Args:
+        tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues.
+            This will be used only when ``compressed==False``
+        cholesky (bool): use Cholesky decomposition for the ``two_electron`` instead of
+            eigendecomposition. Default is ``False``.
+        compressed (bool): use compressed double factorization for decomposing the ``two_electron``.
+        regularization (string | None): type of regularization (``"L1"`` or ``"L2"``) to be
+            used for optimizing the factors. Default is to not include any regularization term
+        **compression_kwargs: Look at the keyword arguments (``compression_kwargs``) in the
+            :func:`~.factorize` method for all the available options with ``compressed=True``
 
     Returns:
         tuple(list[array[float]], list[list[Observable]], list[array[float]]): tuple containing
@@ -479,13 +490,11 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     chemist_one_body_tensor = np.kron(one_body_tensor, np.eye(2))  # account for spin
     t_eigvals, t_eigvecs = np.linalg.eigh(chemist_one_body_tensor)
 
-    factors, _, _ = factorize(chemist_two_body_tensor, tol_factor=tol_factor)
-    factors = [np.kron(factor, np.eye(2)) for factor in factors]  # account for spin
-
-    v_coeffs, v_unitaries = np.linalg.eigh(factors)
-    indices = [np.argsort(v_coeff)[::-1] for v_coeff in v_coeffs]
-    v_coeffs = [v_coeff[indices[idx]] for idx, v_coeff in enumerate(v_coeffs)]
-    v_unitaries = [v_unitary[:, indices[idx]] for idx, v_unitary in enumerate(v_unitaries)]
+    factorization_kwargs["tol_factor"] = tol_factor
+    factors, core_tensors, leaf_tensors = factorize(chemist_two_body_tensor, **factorization_kwargs)
+    v_unitaries = [
+        np.kron(leaf_tensor, np.eye(2)) for leaf_tensor in leaf_tensors
+    ]  # account for spin
 
     ops_t = 0.0
     for p in range(num_orbitals):
@@ -497,8 +506,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
         for p in range(num_orbitals):
             for q in range(num_orbitals):
                 ops_l_ += (
-                    v_coeffs[idx][p]
-                    * v_coeffs[idx][q]
+                    core_tensors[idx][p // 2, q // 2]
                     * 0.25
                     * (
                         qml.Identity(p)
