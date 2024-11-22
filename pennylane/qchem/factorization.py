@@ -57,9 +57,9 @@ def factorize(
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
             basis arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
-            This will be used only when ``compressed==False``
+            This will be used only when ``compressed=False``
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues.
-            This will be used only when ``compressed==False``
+            This will be used only when ``compressed=False``
         cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
             :math:`L^{(r)}` instead of eigendecomposition
         compressed (bool): use compressed double factorization to optimize the factors returned
@@ -378,7 +378,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
 
     Keyword Args:
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues.
-            This will be used only when ``compressed==False``
+            This will be used only when ``compressed=False``
         cholesky (bool): use Cholesky decomposition for the ``two_electron`` instead of
             eigendecomposition. Default is ``False``.
         compressed (bool): use compressed double factorization for decomposing the ``two_electron``.
