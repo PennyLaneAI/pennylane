@@ -213,6 +213,7 @@ def _to_qfunc_output_type(
 
     results_leaves = qml.pytrees.flatten(results, is_leaf=lambda obj: isinstance(obj, dict))[0]
 
+    # patch for transforms that change the number of results like metric_tensor
     if len(results_leaves) != len(qfunc_output_leaves):
         if isinstance(qfunc_output, (Sequence, qml.measurements.MeasurementProcess)):
             return results
