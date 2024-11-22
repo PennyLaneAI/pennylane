@@ -468,7 +468,7 @@ def _qsp_to_qsvt(angles):
     return angles + update_vals
 
 
-def _complementary_poly(P):
+def _complementary_poly(poly_coeffs):
     r"""
     Computes the complementary polynomial Q given a polynomial P.
 
@@ -483,39 +483,38 @@ def _complementary_poly(P):
     For more details see `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
 
     Args:
-        P (array-like): coefficients of the complex polynomial P
+        poly_coeffs (array-like): coefficients of the complex polynomial P
 
     Returns:
         array-like: coefficients of the complementary polynomial Q
     """
-    poly_degree = len(P) - 1
+    poly_degree = len(poly_coeffs) - 1
 
     # Build the polynomial R(z) = z^degree * (1 - conj(P(1/z)) * P(z)), deduced from (eq.33) and (eq.34) of
-    # `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_
-    R = Polynomial.basis(poly_degree) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
+    # `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
+    # Note that conj(P(1/z)) * P(z) could be expressed as z^-degree * conj(P(z)[::-1]) * P(z)
+    R = Polynomial.basis(poly_degree) - Polynomial(poly_coeffs) * Polynomial(
+        np.conj(poly_coeffs[::-1])
+    )
     r_roots = R.roots()
 
-    # Categorize the roots based on their magnitude: outside the unit circle or inside the closed unit circle
     inside_circle = [root for root in r_roots if np.abs(root) <= 1]
     outside_circle = [root for root in r_roots if np.abs(root) > 1]
 
-    # Compute the scaling factor for Q, which depends on the leading coefficient of R
     scale_factor = np.sqrt(np.abs(R.coef[-1] * np.prod(outside_circle)))
-
-    # Complementary polynomial Q is built using th roots inside the closed unit circle
     Q_poly = scale_factor * Polynomial.fromroots(inside_circle)
 
     return Q_poly.coef
 
 
-def _QSP_angles_root_finding(F):
+def _compute_qsp_angle(poly_coeffs):
     r"""
-    Computes the Quantum Signal Processing (QSP) angles given a polynomial F.
+    Computes the Quantum Signal Processing (QSP) angles given the coefficients of a polynomial F.
 
-    The method for computing the QSP angles is adapted from the approach described in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_] for Generalized-QSP.    
+    The method for computing the QSP angles is adapted from the approach described in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_] for Generalized-QSP.
 
     Args:
-        F (array-like): coefficients of the input polynomial F
+        poly_coeffs (array-like): coefficients of the input polynomial F
 
     Returns:
         (array-like): QSP angles corresponding to the input polynomial F
@@ -523,46 +522,39 @@ def _QSP_angles_root_finding(F):
     .. details::
         :title: Implementation details
 
-        The GQSP paper [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_] describes a method for calculating angles efficiently if, given an objective
-        polynomial :math:`P`, we know its complementary polynomial :math:`Q`.
-        This means that :math:`|P(e^{i \theta})|^2 + |Q(e^{i \theta})|^2 = 1` for all :math:`\theta \in [0, 2 \pi]`.
+        Based on the appendix A in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_], the target polynomial :math:`F`
+        is transformed into a new polynomial :math:`P` by following the steps below:
 
-        It is important to note the differences between QSP and GQSP:
+        0. The input to the function are the coefficients of :math:`F`. E.g. :math:`[c_0, 0, c_1, 0, c_2]`.
+        1. We express the polynomial in the Chebyshev basis by applying the Chebyshev transform. This generates
+           a new representation :math:`[a_0, 0, a_1, 0, a_2]`.
+            2. We generate :math:`P` by reordering the array, moving the zeros to the initial positions.
+               :math:`P = [0, 0, a_0, a_1, a_2]`.
 
-        1. Given a block encoding of a matrix :math:`A`, GQSP works on the Chebyshev basis and QSP on the standard basis.
-        2. QSP accepts as input only polynomials with defined parity but GQSP does not have this restriction.
-        3. In GQSP, the coefficients can be complex, while in QSP they must be real.
-        4. GQSP applies three parameters per iteration, while QSP applies only one.
+            The polynomial :math:`P` can now be used in Algorithm 1 [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_]
+            in order to find the desired angles.
 
-        Based on [1], in order to calculate the angles for a polynomial :math:`F` in QSP using a GQSP solver, the
-        polynomial should first be transformed into the Chebyshev basis. This is done via `chebyshev.poly2cheb(F)`.
+            The above algorithm is specific to Generalized-QSP so an adaptation has been made to return the required angles:
 
-        Theorem 5 of the paper [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_] shows that to calculate the complementary polynomial of :math:`F`, we
-        first define :math:`P(z) = z^{\frac{d}{2}}F(\sqrt{z})`. Based on [2], :math:`F` is of the
-        form :math:`(a_0, 0, a_2, 0, a_4, \dots)`, so one can
-        rewrite :math:`P` as :math:`(0, 0, \dots, a_0, a_2, a_4, \dots)`. This is what is done
-        when :math:`P` is defined in the code.
+                - The :math:`R(\theta, \phi, \lambda)` gate, is simplified into a :math:`R_Y(\theta)` gate.
 
-        Once we have the coefficients of the polynomial and its complementary,
-        we can apply Algorithm 1 in [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_], where :math:`\vec{a}` and :math:`\vec{b}` are the
-        coefficients of these polynomials, respectively. By [3], the coefficients are real,
-        so the :math:`\vec{\theta}`, :math:`\vec{\phi}`, and :math:`\vec{\lambda}` angles can be combined,
-        thus generating ``rotation_angles``. The algorithm is simplified, and instead of working
-        with the gate defined in (eq.8) of the previous paper, the RY gate is used.
+                - The calculation of :math:`\theta_d` is updated to :math:`\theta_d = \tan^{-1}(\frac{a_d}{b_d})`.
+                  In this way, the sign introduced by :math:`\phi_d` and :math:`\lambda_d` is absorbed
+                  in the :math:`\theta_d` value.
     """
 
-    parity = (len(F) - 1) % 2
+    parity = (len(poly_coeffs) - 1) % 2
 
-    # Construct the auxiliary polynomial P and its complementary Q based on appendix A in [arXiv:2406.04246]
-    P = np.concatenate([np.zeros(len(F) // 2), chebyshev.poly2cheb(F)[parity::2]]) * (1 - 1e-12)
+    P = np.concatenate(
+        [np.zeros(len(poly_coeffs) // 2), chebyshev.poly2cheb(poly_coeffs)[parity::2]]
+    ) * (1 - 1e-12)
     complementary = _complementary_poly(P)
 
     polynomial_matrix = np.array([P, complementary])
     num_terms = polynomial_matrix.shape[1]
     rotation_angles = np.zeros(num_terms)
 
-    # This subroutine is an adaptation of Algorithm 1 in [arXiv:2308.01501]
-    # in order to work in the context of QSP.
+    # Adaptation of Algorithm 1
     with qml.QueuingManager.stop_recording():
         for idx in range(num_terms - 1, -1, -1):
 
@@ -586,6 +578,9 @@ def transform_angles(angles, routine1, routine2):
     This function adjusts the angles according to the specified transformation
     between two routines, either from Quantum Signal Processing (QSP) to
     Quantum Singular Value Transformation (QSVT) or vice versa.
+
+    The transformation is based in Appendix A.2 [`arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_],
+    since QSVT is equivalent to taking the reflection convention of QSP.
 
     Args:
         angles (array-like): a list or array of angles to be transformed.
@@ -661,19 +656,19 @@ def transform_angles(angles, routine1, routine2):
 
 def poly_to_angles(poly, routine, angle_solver="root-finding"):
     r"""
-    Converts a given polynomial into angles for to be used with specific quantum signal processing (QSP)
+    Computes the angles needed to implement a polynomial with quantum signal processing (QSP)
     or quantum singular value transformation (QSVT) routines.
 
+    The polynomial must have defined parity and real coefficients. It also must meet
+    that :math:`|P(x)| \leq 1` for all :math:`x \in [-1, 1]`. More information about these restriction can be
+    found in [`arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_].
+
     Args:
-        poly (array-like): coefficients of the polynomial, ordered from lowest to higher degree.
-                           The polynomial must have defined parity and real coefficients.
-                           It also must meet that :math:`|P(x)| \leq 1` for all :math:`x \in [-1, 1]`.
-                           More information about these restriction can be
-                           found in [`arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_]
+        poly (array-like): coefficients of the polynomial, ordered from lowest to higher degree
 
-        routine (str): specifies the type of angle transformation required. Must be either: ``"QSP"`` or ``"QSVT"``
+        routine (str): specifies the routine where the angles will be applied. Could be either: ``"QSP"`` or ``"QSVT"``
 
-        angle_solver (str): optional string which specifies the method used to calculate the angles (must be ``"root-finding"``)
+        angle_solver (str): optional string which specifies the method used to calculate the angles. Default is ``"root-finding"``
 
     Returns:
         (array-like): angles corresponding to the specified transformation routine
@@ -729,7 +724,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
 
     for x in [-1, 0, 1]:
         if qml.math.abs(qml.math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
-            # It is not a property that we can check globally but checking these three points is useful
+            # Check that |P(x)| ≤ 1. Only points -1, 0, 1 will be checked.
             raise AssertionError("The polynomial must satisfy that |P(x)| ≤ 1 for all x in [-1, 1]")
 
     if routine in ["QSVT", "QSP"]:
@@ -746,11 +741,11 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
 
     if routine == "QSVT":
         if angle_solver == "root-finding":
-            return transform_angles(_QSP_angles_root_finding(poly), "QSP", "QSVT")
-        raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
+            return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
+        raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
 
     if routine == "QSP":
         if angle_solver == "root-finding":
-            return _QSP_angles_root_finding(poly)
+            return _compute_qsp_angle(poly)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
     raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
