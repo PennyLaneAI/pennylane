@@ -265,7 +265,8 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
     )[0]
 
     if len(measurement_processes) == 0:
-        measurement_processes = [qfunc_output]
+        measurement_processes = [None]
+
 
     # Handle tensor measurement objects, e.g., returning qml.math.hstack
     # Results in a nested list of tensors after flatten - requiring some processing.
