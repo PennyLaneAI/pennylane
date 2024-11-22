@@ -211,7 +211,6 @@ def test_unary_mapping_boseword(bose_op, nstates, result):
     qubit_op = unary_mapping(bose_op, nstates=nstates, ps=True)
     qubit_op.simplify(tol=1e-8)
 
-    # get expected op as PauliSentence and simplify
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op.simplify(tol=1e-8)
     assert qubit_op == expected_op
