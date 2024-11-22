@@ -211,6 +211,7 @@ def _to_qfunc_output_type(
         qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
     )
 
+    # counts results are treated as a leaf
     results_leaves = qml.pytrees.flatten(results, is_leaf=lambda obj: isinstance(obj, dict))[0]
 
     # patch for transforms that change the number of results like metric_tensor
