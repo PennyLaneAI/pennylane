@@ -20,7 +20,6 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Sequence
-from dataclasses import replace
 from typing import Any, Literal, Optional, Union, get_args
 
 from cachetools import Cache
@@ -29,16 +28,11 @@ import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import MidMeasureMP
-from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
-from .execution import (
-    INTERFACE_MAP,
-    SUPPORTED_INTERFACE_NAMES,
-    SupportedInterfaceUserInput,
-    _get_interface_name,
-)
+from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -110,94 +104,6 @@ def _make_execution_config(
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
         mcm_config=mcm_config or qml.devices.MCMConfig(),
     )
-
-
-def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool
-) -> "qml.devices.MCMConfig":
-    """Helper function to resolve the mid-circuit measurements configuration based on
-    execution parameters"""
-    updated_values = {}
-
-    if not finite_shots:
-        updated_values["postselect_mode"] = None
-        if mcm_config.mcm_method == "one-shot":
-            raise ValueError(
-                f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
-            )
-
-    if mcm_config.mcm_method == "single-branch-statistics":
-        raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
-
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
-        # This is a current limitation of defer_measurements. "hw-like" behaviour is
-        # not yet accessible.
-        if mcm_config.postselect_mode == "hw-like":
-            raise ValueError(
-                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
-                "mcm_method='deferred'."
-            )
-        updated_values["postselect_mode"] = "fill-shots"
-
-    if (
-        finite_shots
-        and "jax" in interface
-        and mcm_config.mcm_method in (None, "one-shot")
-        and mcm_config.postselect_mode in (None, "hw-like")
-    ):
-        updated_values["postselect_mode"] = "pad-invalid-samples"
-
-    return replace(mcm_config, **updated_values)
-
-
-# pylint: disable=protected-access
-def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tapes: QuantumScriptBatch,
-    transform_program: TransformProgram,
-) -> "qml.devices.ExecutionConfig":
-    """Resolves the execution configuration for non-device specific properties.
-
-    Args:
-        execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
-        device (qml.devices.Device): a Pennylane device
-        tapes (QuantumScriptBatch): a batch of tapes
-        transform_program (TransformProgram): a program of transformations to be applied to the tapes
-
-    Returns:
-        qml.devices.ExecutionConfig: resolved execution configuration
-    """
-    updated_values = {}
-    updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
-
-    if (
-        "lightning" in device.name
-        and qml.metric_tensor in transform_program
-        and execution_config.gradient_method == "best"
-    ):
-        execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = qml.workflow._resolve_diff_method(
-            execution_config, device, tape=tapes[0]
-        )
-
-    if execution_config.gradient_method is qml.gradients.param_shift_cv:
-        updated_values["gradient_keyword_arguments"]["dev"] = device
-
-    # Mid-circuit measurement configuration validation
-    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
-    # workflow still needs to know if jax-jit is used
-    interface = _get_interface_name(tapes, execution_config.interface)
-    finite_shots = any(tape.shots for tape in tapes)
-    mcm_interface = (
-        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
-    )
-    mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
-
-    updated_values["mcm_config"] = mcm_config
-
-    return replace(execution_config, **updated_values)
 
 
 def _to_qfunc_output_type(
@@ -972,6 +878,7 @@ class QNode:
 
         _validate_qfunc_output(self._qfunc_output, self._tape.measurements)
 
+    # pylint: disable=protected-access
     def _execution_component(self, args: tuple, kwargs: dict) -> qml.typing.Result:
         """Construct the transform program and execute the tapes. Helper function for ``__call__``
 
@@ -988,11 +895,10 @@ class QNode:
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
 
         config = _make_execution_config(self, self.diff_method, mcm_config=mcm_config)
-        config = _resolve_execution_config(
+        config = qml.workflow._resolve_execution_config(
             config, self.device, (self._tape,), self.transform_program
         )
 
-        # pylint: disable=protected-access
         outer_transform_program, inner_transform_program, config = (
             qml.workflow._setup_transform_program(
                 self.transform_program,
