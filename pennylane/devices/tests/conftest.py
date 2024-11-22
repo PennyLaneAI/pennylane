@@ -14,7 +14,6 @@
 """Contains shared fixtures for the device tests."""
 import argparse
 import os
-from warnings import warn
 
 import numpy as np
 import pytest
@@ -65,6 +64,18 @@ def init_state():
     return _init_state
 
 
+def get_legacy_capabilities(dev):
+    """Gets the capabilities dictionary of a device."""
+
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        return dev.target_device.capabilities()
+
+    if isinstance(dev, qml.devices.LegacyDevice):
+        return dev.capabilities()
+
+    return {}
+
+
 @pytest.fixture(scope="session")
 def skip_if():
     """Fixture to skip tests."""
@@ -72,7 +83,8 @@ def skip_if():
     def _skip_if(dev, capabilities):
         """Skip test if device has any of the given capabilities."""
 
-        dev_capabilities = dev.capabilities()
+        dev_capabilities = get_legacy_capabilities(dev)
+
         for capability, value in capabilities.items():
             # skip if capability not found, or if capability has specific value
             if capability not in dev_capabilities or dev_capabilities[capability] == value:
@@ -217,23 +229,6 @@ def pytest_addoption(parser):
     addoption(
         "--disable-opmath", action="store", default="False", help="Whether to disable new_opmath"
     )
-
-
-# pylint: disable=eval-used
-@pytest.fixture(scope="session", autouse=True)
-def disable_opmath_if_requested(request):
-    """Check the value of the --disable-opmath option and turn off
-    if True before running the tests"""
-    disable_opmath = request.config.getoption("--disable-opmath")
-    # value from yaml file is a string, convert to boolean
-    if eval(disable_opmath):
-        warn(
-            "Disabling the new Operator arithmetic system for legacy support. "
-            "If you need help troubleshooting your code, please visit "
-            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
-            UserWarning,
-        )
-        qml.operation.disable_new_opmath(warn=False)
 
 
 def pytest_generate_tests(metafunc):

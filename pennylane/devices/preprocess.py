@@ -21,12 +21,12 @@ import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
 from itertools import chain
-from typing import Optional, Union
+from typing import Optional, Type, Union
 
 import pennylane as qml
 from pennylane import Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
-from pennylane.operation import StatePrepBase, Tensor
+from pennylane.operation import StatePrepBase
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import WireError
@@ -48,7 +48,7 @@ def _operator_decomposition_gen(
     max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
-    error: Optional[Exception] = None,
+    error: Optional[Type[Exception]] = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     if error is None:
@@ -302,7 +302,7 @@ def decompose(
     ] = None,
     max_expansion: Union[int, None] = None,
     name: str = "device",
-    error: Optional[Exception] = None,
+    error: Optional[Type[Exception]] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -458,17 +458,10 @@ def validate_observables(
     >>> validate_observables(tape, accepted_observable)
     qml.DeviceError: Observable Z(0) + Y(0) not supported on device
 
-    Note that if the observable is a :class:`~.Tensor`, the validation is run on each object in the
-    ``Tensor`` instead.
-
     """
     for m in tape.measurements:
-        if m.obs is not None:
-            if isinstance(m.obs, Tensor):
-                if any(not stopping_condition(o) for o in m.obs.obs):
-                    raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
-            elif not stopping_condition(m.obs):
-                raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
+        if m.obs is not None and not stopping_condition(m.obs):
+            raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
 
     return (tape,), null_postprocessing
 
