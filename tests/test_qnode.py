@@ -530,7 +530,14 @@ class TestPyTreeStructure:
 
         assert result_structure == measurement_structure
 
-    def test_tensor_measurement(self):
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            lambda: qml.math.hstack([qml.expval(qml.Z(i)) for i in range(2)]),
+            lambda: qml.math.stack([qml.expval(qml.Z(i)) for i in range(2)]),
+        ],
+    )
+    def test_tensor_measurement(self, measurement):
         """Tests that measurements of tensor type are handled correctly"""
         dev = qml.device("default.qubit", wires=2, shots=100)
 
@@ -540,7 +547,7 @@ class TestPyTreeStructure:
             qml.RY(2, wires=1)
             qml.measure(0)
             qml.CNOT(wires=[0, 1])
-            return qml.math.hstack([qml.expval(qml.Z(i)) for i in range(2)])
+            return measurement()
 
         result = circuit()
 
