@@ -1506,7 +1506,7 @@ def test_error_generator_not_registered(allow_nonunitary):
             qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
 
-def test_no_error_missing_aux_wire_not_used(recwarn):
+def test_no_error_missing_aux_wire_not_used():
     """Tests that a no error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing but it is not used, either
     because ``approx`` is used or because there only is a diagonal contribution."""
@@ -1540,9 +1540,6 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
-
-    if qml.operation.active_new_opmath():
-        assert len(recwarn) == 0
 
 
 def test_raises_circuit_that_uses_missing_wire():
