@@ -124,10 +124,7 @@ class TransformTracer(Tracer):
             elif val.mv is not None:
                 kwargs = {"n_wires": len(val.mv) if isinstance(val.mv, list) else 1}
             else:
-                kwargs = {
-                    "n_wires": len(val.wires),
-                    "has_eigvals": val._eigvals is not None,
-                }
+                kwargs = {"n_wires": len(val.wires), "has_eigvals": val._eigvals is not None}
             aval = qml.capture.AbstractMeasurement(val._abstract_eval, **kwargs)
         else:
             if isinstance(val, (list, tuple, int, float, complex, bool)):
