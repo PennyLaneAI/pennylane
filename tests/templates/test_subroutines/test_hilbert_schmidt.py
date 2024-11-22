@@ -276,6 +276,12 @@ class TestHilbertSchmidt:
             qml.CNOT(wires=[0, 2]),
             qml.CNOT(wires=[1, 3]),
             qml.SWAP(wires=[0, 1]),
+            qml.QubitUnitary(qml.RZ(0.1, wires=[2]).matrix().conjugate(), wires=[2]),
+            qml.QubitUnitary(qml.CNOT(wires=[2, 3]).matrix().conjugate(), wires=[2, 3]),
+            qml.CNOT(wires=[1, 3]),
+            qml.CNOT(wires=[0, 2]),
+            qml.Hadamard(wires=[0]),
+            qml.Hadamard(wires=[1]),
         ]
 
         for i, j in zip(tape_dec.operations, expected_operations):
