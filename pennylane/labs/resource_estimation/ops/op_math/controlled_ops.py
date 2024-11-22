@@ -306,17 +306,35 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         raise re.ResourcesNotDefined
 
     def resource_params(self) -> dict:
         num_control = len(self.hyperparameters["control_wires"])
         num_work_wires = len(self.hyperparameters["work_wires"])
-        return {"num_ctrl_wires": num_control, "num_work_wires": num_work_wires}
+
+        num_control_values = len([val for val in self.hyperparameters["control_values"] if val])
+
+        return {
+            "num_ctrl_wires": num_control,
+            "num_ctrl_values": num_control_values,
+            "num_work_wires": num_work_wires,
+        }
 
     @classmethod
-    def resource_rep(cls) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(cls, {})
+    def resource_rep(
+        cls, num_ctrl_wires, num_ctrl_values, num_work_wires
+    ) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(
+            cls,
+            {
+                "num_ctrl_wires": num_ctrl_wires,
+                "num_ctrl_values": num_ctrl_values,
+                "num_work_wires": num_work_wires,
+            },
+        )
 
 
 class ResourceCRX(qml.CRX, re.ResourceOperator):
