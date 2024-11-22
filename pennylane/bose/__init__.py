@@ -13,6 +13,5 @@
 # limitations under the License.
 """A module containing utility functions and mappings for working with bosonic operators. """
 
-from .bosonic import BoseWord, BoseSentence
-
+from .bosonic import BoseSentence, BoseWord
 from .bosonic_mapping import binary_mapping
