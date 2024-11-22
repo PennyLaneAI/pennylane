@@ -33,13 +33,13 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
+from ._resolve_diff_method import SupportedDiffMethods, _resolve_diff_method
 from .execution import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
     SupportedInterfaceUserInput,
     _get_interface_name,
 )
-from .resolve_diff_method import SupportedDiffMethods, _resolve_diff_method
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -194,8 +194,8 @@ def _to_qfunc_output_type(
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
     # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
-        results = [results]
+    if isinstance(qfunc_output, Sequence) and len(qfunc_output) == 1:
+        results = (results,)
 
     # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
@@ -933,7 +933,7 @@ class QNode:
     qtape = tape  # for backwards compatibility
 
     @debug_logger
-    def construct(self, args, kwargs):  # pylint: disable=too-many-branches
+    def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
 
@@ -995,7 +995,6 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
@@ -1051,8 +1050,8 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-# pylint: disable=missing-docstring  set manually below
 def qnode(device, **kwargs):
+    """Docstring will be updated below."""
     return functools.partial(QNode, device=device, **kwargs)
 
 
