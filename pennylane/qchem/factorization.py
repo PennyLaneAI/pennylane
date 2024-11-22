@@ -48,10 +48,30 @@ def factorize(
 
     The two-electron tensor :math:`V`, in
     `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
-    is first factorized in terms of symmetric matrices :math:`L^{(r)}` such that
-    :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is
-    determined by a threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized
-    and its eigenvalues (and corresponding eigenvectors) are truncated at a threshold error.
+    can be decomposed in terms of orthonormal matrices :math:`U` (leaf tensors) and
+    symmetric matrices :math:`Z` (core tensors) such that
+    :math:`V_{ijkl} \approx \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)}`,
+    where rank :math:`R` is determined by a threshold error.
+
+    For explicit double factorization, i.e., when ``compressed=False``, the above decomposition
+    is done using an eigenvalue or Cholesky decomposition to obtain symmetric matrices
+    :math:`L^{(r)}` such that :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`,
+    where core and leaf tensors are obtained by further diagonalizing each matrix :math:`L^{(r)}`
+    and truncating its eigenvalues (and corresponding eigenvectors) are at a threshold error.
+    See theory section for more details.
+
+    For compressed double factorization, i.e., when ``compressed=True``, the above
+    decomposition is done by optimizing the following cost function \mathcal{L}:
+
+    .. math::
+
+       \mathcal{L}(U, Z) = \frac{1}{2} |V_{ijkl} - \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)}|_{\text{F}} + \rho \sum_r^R \sum_{pq} |Z_{pq}^{(r)}|^{\gamma},
+
+    where leaf tensors :math:`U` are defined by antisymmetric orbital rotations :math:`X` such that
+    :math:`U^{(r)} = \exp{(X^(r))}`, `F` represents Frobenius norm, :math:`\rho` is a constant
+    scaling factor, and :math:`\gammma` represents the optional ``L1`` and ``L2`` regularization.
+    See references `arXiv:2104.08957 <https://arxiv.org/abs/2104.08957>`__ and `arxiv:2212.07957
+    <https://arxiv.org/pdf/2212.07957>`__ for more details.
 
     Args:
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
@@ -228,6 +248,12 @@ def factorize(
         prefactor = compression_kwargs.get("norm_prefactor", 1e-5)
         init_params = compression_kwargs.get("init_params", None)
 
+        if init_params is not None:
+            init_params = {
+                "X": qml.math.array(init_params["X"], like="jax"),
+                "Z": qml.math.array(init_params["Z"], like="jax"),
+            }
+
         if cholesky and init_params is None:
             factors = _double_factorization_cholesky(two, tol_factor, shape, interface, num_factors)
             f_vals, f_vecs = qml.math.linalg.eigh(factors)
@@ -242,16 +268,20 @@ def factorize(
         core_tensors, asymm_tensors = _double_factorization_compressed(
             two_electron, optimizer, num_factors, num_steps, init_params, prefactor, norm_order
         )
-        leaf_tensors = jsp.linalg.expm(asymm_tensors)
+        core_tensors = qml.math.array(core_tensors, like=interface)
+        leaf_tensors = qml.math.array(jsp.linalg.expm(asymm_tensors), like=interface)
 
         # Since core_tensors are symmetric and not contrained to be rank-one
         upr_tri, unitary = jsp.linalg.schur(core_tensors)
-        factors = jnp.einsum(
-            "tpk,tqk,tki->tpqi",
-            leaf_tensors,
-            leaf_tensors,
-            unitary @ np.sqrt(upr_tri.astype(jnp.complex64)),
-        )  # "tpqi, trsi -> pqrs"
+        factors = qml.math.array(
+            jnp.einsum(
+                "tpk,tqk,tki->tpqi",
+                leaf_tensors,
+                leaf_tensors,
+                unitary @ jnp.sqrt(upr_tri.astype(jnp.complex64)),
+            ),  # einsum contraction for them: "tpqi, trsi -> pqrs"
+            like=interface,
+        )
 
     return factors, core_tensors, leaf_tensors
 
@@ -377,8 +407,8 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
         tol_factor (float): threshold error value for discarding the negligible factors
 
     Keyword Args:
-        tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues.
-            This will be used only when ``compressed=False``
+        tol_eigval (float): threshold error value for discarding the negligible factor
+            eigenvalues. This can be used only when ``compressed=False``
         cholesky (bool): use Cholesky decomposition for the ``two_electron`` instead of
             eigendecomposition. Default is ``False``.
         compressed (bool): use compressed double factorization for decomposing the ``two_electron``.
