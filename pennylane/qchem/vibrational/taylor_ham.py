@@ -18,7 +18,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 
-from pennylane.labs.vibrational_ham.bosonic import BoseSentence, BoseWord
+from pennylane.bose import BoseSentence, BoseWord
 
 
 def _obtain_r2(ytrue, yfit):
