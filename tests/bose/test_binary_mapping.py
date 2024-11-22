@@ -553,6 +553,8 @@ def test_error_is_raised_for_incompatible_type():
 
 
 bs1 = BoseSentence({bw1: 1})
+
+
 @pytest.mark.parametrize(
     "bose_op, qubit_op_data, tol",
     (
