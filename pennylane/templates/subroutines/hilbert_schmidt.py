@@ -22,15 +22,18 @@ from pennylane.operation import AnyWires, Operation
 class HilbertSchmidt(Operation):
     r"""Create a Hilbert-Schmidt template that can be used to compute the Hilbert-Schmidt Test (HST).
 
-    The HST is a useful quantity used when we want to compile a unitary `U` with an approximate unitary `V`. The HST
-    is used as a distance between `U` and `V`, the result of executing the HST is 0 if and only if `V` is equal to
-    `U` (up to a global phase). Therefore, we can define a cost by:
+    The HST is a useful quantity to compile a target unitary `U` with an approximate unitary `V`. The HST
+    is used as a distance between `U` and `V`. The result of executing the HST is 0 if and only if `V` is equal to
+    `U` (up to a global phase). As suggested in [1], we can define a cost function using the Hilbert-Schmidt inner product
+    between the unitaries `U` and `V` as follows:
 
     .. math::
         C_{HST} = 1 - \frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2,
 
-    where the quantity :math:`\frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2` is obtained by executing the
-    Hilbert-Schmidt Test. It is equivalent to taking the outcome probability of the state :math:`|0 ... 0\rangle`
+    where `d` is the dimension of the space in which the unitaries `U` and `V` act.
+    The quantity :math:`\frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2` is obtained by executing the Hilbert-Schmidt Test.
+
+    It is equivalent to taking the outcome probability of the state :math:`|0 ... 0\rangle`
     for the following circuit:
 
     .. figure:: ../../_static/templates/subroutines/hst.png

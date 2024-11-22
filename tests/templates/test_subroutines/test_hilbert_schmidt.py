@@ -122,8 +122,6 @@ class TestHilbertSchmidt:
 
         # We compare the result with 1/d^2 * | Tr(V†U) |^2
         # (see Section 4.1 of https://arxiv.org/pdf/1807.00800 for more details)
-
-        # d = 2^n, where n is the number of qubits
         d = 2
         u_matrix = qml.matrix(u_tape)
 
@@ -143,15 +141,15 @@ class TestHilbertSchmidt:
 
         with qml.queuing.AnnotatedQueue() as q_U:
             qml.SWAP(wires=[0, 1])
-            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0) @ qml.RY(0.1, wires=1)
             qml.CNOT(wires=[0, 1])
 
         u_tape = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_function(param):
-            qml.RZ(param, wires=2)
+            qml.RZ(param, wires=2) @ qml.CNOT(wires=[2, 3])
             qml.CNOT(wires=[2, 3])
-            qml.RY(param, wires=3)
+            qml.RY(param, wires=3) @ qml.Z(3)
             qml.RX(param, wires=2)
 
         @qml.qnode(qml.device("default.qubit", wires=4))
@@ -163,8 +161,6 @@ class TestHilbertSchmidt:
 
         # We compare the result with 1/d^2 * | Tr(V†U) |^2
         # (see Section 4.1 of https://arxiv.org/pdf/1807.00800 for more details)
-
-        # d = 2^n, where n is the number of qubits
         d = 4
         u_matrix = qml.matrix(u_tape, wire_order=[0, 1])
 
@@ -203,8 +199,6 @@ class TestHilbertSchmidt:
 
         # We compare the result with 1/d^2 * | Tr(V†U) |^2
         # (see Section 4.1 of https://arxiv.org/pdf/1807.00800 for more details)
-
-        # d = 2^n, where n is the number of qubits
         d = 8
         u_matrix = qml.matrix(u_tape, wire_order=[0, 1, 2])
 
@@ -246,14 +240,17 @@ class TestHilbertSchmidt:
 
         tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
-            qml.Hadamard(wires=[0]),
+            qml.H(wires=[0]),
             qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
+            qml.H(wires=[0]),
+            qml.QubitUnitary(qml.RZ(0.1, wires=1).matrix().conjugate(), wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.H(0),
         ]
         for i, j in zip(tape_dec.operations, expected_operations):
             assert i.name == j.name
-            assert i.data == j.data
             assert i.wires == j.wires
+            assert qml.math.allclose(i.data, j.data)
 
     def test_hs_decomposition_2_qubits(self):
         """Test if the HS operation is correctly decomposed for 2 qubits."""
@@ -283,8 +280,8 @@ class TestHilbertSchmidt:
 
         for i, j in zip(tape_dec.operations, expected_operations):
             assert i.name == j.name
-            assert i.data == j.data
             assert i.wires == j.wires
+            assert qml.math.allclose(i.data, j.data)
 
     def test_hs_decomposition_2_qubits_custom_wires(self):
         """Test if the HS operation is correctly decomposed for 2 qubits with custom wires."""
@@ -313,8 +310,8 @@ class TestHilbertSchmidt:
             qml.CNOT(wires=["a", "c"]),
             qml.CNOT(wires=["b", "d"]),
             qml.SWAP(wires=["a", "b"]),
-            qml.CNOT(wires=["c", "d"]),
-            qml.RZ(-0.1, wires=["c"]),
+            qml.QubitUnitary(qml.RZ(0.1, wires=["c"]).matrix().conjugate(), wires=["c"]),
+            qml.QubitUnitary(qml.CNOT(wires=["b", "d"]).matrix().conjugate(), wires=["c", "d"]),
             qml.CNOT(wires=["b", "d"]),
             qml.CNOT(wires=["a", "c"]),
             qml.Hadamard(wires=["a"]),
@@ -460,15 +457,15 @@ class TestLocalHilbertSchmidt:
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
-            qml.RZ(-0.1, wires=[1]),
+            qml.QubitUnitary(qml.RZ(0.1, wires=[1]).matrix().conjugate(), wires=[1]),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
 
         for i, j in zip(tape_dec.operations, expected_operations):
             assert i.name == j.name
-            assert i.data == j.data
             assert i.wires == j.wires
+            assert qml.math.allclose(i.data, j.data)
 
     def test_lhs_decomposition_1_qubit_custom_wires(self):
         """Test if the LHS operation is correctly decomposed with custom wires."""
@@ -490,15 +487,15 @@ class TestLocalHilbertSchmidt:
             qml.Hadamard(wires=["a"]),
             qml.CNOT(wires=["a", "b"]),
             qml.Hadamard(wires=["a"]),
-            qml.RZ(-0.1, wires=["b"]),
+            qml.QubitUnitary(qml.RZ(0.1, wires=["b"]).matrix().conjugate(), wires=["b"]),
             qml.CNOT(wires=["a", "b"]),
             qml.Hadamard(wires=["a"]),
         ]
 
         for i, j in zip(tape_dec.operations, expected_operations):
             assert i.name == j.name
-            assert i.data == j.data
             assert i.wires == j.wires
+            assert qml.math.allclose(i.data, j.data)
 
     def test_lhs_decomposition_2_qubits(self):
         """Test if the LHS operation is correctly decomposed for 2 qubits."""
@@ -524,8 +521,8 @@ class TestLocalHilbertSchmidt:
             qml.CNOT(wires=[0, 2]),
             qml.CNOT(wires=[1, 3]),
             qml.SWAP(wires=[0, 1]),
-            qml.CNOT(wires=[2, 3]),
-            qml.RZ(-0.1, wires=[2]),
+            qml.QubitUnitary(qml.RZ(0.1, wires=[2]).matrix().conjugate(), wires=[2]),
+            qml.QubitUnitary(qml.CNOT(wires=[2, 3]).matrix().conjugate(), wires=[2, 3]),
             qml.CNOT(wires=[0, 2]),
             qml.Hadamard(wires=[0]),
         ]
@@ -569,6 +566,9 @@ class TestLocalHilbertSchmidt:
         assert qml.math.allclose(res, 0.5)
         # the answer is currently 0.5, and I'm going to assume that's correct. This test will let us know
         # if the answer changes.
+
+        # The exact analytic expression to be compared against is given by eq. (25) of https://arxiv.org/pdf/1807.00800 with j=1.
+        # unfortunately, we don't have an immediate way to compute such an expression in PennyLane.
 
     def test_v_not_quantum_function(self):
         """Test that we cannot pass a non quantum function to the HS operation"""

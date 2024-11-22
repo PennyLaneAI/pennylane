@@ -187,7 +187,7 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
-* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply adjoint operators in the correct order.
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now provide the correct result.
   [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
 
 * `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily 
