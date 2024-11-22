@@ -509,6 +509,7 @@ class TestPyTreeStructure:
         ],
     )
     def test_pytree_structure_preservation(self, measurement):
+        """Test that the result stucture matches the measurement structure."""
 
         dev = qml.device("default.qubit", wires=2, shots=100)
 
