@@ -20,6 +20,7 @@ from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
 from typing import Optional, Union, overload
+import pennylane as qml
 
 from pennylane import Tracker
 from pennylane.measurements import Shots
@@ -31,6 +32,13 @@ from pennylane.wires import Wires
 
 from .capabilities import DeviceCapabilities
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .preprocess import (
+    validate_device_wires,
+    mid_circuit_measurements,
+    decompose,
+    validate_measurements,
+    validate_observables,
+)
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -463,7 +471,42 @@ class Device(abc.ABC):
                 return self.preprocess(execution_config)[0]
             return self.preprocess()[0]
 
-        return TransformProgram()
+        if not self.capabilities:
+            return TransformProgram()
+
+        program = TransformProgram()
+        program.add_transform(validate_device_wires, self.wires, name=self.name)
+        program.add_transform(
+            mid_circuit_measurements, device=self, mcm_config=execution_config.mcm_config
+        )
+        analytic_capabilities = self.capabilities.filter(finite_shots=False)
+        finite_shots_capabilities = self.capabilities.filter(finite_shots=True)
+        program.add_transform(
+            decompose,
+            stopping_condition=analytic_capabilities.supports_operation,
+            stopping_condition_shots=finite_shots_capabilities.supports_operation,
+            name=self.name,
+        )
+        program.add_transform(
+            validate_measurements,
+            analytic_measurements=lambda mp: mp in analytic_capabilities.measurement_processes,
+            sample_measurements=lambda mp: mp in finite_shots_capabilities.measurement_processes,
+            name=self.name,
+        )
+        program.add_transform(
+            validate_observables,
+            stopping_condition=analytic_capabilities.supports_observable,
+            stopping_condition_shots=finite_shots_capabilities.supports_observable,
+            name=self.name,
+        )
+        program.add_transform(qml.transforms.broadcast_expand)
+        if not self.capabilities.non_commuting_observables:
+            program.add_transform(
+                qml.transforms.split_non_commuting,
+                grouping_strategy="qwc" if self.capabilities.overlapping_observables else "wires",
+            )
+
+        return program
 
     @abc.abstractmethod
     @overload
