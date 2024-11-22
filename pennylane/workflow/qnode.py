@@ -216,9 +216,9 @@ def _to_qfunc_output_type(
     print(results)
 
     if len(results_leaves) != len(qfunc_output_leaves):
-        if qml.math.get_interface(qfunc_output) in {"numpy", "autograd"}:
-            return type(qfunc_output)(results)
-        return results
+        if isinstance(qfunc_output, (Sequence, qml.measurements.MeasurementProcess)):
+            return results
+        return type(qfunc_output)(results)
 
     if len(qfunc_output_leaves) == 1:
         results = (results,)
