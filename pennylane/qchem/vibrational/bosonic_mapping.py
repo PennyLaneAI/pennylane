@@ -49,7 +49,7 @@ def binary_mapping(
 
     Args:
         bose_operator(BoseWord, BoseSentence): the bosonic operator
-        nstates(int): maximum number of states a boson can occupy
+        n_states(int): maximum number of states a boson can occupy
         ps (bool): whether to return the result as a PauliSentence instead of an
             operator. Defaults to False.
         wire_map (dict): a dictionary defining how to map the states of
