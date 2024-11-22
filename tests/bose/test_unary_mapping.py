@@ -16,27 +16,27 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
+from pennylane.bose import BoseSentence, BoseWord, unary_mapping
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pauli.conversion import pauli_sentence
-from pennylane.qchem import BoseSentence, BoseWord, unary_mapping
 
 # Expected results were generated manually
 BOSE_WORDS_AND_OPS = [
     (
         BoseWord({(0, 0): "+"}),
-        # trivial case of a creation operator with 2 states in a boson, 0^ -> (X_0 - iY_0) / 2
+        # trivial case of a creation operator with 2 allowed bosonic states, 0^ -> (X_0 - iY_0) / 2
         2,
         ([0.25, -0.25j, 0.25j, (0.25 + 0j)], [X(0) @ X(1), X(0) @ Y(1), Y(0) @ X(1), Y(0) @ Y(1)]),
     ),
     (
         BoseWord({(0, 0): "-"}),
-        # trivial case of an annihilation operator with 2 states in a boson, 0 -> (X_0 + iY_0) / 2
+        # trivial case of an annihilation operator with 2 allowed bosonic states, 0 -> (X_0 + iY_0) / 2
         2,
         ([0.25, 0.25j, -0.25j, (0.25 + 0j)], [X(0) @ X(1), X(0) @ Y(1), Y(0) @ X(1), Y(0) @ Y(1)]),
     ),
     (
         BoseWord({(0, 0): "+"}),
-        # creation operator with 4 states in a boson
+        # creation operator with 4 allowed bosonic states
         4,
         (
             [
@@ -71,7 +71,7 @@ BOSE_WORDS_AND_OPS = [
     ),
     (
         BoseWord({(0, 0): "-"}),
-        # annihilation operator with 4 states in a boson
+        # annihilation operator with 4 allowed bosonic states
         4,
         (
             [
@@ -205,61 +205,41 @@ BOSE_WORDS_AND_OPS = [
 ]
 
 
-@pytest.mark.parametrize("bose_op, nstates, result", BOSE_WORDS_AND_OPS)
-def test_unary_mapping_boseword(bose_op, nstates, result):
-    """Test that the unary_mapping function returns the correct qubit operator."""
-    qubit_op = unary_mapping(bose_op, nstates=nstates, ps=True)
-    qubit_op.simplify(tol=1e-8)
+class TestBoseWordMapping:
+    """Tests for mapping BoseWords."""
 
-    expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
-    expected_op.simplify(tol=1e-8)
-    assert qubit_op == expected_op
+    @pytest.mark.parametrize("bose_op, n_states, result", BOSE_WORDS_AND_OPS)
+    def test_unary_mapping_boseword(self, bose_op, n_states, result):
+        """Test that the unary_mapping function returns the correct qubit operator."""
+        qubit_op = unary_mapping(bose_op, n_states=n_states, ps=True)
+        qubit_op.simplify(tol=1e-8)
 
+        expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
+        expected_op.simplify(tol=1e-8)
+        assert qubit_op == expected_op
 
-@pytest.mark.parametrize("bosonic_op, nstates, result", BOSE_WORDS_AND_OPS)
-def test_unary_mapping_bose_word_operation(bosonic_op, nstates, result):
-    r"""Test that the unary_mapping function returns the correct operator for
-    return type ps=False."""
-    wires = bosonic_op.wires or [0]
+    @pytest.mark.parametrize("bosonic_op, n_states, result", BOSE_WORDS_AND_OPS)
+    def test_unary_mapping_bose_word_operation(self, bosonic_op, n_states, result):
+        r"""Test that the unary_mapping function returns the correct operator for
+        return type ps=False."""
+        wires = bosonic_op.wires or [0]
 
-    qubit_op = unary_mapping(bosonic_op, nstates=nstates, ps=False)
+        qubit_op = unary_mapping(bosonic_op, n_states=n_states, ps=False)
 
-    expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
-    expected_op = expected_op.operation(wires)
+        expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
+        expected_op = expected_op.operation(wires)
 
-    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
+        qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
+    def test_unary_mapping_for_identity(self):
+        """Test that the unary_mapping function returns the correct qubit operator for Identity."""
+        qml.assert_equal(unary_mapping(BoseWord({})), I(0))
 
-def test_unary_mapping_for_identity():
-    """Test that the unary_mapping function returns the correct qubit operator for Identity."""
-    qml.assert_equal(unary_mapping(BoseWord({})), I(0))
-
-
-def test_unary_mapping_for_identity_ps():
-    """Test that the unary_mapping function returns the correct PauliSentence for Identity when ps=True."""
-    assert unary_mapping(BoseWord({}), ps=True) == PauliSentence({PauliWord({0: "I"}): 1.0 + 0.0j})
-
-
-def test_empty_bose_sentence():
-    """Test that an empty BoseSentence (bose null operator) is
-    converted to an empty PauliSentence or the null operator"""
-    op = BoseSentence({})
-
-    ps_op = unary_mapping(op, ps=True)
-    ps_op.simplify()
-    assert ps_op == PauliSentence({})
-
-    op = unary_mapping(op).simplify()
-    assert isinstance(op, qml.ops.SProd)
-    assert isinstance(op.base, I)
-    assert op.scalar == 0
-
-
-def test_error_is_raised_for_incompatible_type():
-    """Test that an error is raised if the input is not a BoseWord or BoseSentence"""
-
-    with pytest.raises(ValueError, match="bose_operator must be a BoseWord or BoseSentence"):
-        unary_mapping(X(0))
+    def test_unary_mapping_for_identity_ps(self):
+        """Test that the unary_mapping function returns the correct PauliSentence for Identity when ps=True."""
+        assert unary_mapping(BoseWord({}), ps=True) == PauliSentence(
+            {PauliWord({0: "I"}): 1.0 + 0.0j}
+        )
 
 
 bw1 = BoseWord({(0, 0): "+"})
@@ -426,18 +406,33 @@ BOSE_SEN_AND_OPS = [
 ]
 
 
-@pytest.mark.parametrize("bose_op, nstates, result", BOSE_SEN_AND_OPS)
-def test_unary_mapping_bosesentence(bose_op, nstates, result):
-    """Test that the unary_mapping function returns the correct qubit operator."""
-    # convert BoseWord to PauliSentence and simplify
-    print(bose_op)
-    qubit_op = unary_mapping(bose_op, nstates=nstates, ps=True)
-    qubit_op.simplify(tol=1e-8)
+class TestBoseSentenceMapping:
+    """Tests for mapping BoseSentences"""
 
-    # get expected op as PauliSentence and simplify
-    expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
-    expected_op.simplify(tol=1e-8)
-    assert qubit_op == expected_op
+    def test_empty_bose_sentence(self):
+        """Test that an empty BoseSentence (bose null operator) is
+        converted to an empty PauliSentence or the null operator"""
+        op = BoseSentence({})
+
+        ps_op = unary_mapping(op, ps=True)
+        ps_op.simplify()
+        assert ps_op == PauliSentence({})
+
+        op = unary_mapping(op).simplify()
+        assert isinstance(op, qml.ops.SProd)
+        assert isinstance(op.base, I)
+        assert op.scalar == 0
+
+    @pytest.mark.parametrize("bose_op, n_states, result", BOSE_SEN_AND_OPS)
+    def test_unary_mapping_bosesentence(self, bose_op, n_states, result):
+        """Test that the unary_mapping function returns the correct qubit operator."""
+
+        qubit_op = unary_mapping(bose_op, n_states=n_states, ps=True)
+        qubit_op.simplify(tol=1e-8)
+
+        expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
+        expected_op.simplify(tol=1e-8)
+        assert qubit_op == expected_op
 
 
 @pytest.mark.parametrize(
@@ -502,20 +497,25 @@ def test_return_unary_mapping_ps(bose_op):
 )
 def test_unary_mapping_wiremap(bose_op, wire_map, result):
     """Test that the unary_mapping function returns the correct qubit operator."""
-    # convert BoseWord to PauliSentence and simplify
-    qubit_op = unary_mapping(bose_op, nstates=2, wire_map=wire_map, ps=True)
+    qubit_op = unary_mapping(bose_op, n_states=2, wire_map=wire_map, ps=True)
     qubit_op.simplify(tol=1e-8)
 
-    # get expected op as PauliSentence and simplify
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op.simplify(tol=1e-8)
     assert qubit_op == expected_op
 
 
-def test_nstates_error_unary():
+def test_n_states_error_unary():
     """Test that an error is raised if invalid number of states is provided."""
     bw = BoseWord({(0, 0): "-"})
     with pytest.raises(
-        ValueError, match="Number of bosonic states cannot be less than 2, provided 1."
+        ValueError, match="Number of allowed bosonic states cannot be less than 2, provided 0."
     ):
-        unary_mapping(bw, nstates=1)
+        unary_mapping(bw, n_states=0)
+
+
+def test_error_is_raised_for_incompatible_type():
+    """Test that an error is raised if the input is not a BoseWord or BoseSentence"""
+
+    with pytest.raises(ValueError, match="bose_operator must be a BoseWord or BoseSentence"):
+        unary_mapping(X(0))
