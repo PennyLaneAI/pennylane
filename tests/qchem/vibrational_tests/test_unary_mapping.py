@@ -208,7 +208,6 @@ BOSE_WORDS_AND_OPS = [
 @pytest.mark.parametrize("bose_op, nstates, result", BOSE_WORDS_AND_OPS)
 def test_unary_mapping_boseword(bose_op, nstates, result):
     """Test that the unary_mapping function returns the correct qubit operator."""
-    # convert BoseWord to PauliSentence and simplify
     qubit_op = unary_mapping(bose_op, nstates=nstates, ps=True)
     qubit_op.simplify(tol=1e-8)
 
