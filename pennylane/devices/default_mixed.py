@@ -73,7 +73,6 @@ from .preprocess import (
     validate_observables,
 )
 from .modifiers import simulator_tracking, single_tape_support
-from .qubit_mixed.simulate import simulate
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -985,7 +984,7 @@ class DefaultMixedNewAPI(Device):
         )
 
         return tuple(
-            simulate(
+            qml.devices.qubit_mixed.simulate.simulate(
                 c,
                 rng=self._rng,
                 prng_key=self._prng_key,
