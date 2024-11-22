@@ -3,17 +3,39 @@
 # Release 0.40.0-dev (development release)
 
 <h3>New features since last release</h3>
-  
-* A `DeviceCapabilities` data class is defined to contain all capabilities of the device's execution interface (i.e. its implementation of `Device.execute`). A TOML file can be used to define the capabilities of a device, and it can be loaded into a `DeviceCapabilities` object.
-  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
-  ```pycon
-  >>> from pennylane.devices.capabilities import load_toml_file, parse_toml_document, DeviceCapabilities
-  >>> document = load_toml_file("my_device.toml")
-  >>> capabilities = parse_toml_document(document)
-  >>> isinstance(capabilities, DeviceCapabilities)
-  True
-  ```
+* Developers of plugin devices now have the option of providing a TOML-formatted configuration file
+  to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
+  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
+  [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
+
+  * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
+    data class, as well as functions that load and parse the TOML-formatted configuration files.
+
+    ```pycon
+      >>> from pennylane.devices.capabilities import DeviceCapabilities
+      >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
+      >>> isinstance(capabilities, DeviceCapabilities)
+      True
+    ```
+
+  * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
+    that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
+    file if it exists. Otherwise, it is set to `None`.
+
+    ```python
+    from pennylane.devices import Device
+    
+    class MyDevice(Device):
+    
+        config_filepath = "path/to/config.toml"
+    
+        ...
+    ```
+    ```pycon
+    >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
+    True
+    ```
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
@@ -29,6 +51,9 @@
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
+  
+* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
+  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
