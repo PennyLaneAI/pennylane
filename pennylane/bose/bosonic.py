@@ -599,7 +599,15 @@ class BoseSentence(dict):
                 del self[bw]
 
     def normal_order(self):
-        r"""Convert a BoseSentence to its normal-ordered form."""
+        r"""Convert a BoseSentence to its normal-ordered form.
+
+        >>> bw = qml.bose.BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "+", (3, 0): "+"})
+        >>> bs = qml.bose.BoseSentence({bw: 1})
+        >>> print(bw.normal_order())
+        4.0 * b⁺(0) b(0)
+        + 2.0 * I
+        + 1.0 * b⁺(0) b⁺(0) b(0) b(0)
+        """
 
         bose_sen_ordered = BoseSentence({})
 

@@ -39,6 +39,7 @@ from pennylane.fermi import (
     parity_transform,
     bravyi_kitaev,
 )
+from pennylane.bose import BoseSentence, BoseWord
 from pennylane.qchem import (
     taper,
     symmetry_generators,
