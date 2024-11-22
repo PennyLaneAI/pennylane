@@ -56,6 +56,7 @@ Operators
     ~ResourceIsingXY
     ~ResourceIsingYY
     ~ResourceIsingZZ
+    ~ResourceMultiControlledX
     ~ResourceMultiRZ
     ~ResourceOrbitalRotation
     ~ResourcePauliRot
@@ -112,6 +113,7 @@ from .ops import (
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+<<<<<<< HEAD
     ResourceIsingXX,
     ResourceIsingXY,
     ResourceIsingYY,
@@ -121,6 +123,9 @@ from .ops import (
     ResourcePauliRot,
     ResourcePow,
     ResourcePSWAP,
+=======
+    ResourceMultiControlledX,
+>>>>>>> 8ef2c3deb4322383c936b091a15427d8fde7cd3b
     ResourcePhaseShift,
     ResourceRot,
     ResourceRX,
