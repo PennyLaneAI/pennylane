@@ -528,19 +528,19 @@ def _compute_qsp_angle(poly_coeffs):
         0. The input to the function are the coefficients of :math:`F`. E.g. :math:`[c_0, 0, c_1, 0, c_2]`.
         1. We express the polynomial in the Chebyshev basis by applying the Chebyshev transform. This generates
            a new representation :math:`[a_0, 0, a_1, 0, a_2]`.
-            2. We generate :math:`P` by reordering the array, moving the zeros to the initial positions.
-               :math:`P = [0, 0, a_0, a_1, a_2]`.
+        2. We generate :math:`P` by reordering the array, moving the zeros to the initial positions.
+           :math:`P = [0, 0, a_0, a_1, a_2]`.
 
-            The polynomial :math:`P` can now be used in Algorithm 1 [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_]
-            in order to find the desired angles.
+        The polynomial :math:`P` can now be used in Algorithm 1 [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_]
+        in order to find the desired angles.
 
-            The above algorithm is specific to Generalized-QSP so an adaptation has been made to return the required angles:
+        The above algorithm is specific to Generalized-QSP so an adaptation has been made to return the required angles:
 
-                - The :math:`R(\theta, \phi, \lambda)` gate, is simplified into a :math:`R_Y(\theta)` gate.
+            - The :math:`R(\theta, \phi, \lambda)` gate, is simplified into a :math:`R_Y(\theta)` gate.
 
-                - The calculation of :math:`\theta_d` is updated to :math:`\theta_d = \tan^{-1}(\frac{a_d}{b_d})`.
-                  In this way, the sign introduced by :math:`\phi_d` and :math:`\lambda_d` is absorbed
-                  in the :math:`\theta_d` value.
+            - The calculation of :math:`\theta_d` is updated to :math:`\theta_d = \tan^{-1}(\frac{a_d}{b_d})`.
+              In this way, the sign introduced by :math:`\phi_d` and :math:`\lambda_d` is absorbed
+              in the :math:`\theta_d` value.
     """
 
     parity = (len(poly_coeffs) - 1) % 2
