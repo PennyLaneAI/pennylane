@@ -37,7 +37,7 @@ from .qsvt import QSVT, qsvt
 from .select import Select
 from .qdrift import QDrift
 from .controlled_sequence import ControlledSequence
-from .trotter import TrotterProduct
+from .trotter import TrotterProduct, TrotterizedQfunc
 from .aqft import AQFT
 from .fable import FABLE
 from .reflection import Reflection

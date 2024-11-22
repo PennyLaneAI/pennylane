@@ -1200,3 +1200,28 @@ class TestIntegration:
         )
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_coeff_grad, reference_coeff_grad)
+
+
+class TestTrotterizedQfunc:
+
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    def test_standard_validity(self):
+        """Test standard validity criteria using assert_valid."""
+
+        def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
+            "This is the first order expansion (U_1)."
+            qml.RX(time * theta, wires[0])
+            qml.RY(time * phi, wires[1])
+            if flip:
+                qml.CNOT(wires=wires[:2])
+
+        op = qml.TrotterizedQfunc(
+            0.1,
+            first_order_expansion,
+            *(0.12, -3.45),
+            n=1,
+            order=2,
+            wires=["a", "b", "c"],
+            flip=True,
+        )
+        qml.ops.functions.assert_valid(op)

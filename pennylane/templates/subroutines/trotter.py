@@ -18,6 +18,7 @@ import copy
 from collections import defaultdict
 
 import pennylane as qml
+from pennylane.operation import Operation, Operator
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
 from pennylane.resource import Resources, ResourcesOperation
@@ -444,3 +445,183 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 qml.apply(op)
 
         return decomp
+
+
+class TrotterizedQfunc(Operation):
+    r"""An operation representing the Suzuki-Trotter product approximation applied to a set of
+    operations defined in a function.
+
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+    :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+    .. math::
+
+        \begin{align}
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+            &\vdots \\
+            S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+        \end{align}
+
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
+    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+    .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+    Suppose we have direct access to the operators which represent the exponentiated terms of 
+    a hamiltonian:
+
+    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} | for j \in [1, N] \}.
+    
+    Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
+    first order expansion :math:`S_{1}(t)`; this class expands it to any higher order Suzuki-Trotter product.
+
+    .. warning::
+
+        :code:`TrotterizedQfunc` requires that the input function has a very specific function signature. 
+        The first argument should be a time parameter which will be modified according to the Suzuki-Trotter
+        product formula. The wires required by the circuit should be either the last explicit argument or the 
+        first keyword argument. :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
+    
+    Args:
+        time (float): the time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
+        qfunc (Callable): the first-order expansion given as a callable function which queues operations
+        wires (Iterable): the set of wires the operation will act upon (should be identical to qfunc wires)
+        n (int): an integer representing the number of Trotter steps to perform
+        order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+    
+    **Example**
+
+    .. code-block:: python3
+
+        def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
+            "This is the first order expansion (U_1)."
+            qml.RX(time*theta, wires[0])
+            qml.RY(time*phi, wires[1])
+            if flip:
+                qml.CNOT(wires=wires[:2])
+
+        @qml.qnode(qml.device("default.qubit"))
+        def my_circuit(time, angles, num_trotter_steps):
+            qml.TrotterizedQfunc(
+                time, 
+                first_order_expansion, 
+                *angles, 
+                n=num_trotter_steps, 
+                order=2, 
+                wires=['a', 'b', 'c'], 
+                flip=True,
+            )
+            return qml.state()
+        
+    We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
+            
+        >>> time = 0.1
+        >>> angles = (0.12, -3.45)
+        >>> 
+        >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
+        a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
+        b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+    
+    .. details::
+        :title: Usage Details
+        
+        (Insert advanced example here)
+    """
+
+    def __init__(
+        self,
+        time,
+        qfunc,
+        *trainable_args,
+        n=1,
+        order=2,
+        reverse=False,
+        id=None,
+        **non_trainable_kwargs,
+    ):
+        """The init method for the TrotterizedQfunc operation"""
+        # Enforce the function signature: f(time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n)
+
+        try:
+            wires = non_trainable_kwargs.pop("wires")
+        except KeyError:
+            wires = trainable_args[-1]
+            trainable_args = trainable_args[:-1]  # exclude the wires from the args
+
+        self._hyperparameters = non_trainable_kwargs
+        self._hyperparameters["n"] = n
+        self._hyperparameters["order"] = order
+        self._hyperparameters["qfunc"] = qfunc
+        self._hyperparameters["reverse"] = reverse
+
+        super().__init__(time, *trainable_args, wires=wires, id=id)
+
+    def decomposition(self) -> list[Operator]:
+        """The decomposition"""
+        n = self.hyperparameters["n"]
+        order = self.hyperparameters["order"]
+        qfunc = self.hyperparameters["qfunc"]
+        reverse = self.hyperparameters["reverse"]
+
+        time = self.parameters[0]
+        qfunc_args = self.parameters[1:]
+
+        base_hyper_params = ("n", "order", "qfunc", "reverse")
+        qfunc_kwargs = {k: v for k, v in self.hyperparameters.items() if not k in base_hyper_params}
+
+        decomp = (
+            _recursive_qfunc(
+                time / n, order, qfunc, self.wires, reverse, *qfunc_args, **qfunc_kwargs
+            )
+            * n
+        )
+
+        if qml.QueuingManager.recording():
+            for op in decomp:  # apply operators in reverse order of expression
+                qml.apply(op)
+
+        return decomp
+
+
+@qml.QueuingManager.stop_recording()
+def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs):
+    """Generate a list of operations using the
+    recursive expression which defines the Trotter product.
+    Args:
+        time (float): the evolution 'time'
+        order (int): the order of the Trotter expansion
+        ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
+    Returns:
+        list: the approximation as product of exponentials of the Hamiltonian terms
+    """
+    if order == 1:
+        with qml.queuing.QuantumTape() as tape:
+            qfunc(time, *qfunc_args, wires=wires, **qfunc_kwargs)
+        return tape.operations[::-1] if reverse else tape.operations
+
+    if order == 2:
+        with qml.tape.QuantumTape() as tape:
+            qfunc(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
+        return (
+            tape.operations[::-1] + tape.operations
+            if reverse
+            else tape.operations + tape.operations[::-1]
+        )
+
+    scalar_1 = _scalar(order)
+    scalar_2 = 1 - 4 * scalar_1
+
+    ops_lst_1 = _recursive_qfunc(
+        scalar_1 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
+    )
+    ops_lst_2 = _recursive_qfunc(
+        scalar_2 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
+    )
+
+    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
