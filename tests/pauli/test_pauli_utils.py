@@ -225,8 +225,6 @@ class TestGroupingUtils:
             ValueError, observables_to_binary_matrix, observables, n_qubits_invalid
         )
 
-    # removed a fixture to only use legacy_opmath because its not clear why it there
-    # we'll see what happens when we are ready to run the tests
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
@@ -953,8 +951,6 @@ class TestMeasurementTransformations:
         assert pytest.raises(ValueError, diagonalize_qwc_pauli_words, not_qwc_grouping)
 
 
-# removed a fixture to only use legacy_opmath because its not clear why it there
-# we'll see what happens when we are ready to run the tests
 class TestTapering:
 
     terms_bin_mat_data = [
