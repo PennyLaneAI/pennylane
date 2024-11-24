@@ -61,7 +61,8 @@ def factorize(
     See theory section for more details.
 
     For compressed double factorization (CDF), i.e., when ``compressed=True``, the above
-    decomposition is done by optimizing the following cost function :math:`\mathcal{L}`:
+    decomposition is done by optimizing the following cost function :math:`\mathcal{L}`
+    in a greedy layered-wise manner:
 
     .. math::
 
@@ -253,21 +254,18 @@ def factorize(
         prefactor = compression_kwargs.get("norm_prefactor", 1e-5)
         init_params = compression_kwargs.get("init_params", None)
 
-        if init_params is not None:
-            init_params = {
-                "X": qml.math.array(init_params["X"], like="jax"),
-                "Z": qml.math.array(init_params["Z"], like="jax"),
-            }
-
         if cholesky and init_params is None:
             factors = _double_factorization_cholesky(two, tol_factor, shape, interface, num_factors)
             f_vals, f_vecs = qml.math.linalg.eigh(factors)
             core_matrices = qml.math.einsum("ti,tj->tij", f_vals, f_vals)
             leaf_matrices = [sp.linalg.logm(vec).real for vec in f_vecs]
             num_factors = qml.math.shape(core_matrices)[0]
+            init_params = {"X": leaf_matrices, "Z": core_matrices}
+
+        if init_params is not None:
             init_params = {
-                "X": qml.math.array(leaf_matrices, like="jax"),
-                "Z": qml.math.array(core_matrices, like="jax"),
+                "X": qml.math.array(init_params["X"], like="jax"),
+                "Z": qml.math.array(init_params["Z"], like="jax"),
             }
 
         core_tensors, asymm_tensors = _double_factorization_compressed(
@@ -327,7 +325,7 @@ def _double_factorization_cholesky(
         max_idx = qml.math.argmax(cholesky_diag)
         cholesky_mat = cholesky_vecs[:, :idx]
         cholesky_vec = (
-            two[:, max_idx] - cholesky_mat @ cholesky_mat[max_idx].conj()
+            two[:, max_idx] - cholesky_mat @ qml.math.conjugate(cholesky_mat[max_idx])
         ) / qml.math.sqrt(max_err)
 
         cholesky_vecs[:, idx] = cholesky_vec
