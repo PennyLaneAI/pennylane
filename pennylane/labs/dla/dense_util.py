@@ -70,14 +70,14 @@ def _make_extraction_indices(n: int) -> tuple[tuple]:
 
 
 def pauli_coefficients(H: TensorLike) -> np.ndarray:
-    r"""Computes the coefficients of a Hermitian matrix in the Pauli basis.
+    r"""Computes the coefficients of one or multiple Hermitian matrices in the Pauli basis.
 
     The coefficients are ordered lexicographically in the Pauli group.
     I.e. for ``n=2`` qubits we have the following ordering.
 
     .. code-block::
 
-        [I(0), Z(1), Z(0), Z(0) @ Z(1), X(1), Y(1), Z(0) @ X(1), Z(0) @ Y(1), X(0), X(0) @ Z(1), Y(0), Y(0) @ Z(1), X(0) @ X(1), X(0) @ Y(1), Y(0) @ X(1), Y(0) @ Y(1)]
+        [I(0), X(1), Y(1), Z(1), X(0), X(0) @ X(1), X(0) @ Y(1), X(0) @ Z(1), Y(0), Y(0) @ X(1), Y(0) @ Y(1), Y(0) @ Z(1), Z(0), Z(0) @ X(1), Z(0) @ Y(1), Z(0) @ Z(1)]
 
     Args:
         H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
@@ -87,6 +87,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
         matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
 
+    See :func:`~.pennylane.pauli.pauli_decompose` for theoretical background information.
     **Examples**
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
@@ -136,7 +137,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
     hadamard_transform_mat = _walsh_hadamard_transform(term_mat)
     # Reshape again to separate actual broadcasting axis and previous slicing axis
     hadamard_transform_mat = qml.math.reshape(hadamard_transform_mat, shape)
-    # _make phase matrix that allows us to figure out phase contributions from Pauli Y terms.
+    # make phase matrix that allows us to figure out phase contributions from Pauli Y terms.
     phase_mat = qml.math.convert_like(_make_phase_mat(n), H)
     # Multiply phase matrix to Hadamard transformed matrix and transpose the two Hilbert-space-dim axes
     coefficients = qml.math.moveaxis(
@@ -271,8 +272,6 @@ def trace_inner_product(
         # transpose A.
         return np.tensordot(A.conj(), B, axes=[[-1, -2], [-1, -2]]) / A.shape[-1]
 
-    if isinstance(A, (PauliSentence, PauliWord)):
-        return (A @ B).trace()
 
     raise NotImplementedError
 
@@ -330,7 +329,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
 
     if isinstance(basis, np.ndarray) or all(isinstance(op, np.ndarray) for op in basis):
         if not is_orthogonal:
-            gram = np.tensordot(basis, basis, axes=[[1, 2], [2, 1]]).real / basis[0].shape[0]
+            gram = trace_inner_product(basis, basis).real
             adj_vecs = np.tensordot(adj_vecs, np.linalg.pinv(sqrtm(gram)), axes=[[1], [0]])
         return np.tensordot(adj_vecs, basis, axes=1)
 
@@ -416,7 +415,7 @@ def op_to_adjvec(
 
     Note how the function always expects an ``Iterable`` of operators as input.
 
-    Also the ``ops`` can be numerical, but then basis has to be numerical as well.
+    The ``ops`` can also be numerical, but then ``basis`` has to be numerical as well.
 
     >>> op = op.matrix()
     >>> op_to_adjvec([op], [op.matrix() for op in basis])
