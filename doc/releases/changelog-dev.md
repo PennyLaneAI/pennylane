@@ -61,6 +61,10 @@
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
 
+* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
+
 <h3>Improvements 🛠</h3>
 
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
