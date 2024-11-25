@@ -102,7 +102,7 @@ def lie_closure_dense(
 
     The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
 
-    >>> g_ops = [qml.batched_pauli_decompose(op) for op in g]
+    >>> g_ops = [qml.pauli_decompose(op) for op in g]
 
     """
 
