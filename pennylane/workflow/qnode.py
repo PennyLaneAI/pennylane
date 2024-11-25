@@ -23,7 +23,6 @@ from collections.abc import Callable, Sequence
 from typing import Any, Literal, Optional, Union, get_args
 
 from cachetools import Cache
-from resolution import SupportedDiffMethods
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
@@ -31,6 +30,7 @@ from pennylane.logging import debug_logger
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
+from pennylane.workflow.resolution import SupportedDiffMethods, _resolve_execution_config
 
 from ._capture_qnode import capture_qnode
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
@@ -883,7 +883,7 @@ class QNode:
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
 
         config = _make_execution_config(self, self.diff_method, mcm_config=mcm_config)
-        config = qml.workflow._resolve_execution_config(
+        config = _resolve_execution_config(
             config, self.device, (self._tape,), self.transform_program
         )
 
