@@ -1033,6 +1033,7 @@ class DefaultMixedNewAPI(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
+        transform_program.add_transform(qml.defer_measurements, device=self)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             decompose,
@@ -1050,5 +1051,4 @@ class DefaultMixedNewAPI(Device):
         if self.readout_err is not None:
             transform_program.add_transform(warn_readout_error_state)
 
-        transform_program.add_transform(qml.defer_measurements, device=self)
         return transform_program, config
