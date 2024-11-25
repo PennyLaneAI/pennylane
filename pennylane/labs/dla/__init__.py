@@ -38,7 +38,7 @@ Utility functions
     ~op_to_adjvec
     ~orthonormalize
     ~pauli_coefficients
-    ~pauli_decompose
+    ~batched_pauli_decompose
     ~trace_inner_product
 
 
@@ -49,7 +49,7 @@ from .structure_constants_dense import structure_constants_dense
 from .dense_util import (
     change_basis_ad_rep,
     pauli_coefficients,
-    pauli_decompose,
+    batched_pauli_decompose,
     orthonormalize,
     check_orthonormal,
     trace_inner_product,

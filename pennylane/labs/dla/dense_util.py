@@ -73,12 +73,7 @@ def _make_extraction_indices(n: int) -> tuple[tuple]:
 def pauli_coefficients(H: TensorLike) -> np.ndarray:
     r"""Computes the coefficients of one or multiple Hermitian matrices in the Pauli basis.
 
-    The coefficients are ordered lexicographically in the Pauli group.
-    I.e. for ``n=2`` qubits we have the following ordering.
-
-    .. code-block::
-
-        [I(0), X(1), Y(1), Z(1), X(0), X(0) @ X(1), X(0) @ Y(1), X(0) @ Z(1), Y(0), Y(0) @ X(1), Y(0) @ Y(1), Y(0) @ Z(1), Z(0), Z(0) @ X(1), Z(0) @ Y(1), Z(0) @ Z(1)]
+    The coefficients are ordered lexicographically in the Pauli group, ``["III", "IIX", "IIY", "IIZ", "IXI", ...]``.
 
     Args:
         H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
@@ -88,7 +83,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
         matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
 
-    See :func:`~.pennylane.pauli.pauli_decompose` for theoretical background information.
+    See :func:`~.pennylane.pauli.batched_pauli_decompose` for theoretical background information.
     **Examples**
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
@@ -144,7 +139,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
     coefficients = qml.math.moveaxis(
         qml.math.real(qml.math.multiply(hadamard_transform_mat, phase_mat)), -2, -1
     )
-    # Extract the coefficients by reordering them according to the encoding in `qml.pauli.pauli_decompose`
+    # Extract the coefficients by reordering them according to the encoding in `qml.pauli.batched_pauli_decompose`
     indices = _make_extraction_indices(n)
     new_shape = (dim**2,) if batch is None else (batch, dim**2)
     return qml.math.reshape(coefficients[..., indices[0], indices[1]], new_shape)
@@ -165,7 +160,7 @@ def _idx_to_pw(idx, n):
     return PauliWord(pw)
 
 
-def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
+def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
@@ -184,12 +179,12 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
     **Examples**
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1`. We can compute its
-    matrix and get back the Pauli representation via ``pauli_decompose``.
+    matrix and get back the Pauli representation via ``batched_pauli_decompose``.
 
-    >>> from pennylane.labs.dla import pauli_decompose
+    >>> from pennylane.labs.dla import batched_pauli_decompose
     >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
     >>> mat = H.matrix()
-    >>> op = pauli_decompose(mat)
+    >>> op = batched_pauli_decompose(mat)
     >>> op
     0.25 * X(1) + 0.4 * Z(1)
     >>> type(op)
@@ -198,7 +193,7 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
     We can choose to receive a :class:`~.PauliSentence` instead as output instead, by setting
     ``pauli=True``:
 
-    >>> op = pauli_decompose(mat, pauli=True)
+    >>> op = batched_pauli_decompose(mat, pauli=True)
     >>> type(op)
     pennylane.pauli.pauli_arithmetic.PauliSentence
 
@@ -206,13 +201,13 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
 
     >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0) + 1e-7 * qml.Y(0)]
     >>> batch = np.stack([op.matrix() for op in ops])
-    >>> pauli_decompose(batch)
+    >>> batched_pauli_decompose(batch)
     [0.25 * X(0), 1e-07 * Y(0) + 0.5 * Z(0)]
 
     Small contributions can be removed by specifying the ``tol`` parameter, which defaults
     to ``1e-10``, accordingly:
 
-    >>> pauli_decompose(batch, tol=1e-6)
+    >>> batched_pauli_decompose(batch, tol=1e-6)
     [0.25 * X(0), 0.5 * Z(0)]
     """
     if tol is None:
@@ -316,7 +311,7 @@ def trace_inner_product(
 ):
     r"""Trace inner product
 
-    Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`
+    Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A B\right)/\text{dim}(A)` between two Hermitian operators :math:`A` and :math:`B`.
 
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
@@ -363,7 +358,7 @@ def trace_inner_product(
         assert A.shape[-2:] == B.shape[-2:]
         # The axes of the first input are switched, compared to tr[A@B], because we need to
         # transpose A.
-        return np.tensordot(A.conj(), B, axes=[[-1, -2], [-1, -2]]) / A.shape[-1]
+        return np.tensordot(A, B, axes=[[-1, -2], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError
 
