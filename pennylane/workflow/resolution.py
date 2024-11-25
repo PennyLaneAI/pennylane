@@ -16,15 +16,26 @@
 """
 
 from dataclasses import replace
-from typing import get_args
+from typing import Literal, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
-from pennylane.workflow.qnode import SupportedDeviceAPIs, SupportedDiffMethods
 
 from .execution import _get_interface_name
+
+SupportedDiffMethods = Literal[
+    None,
+    "best",
+    "device",
+    "backprop",
+    "adjoint",
+    "parameter-shift",
+    "hadamard",
+    "finite-diff",
+    "spsa",
+]
 
 
 def _resolve_mcm_config(
@@ -118,7 +129,7 @@ def _resolve_execution_config(
 @debug_logger
 def _resolve_diff_method(
     initial_config: "qml.devices.ExecutionConfig",
-    device: SupportedDeviceAPIs,
+    device: "qml.devices.Device",
     tape: "qml.tape.QuantumTape" = None,
 ) -> "qml.devices.ExecutionConfig":
     """

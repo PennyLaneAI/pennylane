@@ -23,6 +23,7 @@ from collections.abc import Callable, Sequence
 from typing import Any, Literal, Optional, Union, get_args
 
 from cachetools import Cache
+from resolution import SupportedDiffMethods
 
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
@@ -38,18 +39,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
-
-SupportedDiffMethods = Literal[
-    None,
-    "best",
-    "device",
-    "backprop",
-    "adjoint",
-    "parameter-shift",
-    "hadamard",
-    "finite-diff",
-    "spsa",
-]
 
 
 def _convert_to_interface(res, interface):
@@ -645,7 +634,7 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    # pylint: disable=too-many-return-statements, unused-argument, inconsistent-return-statements
+    # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
     @debug_logger
     def get_gradient_fn(
@@ -704,14 +693,13 @@ class QNode:
         if diff_method == "hadamard":
             return qml.gradients.hadamard_grad, {}, device
 
-        if isinstance(diff_method, str):
-            raise qml.QuantumFunctionError(
-                f"Differentiation method {diff_method} not recognized. Allowed "
-                f"options are {tuple(get_args(SupportedDiffMethods))}."
-            )
-
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
+
+        raise qml.QuantumFunctionError(
+            f"Differentiation method {diff_method} not recognized. Allowed "
+            f"options are {tuple(get_args(SupportedDiffMethods))}."
+        )
 
     # pylint: disable=unused-argument
     @staticmethod
@@ -855,7 +843,7 @@ class QNode:
     qtape = tape  # for backwards compatibility
 
     @debug_logger
-    def construct(self, args, kwargs):  # pylint: disable=too-many-branches
+    def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
 
@@ -912,7 +900,6 @@ class QNode:
         # Calculate the classical jacobians if necessary
         outer_transform_program.set_classical_component(self, args, kwargs)
 
-        # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
@@ -968,6 +955,10 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
+def qnode(device, **kwargs):
+    """Docstring will be updated below."""
+    return functools.partial(QNode, device=device, **kwargs)
+
+
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
