@@ -123,3 +123,28 @@ class TestT:
         """Test that the compact representation is correct"""
         expected = re.CompressedResourceOp(re.ResourceT, {})
         assert re.ResourceT.resource_rep() == expected
+
+
+class TestX:
+    """Tests for ResourceX"""
+
+    @pytest.mark.parametrize(
+        "controlled_op, expected_op",
+        [
+            (re.ResourceControlled(re.ResourceX(0), control_wires=[1]), re.ResourceCNOT([0, 1])),
+            (
+                re.ResourceControlled(re.ResourceX(0), control_wires=[1, 2]),
+                re.ResourceToffoli([0, 1, 2]),
+            ),
+        ],
+    )
+    def test_controlled_resources(self, controlled_op, expected_op):
+        """Test that the controlled_resource_decomp method dispatches correctly."""
+
+        controlled_cp = controlled_op.resource_rep_from_op()
+        controlled_resources = controlled_cp.op_type.resources(**controlled_cp.params)
+
+        expected_cp = expected_op.resource_rep_from_op()
+        expected_resources = expected_cp.op_type.resources(**expected_cp.params)
+
+        assert controlled_resources == expected_resources
