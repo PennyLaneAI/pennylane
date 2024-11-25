@@ -30,6 +30,7 @@ from pennylane.logging import debug_logger
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
+from pennylane.workflow._setup_transform_program import _setup_transform_program
 from pennylane.workflow.resolution import SupportedDiffMethods, _resolve_execution_config
 
 from ._capture_qnode import capture_qnode
@@ -887,14 +888,12 @@ class QNode:
             config, self.device, (self._tape,), self.transform_program
         )
 
-        outer_transform_program, inner_transform_program, config = (
-            qml.workflow._setup_transform_program(
-                self.transform_program,
-                self.device,
-                config,
-                execute_kwargs["cache"],
-                execute_kwargs["cachesize"],
-            )
+        outer_transform_program, inner_transform_program, config = _setup_transform_program(
+            self.transform_program,
+            self.device,
+            config,
+            execute_kwargs["cache"],
+            execute_kwargs["cachesize"],
         )
 
         # Calculate the classical jacobians if necessary
