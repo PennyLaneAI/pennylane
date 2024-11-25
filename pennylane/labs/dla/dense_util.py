@@ -72,12 +72,7 @@ def _make_extraction_indices(n: int) -> tuple[tuple]:
 def pauli_coefficients(H: TensorLike) -> np.ndarray:
     r"""Computes the coefficients of one or multiple Hermitian matrices in the Pauli basis.
 
-    The coefficients are ordered lexicographically in the Pauli group.
-    I.e. for ``n=2`` qubits we have the following ordering.
-
-    .. code-block::
-
-        [I(0), X(1), Y(1), Z(1), X(0), X(0) @ X(1), X(0) @ Y(1), X(0) @ Z(1), Y(0), Y(0) @ X(1), Y(0) @ Y(1), Y(0) @ Z(1), Z(0), Z(0) @ X(1), Z(0) @ Y(1), Z(0) @ Z(1)]
+    The coefficients are ordered lexicographically in the Pauli group, ``["III", "IIX", "IIY", "IIZ", "IXI", ...]``.
 
     Args:
         H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
