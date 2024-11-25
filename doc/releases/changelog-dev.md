@@ -63,6 +63,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
+  arguments and `interface="auto"`.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
+
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
@@ -123,6 +127,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
+  Autograd framework. As the function uses automatic differentiation for validation, parameters
+  from an autodiff framework have to be used.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
+
 * `qml.math.jax_argnums_to_tape_trainable` is moved and made private to avoid a qnode dependency
   in the math module.
   [(#6609)](https://github.com/PennyLaneAI/pennylane/pull/6609)
@@ -136,6 +145,7 @@
   check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
   [(#6602)](https://github.com/PennyLaneAI/pennylane/pull/6602)
+  [(#6589)](https://github.com/PennyLaneAI/pennylane/pull/6589)
 
 * The developer-facing `qml.utils` module has been removed. Specifically, the
 following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
@@ -254,3 +264,4 @@ William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
 Jay Soni,
+David Wierichs,
