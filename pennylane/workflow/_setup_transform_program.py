@@ -20,6 +20,8 @@ from cachetools import LRUCache
 import pennylane as qml
 from pennylane.transforms.core import TransformProgram
 
+from ._cache_transform import _cache_transform
+
 
 # pylint: disable=protected-access
 def _prune_dynamic_transform(outer_transform, inner_transform):
@@ -99,6 +101,6 @@ def _setup_transform_program(
     if numpy_only:
         inner_transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
     if cache is not None:
-        inner_transform_program.add_transform(qml.workflow._cache_transform, cache=cache)
+        inner_transform_program.add_transform(_cache_transform, cache=cache)
 
     return full_transform_program, inner_transform_program, config
