@@ -22,15 +22,18 @@ from pennylane.operation import AnyWires, Operation
 class HilbertSchmidt(Operation):
     r"""Create a Hilbert-Schmidt template that can be used to compute the Hilbert-Schmidt Test (HST).
 
-    The HST is a useful quantity used when we want to compile an unitary `U` with an approximate unitary `V`. The HST
-    is used as a distance between `U` and `V`, the result of executing the HST is 0 if and only if `V` is equal to
-    `U` (up to a global phase). Therefore we can define a cost by:
+    The HST is a useful quantity to compile a target unitary `U` with an approximate unitary `V`. The HST
+    is used as a distance between `U` and `V`. The result of executing the HST is 0 if and only if `V` is equal to
+    `U` (up to a global phase). As suggested in [1], we can define a cost function using the Hilbert-Schmidt inner product
+    between the unitaries `U` and `V` as follows:
 
     .. math::
         C_{HST} = 1 - \frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2,
 
-    where the quantity :math:`\frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2` is obtained by executing the
-    Hilbert-Schmidt Test. It is equivalent to taking the outcome probability of the state :math:`|0 ... 0\rangle`
+    where `d` is the dimension of the space in which the unitaries `U` and `V` act.
+    The quantity :math:`\frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2` is obtained by executing the Hilbert-Schmidt Test.
+
+    It is equivalent to taking the outcome probability of the state :math:`|0 ... 0\rangle`
     for the following circuit:
 
     .. figure:: ../../_static/templates/subroutines/hst.png
@@ -43,7 +46,7 @@ class HilbertSchmidt(Operation):
     Args:
         *params (array): Parameters for the quantum function `V`.
         v_function (callable): Quantum function that represents the approximate compiled unitary `V`.
-        v_wires (int or Iterable[Number, str]]): The wire(s) the approximate compiled unitary act on.
+        v_wires (int or Iterable[Number, str]]): The wire(s) on which the approximate compiled unitary acts.
         u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
@@ -90,7 +93,7 @@ class HilbertSchmidt(Operation):
         Now that the cost function has been defined it can be called for specific parameters:
 
         >>> cost_hst([0], v_function = v_function, v_wires = [1], u_tape = u_tape)
-        1
+        tensor(1., requires_grad=True)
 
     """
 
@@ -159,12 +162,14 @@ class HilbertSchmidt(Operation):
     @staticmethod
     def compute_decomposition(
         params, wires, u_tape, v_tape, v_function=None, v_wires=None
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
         r"""Representation of the operator as a product of other operators."""
+
         n_wires = len(u_tape.wires + v_tape.wires)
         first_range = range(n_wires // 2)
         second_range = range(n_wires // 2, n_wires)
 
+        # Hadamard first layer
         decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
@@ -179,22 +184,29 @@ class HilbertSchmidt(Operation):
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
-        decomp_ops.extend(qml.adjoint(op_v, lazy=False) for op_v in v_tape.operations)
+        # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
+        # apply the complex conjugate of each operation in the V tape and append it to the decomposition
+        # using the QubitUnitary operation.
+        decomp_ops.extend(
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
+            for op_v in v_tape.operations
+        )
+
         # CNOT second layer
         decomp_ops.extend(
             qml.CNOT(wires=[wires[i], wires[j]])
             for i, j in zip(reversed(first_range), reversed(second_range))
         )
-
         # Hadamard second layer
         decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
         return decomp_ops
 
 
 class LocalHilbertSchmidt(HilbertSchmidt):
-    r"""Create a Local Hilbert-Schmidt template that can be used to compute the  Local Hilbert-Schmidt Test (LHST).
-    The result of the LHST is a useful quantity for compiling a unitary ``U`` with an approximate unitary ``V``. The
-    LHST is used as a distance between `U` and `V`, it is similar to the Hilbert-Schmidt test, but the measurement is
+    r"""Create a Local Hilbert-Schmidt template that can be used to compute the Local Hilbert-Schmidt Test (LHST).
+
+    The result of the LHST is a useful quantity for compiling a unitary `U` with an approximate unitary `V`. The
+    LHST is used as a distance between `U` and `V`. It is similar to the Hilbert-Schmidt test, but the measurement is
     made only on one qubit at the end of the circuit. The LHST cost is always smaller than the HST cost and is useful
     for large unitaries.
 
@@ -206,7 +218,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     Args:
         params (array): Parameters for the quantum function `V`.
         v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
-        v_wires (int or Iterable[Number, str]]): the wire(s) the approximate compiled unitary act on.
+        v_wires (int or Iterable[Number, str]]): the wire(s) on which the approximate compiled unitary acts.
         u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
@@ -259,18 +271,20 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         Now that the cost function has been defined it can be called for specific parameters:
 
         >>> cost_lhst([3*np.pi/2, 3*np.pi/2, np.pi/2], v_function = v_function, v_wires = [2,3], u_tape = u_tape)
-        0.5
+        tensor(0.5, requires_grad=True)
     """
 
     @staticmethod
     def compute_decomposition(
         params, wires, u_tape, v_tape, v_function=None, v_wires=None
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
+
         n_wires = len(u_tape.wires + v_tape.wires)
         first_range = range(n_wires // 2)
         second_range = range(n_wires // 2, n_wires)
 
+        # Hadamard first layer
         decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
@@ -284,8 +298,14 @@ class LocalHilbertSchmidt(HilbertSchmidt):
             decomp_ops.extend(u_tape.operations)
 
         # Unitary V conjugate
-        decomp_ops.extend(qml.adjoint(qml.apply, lazy=False)(op_v) for op_v in v_tape.operations)
-
+        # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
+        # apply the complex conjugate of each operation in the V tape and append it to the decomposition
+        # using the QubitUnitary operation.
+        decomp_ops.extend(
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
+            for op_v in v_tape.operations
+        )
+        # Single qubit measurement
         decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
 
         return decomp_ops
