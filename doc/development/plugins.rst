@@ -135,7 +135,6 @@ PennyLane can potentially provide a default implementation of a transform progra
 which should be sufficient for most plugin devices. This requires that a TOML-formatted configuration
 file is defined for your device. The details of this configuration file is described :ref:`the next section <device_capabilities>`.
 The default preprocessing program will be constructed based on what is declared in this file if provided.
-Note that the you should still override :meth:`~.devices.Device.setup_execution_config`.
 
 Alternatively, you could override the :meth:`~.devices.Device.preprocess_transforms` method with a
 completely customized implementation.
@@ -436,7 +435,8 @@ Device options are any device specific options used to configure the behavior of
 example, ``default.qubit`` has ``max_workers``, ``rng``, and ``prng_key``. ``default.tensor`` has
 ``contract``, ``cutoff``, ``dtype``, ``method``, and ``max_bond_dim``. These options are often set
 with default values on initialization. These values should be placed into the ``ExecutionConfig.device_options``
-dictionary in :meth:`~.devices.Device.setup_execution_config`.
+dictionary in :meth:`~.devices.Device.setup_execution_config`. Note that we do provide a default
+implementation of this method, but you will most likely need to override it yourself.
 
 >>> dev = qml.device('default.tensor', wires=2, max_bond_dim=4, contract="nonlocal", dtype=np.complex64)
 >>> dev.setup_execution_config().device_options
