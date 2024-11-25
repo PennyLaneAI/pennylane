@@ -52,9 +52,9 @@ def unary_mapping(
     Args:
         bose_operator(BoseWord, BoseSentence): the bosonic operator
         n_states(int): maximum number of allowed bosonic states
-        ps (bool): whether to return the result as a PauliSentence instead of an
+        ps (bool): Whether to return the result as a PauliSentence instead of an
             operator. Defaults to False.
-        wire_map (dict): a dictionary defining how to map the states of
+        wire_map (dict): A dictionary defining how to map the states of
             the Bose operator to qubit wires. If None, integers used to
             label the bosonic states will be used as wire labels. Defaults to None.
         tol (float): tolerance for discarding the imaginary part of the coefficients
@@ -64,7 +64,7 @@ def unary_mapping(
 
     **Example**
 
-    >>> w = qml.BoseWord({(0, 0): "+"})
+    >>> w = qml.bose.BoseWord({(0, 0): "+"})
     >>> qml.unary_mapping(w, n_states=4)
     0.25 * X(0) @ X(1)
     + -0.25j * X(0) @ Y(1)
@@ -115,14 +115,14 @@ def _(bose_operator: BoseWord, n_states, tol=None):
 
     qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
-    op_prod = defaultdict(list)
+    ops_per_idx = defaultdict(list)
 
     # Avoiding superfluous terms by taking the product of
     # coefficient matrices.
     for (_, b_idx), sign in bose_operator.items():
-        op_prod[b_idx].append(sign)
+        ops_per_idx[b_idx].append(sign)
 
-    for b_idx, signs in op_prod.items():
+    for b_idx, signs in ops_per_idx.items():
         coeff_mat_prod = np.eye(n_states)
         for sign in signs:
             coeff_mat_prod = np.dot(coeff_mat_prod, coeff_mat[sign])
