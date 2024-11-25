@@ -303,36 +303,60 @@ def test_trace_inner_product_consistency(op1, op2):
     assert np.allclose(res1, res3)
 
 
+### Single-qubit test cases
+# Create Pauli bases on 1 and 2 qubits
 paulis_1_qubit = [op.pauli_rep for op in qml.pauli.pauli_group(1)]
-ps_basis_2_rot = np.random.random((4, 4))
-ps_basis_2 = [sum(c * op for c, op in zip(_coeffs, paulis_1_qubit)) for _coeffs in ps_basis_2_rot]
-coeffs_2 = np.random.random((3, 4))
-expected_2 = [
-    sum(c * op for c, op in zip(coeffs, ps_basis_2))
-    for coeffs in coeffs_2 @ np.linalg.pinv(sqrtm(ps_basis_2_rot @ ps_basis_2_rot.T))
-]
-
 paulis_2_qubits = [op.pauli_rep for op in qml.pauli.pauli_group(2)]
-ps_basis_0_rot = np.random.random((16, 16))
-ps_basis_0 = [sum(c * op for c, op in zip(_coeffs, paulis_2_qubits)) for _coeffs in ps_basis_0_rot]
-coeffs_0 = np.random.random((13, 16))
-expected_0 = [
-    sum(c * op for c, op in zip(coeffs, ps_basis_0))
-    for coeffs in coeffs_0 @ np.linalg.pinv(sqrtm(ps_basis_0_rot @ ps_basis_0_rot.T))
-]
-expected_1 = [sum(c * op for c, op in zip(coeffs, paulis_2_qubits)) for coeffs in coeffs_0]
 
+# Create a non-orthonormal basis on 1 qubit
+basis_coeffs_0 = np.random.random((4, 4))
+basis_0 = [qml.dot(c, paulis_1_qubit).pauli_rep for c in basis_coeffs_0]
+
+# Create an adjvec for three operators, which we understand to be in basis_0
+adjvec_0 = np.random.random((3, 4))
+
+# To express the adjvec given in basis_0 in the standard Pauli basis, we need the inv sqrt Gram.
+# Compute the operator given by adjvec_0 via the new coefficient matrix adjvec_0 @ inv_sqrt_Gram_0
+inv_sqrt_Gram_0 = np.linalg.pinv(sqrtm(basis_coeffs_0 @ basis_coeffs_0.T))
+expected_0 = [qml.dot(c, basis_0).pauli_rep for c in adjvec_0 @ inv_sqrt_Gram_0]
+
+# Use the adjvec_0 for another 3 operators, now understood in the (orthonormal) basis
+# paulis_1_qubits. The expected output does not require a Gram matrix to be computed.
+expected_1 = [qml.dot(c, paulis_1_qubit).pauli_rep for c in adjvec_0]
+
+### Two-qubit test cases
+
+# Create a non-orthonormal basis on 2 qubits
+basis_coeffs_1 = np.random.random((16, 16))
+basis_1 = [qml.dot(c, paulis_2_qubits).pauli_rep for c in basis_coeffs_1]
+
+# Create an adjvec for 13 operators, which we understand to be in basis_1
+adjvec_1 = np.random.random((13, 16))
+
+# To express the adjvec given in basis_1 in the standard Pauli basis, we need the inv sqrt Gram.
+# Compute the operator given by adjvec_1 via the new coefficient matrix adjvec_1 @ inv_sqrt_Gram_1
+inv_sqrt_Gram_1 = np.linalg.pinv(sqrtm(basis_coeffs_1 @ basis_coeffs_1.T))
+expected_2 = [qml.dot(c, basis_1).pauli_rep for c in adjvec_1 @ inv_sqrt_Gram_1]
+
+# Use the adjvec_1 for another 13 operators, now understood in the (orthonormal) basis
+# paulis_2_qubits. The expected output does not require a Gram matrix to be computed.
+expected_3 = [qml.dot(c, paulis_2_qubits).pauli_rep for c in adjvec_1]
+
+# Collect all test cases. All operators are formatted as qml.pauli.PauliSentence
 ps_test_cases = [
-    (coeffs_2, ps_basis_2, expected_2, False),  # Non-orthogonal basis
-    (coeffs_0, ps_basis_0, expected_0, False),  # Non-orthogonal basis
-    (coeffs_0, paulis_2_qubits, expected_1, True),  # Orthonormal basis
+    (adjvec_0, basis_0, expected_0, False),  # Non-orthogonal basis
+    (adjvec_0, paulis_1_qubit, expected_1, True),  # Orthonormal basis
+    (adjvec_1, basis_1, expected_2, False),  # Non-orthogonal basis
+    (adjvec_1, paulis_2_qubits, expected_3, True),  # Orthonormal basis
 ]
 
+# Translate test cases to qml.operation.Operations
 op_test_cases = [
     (adj_vecs, [ps.operation() for ps in basis], [ps.operation() for ps in expected], is_ortho)
     for adj_vecs, basis, expected, is_ortho in ps_test_cases
 ]
 
+# Translate test cases to dense matrices
 dense_test_cases = [
     (
         adj_vecs,
@@ -388,8 +412,8 @@ class TestAdjvecToOp:
 
 
 class TestOpToAdjvec:
-    """Test op_to_adjvec. We reuse the test cases from adjvec_to_op, except
-    for the first one, which uses a linearly dependent "basis"."""
+    """Test op_to_adjvec. We reuse the test cases from adjvec_to_op and simply re-interpret which
+    part is passed to the function, and which represents the expected output."""
 
     @pytest.mark.parametrize("expected, basis, ops, is_ortho", ps_test_cases)
     def test_with_ps(self, ops, basis, expected, is_ortho):
