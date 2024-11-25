@@ -71,9 +71,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     exponential of a given Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
-    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
-    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+    Hamiltonian expressed as a linear combination of operands which in general do not commute.
+    Consider the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed
+    using symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
     .. math::
@@ -102,8 +102,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
-        ValueError: The ``hamiltonian`` must have atleast two terms.
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian.
+        ValueError: The ``hamiltonian`` has only one term or no terms.
+        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
+            (only for ``check_hermitian=True``)
         ValueError: The ``order`` is not one or a positive even integer.
 
     **Example**
@@ -134,21 +135,23 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
         mathematically identical :class:`~.LinearCombination` objects may undergo different time
         evolutions due to the order in which those observables are stored. The order of observables
-        can be queried using the :meth:`~.Sum.terms` method.
+        can be queried using the :attr:`~.Sum.operands` attribute. Also see the advanced example
+        below.
 
     .. warning::
 
-        ``TrotterProduct`` does not automatically simplify the input Hamiltonian, allowing
-        for a more fine-grained control over the decomposition but also risking an increased
-        runtime and number of gates required. Simplification can be performed manually by
+        ``TrotterProduct`` does not automatically simplify the input Hamiltonian. This allows
+        for a more fine-grained control over the decomposition but also risks an increased
+        runtime and/or number of gates. Simplification can be performed manually by
         applying :func:`~.simplify` to your Hamiltonian before using it in ``TrotterProduct``.
 
     .. details::
         :title: Usage Details
 
         An *upper-bound* for the error in approximating time-evolution using this operator can be
-        computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different methods; the
-        "one-norm-bound" scaling method and the "commutator-bound" scaling method. (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
+        computed by calling :func:`~.TrotterProduct.error()`. It is computed using two different
+        methods; the "one-norm-bound" scaling method and the "commutator-bound" scaling method.
+        (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
 
         >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
         >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
@@ -161,6 +164,49 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         of :class:`~.ApproxTimeEvolution` by taking the adjoint:
 
         >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+
+        The grouping of terms in the ``operands`` attribute of the ``hamiltonian`` impacts
+        the structure of the gates created by ``TrotterProduct``. To understand this, first
+        consider this simple two-qubit Hamiltonian with four Pauli word terms:
+
+        >>> coeffs = [0.5, 0.2, 0.1, -0.6]
+        >>> ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1), qml.X(0) @ qml.Y(1)]
+        >>> H_flat = qml.dot(coeffs, ops)
+        >>> H_flat
+        >>> print(*H_flat.operands, sep="\n")
+        0.5 * X(0)
+        0.2 * Y(1)
+        0.1 * (Y(0) @ Z(1))
+        -0.6 * (X(0) @ Y(1))
+
+        As we can see, each Pauli word contributes an individual operand. As a result, the
+        ``TrotterProduct`` (of first order, for simplicity) of this Hamiltonian will contain four
+        exponentials per Trotter step:
+
+        >>> qml.TrotterProduct(H_flat, 1., n=1, order=1).decomposition()
+        [Exp(1j -0.6 * (X(0) @ Y(1))),
+         Exp(1j 0.1 * (Y(0) @ Z(1))),
+         Exp(1j 0.2 * Y(1)),
+         Exp(1j 0.5 * X(0))]
+
+        If we first create two operands with two Pauli words each and then sum those, this is
+        reflected in the structure of the operator:
+
+        >>> H_grouped = qml.sum(qml.dot(coeffs[:2], ops[:2]), qml.dot(coeffs[2:], ops[2:]))
+        >>> print(*H_grouped.operands, sep="\n")
+        0.5 * X(0) + 0.2 * Y(1)
+        0.1 * (Y(0) @ Z(1)) + -0.6 * (X(0) @ Y(1))
+
+        The ``TrotterProduct`` accordingly has a different structure as well:
+
+        >>> qml.TrotterProduct(H_grouped, 1., n=1, order=1).decomposition()
+        [Exp(1j 0.1 * (Y(0) @ Z(1)) + -0.6 * (X(0) @ Y(1))),
+         Exp(1j 0.5 * X(0) + 0.2 * Y(1))]
+
+
+        As we can see, the ``operands`` structure of the Hamiltonian directly impacts the
+        constructed Trotter circuit, and in general, those circuits will be different
+        approximations to the true time evolution.
 
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:
