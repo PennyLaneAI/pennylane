@@ -22,6 +22,11 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+
+jax = pytest.importorskip("jax")
+jnp = jax.numpy
+
+# pylint: disable=wrong-import-position
 from pennylane.capture import TransformInterpreter, TransformTrace, TransformTracer
 from pennylane.capture.primitives import (
     cond_prim,
@@ -32,9 +37,6 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.transforms.core import TransformError, TransformProgram, transform
-
-jax = pytest.importorskip("jax")
-jnp = jax.numpy
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -565,6 +567,7 @@ class TestTransformInterpreterIntegration:
     def test_while_loop(self):
         """Test that calling an interpreted function with while_loop primitives gives the correct
         results."""
+        # pylint: disable=undefined-loop-variable
         program, _, _ = init_test_variables(transforms=[change_rotations])
 
         @TransformInterpreter(program)
