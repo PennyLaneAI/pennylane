@@ -82,7 +82,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
         matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
 
-    See :func:`~.pennylane.pauli.pauli_decompose` for theoretical background information.
+    See :func:`~.pennylane.pauli.batched_pauli_decompose` for theoretical background information.
     **Examples**
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
@@ -138,7 +138,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
     coefficients = qml.math.moveaxis(
         qml.math.real(qml.math.multiply(hadamard_transform_mat, phase_mat)), -2, -1
     )
-    # Extract the coefficients by reordering them according to the encoding in `qml.pauli.pauli_decompose`
+    # Extract the coefficients by reordering them according to the encoding in `qml.pauli.batched_pauli_decompose`
     indices = _make_extraction_indices(n)
     new_shape = (dim**2,) if batch is None else (batch, dim**2)
     return qml.math.reshape(coefficients[..., indices[0], indices[1]], new_shape)
@@ -159,7 +159,7 @@ def _idx_to_pw(idx, n):
     return PauliWord(pw)
 
 
-def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
+def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
@@ -178,12 +178,12 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
     **Examples**
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1`. We can compute its
-    matrix and get back the Pauli representation via ``pauli_decompose``.
+    matrix and get back the Pauli representation via ``batched_pauli_decompose``.
 
-    >>> from pennylane.labs.dla import pauli_decompose
+    >>> from pennylane.labs.dla import batched_pauli_decompose
     >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
     >>> mat = H.matrix()
-    >>> op = pauli_decompose(mat)
+    >>> op = batched_pauli_decompose(mat)
     >>> op
     0.25 * X(1) + 0.4 * Z(1)
     >>> type(op)
@@ -192,7 +192,7 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
     We can choose to receive a :class:`~.PauliSentence` instead as output instead, by setting
     ``pauli=True``:
 
-    >>> op = pauli_decompose(mat, pauli=True)
+    >>> op = batched_pauli_decompose(mat, pauli=True)
     >>> type(op)
     pennylane.pauli.pauli_arithmetic.PauliSentence
 
@@ -200,13 +200,13 @@ def pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = Fa
 
     >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0) + 1e-7 * qml.Y(0)]
     >>> batch = np.stack([op.matrix() for op in ops])
-    >>> pauli_decompose(batch)
+    >>> batched_pauli_decompose(batch)
     [0.25 * X(0), 1e-07 * Y(0) + 0.5 * Z(0)]
 
     Small contributions can be removed by specifying the ``tol`` parameter, which defaults
     to ``1e-10``, accordingly:
 
-    >>> pauli_decompose(batch, tol=1e-6)
+    >>> batched_pauli_decompose(batch, tol=1e-6)
     [0.25 * X(0), 0.5 * Z(0)]
     """
     if tol is None:

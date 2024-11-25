@@ -21,9 +21,9 @@ import pennylane as qml
 from pennylane import I, X, Y, Z
 from pennylane.labs.dla import (
     adjvec_to_op,
+    batched_pauli_decompose,
     op_to_adjvec,
     pauli_coefficients,
-    pauli_decompose,
     trace_inner_product,
 )
 from pennylane.pauli import PauliSentence
@@ -148,7 +148,7 @@ class TestPauliCoefficients:
 
 
 class TestPauliDecompose:
-    """Tests for ``pauli_decompose`` utility function."""
+    """Tests for ``batched_pauli_decompose`` utility function."""
 
     # I  X  Y  Z
     # 0  1  2  3
@@ -168,7 +168,7 @@ class TestPauliDecompose:
     @pytest.mark.parametrize("pauli", [False, True])
     def test_one_qubit(self, H, expected, pauli):
         """Test that Pauli decomposition for a one-qubit matrix is correct."""
-        op = pauli_decompose(H, pauli=pauli)
+        op = batched_pauli_decompose(H, pauli=pauli)
         if pauli:
             expected = expected.pauli_rep
             expected.simplify()
@@ -203,7 +203,7 @@ class TestPauliDecompose:
             I(0) * 0.7,
             I(0) * 0,
         ]
-        op = pauli_decompose(H, pauli=pauli)
+        op = batched_pauli_decompose(H, pauli=pauli)
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
@@ -234,7 +234,7 @@ class TestPauliDecompose:
     @pytest.mark.parametrize("pauli", [False, True])
     def test_two_qubits(self, H, expected, pauli):
         """Test that Pauli decomposition for a two-qubit matrix is correct."""
-        op = pauli_decompose(H, pauli=pauli)
+        op = batched_pauli_decompose(H, pauli=pauli)
         if pauli:
             expected = expected.pauli_rep
             expected.simplify()
@@ -271,7 +271,7 @@ class TestPauliDecompose:
             X(1) - Z(1) + Y(0) @ X(1),
             X(1) @ Z(0) - Y(0) @ Z(1),
         ]
-        op = pauli_decompose(H, pauli=pauli)
+        op = batched_pauli_decompose(H, pauli=pauli)
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:

@@ -34,7 +34,7 @@ Utility functions
     ~adjvec_to_op
     ~op_to_adjvec
     ~pauli_coefficients
-    ~pauli_decompose
+    ~batched_pauli_decompose
     ~trace_inner_product
 
 
@@ -45,6 +45,6 @@ from .dense_util import (
     adjvec_to_op,
     op_to_adjvec,
     pauli_coefficients,
-    pauli_decompose,
+    batched_pauli_decompose,
     trace_inner_product,
 )
