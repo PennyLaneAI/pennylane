@@ -272,6 +272,8 @@ def trace_inner_product(
         # transpose A.
         return np.tensordot(A.conj(), B, axes=[[-1, -2], [-1, -2]]) / A.shape[-1]
 
+    if isinstance(A, (PauliSentence, PauliWord)):
+        return (A @ B).trace()
 
     raise NotImplementedError
 
