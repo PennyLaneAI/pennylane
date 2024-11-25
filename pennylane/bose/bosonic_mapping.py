@@ -44,7 +44,7 @@ def christiansen_mapping(
     r"""Convert a bosonic operator to a qubit operator using the Christiansen mapping.
 
     This mapping assumes that the maximum number of allowed bosonic states is 2 and works only for
-    `christiansen bosons
+    Christiansen bosons defined in `J. Chem. Phys. 120, 2140 (2004)
     <https://pubs.aip.org/aip/jcp/article-abstract/120/5/2140/534128/A-second-quantization-formulation-of-multimode?redirectedFrom=fulltext>`_.
     The bosonic creation and annihilation operators are mapped to the Pauli operators as
 
