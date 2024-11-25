@@ -259,6 +259,20 @@ def trace_inner_product(
     >>> trace_inner_product(qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0))
     1.0
 
+    If both operators are dense arrays, a leading batch dimension is broadcasted.
+
+    >>> batch = 10
+    >>> ops1 = np.random.rand(batch, 16, 16)
+    >>> op2 = np.random.rand(16, 16)
+    >>> trace_inner_product(ops1, op2).shape
+    (10,)
+    >>> trace_inner_product(op2, ops1).shape
+    (10,)
+
+    We can also have both arguments broadcasted.
+    >>> trace_inner_product(ops1, ops1).shape
+    (10, 10)
+
     """
     if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
         return (A.pauli_rep @ B.pauli_rep).trace()
