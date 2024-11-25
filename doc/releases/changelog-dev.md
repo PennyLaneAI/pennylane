@@ -37,6 +37,8 @@
     True
     ```
 
+<h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
+
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
