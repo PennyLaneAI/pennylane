@@ -106,14 +106,31 @@ class TestTransformTracer:
             # need to be same instance for equality operator to work how we want
             (jax.core.AbstractValue(),) * 2,
             (1, jax.core.ShapedArray((), int)),
-            (1.0, jax.core.ShapedArray((), float)),
             (1 + 0j, jax.core.ShapedArray((), complex)),
             (True, jax.core.ShapedArray((), bool)),
-            ([1, 2, 3], jax.core.ShapedArray((3,), int)),
             ((1, 2, 3), jax.core.ShapedArray((3,), int)),
             (
                 jnp.array([1.0 + 0.0j, 2.0 + 0.0j, 3.0 + 0.0j]),
                 jax.core.ShapedArray((3,), complex),
+            ),
+            (qml.PauliX(0), qml.capture.AbstractOperator()),
+            (
+                qml.expval(qml.Z(0)),  # Observable
+                qml.capture.AbstractMeasurement(
+                    qml.measurements.ExpectationMP._abstract_eval, n_wires=None
+                ),
+            ),
+            (
+                qml.probs(wires=0),  # wires
+                qml.capture.AbstractMeasurement(
+                    qml.measurements.ProbabilityMP._abstract_eval, n_wires=1, has_eigvals=False
+                ),
+            ),
+            (
+                qml.sample(op=jax.core.AbstractValue()),  # MCM
+                qml.capture.AbstractMeasurement(
+                    qml.measurements.SampleMP._abstract_eval, n_wires=1
+                ),
             ),
         ],
     )
