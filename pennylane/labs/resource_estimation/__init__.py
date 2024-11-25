@@ -59,7 +59,11 @@ Operators
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
     ~ResourceOrbitalRotation
+<<<<<<< HEAD
     ~ResourcePauliRot
+=======
+    ~ResourceMultiControlledX
+>>>>>>> resource_multi_qubit
     ~ResourcePhaseShift
     ~ResourcePow
     ~ResourcePSWAP
