@@ -29,7 +29,7 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
-class TransformDispatcher:
+class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
     :class:`pennylane.devices.Device`.
@@ -62,7 +62,7 @@ class TransformDispatcher:
 
         return super().__new__(cls)
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         transform,
@@ -80,6 +80,7 @@ class TransformDispatcher:
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
         self._use_argnum_in_expand = use_argnum_in_expand
+        self._primitive = _create_transform_primitive(self._transform.__name__)
         functools.update_wrapper(self, transform)
 
     def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
@@ -94,7 +95,7 @@ class TransformDispatcher:
             if self._expand_transform:
                 expanded_tapes, expand_processing = self._expand_transform(obj, *targs, **tkwargs)
                 transformed_tapes = []
-                processing_and_sclices = []
+                processing_and_slices = []
                 start = 0
                 for tape in expanded_tapes:
                     intermediate_tapes, post_processing_fn = self._transform(
@@ -102,11 +103,11 @@ class TransformDispatcher:
                     )
                     transformed_tapes.extend(intermediate_tapes)
                     end = start + len(intermediate_tapes)
-                    processing_and_sclices.append(tuple([post_processing_fn, slice(start, end)]))
+                    processing_and_slices.append(tuple([post_processing_fn, slice(start, end)]))
                     start = end
 
                 def processing_fn(results):
-                    processed_results = [fn(results[slice]) for fn, slice in processing_and_sclices]
+                    processed_results = [fn(results[slice]) for fn, slice in processing_and_slices]
                     return expand_processing(processed_results)
 
             else:
@@ -117,17 +118,24 @@ class TransformDispatcher:
             return transformed_tapes, processing_fn
 
         if isinstance(obj, qml.QNode):
-            return self._qnode_transform(obj, targs, tkwargs)
+            res = self._qnode_transform(obj, targs, tkwargs)
+            if qml.capture.enabled():
+                res = self._capture_callable_transform(res, targs, tkwargs)
+            return res
+
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
+
         if obj.__class__.__name__ == "QJIT":
             raise TransformError(
                 "Functions that are wrapped / decorated with qjit cannot subsequently be"
                 f" transformed with a PennyLane transform (attempted {self})."
                 f" For the desired affect, ensure that qjit is applied after {self}."
             )
+
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
+
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
             return self._batch_transform(obj, targs, tkwargs)
 
@@ -229,8 +237,42 @@ class TransformDispatcher:
         )
         return qnode
 
+    def _capture_callable_transform(self, qfunc, targs, tkwargs):
+        """Apply the transform on a quantum function when program capture is enabled"""
+
+        @functools.wraps(qfunc)
+        def qfunc_transformed(*args, **kwargs):
+            import jax  # pylint: disable=import-outside-toplevel
+
+            flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
+            jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
+
+            n_args = len(args)
+            n_consts = len(jaxpr.consts)
+            args_slice = slice(0, n_args)
+            consts_slice = slice(n_args, n_args + n_consts)
+            targs_slice = slice(n_args + n_consts, None)
+
+            results = self._primitive.bind(
+                *args,
+                *jaxpr.consts,
+                *targs,
+                inner_jaxpr=jaxpr.jaxpr,
+                args_slice=args_slice,
+                consts_slice=consts_slice,
+                targs_slice=targs_slice,
+                **tkwargs,
+            )
+
+            assert flat_qfunc.out_tree is not None
+            return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
+
+        return qfunc_transformed
+
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
+        if qml.capture.enabled():
+            return self._capture_callable_transform(qfunc, targs, tkwargs)
 
         @functools.wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
@@ -373,7 +415,7 @@ class TransformContainer:
         is_informative=False,
         final_transform=False,
         use_argnum=False,
-    ):  # pylint:disable=redefined-outer-name,too-many-arguments
+    ):  # pylint:disable=redefined-outer-name,too-many-arguments,too-many-positional-arguments
         self._transform = transform
         self._args = args or []
         self._kwargs = kwargs or {}
@@ -438,3 +480,33 @@ class TransformContainer:
     def final_transform(self):
         """``True`` if the transform needs to be executed"""
         return self._final_transform
+
+
+@functools.lru_cache
+def _create_transform_primitive(name):
+    try:
+        # pylint: disable=import-outside-toplevel
+        import jax
+    except ImportError:
+        return None
+
+    transform_prim = jax.core.Primitive(name)
+    transform_prim.multiple_results = True
+
+    @transform_prim.def_impl
+    def _(
+        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, **transform_kwargs
+    ):  # pylint: disable=unused-argument
+        args = all_args[args_slice]
+        consts = all_args[consts_slice]
+        targs = all_args[targs_slice]  # pylint: disable=unused-variable
+
+        out = jax.core.eval_jaxpr(inner_jaxpr, consts, *args)
+        out = out if isinstance(out, Sequence) else [out]
+        return out
+
+    @transform_prim.def_abstract_eval
+    def _(*_, inner_jaxpr, **__):
+        return [out.aval for out in inner_jaxpr.outvars]
+
+    return transform_prim
