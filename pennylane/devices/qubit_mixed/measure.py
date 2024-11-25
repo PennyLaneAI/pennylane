@@ -31,8 +31,23 @@ from pennylane.ops import Sum
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .apply_operation import apply_operation
-from .utils import get_num_wires, reshape_state_as_matrix
+from .apply_operation import _get_num_wires, apply_operation
+
+
+def _reshape_state_as_matrix(state, num_wires):
+    """Given a non-flat, potentially batched state, flatten it to square matrix or matrices if batched.
+
+    Args:
+        state (TensorLike): A state that needs to be reshaped to a square matrix or matrices if batched
+        num_wires (int): The number of wires the state represents
+
+    Returns:
+        Tensorlike: A reshaped, square state, with an extra batch dimension if necessary
+    """
+    dim = 2**num_wires
+    batch_size = math.get_batch_size(state, ((2,) * (num_wires * 2)), dim**2)
+    shape = (batch_size, dim, dim) if batch_size is not None else (dim, dim)
+    return math.reshape(state, shape)
 
 
 def calculate_expval(
@@ -79,10 +94,10 @@ def calculate_reduced_density_matrix(
     """
     wires = measurementprocess.wires
     if not wires:
-        return reshape_state_as_matrix(state, get_num_wires(state, is_state_batched))
+        return _reshape_state_as_matrix(state, _get_num_wires(state, is_state_batched))
 
     num_obs_wires = len(wires)
-    num_state_wires = get_num_wires(state, is_state_batched)
+    num_state_wires = _get_num_wires(state, is_state_batched)
     state_wire_indices_list = list(alphabet[:num_state_wires] * 2)
     final_state_wire_indices_list = [""] * (2 * num_obs_wires)
 
@@ -97,7 +112,7 @@ def calculate_reduced_density_matrix(
 
     state = math.einsum(f"...{state_wire_indices}->...{final_state_wire_indices}", state)
 
-    return reshape_state_as_matrix(state, len(wires))
+    return _reshape_state_as_matrix(state, len(wires))
 
 
 def calculate_probability(
@@ -122,7 +137,7 @@ def calculate_probability(
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     wires = measurementprocess.wires
-    num_state_wires = get_num_wires(state, is_state_batched)
+    num_state_wires = _get_num_wires(state, is_state_batched)
     wire_order = Wires(range(num_state_wires))
 
     if readout_errors is not None:
@@ -134,7 +149,7 @@ def calculate_probability(
     # probs are diagonal elements
     # stacking list since diagonal function axis selection parameter names
     # are not consistent across interfaces
-    reshaped_state = reshape_state_as_matrix(state, num_state_wires)
+    reshaped_state = _reshape_state_as_matrix(state, num_state_wires)
     if is_state_batched:
         probs = math.real(math.stack([math.diagonal(dm) for dm in reshaped_state]))
     else:
