@@ -77,6 +77,10 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @staticmethod
+    def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=config["error_rx"])
+
 
 class ResourceRY(qml.RY, re.ResourceOperator):
     """Resource class for the RY gate."""
@@ -91,6 +95,10 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @staticmethod
+    def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=config["error_ry"])
 
 
 class ResourceRZ(qml.RZ, re.ResourceOperator):
@@ -111,6 +119,10 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @staticmethod
+    def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=config["error_rz"])
 
 
 class ResourceRot(qml.Rot, re.ResourceOperator):
