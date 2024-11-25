@@ -356,7 +356,7 @@ class TestInitialization:
         if raise_error:
             with pytest.raises(
                 TypeError,
-                match="The given operator must be a PennyLane ~.Hamiltonian, ~.Sum or ~.SProd",
+                match="The given operator must be a PennyLane ~.Sum or ~.SProd",
             ):
                 qml.TrotterProduct(hamiltonian, time=1.23)
 

@@ -14,6 +14,8 @@
 """
 Tests for the ``default.mixed`` device for the JAX interface
 """
+import warnings
+
 # pylint: disable=protected-access
 from functools import partial
 
@@ -23,6 +25,14 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 pytestmark = pytest.mark.jax
 
@@ -43,7 +53,7 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_devices"]["jax"] == "default.mixed"
+        assert dev.target_device.capabilities()["passthru_devices"]["jax"] == "default.mixed"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
