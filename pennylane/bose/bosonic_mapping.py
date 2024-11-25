@@ -64,7 +64,7 @@ def unary_mapping(
 
     **Example**
 
-    >>> w = qml.BoseWord()
+    >>> w = qml.BoseWord({(0, 0): "+"})
     >>> qml.unary_mapping(w, n_states=4)
     0.25 * X(0) @ X(1)
     + -0.25j * X(0) @ Y(1)
