@@ -34,6 +34,18 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
     def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @staticmethod
+    def adjoint_resource_decomp():
+        return {}
+
+    @staticmethod
+    def controlled_resource_decomp():
+        return {}
+
+    @staticmethod
+    def pow_resource_decomp():
+        return {}
+
 
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     """Resource class for the GlobalPhase gate."""
@@ -48,3 +60,15 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @staticmethod
+    def adjoint_resource_decomp():
+        return {}
+
+    @staticmethod
+    def controlled_resource_decomp():
+        return {}
+
+    @staticmethod
+    def pow_resource_decomp():
+        return {}
