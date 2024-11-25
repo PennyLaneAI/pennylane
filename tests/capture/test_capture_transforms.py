@@ -127,7 +127,7 @@ class TestTransformTracer:
                 ),
             ),
             (
-                qml.sample(op=jax.core.AbstractValue()),  # MCM
+                qml.sample(op=qml.measure(0)),  # MCM
                 qml.capture.AbstractMeasurement(
                     qml.measurements.SampleMP._abstract_eval, n_wires=1
                 ),
