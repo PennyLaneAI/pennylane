@@ -110,6 +110,7 @@ def test_mcm_config_validation(mock_device, mock_empty_tape, mock_empty_tp):
 
 @pytest.mark.parametrize("mcm_method", [None, "one-shot"])
 @pytest.mark.parametrize("postselect_mode", [None, "hw-like"])
+@pytest.mark.jax
 def test_jax_interface(
     mcm_method, postselect_mode, mock_device, mock_tape_with_finite_shots, mock_empty_tp
 ):
@@ -125,6 +126,7 @@ def test_jax_interface(
     assert resolved_config.mcm_config == expected_mcm_config
 
 
+@pytest.mark.jax
 def test_jax_jit_interface(mock_device, mock_empty_tape, mock_empty_tp):
     """Test resolving ExecutionConfig with JAX-JIT interface and deferred MCMConfig method."""
     mcm_config = MCMConfig(mcm_method="deferred")
