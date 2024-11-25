@@ -1050,4 +1050,5 @@ class DefaultMixedNewAPI(Device):
         if self.readout_err is not None:
             transform_program.add_transform(warn_readout_error_state)
 
+        transform_program.add_transform(qml.defer_measurements, device=self)
         return transform_program, config
