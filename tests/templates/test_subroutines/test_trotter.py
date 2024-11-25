@@ -26,7 +26,7 @@ from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.resource import Resources
 from pennylane.resource.error import SpectralNormError
-from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
+from pennylane.templates.subroutines.trotter import TrotterizedQfunc, _recursive_expression, _scalar, _recursive_qfunc
 
 test_hamiltonians = (
     qml.dot([1.0, 1.0, 1.0], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
@@ -453,7 +453,7 @@ class TestInitialization:
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qml.ops.functions.assert_valid(op)
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
@@ -573,6 +573,36 @@ class TestPrivateFunctions:
         assert tape.operations == []  # No queuing!
         for op1, op2 in zip(decomp, expected_expansion):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize("reverse", (False, True))
+    @pytest.mark.parametrize("order, expected_decomp", zip((1, 2, 4), expected_expansions))
+    def test_recursive_qfunc(self, order, reverse, expected_decomp):
+        time = 1.23
+        wires = [0, 1]
+
+        def first_order_exp(time, arg1, wires, kwarg1=False):
+            if arg1:
+                qml.exp(qml.PauliX(wires[0]), time*1j)
+            
+            if kwarg1:
+                qml.exp(qml.PauliY(wires[0]), time*1j),
+            
+            qml.exp(qml.PauliZ(wires[1]), time*1j),
+            return
+
+        qfunc_args = (True,)
+        qfunc_kwargs = {"kwarg1": True}
+        with qml.tape.QuantumTape() as tape:
+            decomp = _recursive_qfunc(time, order, first_order_exp, wires, reverse, *qfunc_args, **qfunc_kwargs)
+
+        assert tape.operations == []  # No queuing!
+
+        for index in range(len(decomp)):
+            expected_index = index
+            if reverse:
+                expected_index = (2 - (index % 3)) + 3 * (index // 3)  # manually reversing 
+
+            qml.assert_equal(decomp[index], expected_decomp[expected_index])
 
 
 class TestError:
@@ -1200,3 +1230,28 @@ class TestIntegration:
         )
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_coeff_grad, reference_coeff_grad)
+
+
+class TestTrotterizedQfunc:
+
+    # @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    def test_standard_validity(self):
+        """Test standard validity criteria using assert_valid."""
+
+        def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
+            "This is the first order expansion (U_1)."
+            qml.RX(time * theta, wires[0])
+            qml.RY(time * phi, wires[1])
+            if flip:
+                qml.CNOT(wires=wires[:2])
+
+        op = TrotterizedQfunc(
+            0.1,
+            *(0.12, -3.45),
+            qfunc=first_order_expansion,
+            n=1,
+            order=2,
+            wires=["a", "b", "c"],
+            flip=True,
+        )
+        qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_pickle=True)
