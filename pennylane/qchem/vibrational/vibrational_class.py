@@ -85,6 +85,18 @@ def single_point(molecule, method="rhf"):
     return scf_obj
 
 
+def _import_geometric():
+    """Import geometric."""
+    try:
+        import geometric
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires geometric. It can be installed with: pip install geometric."
+        ) from Error
+
+    return geometric
+
+
 def optimize_geometry(molecule, method="rhf"):
     r"""Obtains equilibrium geometry for the molecule.
 
@@ -98,10 +110,10 @@ def optimize_geometry(molecule, method="rhf"):
 
     """
     pyscf = _import_pyscf()
-    from pyscf.geomopt.geometric_solver import optimize
+    geometric = _import_geometric()
 
     scf_res = single_point(molecule, method)
-    geom_eq = optimize(scf_res, maxsteps=100)
+    geom_eq = geometric.optimize(scf_res, maxsteps=100)
 
     mol_eq = qml.qchem.Molecule(
         molecule.symbols,

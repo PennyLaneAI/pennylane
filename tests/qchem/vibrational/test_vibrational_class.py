@@ -26,8 +26,8 @@ AU_TO_CM = 219475
 # pylint: disable=too-many-arguments
 
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support")
-def test_es_methoderror():
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
+def test_optimize_geometry_methoderror():
     r"""Test that an error is raised if wrong method is provided for
     geometry optimization."""
 
@@ -72,7 +72,7 @@ def test_es_methoderror():
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
-def test_scf_energy(sym, geom, unit, method, basis, expected_energy):
+def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
     r"""Test that correct energy is produced for a given molecule."""
 
     mol = qml.qchem.Molecule(sym, geom, unit=unit, basis_name=basis, load_data=True)
@@ -128,7 +128,6 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = vibrational.optimize_geometry(mol)
     harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
-    print(harmonic_res["norm_mode"], expected_vecs)
     assert np.allclose(harmonic_res["norm_mode"], expected_vecs) or np.allclose(
         harmonic_res["norm_mode"], -1 * np.array(expected_vecs)
     )

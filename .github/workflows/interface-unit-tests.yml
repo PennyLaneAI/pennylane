@@ -554,7 +554,7 @@ jobs:
       pytest_markers: qchem
       pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
-        openfermionpyscf basis-set-exchange
+        openfermionpyscf basis-set-exchange geometric
         ${{ inputs.additional_python_packages }}
 
   gradients-tests:
