@@ -34,7 +34,6 @@ quantum-classical programs.
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
     ~make_plxpr
-    ~qnode_call
     ~PlxprInterpreter
     ~FlatFn
 
@@ -156,7 +155,6 @@ from .capture_measurements import (
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
 )
-from .capture_qnode import qnode_call
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr
 
@@ -185,7 +183,7 @@ def __getattr__(key):
         return _get_abstract_measurement()
 
     if key == "qnode_prim":
-        from .capture_qnode import _get_qnode_prim
+        from ..workflow._capture_qnode import _get_qnode_prim
 
         return _get_qnode_prim()
 
@@ -224,7 +222,6 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
-    "qnode_call",
     "AbstractOperator",
     "AbstractMeasurement",
     "qnode_prim",

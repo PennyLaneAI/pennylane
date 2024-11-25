@@ -25,6 +25,39 @@ from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatc
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 
 
+def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
+    """This function gets the tape parameters from the QNode construction given some argnums (only for Jax).
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behaviour
+    of Jax in order to mark trainable parameters.
+
+    Args:
+        qnode(qml.QNode): the quantum node.
+        argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
+        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+
+    Return:
+        list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
+    """
+    import jax  # pylint: disable=import-outside-toplevel
+
+    with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
+        trace = jax.interpreters.ad.JVPTrace(main, 0)
+
+    args_jvp = [
+        (
+            jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+            if i in argnums
+            else arg
+        )
+        for i, arg in enumerate(args)
+    ]
+
+    tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
+    tapes, _ = program((tape,))
+    del trace
+    return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
+
+
 def _batch_postprocessing(
     results: ResultBatch, individual_fns: list[PostprocessingFn], slices: list[slice]
 ) -> ResultBatch:
@@ -479,7 +512,7 @@ class TransformProgram:
             argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
             # pylint: disable=protected-access
             if (transform._use_argnum or transform.classical_cotransform) and argnums:
-                params = qml.math.jax_argnums_to_tape_trainable(
+                params = _jax_argnums_to_tape_trainable(
                     qnode, argnums, TransformProgram(self[0:index]), args, kwargs
                 )
                 argnums_list.append([qml.math.get_trainable_indices(param) for param in params])

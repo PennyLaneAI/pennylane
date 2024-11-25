@@ -66,14 +66,43 @@ class TestSWAP:
         """Test that the resources can be computed from the compressed representation"""
 
         op = re.ResourceSWAP([0, 1])
-        cnot = re.ResourceCNOT.resource_rep()
-        expected = {cnot: 3}
+        expected = {re.ResourceCNOT.resource_rep(): 3}
 
         op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
-        op_compressed_rep_type = op_compressed_rep.op_type
+        assert op_resource_type.resources(**op_resource_params) == expected
 
-        assert op_compressed_rep_type.resources(**op_resource_params) == expected
+
+class TestS:
+    """Tests for ResourceS"""
+
+    def test_resources(self):
+        """Test that S decomposes into two Ts"""
+        op = re.ResourceS(0)
+        expected = {re.CompressedResourceOp(re.ResourceT, {}): 2}
+        assert op.resources() == expected
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceS(0)
+        assert op.resource_params() == {}
+
+    def test_resource_rep(self):
+        """Test that the compressed representation is correct"""
+        expected = re.CompressedResourceOp(re.ResourceS, {})
+        assert re.ResourceS.resource_rep() == expected
+
+    def test_resources_from_rep(self):
+        """Test that the resources can be computed from the compressed representation"""
+
+        op = re.ResourceS(0)
+        expected = {re.ResourceT.resource_rep(): 2}
+
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.params
+        assert op_resource_type.resources(**op_resource_params) == expected
 
 
 class TestT:

@@ -148,6 +148,16 @@ class TestInitialization:
 class TestValidation:
     """Tests for QNode creation and validation"""
 
+    @pytest.mark.parametrize("return_type", (tuple, list))
+    def test_return_behaviour_consistency(self, return_type):
+        """Test that the QNode return typing stays consistent"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(return_type):
+            return return_type([qml.expval(qml.Z(0))])
+
+        assert isinstance(circuit(return_type), return_type)
+
     def test_expansion_strategy_error(self):
         """Test that an error is raised if expansion_strategy is passed to the qnode."""
 
@@ -328,8 +338,8 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Differentiation method 5 must be a gradient transform or a string",
+            ValueError,
+            match="Differentiation method 5 must be a str, TransformDispatcher, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
@@ -830,7 +840,7 @@ class TestIntegration:
 
         with pytest.raises(
             TypeError,
-            match="does not support mid-circuit measurements natively, and hence it does not support the dynamic_one_shot transform.",
+            match="does not support mid-circuit measurements and/or one-shot execution mode",
         ):
 
             @qml.transforms.dynamic_one_shot
@@ -1028,6 +1038,47 @@ class TestIntegration:
 
         x = np.array(0.8)
         res = circuit(x)
+        assert qml.math.get_interface(res) == "numpy"
+
+    def test_qnode_default_interface(self):
+        """Tests that the default interface is set correctly for a QNode."""
+
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(graph: nx.Graph):
+            for a in graph.nodes:
+                qml.Hadamard(wires=a)
+            for a, b in graph.edges:
+                qml.CZ(wires=[a, b])
+            return qml.expval(qml.PauliZ(0))
+
+        graph = nx.complete_graph(3)
+        res = circuit(graph)
+        assert qml.math.get_interface(res) == "numpy"
+
+    def test_qscript_default_interface(self):
+        """Tests that the default interface is set correctly for a QuantumScript."""
+
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
+
+        dev = qml.device("default.qubit")
+
+        # pylint: disable=too-few-public-methods
+        class DummyCustomGraphOp(qml.operation.Operation):
+            """Dummy custom operation for testing purposes."""
+
+            def __init__(self, graph: nx.Graph):
+                super().__init__(graph, wires=graph.nodes)
+
+            def decomposition(self) -> list:
+                return []
+
+        graph = nx.complete_graph(3)
+        tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
+        res = qml.execute([tape], dev)
         assert qml.math.get_interface(res) == "numpy"
 
 
