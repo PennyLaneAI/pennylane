@@ -14,7 +14,6 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument, too-many-positional-arguments, inconsistent-return-statements
 import copy
 import functools
 import inspect
@@ -34,6 +33,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
+from ._resolve_diff_method import SupportedDiffMethods, _resolve_diff_method
 from .execution import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
@@ -45,18 +45,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
-
-SupportedDiffMethods = Literal[
-    None,
-    "best",
-    "device",
-    "backprop",
-    "adjoint",
-    "parameter-shift",
-    "hadamard",
-    "finite-diff",
-    "spsa",
-]
 
 
 def _convert_to_interface(res, interface):
@@ -178,9 +166,7 @@ def _resolve_execution_config(
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     else:
-        execution_config = qml.workflow._resolve_diff_method(
-            execution_config, device, tape=tapes[0]
-        )
+        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
@@ -272,6 +258,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
+# pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -737,7 +724,7 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
     @debug_logger
     def get_gradient_fn(
@@ -796,15 +783,15 @@ class QNode:
         if diff_method == "hadamard":
             return qml.gradients.hadamard_grad, {}, device
 
-        if isinstance(diff_method, str):
-            raise qml.QuantumFunctionError(
-                f"Differentiation method {diff_method} not recognized. Allowed "
-                f"options are {tuple(get_args(SupportedDiffMethods))}."
-            )
-
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
 
+        raise qml.QuantumFunctionError(
+            f"Differentiation method {diff_method} not recognized. Allowed "
+            f"options are {tuple(get_args(SupportedDiffMethods))}."
+        )
+
+    # pylint: disable=unused-argument
     @staticmethod
     @debug_logger
     def get_best_method(
@@ -946,7 +933,7 @@ class QNode:
     qtape = tape  # for backwards compatibility
 
     @debug_logger
-    def construct(self, args, kwargs):  # pylint: disable=too-many-branches
+    def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
 
@@ -1008,7 +995,6 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
@@ -1064,7 +1050,11 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
+def qnode(device, **kwargs):
+    """Docstring will be updated below."""
+    return functools.partial(QNode, device=device, **kwargs)
+
+
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 

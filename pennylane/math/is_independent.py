@@ -21,6 +21,7 @@ a function is independent of its arguments for the interfaces
 * PyTorch
 """
 import warnings
+from functools import partial
 
 import numpy as np
 from autograd.core import VJPNode
@@ -74,7 +75,7 @@ def _autograd_is_indep_analytic(func, *args, **kwargs):
     return True
 
 
-# pylint: disable=import-outside-toplevel,unnecessary-lambda-assignment,unnecessary-lambda
+# pylint: disable=import-outside-toplevel
 def _jax_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using JAX.
@@ -110,7 +111,8 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
     """
     import jax
 
-    mapped_func = lambda *_args: func(*_args, **kwargs)
+    mapped_func = partial(func, **kwargs)
+
     _vjp = jax.vjp(mapped_func, *args)[1]
     if _vjp.args[0].args != ((),):
         return False
@@ -182,7 +184,10 @@ def _get_random_args(args, interface, num, seed, bounds):
         tf.random.set_seed(seed)
         rnd_args = []
         for _ in range(num):
-            _args = (tf.random.uniform(tf.shape(_arg)) * width + bounds[0] for _arg in args)
+            _args = (
+                tf.random.uniform(tf.shape(_arg), dtype=_arg.dtype) * width + bounds[0]
+                for _arg in args
+            )
             _args = tuple(
                 tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
                 for _arg, arg in zip(_args, args)
@@ -207,6 +212,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     return rnd_args
 
 
+# pylint:disable=too-many-arguments,too-many-positional-arguments
 def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds):
     """Test whether a function returns the same output at random positions.
 
@@ -227,8 +233,6 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
         chosen points.
     """
 
-    # pylint:disable=too-many-arguments
-
     rnd_args = _get_random_args(args, interface, num_pos, seed, bounds)
     original_output = func(*args, **kwargs)
     is_tuple_valued = isinstance(original_output, tuple)
@@ -247,6 +251,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
     return True
 
 
+# pylint:disable=too-many-arguments,too-many-positional-arguments
 def is_independent(
     func,
     interface,

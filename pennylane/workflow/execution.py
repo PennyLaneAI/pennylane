@@ -16,11 +16,6 @@ Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
 
-# pylint: disable=import-outside-toplevel,too-many-branches,not-callable,unexpected-keyword-arg
-# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
-# pylint: disable=invalid-unary-operand-type,isinstance-second-argument-not-valid-type
-# pylint: disable=too-many-arguments,too-many-statements,function-redefined,too-many-function-args,too-many-positional-arguments
-
 import inspect
 import logging
 from collections.abc import Callable
@@ -40,7 +35,6 @@ from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, Transf
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 jpc_interfaces = {
     "autograd",
@@ -94,6 +88,7 @@ SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
+# pylint: disable=import-outside-toplevel
 def _use_tensorflow_autograph():
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
@@ -108,6 +103,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
+# pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
     interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
@@ -246,9 +242,11 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
+# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches, too-many-statements
+# pylint: disable=too-many-locals
 def execute(
     tapes: QuantumScriptBatch,
-    device: SupportedDeviceAPIs,
+    device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[str] = "auto",
     transform_program=None,
@@ -263,8 +261,8 @@ def execute(
     mcm_config=None,
     gradient_fn="unset",
 ) -> ResultBatch:
-    """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
-    during the project. The current version is supporting forward execution for NumPy and does not support shot vectors.
+    """New function to execute a batch of tapes on a device in an autodifferentiable-compatible
+    manner.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
@@ -278,9 +276,12 @@ def execute(
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
-        inner_transform (.TransformProgram): A transform program to be applied to the tapes in inner execution, inside the ml interface.
-        config (qml.devices.ExecutionConfig): A datastructure describing the parameters needed to fully describe the execution.
-        grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
+        inner_transform (.TransformProgram): A transform program to be applied to the tapes in
+            inner execution, inside the ml interface.
+        config (qml.devices.ExecutionConfig): A datastructure describing the parameters
+            needed to fully describe the execution.
+        grad_on_execution (bool, str): Whether the gradients should be computed
+            on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
@@ -295,9 +296,10 @@ def execute(
             (classical) computational overhead during the backwards pass.
         device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
             product if it is available.
-        mcm_config (dict): Dictionary containing configuration options for handling mid-circuit measurements.
-        gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed ``diff_method`` and will
-            be removed in v0.41.
+        mcm_config (dict): Dictionary containing configuration options for handling
+            mid-circuit measurements.
+        gradient_fn="unset": **DEPRECATED**.  This keyword argument has been renamed
+            ``diff_method`` and will be removed in v0.41.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -370,7 +372,11 @@ def execute(
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
-            """Entry with args=(tapes=%s, device=%s, diff_method=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s) called by=%s""",
+            (
+                """Entry with args=(tapes=%s, device=%s, diff_method=%s, interface=%s, """
+                """grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s,"""
+                """ max_diff=%s) called by=%s"""
+            ),
             tapes,
             repr(device),
             (
@@ -475,8 +481,9 @@ def execute(
 
         elif config.grad_on_execution:
 
-            def execute_fn(internal_tapes):
-                """A partial function that wraps the execute_and_compute_derivatives method of the device.
+            def wrap_execute_and_compute_derivatives(internal_tapes):
+                """A partial function that wraps the execute_and_compute_derivatives
+                method of the device.
 
                 Closure Variables:
                     device: The device to execute on
@@ -486,11 +493,13 @@ def execute(
 
                 return device.execute_and_compute_derivatives(numpy_tapes, config)
 
+            execute_fn = wrap_execute_and_compute_derivatives
+
             diff_method = None
 
         else:
 
-            def execute_fn(internal_tapes) -> tuple[ResultBatch, tuple]:
+            def execution_with_dummy_jac(internal_tapes) -> tuple[ResultBatch, tuple]:
                 """A wrapper around device.execute that adds an empty tuple instead of derivatives.
 
                 Closure Variables:
@@ -500,7 +509,9 @@ def execute(
                 numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return device.execute(numpy_tapes, config), tuple()
 
-            def diff_method(internal_tapes):
+            execute_fn = execution_with_dummy_jac
+
+            def device_compute_derivatives(internal_tapes):
                 """A partial function that wraps compute_derivatives method of the device.
 
                 Closure Variables:
@@ -509,6 +520,8 @@ def execute(
                 """
                 numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return device.compute_derivatives(numpy_tapes, config)
+
+            diff_method = device_compute_derivatives
 
     elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
@@ -552,7 +565,7 @@ def execute(
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
 
-    ml_boundary_execute = _get_ml_boundary_execute(
+    ml_execute = _get_ml_boundary_execute(
         interface,
         config.grad_on_execution,
         config.use_device_jacobian_product,
@@ -560,9 +573,9 @@ def execute(
     )
 
     if interface in jpc_interfaces:
-        results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
+        results = ml_execute(tapes, execute_fn, jpc, device=device)
     else:
-        results = ml_boundary_execute(
+        results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
             tapes, device, execute_fn, diff_method, gradient_kwargs, _n=1, max_diff=max_diff
         )
 
