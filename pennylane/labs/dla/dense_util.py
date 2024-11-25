@@ -285,13 +285,7 @@ def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, O
         return Q
 
     OM = gram_schmidt(_M)
-    for i in range(OM.shape[1]):
-        for j in range(OM.shape[1]):
-            prod = OM[:, i] @ OM[:, j]
-            if i == j:
-                assert np.isclose(prod, 1)
-            else:
-                assert np.isclose(prod, 0)
+    assert np.allclose(np.tensordot(OM.T, OM, axes=1), np.eye(len(OM)))
 
     # reconstruct normalized operators
 
