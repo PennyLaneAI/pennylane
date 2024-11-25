@@ -111,9 +111,10 @@ def optimize_geometry(molecule, method="rhf"):
     """
     pyscf = _import_pyscf()
     geometric = _import_geometric()
+    from pyscf.geomopt.geometric_solver import optimize
 
     scf_res = single_point(molecule, method)
-    geom_eq = geometric.optimize(scf_res, maxsteps=100)
+    geom_eq = optimize(scf_res, maxsteps=100)
 
     mol_eq = qml.qchem.Molecule(
         molecule.symbols,
