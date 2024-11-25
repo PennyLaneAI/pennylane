@@ -348,6 +348,8 @@ class Device(abc.ABC):
         """
 
         if self.__class__.preprocess is not Device.preprocess:
+            if config:
+                return self.preprocess()[1]
             return self.preprocess(config)[1]
 
         if config is None:
@@ -448,7 +450,9 @@ class Device(abc.ABC):
         #       3. The device overrides this method and not preprocess (recommended and what we
         #          are ultimately aiming for), then preprocess calls the overridden method.
         if self.__class__.preprocess is not Device.preprocess:
-            return self.preprocess(execution_config)[0]
+            if execution_config:
+                return self.preprocess(execution_config)[0]
+            return self.preprocess()[0]
 
         return TransformProgram()
 
