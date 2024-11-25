@@ -76,56 +76,6 @@ def _resolve_mcm_config(
     return replace(mcm_config, **updated_values)
 
 
-# pylint: disable=protected-access
-def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tapes: QuantumScriptBatch,
-    transform_program: TransformProgram,
-) -> "qml.devices.ExecutionConfig":
-    """Resolves the execution configuration for non-device specific properties.
-
-    Args:
-        execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
-        device (qml.devices.Device): a Pennylane device
-        tapes (QuantumScriptBatch): a batch of tapes
-        transform_program (TransformProgram): a program of transformations to be applied to the tapes
-
-    Returns:
-        qml.devices.ExecutionConfig: resolved execution configuration
-    """
-    updated_values = {}
-    updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
-
-    if (
-        "lightning" in device.name
-        and qml.metric_tensor in transform_program
-        and execution_config.gradient_method == "best"
-    ):
-        execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = qml.workflow._resolve_diff_method(
-            execution_config, device, tape=tapes[0]
-        )
-
-    if execution_config.gradient_method is qml.gradients.param_shift_cv:
-        updated_values["gradient_keyword_arguments"]["dev"] = device
-
-    # Mid-circuit measurement configuration validation
-    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
-    # workflow still needs to know if jax-jit is used
-    interface = _get_interface_name(tapes, execution_config.interface)
-    finite_shots = any(tape.shots for tape in tapes)
-    mcm_interface = (
-        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
-    )
-    mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
-
-    updated_values["mcm_config"] = mcm_config
-
-    return replace(execution_config, **updated_values)
-
-
 @debug_logger
 def _resolve_diff_method(
     initial_config: "qml.devices.ExecutionConfig",
@@ -182,3 +132,51 @@ def _resolve_diff_method(
             )
 
     return replace(initial_config, **updated_values)
+
+
+# pylint: disable=protected-access
+def _resolve_execution_config(
+    execution_config: "qml.devices.ExecutionConfig",
+    device: "qml.devices.Device",
+    tapes: QuantumScriptBatch,
+    transform_program: TransformProgram,
+) -> "qml.devices.ExecutionConfig":
+    """Resolves the execution configuration for non-device specific properties.
+
+    Args:
+        execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
+        device (qml.devices.Device): a Pennylane device
+        tapes (QuantumScriptBatch): a batch of tapes
+        transform_program (TransformProgram): a program of transformations to be applied to the tapes
+
+    Returns:
+        qml.devices.ExecutionConfig: resolved execution configuration
+    """
+    updated_values = {}
+    updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
+
+    if (
+        "lightning" in device.name
+        and qml.metric_tensor in transform_program
+        and execution_config.gradient_method == "best"
+    ):
+        execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
+    else:
+        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+
+    if execution_config.gradient_method is qml.gradients.param_shift_cv:
+        updated_values["gradient_keyword_arguments"]["dev"] = device
+
+    # Mid-circuit measurement configuration validation
+    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
+    # workflow still needs to know if jax-jit is used
+    interface = _get_interface_name(tapes, execution_config.interface)
+    finite_shots = any(tape.shots for tape in tapes)
+    mcm_interface = (
+        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
+    )
+    mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
+
+    updated_values["mcm_config"] = mcm_config
+
+    return replace(execution_config, **updated_values)

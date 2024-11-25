@@ -56,13 +56,11 @@ def test_resolve_mcm_config_jax_jit_deferred():
     assert resolved.postselect_mode == "fill-shots"
 
 
-def test_resolve_mcm_config_finite_shots_pad_invalid_samples():
+@pytest.mark.parametrize("mcm_method", [None, "one-shot"])
+@pytest.mark.parametrize("postselect_mode", [None, "hw-like"])
+def test_resolve_mcm_config_finite_shots_pad_invalid_samples(mcm_method, postselect_mode):
     """Test resolution when finite_shots is True and interface is JAX."""
-    mcm_config = MCMConfig(mcm_method=None, postselect_mode=None)
-
+    mcm_config = MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
     resolved = _resolve_mcm_config(mcm_config, interface="jax", finite_shots=True)
-    assert resolved.postselect_mode == "pad-invalid-samples"
 
-    mcm_config = MCMConfig(mcm_method="one-shot", postselect_mode="hw-like")
-    resolved = _resolve_mcm_config(mcm_config, interface="jax", finite_shots=True)
     assert resolved.postselect_mode == "pad-invalid-samples"
