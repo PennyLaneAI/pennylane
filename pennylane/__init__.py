@@ -42,6 +42,7 @@ from pennylane.fermi import (
 from pennylane.bose import (
     BoseSentence,
     BoseWord,
+    binary_mapping,
     unary_mapping,
 )
 from pennylane.qchem import (
