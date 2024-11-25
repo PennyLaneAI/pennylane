@@ -105,7 +105,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
-        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`.
+        TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
         ValueError: The ``hamiltonian`` must have atleast two terms.
         ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian.
         ValueError: The ``order`` is not one or a positive even integer.
@@ -136,7 +136,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     .. warning::
 
         The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
-        mathematically identical :class:`~.Hamiltonian` objects may undergo different time
+        mathematically identical :class:`~.LinearCombination` objects may undergo different time
         evolutions due to the order in which those observables are stored. The order of observables
         can be queried using the :meth:`~.Sum.terms` method.
 
@@ -226,7 +226,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         if not isinstance(hamiltonian, Sum):
             raise TypeError(
-                f"The given operator must be a PennyLane ~.Hamiltonian, ~.Sum or ~.SProd, got {hamiltonian}"
+                f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
 
         if check_hermitian:

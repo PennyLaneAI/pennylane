@@ -1,5 +1,3 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -162,6 +160,17 @@ class ResourceX(qml.X, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @staticmethod
+    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_vals, num_work_wires, **kwargs):
+        if num_ctrl_wires == 1 and num_ctrl_vals == 1:
+            return re.ResourceCNOT.resources(**kwargs)
+        if num_ctrl_wires == 2 and num_ctrl_vals == 2:
+            return re.ResourceToffoli.resources(**kwargs)
+
+        return re.ResourceMultiControlledX.resources(
+            num_ctrl_wires, num_ctrl_vals, num_work_wires, **kwargs
+        )
 
 
 class ResourceY(qml.Y, re.ResourceOperator):
