@@ -14,7 +14,6 @@
 """This module contains functions to map bosonic operators to qubit operators."""
 
 from collections import defaultdict
-
 from functools import singledispatch
 from typing import Union
 
