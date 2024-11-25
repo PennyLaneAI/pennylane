@@ -60,7 +60,7 @@ def unary_mapping(
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        Union[PauliSentence, Operator]: a linear combination of qubit operators
+        Union[PauliSentence, Operator]: A linear combination of qubit operators
 
     **Example**
 
