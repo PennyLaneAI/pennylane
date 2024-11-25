@@ -26,7 +26,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     This function computes the structure constants of a Lie algebra provided by their dense matrix representation,
     obtained from, e.g., :func:`~lie_closure_dense`.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
-    `~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
+    :class:`~PauliSentence` that are employed in :func:`~structure_constants`, e.g., when there are few generators
     that are sums of many Paulis.
 
     .. seealso:: For details on the mathematical definitions, see :func:`~structure_constants` and the section "Lie algebra basics" in our `g-sim demo <https://pennylane.ai/qml/demos/tutorial_liesim/#lie-algebra-basics>`__.

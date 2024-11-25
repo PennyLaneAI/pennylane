@@ -35,7 +35,9 @@ Utility functions
 
     ~adjvec_to_op
     ~change_basis_ad_rep
+    ~check_orthonormal
     ~op_to_adjvec
+    ~orthonormalize
     ~pauli_coefficients
     ~batched_pauli_decompose
     ~trace_inner_product
