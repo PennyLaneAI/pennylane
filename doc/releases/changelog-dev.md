@@ -235,6 +235,10 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply the complex conjugate
+  of the unitaries instead of the adjoint, providing the correct result.
+  [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
+
 * `QNode` return behaviour is now consistent for lists and tuples.
   [(#6568)](https://github.com/PennyLaneAI/pennylane/pull/6568)
 
