@@ -1830,23 +1830,6 @@ class Operation(Operator):
             self.grad_recipe = [None] * self.num_params
 
 
-# class QFuncToOperation(Operation):
-#     r"""This class constructs an operation from a quantum function."""
-
-#     def __init__(self, qfunc, wires, *trainable_args, name: str = None, id: str=None, **non_trainable_kwargs):
-#         self.qfunc = qfunc
-#         self._hyperparameters = non_trainable_kwargs
-#         self._name = name or self.__class__.__name__
-#         super().__init__(*trainable_args, wires=wires, id=id)
-
-#     def decomposition(self) -> list[Operator]:
-#         """Queue the decomposition as the set of operations called in the qfunc."""
-#         with qml.queuing.AnnotatedQueue() as q:
-#             self.qfunc(*self.parameters, **self.hyperparameters)
-
-#         return [op for op in q.queue if not isinstance(op, qml.measure.MeasurementProcess)]
-
-
 class Channel(Operation, abc.ABC):
     r"""Base class for quantum channels.
 

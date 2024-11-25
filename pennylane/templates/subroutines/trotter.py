@@ -16,6 +16,7 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
 from collections import defaultdict
+from functools import wraps
 
 import pennylane as qml
 from pennylane.operation import Operation, Operator
@@ -24,6 +25,8 @@ from pennylane.ops.op_math import SProd
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
+
+from ...operation import FlatPytree
 
 
 def _scalar(order):
@@ -488,16 +491,30 @@ class TrotterizedQfunc(Operation):
         product formula. The wires required by the circuit should be either the last explicit argument or the 
         first keyword argument. :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
     
+    .. warning::
+
+        :code:`TrotterizedQfunc` currently does not support pickling. Instead please decompose the operation
+        first before attempting to pickle the quantum circuit. 
+    
     Args:
         time (float): the time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
+        *trainable_args (tuple): the trainable arguments of the first-order expansion function
         qfunc (Callable): the first-order expansion given as a callable function which queues operations
         wires (Iterable): the set of wires the operation will act upon (should be identical to qfunc wires)
         n (int): an integer representing the number of Trotter steps to perform
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+        reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
+        name (str): an optional name for the instance
+        **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
+    
+    Raises:
+        ValueError: A qfunc must be provided to be trotterized. 
     
     **Example**
 
     .. code-block:: python3
+
+        from pennylane.templates.subroutines.trotter import TrotterizedQfunc
 
         def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
             "This is the first order expansion (U_1)."
@@ -508,10 +525,10 @@ class TrotterizedQfunc(Operation):
 
         @qml.qnode(qml.device("default.qubit"))
         def my_circuit(time, angles, num_trotter_steps):
-            qml.TrotterizedQfunc(
+            TrotterizedQfunc(
                 time, 
-                first_order_expansion, 
                 *angles, 
+                qfunc=first_order_expansion, 
                 n=num_trotter_steps, 
                 order=2, 
                 wires=['a', 'b', 'c'], 
@@ -527,26 +544,30 @@ class TrotterizedQfunc(Operation):
         >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
         a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
         b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
-    
-    .. details::
-        :title: Usage Details
-        
-        (Insert advanced example here)
+        >>>
+        >>>
+        >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=3))
+        a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
+        b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+
     """
 
     def __init__(
         self,
         time,
-        qfunc,
         *trainable_args,
+        qfunc=None,
         n=1,
         order=2,
         reverse=False,
+        name=None,
         id=None,
         **non_trainable_kwargs,
     ):
-        """The init method for the TrotterizedQfunc operation"""
         # Enforce the function signature: f(time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n)
+
+        if qfunc is None:
+            raise ValueError("The qfunc must be provided to be trotterized.")
 
         try:
             wires = non_trainable_kwargs.pop("wires")
@@ -561,6 +582,9 @@ class TrotterizedQfunc(Operation):
         self._hyperparameters["reverse"] = reverse
 
         super().__init__(time, *trainable_args, wires=wires, id=id)
+
+        if name:
+            self._name = name  # Override name if a custom name is provided
 
     def decomposition(self) -> list[Operator]:
         """The decomposition"""
@@ -587,6 +611,168 @@ class TrotterizedQfunc(Operation):
                 qml.apply(op)
 
         return decomp
+
+    def _flatten(self):
+        """Serialize the operation into trainable and non-trainable components.
+
+        Returns:
+            data, metadata: The trainable and non-trainable components.
+
+        See ``Operator._unflatten``.
+
+        The data component can be recursive and include other operations. For example, the trainable component of ``Adjoint(RX(1, wires=0))``
+        will be the operator ``RX(1, wires=0)``.
+
+        The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
+        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> qml.Rot._unflatten(*op._flatten())
+        Rot(1.2, 2.3, 3.4, wires=[0])
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> qml.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.2, XY, wires=[0, 1])
+
+        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
+        ``_flatten`` methods.
+
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> op._flatten()
+        ((U2(3.4, 4.5, wires=['a']),),
+        (Wires(['b', 'c']), (True, True), Wires([])))
+        """
+        hashable_hyperparameters = tuple(self.hyperparameters.items()) + (("wires", self.wires),)
+        return self.data, hashable_hyperparameters
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        """Recreate an operation from its serialized format.
+
+        Args:
+            data: the trainable component of the operation
+            metadata: the non-trainable component of the operation.
+
+        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``Operator._unflatten``.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> op._flatten()
+        ((1.2, 2.3, 3.4), (Wires([0]), ()))
+        >>> qml.Rot._unflatten(*op._flatten())
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> type(op)._unflatten(*op._flatten())
+        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
+
+        """
+        return cls(*data, **dict(metadata))
+
+
+def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
+    r"""Generates higher order Suzuki-Trotter product formulas from a set of
+    operations defined in a function.
+
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+    :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+    .. math::
+
+        \begin{align}
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+            &\vdots \\
+            S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+        \end{align}
+
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
+    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+    .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+    Suppose we have direct access to the operators which represent the exponentiated terms of 
+    a hamiltonian:
+
+    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} | for j \in [1, N] \}.
+    
+    Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
+    first order expansion :math:`S_{1}(t)`; this function expands it to any higher order Suzuki-Trotter product.
+
+    .. warning::
+
+        :code:`trotterize()` requires the :code:`qfunc` argument is a function with a very specific call 
+        signature. The first argument should be a time parameter which will be modified according to the 
+        Suzuki-Trotter product formula. The wires required by the circuit should be either the last 
+        explicit argument or the first keyword argument. 
+        :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
+    
+    Args:
+        qfunc (Callable): the first-order expansion given as a callable function which queues operations
+        n (int): an integer representing the number of Trotter steps to perform
+        order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
+        reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
+        name (str): an optional name for the instance
+        **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
+    
+    Returns:
+        Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of 
+            :class:`~.TrotterizedQfunc`
+    
+    **Example**
+
+    .. code-block:: python3
+
+        def first_order_expansion(time, theta, phi, wires, flip=False):
+            "This is the first order expansion (U_1)."
+            qml.RX(time*theta, wires[0])
+            qml.RY(time*phi, wires[1])
+            if flip:
+                qml.CNOT(wires=wires[:2])
+
+        @qml.qnode(qml.device("default.qubit"))
+        def my_circuit(time, theta, phi, num_trotter_steps):
+            qml.trotterize(
+                first_order_expansion,
+                n=num_trotter_steps,
+                order=2,
+            )(time, theta, phi, wires=['a', 'b', 'c'], flip=True)
+            return qml.state()
+        
+    We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
+            
+        >>> time = 0.1
+        >>> theta, phi = (0.12, -3.45)
+        >>> 
+        >>> print(qml.draw(my_circuit, level=3)(time, theta, phi, num_trotter_steps=1))
+        a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
+        b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+        >>>
+        >>>
+        >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=3))
+        a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
+        b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
+
+    """
+
+    @wraps(qfunc)
+    def wrapper(*args, **kwargs):
+        time = args[0]
+        other_args = args[1:]
+        return TrotterizedQfunc(
+            time, *other_args, qfunc=qfunc, n=n, order=order, reverse=reverse, name=name, **kwargs
+        )
+
+    return wrapper
 
 
 @qml.QueuingManager.stop_recording()
