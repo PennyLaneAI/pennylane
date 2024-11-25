@@ -64,9 +64,7 @@ class TestHilbertSchmidt:
     def test_maximal_cost(self, param):
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+        u_tape = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
 
         def v_function(param):
             qml.Identity(wires=1)
@@ -85,9 +83,7 @@ class TestHilbertSchmidt:
     def test_minimal_cost(self, param):
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+        u_tape = qml.tape.QuantumScript([qml.Hadamard(0)])
 
         def v_function(param):
             qml.Hadamard(wires=1)
@@ -106,10 +102,7 @@ class TestHilbertSchmidt:
     def test_intermediate_cost_1_qubits(self, param):
         """Test that Hilbert-Schmidt test provides the correct cost for a 1 qubit unitary."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-
-        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+        u_tape = qml.tape.QuantumScript([qml.Hadamard(0)])
 
         def v_function(param):
             qml.RZ(param, wires=1)
@@ -140,12 +133,13 @@ class TestHilbertSchmidt:
     def test_intermediate_cost_2_qubits(self, param):
         """Test that Hilbert-Schmidt test provides the correct cost for a 2 qubit unitary."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.SWAP(wires=[0, 1])
-            qml.Hadamard(wires=0) @ qml.RY(0.1, wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+        u_tape = qml.tape.QuantumScript(
+            [
+                qml.SWAP(wires=[0, 1]),
+                qml.Hadamard(wires=0) @ qml.RY(0.1, wires=1),
+                qml.CNOT(wires=[0, 1]),
+            ]
+        )
 
         def v_function(param):
             qml.RZ(param, wires=2) @ qml.CNOT(wires=[2, 3])
@@ -179,12 +173,9 @@ class TestHilbertSchmidt:
     def test_intermediate_cost_3_qubits(self, param):
         """Test that Hilbert-Schmidt test provides the correct cost for a 3 qubit unitary."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.RY(0.1, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-
-        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+        u_tape = qml.tape.QuantumScript(
+            [qml.RY(0.1, wires=0), qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[1, 2])]
+        )
 
         def v_function(param):
             qml.RY(param, wires=3)
@@ -439,9 +430,7 @@ class TestLocalHilbertSchmidt:
     def test_maximal_cost(self, param):
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+        u_tape = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
 
         def v_function(param):
             qml.Identity(wires=1)
@@ -460,9 +449,7 @@ class TestLocalHilbertSchmidt:
     def test_minimal_cost(self, param):
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-        u_tape = qml.tape.QuantumScript.from_queue(q_U)
+        u_tape = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
 
         def v_function(param):
             qml.Hadamard(wires=1)
