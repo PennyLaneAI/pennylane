@@ -229,7 +229,7 @@ class Device(abc.ABC):
 
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """Device preprocessing function.
 
@@ -327,9 +327,7 @@ class Device(abc.ABC):
         transform_program = self.preprocess_transforms(execution_config)
         return transform_program, execution_config
 
-    def setup_execution_config(
-        self, config: ExecutionConfig = DefaultExecutionConfig
-    ) -> ExecutionConfig:
+    def setup_execution_config(self, config: Optional[ExecutionConfig] = None) -> ExecutionConfig:
         """Sets up an ExecutionConfig that configures the execution behaviour.
 
         The execution config stores information on how the device should perform the execution,
@@ -352,13 +350,16 @@ class Device(abc.ABC):
         if self.__class__.preprocess is not Device.preprocess:
             return self.preprocess(config)[1]
 
+        if config is None:
+            config = DefaultExecutionConfig
+
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
 
         return config
 
     def preprocess_transforms(
-        self, execution_config: ExecutionConfig = DefaultExecutionConfig
+        self, execution_config: Optional[ExecutionConfig] = None
     ) -> TransformProgram:
         """Returns the transform program to preprocess a circuit for execution.
 
