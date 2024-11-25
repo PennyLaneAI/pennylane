@@ -22,6 +22,19 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .bosonic import BoseSentence, BoseWord
 
 
+def _test_double_occupancy(bose_operator):
+    r"""Tests and raises an error if the operator contains terms with double occupancy."""
+    ordered_op = bose_operator.normal_order()
+    for bw in ordered_op:
+        bw_terms = list(bw.keys())
+        for i in range(len(bw) - 1):
+            if bw_terms[i][1] == bw_terms[i + 1][1] and bw[bw_terms[i]] == bw[bw_terms[i + 1]]:
+                raise ValueError(
+                    "The provided bose_operator contains terms that require more than 2 states to "
+                    "represent a bosonic mode, consider using binary_mapping or unary_mapping for this operator."
+                )
+
+
 def christiansen_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
     ps: bool = False,
@@ -30,30 +43,30 @@ def christiansen_mapping(
 ):
     r"""Convert a bosonic operator to a qubit operator using the Christiansen mapping.
 
-    This mapping assumes that the bosons are 2-level systems and works only for
-    hardcore bosons.
+    This mapping assumes that the maximum number of allowed bosonic states is 2 and works only for
+    `christiansen bosons
+    <https://pubs.aip.org/aip/jcp/article-abstract/120/5/2140/534128/A-second-quantization-formulation-of-multimode?redirectedFrom=fulltext>`_.
     The bosonic creation and annihilation operators are mapped to the Pauli operators as
 
     .. math::
 
-        a^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
-        a^{\dagger}_n = \frac{X_n - iY_n}{2},
+        b^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        b^{\dagger}_n = \frac{X_n - iY_n}{2},
 
     and
 
     .. math::
 
-        a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
-        a_n = \frac{X_n + iY_n}{2},
+        b_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        b_n = \frac{X_n + iY_n}{2},
 
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
 
     Args:
         bose_operator(BoseWord, BoseSentence): the bosonic operator
-        nstates(int): maximum number of states a boson can occupy
-        ps (bool): whether to return the result as a PauliSentence instead of an
+        ps (bool): Whether to return the result as a PauliSentence instead of an
             operator. Defaults to False.
-        wire_map (dict): a dictionary defining how to map the states of
+        wire_map (dict): A dictionary defining how to map the states of
             the Bose operator to qubit wires. If None, integers used to
             label the bosonic states will be used as wire labels. Defaults to None.
         tol (float): tolerance for discarding the imaginary part of the coefficients
@@ -61,6 +74,7 @@ def christiansen_mapping(
     Returns:
         Union[PauliSentence, Operator]: a linear combination of qubit operators
     """
+
     qubit_operator = _christiansen_mapping_dispatch(bose_operator, tol)
 
     wires = list(bose_operator.wires) or [0]
@@ -83,17 +97,18 @@ def _christiansen_mapping_dispatch(bose_operator, tol):
 @_christiansen_mapping_dispatch.register
 def _(bose_operator: BoseWord, tol=None):
 
+    _test_double_occupancy(bose_operator)
+
     qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
     coeffs = {"+": -0.5j, "-": 0.5j}
 
-    for item in bose_operator.items():
-        (_, wire), sign = item
+    for (_, b_idx), sign in bose_operator.items():
 
         qubit_operator @= PauliSentence(
             {
-                PauliWord({**{wire: "X"}}): 0.5,
-                PauliWord({**{wire: "Y"}}): coeffs[sign],
+                PauliWord({**{b_idx: "X"}}): 0.5,
+                PauliWord({**{b_idx: "Y"}}): coeffs[sign],
             }
         )
 
@@ -109,10 +124,12 @@ def _(bose_operator: BoseWord, tol=None):
 @_christiansen_mapping_dispatch.register
 def _(bose_operator: BoseSentence, tol=None):
 
+    _test_double_occupancy(bose_operator)
+
     qubit_operator = PauliSentence()
 
-    for fw, coeff in bose_operator.items():
-        bose_word_as_ps = christiansen_mapping(fw, ps=True)
+    for bw, coeff in bose_operator.items():
+        bose_word_as_ps = christiansen_mapping(bw, ps=True)
 
         for pw in bose_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
