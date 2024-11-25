@@ -29,7 +29,6 @@ from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow._setup_transform_program import _prune_dynamic_transform
 
 
 def test_tape_property_is_deprecated():
@@ -1951,48 +1950,3 @@ def test_resets_after_execution_error():
         circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"
-
-
-def test_prune_dynamic_transform():
-    """Tests that the helper function prune dynamic transform works."""
-
-    program1 = qml.transforms.core.TransformProgram(
-        [
-            qml.transforms.dynamic_one_shot,
-            qml.transforms.split_non_commuting,
-            qml.transforms.dynamic_one_shot,
-        ]
-    )
-    program2 = qml.transforms.core.TransformProgram(
-        [
-            qml.transforms.dynamic_one_shot,
-            qml.transforms.split_non_commuting,
-        ]
-    )
-
-    _prune_dynamic_transform(program1, program2)
-    assert len(program1) == 1
-    assert len(program2) == 2
-
-
-def test_prune_dynamic_transform_with_mcm():
-    """Tests that the helper function prune dynamic transform works with mcm"""
-
-    program1 = qml.transforms.core.TransformProgram(
-        [
-            qml.transforms.dynamic_one_shot,
-            qml.transforms.split_non_commuting,
-            qml.devices.preprocess.mid_circuit_measurements,
-        ]
-    )
-    program2 = qml.transforms.core.TransformProgram(
-        [
-            qml.transforms.dynamic_one_shot,
-            qml.transforms.split_non_commuting,
-        ]
-    )
-
-    _prune_dynamic_transform(program1, program2)
-    assert len(program1) == 2
-    assert qml.devices.preprocess.mid_circuit_measurements in program1
-    assert len(program2) == 1
