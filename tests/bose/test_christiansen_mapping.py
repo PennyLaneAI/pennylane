@@ -15,12 +15,11 @@
 import pytest
 
 import pennylane as qml
-from pennylane.bose import BoseWord, BoseSentence, christiansen_mapping
 from pennylane import I, X, Y, Z
+from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 from pennylane.ops import SProd
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pauli.conversion import pauli_sentence
-
 
 BOSE_WORDS_AND_OPS = [
     (
