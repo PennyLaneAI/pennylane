@@ -787,7 +787,7 @@ def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kw
         list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        with qml.queuing.QuantumTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qfunc(time, *qfunc_args, wires=wires, **qfunc_kwargs)
         return tape.operations[::-1] if reverse else tape.operations
 
