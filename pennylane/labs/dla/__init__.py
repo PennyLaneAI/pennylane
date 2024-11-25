@@ -37,9 +37,11 @@ Utility functions
 
     ~adjvec_to_op
     ~change_basis_ad_rep
+    ~check_orthonormal
     ~op_to_adjvec
+    ~orthonormalize
     ~pauli_coefficients
-    ~pauli_decompose
+    ~batched_pauli_decompose
     ~pauli_coefficients
     ~check_cartan_decomp
     ~check_commutation
@@ -93,10 +95,10 @@ from .dense_util import (
     check_commutation,
     check_orthonormal,
     pauli_coefficients,
-    pauli_decompose,
+    batched_pauli_decompose,
+    trace_inner_product,
     op_to_adjvec,
     orthonormalize,
-    trace_inner_product,
 )
 
 from .involutions import (

@@ -36,31 +36,86 @@ def test_rotation_resources(epsilon, expected):
     assert gate_types == _rotation_resources(epsilon=epsilon)
 
 
-class TestRZ:
-    """Test ResourceRZ"""
+class TestPauliRotation:
+    """Test ResourceRX, ResourceRY, and ResourceRZ"""
 
-    @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
-    def test_resources(self, epsilon):
+    params_classes = [re.ResourceRX, re.ResourceRY, re.ResourceRZ]
+    params_errors = [10e-3, 10e-4, 10e-5]
+
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
+    def test_resources(self, resource_class, epsilon):
         """Test the resources method"""
-        op = re.ResourceRZ(1.24, wires=0)
-        config = {"error_rz": epsilon}
+
+        label = "error_" + resource_class.__name__.replace("Resource", "").lower()
+        config = {label: epsilon}
+        op = resource_class(1.24, wires=0)
         assert op.resources(config) == _rotation_resources(epsilon=epsilon)
 
-    def test_resource_rep(self):
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
+    def test_resource_rep(self, resource_class, epsilon):  # pylint: disable=unused-argument
         """Test the compact representation"""
-        op = re.ResourceRZ(1.24, wires=0)
-        expected = re.CompressedResourceOp(re.ResourceRZ, {})
-
+        op = resource_class(1.24, wires=0)
+        expected = re.CompressedResourceOp(resource_class, {})
         assert op.resource_rep() == expected
+
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
+    def test_resources_from_rep(self, resource_class, epsilon):
+        """Test the resources can be obtained from the compact representation"""
+
+        label = "error_" + resource_class.__name__.replace("Resource", "").lower()
+        config = {label: epsilon}
+        op = resource_class(1.24, wires=0)
+        expected = _rotation_resources(epsilon=epsilon)
+
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.params
+        assert op_resource_type.resources(**op_resource_params, config=config) == expected
+
+    @pytest.mark.parametrize("resource_class", params_classes)
+    @pytest.mark.parametrize("epsilon", params_errors)
+    def test_resource_params(self, resource_class, epsilon):  # pylint: disable=unused-argument
+        """Test that the resource params are correct"""
+        op = resource_class(1.24, wires=0)
+        assert op.resource_params() == {}
+
+
+class TestRot:
+    """Test ResourceRot"""
+
+    def test_resources(self):
+        """Test the resources method"""
+        op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
+        rx = re.ResourceRX.resource_rep()
+        ry = re.ResourceRY.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
+        expected = {rx: 1, ry: 1, rz: 1}
+
+        assert op.resources() == expected
+
+    def test_resource_rep(self):
+        """Test the compressed representation"""
+        op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
+        expected = re.CompressedResourceOp(re.ResourceRot, {})
+        assert op.resource_rep() == expected
+
+    def test_resources_from_rep(self):
+        """Test that the resources can be obtained from the compact representation"""
+        op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
+        rx = re.CompressedResourceOp(re.ResourceRX, {})
+        ry = re.CompressedResourceOp(re.ResourceRY, {})
+        rz = re.CompressedResourceOp(re.ResourceRZ, {})
+        expected = {rx: 1, ry: 1, rz: 1}
+
+        op_compressed_rep = op.resource_rep_from_op()
+        op_resource_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.params
+        assert op_resource_type.resources(**op_resource_params) == expected
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
-        op = re.ResourceRZ(1.24, wires=0)
+        op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
         assert op.resource_params() == {}
-
-    @pytest.mark.parametrize("epsilon", [10e-3, 10e-4, 10e-5])
-    def test_resources_from_rep(self, epsilon):
-        """Test the resources can be obtained from the compact representation"""
-        config = {"error_rz": epsilon}
-        expected = _rotation_resources(epsilon=epsilon)
-        assert re.ResourceRZ.resources(config, **re.ResourceRZ.resource_rep().params) == expected
