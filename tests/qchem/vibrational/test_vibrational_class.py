@@ -97,7 +97,7 @@ def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
 def test_optimize_geometry(sym, geom, expected_geom):
     r"""Test that correct optimized geometry is obtained."""
 
@@ -122,7 +122,7 @@ def test_optimize_geometry(sym, geom, expected_geom):
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
 def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
@@ -179,7 +179,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
 def test_mode_localization(sym, geom, loc_freqs, exp_results):
     r"""Test that mode localization returns correct results."""
 
@@ -250,8 +250,8 @@ def test_error_mode_localization():
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational.optimize_geometry(mol)
+    mol_scf = vibrational.single_point(mol)
 
-    harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
+    harmonic_res = vibrational.harmonic_analysis(mol_scf)
     with pytest.raises(ValueError, match="The `freq_separation` list cannot be empty."):
         vibrational.localize_normal_modes(harmonic_res, freq_separation=[])
