@@ -58,6 +58,9 @@
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
+* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
 <h3>Improvements 🛠</h3>
 
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
@@ -248,6 +251,10 @@ same information.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply the complex conjugate
+  of the unitaries instead of the adjoint, providing the correct result.
+  [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
 
 * `QNode` return behaviour is now consistent for lists and tuples.
   [(#6568)](https://github.com/PennyLaneAI/pennylane/pull/6568)
