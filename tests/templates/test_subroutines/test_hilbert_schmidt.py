@@ -14,8 +14,9 @@
 """
 Unit tests for the Hilbert-Schmidt templates.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 
 # pylint: disable=expression-not-assigned
@@ -612,7 +613,7 @@ class TestLocalHilbertSchmidt:
 
         # The exact analytic expression to be compared against is given by eq. (25) of https://arxiv.org/pdf/1807.00800 with j=1.
         # Unfortunately, we don't have an immediate way to compute such an expression in PennyLane. However, since the
-        # local Hilbert-Schmidt test is very similar to the Hilbert-Schmidt test, the compare the latter with the
+        # local Hilbert-Schmidt test is very similar to the Hilbert-Schmidt test, we compare the latter with the
         # analytic expression and use that as a proxy for correctness.
 
         assert qml.math.allclose(res, 0.5)
