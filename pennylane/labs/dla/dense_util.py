@@ -241,7 +241,7 @@ def trace_inner_product(
 ):
     r"""Trace inner product
 
-    Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)`
+    Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A B\right)/\text{dim}(A)` between two Hermitian operators :math:`A` and :math:`B`.
 
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
@@ -288,7 +288,7 @@ def trace_inner_product(
         assert A.shape[-2:] == B.shape[-2:]
         # The axes of the first input are switched, compared to tr[A@B], because we need to
         # transpose A.
-        return np.tensordot(A.conj(), B, axes=[[-1, -2], [-1, -2]]) / A.shape[-1]
+        return np.tensordot(A, B, axes=[[-1, -2], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError
 
