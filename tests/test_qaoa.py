@@ -1094,7 +1094,6 @@ class TestUtils:
     """Tests that the utility functions are working properly"""
 
     # pylint: disable=protected-access
-    # removed a fixture to only use legacy opmath here for now, because I'm not sure why its relevant
     @pytest.mark.parametrize(
         ("hamiltonian", "value"),
         (
