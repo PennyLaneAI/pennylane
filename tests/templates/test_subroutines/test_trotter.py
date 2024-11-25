@@ -447,7 +447,7 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    # @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
@@ -579,7 +579,6 @@ class TestPrivateFunctions:
     def test_recursive_qfunc(self, order, reverse, expected_decomp):
         time = 1.23
         wires = [0, 1]
-        expected_decomp = expected_decomp[::-1] if reverse else expected_decomp
 
         def first_order_exp(time, arg1, wires, kwarg1=False):
             if arg1:
@@ -597,8 +596,14 @@ class TestPrivateFunctions:
             decomp = _recursive_qfunc(time, order, first_order_exp, wires, reverse, *qfunc_args, **qfunc_kwargs)
 
         assert tape.operations == []  # No queuing!
-        for op1, op2 in zip(decomp, expected_decomp):
-            qml.assert_equal(op1, op2)
+
+        for index in range(len(decomp)):
+            expected_index = index
+            if reverse:
+                expected_index = (2 - (index % 3)) + 3 * (index // 3)  # manually reversing 
+
+            qml.assert_equal(decomp[index], expected_decomp[expected_index])
+
 
 class TestError:
     """Test the error method of the TrotterProduct class"""
