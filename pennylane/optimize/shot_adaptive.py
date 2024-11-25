@@ -62,7 +62,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     **Example**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be realized
-    as a :class:`~.QNode` object measuring the expectation of a :class:`~.Hamiltonian`.
+    as a :class:`~.QNode` object measuring the expectation of a :class:`~.ops.LinearCombination`.
 
     >>> from pennylane import numpy as np
     >>> coeffs = [2, 4, -1, 5, 2]
@@ -308,8 +308,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """Compute the single shot gradients of a QNode."""
         self.check_device(qnode.device)
 
-        qnode.construct(args, kwargs)
-        tape = qnode.tape
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
         [expval] = tape.measurements
         coeffs, observables = (
             expval.obs.terms()

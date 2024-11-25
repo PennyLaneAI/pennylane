@@ -37,7 +37,7 @@ Utility functions
     ~change_basis_ad_rep
     ~op_to_adjvec
     ~pauli_coefficients
-    ~pauli_decompose
+    ~batched_pauli_decompose
     ~trace_inner_product
 
 Involutions
@@ -60,7 +60,7 @@ from .cartan import cartan_decomposition, even_odd_involution, concurrence_invol
 from .dense_util import (
     change_basis_ad_rep,
     pauli_coefficients,
-    pauli_decompose,
+    batched_pauli_decompose,
     orthonormalize,
     check_orthonormal,
     trace_inner_product,

@@ -100,7 +100,7 @@ def lie_closure_dense(
     >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
     >>> g = lie_closure_mat(gens, n)
 
-    The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~pauli_decompose`.
+    The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
 
     >>> g_ops = [qml.pauli_decompose(op) for op in g]
 

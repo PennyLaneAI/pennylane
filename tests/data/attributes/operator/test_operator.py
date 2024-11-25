@@ -243,3 +243,13 @@ def test_value_init_not_supported():
         TypeError, match="Serialization of operator type 'NotSupported' is not supported"
     ):
         DatasetOperator(NotSupported(1))
+
+
+def test_retrieve_operator_from_loaded_data():
+    """Test that uploaded data can be downloaded and used to retrieve an
+    operation representing the Hamiltonian"""
+
+    h2 = qml.data.load("qchem", molname="H2", bondlength=0.742, basis="STO-3G")[0]
+    H = h2.hamiltonian
+
+    assert isinstance(H, qml.ops.LinearCombination)
