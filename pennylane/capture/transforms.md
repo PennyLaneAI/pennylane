@@ -133,9 +133,9 @@ def find_top_trace(xs: Sequence[Union[Any, Tracer]]) -> Trace:
 and otherwise returns the interpreter at the bottom of the stack. This last interpreter does the
 standard evaluation on the primitive we are binding (more on that later). Note that we are only
 applying an interpreter when the input arguments to a primitive are boxed in a `Tracer`
-corresponding to that interpreter. This is an optimization that JAX uses to skip usage of
-unnecessary interpreters, so that transformations follow data-dependence (except for the special
-level-0 interpreter, which interprets everything). This data-dependence will cause issues with
+corresponding to that interpreter. This is an optimization that JAX uses to skip the usage of
+unnecessary interpreters, so that transformations follow data dependence (except for the special
+level-0 interpreter, which interprets everything). This data dependence will cause issues with
 PennyLane transforms, so we will have to work around it (more on that later).
 
 ```python
@@ -248,8 +248,8 @@ our purposes.
 
 ## PennyLane Transforms
 
-As mentioned earlier, JAX has a built in optimization to avoid processing primitives with
-unnecessary interpreters by leveraging data-dependence: we only apply an interpreter when
+As mentioned earlier, JAX has a built-in optimization to avoid processing primitives with
+unnecessary interpreters by leveraging data dependence: we only apply an interpreter when
 the input arguments to a `primitive.bind` call are boxed in a `Tracer` corresponding to
 the interpreter. However, this optimization is unfavourable for our purposes. We want to
 interpret _all_ operator and measurement primitives using our "pennylane transform
@@ -354,7 +354,7 @@ All the `RX` primitives have been transformed into `RY` primitives. Woohoo!
 
 ### Constraints
 
-This implementation has many constraints. Hopefully some of these can be mitigated in the future.
+This implementation has many constraints. Hopefully, some of these can be mitigated in the future.
 But, for now, they're listed below:
 
 1. Only transforms that return a single tape can be implemented to transform PLxPR natively.
@@ -363,7 +363,7 @@ But, for now, they're listed below:
 4. Transforms that traverse the tape in reverse cannot be implemented using this strategy.
 
 Some of the above constraints can be mitigated. We can re-think at least some transforms to be
-impementable using the above strategy using the `state` input. For example, we can store
+implementable using the above strategy using the `state` input. For example, we can store
 intermediate primitives in `state` without applying them until a certain condition is met. This can
 be useful for mitigating point 4.
 
