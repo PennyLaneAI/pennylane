@@ -349,8 +349,8 @@ class Device(abc.ABC):
 
         if self.__class__.preprocess is not Device.preprocess:
             if config:
-                return self.preprocess()[1]
-            return self.preprocess(config)[1]
+                return self.preprocess(config)[1]
+            return self.preprocess()[1]
 
         if config is None:
             config = DefaultExecutionConfig
