@@ -414,7 +414,7 @@ def op_to_adjvec(
     >>> op_to_adjvec([op], basis)
     array([[1. , 0.5, 0. ]])
     >>> op_to_adjvec([op], [op.matrix() for op in basis])
-    array([[1. +0.j, 0.5+0.j, 0. +0.j]])
+    array([[1. , 0.5, 0. ]])
 
     Note how the function always expects an ``Iterable`` of operators as input.
 
@@ -422,7 +422,7 @@ def op_to_adjvec(
 
     >>> op = op.matrix()
     >>> op_to_adjvec([op], [op.matrix() for op in basis])
-    array([[1. +0.j, 0.5+0.j, 0. +0.j]])
+    array([[1. , 0.5, 0. ]])
     """
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
