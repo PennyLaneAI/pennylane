@@ -1009,7 +1009,7 @@ class DefaultMixedNewAPI(Device):
     @debug_logger
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
