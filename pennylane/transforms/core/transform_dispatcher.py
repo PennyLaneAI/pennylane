@@ -438,7 +438,7 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
             and self.transform == other.transform
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
-            and self.plxpr_transform == other.plxpr_transform
+            # and self.plxpr_transform == other.plxpr_transform
             and self.is_informative == other.is_informative
             and self.final_transform == other.final_transform
         )
