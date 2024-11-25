@@ -334,9 +334,27 @@ def trace_inner_product(
     >>> trace_inner_product(qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0))
     1.0
 
+    If both operators are dense arrays, a leading batch dimension is broadcasted.
+
+    >>> batch = 10
+    >>> ops1 = np.random.rand(batch, 16, 16)
+    >>> op2 = np.random.rand(16, 16)
+    >>> trace_inner_product(ops1, op2).shape
+    (10,)
+    >>> trace_inner_product(op2, ops1).shape
+    (10,)
+
+    We can also have both arguments broadcasted.
+    >>> trace_inner_product(ops1, ops1).shape
+    (10, 10)
+
     """
     if getattr(A, "pauli_rep", None) is not None and getattr(B, "pauli_rep", None) is not None:
         return (A.pauli_rep @ B.pauli_rep).trace()
+
+    if all(isinstance(op, np.ndarray) for op in A) and all(isinstance(op, np.ndarray) for op in B):
+        A = np.array(A)
+        B = np.array(B)
 
     if not isinstance(A, type(B)):
         raise TypeError("Both input operators need to be of the same type")
@@ -501,7 +519,7 @@ def op_to_adjvec(
     >>> op_to_adjvec([op], basis)
     array([[1. , 0.5, 0. ]])
     >>> op_to_adjvec([op], [op.matrix() for op in basis])
-    array([[1. +0.j, 0.5+0.j, 0. +0.j]])
+    array([[1. , 0.5, 0. ]])
 
     Note how the function always expects an ``Iterable`` of operators as input.
 
@@ -509,7 +527,7 @@ def op_to_adjvec(
 
     >>> op = op.matrix()
     >>> op_to_adjvec([op], [op.matrix() for op in basis])
-    array([[1. +0.j, 0.5+0.j, 0. +0.j]])
+    array([[1. , 0.5, 0. ]])
     """
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
