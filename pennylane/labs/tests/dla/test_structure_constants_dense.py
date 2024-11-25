@@ -20,9 +20,9 @@ import pytest
 import pennylane as qml
 from pennylane import X, Y, Z
 from pennylane.labs.dla import (
+    batched_pauli_decompose,
     check_orthonormal,
     orthonormalize,
-    pauli_decompose,
     structure_constants_dense,
     trace_inner_product,
 )
@@ -91,7 +91,7 @@ class TestAdjointRepr:
         if use_orthonormal:
             dla_dense = orthonormalize(dla_dense)
             assert check_orthonormal(dla_dense, trace_inner_product)
-            dla = pauli_decompose(dla_dense, pauli=True)
+            dla = batched_pauli_decompose(dla_dense, pauli=True)
             assert check_orthonormal(dla, trace_inner_product)
 
         ad_rep_non_dense = qml.structure_constants(dla, is_orthogonal=False)
