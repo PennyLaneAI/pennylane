@@ -23,7 +23,7 @@ from .bosonic import BoseSentence, BoseWord
 
 
 def _test_double_occupancy(bose_operator):
-    r"""Tests and raises an error if the operator contains terms with double occupancy."""
+    r"""Tests and raises an error if the BoseSentence or BoseWord contains terms with double occupancy."""
     ordered_op = bose_operator.normal_order()
     for bw in ordered_op:
         bw_terms = list(bw.keys())
