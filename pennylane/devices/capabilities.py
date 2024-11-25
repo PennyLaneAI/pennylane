@@ -19,7 +19,9 @@ import sys
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-from typing import Optional
+from typing import Optional, Callable
+
+import pennylane as qml
 
 if sys.version_info >= (3, 11):
     import tomllib as toml  # pragma: no cover
@@ -399,3 +401,29 @@ def update_device_capabilities(
         raise InvalidCapabilitiesError(
             "qjit-specific sections are found but the device is not qjit-compatible."
         )
+
+
+def observable_stopping_condition_factory(
+    capabilities: DeviceCapabilities,
+) -> Callable[[qml.operation.Operator], bool]:
+    """Returns a default observable validation check from a capabilities object.
+
+    The returned function check if an observable is supported, for composite and nested
+    observables, check that the operands are supported.
+
+    """
+
+    def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+
+        if not capabilities.supports_observable(obs.name):
+            return False
+
+        if isinstance(obs, qml.ops.CompositeOp):
+            return all(observable_stopping_condition(op) for op in obs.operands)
+
+        if isinstance(obs, qml.ops.SymbolicOp):
+            return observable_stopping_condition(obs.base)
+
+        return True
+
+    return observable_stopping_condition

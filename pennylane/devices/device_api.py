@@ -30,7 +30,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
-from .capabilities import DeviceCapabilities
+from .capabilities import DeviceCapabilities, observable_stopping_condition_factory
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import (
     validate_device_wires,
@@ -495,8 +495,10 @@ class Device(abc.ABC):
         )
         program.add_transform(
             validate_observables,
-            stopping_condition=analytic_capabilities.supports_observable,
-            stopping_condition_shots=finite_shots_capabilities.supports_observable,
+            stopping_condition=observable_stopping_condition_factory(analytic_capabilities),
+            stopping_condition_shots=observable_stopping_condition_factory(
+                finite_shots_capabilities
+            ),
             name=self.name,
         )
         program.add_transform(qml.transforms.broadcast_expand)
