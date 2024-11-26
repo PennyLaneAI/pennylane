@@ -467,10 +467,10 @@ class TestSumOfTermsDifferentiability:
     @staticmethod
     def expected(scale, coeffs, n_wires=5, offset=0.1, like="numpy"):
         """Get the expected expval of the class' circuit."""
-        phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
-        cosines = math.cos(phase / 2) ** 2
-        sines = -math.sin(phase)
-        return coeffs[0] * qml.math.prod(cosines) + coeffs[1] * qml.math.prod(sines)
+        phase = offset + scale * qml.math.arange(n_wires, like=like)
+        sines = qml.math.sin(phase)
+        sign = (-1) ** n_wires  # For n_wires=5, sign = -1
+        return coeffs[1] * sign * qml.math.prod(sines)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize(
