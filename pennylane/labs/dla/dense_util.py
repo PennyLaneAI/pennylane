@@ -82,7 +82,8 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
         matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
 
-    See :func:`~.pennylane.pauli.batched_pauli_decompose` for theoretical background information.
+    See :func:`~.pennylane.pauli.pauli_decompose` for theoretical background information.
+
     **Examples**
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
@@ -264,7 +265,7 @@ def trace_inner_product(
     (10,)
 
     We can also have both arguments broadcasted.
-    
+
     >>> trace_inner_product(ops1, ops1).shape
     (10, 10)
 
