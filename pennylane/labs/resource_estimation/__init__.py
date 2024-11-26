@@ -39,6 +39,7 @@ Operators
     :toctree: api
 
     ~ResourceAdjoint
+    ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlled
     ~ResourceControlledPhaseShift
@@ -59,11 +60,8 @@ Operators
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
     ~ResourceOrbitalRotation
-<<<<<<< HEAD
     ~ResourcePauliRot
-=======
     ~ResourceMultiControlledX
->>>>>>> resource_multi_qubit
     ~ResourcePhaseShift
     ~ResourcePow
     ~ResourcePSWAP
@@ -90,6 +88,16 @@ Templates
 
     ~ResourceQFT
 
+Tracking Resources
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~get_resources
+    ~DefaultGateSet
+    ~resource_config
+
 Exceptions
 ~~~~~~~~~~
 
@@ -101,9 +109,11 @@ Exceptions
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
+from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 from .ops import (
     ResourceAdjoint,
+    ResourceCH,
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
