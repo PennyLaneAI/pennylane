@@ -15,10 +15,59 @@
 This module contains the qml.iterative_qpe function.
 """
 
+from typing import Optional
 
 import numpy as np
 
 import pennylane as qml
+
+
+class IterativeQPE(qml.ops.SymbolicOp):
+
+    def __init__(self, base, aux_wire, iters):
+        self._aux_wire = qml.wires.Wires(aux_wire)
+        super().__init__(base)
+        self.hyperparameters["iters"] = iters
+        with qml.QueuingManager.stop_recording():
+            self.measurements = [qml.measure(aux_wire, reset=True) for _ in range(iters)]
+
+    has_matrix = False
+
+    @property
+    def wires(self):
+        return self.base.wires + self._aux_wire
+
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
+        return f"IterativeQPE({self.base})"
+
+    @property
+    def iters(self):
+        return self.hyperparameters["iters"]
+
+    def decomposition(self):
+        ops = []
+
+        for i in range(self.iters):
+            ops.append(qml.Hadamard(wires=self._aux_wire))
+            ops.append(
+                qml.ctrl(qml.pow(self.base, z=2 ** (self.iters - i - 1)), control=self._aux_wire)
+            )
+
+            for ind, meas in enumerate(self.measurements[:i]):
+                c_op = qml.ops.Conditional(
+                    meas, qml.PhaseShift(-2.0 * np.pi / 2 ** (ind + 2), wires=self._aux_wire)
+                )
+                ops.append(c_op)
+
+            ops.append(qml.Hadamard(wires=self._aux_wire))
+            ops.extend(self.measurements[i].measurements)
+
+        return ops
 
 
 def iterative_qpe(base, aux_wire, iters):
@@ -75,6 +124,8 @@ def iterative_qpe(base, aux_wire, iters):
                                                                      ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                       ╚═══════╡ ╰Sample[MCM]
     """
+    op = IterativeQPE(base, aux_wire, iters)
+    return op.measurements
     measurements = []
 
     for i in range(iters):
