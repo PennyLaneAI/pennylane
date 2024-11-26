@@ -69,7 +69,7 @@ def test_gradient_expand_transform(mocker, mock_device, mock_execution_config):
 
     container = qml.transforms.core.TransformContainer(mock_user_transform)
     user_tp = qml.transforms.core.TransformProgram((container,))
-    full_tp, inner_tp, _ = _setup_transform_program(user_tp, mock_device, mock_execution_config)
+    full_tp, inner_tp = _setup_transform_program(user_tp, mock_device, mock_execution_config)
 
     assert len(full_tp) == 2
     assert repr(full_tp) == "TransformProgram(mock_user_transform, mock_expand_transform)"
@@ -85,7 +85,7 @@ def test_device_transform_program(mocker, mock_device, mock_execution_config):
     mock_device.preprocess = mocker.MagicMock(return_value=(device_tp, mock_execution_config))
 
     user_transform_program = TransformProgram()
-    full_tp, inner_tp, _ = _setup_transform_program(
+    full_tp, inner_tp = _setup_transform_program(
         user_transform_program, mock_device, mock_execution_config
     )
 
@@ -96,7 +96,7 @@ def test_device_transform_program(mocker, mock_device, mock_execution_config):
 
     mock_execution_config.use_device_gradient = False
 
-    full_tp, inner_tp, _ = _setup_transform_program(
+    full_tp, inner_tp = _setup_transform_program(
         user_transform_program, mock_device, mock_execution_config
     )
 
@@ -162,7 +162,7 @@ def test_device_supports_interface_data(mocker, mock_device, mock_execution_conf
     )
 
     user_transform_program = TransformProgram()
-    full_tp, inner_tp, _ = _setup_transform_program(
+    full_tp, inner_tp = _setup_transform_program(
         user_transform_program, mock_device, mock_execution_config
     )
 
@@ -179,7 +179,7 @@ def test_cache_handling(mocker, mock_device, mock_execution_config):
     )
 
     user_transform_program = TransformProgram()
-    full_tp, inner_tp, _ = _setup_transform_program(
+    full_tp, inner_tp = _setup_transform_program(
         user_transform_program, mock_device, mock_execution_config, cache=True
     )
 
@@ -188,7 +188,7 @@ def test_cache_handling(mocker, mock_device, mock_execution_config):
 
     assert full_tp.is_empty()
 
-    full_tp, inner_tp, _ = _setup_transform_program(
+    full_tp, inner_tp = _setup_transform_program(
         user_transform_program, mock_device, mock_execution_config, cache=False
     )
 
