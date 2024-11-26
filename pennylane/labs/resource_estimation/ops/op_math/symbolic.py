@@ -19,6 +19,7 @@ from pennylane.labs.resource_estimation.resource_container import _combine_dict,
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.exp import Exp
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments
 
@@ -139,7 +140,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
         try:
             return _scale_dict(base_class.resources(**base_params), z)
-        except re.ResourcesNotDefined:
+        except re.ResourcesNotDefined:  
             pass
 
         return {base_class.resource_rep(): z}
@@ -161,3 +162,25 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     @classmethod
     def pow_resource_decomp(cls, z0, base_class, z, base_params, **kwargs):
         return cls._resource_decomp(base_class, z0 * z, base_params)
+
+
+class ResourceExp(Exp, re.ResourceOperator):
+    """Resource class for Exp"""
+    
+    @staticmethod
+    def _resource_decomp(base_class, z, base_params, **kwargs):
+        return {base_class.resource_rep(): z}
+
+    def resource_params(self):
+        return {
+            "base_class": type(self.base),
+            "z": self.z,
+            "base_params": self.base.resource_params(),
+        }
+
+    @classmethod
+    def resource_rep(cls, base_class, z, base_params, **kwargs):
+        name = f"{base_class.__name__}**{z}".replace("Resource", "")
+        return re.CompressedResourceOp(
+            cls, {"base_class": base_class, "z": z, "base_params": base_params}, name=name
+        )
