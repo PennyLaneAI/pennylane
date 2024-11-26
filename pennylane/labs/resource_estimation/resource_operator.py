@@ -121,10 +121,12 @@ class ResourceOperator(ABC):
         """Returns a compressed representation of the operator raised to a power"""
         raise ResourcesNotDefined
 
-    # @classmethod
-    # def exp_resource_decomp(cls, , *args, **kwargs) -> Dict[CompressedResourceOp, int]:
-    #     """Returns a compressed representation for the resources of the operator"""
-    #     raise ResourcesNotDefined
+    @classmethod
+    def exp_resource_decomp(
+        cls, scalar, num_steps, *args, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation for the resources of the exponentiated operator"""
+        raise ResourcesNotDefined
 
 
 class ResourcesNotDefined(Exception):

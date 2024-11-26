@@ -113,6 +113,7 @@ from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 from .ops import (
     ResourceAdjoint,
+    ResourceExp,
     ResourceCH,
     ResourceCNOT,
     ResourceControlled,

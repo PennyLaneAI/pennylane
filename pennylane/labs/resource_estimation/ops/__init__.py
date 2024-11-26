@@ -50,6 +50,7 @@ from .qubit import (
 
 from .op_math import (
     ResourceAdjoint,
+    ResourceExp,
     ResourceCY,
     ResourceCH,
     ResourceCZ,

@@ -14,12 +14,15 @@
 r"""Resource operators for symbolic operations."""
 from collections import defaultdict
 
+import pennylane as qml
 import pennylane.labs.resource_estimation as re
+from pennylane import math
 from pennylane.labs.resource_estimation.resource_container import _combine_dict, _scale_dict
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
-from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.exp import Exp
+from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.sprod import SProd
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments
 
@@ -140,7 +143,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
         try:
             return _scale_dict(base_class.resources(**base_params), z)
-        except re.ResourcesNotDefined:  
+        except re.ResourcesNotDefined:
             pass
 
         return {base_class.resource_rep(): z}
@@ -166,21 +169,96 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
 class ResourceExp(Exp, re.ResourceOperator):
     """Resource class for Exp"""
-    
+
     @staticmethod
-    def _resource_decomp(base_class, z, base_params, **kwargs):
-        return {base_class.resource_rep(): z}
+    def _resource_decomp(base_class, coeff, num_steps, **kwargs):
+
+        while isinstance(base_class, SProd):
+            coeff *= base_class.scalar
+            base_class = base_class.base
+
+        # Custom exponential operator resources:
+        if isinstance(base_class, re.ResourceOperator):
+            try:
+                return base_class.exp_resource_decomp(coeff, num_steps, **kwargs)
+            except re.ResourcesNotDefined:
+                pass
+
+        # PauliRot resource decomp:
+        if (pauli_sentence := base_class.pauli_rep) and math.real(coeff) == 0:
+            if qml.pauli.is_pauli_word(base_class):
+                num_wires = len(base_class.wires)
+                pauli_word = tuple(pauli_sentence.keys())[0]  # only one term in the sum
+                return _resources_from_pauli_word(pauli_word, num_wires)
+
+            scalar = num_steps or 1  # 1st-order Trotter-Suzuki with 'num_steps' trotter steps:
+            return _scale_dict(
+                _resources_from_pauli_sentence(pauli_sentence), scalar=scalar, in_place=True
+            )
+
+        raise re.ResourcesNotDefined
 
     def resource_params(self):
         return {
-            "base_class": type(self.base),
-            "z": self.z,
-            "base_params": self.base.resource_params(),
+            "base_class": self.base,
+            "coeff": self.scalar,
+            "num_steps": self.num_steps,
         }
 
     @classmethod
-    def resource_rep(cls, base_class, z, base_params, **kwargs):
-        name = f"{base_class.__name__}**{z}".replace("Resource", "")
-        return re.CompressedResourceOp(
-            cls, {"base_class": base_class, "z": z, "base_params": base_params}, name=name
+    def resource_rep(cls, base_class, coeff, num_steps, **kwargs):
+        name = f"Exp({base_class.__class__.__name__}, {coeff}, num_steps={num_steps})".replace(
+            "Resource", ""
         )
+        return re.CompressedResourceOp(
+            cls, {"base_class": base_class, "coeff": coeff, "num_steps": num_steps}, name=name
+        )
+
+
+def _resources_from_pauli_word(pauli_word, num_wires):
+    pauli_string = "".join((str(v) for v in pauli_word.values()))
+
+    if len(pauli_string) == 0:
+        return {}  # Identity operation has no resources.
+
+    counter = {"X": 0, "Y": 0, "Z": 0}
+    for c in pauli_string:
+        counter[c] += 1
+
+    num_x = counter["X"]
+    num_y = counter["Y"]
+
+    s = re.CompressedResourceOp(re.ResourceS, {})
+    h = re.CompressedResourceOp(re.ResourceHadamard, {})
+    rz = re.CompressedResourceOp(re.ResourceRZ, {})
+    cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
+
+    gate_types = {}
+    gate_types[rz] = 1
+    gate_types[s] = 2 * num_y
+    gate_types[h] = 2 * (num_x + num_y)
+    gate_types[cnot] = 2 * (num_wires - 1)
+
+    return gate_types
+
+
+def _resources_from_pauli_sentence(pauli_sentence):
+    gate_types = defaultdict(int)
+    rx = re.CompressedResourceOp(re.ResourceRX, {})
+    ry = re.CompressedResourceOp(re.ResourceRY, {})
+    rz = re.CompressedResourceOp(re.ResourceRZ, {})
+
+    for pauli_word in iter(pauli_sentence.keys()):
+        num_wires = len(pauli_word.wires)
+
+        if num_wires == 1:
+            pauli_string = "".join((str(v) for v in pauli_word.values()))
+            op_type = {"Z": rz, "X": rx, "Y": ry}[pauli_string]
+            gate_types[op_type] += 1
+
+            continue
+
+        pw_gates = _resources_from_pauli_word(pauli_word, num_wires)
+        _ = _combine_dict(gate_types, pw_gates, in_place=True)
+
+    return gate_types
