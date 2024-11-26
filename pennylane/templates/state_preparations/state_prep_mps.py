@@ -20,7 +20,7 @@ from pennylane.wires import Wires
 
 
 class MPSPrep(Operation):
-    r"""Prepares an initial state using a MPS representation.
+    r"""Prepares an initial state using a matrix product state (MPS) representation.
 
     .. note::
 
@@ -28,7 +28,7 @@ class MPSPrep(Operation):
 
 
     Args:
-        mps (list(arrays)):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS
+        mps (List[arrays]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS
         site matrices
 
         wires (Sequence[int]): wires that the template acts on
@@ -61,6 +61,48 @@ class MPSPrep(Operation):
         def circuit():
             qml.MPSPrep(mps, wires = [0,1,2])
             return qml.state()
+
+    .. details::
+        :title: Usage Details
+
+        **Parameter shape**
+
+        The matrix product state, is a list of arrays of the following form:
+
+            - The first element has rank two :math:`(a_{0,0}, a_{0,1})`.
+            - The last element has rank two :math:`(a_{N-1,0}, a_{N-1,1})`.
+            - The rest of the elements have rank three :math:`(a_{j,0}, a_{j,1}, a_{j,2})` where the first dimension
+              of the array matches the last dimension of the previous array.
+
+        In addition, all dimensions must be powers of two.
+        The following input is valid:
+
+        .. code-block::
+
+            mps = [
+                np.array([[0.0, 0.107], [0.994, 0.0]]),
+                np.array(
+                    [
+                        [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                        [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                    ]
+                ),
+                np.array(
+                    [
+                        [[-1.0, 0.0], [0.0, 0.0]],
+                        [[0.0, 0.0], [0.0, 1.0]],
+                        [[0.0, -1.0], [0.0, 0.0]],
+                        [[0.0, 0.0], [1.0, 0.0]],
+                    ]
+                ),
+                np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+            ]
+
+        The dimensions of ``mps`` are: :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]`, that satisfy the criteria described above.
+
+
+
+
     """
 
     def __init__(self, mps, wires, id=None):
