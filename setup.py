@@ -21,7 +21,7 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy<2.1",
+    "numpy",
     "scipy",
     "networkx",
     "rustworkx>=0.14.0",
@@ -85,6 +85,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Physics",
 ]
