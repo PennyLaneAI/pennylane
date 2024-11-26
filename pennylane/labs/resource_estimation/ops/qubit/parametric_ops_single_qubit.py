@@ -67,7 +67,9 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
         return {cls.resource_rep(): 1}
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceControlledPhaseShift.resources()
 
@@ -97,7 +99,9 @@ class ResourceRX(qml.RX, re.ResourceOperator):
         return _rotation_resources(epsilon=config["error_rx"])
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCRX.resources()
 
@@ -123,7 +127,9 @@ class ResourceRY(qml.RY, re.ResourceOperator):
         return _rotation_resources(epsilon=config["error_ry"])
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCRY.resources()
 
@@ -154,7 +160,9 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
         return _rotation_resources(epsilon=config["error_rz"])
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCRZ.resources()
 
@@ -185,7 +193,9 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
         return cls.resources()
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCRot.resources()
 

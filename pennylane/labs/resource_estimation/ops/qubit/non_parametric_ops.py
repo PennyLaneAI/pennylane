@@ -37,7 +37,9 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
         return {cls.resource_rep(): 1}
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCH.resources(**kwargs)
 
@@ -126,7 +128,9 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
         return {cls.resource_rep(): 1}
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCSWAP.resources(**kwargs)
 
@@ -225,7 +229,9 @@ class ResourceY(qml.Y, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCY.resources(**kwargs)
 
@@ -252,7 +258,9 @@ class ResourceZ(qml.Z, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCZ.resources(**kwargs)
 
