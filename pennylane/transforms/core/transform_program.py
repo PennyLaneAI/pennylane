@@ -495,7 +495,7 @@ class TransformProgram:
 
         # autograd and tf cant handle pytrees, so need to squeeze batches
         tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
-        tapes, _ = self[:index]((tape,))
+        tapes, _ = self[:index]((tape,)) # pylint: disable=not-callable
         multi_tapes = len(tapes) > 1
         if not multi_tapes:
             classical_jacobian = [classical_jacobian]
