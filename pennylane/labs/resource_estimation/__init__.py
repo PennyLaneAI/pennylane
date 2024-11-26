@@ -42,6 +42,7 @@ Operators
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
     ~ResourceCRY
+    ~ResourceCSWAP
     ~ResourceCY
     ~ResourceCZ
     ~ResourceGlobalPhase
@@ -86,6 +87,7 @@ from .ops import (
     ResourceCNOT,
     ResourceControlledPhaseShift,
     ResourceCRY,
+    ResourceCSWAP,
     ResourceCY,
     ResourceCZ,
     ResourceGlobalPhase,
