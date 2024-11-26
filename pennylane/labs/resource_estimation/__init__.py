@@ -39,6 +39,7 @@ Operators
     :toctree: api
 
     ~ResourceAdjoint
+    ~ResourceCCZ
     ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlled
@@ -113,6 +114,7 @@ from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 from .ops import (
     ResourceAdjoint,
+    ResourceCCZ,
     ResourceCH,
     ResourceCNOT,
     ResourceControlled,
