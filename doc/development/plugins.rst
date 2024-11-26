@@ -131,6 +131,9 @@ circuit batch produced by the program should be run via ``Device.execute`` witho
     batch, fn = transform_program(initial_batch)
     fn(dev.execute(batch, execution_config))
 
+This section will focus on step 1, see the section on the :ref:`**Execution Config** <execution_config>`
+below for more information on step 2.
+
 PennyLane can potentially provide a default implementation of a transform program through :meth:`~.devices.Device.preprocess_transforms`,
 which should be sufficient for most plugin devices. This requires that a TOML-formatted configuration
 file is defined for your device. The details of this configuration file is described :ref:`the next section <device_capabilities>`.
@@ -215,8 +218,6 @@ or can include in-built transforms such as:
 * :func:`pennylane.devices.preprocess.validate_multiprocessing_workers`
 * :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
 * :func:`pennylane.devices.preprocess.no_sampling`
-
-See the section on the :ref:`**Execution Config** <execution_config>` below for more information on step 2.
 
 .. _device_capabilities:
 
