@@ -68,8 +68,12 @@
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
+* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
+
 * Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
 
 <h3>Improvements 🛠</h3>
 
@@ -109,6 +113,23 @@
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
 <h4>Other Improvements</h4>
+
+* Added PyTree support for measurements in a circuit. 
+  [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
+
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Hadamard(0)
+      qml.CNOT([0,1])
+      return {"Probabilities": qml.probs(), "State": qml.state()}
+  ```
+  ```pycon
+  >>> circuit() 
+  {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])} 
+  ```
 
 * `_cache_transform` transform has been moved to its own file located
   at `qml.workflow._cache_transform.py`.
