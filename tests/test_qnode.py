@@ -463,6 +463,96 @@ class TestValidation:
         assert len(record) == 0
 
 
+# pylint: disable=too-few-public-methods
+# pylint: disable=unnecessary-lambda
+class TestPyTreeStructure:
+    """Tests for preservation of pytree structure through execution"""
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            lambda: ({"probs": qml.probs()},),
+            lambda: qml.probs(),
+            lambda: [
+                [qml.probs(wires=1), {"a": qml.probs(wires=0)}, qml.expval(qml.Z(0))],
+                {"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))},
+            ],
+            lambda: {"exp": qml.expval(qml.Z(0))},
+            lambda: {
+                "layer1": {
+                    "layer2": {
+                        "probs": qml.probs(wires=[0, 1]),
+                        "expval": qml.expval(qml.PauliY(1)),
+                    },
+                    "single_prob": qml.probs(wires=0),
+                }
+            },
+            lambda: (
+                [qml.probs(wires=1), {"exp": qml.expval(qml.PauliZ(0))}],
+                qml.expval(qml.PauliX(1)),
+            ),
+            lambda: [
+                (qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1))),
+                (qml.probs(wires=[1]), {"nested": qml.probs(wires=[0])}),
+            ],
+            lambda: [
+                {
+                    "first_layer": qml.probs(wires=0),
+                    "second_layer": [
+                        qml.expval(qml.PauliX(1)),
+                        {"nested_exp": qml.expval(qml.PauliY(0))},
+                    ],
+                },
+                (qml.probs(wires=[0, 1]), {"final": qml.expval(qml.PauliZ(0))}),
+            ],
+        ],
+    )
+    def test_pytree_structure_preservation(self, measurement):
+        """Test that the result stucture matches the measurement structure."""
+
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1, wires=0)
+            qml.RY(2, wires=1)
+            qml.measure(0)
+            qml.CNOT(wires=[0, 1])
+            return measurement()
+
+        result = circuit()
+
+        result_structure = qml.pytrees.flatten(result)[1]
+        measurement_structure = qml.pytrees.flatten(
+            measurement(), is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+        )[1]
+
+        assert result_structure == measurement_structure
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            lambda: qml.math.hstack([qml.expval(qml.Z(i)) for i in range(2)]),
+            lambda: qml.math.stack([qml.expval(qml.Z(i)) for i in range(2)]),
+        ],
+    )
+    def test_tensor_measurement(self, measurement):
+        """Tests that measurements of tensor type are handled correctly"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1, wires=0)
+            qml.RY(2, wires=1)
+            qml.measure(0)
+            qml.CNOT(wires=[0, 1])
+            return measurement()
+
+        result = circuit()
+
+        assert len(result) == 2
+
+
 class TestTapeConstruction:
     """Tests for the tape construction"""
 
