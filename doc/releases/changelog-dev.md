@@ -39,6 +39,7 @@
 
 * Added Pauli String representations for the gates X, Y, Z, H, S, T, SX, SWAP, ISWAP, ECR, SISWAP, RX, RY, RZ, Rot, U1, U2, U2.
   [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
+  
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 

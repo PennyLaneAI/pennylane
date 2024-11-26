@@ -646,6 +646,7 @@ class Rot(Operation):
             )
         return self._pauli_rep
 
+# pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         phi: TensorLike,
@@ -1167,6 +1168,7 @@ class U3(Operation):
             )
         return self._pauli_rep
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         theta: TensorLike,
