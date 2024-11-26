@@ -27,11 +27,9 @@ from malt.operators.variables import Undefined
 
 import pennylane as qml
 
-# ToDo: do we need has_jax for anything in this one?
 has_jax = True
 try:
     import jax
-
 except ImportError:
     has_jax = False
 
@@ -106,6 +104,9 @@ def assert_iteration_inputs(inputs, symbol_names):
     Additionally, these types need to be valid JAX types.
     """
 
+    if not has_jax:
+        raise ImportError("autograph capture requires JAX to be installed.")
+
     for i, inp in enumerate(inputs):
         if isinstance(inp, Undefined):
             raise AutoGraphError(
@@ -130,22 +131,6 @@ def assert_iteration_inputs(inputs, symbol_names):
             ) from e
 
 
-def assert_iteration_results(inputs, outputs, symbol_names):
-    """The results of a for loop should have the identical type as the inputs, since they are
-    "passed" as inputs to the next iteration. A mismatch here may indicate that a loop carried
-    variable was initialized with wrong type.
-    """
-
-    for i, (inp, out) in enumerate(zip(inputs, outputs)):
-        inp_t, out_t = jax.api_util.shaped_abstractify(inp), jax.api_util.shaped_abstractify(out)
-        if inp_t.dtype != out_t.dtype or inp_t.shape != out_t.shape:
-            raise AutoGraphError(
-                f"The variable '{symbol_names[i]}' was initialized with the wrong type, or you may "
-                f"be trying to change its type from one iteration to the next. "
-                f"Expected: {out_t}, Got: {inp_t}"
-            )
-
-
 def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names):
     """Dispatch to a PennyLane implementation of while loops."""
 
@@ -166,7 +151,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
         return get_state()
 
     final_iter_args = functional_while(init_iter_args)
-    assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
+
     return final_iter_args
 
 
