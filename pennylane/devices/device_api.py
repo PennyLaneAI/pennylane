@@ -133,6 +133,14 @@ class Device(abc.ABC):
     def __init_subclass__(cls, **kwargs):
         if cls.config_filepath is not None:
             cls.capabilities = DeviceCapabilities.from_toml_file(cls.config_filepath)
+        if cls.preprocess is not Device.preprocess and (
+            cls.setup_execution_config is not Device.setup_execution_config
+            or cls.preprocess_transforms is not Device.preprocess_transforms
+        ):
+            raise ValueError(
+                "A device should implement either `preprocess` or `setup_execution_config` "
+                "and `preprocess_transforms`, but not both."
+            )
         super().__init_subclass__(**kwargs)
 
     @property

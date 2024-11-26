@@ -14,6 +14,7 @@
 """
 Tests for the basic default behavior of the Device API.
 """
+from typing import Optional
 
 # pylint:disable=unused-argument,too-few-public-methods,unused-variable
 
@@ -22,6 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
 from pennylane.devices.capabilities import DeviceCapabilities
+from pennylane.transforms.core import TransformProgram
 from pennylane.wires import Wires
 
 
@@ -232,6 +234,31 @@ class TestMinimalDevice:
         """Test that device wires cannot be set after device initialization."""
         with pytest.raises(AttributeError):
             self.dev.wires = [0, 1]  # pylint:disable=attribute-defined-outside-init
+
+
+def test_device_with_ambiguous_preprocess():
+    """Tests that an error is raised when defining a device with ambiguous preprocess."""
+
+    with pytest.raises(ValueError, match="A device should implement either"):
+
+        class InvalidDevice(Device):
+            """A device with ambiguous preprocess."""
+
+            def preprocess(self, execution_config=None):
+                return TransformProgram(), ExecutionConfig()
+
+            def setup_execution_config(
+                self, config: Optional[ExecutionConfig] = None
+            ) -> ExecutionConfig:
+                return ExecutionConfig()
+
+            def preprocess_transforms(
+                self, execution_config: Optional[ExecutionConfig] = None
+            ) -> TransformProgram:
+                return TransformProgram()
+
+            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+                return (0,)
 
 
 class TestProvidingDerivatives:
