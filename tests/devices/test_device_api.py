@@ -16,8 +16,6 @@ Tests for the basic default behavior of the Device API.
 """
 from typing import Optional
 
-# pylint:disable=unused-argument,too-few-public-methods,unused-variable
-
 import pytest
 
 import pennylane as qml
@@ -25,6 +23,8 @@ from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
 from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.transforms.core import TransformProgram
 from pennylane.wires import Wires
+
+# pylint:disable=unused-argument,too-few-public-methods,unused-variable
 
 
 def test_execute_method_abstract():
