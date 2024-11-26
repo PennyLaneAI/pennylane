@@ -62,7 +62,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.tape import QuantumScript
 
 from . import Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .preprocess import (
     decompose,
     no_sampling,
@@ -1030,6 +1030,7 @@ class DefaultMixedNewAPI(Device):
         * Supports any qubit channel that provides Kraus matrices
 
         """
+        execution_config = execution_config or ExecutionConfig()
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
