@@ -26,7 +26,12 @@ from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.resource import Resources
 from pennylane.resource.error import SpectralNormError
-from pennylane.templates.subroutines.trotter import TrotterizedQfunc, _recursive_expression, _scalar, _recursive_qfunc
+from pennylane.templates.subroutines.trotter import (
+    TrotterizedQfunc,
+    _recursive_expression,
+    _recursive_qfunc,
+    _scalar,
+)
 
 test_hamiltonians = (
     qml.dot([1.0, 1.0, 1.0], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
@@ -579,26 +584,33 @@ class TestPrivateFunctions:
     def test_recursive_qfunc(self, order, reverse, expected_decomp):
         time = 1.23
         wires = [0, 1]
-        expected_decomp = expected_decomp[::-1] if reverse else expected_decomp
 
         def first_order_exp(time, arg1, wires, kwarg1=False):
             if arg1:
-                qml.exp(qml.PauliX(wires[0]), time*1j)
-            
+                qml.exp(qml.PauliX(wires[0]), time * 1j)
+
             if kwarg1:
-                qml.exp(qml.PauliY(wires[0]), time*1j),
-            
-            qml.exp(qml.PauliZ(wires[1]), time*1j),
+                qml.exp(qml.PauliY(wires[0]), time * 1j),
+
+            qml.exp(qml.PauliZ(wires[1]), time * 1j),
             return
 
         qfunc_args = (True,)
         qfunc_kwargs = {"kwarg1": True}
         with qml.tape.QuantumTape() as tape:
-            decomp = _recursive_qfunc(time, order, first_order_exp, wires, reverse, *qfunc_args, **qfunc_kwargs)
+            decomp = _recursive_qfunc(
+                time, order, first_order_exp, wires, reverse, *qfunc_args, **qfunc_kwargs
+            )
 
         assert tape.operations == []  # No queuing!
-        for op1, op2 in zip(decomp, expected_decomp):
-            qml.assert_equal(op1, op2)
+
+        for index in range(len(decomp)):
+            expected_index = index
+            if reverse:
+                expected_index = (2 - (index % 3)) + 3 * (index // 3)
+
+            qml.assert_equal(decomp[index], expected_decomp[expected_index])
+
 
 class TestError:
     """Test the error method of the TrotterProduct class"""
