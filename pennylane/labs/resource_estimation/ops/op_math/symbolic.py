@@ -20,7 +20,7 @@ from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import PowOperation
 
-# pylint: disable=too-many-ancestors,arguments-differ
+# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments
 
 
 class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
@@ -50,21 +50,33 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
             cls, {"base_class": base_class, "base_params": base_params}, name=name
         )
 
+    @staticmethod
+    def adjoint_resource_decomp(base_class, base_params, **kwargs):
+        return base_class._resource_decomp(**base_params)
+
 
 class ResourceControlled(ControlledOp, re.ResourceOperator):
     """Resource class for Controlled"""
 
     @staticmethod
-    def _resource_decomp(base_class, base_params, num_ctrl_wires, **kwargs):
+    def _resource_decomp(
+        base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ):
         try:
-            return base_class.controlled_resource_decomp(num_ctrl_wires, **base_params)
+            return base_class.controlled_resource_decomp(
+                num_ctrl_wires, num_ctrl_values, num_work_wires, **base_params
+            )
         except re.ResourcesNotDefined:
-            gate_types = defaultdict(int)
-            decomp = base_class.resources(**base_params)
-            for gate, count in decomp.items():
-                resources = gate.op_type.controlled_resource_decomp(**gate.params)
-                _scale_dict(resources, count, in_place=True)
-                _combine_dict(gate_types, resources, in_place=True)
+            pass
+
+        gate_types = defaultdict(int)
+        decomp = base_class.resources(**base_params)
+        for gate, count in decomp.items():
+            resources = gate.op_type.controlled_resource_decomp(
+                num_ctrl_wires, num_ctrl_values, num_work_wires, **gate.params
+            )
+            _scale_dict(resources, count, in_place=True)
+            _combine_dict(gate_types, resources, in_place=True)
 
             return gate_types
 
@@ -73,11 +85,14 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             "base_class": type(self.base),
             "base_params": self.base.resource_params(),
             "num_ctrl_wires": len(self.control_wires),
-            "num_zeros": len([val for val in self.control_values if not val]),
+            "num_ctrl_values": len([val for val in self.control_values if val]),
+            "num_work_wires": len(self.work_wires),
         }
 
     @classmethod
-    def resource_rep(cls, base_class, base_params, num_ctrl_wires, num_zeros, **kwargs):
+    def resource_rep(
+        cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ):
         name = f"Controlled({base_class.__name__}, wires={num_ctrl_wires})".replace("Resource", "")
         return re.CompressedResourceOp(
             cls,
@@ -85,9 +100,30 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                 "base_class": base_class,
                 "base_params": base_params,
                 "num_ctrl_wires": num_ctrl_wires,
-                "num_zeros": num_zeros,
+                "num_ctrl_values": num_ctrl_values,
+                "num_work_wires": num_work_wires,
             },
             name=name,
+        )
+
+    @classmethod
+    def controlled_resource_decomp(
+        cls,
+        outer_num_ctrl_wires,
+        outer_num_ctrl_values,
+        outer_num_work_wires,
+        base_class,
+        base_params,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+    ):
+        return cls._resource_decomp(
+            base_class,
+            base_params,
+            outer_num_ctrl_wires + num_ctrl_wires,
+            outer_num_ctrl_values + num_ctrl_values,
+            outer_num_work_wires + num_work_wires,
         )
 
 
@@ -121,3 +157,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         return re.CompressedResourceOp(
             cls, {"base_class": base_class, "z": z, "base_params": base_params}, name=name
         )
+
+    @classmethod
+    def pow_resource_decomp(cls, z0, base_class, z, base_params, **kwargs):
+        return cls._resource_decomp(base_class, z0 * z, base_params)

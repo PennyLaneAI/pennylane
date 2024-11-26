@@ -1,5 +1,3 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -38,6 +36,15 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 1}
 
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCH.resources(**kwargs)
+
+        raise re.ResourcesNotDefined
+
 
 class ResourceS(qml.S, re.ResourceOperator):
     """Resource class for the S gate."""
@@ -56,6 +63,14 @@ class ResourceS(qml.S, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 3}
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): z % 4}
 
 
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
@@ -112,6 +127,15 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 1}
 
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCSWAP.resources(**kwargs)
+
+        raise re.ResourcesNotDefined
+
     @classmethod
     def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): z % 2}
@@ -163,6 +187,25 @@ class ResourceX(qml.X, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs):
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCNOT.resources(**kwargs)
+        if num_ctrl_wires == 2 and num_ctrl_values == 2:
+            return re.ResourceToffoli.resources(**kwargs)
+
+        return re.ResourceMultiControlledX.resources(
+            num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        )
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): z % 2}
+
 
 class ResourceY(qml.Y, re.ResourceOperator):
     """Resource class for the Y gate."""
@@ -185,6 +228,15 @@ class ResourceY(qml.Y, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCY.resources(**kwargs)
+
+        raise re.ResourcesNotDefined
+
 
 class ResourceZ(qml.Z, re.ResourceOperator):
     """Resource class for the Z gate."""
@@ -204,3 +256,15 @@ class ResourceZ(qml.Z, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCZ.resources(**kwargs)
+
+        if num_ctrl_wires == 2 and num_ctrl_wires == 2:
+            return re.ResourceCCZ.resources(**kwargs)
+
+        raise re.ResourcesNotDefined
