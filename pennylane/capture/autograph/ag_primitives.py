@@ -98,7 +98,7 @@ def assert_iteration_inputs(inputs, symbol_names):
 
     The reason is two-fold:
       - the type information from those variables is required for tracing
-      - we want to avoid access of a variable that is uninitialized, or uninitialized in a subset
+      - we want to avoid accessing a variable that is uninitialized, or uninitialized in a subset
         of execution paths
 
     Additionally, these types need to be valid JAX types.
