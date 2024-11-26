@@ -158,7 +158,7 @@ class TestMinimalDevice:
 
         a = (1,)
         assert fn(a) == (1,)
-        assert config is qml.devices.DefaultExecutionConfig
+        assert config == qml.devices.DefaultExecutionConfig
 
     def test_preprocess_batch_circuits(self):
         """Test that preprocessing a batch doesn't do anything."""
