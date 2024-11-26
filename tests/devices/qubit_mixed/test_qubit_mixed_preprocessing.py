@@ -171,30 +171,34 @@ class TestPreprocessing:
             (qml.s_prod(1.2, qml.PauliX(0)), True),
             (qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.PauliZ(1)), True),
             (qml.prod(qml.PauliX(0), qml.PauliZ(1)), True),
+            # Simple LinearCombination with valid observables
+            (qml.ops.LinearCombination([1.0, 0.5], [qml.PauliX(0), qml.PauliZ(1)]), True),
+            # LinearCombination with mixed valid/invalid ops
+            (
+                qml.ops.LinearCombination(
+                    [1.0, 0.5], [qml.PauliX(0), qml.DepolarizingChannel(0.4, wires=0)]
+                ),
+                False,
+            ),
+            # LinearCombination with all invalid ops
+            (
+                qml.ops.LinearCombination(
+                    [1.0, 0.5], [qml.Snapshot(), qml.DepolarizingChannel(0.4, wires=0)]
+                ),
+                False,
+            ),
+            # Complex LinearCombination
+            (
+                qml.ops.LinearCombination(
+                    [0.3, 0.7], [qml.prod(qml.PauliX(0), qml.PauliZ(1)), qml.PauliY(2)]
+                ),
+                True,
+            ),
         ],
     )
     def test_accepted_observable(self, obs, expected):
         """Test that observable_stopping_condition works correctly"""
         res = observable_stopping_condition(obs)
-        assert res == expected
-
-    @pytest.mark.parametrize(
-        "coeffs, ops, expected",
-        [
-            # Simple LinearCombination with valid observables
-            ([1.0, 0.5], [qml.PauliX(0), qml.PauliZ(1)], True),
-            # LinearCombination with mixed valid/invalid ops
-            ([1.0, 0.5], [qml.PauliX(0), qml.DepolarizingChannel(0.4, wires=0)], False),
-            # LinearCombination with all invalid ops
-            ([1.0, 0.5], [qml.Snapshot(), qml.DepolarizingChannel(0.4, wires=0)], False),
-            # Complex LinearCombination
-            ([0.3, 0.7], [qml.prod(qml.PauliX(0), qml.PauliZ(1)), qml.PauliY(2)], True),
-        ],
-    )
-    def test_linear_combination_observable_condition(self, coeffs, ops, expected):
-        """Test observable_stopping_condition for LinearCombination objects"""
-        H = qml.ops.LinearCombination(coeffs, ops)
-        res = observable_stopping_condition(H)
         assert res == expected
 
 
