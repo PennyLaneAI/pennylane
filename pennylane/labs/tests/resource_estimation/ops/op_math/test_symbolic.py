@@ -36,16 +36,21 @@ class TestResourceAdjoint:
             "base_params": base.resource_params(),
         }
 
-    @pytest.mark.parametrize("op, expected", [
-        (re.ResourceAdjoint(re.ResourceQFT([0, 1])), "Adjoint(QFT(2))"),
-        (re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1]))), "Adjoint(Adjoint(QFT(2)))"),
-    ])
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (re.ResourceAdjoint(re.ResourceQFT([0, 1])), "Adjoint(QFT(2))"),
+            (
+                re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1]))),
+                "Adjoint(Adjoint(QFT(2)))",
+            ),
+        ],
+    )
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
         rep = op.resource_rep_from_op()
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
-
 
     @pytest.mark.parametrize(
         "nested_op, base_op",
@@ -112,18 +117,39 @@ class TestResourceControlled:
             "num_work_wires": 0,
         }
 
-    @pytest.mark.parametrize("op, expected", [
-        (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), "C(QFT(2),1,1,0)"),
-        (re.ResourceControlled(re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), control_wires=[3]), "C(C(QFT(2),1,1,0),1,1,0)"),
-        (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2, 3], control_values=[0, 1]), "C(QFT(2),2,1,0)"),
-        (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2, 3], control_values=[0, 1], work_wires=[4]), "C(QFT(2),2,1,1)"),
-    ])
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), "C(QFT(2),1,1,0)"),
+            (
+                re.ResourceControlled(
+                    re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]),
+                    control_wires=[3],
+                ),
+                "C(C(QFT(2),1,1,0),1,1,0)",
+            ),
+            (
+                re.ResourceControlled(
+                    re.ResourceQFT([0, 1]), control_wires=[2, 3], control_values=[0, 1]
+                ),
+                "C(QFT(2),2,1,0)",
+            ),
+            (
+                re.ResourceControlled(
+                    re.ResourceQFT([0, 1]),
+                    control_wires=[2, 3],
+                    control_values=[0, 1],
+                    work_wires=[4],
+                ),
+                "C(QFT(2),2,1,1)",
+            ),
+        ],
+    )
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
         rep = op.resource_rep_from_op()
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
-
 
     @pytest.mark.parametrize(
         "nested_op, expected_op",
@@ -172,11 +198,14 @@ class TestResourcePow:
             "base_params": base.resource_params(),
         }
 
-    @pytest.mark.parametrize("op, expected", [
-        (re.ResourcePow(re.ResourceQFT([0, 1]), 2), "(QFT(2))**2"),
-        (re.ResourcePow(re.ResourceAdjoint(re.ResourceQFT([0, 1])), 2), "(Adjoint(QFT(2)))**2"),
-        (re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 3), "((QFT(2))**2)**3"),
-    ])
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (re.ResourcePow(re.ResourceQFT([0, 1]), 2), "(QFT(2))**2"),
+            (re.ResourcePow(re.ResourceAdjoint(re.ResourceQFT([0, 1])), 2), "(Adjoint(QFT(2)))**2"),
+            (re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 3), "((QFT(2))**2)**3"),
+        ],
+    )
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
         rep = op.resource_rep_from_op()

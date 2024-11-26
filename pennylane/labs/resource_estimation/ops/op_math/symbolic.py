@@ -46,9 +46,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, base_class, base_params, **kwargs) -> re.CompressedResourceOp:
-        return re.CompressedResourceOp(
-            cls, {"base_class": base_class, "base_params": base_params}
-        )
+        return re.CompressedResourceOp(cls, {"base_class": base_class, "base_params": base_params})
 
     @staticmethod
     def adjoint_resource_decomp(

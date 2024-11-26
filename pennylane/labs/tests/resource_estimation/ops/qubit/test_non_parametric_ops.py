@@ -136,7 +136,6 @@ class TestX:
         }
         assert re.ResourceX.resources() == expected
 
-
     def test_resource_params(self):
         """Test that the resource params are correct"""
         op = re.ResourceX(0)
