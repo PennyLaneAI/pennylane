@@ -255,7 +255,11 @@ def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) 
     >>> check_orthonormal(ops_orth, trace_inner_product)
     True
 
-    This works also for dense matrices as inputs
+    This works also for lists of dense matrices as inputs
+    >>> ops_m = [qml.matrix(op) for op in ops]
+    >>> ops_m_orth = orthonormalize(ops_m)
+    >>> ops_m_orth.shape
+    (3, 2, 2)
     """
 
     if isinstance(basis, PauliVSpace) or all(
@@ -427,6 +431,26 @@ def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
 
     Returns:
         numpy.ndarray: Adjoint representation in new basis.
+
+    **Example**
+
+    We choose a basis of a Lie algebra, compute its adjoint representation.
+
+    >>> from pennylane.labs.dla import change_basis_ad_rep
+    >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
+    >>> adj = qml.structure_constants(basis)
+
+    Now we change the basis and re-compute the adjoint representation in that new basis.
+
+    >>> basis_change = np.array([[1., 1., 0.], [0., 1., 1.], [0., 1., 1.]])
+    >>> new_ops = [qml.sum(*[basis_change[i,j] * basis[j] for j in range(3)]) for i in range(3)]
+    >>> new_adj = qml.structure_constants(new_ops)
+
+    We confirm that instead of re-computing the adjoint representation (typically expensive), we can
+    transform the old adjoint representation with the change of basis matrix.
+
+    >>> new_adj_re = change_basis_ad_rep(adj, basis_change)
+    np.allclose(new_adj, new_adj_re)
     """
     # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
     new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
