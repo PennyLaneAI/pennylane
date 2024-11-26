@@ -471,6 +471,7 @@ class TestForLoops:
 
         assert np.allclose(result, [2, 5])
 
+    # pylint: disable=undefined-loop-variable
     @pytest.mark.xfail(reason="currently unsupported, but we may find a way to do so in the future")
     def test_iteration_element_access_no_init(self):
         """Test that access to the iteration index/elements is possible after the loop executed
