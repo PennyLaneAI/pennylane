@@ -380,6 +380,7 @@ class Device(abc.ABC):
             TransformProgram: A transform program that is called before execution
 
         The transform program is composed of a list of individual transforms, which may include:
+
         * Decomposition of operations and measurements to what is supported by the device.
         * Splitting a circuit with measurements of non-commuting observables or Hamiltonians into multiple executions.
         * Splitting a circuit with batched parameters into multiple executions.

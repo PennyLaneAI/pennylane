@@ -120,8 +120,8 @@ There are two components of preprocessing circuits for device execution:
 1) Create a :class:`~.TransformProgram` capable of turning an arbitrary batch of :class:`~.QuantumScript`\ s into a new batch of tapes supported by the ``execute`` method.
 2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation.
 
-These two tasks can be extracted into private methods or helper functions if that improves source
-code organization. Once the transform program has been applied to a batch of circuits, the result
+These two tasks are performed by :meth:`~.devices.Device.setup_execution_config` and :meth:`~.devices.Device.preprocess_transforms`
+respectively. Once the transform program has been applied to a batch of circuits, the result
 circuit batch produced by the program should be run via ``Device.execute`` without error:
 
 .. code-block:: python
@@ -131,16 +131,16 @@ circuit batch produced by the program should be run via ``Device.execute`` witho
     batch, fn = transform_program(initial_batch)
     fn(dev.execute(batch, execution_config))
 
-This section will focus on step 1, see the section on the :ref:`**Execution Config** <execution_config>`
-below for more information on step 2.
+This section will focus on :meth:`~.devices.Device.preprocess_transforms`, see the section on the :ref:`**Execution Config** <execution_config>`
+below for more information on :meth:`~.devices.Device.setup_execution_config`.
 
 PennyLane can potentially provide a default implementation of a transform program through :meth:`~.devices.Device.preprocess_transforms`,
 which should be sufficient for most plugin devices. This requires that a TOML-formatted configuration
 file is defined for your device. The details of this configuration file is described :ref:`the next section <device_capabilities>`.
 The default preprocessing program will be constructed based on what is declared in this file if provided.
 
-Alternatively, you could override the :meth:`~.devices.Device.preprocess_transforms` method with a
-completely customized implementation.
+You could override the :meth:`~.devices.Device.preprocess_transforms` method with a completely
+customized implementation, or extend the default behaviour by adding new transforms.
 
 The :meth:`~.devices.Device.preprocess_transforms` method should start with creating a transform program:
 
