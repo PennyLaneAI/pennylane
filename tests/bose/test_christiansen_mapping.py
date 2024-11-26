@@ -390,19 +390,3 @@ def test_error_is_raised_for_incompatible_type():
 
     with pytest.raises(ValueError, match="bose_operator must be a BoseWord or BoseSentence"):
         christiansen_mapping(X(0))
-
-
-@pytest.mark.parametrize(
-    "operator",
-    (
-        BoseWord({(0, 0): "-", (1, 1): "-", (2, 1): "+", (3, 0): "-"}),
-        BoseSentence({BoseWord({(0, 0): "-", (1, 1): "-", (2, 1): "+", (3, 0): "-"}): 1.0}),
-    ),
-)
-def test_error_for_double_occupancy(operator):
-    """Test that christiansen_mapping raises an error if an operator with double occupancy is provided."""
-    with pytest.raises(
-        ValueError,
-        match="The provided bose_operator contains terms that require more than 2 states to represent a bosonic mode",
-    ):
-        christiansen_mapping(operator)

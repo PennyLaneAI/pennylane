@@ -22,19 +22,6 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .bosonic import BoseSentence, BoseWord
 
 
-def _test_double_occupancy(bose_operator):
-    r"""Tests and raises an error if the BoseSentence or BoseWord contains terms with double occupancy."""
-    ordered_op = bose_operator.normal_order()
-    for bw in ordered_op:
-        bw_terms = list(bw.keys())
-        for i in range(len(bw) - 1):
-            if bw_terms[i][1] == bw_terms[i + 1][1] and bw[bw_terms[i]] == bw[bw_terms[i + 1]]:
-                raise ValueError(
-                    "The provided bose_operator contains terms that require more than 2 states to "
-                    "represent a bosonic mode, consider using binary_mapping or unary_mapping for this operator."
-                )
-
-
 def christiansen_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
     ps: bool = False,
@@ -97,8 +84,6 @@ def _christiansen_mapping_dispatch(bose_operator, tol):
 @_christiansen_mapping_dispatch.register
 def _(bose_operator: BoseWord, tol=None):
 
-    _test_double_occupancy(bose_operator)
-
     qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
     coeffs = {"+": -0.5j, "-": 0.5j}
@@ -123,8 +108,6 @@ def _(bose_operator: BoseWord, tol=None):
 
 @_christiansen_mapping_dispatch.register
 def _(bose_operator: BoseSentence, tol=None):
-
-    _test_double_occupancy(bose_operator)
 
     qubit_operator = PauliSentence()
 
