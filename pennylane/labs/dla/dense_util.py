@@ -234,8 +234,15 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
     return H_ops
 
 
-def orthonormalize(basis):
-    r"""Orthonormalize a list of basis vectors"""
+def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) -> np.ndarray:
+    r"""Orthonormalize a list of basis vectors.
+
+    Args:
+        basis (Iterable[Union[PauliSentence, Operator, np.ndarray]]): List of basis vectors.
+
+    Returns:
+        np.ndarray: Orthonormalized basis vectors.
+    """
 
     if isinstance(basis, PauliVSpace) or all(
         isinstance(op, (PauliSentence, Operator)) for op in basis
@@ -297,8 +304,17 @@ def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, O
     return generators_orthogonal
 
 
-def check_orthonormal(g, inner_product):
-    """Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``"""
+def check_orthonormal(g: Iterable[Union[PauliSentence, Operator]], inner_product: callable) -> bool:
+    """
+    Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``.
+
+    Args:
+        g (Iterable[Union[PauliSentence, Operator]]): List of operators
+        inner_product (callable): Inner product function to check orthonormality
+
+    Returns:
+        bool: ``True`` if the operators are orthonormal, ``False`` otherwise.
+    """
     for op in g:
         if not np.isclose(inner_product(op, op), 1.0):
             return False
