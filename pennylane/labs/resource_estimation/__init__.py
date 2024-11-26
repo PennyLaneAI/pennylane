@@ -39,6 +39,7 @@ Operators
     :toctree: api
 
     ~ResourceAdjoint
+    ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlled
     ~ResourceControlledPhaseShift
@@ -59,11 +60,8 @@ Operators
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
     ~ResourceOrbitalRotation
-<<<<<<< HEAD
-    ~ResourcePauliRot
-=======
     ~ResourceMultiControlledX
->>>>>>> resource_multi_qubit
+    ~ResourcePauliRot
     ~ResourcePhaseShift
     ~ResourcePow
     ~ResourcePSWAP
@@ -104,6 +102,7 @@ from .resource_container import CompressedResourceOp, Resources
 
 from .ops import (
     ResourceAdjoint,
+    ResourceCH,
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
