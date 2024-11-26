@@ -3,17 +3,39 @@
 # Release 0.40.0-dev (development release)
 
 <h3>New features since last release</h3>
-  
-* A `DeviceCapabilities` data class is defined to contain all capabilities of the device's execution interface (i.e. its implementation of `Device.execute`). A TOML file can be used to define the capabilities of a device, and it can be loaded into a `DeviceCapabilities` object.
-  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
-  ```pycon
-  >>> from pennylane.devices.capabilities import load_toml_file, parse_toml_document, DeviceCapabilities
-  >>> document = load_toml_file("my_device.toml")
-  >>> capabilities = parse_toml_document(document)
-  >>> isinstance(capabilities, DeviceCapabilities)
-  True
-  ```
+* Developers of plugin devices now have the option of providing a TOML-formatted configuration file
+  to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
+  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
+  [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
+
+  * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
+    data class, as well as functions that load and parse the TOML-formatted configuration files.
+
+    ```pycon
+      >>> from pennylane.devices.capabilities import DeviceCapabilities
+      >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
+      >>> isinstance(capabilities, DeviceCapabilities)
+      True
+    ```
+
+  * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
+    that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
+    file if it exists. Otherwise, it is set to `None`.
+
+    ```python
+    from pennylane.devices import Device
+    
+    class MyDevice(Device):
+    
+        config_filepath = "path/to/config.toml"
+    
+        ...
+    ```
+    ```pycon
+    >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
+    True
+    ```
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
@@ -29,6 +51,9 @@
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
+  
+* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
+  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
@@ -36,7 +61,14 @@
 * Support is added for if/else statements in circuits executed with `qml.capture.enabled`, via `autograph`
   [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
 
+* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
 <h3>Improvements 🛠</h3>
+
+* Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
+  arguments and `interface="auto"`.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
 
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
@@ -71,6 +103,10 @@
 
 <h4>Other Improvements</h4>
 
+* `_cache_transform` transform has been moved to its own file located
+  at `qml.workflow._cache_transform.py`.
+  [(#6624)](https://github.com/PennyLaneAI/pennylane/pull/6624)
+
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
 
@@ -94,6 +130,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
+  Autograd framework. As the function uses automatic differentiation for validation, parameters
+  from an autodiff framework have to be used.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
+
 * `qml.math.jax_argnums_to_tape_trainable` is moved and made private to avoid a qnode dependency
   in the math module.
   [(#6609)](https://github.com/PennyLaneAI/pennylane/pull/6609)
@@ -107,6 +148,7 @@
   check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
   [(#6602)](https://github.com/PennyLaneAI/pennylane/pull/6602)
+  [(#6589)](https://github.com/PennyLaneAI/pennylane/pull/6589)
 
 * The developer-facing `qml.utils` module has been removed. Specifically, the
 following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
@@ -196,6 +238,10 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply the complex conjugate
+  of the unitaries instead of the adjoint, providing the correct result.
+  [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
+
 * `QNode` return behaviour is now consistent for lists and tuples.
   [(#6568)](https://github.com/PennyLaneAI/pennylane/pull/6568)
 
@@ -225,3 +271,4 @@ William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
 Jay Soni,
+David Wierichs,

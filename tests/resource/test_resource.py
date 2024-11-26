@@ -33,6 +33,7 @@ from pennylane.resource.resource import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
+    substitute,
 )
 from pennylane.tape import QuantumScript
 
@@ -432,6 +433,135 @@ class TestResources:
 
         resultant_obj = mul_in_parallel(resource_obj, scalar)
         assert resultant_obj == expected_res_obj
+
+    gate_info = (("RX", 1), ("RZ", 1), ("RZ", 1))
+
+    sub_obj = (
+        Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        ),
+        Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        ),
+        Resources(
+            num_wires=5,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        ),
+    )
+
+    expected_results_sub = (
+        Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=14,
+            gate_types=defaultdict(int, {"RX": 10, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 13, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        ),
+        Resources(
+            num_wires=6,
+            num_gates=14,
+            gate_types=defaultdict(int, {"RX": 10, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 13, 2: 1}),
+            depth=3,
+            shots=Shots(10),
+        ),
+    )
+
+    @pytest.mark.parametrize(
+        "gate_info, sub_obj, expected_res_obj", zip(gate_info, sub_obj, expected_results_sub)
+    )
+    def test_substitute(self, gate_info, sub_obj, expected_res_obj):
+        """Test the substitute function"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
+        )
+
+        resultant_obj = substitute(resource_obj, gate_info, sub_obj)
+        assert resultant_obj == expected_res_obj
+
+    def test_substitute_wire_error(self):
+        """Test that substitute raises an exception when the wire count does not exist in gate_sizes"""
+
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
+        )
+
+        sub_obj = Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        )
+
+        gate_info = ("RZ", 100)
+
+        with pytest.raises(
+            ValueError, match="initial_resources does not contain a gate acting on 100 wires."
+        ):
+            substitute(resource_obj, gate_info, sub_obj)
+
+    def test_substitute_gate_count_error(self):
+        """Test that substitute raises an exception when the substitution would result in a negative value in gate_sizes"""
+
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+            gate_sizes=defaultdict(int, {1: 5, 2: 1}),
+            depth=2,
+            shots=Shots(10),
+        )
+
+        sub_obj = Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+            gate_sizes=defaultdict(int, {1: 5}),
+            depth=1,
+            shots=Shots(shots=None),
+        )
+
+        gate_info = ("RZ", 2)
+        with pytest.raises(
+            ValueError,
+            match="Found 2 gates of type RZ, but only 1 gates act on 2 wires in initial_resources.",
+        ):
+            substitute(resource_obj, gate_info, sub_obj)
 
 
 class TestResourcesOperation:  # pylint: disable=too-few-public-methods
