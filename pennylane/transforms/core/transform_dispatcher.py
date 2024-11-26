@@ -258,7 +258,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 args_slice=args_slice,
                 consts_slice=consts_slice,
                 targs=targs,
-                **tkwargs,
+                tkwargs=tkwargs,
             )
 
             assert flat_qfunc.out_tree is not None
@@ -492,7 +492,7 @@ def _create_transform_primitive(name):
 
     @transform_prim.def_impl
     def _(
-        *all_args, inner_jaxpr, args_slice, consts_slice, targs, **tkwargs
+        *all_args, inner_jaxpr, args_slice, consts_slice, targs, tkwargs
     ):  # pylint: disable=unused-argument
         args = all_args[args_slice]
         consts = all_args[consts_slice]
