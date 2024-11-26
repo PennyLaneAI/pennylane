@@ -83,13 +83,15 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
         matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
 
-    See :func:`~.pennylane.pauli.batched_pauli_decompose` for theoretical background information.
+    See :func:`~.pennylane.pauli.pauli_decompose` for theoretical background information.
+
     **Examples**
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
 
     >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
     >>> mat = H.matrix()
+    >>> mat
     array([[ 0.  +0.j,  0.4 +0.j,  0.25+0.j,  0.  +0.j],
            [ 0.4 +0.j,  0.  +0.j,  0.  +0.j,  0.25+0.j],
            [ 0.25+0.j,  0.  +0.j,  0.  +0.j, -0.4 +0.j],
@@ -309,9 +311,7 @@ def check_orthonormal(g, inner_product):
 def trace_inner_product(
     A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
 ):
-    r"""Trace inner product
-
-    Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A B\right)/\text{dim}(A)` between two Hermitian operators :math:`A` and :math:`B`.
+    r"""Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A B\right)/\text{dim}(A)` between two Hermitian operators :math:`A` and :math:`B`.
 
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
@@ -340,6 +340,7 @@ def trace_inner_product(
     (10,)
 
     We can also have both arguments broadcasted.
+
     >>> trace_inner_product(ops1, ops1).shape
     (10, 10)
 
@@ -484,7 +485,7 @@ def op_to_adjvec(
 ):
     r"""Decompose a batch of operators onto a given operator basis.
 
-    The adjoint vector representation are the coefficients :math:`c_j` in a given operator
+    The adjoint vector representation is provided by the coefficients :math:`c_j` in a given operator
     basis of the operator :math:`\hat{b}_j` such that the input operator can be written as
     :math:`\hat{O} = \sum_j c_j \hat{b}_j`.
 
@@ -497,7 +498,7 @@ def op_to_adjvec(
             product. Defaults to ``True``, which allows to skip some computations.
 
     Returns:
-        np.ndarray: The batch of coefficient vectors of the operators ``ops`` expressed in
+        np.ndarray: The batch of coefficient vectors of the operators' ``ops`` expressed in
         ``basis``. The shape is ``(len(ops), len(basis)``.
 
     The format of the resulting operators is determined by the ``type`` in ``basis``.
@@ -509,7 +510,7 @@ def op_to_adjvec(
     The basis can be numerical or operators.
 
     >>> from pennylane.labs.dla import op_to_adjvec
-    >>> op = X(0) + 0.5 * Y(0)
+    >>> op = qml.X(0) + 0.5 * qml.Y(0)
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> op_to_adjvec([op], basis)
     array([[1. , 0.5, 0. ]])
