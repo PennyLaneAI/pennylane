@@ -38,6 +38,7 @@ Operators
 .. autosummary::
     :toctree: api
 
+    ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
     ~ResourceCRY
@@ -81,6 +82,7 @@ from .resource_operator import ResourceOperator, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
 
 from .ops import (
+    ResourceCH,
     ResourceCNOT,
     ResourceControlledPhaseShift,
     ResourceCRY,
