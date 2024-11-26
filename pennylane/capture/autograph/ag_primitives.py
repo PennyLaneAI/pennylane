@@ -25,7 +25,6 @@ from malt.impl import api as ag_api
 from malt.impl.api import converted_call as ag_converted_call
 from malt.operators import py_builtins as ag_py_builtins
 from malt.operators.variables import Undefined
-from malt.pyct.origin_info import LineLocation
 
 import pennylane as qml
 
@@ -62,7 +61,7 @@ def assert_results(results, var_names):
     return results
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
@@ -152,6 +151,7 @@ def assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
+# pylint: disable=too-many-positional-arguments
 def _call_pennylane_for(
     start,
     stop,
@@ -238,25 +238,21 @@ def for_stmt(
         enum_start = iteration_target.start_idx
         try:
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception as e:  # pylint: disable=bare-except
+        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught
             exception_raised = e
     else:
         start, stop, step = 0, len(iteration_target), 1
         enum_start = None
         try:
             iteration_array = jnp.asarray(iteration_target)
-        except Exception as e:  # pylint: disable=bare-except
+        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught
             exception_raised = e
 
     if exception_raised:
-        # pylint: disable=import-outside-toplevel
-        import inspect
-
-        for_loop_info = get_source_code_info(inspect.stack()[1])
 
         raise AutoGraphError(
             f"Could not convert the iteration target {iteration_target} to array while processing "
-            f"the following with AutoGraph:\n{for_loop_info}"
+            f"a for-loop with AutoGraph."
         ) from exception_raised
 
     try:
@@ -275,27 +271,19 @@ def for_stmt(
     except Exception as e:  # pylint: disable=broad-exception-caught
 
         # pylint: disable=import-outside-toplevel
-        import inspect
         import textwrap
-
-        for_loop_info = get_source_code_info(inspect.stack()[1])
 
         raise AutoGraphError(
             f"Tracing of an AutoGraph converted for loop failed with an exception:\n"
             f"  {type(e).__name__}:{textwrap.indent(str(e), '    ')}\n"
             f"\n"
-            f"The error ocurred within the body of the following for loop statement:\n"
-            f"{for_loop_info}"
-            f"\n"
-            f"If you intended for the conversion to happen, make sure that the (now "
-            f"dynamic) loop variable is not used in tracing-incompatible ways, for "
+            f"The error ocurred within the body of a for loop statement."
+            f"Make sure that loop variables are not used in tracing-incompatible ways, for "
             f"instance by indexing a Python list with it. In that case, the list should be "
             f"wrapped into an array.\n"
             f"To understand different types of JAX tracing errors, please refer to the "
             f"guide at: https://jax.readthedocs.io/en/latest/errors.html\n"
             f"\n"
-            f"If you did not intend for the conversion to happen, you may safely ignore "
-            f"this warning."
         ) from e
 
     set_state(results)
@@ -331,52 +319,6 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
 
     results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
-
-
-def get_source_code_info(tb_frame):
-    """Attempt to obtain original source code information for an exception raised within AutoGraph
-    transformed code.
-
-    Uses introspection on the call stack to extract the source map record from within AutoGraph
-    statements. However, it is not guaranteed to find the source map and may return nothing.
-    """
-    import inspect  # pylint: disable=import-outside-toplevel
-
-    ag_source_map = None
-
-    # Traverse frames in reverse to find caller with `ag_source_map` property:
-    # - function: directly on the callable object
-    # - qnode method: on the self object
-    # - qjit method: on the self.user_function object
-    try:
-        for frame in inspect.stack():
-            if frame.function == "converted_call" and "converted_f" in frame.frame.f_locals:
-                obj = frame.frame.f_locals["converted_f"]
-                ag_source_map = obj.ag_source_map
-                break
-            if "self" in frame.frame.f_locals:
-                obj = frame.frame.f_locals["self"]
-                if isinstance(obj, qml.QNode):
-                    ag_source_map = obj.ag_source_map
-                    break
-    except:  # nosec B110 # pylint: disable=bare-except # pragma: nocover
-        pass
-
-    loc = LineLocation(tb_frame.filename, tb_frame.lineno)
-    if ag_source_map is not None and loc in ag_source_map:
-        function_name = ag_source_map[loc].function_name
-        filename = ag_source_map[loc].loc.filename
-        lineno = ag_source_map[loc].loc.lineno
-        source_code = ag_source_map[loc].source_code_line.strip()
-    else:
-        function_name = tb_frame.name
-        filename = tb_frame.filename
-        lineno = tb_frame.lineno
-        source_code = tb_frame.line
-
-    info = f'  File "{filename}", line {lineno}, in {function_name}\n' f"    {source_code}\n"
-
-    return info
 
 
 # Prevent autograph from converting PennyLane and Catalyst library code, this can lead to many
