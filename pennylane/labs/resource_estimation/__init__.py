@@ -38,15 +38,23 @@ Operators
 .. autosummary::
     :toctree: api
 
+    ~ResourceCCZ
     ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
     ~ResourceDoubleExcitation
     ~ResourceDoubleExcitationMinus
     ~ResourceDoubleExcitationPlus
+    ~ResourceCRot
+    ~ResourceCRX
     ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCSWAP
     ~ResourceCY
     ~ResourceCZ
+    ~ResourceDoubleExcitation
+    ~ResourceDoubleExcitationMinus
+    ~ResourceDoubleExcitationPlus
     ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
@@ -107,10 +115,15 @@ from .resource_container import CompressedResourceOp, Resources
 from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 from .ops import (
+    ResourceCCZ,
     ResourceCH,
     ResourceCNOT,
     ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
     ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
     ResourceCY,
     ResourceCZ,
     ResourceDoubleExcitation,
