@@ -242,6 +242,20 @@ def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) 
 
     Returns:
         np.ndarray: Orthonormalized basis vectors.
+
+    .. seealso:: :func:`~trace_inner_product`, :func:`~orthonormalize`
+
+    **Example**
+
+    >>> from pennylane.labs.dla import orthonormalize, check_orthonormal, trace_inner_product
+    >>> ops = [qml.X(0), qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0)]
+    >>> check_orthonormal(ops, trace_inner_product)
+    False
+    >>> ops_orth = orthonormalize(ops)
+    >>> check_orthonormal(ops_orth, trace_inner_product)
+    True
+
+    This works also for dense matrices as inputs
     """
 
     if isinstance(basis, PauliVSpace) or all(
@@ -321,6 +335,18 @@ def check_orthonormal(g: Iterable[Union[PauliSentence, Operator]], inner_product
 
     Returns:
         bool: ``True`` if the operators are orthonormal, ``False`` otherwise.
+
+    .. seealso:: :func:`~trace_inner_product`, :func:`~orthonormalize`
+
+    **Example**
+
+    >>> from pennylane.labs.dla import orthonormalize, check_orthonormal, trace_inner_product
+    >>> ops = [qml.X(0), qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0)]
+    >>> check_orthonormal(ops, trace_inner_product)
+    False
+    >>> ops_orth = orthonormalize(ops)
+    >>> check_orthonormal(ops_orth, trace_inner_product)
+    True
     """
     for op in g:
         if not np.isclose(inner_product(op, op), 1.0):
