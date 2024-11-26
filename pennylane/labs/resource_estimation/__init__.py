@@ -44,6 +44,7 @@ Operators
     ~ResourceCNOT
     ~ResourceControlled
     ~ResourceControlledPhaseShift
+    ~ResourceCRot
     ~ResourceCRX
     ~ResourceCRY
     ~ResourceCRZ
@@ -121,6 +122,7 @@ from .ops import (
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourceCRot,
     ResourceCRX,
     ResourceCRY,
     ResourceCRZ,
