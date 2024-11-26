@@ -42,7 +42,9 @@ Operators
     ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
+    ~ResourceCRX
     ~ResourceCRY
+    ~ResourceCRZ
     ~ResourceCSWAP
     ~ResourceCY
     ~ResourceCZ
@@ -99,7 +101,9 @@ from .ops import (
     ResourceCH,
     ResourceCNOT,
     ResourceControlledPhaseShift,
+    ResourceCRX,
     ResourceCRY,
+    ResourceCRZ,
     ResourceCSWAP,
     ResourceCY,
     ResourceCZ,
