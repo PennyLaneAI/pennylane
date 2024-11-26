@@ -13,3 +13,4 @@
 # limitations under the License.
 r"""This module contains resource operators for PennyLane templates. """
 from .subroutines import ResourceQFT
+from .trotter import ResourceTrotterProduct, ResourceTrotterizedQfunc, resource_trotterize

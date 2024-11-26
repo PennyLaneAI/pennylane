@@ -157,4 +157,7 @@ from .ops import (
 
 from .templates import (
     ResourceQFT,
+    ResourceTrotterProduct,
+    ResourceTrotterizedQfunc,
+    resource_trotterize,
 )
