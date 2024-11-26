@@ -57,20 +57,20 @@ def _setup_transform_program(
     resolved_execution_config: "qml.devices.ExecutionConfig",
     cache=None,
     cachesize=10000,
-) -> tuple[TransformProgram, TransformProgram, "qml.devices.ExecutionConfig"]:
+) -> tuple[TransformProgram, TransformProgram]:
 
-    device_transform_program, config = device.preprocess(execution_config=resolved_execution_config)
+    device_transform_program = device.preprocess(execution_config=resolved_execution_config)[0]
 
     full_transform_program = qml.transforms.core.TransformProgram(user_transform_program)
     inner_transform_program = qml.transforms.core.TransformProgram()
 
     # Add the gradient expand to the program if necessary
-    if getattr(config.gradient_method, "expand_transform", False):
+    if getattr(resolved_execution_config.gradient_method, "expand_transform", False):
         full_transform_program.add_transform(
-            qml.transform(config.gradient_method.expand_transform),
-            **config.gradient_keyword_arguments,
+            qml.transform(resolved_execution_config.gradient_method.expand_transform),
+            **resolved_execution_config.gradient_keyword_arguments,
         )
-    if config.use_device_gradient:
+    if resolved_execution_config.use_device_gradient:
         full_transform_program += device_transform_program
     else:
         inner_transform_program += device_transform_program
@@ -88,13 +88,17 @@ def _setup_transform_program(
         cache = None
 
     # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = config.interface is None or config.gradient_method in {
-        None,
-        "backprop",
-    }
+    no_interface_boundary_required = (
+        resolved_execution_config.interface is None
+        or resolved_execution_config.gradient_method
+        in {
+            None,
+            "backprop",
+        }
+    )
     device_supports_interface_data = no_interface_boundary_required and (
-        config.interface is None
-        or config.gradient_method == "backprop"
+        resolved_execution_config.interface is None
+        or resolved_execution_config.gradient_method == "backprop"
         or getattr(device, "short_name", "") == "default.mixed"
     )
     numpy_only = not device_supports_interface_data
@@ -103,4 +107,4 @@ def _setup_transform_program(
     if cache is not None:
         inner_transform_program.add_transform(_cache_transform, cache=cache)
 
-    return full_transform_program, inner_transform_program, config
+    return full_transform_program, inner_transform_program

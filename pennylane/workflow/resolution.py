@@ -179,4 +179,6 @@ def _resolve_execution_config(
 
     updated_values["mcm_config"] = mcm_config
 
+    execution_config = device.preprocess(execution_config)[1]
+
     return replace(execution_config, **updated_values)

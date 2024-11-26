@@ -888,7 +888,7 @@ class QNode:
             config, self.device, (self._tape,), self.transform_program
         )
 
-        outer_transform_program, inner_transform_program, config = _setup_transform_program(
+        outer_transform_program, inner_transform_program = _setup_transform_program(
             self.transform_program,
             self.device,
             config,
