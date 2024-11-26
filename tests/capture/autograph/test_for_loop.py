@@ -184,7 +184,9 @@ class TestForLoops:
 
         assert np.allclose(result, jnp.sqrt(2) / 2)
 
-    @pytest.mark.xfail(reason="relies on unimplemented fallback behaviour")
+    @pytest.mark.xfail(
+        reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
+    )
     def test_for_in_object_list(self):
         """Test for loop over a Python list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
@@ -351,7 +353,9 @@ class TestForLoops:
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
-    @pytest.mark.xfail(reason="relies on unimplemented fallback behaviour")
+    @pytest.mark.xfail(
+        reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
+    )
     def test_for_in_enumerate_object_list(self):
         """Test for loop over a Python enumeration on a list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
@@ -369,7 +373,9 @@ class TestForLoops:
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
-    @pytest.mark.xfail(reason="relies on unimplemented fallback behaviour")
+    @pytest.mark.xfail(
+        reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
+    )
     def test_for_in_other_iterable_object(self):
         """Test for loop over arbitrary iterable Python objects.
         The behaviour should fall back to standard Python."""
