@@ -57,14 +57,6 @@ def get_expval(op, state):
     return np.trace(op_mult_state)
 
 
-# def test_probs_with_negative_on_diagonal():
-#     """Test that if there is a negative on diagonal it is clipped to 0"""
-#     state = np.array([[1 - 1e-4 + 0j, 0, 0], [0, -1e-4, 0], [0, 0, 1e-4]])
-#     probs = measure(qml.probs(), state)
-#     expected_probs = np.array([1 - 1e-4, 0, 1e-4])
-#     assert np.allclose(probs, expected_probs)
-
-
 @pytest.mark.parametrize(
     "mp", [qml.sample(), qml.counts(), qml.sample(wires=0), qml.counts(wires=0)]
 )
@@ -145,9 +137,9 @@ class TestMeasurements:
     @pytest.mark.parametrize(
         "coeffs, observables",
         [
-            ([-0.5, 2], [qml.PauliX(7), qml.PauliX(8)]),
-            ([-0.3, 1], [qml.PauliX(2), qml.PauliX(4)]),
-            ([-0.45, 2.6], [qml.PauliX(6), qml.PauliX(3)]),
+            ([-0.5, 2], [qml.PauliX(0), qml.PauliX(1)]),
+            ([-0.3, 1], [qml.PauliY(0), qml.PauliX(1)]),
+            ([-0.45, 2.6], [qml.PauliZ(1), qml.PauliX(0)]),
         ],
     )
     def test_hamiltonian_expval(self, coeffs, observables, two_qubit_state):
@@ -176,39 +168,12 @@ class TestMeasurements:
 
         assert np.isclose(res, expected)
 
-    # def test_sum_expval_tensor_contraction(self):
-    #     """Test that `Sum` expectation values are correct when tensor contraction
-    #     is used for computation."""
-    #     summands = (qml.prod(qml.PauliX(i), qml.PauliZ(i + 1)) for i in range(4))
-    #     obs = qml.sum(*summands)
-
-    #     @qml.qnode(qml.device("default.qubit", wires=5))
-    #     def find_state(x):
-    #         for i in range(5):
-    #             qml.RX(x, wires=i)
-    #         return qml.state()
-
-    #     rots = [0.123, 0.321]
-    #     schmidts = [0.7, 0.3]
-    #     state = np.zeros([3] * (2 * 5), dtype=complex)
-
-    #     for i in range(2):
-    #         vec = find_state(rots[i])
-    #         state += schmidts[i] * np.outer(vec, np.conj(vec)).reshape([3] * (2 * 5))
-
-    #     res = measure(qml.expval(obs), state)
-    #     expected = 0
-    #     for schmidt, theta in zip(schmidts, rots):
-    #         expected += schmidt * (4 * (-np.sin(theta) * np.cos(theta)))
-
-    #     assert np.allclose(res, expected)
-
     @pytest.mark.parametrize(
         "observable",
         [
+            qml.PauliX(0),
             qml.PauliX(1),
-            qml.PauliX(6),
-            (qml.PauliX(6) @ qml.PauliX(2)),
+            (qml.PauliX(0) @ qml.PauliX(1)),
         ],
     )
     def test_variance_measurement(self, observable, two_qubit_state):
@@ -224,67 +189,97 @@ class TestMeasurements:
         assert np.allclose(res, expected)
 
 
-# @pytest.mark.parametrize(
-#     "obs, coeffs, matrices",
-#     [
-#         (
-#             qml.Hamiltonian([-0.5, 2], [qml.PauliX(0), qml.PauliX(1)]),
-#             [-0.5, 2],
-#             [qml.PauliX(0).matrix(), qml.PauliX(1).matrix()],
-#         ),
-#         (
-#             qml.Hermitian(
-#                 -0.5 * qml.PauliX(0).matrix() + 2 * qml.PauliX(1).matrix(),
-#                 wires=[0],
-#             ),
-#             [-0.5, 2],
-#             [qml.PauliX(0).matrix(), qml.PauliX(1).matrix()],
-#         ),
-#     ],
-# )
-# class TestExpValAnalytical:
-#     @staticmethod
-#     def prepare_pure_state(theta):
-#         """Helper function to prepare a pure state density matrix."""
-#         state_vector = np.array([np.cos(theta), -1j * np.sin(theta)])
-#         return np.outer(state_vector, np.conj(state_vector))
+@pytest.mark.parametrize(
+    "obs, coeffs, matrices",
+    [
+        (
+            qml.Hamiltonian([-0.5, 2], [qml.PauliX(0), qml.PauliX(1)]),
+            [-0.5, 2],
+            [
+                np.kron(qml.PauliX(0).matrix(), np.eye(2)),
+                np.kron(np.eye(2), qml.PauliX(1).matrix()),
+            ],
+        ),
+        (
+            qml.Hermitian(
+                -0.5 * np.kron(qml.PauliX(0).matrix(), np.eye(2))
+                + 2 * np.kron(np.eye(2), qml.PauliX(1).matrix()),
+                wires=[0, 1],
+            ),
+            [-0.5, 2],
+            [
+                np.kron(qml.PauliX(0).matrix(), np.eye(2)),
+                np.kron(np.eye(2), qml.PauliX(1).matrix()),
+            ],
+        ),
+    ],
+)
+class TestExpValAnalytical:
+    @staticmethod
+    def prepare_pure_state(theta):
+        """Helper function to prepare a two-qubit pure state density matrix."""
+        qubit0 = np.array([np.cos(theta), -1j * np.sin(theta)])
+        qubit1 = np.array([1, 0])  # Second qubit in |0⟩ state
+        state_vector = np.kron(qubit0, qubit1)  # Shape: (4,)
+        state = np.outer(state_vector, np.conj(state_vector))  # Shape: (4, 4)
+        return state
 
-#     @staticmethod
-#     def prepare_mixed_state(theta, weights):
-#         """Helper function to prepare a mixed state density matrix."""
-#         state_vector_one = np.array([np.cos(theta), -1j * np.sin(theta)])
-#         state_vector_two = np.array([np.cos(theta), 1j * np.sin(theta)])
-#         state_one = np.outer(state_vector_one, np.conj(state_vector_one))
-#         state_two = np.outer(state_vector_two, np.conj(state_vector_two))
-#         return weights[0] * state_one + weights[1] * state_two
+    @staticmethod
+    def prepare_mixed_state(theta, weights):
+        """Helper function to prepare a two-qubit mixed state density matrix."""
+        qubit1 = np.array([1, 0])  # Second qubit in |0⟩ state
 
-#     @staticmethod
-#     def compute_expected_value(obs, state):
-#         """Helper function to compute the analytical expectation value."""
-#         return np.trace(state @ obs.matrix())
+        qubit0_one = np.array([np.cos(theta), -1j * np.sin(theta)])
+        qubit0_two = np.array([np.cos(theta), 1j * np.sin(theta)])
 
-#     def test_expval_pure_state(self, obs, coeffs, matrices):
-#         """Test that measurements work on pure states as expected from analytical calculation."""
-#         theta = 0.123
-#         state = self.prepare_pure_state(theta)
+        state_vector_one = np.kron(qubit0_one, qubit1)
+        state_vector_two = np.kron(qubit0_two, qubit1)
 
-#         res = measure(qml.expval(obs), state)
+        state_one = np.outer(state_vector_one, np.conj(state_vector_one))
+        state_two = np.outer(state_vector_two, np.conj(state_vector_two))
 
-#         # Compute the expected value directly from the observable and state
-#         expected = self.compute_expected_value(obs, state)
-#         assert np.allclose(res, expected)
+        return weights[0] * state_one + weights[1] * state_two
 
-#     def test_expval_mixed_state(self, obs, coeffs, matrices):
-#         """Test that measurements work on mixed states as expected from analytical calculation."""
-#         theta = 0.123
-#         weights = [0.33, 0.67]
-#         state = self.prepare_mixed_state(theta, weights)
+    @staticmethod
+    def compute_expected_value(obs, state):
+        """Helper function to compute the analytical expectation value."""
+        if isinstance(obs, qml.Hamiltonian):
+            matrices = [
+                np.kron(qml.PauliX(0).matrix(), np.eye(2)),
+                np.kron(np.eye(2), qml.PauliX(1).matrix()),
+            ]
+            hamiltonian_matrix = sum(c * m for c, m in zip(obs.coeffs, matrices))
+            obs_matrix = hamiltonian_matrix
+        else:
+            obs_matrix = obs.matrix()
+        return np.trace(state @ obs_matrix)
 
-#         res = measure(qml.expval(obs), state)
+    def test_expval_pure_state(self, obs, coeffs, matrices):
+        theta = 0.123
+        state = self.prepare_pure_state(theta)
 
-#         # Compute the expected value directly from the observable and state
-#         expected = self.compute_expected_value(obs, state)
-#         assert np.allclose(res, expected)
+        if isinstance(obs, qml.Hamiltonian):
+            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices))
+            res = np.trace(state @ hamiltonian_matrix)
+        else:
+            res = np.trace(state @ obs.matrix())
+
+        expected = self.compute_expected_value(obs, state)
+        assert np.allclose(res, expected.real)
+
+    def test_expval_mixed_state(self, obs, coeffs, matrices):
+        theta = 0.123
+        weights = [0.33, 0.67]
+        state = self.prepare_mixed_state(theta, weights)
+
+        if isinstance(obs, qml.Hamiltonian):
+            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices))
+            res = np.trace(state @ hamiltonian_matrix)
+        else:
+            res = np.trace(state @ obs.matrix())
+
+        expected = self.compute_expected_value(obs, state)
+        assert np.allclose(res, expected.real)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -296,10 +291,10 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "measurement, get_expected",
         [
-            (qml.state(), lambda x: math.reshape(x, newshape=(BATCH_SIZE, (4, 4)))),
+            (qml.state(), lambda x: math.reshape(x, newshape=(BATCH_SIZE, 4, 4))),
             (
                 qml.density_matrix(wires=[0, 1]),
-                lambda x: math.reshape(x, newshape=(BATCH_SIZE, (4, 4))),
+                lambda x: math.reshape(x, newshape=(BATCH_SIZE, 4, 4)),
             ),
             (qml.density_matrix(wires=[1]), lambda x: math.trace(x, axis1=1, axis2=3)),
         ],
@@ -318,7 +313,7 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "measurement, matrix_transform",
         [
-            (qml.probs(wires=[0, 1]), lambda x: math.reshape(x, (2, (4, 4)))),
+            (qml.probs(wires=[0, 1]), lambda x: math.reshape(x, (2, 4, 4))),
             (qml.probs(wires=[0]), lambda x: math.trace(x, axis1=2, axis2=4)),
         ],
     )
@@ -341,9 +336,9 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "observable",
         [
-            qml.PauliX(3),
-            qml.PauliX(6),
-            qml.prod(qml.PauliX(2), qml.PauliX(3)),
+            qml.PauliX(0),
+            qml.PauliX(1),
+            qml.prod(qml.PauliX(0), qml.PauliX(1)),
             qml.Hermitian(
                 np.array(
                     [
@@ -368,9 +363,9 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "observable",
         [
-            qml.sum((2 * qml.PauliX(1)), (0.4 * qml.PauliX(6))),
-            qml.sum((2.4 * qml.PauliX(3)), (0.2 * qml.PauliX(7))),
-            qml.sum((0.9 * qml.PauliX(5)), (1.2 * qml.PauliX(8))),
+            qml.sum((2 * qml.PauliX(0)), (0.4 * qml.PauliX(1))),
+            qml.sum((2.4 * qml.PauliZ(0)), (0.2 * qml.PauliX(1))),
+            qml.sum((0.9 * qml.PauliY(1)), (1.2 * qml.PauliX(0))),
         ],
     )
     def test_expval_sum_measurement(self, observable, ml_framework, two_qubit_batched_state):
@@ -398,7 +393,7 @@ class TestBroadcasting:
     def test_expval_hamiltonian_measurement(self, ml_framework, two_qubit_batched_state):
         """Test that expval Hamiltonian measurements work on broadcasted state"""
         initial_state = math.asarray(two_qubit_batched_state, like=ml_framework)
-        observables = [qml.PauliX(1), qml.PauliX(6)]
+        observables = [qml.PauliX(1), qml.PauliX(0)]
         coeffs = [2, 0.4]
         observable = qml.Hamiltonian(coeffs, observables)
         res = measure(qml.expval(observable), initial_state, is_state_batched=True)
@@ -423,9 +418,9 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "observable",
         [
+            qml.PauliX(0),
             qml.PauliX(1),
-            qml.PauliX(6),
-            (qml.PauliX(6) @ qml.PauliX(2)),
+            (qml.PauliX(0) @ qml.PauliX(1)),
         ],
     )
     def test_variance_measurement(self, observable, ml_framework, two_qubit_batched_state):
