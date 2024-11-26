@@ -248,19 +248,16 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
 
             n_args = len(args)
-            n_consts = len(jaxpr.consts)
             args_slice = slice(0, n_args)
-            consts_slice = slice(n_args, n_args + n_consts)
-            targs_slice = slice(n_args + n_consts, None)
+            consts_slice = slice(n_args, None)
 
             results = self._primitive.bind(
                 *args,
                 *jaxpr.consts,
-                *targs,
                 inner_jaxpr=jaxpr.jaxpr,
                 args_slice=args_slice,
                 consts_slice=consts_slice,
-                targs_slice=targs_slice,
+                targs=targs,
                 **tkwargs,
             )
 
@@ -495,11 +492,10 @@ def _create_transform_primitive(name):
 
     @transform_prim.def_impl
     def _(
-        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, **transform_kwargs
+        *all_args, inner_jaxpr, args_slice, consts_slice, targs, **tkwargs
     ):  # pylint: disable=unused-argument
         args = all_args[args_slice]
         consts = all_args[consts_slice]
-        targs = all_args[targs_slice]  # pylint: disable=unused-variable
 
         out = jax.core.eval_jaxpr(inner_jaxpr, consts, *args)
         out = out if isinstance(out, Sequence) else [out]
