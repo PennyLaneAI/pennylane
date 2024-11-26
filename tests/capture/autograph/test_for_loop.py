@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import while_loop
 
 pytestmark = pytest.mark.jax
 
@@ -31,12 +30,7 @@ from jax import numpy as jnp
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
-from pennylane.capture.autograph.ag_primitives import (
-    AutoGraphError,
-    PEnumerate,
-    PRange,
-    get_source_code_info,
-)
+from pennylane.capture.autograph.ag_primitives import AutoGraphError, PEnumerate, PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 
 check_cache = TRANSFORMER.has_cache
@@ -52,13 +46,8 @@ def enable_disable_plxpr():
 class TestPRange:
     """Test the custom PennyLane range object PRange"""
 
-
-class TestPEnumerate:
-    """Test the custom PennyLane range object PRange"""
-
-
-class TestForLoops:
-    """Test that the autograph transformations produce correct results on for loops."""
+    def test_prange(self):
+        raise RuntimeError("you haven't added tests for the new PRange class")
 
     def test_python_range_fallback(self):
         """Test that the custom CRange wrapper correctly falls back to Python."""
@@ -72,6 +61,17 @@ class TestForLoops:
         assert isinstance(pl_range._py_range, range)
         assert pl_range[2] == 2
 
+
+class TestPEnumerate:
+    """Test the custom PennyLane range object PRange"""
+
+    def test_penumerate(self):
+        raise RuntimeError("you haven't added tests for the new PEnumerate class")
+
+
+class TestForLoops:
+    """Test that the autograph transformations produce correct results on for loops."""
+
     def test_for_in_array(self):
         """Test for loop over JAX array."""
 
@@ -82,13 +82,12 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)([1.0, 2.0, 3.0])
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([1.0, 2.0, 3.0]))
 
         def res(params):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
         result = res(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
-        print(result)
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_for_in_array_unpack(self):
@@ -161,20 +160,6 @@ class TestForLoops:
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
-    def test_for_in_object_list_strict(self):
-        """Check the error raised when a for loop iterates over a Python list that
-        is *not* convertible to an array."""
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def f():
-            params = ["0", "1", "2"]
-            for x in params:
-                qml.RY(int(x) / 4 * jnp.pi, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(AutoGraphError, match="Could not convert the iteration target"):
-            run_autograph(f)()
-
     def test_for_in_static_range(self):
         """Test for loop over a Python range with static bounds."""
 
@@ -206,44 +191,6 @@ class TestForLoops:
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
-    # With conversion always taking place, the user needs to be careful to manually wrap
-    # objects accessed via loop iteration indices into arrays (see test case above).
-    # The warning here is actionable.
-    def test_for_in_static_range_indexing_numeric_list(self):
-        """Test for loop over a Python range with static bounds that is used to index an
-        array-compatible Python list. This should fall back to Python with a warning."""
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def f():
-            params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
-            for i in range(3):
-                qml.RY(params[i], wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            match=r"TracerIntegerConversionError:    The __index__\(\) method was called"
-        ):
-            run_autograph(f)()
-
-    # This case is slightly problematic because there is no way for the user to compile this for
-    # loop correctly. Fallback to a Python loop is always necessary, and will result in a warning.
-    # The warning here is not actionable.
-    def test_for_in_static_range_indexing_object_list(self):
-        """Test for loop over a Python range with static bounds that is used to index an
-        array-incompatible Python list. This should fall back to Python with a warning."""
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def f():
-            params = ["0", "1", "2"]
-            for i in range(3):
-                qml.RY(int(params[i]) / 4 * jnp.pi, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            match=r"TracerIntegerConversionError:    The __index__\(\) method was called"
-        ):
-            run_autograph(f)()
-
     def test_for_in_dynamic_range(self):
         """Test for loop over a Python range with dynamic bounds."""
 
@@ -274,48 +221,6 @@ class TestForLoops:
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
-
-    # This case will fail even without autograph conversion, since dynamic iteration bounds are not
-    # allowed in Python ranges. Here, AutoGraph improves the situation by allowing this test case
-    # with a slight modification of the user code (see test case above).
-    # Raising the warning is vital here to notify the user that this use case is actually supported,
-    # but requires a modification. Without it, the user may simply conclude it is unsupported.
-    def test_for_in_dynamic_range_indexing_numeric_list(self):
-        """Test for loop over a Python range with dynamic bounds that is used to index an
-        array-compatible Python list. The fallback to Python will first raise a warning,
-        then an error."""
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def f(n: int):
-            params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
-            for i in range(n):
-                qml.RY(params[i], wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            match=r"TracerIntegerConversionError:    The __index__\(\) method was called"
-        ):
-            with pytest.raises(jax.errors.TracerIntegerConversionError, match="__index__"):
-                run_autograph(f)()
-
-    # This use case is never possible, regardless of whether AutoGraph is used or not.
-    def test_for_in_dynamic_range_indexing_object_list(self):
-        """Test for loop over a Python range with dynamic bounds that is used to index an
-        array-incompatible Python list. The fallback to Python will first raise a warning,
-        then an error."""
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def f(n: int):
-            params = ["0", "1", "2"]
-            for i in range(n):
-                qml.RY(int(params[i]) * jnp.pi, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            match=r"TracerIntegerConversionError:    The __index__\(\) method was called"
-        ):
-            with pytest.raises(jax.errors.TracerIntegerConversionError, match="__index__"):
-                run_autograph(f)()
 
     def test_for_in_enumerate_array(self):
         """Test for loop over a Python enumeration on an array."""
@@ -581,6 +486,78 @@ class TestForLoops:
         jaxpr = jax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 20
 
+
+class TestErrors:
+    """Test that informative errors are raised where expected"""
+
+    def test_for_in_object_list(self):
+        """Check the error raised when a for loop iterates over a Python list that
+        is *not* convertible to an array."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def f():
+            params = ["0", "1", "2"]
+            for x in params:
+                qml.RY(int(x) / 4 * jnp.pi, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(AutoGraphError, match="Could not convert the iteration target"):
+            run_autograph(f)()
+
+    def test_for_in_static_range_indexing_numeric_list(self):
+        """Test an informative error is raised when using a for loop with a static range
+        to index through an array-compatible Python list. This can be fixed by wrapping the
+        list in a jax array, so the error raised here is actionable."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def f():
+            params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
+            for i in range(3):
+                qml.RY(params[i], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            AutoGraphError,
+            match="Make sure that loop variables are not used in tracing-incompatible ways",
+        ):
+            run_autograph(f)()
+
+    def test_for_in_dynamic_range_indexing_numeric_list(self):
+        """Test an informative error is raised when using a for loop with a dynamic range
+        to index through an array-compatible Python list. This can be fixed by wrapping the
+        list in a jax array, so the error raised here is actionable."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def f(n: int):
+            params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
+            for i in range(n):
+                qml.RY(params[i], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            AutoGraphError,
+            match="Make sure that loop variables are not used in tracing-incompatible ways",
+        ):
+            _ = run_autograph(f)(2)
+
+    def test_for_in_dynamic_range_indexing_object_list(self):
+        """Test that an error is raised for a for loop over a Python range with dynamic bounds
+        that is used to index an array-incompatible Python list. This use-case is never possible,
+        even with AutoGraph, because the list can't be wrapped in a jax array."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def f(n: int):
+            params = ["0", "1", "2"]
+            for i in range(n):
+                qml.RY(int(params[i]) * jnp.pi, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            AutoGraphError,
+            match="Make sure that loop variables are not used in tracing-incompatible ways",
+        ):
+            run_autograph(f)(2)
+
     def test_uninitialized_variables(self):
         """Verify errors for (potentially) uninitialized loop variables."""
 
@@ -615,7 +592,7 @@ class TestForLoops:
             run_autograph(f3)()
 
     def test_init_with_invalid_jax_type(self):
-        """Test loop carried values initialized with an invalid JAX type."""
+        """Test an error is raised if a loop carried values initialized with an invalid JAX type."""
 
         def f():
             acc = 0
@@ -629,8 +606,8 @@ class TestForLoops:
             run_autograph(f)()
 
     def test_init_with_mismatched_type(self):
-        """Test loop carried values initialized with a mismatched type compared to the values used
-        inside the loop."""
+        """Test that an error is raised if a loop carried values initialized with a mismatched
+        type compared to the values used inside the loop."""
 
         def f():
             acc = 0
@@ -643,8 +620,13 @@ class TestForLoops:
         with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
             run_autograph(f)()
 
+
+class TestPennyLaneForLoops:
+    """Test that the Autograph behaviour works as expected on functions that
+    contain an explicit PennyLane for_loop"""
+
     def test_no_python_loops(self):
-        """Test AutoGraph behaviour on function with PennyLane loops."""
+        """Test AutoGraph behaviour on function that contains a PennyLane loops."""
 
         def f():
             @qml.for_loop(0, 3, 1)
@@ -659,7 +641,7 @@ class TestForLoops:
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
 
     def test_for_loop(self):
-        """Test if Autograph works when applied directly to a decorated function with for_loop"""
+        """Test if Autograph works when applied directly to a for_loop"""
 
         x = 5
         n = 6
@@ -670,6 +652,7 @@ class TestForLoops:
 
         ag_fn = run_autograph(loop)
         jaxpr = jax.make_jaxpr(ag_fn)(0)
+        assert "for_loop[" in str(jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 30
 
@@ -709,70 +692,11 @@ class TestForLoops:
 
         ag_fn = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_fn)(0)
+        assert "for_loop[" in str(jaxpr)
+        assert "cond[" in str(jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)[0] == 18
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0] == 0
-
-
-# only relevant for for_loops, and only if we put the warning back
-class TestSourceCodeInfo:
-    """Unit tests for exception utilities that retrieves traceback information for the original
-    source code."""
-
-    def test_non_converted_function(self):
-        """Test the robustness of traceback conversion on a non-converted function."""
-
-        try:
-            result = ""
-            raise RuntimeError("Test failure")
-        except RuntimeError as e:
-            result = get_source_code_info(traceback.extract_tb(e.__traceback__, limit=1)[0])
-
-        assert result.split("\n")[1] == '    raise RuntimeError("Test failure")'
-
-    def test_qnode(self):
-        """Test source info retrieval for a qnode function."""
-
-        @qml.qnode(qml.device("default.qubit", wires=2))
-        def main():
-            for _ in range(5):
-                raise RuntimeError("Test failure")
-            return 0
-
-        with pytest.warns(
-            UserWarning,
-            match=(
-                f'  File "{__file__}", line [0-9]+, in {main.__name__}\n'
-                r"    for _ in range\(5\):"
-            ),
-        ):
-            try:
-                run_autograph(main)
-            except RuntimeError as e:
-                assert e.args == ("Test failure",)
-
-    def test_func(self):
-        """Test source info retrieval for a nested function."""
-
-        def inner():
-            for _ in range(5):
-                raise RuntimeError("Test failure")
-
-        def main():
-            inner()
-            return 0
-
-        with pytest.warns(
-            UserWarning,
-            match=(
-                f'  File "{__file__}", line [0-9]+, in {inner.__name__}\n'
-                r"    for _ in range\(5\):"
-            ),
-        ):
-            try:
-                run_autograph(main)
-            except RuntimeError as e:
-                assert e.args == ("Test failure",)
 
 
 if __name__ == "__main__":
