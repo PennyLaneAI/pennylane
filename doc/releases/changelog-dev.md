@@ -122,6 +122,10 @@
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
 
+* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or 
+  resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
+  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
+
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
 
