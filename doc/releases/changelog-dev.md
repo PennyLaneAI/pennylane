@@ -37,9 +37,14 @@
     True
     ```
 
+<h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
+
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+
+* Added utility functions for handling dense matrices in the Lie theory context.
+  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
 
 <h4>New API for Qubit Mixed</h4>
 
