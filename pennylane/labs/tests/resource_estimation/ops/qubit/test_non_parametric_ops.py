@@ -128,18 +128,37 @@ class TestT:
 class TestX:
     """Tests for ResourceX"""
 
-    @pytest.mark.parametrize(
-        "controlled_op, expected_op",
-        [
-            (re.ResourceControlled(re.ResourceX(0), control_wires=[1]), re.ResourceCNOT([0, 1])),
-            (
-                re.ResourceControlled(re.ResourceX(0), control_wires=[1, 2]),
-                re.ResourceToffoli([0, 1, 2]),
-            ),
-        ],
-    )
-    def test_controlled_resources(self, controlled_op, expected_op):
+    def test_resources(self):
+        """Test that ResourceT does not implement a decomposition"""
+        expected = {
+            re.ResourceS.resource_rep(): 2,
+            re.ResourceHadamard.resource_rep(): 2,
+        }
+        assert re.ResourceX.resources() == expected
+
+
+    def test_resource_params(self):
+        """Test that the resource params are correct"""
+        op = re.ResourceX(0)
+        assert op.resource_params() == {}
+
+    def test_resource_rep(self):
+        """Test that the compact representation is correct"""
+        expected = re.CompressedResourceOp(re.ResourceX, {})
+        assert re.ResourceX.resource_rep() == expected
+
+    def test_single_controlled_resources(self):
         """Test that the controlled_resource_decomp method dispatches correctly."""
+        controlled_op = re.ResourceControlled(re.ResourceX(0), control_wires=[1])
+        controlled_cp = controlled_op.resource_rep_from_op()
+
+        with pytest.raises(re.ResourcesNotDefined):
+            controlled_cp.op_type.resources(**controlled_cp.params)
+
+    def test_double_controlled_resources(self):
+        """Test that the controlled_resource_decomp method dispatches correctly."""
+        controlled_op = re.ResourceControlled(re.ResourceX(0), control_wires=[1, 2])
+        expected_op = re.ResourceToffoli([0, 1, 2])
 
         controlled_cp = controlled_op.resource_rep_from_op()
         controlled_resources = controlled_cp.op_type.resources(**controlled_cp.params)

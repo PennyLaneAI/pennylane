@@ -136,8 +136,8 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
     def _resource_decomp(*args, **kwargs):
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
-        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1)
-        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1)
+        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
+        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0)
 
         gate_types = {}
         gate_types[phase] = 1
@@ -162,8 +162,8 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
     def _resource_decomp(*args, **kwargs):
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
-        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1)
-        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1)
+        ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
+        ctrl_phase = re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0)
 
         gate_types = {}
         gate_types[phase] = 1

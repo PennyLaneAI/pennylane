@@ -46,9 +46,8 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, base_class, base_params, **kwargs) -> re.CompressedResourceOp:
-        name = f"Adjoint({base_class.__name__})".replace("Resource", "")
         return re.CompressedResourceOp(
-            cls, {"base_class": base_class, "base_params": base_params}, name=name
+            cls, {"base_class": base_class, "base_params": base_params}
         )
 
     @staticmethod
@@ -56,6 +55,11 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         base_class, base_params, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
         return base_class._resource_decomp(**base_params)
+
+    @staticmethod
+    def tracking_name(base_class, base_params) -> str:
+        base_name = base_class.tracking_name(**base_params)
+        return f"Adjoint({base_name})"
 
 
 class ResourceControlled(ControlledOp, re.ResourceOperator):
@@ -96,7 +100,6 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     def resource_rep(
         cls, base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
     ) -> re.CompressedResourceOp:
-        name = f"Controlled({base_class.__name__}, wires={num_ctrl_wires})".replace("Resource", "")
         return re.CompressedResourceOp(
             cls,
             {
@@ -106,7 +109,6 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
                 "num_ctrl_values": num_ctrl_values,
                 "num_work_wires": num_work_wires,
             },
-            name=name,
         )
 
     @classmethod
@@ -128,6 +130,11 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             outer_num_ctrl_values + num_ctrl_values,
             outer_num_work_wires + num_work_wires,
         )
+
+    @staticmethod
+    def tracking_name(base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires):
+        base_name = base_class.tracking_name(**base_params)
+        return f"C({base_name},{num_ctrl_wires},{num_ctrl_values},{num_work_wires})"
 
 
 class ResourcePow(PowOperation, re.ResourceOperator):
@@ -158,9 +165,8 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
     @classmethod
     def resource_rep(cls, base_class, z, base_params, **kwargs) -> re.CompressedResourceOp:
-        name = f"{base_class.__name__}**{z}".replace("Resource", "")
         return re.CompressedResourceOp(
-            cls, {"base_class": base_class, "z": z, "base_params": base_params}, name=name
+            cls, {"base_class": base_class, "z": z, "base_params": base_params}
         )
 
     @classmethod
@@ -168,3 +174,8 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         cls, z0, base_class, z, base_params, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
         return cls._resource_decomp(base_class, z0 * z, base_params)
+
+    @staticmethod
+    def tracking_name(base_class, z, base_params) -> str:
+        base_name = base_class.tracking_name(**base_params)
+        return f"({base_name})**{z}"
