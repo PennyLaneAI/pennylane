@@ -109,6 +109,23 @@
 
 <h4>Other Improvements</h4>
 
+* Added PyTree support for measurements in a circuit. 
+  [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
+
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Hadamard(0)
+      qml.CNOT([0,1])
+      return {"Probabilities": qml.probs(), "State": qml.state()}
+  ```
+  ```pycon
+  >>> circuit() 
+  {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])} 
+  ```
+
 * `_cache_transform` transform has been moved to its own file located
   at `qml.workflow._cache_transform.py`.
   [(#6624)](https://github.com/PennyLaneAI/pennylane/pull/6624)
