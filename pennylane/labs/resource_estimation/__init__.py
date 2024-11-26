@@ -38,6 +38,7 @@ Operators
 .. autosummary::
     :toctree: api
 
+    ~ResourceCCZ
     ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
@@ -94,6 +95,7 @@ from .resource_container import CompressedResourceOp, Resources
 from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 from .ops import (
+    ResourceCCZ,
     ResourceCH,
     ResourceCNOT,
     ResourceControlledPhaseShift,
