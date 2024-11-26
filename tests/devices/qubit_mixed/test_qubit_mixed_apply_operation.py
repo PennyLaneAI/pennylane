@@ -17,10 +17,10 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from conftest import get_random_mixed_state
 from scipy.stats import unitary_group
 
 import pennylane as qml
-import pennylane.math as math
 from pennylane import (
     CNOT,
     ISWAP,
@@ -30,6 +30,7 @@ from pennylane import (
     PauliError,
     PauliX,
     ResetError,
+    math,
 )
 from pennylane.devices.qubit_mixed import apply_operation
 from pennylane.devices.qubit_mixed.apply_operation import (
@@ -98,28 +99,6 @@ def root_state(nr_wires):
 
 
 special_state_generator = [base0, base1, cat_state, hadamard_state, max_mixed_state, root_state]
-
-
-def get_random_mixed_state(num_qubits):
-    """
-    Generates a random mixed state for testing purposes.
-
-    Args:
-        num_qubits (int): The number of qubits in the mixed state.
-
-    Returns:
-        np.ndarray: A tensor representing the random mixed state.
-    """
-    dim = 2**num_qubits
-
-    rng = np.random.default_rng(seed=4774)
-    basis = unitary_group(dim=dim, seed=584545).rvs()
-    schmidt_weights = rng.dirichlet(np.ones(dim), size=1).astype(complex)[0]
-    mixed_state = np.zeros((dim, dim)).astype(complex)
-    for i in range(dim):
-        mixed_state += schmidt_weights[i] * np.outer(np.conj(basis[i]), basis[i])
-
-    return mixed_state.reshape([2] * (2 * num_qubits))
 
 
 def get_expected_state(expanded_operator, state, num_q):
