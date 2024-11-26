@@ -48,7 +48,7 @@ def test_mid_circuit_measurement_preprocessing():
     # Apply the transform program to the tape
     # Test if an AttributeError is raised
     with pytest.raises(AttributeError, match="'MidMeasureMP' object has no attribute 'operations'"):
-        transform_program(tape)
+        transform_program([tape])
 
 
 class NoMatOp(qml.operation.Operation):
