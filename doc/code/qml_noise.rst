@@ -2,7 +2,7 @@ qml.noise
 =========
 
 This module contains the functionality for building and manipulating insertion-based noise models,
-where noisy gates and channels are inserted based on the target operations.
+where noisy gates and channels are inserted based on the target operations and measurements.
 
 .. _intro_noise_model:
 
@@ -21,10 +21,11 @@ noise-related metadata can also be supplied to construct a noise model using:
 
     ~NoiseModel
 
-Each conditional in the ``model_map`` evaluates the gate operations in the quantum circuit based on
-some condition of its attributes (e.g., type, parameters, wires, etc.) and use the corresponding
-callable to apply the noise operations, using the user-provided metadata (e.g., hardware topologies
-or relaxation times), whenever the condition results true. A noise model once built can be attached
+Each conditional in the ``model_map`` (and ``meas_map``) evaluates the gate operations 
+(and terminal measurments) in the quantum circuit based on some condition of its attributes
+(e.g., type, parameters, wires, etc.) and uses the corresponding callable to apply the
+noise operations, using the user-provided metadata (e.g., hardware topologies or relaxation
+times), whenever the condition is true. A noise model, once built, can be attached
 to a circuit or device via the following transform:
 
 .. autosummary::
@@ -45,6 +46,7 @@ quantum circuit. One can construct standard Boolean functions using the followin
 .. autosummary::
     :toctree: api
 
+    ~meas_eq
     ~op_eq
     ~op_in
     ~wires_eq
@@ -57,7 +59,6 @@ as follows:
 >>> op1, op2 = qml.PauliX(0), qml.PauliX(1)
 >>> fn(op1)
 True
-
 >>> fn(op2)
 False
 
@@ -174,6 +175,7 @@ above, such as :func:`~.op_eq`. These objects do not need to be instantiated dir
 .. autosummary::
     :toctree: api
 
+    ~MeasEq
     ~OpEq
     ~OpIn
     ~WiresEq

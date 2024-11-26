@@ -76,7 +76,6 @@ class TestInheritanceMixins:
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_observable(self):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
 
@@ -96,8 +95,7 @@ class TestInheritanceMixins:
 
         # Check some basic observable functionality
         assert ob.compare(ob)
-        with pytest.warns(UserWarning, match="Tensor object acts on overlapping"):
-            assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
+        assert isinstance(1.0 * ob @ ob, qml.ops.Prod)
 
         # check the dir
         assert "grad_recipe" not in dir(ob)
@@ -107,7 +105,7 @@ class TestInheritanceMixins:
         (
             PlainOperator(1.2, wires=0),
             qml.RX(1.2, wires=0),
-            qml.operation.Tensor(qml.PauliX(0), qml.PauliX(1)),
+            qml.Hermitian([[1, 0], [0, 1]], wires=0),
             qml.PauliX(0),
         ),
     )
@@ -161,9 +159,9 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires("b")
 
-    def test_template_base(self):
+    def test_template_base(self, seed):
         """Test adjoint initialization for a template."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
@@ -179,24 +177,6 @@ class TestInitialization:
         assert qml.math.allclose(params, op.data[0])
 
         assert op.wires == qml.wires.Wires((0, 1))
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_base(self):
-        """Test adjoint initialization for a hamiltonian."""
-        with pytest.warns(UserWarning, match="Tensor object acts on overlapping"):
-            base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
-
-        op = Adjoint(base)
-
-        assert op.base is base
-        assert op.hyperparameters["base"] is base
-        assert op.name == "Adjoint(Hamiltonian)"
-
-        assert op.num_params == 2
-        assert qml.math.allclose(op.parameters, [2.0, 1.0])
-        assert qml.math.allclose(op.data, [2.0, 1.0])
-
-        assert op.wires == qml.wires.Wires([0, "b"])
 
 
 class TestProperties:
@@ -320,12 +300,6 @@ class TestProperties:
         op = Adjoint(qml.PauliX(0))
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_queue_category_None(self):
-        """Test that the queue category `None` for some observables carries over."""
-        op = Adjoint(qml.PauliX(0) @ qml.PauliY(1))
-        assert op._queue_category is None  # pylint: disable=protected-access
-
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
         """Test `is_hermitian` property mirrors that of the base."""
@@ -424,11 +398,11 @@ class TestMiscMethods:
 
     def test_repr(self):
         """Test __repr__ method."""
-        assert repr(Adjoint(qml.S(0))) == "Adjoint(S(wires=[0]))"
+        assert repr(Adjoint(qml.S(0))) == "Adjoint(S(0))"
 
         base = qml.S(0) + qml.T(0)
         op = Adjoint(base)
-        assert repr(op) == "Adjoint(S(wires=[0]) + T(wires=[0]))"
+        assert repr(op) == "Adjoint(S(0) + T(0))"
 
     def test_label(self):
         """Test that the label method for the adjoint class adds a † to the end."""
@@ -492,7 +466,6 @@ class TestAdjointOperation:
 
         assert op.has_generator is False
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
@@ -642,9 +615,9 @@ class TestMatrix:
 
         self.check_matrix(tf.Variable(1.2345), "tensorflow")
 
-    def test_no_matrix_defined(self):
+    def test_no_matrix_defined(self, seed):
         """Test that if the base has no matrix defined, then Adjoint.matrix also raises a MatrixUndefinedError."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
@@ -653,7 +626,6 @@ class TestMatrix:
         with pytest.raises(qml.operation.MatrixUndefinedError):
             Adjoint(base).matrix()
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_adj_hamiltonian(self):
         """Test that a we can take the adjoint of a hamiltonian."""
         U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0) @ qml.PauliZ(wires=1)])
@@ -868,21 +840,17 @@ class TestAdjointConstructorPreconstructedOp:
         assert len(q) == 1
         assert q.queue[0] is out
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_single_observable(self):
-        """Test passing a single preconstructed observable in a queuing context."""
+    def test_correct_queued_operators(self):
+        """Test that args and kwargs do not add operators to the queue."""
 
         with qml.queuing.AnnotatedQueue() as q:
-            base = qml.PauliX(0) @ qml.PauliY(1)
-            out = adjoint(base)
+            qml.adjoint(qml.QSVT)(qml.X(1), [qml.Z(1)])
+            qml.adjoint(qml.QSVT(qml.X(1), [qml.Z(1)]))
 
-        assert len(q) == 1
-        assert q.queue[0] is out
-        assert out.base is base
-        assert isinstance(out, Adjoint)
+        for op in q.queue:
+            assert op.name == "Adjoint(QSVT)"
 
-        qs = qml.tape.QuantumScript.from_queue(q)
-        assert len(qs) == 0
+        assert len(q.queue) == 2
 
 
 class TestAdjointConstructorDifferentCallableTypes:

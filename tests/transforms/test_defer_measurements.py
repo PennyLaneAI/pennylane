@@ -15,6 +15,7 @@
 Tests for the transform implementing the deferred measurement principle.
 """
 import math
+import warnings
 
 # pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
@@ -26,6 +27,13 @@ import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Controlled
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def test_broadcasted_postselection(mocker):
@@ -368,10 +376,12 @@ class TestQNode:
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
     @pytest.mark.parametrize("shots", [None, 1000])
     @pytest.mark.parametrize("phi", np.linspace(np.pi / 2, 7 * np.pi / 2, 6))
-    def test_some_postselection_qnode(self, phi, shots, reduce_postselected, tol, tol_stochastic):
+    def test_some_postselection_qnode(
+        self, phi, shots, reduce_postselected, tol, tol_stochastic, seed
+    ):
         """Test that a qnode with some mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
-        dev = DefaultQubit(seed=822)
+        dev = DefaultQubit(seed=seed)
 
         dm_transform = qml.defer_measurements
         if reduce_postselected is not None:
@@ -491,10 +501,10 @@ class TestQNode:
             qml.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
-    def test_measurement_statistics_single_wire(self, shots):
+    def test_measurement_statistics_single_wire(self, shots, seed):
         """Test that users can collect measurement statistics on
         a single mid-circuit measurement."""
-        dev = DefaultQubit(seed=10)
+        dev = DefaultQubit(seed=seed)
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -503,7 +513,7 @@ class TestQNode:
             m0 = qml.measure(0)
             return qml.probs(op=m0)
 
-        dev = DefaultQubit(seed=10)
+        dev = DefaultQubit(seed=seed)
 
         @qml.qnode(dev)
         def circ2(x):
@@ -548,11 +558,11 @@ class TestQNode:
         assert mp.mv.wires == qml.wires.Wires([1])
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
-    def test_terminal_measurements(self, shots):
+    def test_terminal_measurements(self, shots, seed):
         """Test that mid-circuit measurement statistics and terminal measurements
         can be made together."""
         # Using DefaultQubit to allow non-commuting measurements
-        dev = DefaultQubit(seed=10)
+        dev = DefaultQubit(seed=seed)
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -562,7 +572,7 @@ class TestQNode:
             qml.RY(y, 1)
             return qml.expval(qml.PauliX(1)), qml.probs(op=m0)
 
-        dev = DefaultQubit(seed=10)
+        dev = DefaultQubit(seed=seed)
 
         @qml.qnode(dev)
         def circ2(x, y):
@@ -628,7 +638,7 @@ class TestQNode:
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.measure(mid_measure_wire)
-            qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
+            qml.expval(qml.prod(*[qml.PauliZ(w) for w in tp_wires]))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape, _ = qml.defer_measurements(tape)
@@ -1346,46 +1356,6 @@ class TestExpressionConditionals:
 
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
-
-    @pytest.mark.filterwarnings(
-        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
-    )
-    def test_basis_state_prep(self):
-        """Test the basis state prep template conditioned on mid-circuit
-        measurement outcomes."""
-        template = qml.BasisStatePreparation
-
-        basis_state = [0, 1, 1, 0]
-
-        dev = qml.device("default.qubit", wires=6)
-
-        @qml.qnode(dev)
-        def qnode1():
-            qml.Hadamard(0)
-            qml.ctrl(template, control=0)(basis_state, wires=range(1, 5))
-            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
-
-        @qml.qnode(dev)
-        @qml.defer_measurements
-        def qnode2():
-            qml.Hadamard(0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, template)(basis_state, wires=range(1, 5))
-            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
-
-        assert np.allclose(qnode1(), qnode2())
-
-        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
-        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
-
-        # Check the operations
-        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
-            assert isinstance(op1, type(op2))
-            assert np.allclose(op1.data, op2.data)
-
-        # Check the measurements
-        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
-            assert isinstance(op1, type(op2))
 
     def test_angle_embedding(self):
         """Test the angle embedding template conditioned on mid-circuit

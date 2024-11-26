@@ -14,6 +14,8 @@
 """
 Unit tests for the optimization transform ``undo_swaps``.
 """
+import warnings
+
 import pytest
 from utils import compare_operation_lists
 
@@ -21,6 +23,13 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.optimization import undo_swaps
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestUndoSwaps:

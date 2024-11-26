@@ -61,7 +61,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "while_loop" in str(jaxpr)
+        assert "while_loop[" in str(jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, expected)[0]
         assert result == expected
@@ -79,7 +79,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "while_loop" in str(jaxpr)
+        assert "while_loop[" in str(jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
         assert result == 3
@@ -98,7 +98,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0.0)
-        assert "while_loop" in str(jaxpr)
+        assert "while_loop[" in str(jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0**4)[0]
         expected = jnp.array(
@@ -126,7 +126,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while" in str(jaxpr)
+        assert "while_loop[" in str(jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
 
@@ -143,8 +143,8 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while" in str(jaxpr)
-        assert "for" in str(jaxpr)
+        assert "while_loop[" in str(jaxpr)
+        assert "for_loop[" in str(jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 0 + 1 + sum([1, 2, 3])
 
@@ -162,12 +162,13 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while" in str(jaxpr)
+        assert "while_loop[" in str(jaxpr)
+        assert "cond[" in str(jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == sum([1, 1, 2, 2])
 
     def test_whileloop_exception(self):
-        """Test for-loop error if strict-conversion is enabled."""
+        """Test for-loop can raise an error if strict-conversion is enabled."""
 
         def f1():
             acc = 0
@@ -203,23 +204,6 @@ class TestWhileLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with type <class 'str'>"):
-            ag_fn = run_autograph(f)
-            jax.make_jaxpr(ag_fn)(False)
-
-    def test_init_with_mismatched_type(self):
-        """Test loop carried values initialized with a mismatched type compared to the values used
-        inside the loop."""
-
-        def f(pred: bool):
-            x = 0.0
-
-            while pred:
-                x = 3
-                pred = False
-
-            return x
-
-        with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
             ag_fn = run_autograph(f)
             jax.make_jaxpr(ag_fn)(False)
 

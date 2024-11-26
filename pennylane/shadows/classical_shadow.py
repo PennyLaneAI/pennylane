@@ -46,7 +46,7 @@ class ClassicalShadow:
 
     .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
         qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see our demo
-        on `estimating expectation values with classical shadows <https://pennylane.ai/qml/demos/tutorial_diffable_shadows.html>`_.
+        on `estimating expectation values with classical shadows <https://pennylane.ai/qml/demos/tutorial_diffable_shadows>`_.
 
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
@@ -55,7 +55,7 @@ class ClassicalShadow:
             they appear in the columns of ``bits`` and ``recipes``. If None, defaults
             to ``range(n)``, where ``n`` is the number of measured wires.
 
-    .. seealso:: Demo on `Estimating observables with classical shadows in the Pauli basis <https://pennylane.ai/qml/demos/tutorial_diffable_shadows.html>`_, :func:`~.pennylane.classical_shadow`
+    .. seealso:: Demo on `Estimating observables with classical shadows in the Pauli basis <https://pennylane.ai/qml/demos/tutorial_diffable_shadows>`_, :func:`~.pennylane.classical_shadow`
 
     **Example**
 
@@ -265,18 +265,6 @@ class ClassicalShadow:
         if isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Identity)):
             word = pauli_list_to_word([observable])
             return [(1, word)]
-
-        if isinstance(observable, qml.operation.Tensor):
-            word = pauli_list_to_word(observable.obs)
-            return [(1, word)]
-
-        if isinstance(observable, qml.ops.Hamiltonian):
-            coeffs_and_words = []
-            for coeff, op in zip(observable.data, observable.ops):
-                coeffs_and_words.extend(
-                    [(coeff * c, w) for c, w in self._convert_to_pauli_words(op)]
-                )
-            return coeffs_and_words
 
         # Support for all operators with a valid pauli_rep
         if (pr := observable.pauli_rep) is not None:

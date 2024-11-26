@@ -18,6 +18,7 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 
 import contextlib
 import io
+import warnings
 
 import numpy as np
 import pytest
@@ -27,6 +28,13 @@ from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 @pytest.fixture(name="ops")
@@ -322,7 +330,7 @@ class TestCircuitGraph:
             circuit_w_wires.print_contents()
         out = f.getvalue().strip()
 
-        expected = """Operations\n==========\nHadamard(wires=[0])\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
+        expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
         assert out == expected
 
     tape_depth = (

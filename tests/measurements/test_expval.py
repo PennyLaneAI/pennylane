@@ -50,9 +50,9 @@ class TestExpval:
     """Tests for the expval function"""
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
-    def test_value(self, tol, shots):
+    def test_value(self, tol, shots, seed):
         """Test that the expval interface works"""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -89,11 +89,11 @@ class TestExpval:
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic
+        self, shots, phi, tol, tol_stochastic, seed
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -109,11 +109,11 @@ class TestExpval:
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_composite_measurement_value(
-        self, shots, phi, tol, tol_stochastic
+        self, shots, phi, tol, tol_stochastic, seed
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        dev = qml.device("default.qubit", seed=123)
+        dev = qml.device("default.qubit", seed=seed)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -144,11 +144,11 @@ class TestExpval:
             res = func(phi, shots=shots)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
-    def test_eigvals_instead_of_observable(self):
+    def test_eigvals_instead_of_observable(self, seed):
         """Tests process samples with eigvals instead of observables"""
 
         shots = 100
-        rng = np.random.default_rng(123)
+        rng = np.random.default_rng(seed)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         expected = qml.expval(qml.PauliZ(0)).process_samples(samples, [0, 1])
         assert (
@@ -186,12 +186,13 @@ class TestExpval:
         assert res.shape(None, 1) == ()
         assert res.shape(100, 1) == ()
 
+    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])
-    def test_projector_expval(self, state, shots):
+    def test_projector_expval(self, state, shots, seed):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
         its subclasses."""
-        dev = qml.device("default.qubit", wires=3, shots=shots, seed=123)
+        dev = qml.device("default.qubit", wires=3, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit():
@@ -335,7 +336,7 @@ class TestExpval:
         result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
         assert np.allclose(result, expected)
 
-    def test_batched_hamiltonian(self):
+    def test_batched_hamiltonian(self, seed):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit")
         ops = (qml.Hadamard(0), qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3))
@@ -347,7 +348,7 @@ class TestExpval:
             qml.CNOT([0, 1])
             return qml.expval(H)
 
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
         params = rng.normal(0, np.pi, 4)
         energy = [cost_circuit(p) for p in params]
         energy_batched = cost_circuit(params)

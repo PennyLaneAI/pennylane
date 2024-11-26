@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ from malt.pyct.origin_info import LineLocation
 
 import pennylane as qml
 
-# ToDo: do we need has_jax for anything in this one?
 has_jax = True
 try:
     import jax
@@ -48,7 +47,7 @@ __all__ = [
 
 
 class AutoGraphError(Exception):
-    """Errors related to Catalyst's AutoGraph module."""
+    """Errors related to PennyLane's AutoGraph submodule."""
 
 
 def assert_results(results, var_names):
@@ -104,11 +103,14 @@ def assert_iteration_inputs(inputs, symbol_names):
 
     The reason is two-fold:
       - the type information from those variables is required for tracing
-      - we want to avoid access of a variable that is uninitialized, or uninitialized in a subset
+      - we want to avoid accessing a variable that is uninitialized, or uninitialized in a subset
         of execution paths
 
     Additionally, these types need to be valid JAX types.
     """
+
+    if not has_jax:
+        raise ImportError("autograph capture requires JAX to be installed.")
 
     for i, inp in enumerate(inputs):
         if isinstance(inp, Undefined):
@@ -270,7 +272,7 @@ def for_stmt(
             enum_start,
             iteration_array,
         )
-    except Exception as e: # pylint: disable=broad-exception-caught
+    except Exception as e:  # pylint: disable=broad-exception-caught
 
         # pylint: disable=import-outside-toplevel
         import inspect
@@ -319,7 +321,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
         return get_state()
 
     final_iter_args = functional_while(init_iter_args)
-    assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
+
     return final_iter_args
 
 
@@ -448,8 +450,11 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             assert args and callable(args[0])
             wrapped_fn = args[0]
 
-            def passthrough_wrapper(*args, **kwargs):
-                return converted_call(wrapped_fn, args, kwargs, caller_fn_scope, options)
+            @functools.wraps(wrapped_fn)
+            def passthrough_wrapper(*inner_args, **inner_kwargs):
+                return converted_call(
+                    wrapped_fn, inner_args, inner_kwargs, caller_fn_scope, options
+                )
 
             return fn(
                 passthrough_wrapper,

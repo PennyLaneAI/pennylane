@@ -247,7 +247,7 @@ class TestBasicCircuit:
             qs = qml.tape.QuantumScript(
                 [qml.RX(x, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
             )
-            return dev.execute(qs, ExecutionConfig(interface="torch"))
+            return dev.execute(qs, ExecutionConfig(interface="torch", gradient_method="backprop"))
 
         expected = np.zeros(2)
         assert np.array_equal(f(phi), expected)
@@ -280,6 +280,8 @@ class TestBasicCircuit:
         """Test that even if no interface parameters are given, result is correct."""
         dev = NullQubit()
 
+        import tensorflow as tf
+
         @qml.qnode(dev, interface="tf")
         def circuit(p):
             op(p, wires=[0])
@@ -287,7 +289,8 @@ class TestBasicCircuit:
 
         res = circuit(param)
         assert qml.math.get_interface(res) == "tensorflow"
-        assert res == qml.math.asarray(0.0, like="tensorflow")
+        # float64 due to float64 input variables
+        assert qml.math.allclose(res, tf.Variable(0.0, dtype=tf.float64))  # input variables float64
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
@@ -527,7 +530,7 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        config = ExecutionConfig(interface=qml.math.get_interface(phi))
+        config = ExecutionConfig(interface=qml.math.get_interface(phi), gradient_method="backprop")
         return dev.execute((qs1, qs2), config)
 
     @staticmethod
@@ -549,7 +552,10 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        return NullQubit().execute((qs1, qs2))
+        config = qml.devices.ExecutionConfig(
+            gradient_method="backprop", interface=qml.math.get_interface(phi)
+        )
+        return NullQubit().execute((qs1, qs2), execution_config=config)
 
     @staticmethod
     def assert_results(results):
@@ -652,9 +658,7 @@ class TestSumOfTermsDifferentiability:
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if style == "hamiltonian":
-            H = H.pauli_rep.hamiltonian()
-        elif style == "hermitian":
+        if style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         config = ExecutionConfig(interface=qml.math.get_interface(scale))
@@ -668,11 +672,8 @@ class TestSumOfTermsDifferentiability:
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if style == "hamiltonian":
-            H = H.pauli_rep.hamiltonian()
-        elif style == "hermitian":
+        if style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return NullQubit().execute(qs)
 
@@ -685,7 +686,7 @@ class TestSumOfTermsDifferentiability:
         return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_autograd_backprop(self, style):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
         dev = NullQubit()
@@ -695,7 +696,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_jax_backprop(self, style, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
@@ -708,7 +709,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.xfail(reason="torch backprop does not work")
     @pytest.mark.torch
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_torch_backprop(self, style):
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
@@ -724,7 +725,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.xfail(reason="tf can't track derivatives")
     @pytest.mark.tf
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_tf_backprop(self, style):
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf
@@ -970,12 +971,12 @@ class TestClassicalShadows:
         assert np.array_equal(res, np.zeros((2, 100, n_qubits)))
         assert res.dtype == np.int8
 
-    def test_expval(self):
+    def test_expval(self, seed):
         """Test that shadow expval measurements work as expected"""
         dev = NullQubit()
 
         ops = [qml.Hadamard(0), qml.Hadamard(1)]
-        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)]
+        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=seed)]
         qs = qml.tape.QuantumScript(ops, meas, shots=1000)
         assert dev.execute(qs) == np.array(0.0)
 
@@ -1129,12 +1130,12 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "diff_method", ["device", "adjoint", "backprop", "finite-diff", "parameter-shift"]
     )
-    def test_expected_shape_all_methods(self, diff_method):
+    def test_expected_shape_all_methods(self, diff_method, seed):
         """Test that the gradient shape is as expected with all diff methods."""
         n_wires = 4
 
         shape = qml.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
-        rng = np.random.default_rng(seed=1239594)
+        rng = np.random.default_rng(seed=seed)
         params = qml.numpy.array(rng.random(shape))
         dev = qml.device("null.qubit")
 

@@ -15,8 +15,6 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-import warnings
-
 # pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
 from typing import Optional
 
@@ -57,11 +55,10 @@ class BasisState(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        state (tensor_like): binary input of shape ``(len(wires), )``, e.g., for ``state=np.array([0, 1, 0])`` or ``state=2`` (binary 010), the quantum system will be prepared in state :math:`|010 \rangle`.
+        state (tensor_like): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])`` or ``state=2`` (equivalent to 010 in binary), the quantum system will be prepared in the state :math:`|010 \rangle`.
 
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+        id (str): Custom label given to an operator instance. Can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -442,21 +439,6 @@ class StatePrep(StatePrepBase):
                 )
 
         return state
-
-
-class QubitStateVector(StatePrep):
-    r"""
-    ``QubitStateVector`` is deprecated and will be removed in version 0.40. Instead, please use ``StatePrep``.
-    """
-
-    # pylint: disable=too-many-arguments
-    def __init__(self, state, wires, pad_with=None, normalize=False, validate_norm=True):
-        warnings.warn(
-            "QubitStateVector is deprecated and will be removed in version 0.40. "
-            "Instead, please use StatePrep.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        super().__init__(state, wires, pad_with, normalize, validate_norm)
 
 
 class QubitDensityMatrix(Operation):

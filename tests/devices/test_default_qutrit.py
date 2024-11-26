@@ -18,7 +18,6 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 import math
 
 import pytest
-from flaky import flaky
 from gate_data import GELL_MANN, OMEGA, TADD, TCLOCK, TSHIFT, TSWAP
 from scipy.stats import unitary_group
 
@@ -772,7 +771,7 @@ class TestDefaultQutritIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.qutrit", wires=1)
-        cap = dev.capabilities()
+        cap = dev.target_device.capabilities()
         capabilities = {
             "model": "qutrit",
             "supports_finite_shots": True,
@@ -1102,12 +1101,12 @@ class TestTensorSample:
         )
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("index", list(range(1, 9)))
-    def test_hermitian(self, index, tol_stochastic):
+    def test_hermitian(self, index, tol_stochastic, seed):
         """Tests that sampling on a tensor product of Hermitian observables with another observable works
         correctly"""
 
+        np.random.seed(seed)
         dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
 
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])

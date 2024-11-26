@@ -31,7 +31,7 @@ on:
         description: PyTest Coverage flags to pass to all jobs
         required: false
         type: string
-        default: --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
+        default: --cov-config=.coveragerc --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
       pytest_additional_args:
         description: Additional arguments to pass to pytest
         required: false
@@ -54,11 +54,6 @@ on:
         required: false
         type: string
         default: ''
-      disable_new_opmath:
-        description: Whether to disable the new op_math or not when running the tests
-        required: false
-        type: string
-        default: "False"
       additional_python_packages:
         description: Additional Python packages to install separated by a space
         required: false
@@ -69,10 +64,50 @@ on:
         required: false
         type: boolean
         default: true
+      use_large_runner:
+        description: |
+          Indicate if the large runner should be used for the job.
+          If this is true, large runner is used for the build regardless of the context.
+        required: false
+        type: boolean
+        default: false
+      python_warning_level:
+        description: Sets the default Python warning level as defined by https://docs.python.org/3/using/cmdline.html#envvar-PYTHONWARNINGS
+        required: false
+        type: string
+        default: 'default'
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  ACTIONS_STEP_DEBUG: true
 
 jobs:
+  determine_runner:
+    if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+      force_large_runner: ${{ inputs.use_large_runner }}
+
+  disable-fail-fast-wae:
+    needs:
+      - determine_runner
+    
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    steps:
+      - name: Set fail-fast for WAE
+        id: mat_fail_fast
+        run: |
+          echo "fail_fast=${{ contains(inputs.python_warning_level, 'default') && 'default' || 'error' }}" >> $GITHUB_OUTPUT
+
+    outputs:
+      fail_fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
+
   setup-ci-load:
-    runs-on: ubuntu-latest
+    needs:
+      - determine_runner
+    
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
 
     steps:
       - name: Setup Python Versions
@@ -88,6 +123,13 @@ jobs:
             "default": ["3.10"]
           }
           EOF
+          elif [ "${{ inputs.python_warning_level }}" == "error" ];
+          then
+            cat >python_versions.json <<-EOF
+          {
+            "default": ["3.10"]       
+          }
+          EOF
           else
             cat >python_versions.json <<-EOF
           {
@@ -100,7 +142,7 @@ jobs:
             "qcut-tests": ["3.10"],
             "qchem-tests": ["3.10"],
             "gradients-tests": ["3.10"],
-            "data-tests": ["3.10"],
+            "data-tests": ["3.10", "3.12"],
             "device-tests": ["3.10"]
           }
           EOF
@@ -117,22 +159,22 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 5,
+            "core-tests": 6,
             "gradients-tests": 2,
-            "jax-tests": 5,
+            "jax-tests": 4,
             "tf-tests": 3,
-            "device-tests": 2
+            "device-tests": 1
           }
           EOF
           else
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 5,
-            "jax-tests": 10,
+            "core-tests": 6,
+            "jax-tests": 8,
             "tf-tests": 6,
             "torch-tests": 2,
-            "device-tests": 2
+            "device-tests": 1
           }
           EOF
           fi
@@ -162,42 +204,20 @@ jobs:
   # This job is the source of truth for the default versions of PyTorch, TensorFlow, and JAX.
   # Individual jobs can use these values or override at a per job level.
   default-dependency-versions:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Default JAX Version
-        id: jax
-        run: echo "version=0.4.28" >> $GITHUB_OUTPUT
-      
-      - name: Default Tensorflow Version
-        id: tensorflow
-        run: echo "version=2.16.0" >> $GITHUB_OUTPUT
-      
-      - name: Default PyTorch Version
-        id: pytorch
-        run: echo "version=2.3.0" >> $GITHUB_OUTPUT
-      
-      - name: Nightly Catalyst Version
-        id: catalyst
-        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre" >> $GITHUB_OUTPUT
-      
-      - name: PennyLane-Lightning Latest Version
-        id: pennylane-lightning
-        run: echo "latest=-i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade" >> $GITHUB_OUTPUT
-    
-    outputs:
-      jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
-      tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
-      pytorch-version: torch==${{ steps.pytorch.outputs.version }} -f https://download.pytorch.org/whl/torch_stable.html
-      catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
-      pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}
-
+    needs:
+      - determine_runner
+    uses: ./.github/workflows/interface-dependency-versions.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
 
   torch-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).torch-tests
@@ -212,6 +232,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'torch-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}torch-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}
@@ -220,17 +241,20 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'torch.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   autograd-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).autograd-tests
@@ -245,6 +269,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'autograd-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}autograd-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
@@ -252,15 +277,18 @@ jobs:
       additional_pip_packages: ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       pytest_markers: autograd and not qcut and not finite-diff and not param-shift
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   tf-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).tf-tests
@@ -276,6 +304,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'tf-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
@@ -286,24 +315,25 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 3 --group ${{ matrix.group }}
+      pytest_additional_args: --splits 3 --group ${{ matrix.group }} -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       pytest_durations_file_path: '.github/durations/tf_tests_durations.json'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'tf.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
-
 
   jax-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [1, 2, 3, 4, 5]
+        group: [1, 2, 3, 4]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
@@ -312,6 +342,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'jax-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
@@ -322,24 +353,26 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --dist=loadscope --splits 5 --group ${{ matrix.group }}
+      pytest_additional_args: --dist=loadscope --splits 4 --group ${{ matrix.group }} -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       pytest_durations_file_path: '.github/durations/jax_tests_durations.json'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'jax.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   core-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).core-tests
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [1, 2, 3, 4, 5]
+        group: [1, 2, 3, 4, 5, 6]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
@@ -348,6 +381,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'core-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}core-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
@@ -356,17 +390,19 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: core and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 5 --group ${{ matrix.group }}
+      pytest_additional_args: --splits 6 --group ${{ matrix.group }} -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       pytest_durations_file_path: '.github/durations/core_tests_durations.json'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'core.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   all-interfaces-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).all-interfaces-tests
@@ -381,6 +417,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'all-interfaces-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}all-interfaces-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
@@ -393,15 +430,18 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
+      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'all_interfaces.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   external-libraries-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).external-libraries-tests
@@ -416,14 +456,17 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'external-libraries-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: external-libraries-tests-coverage
       python_version: ${{ matrix.python-version }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
+      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
-        pyzx matplotlib stim quimb mitiq pennylane-qiskit ply
+        pyzx matplotlib stim quimb==1.8.4 mitiq ply
+        git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ inputs.additional_python_packages }}
@@ -436,14 +479,16 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
 
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   qcut-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qcut-tests
@@ -458,12 +503,14 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'qcut-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qcut-coverage
       python_version: ${{ matrix.python-version }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
+      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
         kahypar==1.1.7 
         opt_einsum
@@ -472,14 +519,16 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   qchem-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qchem-tests
@@ -494,6 +543,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'qchem-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}qchem-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
@@ -502,16 +552,19 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
+      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
         openfermionpyscf basis-set-exchange
         ${{ inputs.additional_python_packages }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
   gradients-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).gradients-tests
@@ -529,10 +582,12 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'gradients-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: ${{ matrix.python-version }}
+      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
@@ -541,14 +596,16 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   data-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).data-tests
@@ -563,24 +620,28 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'data-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}data-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: data-coverage-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       pytest_markers: data
       additional_pip_packages: |
         h5py
         ${{ inputs.additional_python_packages }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   device-tests:
     needs:
       - setup-ci-load
+      - determine_runner
       - default-dependency-versions
+      - disable-fail-fast-wae
     strategy:
+      fail-fast: ${{ needs.disable-fail-fast-wae.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).device-tests
@@ -602,20 +663,20 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'device-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
       additional_pip_packages: |
-        ${{ contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
-        ${{ contains(matrix.config.skip_interface, 'tf') && needs.default-dependency-versions.outputs.tensorflow-version || '' }}
-        ${{ contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'tf') && needs.default-dependency-versions.outputs.tensorflow-version || '' }}
+        ${{ !contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_test_directory: pennylane/devices/tests
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
+      pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }} -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
 
 
   upload-to-codecov:

@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ from malt.core import converter
 from malt.impl.api import PyToPy
 
 import pennylane as qml
-from pennylane.capture.autograph.ag_primitives import AutoGraphError
 
 from . import ag_primitives
+from .ag_primitives import AutoGraphError
 
 
 class PennyLaneTransformer(PyToPy):
@@ -158,6 +158,8 @@ def autograph_source(fn):
 
     .. code-block:: python
 
+        from pennylane.capture.autograph import run_autograph, autograph_source
+
         def decide(x):
             if x < 5:
                 y = 15
@@ -165,28 +167,37 @@ def autograph_source(fn):
                 y = 1
             return y
 
-        @qjit(autograph=True)
-        def func(x: int):
-            y = decide(x)
-            return y ** 2
+        ag_decide = run_autograph(decide)
 
-    >>> print(autograph_source(decide))
-    def decide_1(x):
-        with ag__.FunctionScope('decide', 'fscope', ag__.STD) as fscope:
+    >>> print(autograph_source(ag_fn))
+    def ag__decide(x):
+        with ag__.FunctionScope('decide', 'fscope', ag__.ConversionOptions(recursive=True, user_requested=True, optional_features=ag__.Feature.BUILTIN_FUNCTIONS, internal_convert_user_code=True)) as fscope:
+            do_return = False
+            retval_ = ag__.UndefinedReturnValue()
+
             def get_state():
                 return (y,)
+
             def set_state(vars_):
                 nonlocal y
-                (y,) = vars_
+                y, = vars_
+
             def if_body():
                 nonlocal y
                 y = 15
+
             def else_body():
                 nonlocal y
                 y = 1
             y = ag__.Undefined('y')
-            ag__.if_stmt(x < 5, if_body, else_body, get_state, set_state, ('y',), 1)
-            return y
+            ag__.if_stmt(ag__.ld(x) < 5, if_body, else_body, get_state, set_state, ('y',), 1)
+            try:
+                do_return = True
+                retval_ = ag__.ld(y)
+            except:
+                do_return = False
+                raise
+            return fscope.ret(retval_, do_return)
     """
 
     # Handle directly converted objects.
