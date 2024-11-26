@@ -553,4 +553,4 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
 
     @classmethod
     def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        return {cls.resource_rep(): 1}
