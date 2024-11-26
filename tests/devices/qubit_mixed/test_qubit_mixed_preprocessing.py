@@ -38,7 +38,7 @@ def test_mid_circuit_measurement_preprocessing():
 
     # Define operations and mid-circuit measurement
     m0 = qml.measure(0)
-    ops = [m0, qml.ops.Conditional(m0, qml.X(0))]
+    ops = [*m0.measurements, qml.ops.Conditional(m0, qml.X(0))]
     measurements = [qml.expval(qml.PauliZ(1))]  # Or any relevant measurement
 
     # Construct the QuantumScript
