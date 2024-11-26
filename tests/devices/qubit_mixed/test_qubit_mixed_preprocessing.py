@@ -57,17 +57,7 @@ def test_mid_circuit_measurement_preprocessing():
         op for op in processed_tape.operations if isinstance(op, qml.measurements.MidMeasureMP)
     ]
     assert len(mid_measure_ops) == 0, "Mid-circuit measurements were not deferred properly."
-
-    # The following is not executed yet so we notImplementedError here
-    with pytest.raises(NotImplementedError):
-        # Execute the processed tape
-        result = dev.execute(processed_tape)
-
-        # Since we're measuring qml.expval(qml.PauliZ(1)), the expected result is close to zero
-        expected_result = 0.0
-        assert np.allclose(
-            result, expected_result, atol=0.1
-        ), "Execution result does not match expected value."
+    assert processed_tape.circuit == [qml.CNOT([0, 1]), qml.CNOT([1, 0]), qml.expval(qml.Z(0))]
 
 
 class NoMatOp(qml.operation.Operation):
