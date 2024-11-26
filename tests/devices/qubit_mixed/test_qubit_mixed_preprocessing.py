@@ -46,9 +46,28 @@ def test_mid_circuit_measurement_preprocessing():
     transform_program, _ = dev.preprocess()
 
     # Apply the transform program to the tape
-    # Test if an AttributeError is raised
-    with pytest.raises(AttributeError, match="'MidMeasureMP' object has no attribute 'operations'"):
-        transform_program([tape])
+    processed_tapes, _ = transform_program([tape])
+
+    # There should be one processed tape
+    assert len(processed_tapes) == 1, "Expected exactly one processed tape."
+    processed_tape = processed_tapes[0]
+
+    # Check that mid-circuit measurements have been deferred
+    mid_measure_ops = [
+        op for op in processed_tape.operations if isinstance(op, qml.measurements.MidMeasureMP)
+    ]
+    assert len(mid_measure_ops) == 0, "Mid-circuit measurements were not deferred properly."
+
+    # The following is not executed yet so we notImplementedError here
+    with pytest.raises(NotImplementedError):
+        # Execute the processed tape
+        result = dev.execute(processed_tape)
+
+        # Since we're measuring qml.expval(qml.PauliZ(1)), the expected result is close to zero
+        expected_result = 0.0
+        assert np.allclose(
+            result, expected_result, atol=0.1
+        ), "Execution result does not match expected value."
 
 
 class NoMatOp(qml.operation.Operation):
