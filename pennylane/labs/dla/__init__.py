@@ -23,6 +23,28 @@ Experimental Lie theory features
     ~lie_closure_dense
 
 
+Utility functions
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~adjvec_to_op
+    ~op_to_adjvec
+    ~pauli_coefficients
+    ~batched_pauli_decompose
+    ~trace_inner_product
+
+
 """
 
 from .lie_closure_dense import lie_closure_dense
+from .dense_util import (
+    adjvec_to_op,
+    op_to_adjvec,
+    pauli_coefficients,
+    batched_pauli_decompose,
+    trace_inner_product,
+)
