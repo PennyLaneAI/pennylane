@@ -353,7 +353,7 @@ class Device(abc.ABC):
             return self.preprocess()[1]
 
         if config is None:
-            config = DefaultExecutionConfig
+            config = ExecutionConfig()
 
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
