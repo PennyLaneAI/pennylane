@@ -156,12 +156,17 @@ def defer_measurements(
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
-        reduce_postselected (bool): Whether or not to use postselection information to
-            reduce the number of operations and control wires in the output tape. Active by default.
+        reduce_postselected (bool): Whether to use postselection information to reduce the number
+            of operations and control wires in the output tape. Active by default.
+
+    Keyword Args:
+        allow_postselect (bool): Whether postselection is allowed. In order to perform postselection
+            with ``defer_measurements``, the device must support the :class:`~.Projector` operation.
+            Defaults to ``False``.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
-        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         ValueError: If custom wire labels are used with qubit reuse or reset
@@ -273,8 +278,6 @@ def defer_measurements(
 
     _check_tape_validity(tape)
 
-    device = kwargs.get("device", None)
-
     new_operations = []
 
     # Find wires that are reused after measurement
@@ -285,8 +288,13 @@ def defer_measurements(
         is_postselecting,
     ) = _collect_mid_measure_info(tape)
 
-    if is_postselecting and device is not None and not isinstance(device, qml.devices.DefaultQubit):
-        raise ValueError(f"Postselection is not supported on the {device} device.")
+    allow_postselect = kwargs.get("allow_postselect", False)
+
+    if is_postselecting and not allow_postselect:
+        raise ValueError(
+            "Postselection is not allowed on the device with deferred measurements. The device "
+            "must support the Projector gate to apply postselection."
+        )
 
     if len(reused_measurement_wires) > 0 and not all(isinstance(w, int) for w in tape.wires):
         raise ValueError(

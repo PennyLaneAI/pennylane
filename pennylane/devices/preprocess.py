@@ -200,7 +200,7 @@ def mid_circuit_measurements(
         return qml.dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
     if mcm_method == "tree-traversal":
         return (tape,), null_postprocessing
-    return qml.defer_measurements(tape, device=device)
+    return qml.defer_measurements(tape, allow_postselect=device.name == "default.qubit")
 
 
 @transform

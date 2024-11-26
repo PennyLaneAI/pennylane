@@ -29,12 +29,16 @@ from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
+from . import MCMConfig
 
-from .capabilities import DeviceCapabilities, observable_stopping_condition_factory
+from .capabilities import (
+    DeviceCapabilities,
+    observable_stopping_condition_factory,
+    validate_mcm_method,
+)
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import (
     validate_device_wires,
-    mid_circuit_measurements,
     decompose,
     validate_measurements,
     validate_observables,
@@ -127,6 +131,8 @@ class Device(abc.ABC):
         * ``gradient_keyword_arguments``: Options for the gradient method.
 
         * ``derivative_order``: Relevant for requested device derivatives.
+
+        * ``mcm_config``: Options for methods of handling mid-circuit-measures.
 
     """
 
@@ -343,7 +349,9 @@ class Device(abc.ABC):
         transform_program = self.preprocess_transforms(execution_config)
         return transform_program, execution_config
 
-    def setup_execution_config(self, config: Optional[ExecutionConfig] = None) -> ExecutionConfig:
+    def setup_execution_config(
+        self, config: Optional[ExecutionConfig] = None, tape: Optional[QuantumScript] = None
+    ) -> ExecutionConfig:
         """Sets up an ``ExecutionConfig`` that configures the execution behaviour.
 
         The execution config stores information on how the device should perform the execution,
@@ -357,6 +365,7 @@ class Device(abc.ABC):
         Args:
             config (ExecutionConfig): The initial ExecutionConfig object that describes the
                 parameters needed to configure the execution behaviour.
+            tape (QuantumScript): The quantum circuit to customize the execution config for.
 
         Returns:
             ExecutionConfig: The updated ExecutionConfig object
@@ -373,6 +382,19 @@ class Device(abc.ABC):
 
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
+
+        if self.capabilities is None:
+            return config  # The following cannot be performed without the device capabilities
+
+        shots_present = tape and bool(tape.shots)
+        validate_mcm_method(self.capabilities, config.mcm_config.mcm_method, shots_present)
+        if config.mcm_config.mcm_method is None:
+            # This is a sensible default strategy for resolving the MCM method based on declared
+            # capabilities of a device, but if a device wishes to do this differently, it should
+            # override the ``setup_execution_config`` method itself.
+            default_mcm_method = _default_mcm_method(self.capabilities, shots_present)
+            new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
+            config = replace(config, mcm_config=new_mcm_config)
 
         return config
 
@@ -472,13 +494,25 @@ class Device(abc.ABC):
             return self.preprocess()[0]
 
         if not self.capabilities:
+            # The capabilities are required to construct a default transform program.
             return TransformProgram()
 
         program = TransformProgram()
+
+        # First handle mid-circuit measurements because it may add wires. At this point we
+        # should assume that the mcm method is already validated and resolved.
+        if execution_config.mcm_config.mcm_method == "deferred":
+            program.add_transform(
+                qml.transforms.defer_measurements,
+                allow_postselect=self.capabilities.supports_operation("Projector"),
+            )
+        elif execution_config.mcm_config.mcm_method == "one-shot":
+            program.add_transform(
+                qml.transforms.dynamic_one_shot,
+                postselect_mode=execution_config.mcm_config.postselect_mode,
+            )
+
         program.add_transform(validate_device_wires, self.wires, name=self.name)
-        program.add_transform(
-            mid_circuit_measurements, device=self, mcm_config=execution_config.mcm_config
-        )
         analytic_capabilities = self.capabilities.filter(finite_shots=False)
         finite_shots_capabilities = self.capabilities.filter(finite_shots=True)
         program.add_transform(
@@ -916,3 +950,20 @@ class Device(abc.ABC):
 
         """
         raise NotImplementedError
+
+
+def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:
+    """Simple strategy to find the best match for the default mcm method."""
+
+    supports_one_shot = "one-shot" in capabilities.supported_mcm_methods
+    has_device_support = capabilities and "device" in capabilities.supported_mcm_methods
+
+    # In finite shots mode, the one-shot method is the default even if there is device support.
+    # This is to ensure consistency with old behaviour. Although I'm not too sure about this.
+    if supports_one_shot and shots_present:
+        return "one-shot"
+
+    if has_device_support:
+        return "device"
+
+    return "deferred"

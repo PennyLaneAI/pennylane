@@ -26,31 +26,22 @@ class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
     mcm_method: Optional[str] = None
-    """Which mid-circuit measurement strategy to use. Use ``deferred`` for the deferred
-    measurements principle and "one-shot" if using finite shots to execute the circuit
-    for each shot separately. If not specified, the device will decide which method to
-    use."""
+    """Which mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
+    measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
+    each shot separately. Any other value will be passed to the device, and the device is
+    expected to handle mid-circuit measurements using the requested method. If not specified,
+    the device will decide which method to use."""
 
     postselect_mode: Optional[str] = None
-    """Configuration for handling shots with mid-circuit measurement postselection. If
-    ``"hw-like"``, invalid shots will be discarded and only results for valid shots will
-    be returned. If ``"fill-shots"``, results corresponding to the original number of
-    shots will be returned. If not specified, the device will decide which mode to use."""
+    """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
+    discarded and only results for valid shots will be returned. In this case, less samples
+    may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
+    will be of the same size as the original number of shots. If not specified, the device will
+    decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally 
+    instead of ``"hw-like"`` when using jax/catalyst"""
 
     def __post_init__(self):
-        """
-        Validate the configured mid-circuit measurement options.
-
-        Note that this hook is automatically called after init via the dataclass integration.
-        """
-        if self.mcm_method not in (
-            "deferred",
-            "one-shot",
-            "single-branch-statistics",
-            "tree-traversal",
-            None,
-        ):
-            raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
+        """Validate the configured mid-circuit measurement options."""
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
@@ -102,7 +93,7 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
-    mcm_config: Union[MCMConfig, dict] = field(default_factory=MCMConfig)
+    mcm_config: MCMConfig = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
     def __post_init__(self):
@@ -137,6 +128,7 @@ class ExecutionConfig:
 
         if isinstance(self.mcm_config, dict):
             self.mcm_config = MCMConfig(**self.mcm_config)
+
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 
