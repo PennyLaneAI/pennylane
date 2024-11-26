@@ -613,3 +613,32 @@ class TestSumOfTermsDifferentiability:
         expected_gradient = tape2.gradient(expected_out, coeffs)
         assert len(gradient) == 2
         assert qml.math.allclose(expected_gradient, gradient)
+
+
+# pylint: disable=too-few-public-methods
+class TestReadoutErrors:
+    """Test that readout errors are correctly applied to measurements."""
+
+    def test_readout_error(self):
+        """Test that readout errors are correctly applied to measurements."""
+        # Define the readout error probability
+        p = 0.1  # Probability of bit-flip error during readout
+
+        # Define the readout error operation using qml.BitFlip
+        def readout_error(wires):
+            return qml.BitFlip(p, wires=wires)
+
+        # Define the state: let's use the |+⟩ state
+        state_vector = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)])
+        state = np.outer(state_vector, np.conj(state_vector))
+
+        # Define the observable
+        obs = qml.PauliX(0)
+
+        # Calculate the expected value with readout errors
+        expected = 1 - 2 * p  # Since p = 0.1, expected = 0.8
+
+        # Measure the observable using the measure function with readout errors
+        res = measure(qml.expval(obs), state, readout_errors=[readout_error])
+
+        assert np.allclose(res, expected), f"Expected {expected}, got {res}"
