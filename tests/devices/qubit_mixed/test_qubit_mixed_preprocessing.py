@@ -201,10 +201,6 @@ class TestPreprocessing:
         res = observable_stopping_condition(obs)
         assert res == expected
 
-
-class TestPreprocessingIntegration:
-    """Test preprocess produces output that can be executed by the device."""
-
     def test_batch_transform_no_batching(self):
         """Test that batch_transform does nothing when no batching is required."""
         ops = [qml.Hadamard(0), qml.CNOT(wires=[0, 1]), qml.RX(0.123, wires=1)]
