@@ -16,6 +16,8 @@
 
 # pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 
+from unittest import mock
+
 import numpy as np
 import pytest
 
@@ -29,6 +31,7 @@ from jax import numpy as jnp
 
 # must be below jax importorskip
 from jax.core import eval_jaxpr
+from malt.operators import py_builtins as ag_py_builtins
 
 from pennylane.capture.autograph.ag_primitives import AutoGraphError, PEnumerate, PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
@@ -43,14 +46,12 @@ def enable_disable_plxpr():
     qml.capture.disable()
 
 
-class TestPRange:
-    """Test the custom PennyLane range object PRange"""
-
-    def test_prange(self):
-        raise RuntimeError("you haven't added tests for the new PRange class")
+class TestCustomRangeAndEnumeration:
+    """Test the custom PennyLane range and enumeration objects, PRange and
+    PEnumeration"""
 
     def test_python_range_fallback(self):
-        """Test that the custom CRange wrapper correctly falls back to Python."""
+        """Test that the custom PRange wrapper correctly falls back to Python."""
 
         # pylint: disable=protected-access
 
@@ -61,12 +62,53 @@ class TestPRange:
         assert isinstance(pl_range._py_range, range)
         assert pl_range[2] == 2
 
+    def test_get_raw_range(self):
+        """Test that the get_raw_range function accesses the intial inputs of the range"""
 
-class TestPEnumerate:
-    """Test the custom PennyLane range object PRange"""
+        pl_range = PRange(0, 5, 1)
+        assert pl_range.get_raw_range() == (0, 5, 1)
 
-    def test_penumerate(self):
-        raise RuntimeError("you haven't added tests for the new PEnumerate class")
+    @mock.patch.dict(
+        "pennylane.capture.autograph.ag_primitives.py_builtins_map",
+        {**ag_py_builtins.BUILTIN_FUNCTIONS_MAP},
+    )
+    def test_prange_vs_range(self):
+        """Test that using PRange fixes the TracerIntegerConversionError raised by JAX
+        when initializing range"""
+
+        def f1(n):
+            _ = range(n)
+            return n
+
+        def f2(n):
+            _ = PRange(n)
+            return n
+
+        # autograph runs, but it's not compatible with conversion to JAXPR because of indexing
+        ag_f1 = run_autograph(f1)
+        with pytest.raises(
+            jax.errors.TracerIntegerConversionError,
+            match=r"The __index__\(\) method was called on traced array",
+        ):
+            _ = jax.make_jaxpr(ag_f1)(3)
+
+        # using PRange fixes it
+        _ = jax.make_jaxpr(run_autograph(f2))(3)
+
+    @pytest.mark.parametrize("start", [None, 0, 1, 2])
+    def test_penumerate(self, start):
+        """Test that PEnumerate is an instance of enumerate with additional attributes start_idx
+        and iteration_target"""
+
+        iterable = [qml.X(0), qml.Y(1), qml.Z(0)]
+        expected_start = 0 if start is None else start
+
+        enum = PEnumerate(iterable) if start is None else PEnumerate(iterable, start)
+
+        assert enum.iteration_target == iterable
+        assert enum.start_idx == expected_start
+
+        assert isinstance(enum, enumerate)
 
 
 class TestForLoops:
