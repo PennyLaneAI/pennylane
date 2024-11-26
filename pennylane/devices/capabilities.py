@@ -429,9 +429,7 @@ def observable_stopping_condition_factory(
     return observable_stopping_condition
 
 
-def validate_mcm_method(
-    capabilities: DeviceCapabilities, mcm_method: str, shots_present: bool
-):
+def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots_present: bool):
     """Validates an MCM method against the device's capabilities.'"""
 
     if mcm_method is None or mcm_method == "deferred":
