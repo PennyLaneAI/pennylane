@@ -97,7 +97,7 @@ def factorize(
     Keyword Args:
         num_factors (int): maximum number of factors that should be optimized for compressed
             double factorization. Default is :math:`2\times N`, where `N` is the number of
-            dimension of two-electron tensor
+            dimensions of two-electron tensor
         num_steps (int): maximum number of epochs for optimizing each factor. Default is ``1000``.
         optimizer (optax.optimizer): an optax optimizer instance. If not provided, `Adam
             <https://optax.readthedocs.io/en/latest/api/optimizers.html#optax.adam>`_ is
@@ -111,9 +111,10 @@ def factorize(
         norm_prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``
 
     Returns:
-        tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
-        symmetric matrices (factors) approximating the two-electron integral tensor, and
-        truncated core tensors and leaf tensors of the generated factors.
+        tuple(TensorLike, TensorLike, TensorLike): tuple containing symmetric matrices (factors)
+        approximating the two-electron integral tensor and core tensors and leaf tensors of
+        the generated factors. In the explicit case where the core and leaf tensors could be
+        truncated, they will be returned as a list.
 
     **Example**
 
@@ -202,8 +203,8 @@ def factorize(
         - Decompose the resulting matrix either via Cholesky decomposition or
           via eigenvalue decomposition.
 
-        - For the former, we keep the vectors that result in an approximation error
-          larger than a threshold. While for the latter, we keep the :math:`r`
+        - For Cholesky decomposition, we keep the vectors that result in an approximation error
+          larger than a threshold. While for the eigenvalue decomposition, we keep the :math:`r`
           eigenvectors that have corresponding eigenvalues larger than a threshold.
 
         - Multiply the eigenvectors by the square root of the eigenvalues to obtain
@@ -223,21 +224,20 @@ def factorize(
     interface = qml.math.get_interface(two_electron)
 
     if not compressed:
-        if cholesky:
-            factors = _double_factorization_cholesky(two, tol_factor, shape, interface)
-        else:
-            factors = _double_factorization_eigen(two, tol_factor, shape, interface)
+        _explicit_df_func = (
+            _double_factorization_cholesky if cholesky else _double_factorization_eigen
+        )
+        factors, f_eigvals, f_eigvecs = _explicit_df_func(two, tol_factor, shape, interface)
 
         core_tensors, leaf_tensors = [], []
-        feigvals, feigvecs = qml.math.linalg.eigh(factors)
-        for feigval, feigvec in zip(feigvals, feigvecs):
-            fidx = qml.math.where(qml.math.abs(feigval) > tol_eigval)[0]
-            core_tensors.append(qml.math.einsum("i,j->ij", feigval[fidx], feigval[fidx]))
-            leaf_tensors.append(feigvec[:, fidx])
+        for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs):
+            fidx = qml.math.where(qml.math.abs(f_eigval) > tol_eigval)[0]
+            core_tensors.append(qml.math.einsum("i,j->ij", f_eigval[fidx], f_eigval[fidx]))
+            leaf_tensors.append(f_eigvec[:, fidx])
 
         if np.sum([len(v) for v in core_tensors]) == 0:
             raise ValueError(
-                "All eigenvectors are discarded. Consider decreasing the second threshold error."
+                "All eigenvectors are discarded. Consider decreasing the tol_eigval threshold."
             )
 
     else:
@@ -255,12 +255,14 @@ def factorize(
         init_params = compression_kwargs.get("init_params", None)
 
         if cholesky and init_params is None:
-            factors = _double_factorization_cholesky(two, tol_factor, shape, interface, num_factors)
-            f_vals, f_vecs = qml.math.linalg.eigh(factors)
-            core_matrices = qml.math.einsum("ti,tj->tij", f_vals, f_vals)
-            leaf_matrices = [sp.linalg.logm(vec).real for vec in f_vecs]
+            # compute the core and orbital generator tensors from the factors
+            factors, f_eigvals, f_eigvecs = _double_factorization_cholesky(
+                two, tol_factor, shape, interface, num_factors
+            )
+            core_matrices = qml.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
+            asym_matrices = [sp.linalg.logm(f_eigvec).real for f_eigvec in f_eigvecs]
+            init_params = {"X": asym_matrices, "Z": core_matrices}
             num_factors = qml.math.shape(core_matrices)[0]
-            init_params = {"X": leaf_matrices, "Z": core_matrices}
 
         if init_params is not None:
             init_params = {
@@ -268,13 +270,11 @@ def factorize(
                 "Z": qml.math.array(init_params["Z"], like="jax"),
             }
 
-        core_tensors, asymm_tensors = _double_factorization_compressed(
+        core_tensors, leaf_tensors = _double_factorization_compressed(
             two_electron, optimizer, num_factors, num_steps, init_params, prefactor, norm_order
         )
-        core_tensors = qml.math.array(core_tensors, like=interface)
-        leaf_tensors = qml.math.array(jsp.linalg.expm(asymm_tensors), like=interface)
 
-        # Since core_tensors are symmetric and not contrained to be rank-one
+        # Since core_tensors are symmetric and not constrained to be rank-one
         upr_tri, unitary = jsp.linalg.schur(core_tensors)
         factors = qml.math.array(
             jnp.einsum(
@@ -285,6 +285,8 @@ def factorize(
             ),  # einsum contraction for them: "tpqi, trsi -> pqrs"
             like=interface,
         )
+        core_tensors = qml.math.array(core_tensors, like=interface)
+        leaf_tensors = qml.math.array(leaf_tensors, like=interface)
 
     return factors, core_tensors, leaf_tensors
 
@@ -303,13 +305,29 @@ def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=N
 
     n, r = shape[0], len(eigvals_r)
     factors = qml.math.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)], like=interface)
-    return factors
+    feigvals, feigvecs = qml.math.linalg.eigh(factors)
+    return factors, feigvals, feigvecs
 
 
 def _double_factorization_cholesky(
     two, tol_factor=1.0e-10, shape=None, interface=None, num_factors=None
 ):
-    """Double factorization via Cholesky decomposition"""
+    """Double factorization using Cholesky decomposition of the two-electron
+    integral tensor described in J. Chem. Phys. 118, 9481-9484 (2003).
+
+    Args:
+        two (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation
+        tol_factor (float): threshold error value for discarding the negligible factors
+        shape (tuple[int, int]): shape for the provided two_electron
+        interface (string): interface for two_electron tensor
+        num_factors (int): number of factors to be computed.
+
+    Returns:
+        tuple(array[array[float]], array[array[float]], array[array[float]]): tuple containing
+        symmetric matrices (factors) approximating the two-electron integral tensor, truncated
+        eigenvalues of the generated factors, and truncated eigenvectors of the generated factors
+    """
     n2 = shape[0] * shape[1]
     if num_factors is None:
         num_factors = n2
@@ -332,7 +350,8 @@ def _double_factorization_cholesky(
         cholesky_diag -= qml.math.abs(cholesky_vec) ** 2
 
     factors = cholesky_vecs.T.reshape(-1, shape[0], shape[0])
-    return factors
+    feigvals, feigvecs = qml.math.linalg.eigh(factors)
+    return factors, feigvals, feigvecs
 
 
 def _double_factorization_compressed(
@@ -340,15 +359,15 @@ def _double_factorization_compressed(
 ):
     """Compressed double factorization with optional regularization"""
     norb = two.shape[0]
-    leaf_tensors, core_tensors = jnp.zeros((2, 0, norb, norb))
+    asym_tensors, core_tensors = jnp.zeros((2, 0, norb, norb))
 
     cost_func = value_and_grad(
         partial(_compressed_cost_fn, two=two, norm_order=norm_order, prefactor=prefactor)
     )
 
     @jit
-    def _step(params, opt_state, leaf_tensors, core_tensors):
-        cost, grads = cost_func(params, leaf_tensors=leaf_tensors, core_tensors=core_tensors)
+    def _step(params, opt_state, asym_tensors, core_tensors):
+        cost, grads = cost_func(params, asym_tensors=asym_tensors, core_tensors=core_tensors)
         updates, opt_state = optimizer.update(grads, opt_state)
         new_params = optax.apply_updates(params, updates)
         return new_params, opt_state, cost
@@ -362,20 +381,21 @@ def _double_factorization_compressed(
         opt_state = optimizer.init(params)
 
         for _ in range(num_steps):
-            params, opt_state, _ = _step(params, opt_state, leaf_tensors, core_tensors)
+            params, opt_state, _ = _step(params, opt_state, asym_tensors, core_tensors)
 
         Xs, Zs = params["X"], params["Z"]
-        leaf_tensors = jnp.concatenate(
-            (leaf_tensors, 0.5 * (Xs - jnp.transpose(Xs, (0, 2, 1)))), axis=0
+        asym_tensors = jnp.concatenate(
+            (asym_tensors, 0.5 * (Xs - jnp.transpose(Xs, (0, 2, 1)))), axis=0
         )
         core_tensors = jnp.concatenate(
             (core_tensors, 0.5 * (Zs + jnp.transpose(Zs, (0, 2, 1)))), axis=0
         )
 
+    leaf_tensors = jsp.linalg.expm(asym_tensors)
     return core_tensors, leaf_tensors
 
 
-def _compressed_cost_fn(params, two, leaf_tensors, core_tensors, norm_order, prefactor):
+def _compressed_cost_fn(params, two, asym_tensors, core_tensors, norm_order, prefactor):
     """Loss function for the compressed double factorization.
 
     The loss is computed based on evaluating Frobenius norm of the two-body tensor
@@ -383,12 +403,13 @@ def _compressed_cost_fn(params, two, leaf_tensors, core_tensors, norm_order, pre
     and optional evaluation of regularization of the core tensors.
     """
     Xs, Zs = params["X"], params["Z"]
-    Xs = jnp.concatenate((leaf_tensors, Xs), axis=0)
-    Zs = jnp.concatenate((core_tensors, Zs), axis=0)
 
-    Zs = 0.5 * (Zs + jnp.transpose(Zs, (0, 2, 1)))
+    Xs = jnp.concatenate((asym_tensors, Xs), axis=0)
     Xs = 0.5 * (Xs - jnp.transpose(Xs, (0, 2, 1)))
     Us = jsp.linalg.expm(Xs)
+
+    Zs = jnp.concatenate((core_tensors, Zs), axis=0)
+    Zs = 0.5 * (Zs + jnp.transpose(Zs, (0, 2, 1)))
 
     cdf_two = jnp.einsum("tpk,tqk,tkl,trl,tsl->pqrs", Us, Us, Zs, Us, Us)
 
