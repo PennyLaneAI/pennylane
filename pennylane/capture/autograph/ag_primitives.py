@@ -269,7 +269,6 @@ def for_stmt(
             iteration_array,
         )
     except Exception as e:  # pylint: disable=broad-exception-caught
-
         # pylint: disable=import-outside-toplevel
         import textwrap
 
@@ -277,13 +276,11 @@ def for_stmt(
             f"Tracing of an AutoGraph converted for loop failed with an exception:\n"
             f"  {type(e).__name__}:{textwrap.indent(str(e), '    ')}\n"
             f"\n"
-            f"The error ocurred within the body of a for loop statement."
-            f"Make sure that loop variables are not used in tracing-incompatible ways, for "
-            f"instance by indexing a Python list with it. In that case, the list should be "
-            f"wrapped into an array.\n"
-            f"To understand different types of JAX tracing errors, please refer to the "
-            f"guide at: https://jax.readthedocs.io/en/latest/errors.html\n"
-            f"\n"
+            f"Make sure that loop variables are not used in tracing-incompatible ways, for instance "
+            f"by indexing a Python list with it (rather than a JAX array). Also ensure all variables "
+            f"are initialized before the loop begins, and that they don't change type across iterations.\n"
+            f"To understand different types of JAX tracing errors, please refer to the guide at: "
+            f"https://jax.readthedocs.io/en/latest/errors.html"
         ) from e
 
     set_state(results)
@@ -420,13 +417,9 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
 
 
 class PRange:
-    """PennyLane range object.
-
-    Can be passed to a Python for loop for native conversion to a for_loop call.
-    Otherwise this class behaves exactly like the Python range class.
-
-    Without this native conversion, all iteration targets in a Python for loop must be convertible
-    to arrays. For all other inputs the loop will be treated as a regular Python loop.
+    """PennyLane range object. This class re-implements the built-in range class
+    (which can't be inherited from). The only change is saving and accessing the
+    inputs directly, to circumvent some JAX-unfriendly code in the Python range.
     """
 
     def __init__(self, start_stop, stop=None, step=None):
@@ -493,14 +486,8 @@ class PRange:
 
 # pylint: disable=too-few-public-methods
 class PEnumerate(enumerate):
-    """PennyLane enumeration object.
-
-    Can be passed to a Python for loop for conversion into a for_loop call. The loop index, as well
-    as the iterable element will be provided to the loop body.
-    Otherwise this class behaves exactly like the Python enumerate class.
-
-    Note that the iterable must be convertible to an array, otherwise the loop will be treated as a
-    regular Python loop.
+    """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
+    input iteration_target and start_idx, which are used by the for-loop conversion.
     """
 
     def __init__(self, iterable, start=0):
