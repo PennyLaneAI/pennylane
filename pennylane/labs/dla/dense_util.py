@@ -83,13 +83,15 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
         np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
         matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
 
-    See :func:`~.pennylane.pauli.batched_pauli_decompose` for theoretical background information.
+    See :func:`~.pennylane.pauli.pauli_decompose` for theoretical background information.
+
     **Examples**
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
 
     >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
     >>> mat = H.matrix()
+    >>> mat
     array([[ 0.  +0.j,  0.4 +0.j,  0.25+0.j,  0.  +0.j],
            [ 0.4 +0.j,  0.  +0.j,  0.  +0.j,  0.25+0.j],
            [ 0.25+0.j,  0.  +0.j,  0.  +0.j, -0.4 +0.j],
@@ -232,8 +234,15 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
     return H_ops
 
 
-def orthonormalize(basis):
-    r"""Orthonormalize a list of basis vectors"""
+def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) -> np.ndarray:
+    r"""Orthonormalize a list of basis vectors.
+
+    Args:
+        basis (Iterable[Union[PauliSentence, Operator, np.ndarray]]): List of basis vectors.
+
+    Returns:
+        np.ndarray: Orthonormalized basis vectors.
+    """
 
     if isinstance(basis, PauliVSpace) or all(
         isinstance(op, (PauliSentence, Operator)) for op in basis
@@ -255,6 +264,7 @@ def _orthonormalize_np(basis: Iterable[np.ndarray]):
 
 
 def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, Operator]]]):
+    # We are generating a sparse pauli representation of the basis, where each entry of a basis vector corresponds to one of the Pauli words
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
 
@@ -264,26 +274,32 @@ def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, O
     if len(basis) == 0:
         return basis
 
+    # Set up all unique pauli words in the basis
     all_pws = reduce(set.__or__, [set(ps.keys()) for ps in basis])
     num_pw = len(all_pws)
 
+    # map pauli words to indices and back
     _pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
     _idx_to_pw = dict(enumerate(all_pws))
+
+    # dense matrix representation of the basis in the sparse pauli representation
     _M = np.zeros((num_pw, len(basis)), dtype=float)
 
     for i, gen in enumerate(basis):
         for pw, value in gen.items():
             _M[_pw_to_idx[pw], i] = value
 
+    # orthonormalize dense matrix using QR decomposition
     def gram_schmidt(X):
         Q, _ = np.linalg.qr(X)
         return Q
 
     OM = gram_schmidt(_M)
+
+    # make sure the resulting matrix is orthonormal
     assert np.allclose(np.tensordot(OM.T, OM, axes=1), np.eye(OM.shape[1]))
 
-    # reconstruct normalized operators
-
+    # reconstruct orthonormalized operators
     generators_orthogonal = []
     for i in range(len(basis)):
         u1 = PauliSentence({})
@@ -295,8 +311,17 @@ def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, O
     return generators_orthogonal
 
 
-def check_orthonormal(g, inner_product):
-    """Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``"""
+def check_orthonormal(g: Iterable[Union[PauliSentence, Operator]], inner_product: callable) -> bool:
+    """
+    Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``.
+
+    Args:
+        g (Iterable[Union[PauliSentence, Operator]]): List of operators
+        inner_product (callable): Inner product function to check orthonormality
+
+    Returns:
+        bool: ``True`` if the operators are orthonormal, ``False`` otherwise.
+    """
     for op in g:
         if not np.isclose(inner_product(op, op), 1.0):
             return False
@@ -309,9 +334,7 @@ def check_orthonormal(g, inner_product):
 def trace_inner_product(
     A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
 ):
-    r"""Trace inner product
-
-    Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A B\right)/\text{dim}(A)` between two Hermitian operators :math:`A` and :math:`B`.
+    r"""Implementation of the trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A B\right)/\text{dim}(A)` between two Hermitian operators :math:`A` and :math:`B`.
 
     If the inputs are ``np.ndarray``, leading broadcasting axes are supported for either or both
     inputs.
@@ -340,6 +363,7 @@ def trace_inner_product(
     (10,)
 
     We can also have both arguments broadcasted.
+
     >>> trace_inner_product(ops1, ops1).shape
     (10, 10)
 
@@ -364,7 +388,12 @@ def trace_inner_product(
 
 
 def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
-    """Apply the basis change between bases of operators to the adjoint representation.
+    r"""Apply the basis change between bases of operators to the adjoint representation.
+
+    Assume the adjoint repesentation is given in terms of a basis :math:`\{b_j\}`,
+    :math:`\text{ad_\mu}_{\alpha \beta} \propto \text{tr}\left(b_\mu \cdot [b_\alpha, b_\beta] \right)`.
+    We can represent the adjoint representation in terms of a new basis :math:`c_i = \sum_j T_{ij} b_j`
+    with the basis transformation matrix :math:`T` using ``change_basis_ad_rep``.
 
     Args:
         adj (numpy.ndarray): Adjoint representation in old basis.
@@ -484,7 +513,7 @@ def op_to_adjvec(
 ):
     r"""Decompose a batch of operators onto a given operator basis.
 
-    The adjoint vector representation are the coefficients :math:`c_j` in a given operator
+    The adjoint vector representation is provided by the coefficients :math:`c_j` in a given operator
     basis of the operator :math:`\hat{b}_j` such that the input operator can be written as
     :math:`\hat{O} = \sum_j c_j \hat{b}_j`.
 
@@ -497,7 +526,7 @@ def op_to_adjvec(
             product. Defaults to ``True``, which allows to skip some computations.
 
     Returns:
-        np.ndarray: The batch of coefficient vectors of the operators ``ops`` expressed in
+        np.ndarray: The batch of coefficient vectors of the operators' ``ops`` expressed in
         ``basis``. The shape is ``(len(ops), len(basis)``.
 
     The format of the resulting operators is determined by the ``type`` in ``basis``.
@@ -509,7 +538,7 @@ def op_to_adjvec(
     The basis can be numerical or operators.
 
     >>> from pennylane.labs.dla import op_to_adjvec
-    >>> op = X(0) + 0.5 * Y(0)
+    >>> op = qml.X(0) + 0.5 * qml.Y(0)
     >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
     >>> op_to_adjvec([op], basis)
     array([[1. , 0.5, 0. ]])
