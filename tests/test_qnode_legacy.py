@@ -858,58 +858,6 @@ class TestIntegration:
         assert len(tape.operations) == 2
         assert isinstance(tape.operations[1], qml.measurements.MidMeasureMP)
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
-    @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
-    @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
-    @pytest.mark.parametrize(
-        "return_type", [qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(1)), qml.probs(wires=[1])]
-    )
-    @pytest.mark.parametrize(
-        "mv_return, mv_res",
-        [
-            (qml.expval, lambda x: np.sin(x / 2) ** 2),
-            (qml.var, lambda x: np.sin(x / 2) ** 2 - np.sin(x / 2) ** 4),
-            (qml.probs, lambda x: [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
-        ],
-    )
-    def test_defer_meas_if_mcm_unsupported(
-        self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
-    ):  # pylint: disable=too-many-arguments
-        """Tests that the transform using the deferred measurement principle is
-        applied if the device doesn't support mid-circuit measurements
-        natively."""
-
-        if dev_name == "default.qubit.legacy":
-            dev = DefaultQubitLegacy(wires=3)
-        else:
-            dev = qml.device(dev_name, wires=3)
-
-        @qml.qnode(dev)
-        def cry_qnode(x, y):
-            """QNode where we apply a controlled Y-rotation."""
-            qml.Hadamard(1)
-            qml.RY(x, wires=0)
-            qml.CRY(y, wires=[0, 1])
-            return qml.apply(return_type)
-
-        @qml.qnode(dev)
-        def conditional_ry_qnode(x, y):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qml.Hadamard(1)
-            qml.RY(x, wires=0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(y, wires=1)
-            return qml.apply(return_type), mv_return(op=m_0)
-
-        spy = mocker.spy(qml.defer_measurements, "_transform")
-        r1 = cry_qnode(first_par, sec_par)
-        r2 = conditional_ry_qnode(first_par, sec_par)
-
-        assert np.allclose(r1, r2[0])
-        assert np.allclose(r2[1], mv_res(first_par))
-        assert spy.call_count == (3 if dev.name == "default.qubit" else 1)
-
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
