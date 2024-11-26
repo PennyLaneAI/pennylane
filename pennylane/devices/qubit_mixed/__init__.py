@@ -22,6 +22,9 @@ at your own discretion.
     :toctree: api
 
     apply_operation
+    create_initial_state
+    measure
 """
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
+from .measure import measure
