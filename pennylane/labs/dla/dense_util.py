@@ -388,7 +388,12 @@ def trace_inner_product(
 
 
 def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
-    """Apply the basis change between bases of operators to the adjoint representation.
+    r"""Apply the basis change between bases of operators to the adjoint representation.
+
+    Assume the adjoint repesentation is given in terms of a basis :math:`\{b_j\}`,
+    :math:`\text{ad_\mu}_{\alpha \beta} \propto \text{tr}\left(b_\mu \cdot [b_\alpha, b_\beta] \right)`.
+    We can represent the adjoint representation in terms of a new basis :math:`c_i = \sum_j T_{ij} b_j`
+    with the basis transformation matrix :math:`T` using ``change_basis_ad_rep``.
 
     Args:
         adj (numpy.ndarray): Adjoint representation in old basis.
