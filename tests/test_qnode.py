@@ -523,10 +523,10 @@ class TestPyTreeStructure:
 
         result = circuit()
 
-        _, result_structure = qml.pytrees.flatten(result)
-        _, measurement_structure = qml.pytrees.flatten(
+        result_structure = qml.pytrees.flatten(result)[1]
+        measurement_structure = qml.pytrees.flatten(
             measurement(), is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
-        )
+        )[1]
 
         assert result_structure == measurement_structure
 
@@ -539,7 +539,7 @@ class TestPyTreeStructure:
     )
     def test_tensor_measurement(self, measurement):
         """Tests that measurements of tensor type are handled correctly"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
