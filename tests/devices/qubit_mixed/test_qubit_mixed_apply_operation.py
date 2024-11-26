@@ -17,7 +17,6 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from conftest import get_random_mixed_state
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -38,6 +37,8 @@ from pennylane.devices.qubit_mixed.apply_operation import (
     apply_operation_tensordot,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE
+
+from .conftest import get_random_mixed_state
 
 ml_frameworks_list = [
     "numpy",
