@@ -29,7 +29,7 @@ class MPSPrep(Operation):
 
     Args:
         mps (List[arrays]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS
-        site matrices
+            site matrices
 
         wires (Sequence[int]): wires that the template acts on
 
@@ -65,14 +65,12 @@ class MPSPrep(Operation):
     .. details::
         :title: Usage Details
 
-        **Parameter shape**
-
         The matrix product state, is a list of arrays of the following form:
 
-            - The first element has rank two :math:`(a_{0,0}, a_{0,1})`.
-            - The last element has rank two :math:`(a_{N-1,0}, a_{N-1,1})`.
-            - The rest of the elements have rank three :math:`(a_{j,0}, a_{j,1}, a_{j,2})` where the first dimension
-              of the array matches the last dimension of the previous array.
+        - The first element has rank two :math:`(a_{0,0}, a_{0,1})`.
+        - The last element has rank two :math:`(a_{N-1,0}, a_{N-1,1})`.
+        - The rest of the elements have rank three :math:`(a_{j,0}, a_{j,1}, a_{j,2})` where the first dimension
+          of the array matches the last dimension of the previous array.
 
         In addition, all dimensions must be powers of two.
         The following input is valid:
