@@ -264,6 +264,7 @@ def _orthonormalize_np(basis: Iterable[np.ndarray]):
 
 
 def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, Operator]]]):
+    # We are generating a sparse pauli representation of the basis, where each entry of a basis vector corresponds to one of the Pauli words
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
 
@@ -273,26 +274,32 @@ def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, O
     if len(basis) == 0:
         return basis
 
+    # Set up all unique pauli words in the basis
     all_pws = reduce(set.__or__, [set(ps.keys()) for ps in basis])
     num_pw = len(all_pws)
 
+    # map pauli words to indices and back
     _pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
     _idx_to_pw = dict(enumerate(all_pws))
+
+    # dense matrix representation of the basis in the sparse pauli representation
     _M = np.zeros((num_pw, len(basis)), dtype=float)
 
     for i, gen in enumerate(basis):
         for pw, value in gen.items():
             _M[_pw_to_idx[pw], i] = value
 
+    # orthonormalize dense matrix using QR decomposition
     def gram_schmidt(X):
         Q, _ = np.linalg.qr(X)
         return Q
 
     OM = gram_schmidt(_M)
+
+    # make sure the resulting matrix is orthonormal
     assert np.allclose(np.tensordot(OM.T, OM, axes=1), np.eye(OM.shape[1]))
 
-    # reconstruct normalized operators
-
+    # reconstruct orthonormalized operators
     generators_orthogonal = []
     for i in range(len(basis)):
         u1 = PauliSentence({})
