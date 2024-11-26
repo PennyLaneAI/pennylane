@@ -44,13 +44,15 @@ Operators
     ~ResourceCNOT
     ~ResourceControlled
     ~ResourceControlledPhaseShift
-    ~ResourceDoubleExcitation
-    ~ResourceDoubleExcitationMinus
-    ~ResourceDoubleExcitationPlus
+    ~ResourceCRX
     ~ResourceCRY
+    ~ResourceCRZ
     ~ResourceCSWAP
     ~ResourceCY
     ~ResourceCZ
+    ~ResourceDoubleExcitation
+    ~ResourceDoubleExcitationMinus
+    ~ResourceDoubleExcitationPlus
     ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
@@ -119,7 +121,9 @@ from .ops import (
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourceCRX,
     ResourceCRY,
+    ResourceCRZ,
     ResourceCSWAP,
     ResourceCY,
     ResourceCZ,
