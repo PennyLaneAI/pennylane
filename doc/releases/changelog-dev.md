@@ -43,6 +43,11 @@
     >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
     True
     ```
+    
+  * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms` 
+    are added to the device API for devices that provides a TOML configuration file and thus have 
+    a `capabilities` property.
+    [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
