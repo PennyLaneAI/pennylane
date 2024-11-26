@@ -40,7 +40,7 @@ def test_mid_circuit_measurement_preprocessing():
     ops = [*m0.measurements, qml.ops.Conditional(m0, qml.X(0))]
 
     # Construct the QuantumScript
-    tape = qml.tape.QuantumScript(ops, [qml.state()])
+    tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(0))])
 
     # Process the tape with the device's preprocess method
     transform_program, _ = dev.preprocess()
