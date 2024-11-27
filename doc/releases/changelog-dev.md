@@ -90,6 +90,9 @@
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
+* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
+  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
+
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
