@@ -14,4 +14,8 @@
 """A module containing utility functions and mappings for working with bosonic operators. """
 
 from .bosonic import BoseSentence, BoseWord
-from .bosonic_mapping import christiansen_mapping
+from .bosonic_mapping import (
+    binary_mapping,
+    unary_mapping,
+    christiansen_mapping
+)
