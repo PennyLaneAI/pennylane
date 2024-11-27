@@ -79,13 +79,6 @@ def test_invalid_execution_config_mcm_config():
         _ = ExecutionConfig(mcm_config=option)
 
 
-def test_mcm_config_invalid_mcm_method():
-    """Test that an error is raised if creating MCMConfig with invalid mcm_method"""
-    option = "foo"
-    with pytest.raises(ValueError, match="Invalid mid-circuit measurements method"):
-        _ = MCMConfig(mcm_method=option)
-
-
 def test_mcm_config_invalid_postselect_mode():
     """Test that an error is raised if creating MCMConfig with invalid postselect_mode"""
     option = "foo"

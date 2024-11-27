@@ -19,8 +19,9 @@ from typing import Optional
 import pytest
 
 import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig
+from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import DeviceCapabilities
+from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformProgram
 from pennylane.wires import Wires
 
@@ -55,6 +56,20 @@ schema = 3
 
 """
 
+EXAMPLE_TOML_FILE_ONE_SHOT = (
+    EXAMPLE_TOML_FILE
+    + """
+supported_mcm_methods = [ "one-shot" ]
+"""
+)
+
+EXAMPLE_TOML_FILE_ALL_SUPPORT = (
+    EXAMPLE_TOML_FILE
+    + """
+supported_mcm_methods = [ "device", "one-shot" ]
+"""
+)
+
 
 class TestDeviceCapabilities:
     """Tests for the capabilities of a device."""
@@ -69,7 +84,7 @@ class TestDeviceCapabilities:
 
             config_filepath = request.node.toml_file
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+            def execute(self, circuits, execution_config=None):
                 return (0,)
 
         dev = DeviceWithCapabilities()
@@ -86,6 +101,160 @@ class TestDeviceCapabilities:
 
                 def execute(self, circuits, execution_config=DefaultExecutionConfig):
                     return (0,)
+
+
+class TestSetupExecutionConfig:
+    """Tests the default implementation for setup_execution_config."""
+
+    def test_device_implements_preprocess(self):
+        """Tests that the execution config returned by device's preprocess is used."""
+
+        default_execution_config = ExecutionConfig()
+
+        class CustomDevice(Device):
+
+            def preprocess(self, execution_config=None):
+                return TransformProgram(), default_execution_config
+
+            def execute(self, circuits, execution_config=None):
+                return (0,)
+
+        dev = CustomDevice()
+        config = dev.setup_execution_config()
+        assert config is default_execution_config
+
+    def test_device_no_capabilities(self):
+        """Tests if the device does not declare capabilities."""
+
+        class DeviceNoCapabilities(Device):
+
+            def execute(self, circuits, execution_config=None):
+                return (0,)
+
+        dev = DeviceNoCapabilities()
+        config = dev.setup_execution_config()
+        assert config == ExecutionConfig()
+
+        DeviceNoCapabilities.supports_derivatives = lambda *_: True
+        initial_config = ExecutionConfig(gradient_method="best")
+        config = dev.setup_execution_config(initial_config)
+        assert config.gradient_method == "device"
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file, mcm_method, shots, expected_transform, expected_error",
+        [
+            (EXAMPLE_TOML_FILE, "deferred", 10, qml.defer_measurements, None),
+            (EXAMPLE_TOML_FILE, "deferred", None, qml.defer_measurements, None),
+            (
+                EXAMPLE_TOML_FILE,
+                "one-shot",
+                None,
+                None,
+                'The "one-shot" MCM method is only supported with finite shots.',
+            ),
+            (
+                EXAMPLE_TOML_FILE,
+                "one-shot",
+                10,
+                None,
+                'Requested MCM method "one-shot" unsupported by the device.',
+            ),
+            (
+                EXAMPLE_TOML_FILE_ONE_SHOT,
+                "magic",
+                10,
+                None,
+                'Requested MCM method "magic" unsupported by the device.',
+            ),
+            (
+                EXAMPLE_TOML_FILE_ALL_SUPPORT,
+                "tree-traversal",
+                10,
+                None,
+                'Requested MCM method "tree-traversal" unsupported by the device.',
+            ),
+        ],
+        indirect=("create_temporary_toml_file",),
+    )
+    def test_mcm_method_validation(
+        self, mcm_method, shots, expected_transform, expected_error, request
+    ):
+        """Tests that the requested MCM method is validated."""
+
+        class DeviceWithMCM(Device):
+            """A device with capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def execute(self, circuits, execution_config=None):
+                return (0,)
+
+        dev = DeviceWithMCM()
+        mcm_config = MCMConfig(mcm_method=mcm_method)
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        initial_config = ExecutionConfig(mcm_config=mcm_config)
+
+        if expected_error is not None:
+            with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+                dev.setup_execution_config(initial_config, tape)
+            return
+
+        config = dev.setup_execution_config(initial_config, tape)
+        assert config.mcm_config.mcm_method == mcm_method
+
+    @pytest.mark.parametrize(
+        "mcm_method, shots, expected_error",
+        [
+            ("one-shot", None, 'The "one-shot" MCM method is only supported with finite shots.'),
+            ("magic", None, 'Requested MCM method "magic" unsupported by the device.'),
+        ],
+    )
+    def test_mcm_method_validation_without_capabilities(self, mcm_method, shots, expected_error):
+        """Tests that the requested mcm method is validated without device capabilities"""
+
+        class CustomDevice(Device):
+            """A device with only a dummy execute method provided."""
+
+            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+                return (0,)
+
+        dev = CustomDevice()
+        mcm_config = MCMConfig(mcm_method=mcm_method)
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        initial_config = ExecutionConfig(mcm_config=mcm_config)
+        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+            dev.setup_execution_config(initial_config, tape)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file, shots, expected_method",
+        [
+            (EXAMPLE_TOML_FILE, 10, "deferred"),
+            (EXAMPLE_TOML_FILE, None, "deferred"),
+            (EXAMPLE_TOML_FILE_ONE_SHOT, 10, "one-shot"),
+            (EXAMPLE_TOML_FILE_ONE_SHOT, None, "deferred"),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "one-shot"),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, None, "device"),
+        ],
+        indirect=("create_temporary_toml_file",),
+    )
+    def test_mcm_method_resolution(self, request, shots, expected_method):
+        """Tests that an MCM method is chosen if not specified."""
+
+        class CustomDevice(qml.devices.Device):
+            """A device with capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def execute(self, circuit, **kwargs):
+                """The execute method for the custom device."""
+                return 0
+
+        dev = CustomDevice()
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        config = dev.setup_execution_config(ExecutionConfig(), tape)
+        assert config.mcm_config.mcm_method == expected_method
 
 
 class TestMinimalDevice:
@@ -248,7 +417,7 @@ def test_device_with_ambiguous_preprocess():
                 return TransformProgram(), ExecutionConfig()
 
             def setup_execution_config(
-                self, config: Optional[ExecutionConfig] = None
+                self, config: Optional[ExecutionConfig] = None, tape: Optional[QuantumScript] = None
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 

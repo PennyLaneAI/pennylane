@@ -383,12 +383,9 @@ class Device(abc.ABC):
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
 
-        if self.capabilities is None:
-            return config  # The following cannot be performed without the device capabilities
-
         shots_present = tape and bool(tape.shots)
         validate_mcm_method(self.capabilities, config.mcm_config.mcm_method, shots_present)
-        if config.mcm_config.mcm_method is None:
+        if config.mcm_config.mcm_method is None and self.capabilities is not None:
             # This is a sensible default strategy for resolving the MCM method based on declared
             # capabilities of a device, but if a device wishes to do this differently, it should
             # override the ``setup_execution_config`` method itself.
