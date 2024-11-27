@@ -93,8 +93,8 @@ def if_stmt(
 
 
 def _assert_iteration_inputs(inputs, symbol_names):
-    """All loop carried values, variables that are updated each iteration or accessed after the
-    loop terminates, need to be initialized prior to entering the loop.
+    """Assert that all loop carried values, variables that are updated each iteration or accessed after the
+    loop terminates, are initialized prior to entering the loop.
 
     The reason is two-fold:
       - the type information from those variables is required for tracing
@@ -102,6 +102,10 @@ def _assert_iteration_inputs(inputs, symbol_names):
         of execution paths
 
     Additionally, these types need to be valid JAX types.
+
+    Args:
+        inputs (Tuple): The loop carried values
+        symbol_names (Tuple[str]): The names of the loop carried values.
     """
 
     if not has_jax:  # pragma: no cover
