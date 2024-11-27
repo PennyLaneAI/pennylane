@@ -98,7 +98,7 @@ def _localization_unitary(qmat):
         warnings.warn(
             "Mode localization finished unsuccessfully, returning normal modes..."
         )  # pragma: no cover
-        return _params_to_unitary(0 * params, nmodes), qmat
+        return _params_to_unitary(0 * params, nmodes), qmat # pragma: no cover
 
     params_opt = optimization_res.x
     uloc = _params_to_unitary(params_opt, nmodes)
