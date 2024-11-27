@@ -22,9 +22,9 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
+from pennylane.math import INTERFACE_MAP
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
-from pennylane.workflow.execution import INTERFACE_MAP
 
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
