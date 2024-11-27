@@ -59,7 +59,7 @@ def _setup_transform_program(
     cachesize=10000,
 ) -> tuple[TransformProgram, TransformProgram]:
 
-    device_transform_program = device.preprocess_transforms(user_transform_program)
+    device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
     full_transform_program = qml.transforms.core.TransformProgram(user_transform_program)
     inner_transform_program = qml.transforms.core.TransformProgram()
