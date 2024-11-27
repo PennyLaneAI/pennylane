@@ -94,7 +94,7 @@ def _localization_unitary(qmat):
     optimization_res = scipy.optimize.minimize(_params_cost, params, args=(qnormalized, nmodes))
 
     # Check if the minimization was successful; if it wasn't, proceed with the normal modes.
-    if optimization_res.success is False:
+    if not optimization_res.success:
         warnings.warn(
             "Mode localization finished unsuccessfully, returning normal modes..."
         )  # pragma: no cover
