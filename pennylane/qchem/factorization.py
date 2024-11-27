@@ -126,19 +126,14 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
         - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
           :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-        - Decompose the resulting matrix either via Cholesky decomposition or
-          via eigenvalue decomposition.
+        - Decompose the resulting matrix either via eigenvalue decomposition or
+          Cholesky decomposition.
 
-        - In the Cholesky decomposition, we build matrices :math:`L^{(r)}` as
-          :math:`v_iv_i^{\dagger}`, where each vector :math:`v_i` is constructed
-          to explain the part of the matrix that hasn't been explained by previous
-          vectors and reduce the error term. We build :math:`r` such matrices that
-          result in an overall approximation error less than the threshold.
+        - For the eigenvalue decomposition, keep the :math:`r` eigenvectors that
+          have corresponding eigenvalues larger than the threshold.
 
-        - In the eigenvalue decomposition, we keep the :math:`r` eigenvectors that
-          have corresponding eigenvalues larger than a threshold and multiply these
-          eigenvectors by the square root of their eigenvalues to obtain
-          matrices :math:`L^{(r)}`.
+        - While for the Cholesky decomposition, keep the first :math:`r` Cholesky
+          vectors that result in an residual error below the threshold.
 
         - Diagonalize the :math:`L^{(r)}` (:math:`n \times n`) matrices and for each
           matrix keep the eigenvalues (and their corresponding eigenvectors) that are
@@ -173,7 +168,22 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
 
 
 def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
-    """Double factorization via generalized eigen decomposition"""
+    """Explicit double factorization using generalized eigen decomposition of
+    the two-electron integral tensor described in PRX Quantum 2, 040352 (2021).
+
+    Args:
+        two (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation
+        tol_factor (float): threshold error value for discarding the negligible factors
+        shape (tuple[int, int]): shape for the provided two_electron
+        interface (string): interface for two_electron tensor
+        num_factors (int): number of factors to be computed.
+
+    Returns:
+        tuple(array[array[float]], array[array[float]], array[array[float]]): tuple containing
+        symmetric matrices (factors) approximating the two-electron integral tensor, truncated
+        eigenvalues of the generated factors, and truncated eigenvectors of the generated factors
+    """
     eigvals_r, eigvecs_r = qml.math.linalg.eigh(two)
     eigvals_r = qml.math.array([val for val in eigvals_r if abs(val) > tol_factor])
 
@@ -190,7 +200,22 @@ def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=N
 
 
 def _double_factorization_cholesky(two, tol_factor=1.0e-10, shape=None, interface=None):
-    """Double factorization via `Cholesky decomposition <https://en.wikipedia.org/wiki/Cholesky_decomposition>`_"""
+    """Explicit double factorization using Cholesky decomposition of the two-electron
+    integral tensor described in J. Chem. Phys. 118, 9481-9484 (2003).
+
+    Args:
+        two (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation
+        tol_factor (float): threshold error value for discarding the negligible factors
+        shape (tuple[int, int]): shape for the provided two_electron
+        interface (string): interface for two_electron tensor
+        num_factors (int): number of factors to be computed.
+
+    Returns:
+        tuple(array[array[float]], array[array[float]], array[array[float]]): tuple containing
+        symmetric matrices (factors) approximating the two-electron integral tensor, truncated
+        eigenvalues of the generated factors, and truncated eigenvectors of the generated factors
+    """
     n2 = shape[0] * shape[1]
     cholesky_vecs = qml.math.zeros((n2, n2 + 1), like=interface)
     cholesky_diag = qml.math.array(qml.math.diagonal(two).real, like=interface)
