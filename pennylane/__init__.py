@@ -17,84 +17,145 @@ PennyLane can be directly imported.
 """
 
 
-import pennylane.capture
-import pennylane.compiler
-import pennylane.data
-import pennylane.fourier
-import pennylane.gradients  # pylint:disable=wrong-import-order
-import pennylane.kernels
-# pylint:disable=wrong-import-order
-import pennylane.logging  # pylint:disable=wrong-import-order
-import pennylane.math
-import pennylane.noise
+from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
+from pennylane.queuing import QueuingManager, apply
+
+import pennylane.capture
+import pennylane.kernels
+import pennylane.math
 import pennylane.operation
-import pennylane.pauli
-import pennylane.pulse
-import pennylane.qchem
 import pennylane.qnn
-import pennylane.resource
-import pennylane.spin
 import pennylane.templates
-from pennylane import qaoa
-from pennylane._grad import grad, jacobian, jvp, vjp
+import pennylane.pauli
+from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
+from pennylane.resource import specs
+import pennylane.resource
+import pennylane.qchem
+from pennylane.fermi import (
+    FermiC,
+    FermiA,
+    jordan_wigner,
+    parity_transform,
+    bravyi_kitaev,
+)
+from pennylane.bose import (
+    BoseSentence,
+    BoseWord,
+    binary_mapping,
+    unary_mapping,
+    christiansen_mapping,
+)
+from pennylane.qchem import (
+    taper,
+    symmetry_generators,
+    paulix_ops,
+    taper_operation,
+    import_operator,
+    from_openfermion,
+    to_openfermion,
+)
+from pennylane._grad import grad, jacobian, vjp, jvp
 from pennylane._version import __version__
 from pennylane.about import about
-from pennylane.boolean_fn import BooleanFn
-from pennylane.bose import (BoseSentence, BoseWord, binary_mapping,
-                            christiansen_mapping, unary_mapping)
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.compiler import for_loop, qjit, while_loop
 from pennylane.configuration import Configuration
-from pennylane.debugging import (breakpoint, debug_expval, debug_probs,
-                                 debug_state, debug_tape, snapshots)
-from pennylane.devices.device_constructor import device, refresh_devices
 from pennylane.drawer import draw, draw_mpl
-from pennylane.fermi import (FermiA, FermiC, bravyi_kitaev, jordan_wigner,
-                             parity_transform)
-from pennylane.gradients import adjoint_metric_tensor, metric_tensor
-from pennylane.io import *
-from pennylane.measurements import (classical_shadow, counts, density_matrix,
-                                    expval, measure, mutual_info, probs,
-                                    purity, sample, shadow_expval, state, var,
-                                    vn_entropy)
-from pennylane.noise import NoiseModel
-from pennylane.ops import LinearCombination as Hamiltonian
-from pennylane.ops import *
-from pennylane.ops import adjoint, cond, ctrl, exp, pow, prod, s_prod, sum
-from pennylane.ops.functions import (assert_equal, comm, commutator, dot,
-                                     eigvals, equal, evolve, generator,
-                                     is_commuting, is_hermitian, is_unitary,
-                                     iterative_qpe, map_wires, matrix,
-                                     simplify)
-from pennylane.ops.identity import I
-from pennylane.optimize import *
-from pennylane.pauli import (center, lie_closure, pauli_decompose,
-                             structure_constants)
-from pennylane.qchem import (from_openfermion, import_operator, paulix_ops,
-                             symmetry_generators, taper, taper_operation,
-                             to_openfermion)
-from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane.queuing import QueuingManager, apply
+from pennylane.tracker import Tracker
 from pennylane.registers import registers
-from pennylane.resource import specs
-from pennylane.shadows import ClassicalShadow
+from pennylane.io import *
+from pennylane.measurements import (
+    counts,
+    density_matrix,
+    measure,
+    expval,
+    probs,
+    sample,
+    state,
+    var,
+    vn_entropy,
+    purity,
+    mutual_info,
+    classical_shadow,
+    shadow_expval,
+)
+from pennylane.ops import *
+from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
+from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
+from pennylane.templates.tensornetworks import *
+from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane.templates.swapnetworks import *
-from pennylane.templates.tensornetworks import *
-from pennylane.tracker import Tracker
-from pennylane.transforms import (add_noise, apply_controlled_Q, batch_input,
-                                  batch_params, batch_partial,
-                                  clifford_t_decomposition, commutation_dag,
-                                  compile, defer_measurements,
-                                  dynamic_one_shot, pattern_matching,
-                                  pattern_matching_optimization,
-                                  quantum_monte_carlo, transform)
-from pennylane.workflow import QNode, execute, qnode
+from pennylane import qaoa
+from pennylane.workflow import QNode, qnode, execute
+from pennylane.transforms import (
+    transform,
+    batch_params,
+    batch_input,
+    batch_partial,
+    compile,
+    defer_measurements,
+    dynamic_one_shot,
+    quantum_monte_carlo,
+    apply_controlled_Q,
+    commutation_dag,
+    pattern_matching,
+    pattern_matching_optimization,
+    clifford_t_decomposition,
+    add_noise,
+)
+from pennylane.ops.functions import (
+    dot,
+    eigvals,
+    equal,
+    assert_equal,
+    evolve,
+    generator,
+    is_commuting,
+    is_hermitian,
+    is_unitary,
+    map_wires,
+    matrix,
+    simplify,
+    iterative_qpe,
+    commutator,
+    comm,
+)
+from pennylane.ops.identity import I
+from pennylane.optimize import *
+from pennylane.debugging import (
+    snapshots,
+    breakpoint,
+    debug_expval,
+    debug_state,
+    debug_probs,
+    debug_tape,
+)
+from pennylane.shadows import ClassicalShadow
+from pennylane.qcut import cut_circuit, cut_circuit_mc
+import pennylane.pulse
+
+import pennylane.fourier
+from pennylane.gradients import metric_tensor, adjoint_metric_tensor
+import pennylane.gradients  # pylint:disable=wrong-import-order
+
+# pylint:disable=wrong-import-order
+import pennylane.logging  # pylint:disable=wrong-import-order
+
+from pennylane.compiler import qjit, while_loop, for_loop
+import pennylane.compiler
+
+import pennylane.data
+
+import pennylane.noise
+from pennylane.noise import NoiseModel
+
+from pennylane.devices.device_constructor import device, refresh_devices
+
+import pennylane.spin
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

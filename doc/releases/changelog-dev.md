@@ -71,7 +71,6 @@
 
 * Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
->>>>>>> origin/master
 
 
 <h3>Improvements 🛠</h3>
@@ -290,6 +289,7 @@ This release contains contributions from (in alphabetical order):
 Shiwen An,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
