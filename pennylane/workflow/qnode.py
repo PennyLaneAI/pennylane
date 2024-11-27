@@ -954,7 +954,7 @@ class QNode:
         try:
             res = self._execution_component(args, kwargs)
         finally:
-            if old_interface == Interface.AUTO:
+            if old_interface == "auto":
                 self._interface = Interface.AUTO
 
         return res
