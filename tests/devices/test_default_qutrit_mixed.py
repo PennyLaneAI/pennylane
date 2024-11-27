@@ -1469,7 +1469,8 @@ class TestReadoutError:
             self.setup_state(num_wires)
             return qml.state()
 
-        res = circuit()
+        with pytest.warns(UserWarning, match="Measurement .* is not affected by readout error"):
+            res = circuit()
         assert np.allclose(res, self.get_expected_dm(num_wires))
 
     @pytest.mark.parametrize("relaxations, misclassifications", state_relax_and_misclass)
@@ -1487,7 +1488,8 @@ class TestReadoutError:
             self.setup_state(num_wires)
             return qml.density_matrix(wires=1)
 
-        res = circuit()
+        with pytest.warns(UserWarning, match="Measurement .* is not affected by readout error"):
+            res = circuit()
         assert np.allclose(res, self.get_expected_dm(1))
 
     @pytest.mark.parametrize(

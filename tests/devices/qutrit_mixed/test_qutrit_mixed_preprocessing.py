@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for qutrit mixed device preprocessing."""
-import warnings
+from contextlib import nullcontext
 
 import numpy as np
 import pytest
@@ -305,12 +305,9 @@ class TestPreprocessingIntegration:
         )
         program, _ = device.preprocess()
 
-        with warnings.catch_warnings(record=True) as warning:
+        with (
+            pytest.warns(UserWarning, match="Measurement .* is not affected by readout error")
+            if req_warn
+            else nullcontext()
+        ):
             program(tapes)
-            if req_warn:
-                assert len(warning) != 0
-                for warn in list(warning):
-                    print(type(warn.message))
-                    assert "is not affected by readout error" in warn.message.args[0]
-            else:
-                assert len(warning) == 0
