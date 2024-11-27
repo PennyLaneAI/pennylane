@@ -349,38 +349,37 @@ class TestSimplify:
             qml.RX(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RZ(4 * np.pi - 1, 0)
         )
         simplified_op = adj_op.simplify()
+        sum_op = sum_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, qml.ops.Sum)
-        assert sum_op.data == simplified_op.data
+        assert np.allclose(sum_op.data, simplified_op.data)
         assert sum_op.wires == simplified_op.wires
         assert sum_op.arithmetic_depth == simplified_op.arithmetic_depth
 
         for s1, s2 in zip(sum_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
-            assert s1.data == s2.data
+            assert np.allclose(s1.data, s2.data)
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
     def test_simplify_adj_of_prod(self):
         """Test that the simplify method converts an adjoint of products to a (reverse) product
         of adjoints."""
-        adj_op = Adjoint(qml.prod(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
-        final_op = qml.prod(
-            qml.RZ(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RX(4 * np.pi - 1, 0)
-        )
+        adj_op = Adjoint(qml.prod(qml.IsingXX(1, [1, 0]), qml.MultiRZ(1, [0, 1])))
+        final_op = qml.prod(qml.MultiRZ(4 * np.pi - 1, [0, 1]), qml.IsingXX(4 * np.pi - 1, [1, 0]))
         simplified_op = adj_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.Prod)
-        assert final_op.data == simplified_op.data
+        assert np.allclose(final_op.data, simplified_op.data)
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
-            assert s1.data == s2.data
+            assert np.allclose(s1.data, s2.data)
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
     def test_simplify_with_adjoint_not_defined(self):

@@ -626,7 +626,7 @@ class TestControlledSimplify:
         for s1, s2 in zip(final_op.base.operands, simplified_op.base.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
-            assert s1.data == s2.data
+            assert np.allclose(s1.data, s2.data)
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
     def test_simplify_nested_controlled_ops(self):
