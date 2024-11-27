@@ -540,7 +540,7 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs, tkwargs
     ):  # pylint: disable=unused-argument
-        return NotImplementedError
+        raise NotImplementedError
 
     @transform_prim.def_abstract_eval
     def _(*_, inner_jaxpr, **__):

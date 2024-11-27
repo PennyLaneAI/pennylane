@@ -110,8 +110,8 @@ class TestCaptureTransforms:
         for eqn1, eqn2 in zip(qfunc_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
-    def test_transform_primitive_eval(self):
-        """Test that JAXPR containing a transform primitive can be evaluated correctly."""
+    def test_transform_primitive_eval_not_implemented(self):
+        """Test JAXPR containing a transform primitive cannot be evaluated due to a NotImplementedError."""
 
         def func(x):
             y = x * 5
@@ -123,33 +123,9 @@ class TestCaptureTransforms:
 
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        inner_jaxpr = jax.make_jaxpr(func)(*args)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)[0]
-        expected = jax.core.eval_jaxpr(inner_jaxpr.jaxpr, inner_jaxpr.consts, *args)[0]
-        assert res == expected == func(*args)
-
-    def test_transform_qnode_eval(self):
-        """Test that JAXPR containing a transformed qnode primitive is evaluated correctly."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def func():
-            qml.Z(0)
-            qml.X(0)
-            return qml.expval(qml.Z(0))
-
-        targs = (0, 1)
-        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
-
-        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
-        jaxpr = jax.make_jaxpr(transformed_func)()
-        inner_jaxpr = jax.make_jaxpr(func)()
-
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0]
-        expected = jax.core.eval_jaxpr(inner_jaxpr.jaxpr, inner_jaxpr.consts)[0]
-        assert qml.math.allclose(res, expected)
-        assert qml.math.allclose(res, func())
+        with pytest.raises(NotImplementedError):
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)[0]
 
     def test_multiple_transforms_capture(self):
         """Test that JAXPR containing a transformed qnode primitive is evaluated correctly."""
