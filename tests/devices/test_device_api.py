@@ -20,7 +20,11 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
-from pennylane.devices.capabilities import DeviceCapabilities, OperatorProperties
+from pennylane.devices.capabilities import (
+    DeviceCapabilities,
+    OperatorProperties,
+    ExecutionCondition,
+)
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -367,6 +371,130 @@ class TestPreprocessTransforms:
         else:
             tapes, _ = program((tape,))
             assert isinstance(tapes[0].operations[0], qml.Projector)
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    @pytest.mark.parametrize("shots", [None, 10])
+    def test_decomposition(self, request, shots):
+        """Tests that decomposition acts correctly with or without shots."""
+
+        class CustomDevice(Device):
+            """A device with capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def __init__(self):
+                super().__init__()
+                self.capabilities.operations.update(
+                    {
+                        "Rot": OperatorProperties(
+                            conditions=[ExecutionCondition.ANALYTIC_MODE_ONLY]
+                        ),
+                        "CNOT": OperatorProperties(),
+                        "RY": OperatorProperties(),
+                        "RZ": OperatorProperties(),
+                    }
+                )
+
+            def execute(
+                self,
+                circuits: QuantumScriptOrBatch,
+                execution_config: ExecutionConfig = None,
+            ) -> Union[Result, ResultBatch]:
+                return (0,)
+
+        dev = CustomDevice()
+        program = dev.preprocess_transforms()
+        tape = QuantumScript([qml.Rot(0.1, 0.2, 0.3, wires=0)], shots=shots)
+        tapes, _ = program((tape,))
+        if shots:
+            assert tapes[0].operations == [
+                qml.RZ(0.1, wires=0),
+                qml.RY(0.2, wires=0),
+                qml.RZ(0.3, wires=0),
+            ]
+        else:
+            assert tapes[0].operations == [qml.Rot(0.1, 0.2, 0.3, wires=0)]
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    @pytest.mark.parametrize("shots", [None, 10])
+    def test_validation(self, request, shots):
+        """Tests that observable and measurement validation works correctly."""
+
+        class CustomDevice(Device):
+            """A device with capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def __init__(self):
+                super().__init__()
+                self.capabilities.observables.update(
+                    {
+                        "Hadamard": OperatorProperties(
+                            conditions=[ExecutionCondition.ANALYTIC_MODE_ONLY]
+                        ),
+                        "PauliZ": OperatorProperties(),
+                        "PauliY": OperatorProperties(
+                            conditions=[ExecutionCondition.FINITE_SHOTS_ONLY]
+                        ),
+                    }
+                )
+                self.capabilities.measurement_processes.update(
+                    {
+                        "ExpectationMP": [],
+                        "SampleMP": [],
+                        "CountsMP": [ExecutionCondition.FINITE_SHOTS_ONLY],
+                        "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
+                    }
+                )
+
+            def execute(
+                self,
+                circuits: QuantumScriptOrBatch,
+                execution_config: ExecutionConfig = None,
+            ) -> Union[Result, ResultBatch]:
+                return (0,)
+
+        dev = CustomDevice()
+        program = dev.preprocess_transforms()
+
+        valid_tape = QuantumScript([], [qml.expval(qml.Z(0))], shots=shots)
+        _, __ = program((valid_tape,))
+
+        invalid_tape = QuantumScript([], [qml.var(qml.PauliZ(0))], shots=shots)
+        with pytest.raises(qml.DeviceError, match=r"Measurement var\(Z\(0\)\) not accepted"):
+            _, __ = program((invalid_tape,))
+
+        invalid_tape = QuantumScript([], [qml.expval(qml.PauliX(0))], shots=shots)
+        with pytest.raises(qml.DeviceError, match=r"Observable X\(0\) not supported"):
+            _, __ = program((invalid_tape,))
+
+        shots_only_meas_tape = QuantumScript([], [qml.counts()], shots=shots)
+        shots_only_obs_tape = QuantumScript([], [qml.expval(qml.Y(0))], shots=shots)
+        analytic_only_obs_tape = QuantumScript([], [qml.expval(qml.H(0))], shots=shots)
+        analytic_only_meas_tape = QuantumScript([], [qml.state()], shots=shots)
+
+        if shots:
+
+            _, __ = program((shots_only_meas_tape,))
+            _, __ = program((shots_only_obs_tape,))
+
+            with pytest.raises(qml.DeviceError, match=r"Measurement .* not accepted"):
+                _, __ = program((analytic_only_meas_tape,))
+
+            with pytest.raises(qml.DeviceError, match=r"Observable .* not supported"):
+                _, __ = program((analytic_only_obs_tape,))
+
+        else:
+            _, __ = program((analytic_only_meas_tape,))
+            _, __ = program((analytic_only_obs_tape,))
+
+            with pytest.raises(qml.DeviceError, match=r"Measurement .* not accepted"):
+                _, __ = program((shots_only_meas_tape,))
+
+            with pytest.raises(qml.DeviceError, match=r"Observable .* not supported"):
+                _, __ = program((shots_only_obs_tape,))
 
 
 class TestMinimalDevice:

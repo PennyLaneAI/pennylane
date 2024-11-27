@@ -494,6 +494,9 @@ class Device(abc.ABC):
             # The capabilities are required to construct a default transform program.
             return TransformProgram()
 
+        if not execution_config:
+            execution_config = ExecutionConfig()
+
         program = TransformProgram()
 
         # First handle mid-circuit measurements because it may add wires. At this point we
@@ -520,8 +523,10 @@ class Device(abc.ABC):
         )
         program.add_transform(
             validate_measurements,
-            analytic_measurements=lambda mp: mp in analytic_capabilities.measurement_processes,
-            sample_measurements=lambda mp: mp in finite_shots_capabilities.measurement_processes,
+            analytic_measurements=lambda mp: type(mp).__name__
+            in analytic_capabilities.measurement_processes,
+            sample_measurements=lambda mp: type(mp).__name__
+            in finite_shots_capabilities.measurement_processes,
             name=self.name,
         )
         program.add_transform(
@@ -533,11 +538,12 @@ class Device(abc.ABC):
             name=self.name,
         )
         program.add_transform(qml.transforms.broadcast_expand)
-        if not self.capabilities.non_commuting_observables:
-            program.add_transform(
-                qml.transforms.split_non_commuting,
-                grouping_strategy="qwc" if self.capabilities.overlapping_observables else "wires",
-            )
+        if not self.capabilities.overlapping_observables:
+            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        elif not self.capabilities.non_commuting_observables:
+            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="qwc")
+        elif not self.capabilities.supports_observable("Sum"):
+            program.add_transform(qml.transforms.split_to_single_terms)
 
         return program
 
