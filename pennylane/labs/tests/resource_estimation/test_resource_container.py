@@ -30,6 +30,7 @@ from pennylane.labs.resource_estimation.resource_container import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
+    substitute,
 )
 from pennylane.labs.resource_estimation.resource_operator import ResourceOperator
 
@@ -296,6 +297,44 @@ class TestResources:
         r._ipython_display_()  # pylint: disable=protected-access
         captured = capsys.readouterr()
         assert rep in captured.out
+
+    gate_names = ("RX", "RZ")
+    expected_results_sub = (
+        Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        ),
+        Resources(
+            num_wires=2,
+            num_gates=14,
+            gate_types=defaultdict(int, {"RX": 10, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        ),
+    )
+
+    @pytest.mark.parametrize("gate_name, expected_res_obj", zip(gate_names, expected_results_sub))
+    def test_substitute(self, gate_name, expected_res_obj):
+        """Test the substitute function"""
+        resource_obj = Resources(
+            num_wires=2,
+            num_gates=6,
+            gate_types=defaultdict(int, {"RZ": 2, "CNOT": 1, "RY": 2, "Hadamard": 1}),
+        )
+
+        sub_obj = Resources(
+            num_wires=1,
+            num_gates=5,
+            gate_types=defaultdict(int, {"RX": 5}),
+        )
+
+        resultant_obj1 = substitute(resource_obj, gate_name, sub_obj, in_place=False)
+        print(resultant_obj1)
+        print(expected_res_obj)
+        assert resultant_obj1 == expected_res_obj
+
+        resultant_obj2 = substitute(resource_obj, gate_name, sub_obj, in_place=True)
+        assert resultant_obj2 == expected_res_obj
+        assert resultant_obj2 is resource_obj
 
 
 @pytest.mark.parametrize("in_place", [False, True])
