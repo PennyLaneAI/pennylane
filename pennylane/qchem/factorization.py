@@ -126,14 +126,17 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
         - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
           :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-        - Decompose the resulting matrix either via eigenvalue decomposition or
+        - Decompose the resulting matrix either via eigendecomposition or
           Cholesky decomposition.
 
-        - For the eigenvalue decomposition, keep the :math:`r` eigenvectors that
-          have corresponding eigenvalues larger than the threshold.
+        - For the eigendecomposition, keep the :math:`r` eigenvectors with
+          corresponding eigenvalues larger than the threshold. Multiply these
+          eigenvectors by the square root of the eigenvalues and reshape them
+          to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
         - While for the Cholesky decomposition, keep the first :math:`r` Cholesky
-          vectors that result in an residual error below the threshold.
+          vectors that result in an residual error below the threshold and reshape
+          them to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
         - Diagonalize the :math:`L^{(r)}` (:math:`n \times n`) matrices and for each
           matrix keep the eigenvalues (and their corresponding eigenvectors) that are
@@ -168,7 +171,7 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
 
 
 def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
-    """Explicit double factorization using generalized eigen decomposition of
+    """Explicit double factorization using generalized eigendecomposition of
     the two-electron integral tensor described in PRX Quantum 2, 040352 (2021).
 
     Args:
