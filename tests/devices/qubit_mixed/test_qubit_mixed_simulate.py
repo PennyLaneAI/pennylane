@@ -14,13 +14,10 @@
 """Unit tests for simulate in devices/qubit_mixed."""
 import numpy as np
 import pytest
-from dummy_debugger import Debugger
-from flaky import flaky
 
 import pennylane as qml
 from pennylane import math
 from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, simulate
-
 
 ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
 
@@ -53,7 +50,7 @@ class TestStatePrepBase:
             measurements=[qml.probs(wires=[0, 1])],  # measure only the wires we prepare
         )
         probs = simulate(qs)
-        
+
         # For state |1, 1>, only the |11> probability should be 1, others 0
         expected = np.zeros(4)
         expected[3] = 1.0  # |11> is the last basis state
@@ -62,16 +59,16 @@ class TestStatePrepBase:
     def test_basis_state_padding(self):
         """Test that the BasisState operator prepares the desired state, with actual wires larger than the initial."""
         qs = qml.tape.QuantumScript(
-            ops=[qml.BasisState(np.array([1, 1]), wires=[0, 1])], # prod state |1, 1>
+            ops=[qml.BasisState(np.array([1, 1]), wires=[0, 1])],  # prod state |1, 1>
             measurements=[qml.probs(wires=[0, 1, 2])],
         )
         probs = simulate(qs)
         expected = np.zeros(8)
-        expected[6] = 1.0 # Should be |110> = |6>
+        expected[6] = 1.0  # Should be |110> = |6>
         assert qml.math.allclose(probs, expected)
 
 
-@pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
+@pytest.mark.parametrize("subspace", [(0, 1), (0, 2), (2, 1)])
 class TestBasicCircuit:
     """Tests a basic circuit with one RX gate and a few simple expectation values."""
 
@@ -82,7 +79,7 @@ class TestBasicCircuit:
         obs = [
             qml.expval(qml.PauliX(subspace[0])),
             qml.expval(qml.PauliY(subspace[0])),
-            qml.expval(qml.PauliZ(subspace[0]))
+            qml.expval(qml.PauliZ(subspace[0])),
         ]
         return qml.tape.QuantumScript(ops, obs)
 
@@ -95,11 +92,11 @@ class TestBasicCircuit:
 
         # For density matrix simulation of RX(phi), the expectations are:
         expected_measurements = (
-            0,           # <X> appears to be 0 in density matrix formalism
+            0,  # <X> appears to be 0 in density matrix formalism
             -np.sin(phi),  # <Y> has negative sign
-            np.cos(phi)  # <Z> is correct
+            np.cos(phi),  # <Z> is correct
         )
-        
+
         assert isinstance(result, tuple)
         assert len(result) == 3
         assert np.allclose(result, expected_measurements)
@@ -109,10 +106,12 @@ class TestBasicCircuit:
         result = measure_final_state(qs, state, is_state_batched)
 
         # For RX rotation in density matrix form - note flipped signs
-        expected_state = np.array([
-            [np.cos(phi/2)**2, 0.5j*np.sin(phi)],
-            [-0.5j*np.sin(phi), np.sin(phi/2)**2]
-        ])
+        expected_state = np.array(
+            [
+                [np.cos(phi / 2) ** 2, 0.5j * np.sin(phi)],
+                [-0.5j * np.sin(phi), np.sin(phi / 2) ** 2],
+            ]
+        )
 
         assert np.allclose(state, expected_state)
         assert not is_state_batched
@@ -171,13 +170,13 @@ class TestBasicCircuit:
 
         result = f(phi)
         expected = (0, -np.sin(phi.detach().numpy()), np.cos(phi.detach().numpy()))
-        
+
         result_detached = math.asarray(result, like="torch").detach().numpy()
         assert math.allclose(result_detached, expected)
 
         # Convert complex jacobian to real and take only real part for comparison
         jacobian = math.asarray(torch.autograd.functional.jacobian(f, phi + 0j), like="torch")
-        jacobian = jacobian.real if hasattr(jacobian, 'real') else jacobian
+        jacobian = jacobian.real if hasattr(jacobian, "real") else jacobian
         expected = (0, -np.cos(phi.detach().numpy()), -np.sin(phi.detach().numpy()))
         assert math.allclose(jacobian.detach().numpy(), expected)
 
@@ -204,59 +203,50 @@ class TestBasicCircuit:
         )
 
 
-@pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters."""
 
     @staticmethod
-    def get_expected_state(x, subspace):
+    def get_expected_state(x):
         """Gets the expected final state of the circuit described in `get_ops_and_measurements`."""
         states = []
         for x_val in x:
-            cos = np.cos(x_val/2)
-            sin = np.sin(x_val/2)
-            state = np.array([
-                [cos**2, 0.5j*np.sin(x_val)],
-                [-0.5j*np.sin(x_val), sin**2]
-            ])
+            cos = np.cos(x_val / 2)
+            sin = np.sin(x_val / 2)
+            state = np.array([[cos**2, 0.5j * np.sin(x_val)], [-0.5j * np.sin(x_val), sin**2]])
             states.append(state)
         return np.stack(states)
 
     @staticmethod
-    def get_expectation_values(x, subspace):
+    def get_expectation_values(x):
         """Gets the expected final expvals of the circuit described in `get_ops_and_measurements`."""
-        if subspace in [(0, 1), (0, 2)]:
-            return [-np.sin(x), np.cos(x)]
-        raise ValueError(f"Test cases doesn't support subspace {subspace}")
+        return [-np.sin(x), np.cos(x)]
 
     @staticmethod
-    def get_quantum_script(x, subspace, shots=None, extra_wire=False):
+    def get_quantum_script(x, shots=None, extra_wire=False):
         """Gets quantum script of a circuit that includes parameter broadcasted operations and measurements."""
         # Use consistent wire ordering for the mapping test
         wire_list = [0, 1]
         if extra_wire:
             wire_list.append(2)
-            
+
         ops = [qml.RX(x, wires=wire_list[0])]
-        measurements = [
-            qml.expval(qml.PauliY(wire_list[0])),
-            qml.expval(qml.PauliZ(wire_list[0]))
-        ]
+        measurements = [qml.expval(qml.PauliY(wire_list[0])), qml.expval(qml.PauliZ(wire_list[0]))]
         if extra_wire:
             # Add measurement on the last wire for the extra wire case
             measurements.insert(0, qml.expval(qml.PauliY(wire_list[-1])))
-            
+
         return qml.tape.QuantumScript(ops, measurements, shots=shots)
 
-    def test_broadcasted_op_state(self, subspace):
+    def test_broadcasted_op_state(self):
         """Test that simulate works for state measurements
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
-        qs = self.get_quantum_script(x, subspace)
+        qs = self.get_quantum_script(x)
         res = simulate(qs)
 
-        expected = self.get_expectation_values(x, subspace)
+        expected = self.get_expectation_values(x)
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res, expected)
@@ -264,54 +254,22 @@ class TestBroadcasting:
         state, is_state_batched = get_final_state(qs)
         res = measure_final_state(qs, state, is_state_batched)
 
-        assert np.allclose(state, self.get_expected_state(x, subspace))
+        assert np.allclose(state, self.get_expected_state(x))
         assert is_state_batched
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res, expected)
 
-    def test_broadcasting_with_extra_measurement_wires(self, mocker, subspace):
+    def test_broadcasting_with_extra_measurement_wires(self, mocker):
         """Test that broadcasting works when the operations don't act on all wires."""
         spy = mocker.spy(qml, "map_wires")
         x = np.array([0.8, 1.0, 1.2, 1.4])
-        qs = self.get_quantum_script(x, subspace, extra_wire=True)
+        qs = self.get_quantum_script(x, extra_wire=True)
         res = simulate(qs)
 
         assert isinstance(res, tuple)
         assert len(res) == 3
         assert np.allclose(res[0], np.zeros_like(x))
-        assert np.allclose(res[1:], self.get_expectation_values(x, subspace))
+        assert np.allclose(res[1:], self.get_expectation_values(x))
         # The mapping should be consistent with the wire ordering in get_quantum_script
         assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
-
-
-@pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
-class TestDebugger:
-    """Tests that the debugger works for a simple circuit"""
-
-    # basis_state
-
-    @staticmethod
-    def get_debugger_quantum_script(phi, subspace):
-        """Get the quantum script with debugging where TRX is applied
-        then GellMann observables are measured"""
-
-    def test_debugger_numpy(self, subspace):
-        """Test debugger with numpy"""
-
-    @pytest.mark.autograd
-    def test_debugger_autograd(self, subspace):
-        """Tests debugger with autograd"""
-
-    @pytest.mark.jax
-    def test_debugger_jax(self, subspace):
-        """Tests debugger with JAX"""
-
-    @pytest.mark.torch
-    def test_debugger_torch(self, subspace):
-        """Tests debugger with torch"""
-
-    # pylint: disable=invalid-unary-operand-type
-    @pytest.mark.tf
-    def test_debugger_tf(self, subspace):
-        """Tests debugger with tensorflow."""
