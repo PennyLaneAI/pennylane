@@ -530,7 +530,7 @@ class TransformProgram:
         processing_fns_stack = []
 
         for i, transform_container in enumerate(self):
-            transform, targs, tkwargs, cotransform, _, _ = transform_container
+            transform, targs, tkwargs, cotransform, _, _, _ = transform_container
 
             execution_tapes = []
             fns = []
