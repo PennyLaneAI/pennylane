@@ -336,7 +336,7 @@ class Device(abc.ABC):
         return transform_program, execution_config
 
     def setup_execution_config(self, config: Optional[ExecutionConfig] = None) -> ExecutionConfig:
-        """Sets up an ExecutionConfig that configures the execution behaviour.
+        """Sets up an ``ExecutionConfig`` that configures the execution behaviour.
 
         The execution config stores information on how the device should perform the execution,
         as well as how PennyLane should interact with the device. See :class:`ExecutionConfig`
