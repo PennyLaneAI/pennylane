@@ -239,6 +239,7 @@ def execute(
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[str] = "auto",
+    *,
     transform_program=None,
     inner_transform=None,
     config=None,
@@ -401,9 +402,16 @@ def execute(
 
     gradient_kwargs = gradient_kwargs or {}
     mcm_config = mcm_config or {}
-    config = config or _get_execution_config(
-        diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
-    )
+    if not config:
+        config = qml.devices.ExecutionConfig(
+            interface=interface,
+            gradient_method=diff_method,
+            grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+            use_device_jacobian_product=device_vjp,
+            mcm_config=mcm_config,
+            gradient_keyword_arguments=gradient_kwargs,
+        )
+        config = device.setup_execution_config(config)
 
     # pylint: disable=protected-access
     if transform_program is None or inner_transform is None:
@@ -564,4 +572,4 @@ def _get_execution_config(
         gradient_keyword_arguments=gradient_kwargs,
     )
 
-    return device.preprocess(config)[1]
+    return device.setup_execution_config(config)

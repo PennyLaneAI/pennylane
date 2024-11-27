@@ -64,7 +64,7 @@ def get_best_diff_method(qnode: QNode):
         config = _make_execution_config(None, "best")
 
         if device.supports_derivatives(config, circuit=tape):
-            new_config = device.preprocess(config)[1]
+            new_config = device.setup_execution_config(config)
             transform = new_config.gradient_method
             return handle_return(transform)
 
