@@ -33,12 +33,12 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(base_class, base_params, **kwargs):
         try:
-            return base_class.adjoint_resource_decomp(**base_params)
+            return base_class.adjoint_resource_decomp(**base_params, **kwargs)
         except re.ResourcesNotDefined:
             gate_types = defaultdict(int)
-            decomp = base_class.resources(**base_params)
+            decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                resources = gate.op_type.adjoint_resource_decomp(**gate.params)
+                resources = gate.op_type.adjoint_resource_decomp(**gate.params, **kwargs)
                 _scale_dict(resources, count, in_place=True)
                 _combine_dict(gate_types, resources, in_place=True)
 
@@ -56,7 +56,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
     @staticmethod
     def adjoint_resource_decomp(base_class, base_params, **kwargs):
-        return base_class._resource_decomp(**base_params)
+        return base_class._resource_decomp(**base_params, **kwargs)
 
 
 class ResourceControlled(ControlledOp, re.ResourceOperator):
@@ -68,16 +68,16 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
     ):
         try:
             return base_class.controlled_resource_decomp(
-                num_ctrl_wires, num_ctrl_values, num_work_wires, **base_params
+                num_ctrl_wires, num_ctrl_values, num_work_wires, **base_params, **kwargs
             )
         except re.ResourcesNotDefined:
             pass
 
         gate_types = defaultdict(int)
-        decomp = base_class.resources(**base_params)
+        decomp = base_class.resources(**base_params, **kwargs)
         for gate, count in decomp.items():
             resources = gate.op_type.controlled_resource_decomp(
-                num_ctrl_wires, num_ctrl_values, num_work_wires, **gate.params
+                num_ctrl_wires, num_ctrl_values, num_work_wires, **gate.params, **kwargs,
             )
             _scale_dict(resources, count, in_place=True)
             _combine_dict(gate_types, resources, in_place=True)
@@ -121,6 +121,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         num_ctrl_wires,
         num_ctrl_values,
         num_work_wires,
+        **kwargs,
     ):
         return cls._resource_decomp(
             base_class,
@@ -128,6 +129,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             outer_num_ctrl_wires + num_ctrl_wires,
             outer_num_ctrl_values + num_ctrl_values,
             outer_num_work_wires + num_work_wires,
+            **kwargs
         )
 
 
@@ -137,12 +139,12 @@ class ResourcePow(PowOperation, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(base_class, z, base_params, **kwargs):
         try:
-            return base_class.pow_resource_decomp(z, **base_params)
+            return base_class.pow_resource_decomp(z, **base_params, **kwargs)
         except re.ResourcesNotDefined:
             pass
 
         try:
-            return _scale_dict(base_class.resources(**base_params), z)
+            return _scale_dict(base_class.resources(**base_params, **kwargs), z)
         except re.ResourcesNotDefined:
             pass
 
@@ -164,7 +166,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z0, base_class, z, base_params, **kwargs):
-        return cls._resource_decomp(base_class, z0 * z, base_params)
+        return cls._resource_decomp(base_class, z0 * z, base_params, **kwargs)
 
 
 class ResourceExp(Exp, re.ResourceOperator):

@@ -139,6 +139,8 @@ from .ops import (
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourceCRX,
+    ResourceCCZ,
     ResourceCRY,
     ResourceCY,
     ResourceCZ,
