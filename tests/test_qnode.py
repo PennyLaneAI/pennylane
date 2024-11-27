@@ -425,6 +425,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=2)
 
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("default")
 
             @qml.qnode(dev, random_kwarg=qml.gradients.finite_diff)
             def circuit(params):
@@ -441,6 +442,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=2)
 
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("default")
 
             @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
             def circuit0(params):
