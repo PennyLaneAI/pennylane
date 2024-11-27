@@ -60,7 +60,7 @@ def _setup_transform_program(
     cachesize=10000,
 ) -> tuple[TransformProgram, TransformProgram]:
 
-    device_transform_program = device.preprocess_transforms(user_transform_program)
+    device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
     full_transform_program = qml.transforms.core.TransformProgram(user_transform_program)
     inner_transform_program = qml.transforms.core.TransformProgram()
@@ -89,21 +89,15 @@ def _setup_transform_program(
         cache = None
 
     # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = (
-        resolved_execution_config.interface is Interface.NUMPY
-        or resolved_execution_config.gradient_method
-        in {
-            None,
-            "backprop",
-        }
-    )
-    device_supports_interface_data = no_interface_boundary_required and (
+    interface_data_supported = (
         resolved_execution_config.interface is Interface.NUMPY
         or resolved_execution_config.gradient_method == "backprop"
-        or getattr(device, "short_name", "") == "default.mixed"
+        or (
+            getattr(device, "short_name", "") == "default.mixed"
+            and resolved_execution_config.gradient_method is None
+        )
     )
-    numpy_only = not device_supports_interface_data
-    if numpy_only:
+    if not interface_data_supported:
         inner_transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
     if cache is not None:
         inner_transform_program.add_transform(_cache_transform, cache=cache)
