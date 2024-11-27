@@ -103,8 +103,8 @@ def specs(
         return the same results:
 
         >>> print(qml.specs(circuit, level=0)(0.1)["resources"])
-        wires: 2
-        gates: 6
+        num_wires: 2
+        num_gates: 6
         depth: 6
         shots: Shots(total=None)
         gate_types:
@@ -115,8 +115,8 @@ def specs(
         We then check the resources after applying all transforms:
 
         >>> print(qml.specs(circuit, level=None)(0.1)["resources"])
-        wires: 2
-        gates: 2
+        num_wires: 2
+        num_gates: 2
         depth: 1
         shots: Shots(total=None)
         gate_types:
@@ -127,8 +127,8 @@ def specs(
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
         >>> print(qml.specs(circuit, level=2)(0.1)["resources"])
-        wires: 2
-        gates: 3
+        num_wires: 2
+        num_gates: 3
         depth: 3
         shots: Shots(total=None)
         gate_types:

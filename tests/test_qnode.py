@@ -148,6 +148,16 @@ class TestInitialization:
 class TestValidation:
     """Tests for QNode creation and validation"""
 
+    @pytest.mark.parametrize("return_type", (tuple, list))
+    def test_return_behaviour_consistency(self, return_type):
+        """Test that the QNode return typing stays consistent"""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(return_type):
+            return return_type([qml.expval(qml.Z(0))])
+
+        assert isinstance(circuit(return_type), return_type)
+
     def test_expansion_strategy_error(self):
         """Test that an error is raised if expansion_strategy is passed to the qnode."""
 
@@ -328,8 +338,8 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Differentiation method 5 must be a gradient transform or a string",
+            ValueError,
+            match="Differentiation method 5 must be a str, TransformDispatcher, or None",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
 
@@ -452,6 +462,96 @@ class TestValidation:
             _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1))
 
         assert len(record) == 0
+
+
+# pylint: disable=too-few-public-methods
+# pylint: disable=unnecessary-lambda
+class TestPyTreeStructure:
+    """Tests for preservation of pytree structure through execution"""
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            lambda: ({"probs": qml.probs()},),
+            lambda: qml.probs(),
+            lambda: [
+                [qml.probs(wires=1), {"a": qml.probs(wires=0)}, qml.expval(qml.Z(0))],
+                {"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))},
+            ],
+            lambda: {"exp": qml.expval(qml.Z(0))},
+            lambda: {
+                "layer1": {
+                    "layer2": {
+                        "probs": qml.probs(wires=[0, 1]),
+                        "expval": qml.expval(qml.PauliY(1)),
+                    },
+                    "single_prob": qml.probs(wires=0),
+                }
+            },
+            lambda: (
+                [qml.probs(wires=1), {"exp": qml.expval(qml.PauliZ(0))}],
+                qml.expval(qml.PauliX(1)),
+            ),
+            lambda: [
+                (qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1))),
+                (qml.probs(wires=[1]), {"nested": qml.probs(wires=[0])}),
+            ],
+            lambda: [
+                {
+                    "first_layer": qml.probs(wires=0),
+                    "second_layer": [
+                        qml.expval(qml.PauliX(1)),
+                        {"nested_exp": qml.expval(qml.PauliY(0))},
+                    ],
+                },
+                (qml.probs(wires=[0, 1]), {"final": qml.expval(qml.PauliZ(0))}),
+            ],
+        ],
+    )
+    def test_pytree_structure_preservation(self, measurement):
+        """Test that the result stucture matches the measurement structure."""
+
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1, wires=0)
+            qml.RY(2, wires=1)
+            qml.measure(0)
+            qml.CNOT(wires=[0, 1])
+            return measurement()
+
+        result = circuit()
+
+        result_structure = qml.pytrees.flatten(result)[1]
+        measurement_structure = qml.pytrees.flatten(
+            measurement(), is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+        )[1]
+
+        assert result_structure == measurement_structure
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            lambda: qml.math.hstack([qml.expval(qml.Z(i)) for i in range(2)]),
+            lambda: qml.math.stack([qml.expval(qml.Z(i)) for i in range(2)]),
+        ],
+    )
+    def test_tensor_measurement(self, measurement):
+        """Tests that measurements of tensor type are handled correctly"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1, wires=0)
+            qml.RY(2, wires=1)
+            qml.measure(0)
+            qml.CNOT(wires=[0, 1])
+            return measurement()
+
+        result = circuit()
+
+        assert len(result) == 2
 
 
 class TestTapeConstruction:
@@ -830,7 +930,7 @@ class TestIntegration:
 
         with pytest.raises(
             TypeError,
-            match="does not support mid-circuit measurements natively, and hence it does not support the dynamic_one_shot transform.",
+            match="does not support mid-circuit measurements and/or one-shot execution mode",
         ):
 
             @qml.transforms.dynamic_one_shot
@@ -1028,6 +1128,47 @@ class TestIntegration:
 
         x = np.array(0.8)
         res = circuit(x)
+        assert qml.math.get_interface(res) == "numpy"
+
+    def test_qnode_default_interface(self):
+        """Tests that the default interface is set correctly for a QNode."""
+
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(graph: nx.Graph):
+            for a in graph.nodes:
+                qml.Hadamard(wires=a)
+            for a, b in graph.edges:
+                qml.CZ(wires=[a, b])
+            return qml.expval(qml.PauliZ(0))
+
+        graph = nx.complete_graph(3)
+        res = circuit(graph)
+        assert qml.math.get_interface(res) == "numpy"
+
+    def test_qscript_default_interface(self):
+        """Tests that the default interface is set correctly for a QuantumScript."""
+
+        # pylint: disable=import-outside-toplevel
+        import networkx as nx
+
+        dev = qml.device("default.qubit")
+
+        # pylint: disable=too-few-public-methods
+        class DummyCustomGraphOp(qml.operation.Operation):
+            """Dummy custom operation for testing purposes."""
+
+            def __init__(self, graph: nx.Graph):
+                super().__init__(graph, wires=graph.nodes)
+
+            def decomposition(self) -> list:
+                return []
+
+        graph = nx.complete_graph(3)
+        tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
+        res = qml.execute([tape], dev)
         assert qml.math.get_interface(res) == "numpy"
 
 
