@@ -103,10 +103,22 @@ class TestWhileLoops:
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0**4)[0]
         expected = jnp.array(
             [
-                0.00045727, 0.00110912, 0.0021832, 0.0052954,
-                0.000613, 0.00148684, 0.00292669, 0.00709874,
-                0.02114249, 0.0512815, 0.10094267, 0.24483834,
-                0.02834256, 0.06874542, 0.13531871, 0.32821807,
+                0.00045727,
+                0.00110912,
+                0.0021832,
+                0.0052954,
+                0.000613,
+                0.00148684,
+                0.00292669,
+                0.00709874,
+                0.02114249,
+                0.0512815,
+                0.10094267,
+                0.24483834,
+                0.02834256,
+                0.06874542,
+                0.13531871,
+                0.32821807,
             ]
         )
         assert_allclose(result, expected, rtol=1e-6, atol=1e-6)
@@ -219,7 +231,3 @@ class TestWhileLoops:
         jaxpr = jax.make_jaxpr(ag_fn)(0)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == n
-
-
-if __name__ == "__main__":
-    pytest.main(["-x", __file__])

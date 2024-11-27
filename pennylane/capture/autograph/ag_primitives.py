@@ -30,7 +30,7 @@ import pennylane as qml
 has_jax = True
 try:
     import jax
-except ImportError:
+except ImportError:  # pragma: no cover
     has_jax = False
 
 
@@ -45,7 +45,7 @@ class AutoGraphError(Exception):
     """Errors related to PennyLane's AutoGraph submodule."""
 
 
-def assert_results(results, var_names):
+def _assert_results(results, var_names):
     """Assert that none of the results are undefined, i.e. have no value."""
 
     assert len(results) == len(var_names)
@@ -57,7 +57,7 @@ def assert_results(results, var_names):
     return results
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
@@ -79,20 +79,20 @@ def if_stmt(
         set_state(init_state)
         true_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     @functional_cond.otherwise
     def functional_cond():
         set_state(init_state)
         false_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     results = functional_cond()
     set_state(results)
 
 
-def assert_iteration_inputs(inputs, symbol_names):
+def _assert_iteration_inputs(inputs, symbol_names):
     """All loop carried values, variables that are updated each iteration or accessed after the
     loop terminates, need to be initialized prior to entering the loop.
 
@@ -104,7 +104,7 @@ def assert_iteration_inputs(inputs, symbol_names):
     Additionally, these types need to be valid JAX types.
     """
 
-    if not has_jax:
+    if not has_jax:  # pragma: no cover
         raise ImportError("autograph capture requires JAX to be installed.")
 
     for i, inp in enumerate(inputs):
@@ -135,7 +135,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
     """Dispatch to a PennyLane implementation of while loops."""
 
     init_iter_args = get_state()
-    assert_iteration_inputs(init_iter_args, symbol_names)
+    _assert_iteration_inputs(init_iter_args, symbol_names)
 
     def test(state):
         old = get_state()
