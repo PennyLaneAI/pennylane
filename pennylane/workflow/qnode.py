@@ -14,13 +14,12 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements, unused-argument, too-many-positional-arguments, inconsistent-return-statements
 import copy
 import functools
 import inspect
 import logging
 import warnings
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import replace
 from typing import Any, Literal, Optional, Union, get_args
 
@@ -34,6 +33,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
+from ._resolve_diff_method import SupportedDiffMethods, _resolve_diff_method
 from .execution import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
@@ -45,18 +45,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
-
-SupportedDiffMethods = Literal[
-    None,
-    "best",
-    "device",
-    "backprop",
-    "adjoint",
-    "parameter-shift",
-    "hadamard",
-    "finite-diff",
-    "spsa",
-]
 
 
 def _convert_to_interface(res, interface):
@@ -178,9 +166,7 @@ def _resolve_execution_config(
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     else:
-        execution_config = qml.workflow._resolve_diff_method(
-            execution_config, device, tape=tapes[0]
-        )
+        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device
@@ -207,15 +193,25 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
-        results = [results]
+    qfunc_output_leaves, qfunc_output_structure = qml.pytrees.flatten(
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
+    )
 
-    # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
-        return results
+    # counts results are treated as a leaf
+    results_leaves = qml.pytrees.flatten(results, is_leaf=lambda obj: isinstance(obj, dict))[0]
 
-    return type(qfunc_output)(results)
+    # patch for transforms that change the number of results like metric_tensor
+    if len(results_leaves) != len(qfunc_output_leaves):
+        if isinstance(qfunc_output, (Sequence, qml.measurements.MeasurementProcess)):
+            return results
+        return type(qfunc_output)(results)
+
+    # result spec squeezes out dim for single measurement value
+    # we need to add it back in
+    if len(qfunc_output_leaves) == 1:
+        results = (results,)
+
+    return qml.pytrees.unflatten(results, qfunc_output_structure)
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
@@ -249,12 +245,24 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
 
 
 def _validate_qfunc_output(qfunc_output, measurements) -> None:
-    if isinstance(qfunc_output, qml.numpy.ndarray):
-        measurement_processes = tuple(measurements)
-    elif not isinstance(qfunc_output, Sequence):
-        measurement_processes = (qfunc_output,)
+    measurement_processes = qml.pytrees.flatten(
+        qfunc_output,
+        is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess),
+    )[0]
+
+    # user provides no measurements or non-measurements
+    if len(measurement_processes) == 0:
+        measurement_processes = None
     else:
-        measurement_processes = qfunc_output
+        # patch for tensor measurement objects, e.g., qml.math.hstack <-> [tensor([tensor(...), tensor(...)])]
+        if isinstance(measurement_processes[0], Iterable) and any(
+            isinstance(m, qml.typing.TensorLike) for m in measurement_processes[0]
+        ):
+            measurement_processes = [
+                m.base.item()
+                for m in measurement_processes[0]
+                if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
+            ]
 
     if not measurement_processes or not all(
         isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
@@ -272,6 +280,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
+# pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -737,7 +746,7 @@ class QNode:
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements, unused-argument
     @staticmethod
     @debug_logger
     def get_gradient_fn(
@@ -796,15 +805,15 @@ class QNode:
         if diff_method == "hadamard":
             return qml.gradients.hadamard_grad, {}, device
 
-        if isinstance(diff_method, str):
-            raise qml.QuantumFunctionError(
-                f"Differentiation method {diff_method} not recognized. Allowed "
-                f"options are {tuple(get_args(SupportedDiffMethods))}."
-            )
-
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
 
+        raise qml.QuantumFunctionError(
+            f"Differentiation method {diff_method} not recognized. Allowed "
+            f"options are {tuple(get_args(SupportedDiffMethods))}."
+        )
+
+    # pylint: disable=unused-argument
     @staticmethod
     @debug_logger
     def get_best_method(
@@ -946,7 +955,7 @@ class QNode:
     qtape = tape  # for backwards compatibility
 
     @debug_logger
-    def construct(self, args, kwargs):  # pylint: disable=too-many-branches
+    def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
 
@@ -1008,7 +1017,6 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
@@ -1064,7 +1072,11 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
+def qnode(device, **kwargs):
+    """Docstring will be updated below."""
+    return functools.partial(QNode, device=device, **kwargs)
+
+
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 

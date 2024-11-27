@@ -50,9 +50,9 @@ class TestExpval:
     """Tests for the expval function"""
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
-    def test_value(self, tol, shots):
+    def test_value(self, tol, shots, seed):
         """Test that the expval interface works"""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -89,11 +89,11 @@ class TestExpval:
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic
+        self, shots, phi, tol, tol_stochastic, seed
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit(phi):
