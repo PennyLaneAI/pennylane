@@ -20,10 +20,9 @@ from typing import Literal, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
+from pennylane.math.interface import Interface, _get_interface_name
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
-
-from .execution import _get_interface_name
 
 SupportedDiffMethods = Literal[
     None,
@@ -55,7 +54,7 @@ def _resolve_mcm_config(
     if mcm_config.mcm_method == "single-branch-statistics":
         raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
+    if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
         if mcm_config.postselect_mode == "hw-like":
@@ -67,7 +66,7 @@ def _resolve_mcm_config(
 
     if (
         finite_shots
-        and "jax" in interface
+        and interface in {Interface.JAX, Interface.JAX_JIT}
         and mcm_config.mcm_method in (None, "one-shot")
         and mcm_config.postselect_mode in (None, "hw-like")
     ):
@@ -173,7 +172,9 @@ def _resolve_execution_config(
     interface = _get_interface_name(tapes, execution_config.interface)
     finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
-        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
+        _get_interface_name(tapes, Interface.AUTO)
+        if execution_config.interface == Interface.NUMPY
+        else interface
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 

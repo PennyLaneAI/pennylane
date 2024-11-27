@@ -20,7 +20,7 @@ from operator import matmul
 from typing import Union
 
 import pennylane as qml
-from pennylane.math.utils import is_abstract
+from pennylane.math.interface import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 

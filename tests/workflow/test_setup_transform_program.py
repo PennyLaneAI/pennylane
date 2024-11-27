@@ -19,6 +19,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import pennylane as qml
+from pennylane.math import Interface
 from pennylane.transforms.core import TransformProgram
 from pennylane.workflow._setup_transform_program import (
     _prune_dynamic_transform,
@@ -29,7 +30,9 @@ from pennylane.workflow._setup_transform_program import (
 @pytest.fixture
 def mock_execution_config(mocker):
     """Creates a mock execution configuration."""
-    return mocker.MagicMock(interface=None, gradient_method=None, use_device_gradient=False)
+    return mocker.MagicMock(
+        interface=Interface.NUMPY, gradient_method=None, use_device_gradient=False
+    )
 
 
 @pytest.fixture

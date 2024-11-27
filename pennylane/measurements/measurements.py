@@ -23,7 +23,7 @@ from enum import Enum
 from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.math.utils import is_abstract
+from pennylane.math.interface import is_abstract
 from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike

@@ -18,6 +18,7 @@
 from cachetools import LRUCache
 
 import pennylane as qml
+from pennylane.math import Interface
 from pennylane.transforms.core import TransformProgram
 
 from ._cache_transform import _cache_transform
@@ -89,7 +90,7 @@ def _setup_transform_program(
 
     # changing this set of conditions causes a bunch of tests to break.
     no_interface_boundary_required = (
-        resolved_execution_config.interface is None
+        resolved_execution_config.interface is Interface.NUMPY
         or resolved_execution_config.gradient_method
         in {
             None,
@@ -97,7 +98,7 @@ def _setup_transform_program(
         }
     )
     device_supports_interface_data = no_interface_boundary_required and (
-        resolved_execution_config.interface is None
+        resolved_execution_config.interface is Interface.NUMPY
         or resolved_execution_config.gradient_method == "backprop"
         or getattr(device, "short_name", "") == "default.mixed"
     )

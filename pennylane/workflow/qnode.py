@@ -27,6 +27,7 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
+from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
@@ -34,7 +35,6 @@ from pennylane.workflow._setup_transform_program import _setup_transform_program
 from pennylane.workflow.resolution import SupportedDiffMethods, _resolve_execution_config
 
 from ._capture_qnode import capture_qnode
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -47,7 +47,7 @@ def _convert_to_interface(res, interface):
     Recursively convert res to the given interface.
     """
 
-    if interface == "numpy":
+    if interface == Interface.NUMPY:
         return res
 
     if isinstance(res, (list, tuple)):
@@ -57,12 +57,12 @@ def _convert_to_interface(res, interface):
         return {k: _convert_to_interface(v, interface) for k, v in res.items()}
 
     interface_conversion_map = {
-        "autograd": "autograd",
-        "jax": "jax",
-        "jax-jit": "jax",
-        "torch": "torch",
-        "tf": "tensorflow",
-        "tf-autograph": "tensorflow",
+        Interface.AUTOGRAD: "autograd",
+        Interface.JAX: "jax",
+        Interface.JAX_JIT: "jax",
+        Interface.TORCH: "torch",
+        Interface.TF: "tensorflow",
+        Interface.TF_AUTOGRAPH: "tensorflow",
     }
 
     interface_name = interface_conversion_map.get(interface, None)
@@ -73,21 +73,17 @@ def _convert_to_interface(res, interface):
 def _make_execution_config(
     circuit: Optional["QNode"], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
-    circuit_interface = getattr(circuit, "interface", None)
+    circuit_interface = getattr(circuit, "interface", Interface.NUMPY)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
     grad_on_execution = execute_kwargs.get("grad_on_execution")
-    if getattr(circuit, "interface", "") == "jax":
+    if circuit_interface == Interface.JAX:
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
 
-    # Mapping numpy to None here because `qml.execute` will map None back into
-    # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
-    # If the user specified interface="numpy", it would've already been converted to
-    # "autograd", and it wouldn't be affected.
     return qml.devices.ExecutionConfig(
-        interface=None if circuit_interface == "numpy" else circuit_interface,
+        interface=circuit_interface,
         gradient_keyword_arguments=gradient_kwargs,
         gradient_method=diff_method,
         grad_on_execution=grad_on_execution,
@@ -516,7 +512,7 @@ class QNode:
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput = "auto",
+        interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         grad_on_execution: Literal[True, False, "best"] = "best",
         cache: Union[Cache, Literal["auto", True, False]] = "auto",
@@ -546,12 +542,6 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if interface not in SUPPORTED_INTERFACE_NAMES:
-            raise qml.QuantumFunctionError(
-                f"Unknown interface {interface}. Interface must be "
-                f"one of {SUPPORTED_INTERFACE_NAMES}."
-            )
-
         if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
@@ -575,7 +565,9 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = "numpy" if diff_method is None else INTERFACE_MAP[interface]
+        self._interface = (
+            Interface.NUMPY if diff_method is None else get_canonical_interface(interface)
+        )
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -632,17 +624,11 @@ class QNode:
     @property
     def interface(self) -> str:
         """The interface used by the QNode"""
-        return self._interface
+        return self._interface.value
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
-        if value not in SUPPORTED_INTERFACE_NAMES:
-
-            raise qml.QuantumFunctionError(
-                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-            )
-
-        self._interface = INTERFACE_MAP[value]
+        self._interface = get_canonical_interface(value)
 
     @property
     def transform_program(self) -> TransformProgram:
@@ -940,7 +926,7 @@ class QNode:
             len(self._tape.get_parameters(trainable_only=False)) == 0
             and not self.transform_program.is_informative
         ):
-            res = _convert_to_interface(res, self.interface)
+            res = _convert_to_interface(res, config.interface)
 
         return _to_qfunc_output_type(
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots
@@ -954,19 +940,21 @@ class QNode:
         old_interface = self.interface
         if old_interface == "auto":
             interface = (
-                "jax"
+                Interface.JAX
                 if qml.capture.enabled()
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
-            if interface != "numpy":
-                interface = INTERFACE_MAP.get(interface, None)
+            try:
+                interface = get_canonical_interface(interface)
+            except ValueError:
+                interface = Interface.AUTO
             self._interface = interface
 
         try:
             res = self._execution_component(args, kwargs)
         finally:
-            if old_interface == "auto":
-                self._interface = "auto"
+            if old_interface == Interface.AUTO:
+                self._interface = Interface.AUTO
 
         return res
 
