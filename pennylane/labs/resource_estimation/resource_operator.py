@@ -103,7 +103,6 @@ class ResourceOperator(ABC):
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
         return self.__class__.resource_rep(**self.resource_params())
-<<<<<<< HEAD
 
     @classmethod
     def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
@@ -128,8 +127,6 @@ class ResourceOperator(ABC):
     ) -> Dict[CompressedResourceOp, int]:
         """Returns a compressed representation for the resources of the exponentiated operator"""
         raise ResourcesNotDefined
-=======
->>>>>>> labs-resource-sub
 
 
 class ResourcesNotDefined(Exception):

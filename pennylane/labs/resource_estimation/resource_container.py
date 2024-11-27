@@ -38,11 +38,7 @@ class CompressedResourceOp:
         Hadamard(num_wires=1)
     """
 
-<<<<<<< HEAD
     def __init__(self, op_type, params: dict, name=None) -> None:
-=======
-    def __init__(self, op_type, params: dict) -> None:
->>>>>>> labs-resource-sub
         r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
         Args:
