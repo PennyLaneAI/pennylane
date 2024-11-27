@@ -254,6 +254,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
     def plxpr_transform(self, primitive, tracers, params, targs, tkwargs, state):
         """Function for processing primitives to transform PLxPR.
+
         Args:
             primitive (jax.core.Primitive): Primitive to transform
             tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive
@@ -262,6 +263,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             tkwargs (dict): Keyword arguments for the transform
             state (dict): Dictionary containing auxiliary information about the environment/state
                 needed to apply the transform
+
         Returns:
             Any: The results of the transformed primitive
         """
