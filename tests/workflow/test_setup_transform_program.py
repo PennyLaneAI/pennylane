@@ -40,22 +40,26 @@ def mock_device(mocker):
     return device
 
 
+def null_postprocessing(results):
+    """A postprocessing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
+
+
 def mock_expand_transform(tape):
     """Mock expand transform function"""
-    postprocessing_fn = MagicMock(name="postprocessing_fn")
-    return [tape], postprocessing_fn
+    return [tape], null_postprocessing
 
 
 def mock_user_transform(tape):
     """Mock user transform function"""
-    postprocessing_fn = MagicMock(name="user_postprocessing_fn")
-    return [tape], postprocessing_fn
+    return [tape], null_postprocessing
 
 
 def mock_device_transform(tape):
     """Mock user transform function"""
-    postprocessing_fn = MagicMock(name="device_postprocessing_fn")
-    return [tape], postprocessing_fn
+    return [tape], null_postprocessing
 
 
 def test_gradient_expand_transform(mocker, mock_device, mock_execution_config):
@@ -82,7 +86,7 @@ def test_device_transform_program(mocker, mock_device, mock_execution_config):
 
     container = qml.transforms.core.TransformContainer(mock_device_transform)
     device_tp = qml.transforms.core.TransformProgram((container,))
-    mock_device.preprocess = mocker.MagicMock(return_value=(device_tp, mock_execution_config))
+    mock_device.preprocess_transforms = mocker.MagicMock(return_value=device_tp)
 
     user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(
