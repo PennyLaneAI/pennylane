@@ -348,7 +348,29 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     def _resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
-        raise re.ResourcesNotDefined
+        gate_types = {}
+        x = re.ResourceX.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
+        toffoli = re.ResourceToffoli.resource_rep()
+        
+        gate_types[x] = num_ctrl_values * 2
+
+        if num_ctrl_wires == 1:
+            gate_types[cnot] = 1
+            return gate_types
+
+        if num_ctrl_wires == 2:
+            gate_types[toffoli] = 1
+            return gate_types
+
+        if num_ctrl_wires == 3:
+            gate_types[cnot] = 2
+            gate_types[toffoli] = 1
+            return gate_types
+    
+
+        gate_types[cnot] = (36*num_ctrl_wires - 111)  # Barenco 1995
+        return gate_types
 
     def resource_params(self) -> dict:
         num_control = len(self.hyperparameters["control_wires"])
