@@ -128,6 +128,10 @@ class ResourceOperator(ABC):
         """Returns a compressed representation for the resources of the exponentiated operator"""
         raise ResourcesNotDefined
 
+    def tracking_name(cls, *args, **kwargs) -> str:
+        """Returns a name used to track the operator during resource estimation."""
+        return cls.__name__.replace("Resource", "")
+
 
 class ResourcesNotDefined(Exception):
     """Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""

@@ -51,6 +51,7 @@ Operators
     :toctree: api
 
     ~ResourceAdjoint
+    ~ResourceCCZ
     ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlled
@@ -58,9 +59,16 @@ Operators
     ~ResourceDoubleExcitation
     ~ResourceDoubleExcitationMinus
     ~ResourceDoubleExcitationPlus
+    ~ResourceCRot
+    ~ResourceCRX
     ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCSWAP
     ~ResourceCY
     ~ResourceCZ
+    ~ResourceDoubleExcitation
+    ~ResourceDoubleExcitationMinus
+    ~ResourceDoubleExcitationPlus
     ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
@@ -73,7 +81,6 @@ Operators
     ~ResourceMultiRZ
     ~ResourceOrbitalRotation
     ~ResourcePauliRot
-    ~ResourceMultiControlledX
     ~ResourcePhaseShift
     ~ResourcePow
     ~ResourcePSWAP
@@ -135,13 +142,17 @@ from .resource_container import (
 from .ops import (
     ResourceAdjoint,
     ResourceExp,
+    ResourceCCZ,
     ResourceCH,
     ResourceCNOT,
     ResourceControlled,
     ResourceControlledPhaseShift,
-    ResourceCRX,
     ResourceCCZ,
+    ResourceCRot,
+    ResourceCRX,
     ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
     ResourceCY,
     ResourceCZ,
     ResourceDoubleExcitation,

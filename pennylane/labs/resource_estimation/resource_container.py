@@ -62,7 +62,7 @@ class CompressedResourceOp:
         self.op_type = op_type
         self.params = params
         self._hashable_params = _make_hashable(params)
-        self._name = name or self.op_type.__name__.replace("Resource", "")
+        self._name = name or op_type.tracking_name(**params)
 
     def __hash__(self) -> int:
         return hash((self._name, self._hashable_params))
