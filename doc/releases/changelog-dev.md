@@ -33,6 +33,11 @@
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
+* ``qml.qchem.factorize`` method now supports performing compressed double factorization 
+  and can be used with ``compressed=True``.
+  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
+
+
 <h3>Improvements 🛠</h3>
 
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
