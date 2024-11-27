@@ -47,6 +47,10 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
         raise re.ResourcesNotDefined
 
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): z % 2}
+
 
 class ResourceS(qml.S, re.ResourceOperator):
     """Resource class for the S gate."""
@@ -230,6 +234,10 @@ class ResourceY(qml.Y, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
     @staticmethod
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
@@ -238,6 +246,10 @@ class ResourceY(qml.Y, re.ResourceOperator):
             return re.ResourceCY.resources(**kwargs)
 
         raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): z % 2}
 
 
 class ResourceZ(qml.Z, re.ResourceOperator):
@@ -259,6 +271,10 @@ class ResourceZ(qml.Z, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
     @staticmethod
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
@@ -270,3 +286,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
             return re.ResourceCCZ.resources(**kwargs)
 
         raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): z % 2}
