@@ -778,7 +778,7 @@ class QNode:
         config = _make_execution_config(None, diff_method)
 
         if device.supports_derivatives(config, circuit=tape):
-            new_config = device.preprocess(config)[1]
+            new_config = device.setup_execution_config(config)
             return new_config.gradient_method, {}, device
 
         if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
@@ -869,7 +869,7 @@ class QNode:
         config = _make_execution_config(None, "best")
 
         if device.supports_derivatives(config, circuit=tape):
-            new_config = device.preprocess(config)[1]
+            new_config = device.setup_execution_config(config)
             return new_config.gradient_method, {}, device
 
         if tape and any(isinstance(o, qml.operation.CV) for o in tape):
