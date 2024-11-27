@@ -496,6 +496,60 @@ class TestPreprocessTransforms:
             with pytest.raises(qml.DeviceError, match=r"Observable .* not supported"):
                 _, __ = program((shots_only_obs_tape,))
 
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    @pytest.mark.parametrize("overlapping_obs", [True, False])
+    @pytest.mark.parametrize("non_commuting_obs", [True, False])
+    @pytest.mark.parametrize("sum_support", [True, False])
+    def test_obs_splitting_transform(
+        self, request, overlapping_obs, non_commuting_obs, sum_support
+    ):
+        """Tests if ``split_non_commuting`` or ``split_to_single_terms`` is applied correctly."""
+
+        if not overlapping_obs and non_commuting_obs:
+            pytest.skip("Not a valid combination of capabilities")
+
+        if overlapping_obs and sum_support:
+            pytest.skip("The support for Sum doesn't matter here")
+
+        class CustomDevice(Device):
+
+            config_filepath = request.node.toml_file
+
+            def __init__(self):
+                super().__init__()
+                self.capabilities.overlapping_observables = overlapping_obs
+                self.capabilities.non_commuting_observables = non_commuting_obs
+                if sum_support:
+                    self.capabilities.observables.update({"Sum": OperatorProperties()})
+
+            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+                return (0,)
+
+        dev = CustomDevice()
+        program = dev.preprocess_transforms()
+
+        if not overlapping_obs:
+            assert qml.transforms.split_non_commuting in program
+            assert qml.transforms.split_to_single_terms not in program
+            for transform_container in program:
+                if transform_container._transform is qml.transforms.split_non_commuting:
+                    assert "grouping_strategy" in transform_container._kwargs
+                    assert transform_container._kwargs["grouping_strategy"] == "wires"
+        elif not non_commuting_obs:
+            assert qml.transforms.split_non_commuting in program
+            assert qml.transforms.split_to_single_terms not in program
+            for transform_container in program:
+                if transform_container._transform is qml.transforms.split_non_commuting:
+                    assert "grouping_strategy" in transform_container._kwargs
+                    assert transform_container._kwargs["grouping_strategy"] == "qwc"
+        elif not sum_support:
+            assert qml.transforms.split_to_single_terms in program
+            assert qml.transforms.split_non_commuting not in program
+        else:
+            assert qml.transforms.split_to_single_terms not in program
+            assert qml.transforms.split_to_single_terms not in program
+
 
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
