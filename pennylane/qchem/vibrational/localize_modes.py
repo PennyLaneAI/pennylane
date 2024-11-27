@@ -80,22 +80,24 @@ def _normalize_q(qmat):
     return qnormalized
 
 
-def _localization_unitary(qmat, rand_start=True):
+def _localization_unitary(qmat):
     r"""Returns the unitary matrix to localize the displacement vectors."""
 
     nmodes = qmat.shape[2]
     num_params = int(nmodes * (nmodes - 1) / 2)
 
-    if rand_start:
-        params = 2 * np.pi * np.random.rand(num_params)
-    else:
-        params = np.zeros(num_params)
+    np.random.seed(1000)
+    params = 2 * np.pi * np.random.rand(num_params)
 
     qnormalized = _normalize_q(qmat)
 
     optimization_res = scipy.optimize.minimize(_params_cost, params, args=(qnormalized, nmodes))
+
+    # Check if the minimization was successful; if it wasn't, proceed with the normal modes.
     if optimization_res.success is False:
-        warnings.warn("Mode localization finished unsuccessfully, returning normal modes...")
+        warnings.warn(
+            "Mode localization finished unsuccessfully, returning normal modes..."
+        )  # pragma: no cover
         return _params_to_unitary(0 * params, nmodes), qmat
 
     params_opt = optimization_res.x

@@ -14,6 +14,7 @@
 """
 This module contains tests for functions needed to compute PES object.
 """
+import sys
 
 import numpy as np
 import pytest
@@ -24,6 +25,17 @@ from pennylane.qchem import vibrational
 AU_TO_CM = 219475
 
 # pylint: disable=too-many-arguments
+
+
+def test_import_pyscf(monkeypatch):
+    """Test if an ImportError is raised by _import_geometric function."""
+    # pylint: disable=protected-access
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "geometric", None)
+
+        with pytest.raises(ImportError, match="This feature requires geometric"):
+            vibrational.vibrational_class._import_geometric()
 
 
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
@@ -134,12 +146,15 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "loc_freqs", "exp_results"),
+    ("harmonic_res", "loc_freqs", "exp_results"),
     # Expected results were obtained using vibrant code
     [
         (
-            ["H", "F"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            # HF Molecule with Bond distance 1.0 A.
+            {
+                "freq_wavenumber": np.array([4137.96875377]),
+                "norm_mode": np.array([[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]]),
+            },
             [2600],
             {
                 "vecs": [[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]],
@@ -148,8 +163,29 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
             },
         ),
         (
-            ["H", "H", "S"],
-            np.array([[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]]),
+            # H2S Molecule with geometry [[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]]
+            {
+                "freq_wavenumber": np.array([1294.21950382, 2691.27147004, 2718.40232678]),
+                "norm_mode": np.array(
+                    [
+                        [
+                            [5.04812381e-17, -4.56823323e-01, 5.19946514e-01],
+                            [1.86137414e-16, 4.56823322e-01, 5.19946514e-01],
+                            [1.35223494e-17, 1.15509844e-11, -3.26953266e-02],
+                        ],
+                        [
+                            [-9.48719985e-18, -5.36045204e-01, -4.43104273e-01],
+                            [1.58761035e-16, 5.36044714e-01, -4.43103833e-01],
+                            [5.31102499e-17, 1.54185981e-08, 2.78633116e-02],
+                        ],
+                        [
+                            [6.52265582e-17, -5.15178735e-01, -4.62528551e-01],
+                            [3.12480469e-16, -5.15179245e-01, 4.62528972e-01],
+                            [1.63797372e-17, 3.23955347e-02, -1.32498366e-08],
+                        ],
+                    ]
+                ),
+            },
             [2600],
             {
                 "vecs": [
@@ -177,19 +213,78 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
                 ],
             },
         ),
+        (
+            # CO2 Molecule with geometry [[0.0,0.0,0.0], [0.0,0.0,1.0], [0.0,0.0,-1.0]]
+            {
+                "freq_wavenumber": np.array(
+                    [656.3184059, 656.3184059, 1407.28717611, 2373.64114216]
+                ),
+                "norm_mode": np.array(
+                    [
+                        [
+                            [5.86064687e-03, 2.45967564e-01, -4.92244293e-16],
+                            [-2.19989467e-03, -9.23281582e-02, 2.95469158e-16],
+                            [-2.19989467e-03, -9.23281582e-02, 3.51671702e-17],
+                        ],
+                        [
+                            [2.45967564e-01, -5.86064687e-03, 6.75239848e-17],
+                            [-9.23281582e-02, 2.19989467e-03, -5.57778225e-17],
+                            [-9.23281582e-02, 2.19989467e-03, 5.95919210e-18],
+                        ],
+                        [
+                            [-4.24669793e-17, 2.11704247e-16, 1.22513573e-14],
+                            [1.58804266e-17, -5.53638907e-17, -1.76782220e-01],
+                            [4.30610059e-18, -4.87173137e-17, 1.76782220e-01],
+                        ],
+                        [
+                            [5.59030930e-17, -4.58567017e-16, -2.46037374e-01],
+                            [-4.23998916e-17, 1.49398458e-16, 9.23543628e-02],
+                            [7.91532671e-18, 1.84094011e-16, 9.23543628e-02],
+                        ],
+                    ]
+                ),
+            },
+            [100, 1000],
+            {
+                "vecs": [
+                    [
+                        [-1.35233802e-01, 2.05538824e-01, -4.43105338e-16],
+                        [5.07623349e-02, -7.71525352e-02, 2.74654830e-16],
+                        [5.07623349e-02, -7.71525352e-02, 2.55166628e-17],
+                    ],
+                    [
+                        [-2.05538824e-01, -1.35233802e-01, 2.24770087e-16],
+                        [7.71525352e-02, 5.07623349e-02, -1.22384285e-16],
+                        [7.71525352e-02, 5.07623349e-02, -2.49227155e-17],
+                    ],
+                    [
+                        [-4.24669825e-17, 2.11704274e-16, 1.41700276e-08],
+                        [1.58804290e-17, -5.53638993e-17, -1.76782225e-01],
+                        [4.30610013e-18, -4.87173243e-17, 1.76782215e-01],
+                    ],
+                    [
+                        [-5.59030905e-17, 4.58567005e-16, 2.46037374e-01],
+                        [4.23998907e-17, -1.49398454e-16, -9.23543526e-02],
+                        [-7.91532696e-18, -1.84094009e-16, -9.23543730e-02],
+                    ],
+                ],
+                "freqs": [0.0029904, 0.0029904, 0.00641206, 0.01081509],
+                "uloc": [
+                    [-5.69390713e-01, 8.22067039e-01, 0.00000000e00, 0.00000000e00],
+                    [-8.22067039e-01, -5.69390713e-01, 0.00000000e00, 0.00000000e00],
+                    [0.00000000e00, 0.00000000e00, 1.00000000e00, -5.75929386e-08],
+                    [0.00000000e00, 0.00000000e00, -5.75929386e-08, -1.00000000e00],
+                ],
+            },
+        ),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
-def test_mode_localization(sym, geom, loc_freqs, exp_results):
+def test_mode_localization(harmonic_res, loc_freqs, exp_results):
     r"""Test that mode localization returns correct results."""
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational.optimize_geometry(mol)
-
-    harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
     loc_res, uloc = vibrational.localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
     freqs = loc_res["freq_wavenumber"] / AU_TO_CM
-
     nmodes = len(freqs)
     for i in range(nmodes):
         res_in_expvecs = any(

@@ -45,7 +45,6 @@ def harmonic_analysis(scf_result, method="rhf"):
         raise ValueError(f"Specified electronic structure method, {method} is not available.")
 
     hess = getattr(pyscf.hessian, method).Hessian(scf_result).kernel()
-
     harmonic_res = thermo.harmonic_analysis(scf_result.mol, hess)
     return harmonic_res
 
@@ -68,14 +67,11 @@ def single_point(molecule, method="rhf"):
         raise ValueError(f"Specified electronic structure method, {method}, is not available.")
 
     geom = [
-        [symbol, tuple(np.array(molecule.coordinates)[i] * BOHR_TO_ANG)]
+        [symbol, tuple(np.array(molecule.coordinates)[i])]
         for i, symbol in enumerate(molecule.symbols)
     ]
-
     spin = int((molecule.mult - 1) / 2)
-    mol = pyscf.gto.Mole(
-        atom=geom, symmetry="C1", spin=spin, charge=molecule.charge, unit="Angstrom"
-    )
+    mol = pyscf.gto.Mole(atom=geom, symmetry="C1", spin=spin, charge=molecule.charge, unit="Bohr")
     mol.basis = molecule.basis_name
     mol.build()
     if method == "rhf":
@@ -119,7 +115,7 @@ def optimize_geometry(molecule, method="rhf"):
     mol_eq = qml.qchem.Molecule(
         molecule.symbols,
         geom_eq.atom_coords(unit="B"),
-        unit="bohr",
+        unit="Bohr",
         basis_name=molecule.basis_name,
         charge=molecule.charge,
         mult=molecule.mult,
@@ -127,5 +123,4 @@ def optimize_geometry(molecule, method="rhf"):
     )
 
     scf_result = single_point(mol_eq, method)
-
     return mol_eq, scf_result
