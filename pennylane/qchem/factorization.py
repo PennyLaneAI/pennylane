@@ -57,7 +57,7 @@ def factorize(
     is done using an eigenvalue or Cholesky decomposition to obtain symmetric matrices
     :math:`L^{(r)}` such that :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`,
     where core and leaf tensors are obtained by further diagonalizing each matrix :math:`L^{(r)}`
-    and truncating its eigenvalues (and the corresponding eigenvectors) are at a threshold error.
+    and truncating its eigenvalues (and the corresponding eigenvectors) at a threshold error.
     See theory section for more details.
 
     For compressed double factorization (CDF), i.e., when ``compressed=True``, the above
@@ -102,7 +102,7 @@ def factorize(
         optimizer (optax.optimizer): an optax optimizer instance. If not provided, `Adam
             <https://optax.readthedocs.io/en/latest/api/optimizers.html#optax.adam>`_ is
             used with ``0.001`` learning rate.
-        init_params (dict[str, TensorLike] | None): Intial values of the orbital rotations
+        init_params (dict[str, TensorLike] | None): intial values of the orbital rotations
             (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
             a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
             two-electron tensor. If not given, by default, zero matrices will be used if
@@ -201,7 +201,7 @@ def factorize(
             V_{ijkl} = \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)},
 
         where :math:`U^{(r)}` are the eigenvectors of :math:`L^{(r)}` and
-        :math:`Z^{(r)}` are the outer proudct of the eigenvalues of :math:`L^{(r)}`.
+        :math:`Z^{(r)}` are the outer product of the eigenvalues of :math:`L^{(r)}`.
 
         The factorization algorithm has the following steps
         [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
@@ -217,7 +217,7 @@ def factorize(
           eigenvectors by the square root of the eigenvalues and reshape them
           to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
-        - While for the Cholesky decomposition, keep the first :math:`r` Cholesky
+        - Whereas for the Cholesky decomposition, keep the first :math:`r` Cholesky
           vectors that result in an residual error below the threshold and reshape
           them to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
@@ -308,8 +308,9 @@ def factorize(
 
 
 def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
-    """Explicit double factorization using generalized eigen decomposition of
-    the two-electron integral tensor described in PRX Quantum 2, 040352 (2021).
+    """Explicit double factorization using eigen decomposition
+    of the two-electron integral tensor described in
+    `PRX Quantum 2, 040352 (2021) <https://doi.org/10.1103/PRXQuantum.2.040352>`_.
 
     Args:
         two (array[array[float]]): two-electron integral tensor in the molecular orbital
@@ -343,8 +344,9 @@ def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=N
 def _double_factorization_cholesky(
     two, tol_factor=1.0e-10, shape=None, interface=None, num_factors=None
 ):
-    """Explicit double factorization using Cholesky decomposition of the two-electron
-    integral tensor described in J. Chem. Phys. 118, 9481-9484 (2003).
+    """Explicit double factorization using Cholesky decomposition
+    of the two-electron integral tensor described in
+    `J. Chem. Phys. 118, 9481-9484 (2003) <https://doi.org/10.1063/1.1578621>`_.
 
     Args:
         two (array[array[float]]): two-electron integral tensor in the molecular orbital
