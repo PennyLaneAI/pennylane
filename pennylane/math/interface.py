@@ -539,11 +539,6 @@ def _get_interface_name(tapes, interface):
     Returns:
         str: Interface name"""
 
-    if interface not in SUPPORTED_INTERFACE_NAMES:
-        raise ValueError(
-            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-        )
-
     interface = get_canonical_interface(interface)
 
     if interface == Interface.AUTO:
