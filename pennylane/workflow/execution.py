@@ -29,6 +29,7 @@ import pennylane as qml
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
+from ._setup_transform_program import _setup_transform_program
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
 logger = logging.getLogger(__name__)
@@ -406,7 +407,7 @@ def execute(
 
     # pylint: disable=protected-access
     if transform_program is None or inner_transform is None:
-        transform_program, inner_transform = qml.workflow._setup_transform_program(
+        transform_program, inner_transform = _setup_transform_program(
             transform_program, device, config, cache, cachesize
         )
 
