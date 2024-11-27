@@ -211,43 +211,78 @@ class TestBroadcasting:
     @staticmethod
     def get_expected_state(x, subspace):
         """Gets the expected final state of the circuit described in `get_ops_and_measurements`."""
+        states = []
+        for x_val in x:
+            cos = np.cos(x_val/2)
+            sin = np.sin(x_val/2)
+            state = np.array([
+                [cos**2, 0.5j*np.sin(x_val)],
+                [-0.5j*np.sin(x_val), sin**2]
+            ])
+            states.append(state)
+        return np.stack(states)
 
     @staticmethod
     def get_expectation_values(x, subspace):
         """Gets the expected final expvals of the circuit described in `get_ops_and_measurements`."""
+        if subspace in [(0, 1), (0, 2)]:
+            return [-np.sin(x), np.cos(x)]
+        raise ValueError(f"Test cases doesn't support subspace {subspace}")
 
     @staticmethod
     def get_quantum_script(x, subspace, shots=None, extra_wire=False):
-        """Gets quantum script of a circuit that includes
-        parameter broadcasted operations and measurements."""
+        """Gets quantum script of a circuit that includes parameter broadcasted operations and measurements."""
+        # Use consistent wire ordering for the mapping test
+        wire_list = [0, 1]
+        if extra_wire:
+            wire_list.append(2)
+            
+        ops = [qml.RX(x, wires=wire_list[0])]
+        measurements = [
+            qml.expval(qml.PauliY(wire_list[0])),
+            qml.expval(qml.PauliZ(wire_list[0]))
+        ]
+        if extra_wire:
+            # Add measurement on the last wire for the extra wire case
+            measurements.insert(0, qml.expval(qml.PauliY(wire_list[-1])))
+            
+        return qml.tape.QuantumScript(ops, measurements, shots=shots)
 
     def test_broadcasted_op_state(self, subspace):
         """Test that simulate works for state measurements
         when an operation has broadcasted parameters"""
+        x = np.array([0.8, 1.0, 1.2, 1.4])
+
+        qs = self.get_quantum_script(x, subspace)
+        res = simulate(qs)
+
+        expected = self.get_expectation_values(x, subspace)
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res, expected)
+
+        state, is_state_batched = get_final_state(qs)
+        res = measure_final_state(qs, state, is_state_batched)
+
+        assert np.allclose(state, self.get_expected_state(x, subspace))
+        assert is_state_batched
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert np.allclose(res, expected)
 
     def test_broadcasting_with_extra_measurement_wires(self, mocker, subspace):
         """Test that broadcasting works when the operations don't act on all wires."""
+        spy = mocker.spy(qml, "map_wires")
+        x = np.array([0.8, 1.0, 1.2, 1.4])
+        qs = self.get_quantum_script(x, subspace, extra_wire=True)
+        res = simulate(qs)
 
-
-@pytest.mark.parametrize("extra_wires", [1, 3])
-class TestStatePadding:
-    """Tests if the state zeros padding works as expected for when operators don't act on all
-    measured wires."""
-
-    @staticmethod
-    def get_expected_dm(x, extra_wires):
-        """Gets the final density matrix of the circuit described in `get_ops_and_measurements`."""
-
-    @staticmethod
-    def get_quantum_script(x, extra_wires):
-        """Gets a quantum script of a circuit where operators don't act on all measured wires."""
-
-    def test_extra_measurement_wires(self, extra_wires):
-        """Tests if correct state is returned when operators don't act on all measured wires."""
-
-    def test_extra_measurement_wires_broadcasting(self, extra_wires):
-        """Tests if correct state is returned when there is broadcasting and
-        operators don't act on all measured wires."""
+        assert isinstance(res, tuple)
+        assert len(res) == 3
+        assert np.allclose(res[0], np.zeros_like(x))
+        assert np.allclose(res[1:], self.get_expectation_values(x, subspace))
+        # The mapping should be consistent with the wire ordering in get_quantum_script
+        assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
 
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
