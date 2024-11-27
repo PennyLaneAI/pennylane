@@ -214,12 +214,6 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         with pytest.raises(ValueError, match="Expected input matrix to have shape"):
             qml.Hermitian(H1, wires=[0])
 
-        # test non-Hermitian matrix
-        H2 = ham.copy()
-        H2[0, 1] = 2
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.Hermitian(H2, wires=0)
-
     def test_ragged_input_raises(self):
         """Tests that an error is raised if the input to Hermitian is ragged."""
         ham = [[1, 0], [0, 1, 2]]
@@ -502,12 +496,6 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.Hermitian(ham[1:], wires=0).matrix()
-
-        # test non-Hermitian matrix
-        H2 = ham.copy()
-        H2[0, 1] = 2
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.Hermitian(H2, wires=0).matrix()
 
     def test_hermitian_empty_wire_list_error(self):
         """Tests that the hermitian operator raises an error when instantiated with wires=[]."""

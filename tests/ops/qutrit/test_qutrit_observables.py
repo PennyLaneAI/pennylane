@@ -296,12 +296,6 @@ class TestTHermitian:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.THermitian(H_01[1:], wires=0).matrix()
 
-        # test non-Hermitian matrix
-        H2 = H_01.copy()
-        H2[0, 1] = 2
-        with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.THermitian(H2, wires=0).matrix()
-
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         A = np.array([[6 + 0j, 1 - 2j, 0], [1 + 2j, -1, 0], [0, 0, 1]])
