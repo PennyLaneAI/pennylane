@@ -159,10 +159,6 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
-  This helps prevent keyword arguments from being passed in the wrong order.
-  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
-
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
   Autograd framework. As the function uses automatic differentiation for validation, parameters
   from an autodiff framework have to be used.
