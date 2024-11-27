@@ -30,11 +30,11 @@ from pennylane.logging import debug_logger
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
-from pennylane.workflow._setup_transform_program import _setup_transform_program
-from pennylane.workflow.resolution import SupportedDiffMethods, _resolve_execution_config
 
 from ._capture_qnode import capture_qnode
+from ._setup_transform_program import _setup_transform_program
 from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
+from .resolution import SupportedDiffMethods, _resolve_execution_config
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
