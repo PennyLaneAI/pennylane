@@ -724,15 +724,19 @@ def test_chemist_transform(
 @pytest.mark.parametrize(
     ("core_shifted", "one_body_shifted", "two_body_shifted"),
     [
-        # (Build HeH+ Molecule and Chemist Hamiltonian)
-        # H_chemist = qml.jordan_wigner(
-        #   fermionic_observable(core_shifted, one_body_shifted, 2 * two_body_shifted, chemist=True)
-        # ).matrix()
-        # eigvals, eigvecs = np.linalg.eigh(H_chemist)
-        # for eigval, eigvec in zip(eigvals, eigvecs.T):
-        #     if (eigvec @ qml.matrix(qml.qchem.particle_number(2 * mol.n_orbitals)) @ eigvec.conj().T) == mol.n_electrons:
-        #         print(eigval) # --> -2.688647053431185
-        #         break
+        # Following shifted terms have been computed manually for HeH+ moelcule.
+        # Their correctness has been verified by computing the chemist Hamiltonian
+        # and observing its eigenspectrum for the lowest eigenvalue with same
+        # number of electrons.
+        #
+        # >>> f_chemist = chemist_fermionic_observable(core_shifted, one_body_shifted, two_body_shifted)
+        # >>> H_chemist = qml.jordan_wigner(f_chemist)
+        # >>> eigvals, eigvecs = np.linalg.eigh(H_chemist.matrix())
+        # >>> for eigval, eigvec in zip(eigvals, eigvecs.T):
+        # ...    if (eigvec @ qml.matrix(qml.qchem.particle_number(4)) @ eigvec.conj().T) == 2:
+        # ...        print(eigval)
+        # ...        break
+        # -2.688647053431185
         (
             np.array([0.14782753]),
             np.array([[-1.55435269, 0.08134727], [0.08134727, -0.0890333]]),
