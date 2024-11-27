@@ -212,9 +212,11 @@ def factorize(
         - Decompose the resulting matrix either via Cholesky decomposition or
           via eigenvalue decomposition.
 
-        - For Cholesky decomposition, we keep the vectors that result in an approximation error
-          larger than a threshold. While for the eigenvalue decomposition, we keep the :math:`r`
-          eigenvectors that have corresponding eigenvalues larger than a threshold.
+        - For the eigenvalue decomposition, keep the :math:`r` eigenvectors that
+          have corresponding eigenvalues larger than a threshold.
+
+        - While for the Cholesky decomposition, keep the first :math:`r` vectors
+          that result in an approximation error below the threshold.
 
         - Multiply the eigenvectors by the square root of the eigenvalues to obtain
           matrices :math:`L^{(r)}`.
