@@ -81,6 +81,28 @@ class TestControlledPhaseShift:
 
         assert op_compressed_rep_type.resources(**op_resource_params) == expected
 
+    @pytest.mark.parametrize("phi, wires", params)
+    def test_adjoint_decomp(self, phi, wires):
+        """Test that the adjoint resources are correct."""
+
+        op = re.ResourceControlledPhaseShift(phi, wires)
+        rep = op.resource_rep_from_op()
+        res = rep.op_type.resources(**rep.params)
+        adjoint_res = rep.op_type.adjoint_resource_decomp(**rep.params)
+
+        assert res == adjoint_res
+
+    @pytest.mark.parametrize("phi, wires", params)
+    def test_pow_decomp(self, phi, wires):
+        """Test that the adjoint resources are correct."""
+
+        op = re.ResourceControlledPhaseShift(phi, wires)
+        rep = op.resource_rep_from_op()
+        res = rep.op_type.resources(**rep.params)
+        adjoint_res = rep.op_type.pow_resource_decomp(2, **rep.params)
+
+        assert res == adjoint_res
+
 
 class TestCNOT:
     """Test ResourceCNOT"""

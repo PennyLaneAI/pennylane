@@ -94,9 +94,9 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
-    @staticmethod
-    def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=config["error_rx"])
+    @classmethod
+    def adjoint_resource_decomp(cls, config) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources(config)
 
     @staticmethod
     def controlled_resource_decomp(
@@ -106,6 +106,10 @@ class ResourceRX(qml.RX, re.ResourceOperator):
             return re.ResourceCRX.resources()
 
         raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z, config) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources(config)
 
 
 class ResourceRY(qml.RY, re.ResourceOperator):
@@ -122,9 +126,9 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
-    @staticmethod
-    def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=config["error_ry"])
+    @classmethod
+    def adjoint_resource_decomp(cls, config) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources(config)
 
     @staticmethod
     def controlled_resource_decomp(
@@ -134,6 +138,10 @@ class ResourceRY(qml.RY, re.ResourceOperator):
             return re.ResourceCRY.resources()
 
         raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z, config) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources(config)
 
 
 class ResourceRZ(qml.RZ, re.ResourceOperator):
@@ -155,9 +163,9 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
-    @staticmethod
-    def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=config["error_rz"])
+    @classmethod
+    def adjoint_resource_decomp(cls, config) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources(config)
 
     @staticmethod
     def controlled_resource_decomp(
@@ -167,6 +175,10 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
             return re.ResourceCRZ.resources()
 
         raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z, config) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources(config)
 
 
 class ResourceRot(qml.Rot, re.ResourceOperator):
@@ -200,7 +212,3 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             return re.ResourceCRot.resources()
 
         raise re.ResourcesNotDefined
-
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources()
