@@ -37,7 +37,7 @@ def check_op_supported(op, dev):
         if op.name not in dev.operations:
             pytest.skip("operation not supported.")
     else:
-        prog, _ = dev.preprocess()
+        prog = dev.preprocess_transforms()
         tape = qml.tape.QuantumScript([op])
         try:
             prog((tape,))

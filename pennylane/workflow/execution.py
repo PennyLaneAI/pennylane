@@ -30,6 +30,7 @@ from pennylane.math import Interface, _get_interface_name, jpc_interfaces
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
+from ._setup_transform_program import _setup_transform_program
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
 logger = logging.getLogger(__name__)
@@ -294,13 +295,20 @@ def execute(
 
     gradient_kwargs = gradient_kwargs or {}
     mcm_config = mcm_config or {}
-    config = config or _get_execution_config(
-        diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
-    )
+    if not config:
+        config = qml.devices.ExecutionConfig(
+            interface=interface,
+            gradient_method=diff_method,
+            grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+            use_device_jacobian_product=device_vjp,
+            mcm_config=mcm_config,
+            gradient_keyword_arguments=gradient_kwargs,
+        )
+        config = device.setup_execution_config(config)
 
     # pylint: disable=protected-access
     if transform_program is None or inner_transform is None:
-        transform_program, inner_transform = qml.workflow._setup_transform_program(
+        transform_program, inner_transform = _setup_transform_program(
             transform_program, device, config, cache, cachesize
         )
 
@@ -457,4 +465,4 @@ def _get_execution_config(
         gradient_keyword_arguments=gradient_kwargs,
     )
 
-    return device.preprocess(config)[1]
+    return device.setup_execution_config(config)

@@ -31,10 +31,10 @@ from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
-from pennylane.workflow._setup_transform_program import _setup_transform_program
-from pennylane.workflow.resolution import SupportedDiffMethods, _resolve_execution_config
 
 from ._capture_qnode import capture_qnode
+from ._setup_transform_program import _setup_transform_program
+from .resolution import SupportedDiffMethods, _resolve_execution_config
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -514,6 +514,7 @@ class QNode:
         device: SupportedDeviceAPIs,
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
+        *,
         grad_on_execution: Literal[True, False, "best"] = "best",
         cache: Union[Cache, Literal["auto", True, False]] = "auto",
         cachesize: int = 10000,
@@ -674,7 +675,7 @@ class QNode:
         config = _make_execution_config(None, diff_method)
 
         if device.supports_derivatives(config, circuit=tape):
-            new_config = device.preprocess(config)[1]
+            new_config = device.setup_execution_config(config)
             return new_config.gradient_method, {}, device
 
         if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
@@ -765,7 +766,7 @@ class QNode:
         config = _make_execution_config(None, "best")
 
         if device.supports_derivatives(config, circuit=tape):
-            new_config = device.preprocess(config)[1]
+            new_config = device.setup_execution_config(config)
             return new_config.gradient_method, {}, device
 
         if tape and any(isinstance(o, qml.operation.CV) for o in tape):
