@@ -266,7 +266,7 @@ same information.
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
-  [(#...)](https://github.com/PennyLaneAI/pennylane/pull/...)
+  [(#6642)](https://github.com/PennyLaneAI/pennylane/pull/6642)
 
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply the complex conjugate
   of the unitaries instead of the adjoint, providing the correct result.

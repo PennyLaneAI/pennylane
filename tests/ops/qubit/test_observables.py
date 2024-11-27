@@ -513,6 +513,32 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
+    @pytest.mark.jax
+    def test_jit_hermitian(self):
+        """Test that the measurement of a Hermitian observable is jittable."""
+
+        import jax
+
+        input_matrix = jax.numpy.array([[0, 1], [1, 0]])
+
+        # Here the matrix is traced
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(input_matrix):
+            qml.X(0)
+            return qml.expval(qml.Hermitian(input_matrix, wires=(0)))
+
+        assert qml.math.allclose(circuit(input_matrix), 0)
+
+        # Here the matrix is captured as a constant
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            qml.RX(0.1, wires=0)
+            return qml.expval(qml.Hermitian(input_matrix, wires=(0)))
+
+        assert qml.math.allclose(circuit(), 0.0)
+
 
 class TestProjector:
     """Tests for the projector observable."""
