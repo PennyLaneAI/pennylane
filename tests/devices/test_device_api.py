@@ -14,15 +14,16 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional
+from typing import Optional, Union
 
 import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import DeviceCapabilities
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
+from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 # pylint:disable=unused-argument,too-few-public-methods,unused-variable
@@ -256,6 +257,77 @@ class TestSetupExecutionConfig:
         config = dev.setup_execution_config(ExecutionConfig(), tape)
         assert config.mcm_config.mcm_method == expected_method
 
+
+class TestPreprocessTransforms:
+    """Tests the default implementation for preprocess_transforms."""
+
+    def test_device_implements_preprocess(self):
+        """Tests that the execution config returned by device's preprocess is used."""
+
+        default_transform_program = TransformProgram()
+
+        class CustomDevice(Device):
+
+            def preprocess(self, execution_config=None):
+                return default_transform_program, ExecutionConfig()
+
+            def execute(self, circuits, execution_config=None):
+                return (0,)
+
+        dev = CustomDevice()
+        program = dev.preprocess_transforms()
+        assert program is default_transform_program
+
+    def test_device_no_capabilities(self):
+        """Tests if the device does not declare capabilities."""
+
+        class DeviceNoCapabilities(Device):
+
+            def execute(self, circuits, execution_config=None):
+                return (0,)
+
+        dev = DeviceNoCapabilities()
+        program = dev.preprocess_transforms()
+        assert program == TransformProgram()
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file, mcm_method, expected_transform",
+        [
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "one-shot", qml.transforms.dynamic_one_shot),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "deferred", qml.transforms.defer_measurements),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "device", None),
+        ],
+        indirect=("create_temporary_toml_file",),
+    )
+    def test_mcm_transform_in_program(self, mcm_method, expected_transform, request):
+        """Tests that the correct MCM transform is included in the program."""
+
+        mcm_transforms = {
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.defer_measurements,
+            qml.devices.preprocess.mid_circuit_measurements,
+        }
+
+        class CustomDevice(Device):
+            """A device with capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def execute(
+                self,
+                circuits: QuantumScriptOrBatch,
+                execution_config: ExecutionConfig = None,
+            ) -> Union[Result, ResultBatch]:
+                return (0,)
+
+        dev = CustomDevice()
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method=mcm_method))
+        transform_program = dev.preprocess_transforms(config)
+        if expected_transform:
+            assert expected_transform in transform_program
+        for other_transform in mcm_transforms - {expected_transform}:
+            assert other_transform not in transform_program
 
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
