@@ -33,6 +33,10 @@
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
+* Added a new function `qml.qchem.symmetry_shift` to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
+
 <h3>Improvements 🛠</h3>
 
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
