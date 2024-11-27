@@ -700,3 +700,114 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
         chemist_one_body_coeffs += one_body_coeffs
 
     return (x for x in [chemist_one_body_coeffs, chemist_two_body_coeffs] if x is not None)
+
+
+def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B", **method_kwargs):
+    r"""Performs a block-invariant symmetry shift on the electronic integrals.
+
+    The block-invariant symmetry shift (BLISS) method [`arXiv:2304.13772
+    <https://arxiv.org/pdf/2304.13772>`_] decreases the one-norm and the
+    spectral range of a molecular Hamiltonian :math:`\hat{H}` defined by
+    its one-body :math:`T_{pq}` and two-body components. It constructs
+    a shifted Hamiltonian (:math:`\hat{H}^{\prime}`), such that:
+
+    .. math::
+
+        H^{\prime}(k_1, k_2, \vec{\xi}) = \hat{H} - k_1 (\hat{N}_e - N_e) - k_2 (\hat{N}_e^2 - \hat{N}_e^2) + \sum_{ij}\xi_{ij} T_{ij} (\hat{N}_e - N_e),
+
+    where :math:`\hat{N}_e` is the electron number operator, :math:`N_e` is the
+    number of electrons of the molecule and :math:`k_u, \xi_{ij} \in \mathbb{R}` are
+    the parameters that are optimized with the constraint :math:`\xi_{ij} = \xi_{ji}`
+    to minimize the overall one-norm of the :math:`\hat{H}^{\prime}`.
+
+    Args:
+        core (array[float]): the contribution of the core orbitals and nuclei
+        one_electron (array[float]): a one-electron integral tensor
+        two_electron (array[float]): a two-electron integral tensor in the chemist notation
+        n_elec (bool): number of electrons in the molecule
+        method (str | callable): solver method used by ``scipy.optimize.minimize``
+            to optimize the parameters. Please refer to its `documentation
+            <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize>`_
+            for the list of all available solvers. Default solver is ``"L-BFGS-B"``.
+        **method_kwargs: keyword arguments to pass when calling ``scipy.optimize.minimize`` with ``method=method``
+
+    Returns:
+        tuple(array[float], array[float], array[float]): symmetry shifted core, one-body tensor and two-body tensor for the provided terms
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = qml.numpy.array([[0.0, 0.0, 0.0],
+    ...                             [1.398397361, 0.0, 0.0]], requires_grad=False)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name="STO-3G")
+    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> ctwo = np.swapaxes(two, 1, 3)
+    >>> s_core, s_one, s_two = symmetry_shift(core, one, ctwo, n_elec=mol.n_electrons)
+    >>> print(s_two)
+    [[[[ 1.12461110e-02 -1.70030746e-09]
+      [-1.70030746e-09 -1.12461660e-02]]
+     [[-1.70030746e-09  1.81210462e-01]
+      [ 1.81210462e-01 -1.70032620e-09]]]
+     [[[-1.70030763e-09  1.81210462e-01]
+      [ 1.81210462e-01 -1.70032598e-09]]
+     [[-1.12461660e-02 -1.70032620e-09]
+      [-1.70032620e-09  1.12461854e-02]]]]
+    """
+    norb = one_electron.shape[0]
+    ki_vec = np.array([0.0, 0.0])
+    xi_mat = np.zeros((norb, norb))
+    xi_idx = np.tril_indices_from(xi_mat)
+    xi_vec = xi_mat[xi_idx]
+
+    params = np.hstack((ki_vec, xi_vec))
+    cost_func = partial(
+        _symmetry_shift_two_body_loss, two=two_electron, xi_idx=xi_idx
+    )  # Step 1: Reduce norm of two-body term
+
+    res_two = sp.optimize.minimize(cost_func, params, method=method, **method_kwargs)
+    _, k2, xi, _, N2, F_ = _symmetry_shift_terms(res_two.x, xi_idx, norb)
+    new_two = two_electron - k2 * N2 - F_ / 4
+
+    params = np.hstack(([0.0, k2], xi[xi_idx]))
+    cost_func = partial(
+        _symmetry_shift_one_body_loss, one=one_electron, n_elec=n_elec, xi_idx=xi_idx
+    )  # Step 2: Reduce norm of one-body term
+
+    res_one = sp.optimize.minimize(cost_func, params, method=method)
+    k1, _, _, N1, _, _ = _symmetry_shift_terms(res_one.x, xi_idx, norb)
+    new_core = core + k1 * n_elec + k2 * n_elec**2
+    new_one = one_electron - k1 * N1 + n_elec * xi / 2
+
+    return new_core, new_one, new_two
+
+
+def _symmetry_shift_terms(params, xi_idx, norb):
+    """Computes the terms required for performing symmetry shift
+    (Eq. 8-9, `arXiv:2304.13772 <https://arxiv.org/abs/2304.13772>`_)
+    from the flattened solution parameter array obtained from scipy optimizer's result."""
+    (k1, k2), xi_vec = params[:2], params[2:]
+    if not xi_vec.size:  # pragma: no cover
+        xi_vec = np.zeros_like(xi_idx[0])
+    xi = np.zeros((norb, norb))
+    xi[xi_idx], xi[xi_idx[::-1]] = xi_vec, xi_vec
+
+    N1 = np.eye(norb)
+    N2 = np.einsum("pq,rs->pqrs", N1, N1)
+    T_ = np.einsum("pq,rs->pqrs", xi, N1)
+    F_ = T_ + np.transpose(T_, (2, 3, 0, 1))
+
+    return k1, k2, xi, N1, N2, F_
+
+
+def _symmetry_shift_two_body_loss(params, two, xi_idx):
+    """Two body loss term for symmetry shift."""
+    _, k2, _, _, N2, F_ = _symmetry_shift_terms(params, xi_idx, two.shape[0])
+    new_two = two - k2 * N2 - F_ / 4
+    return np.linalg.norm(new_two)
+
+
+def _symmetry_shift_one_body_loss(params, one, n_elec, xi_idx):
+    """One body loss term for symmetry shift."""
+    k1, _, xi, N1, _, _ = _symmetry_shift_terms(params, xi_idx, one.shape[0])
+    new_one = one - k1 * N1 + n_elec * xi / 2
+    return np.linalg.norm(new_one)
