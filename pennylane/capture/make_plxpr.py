@@ -103,13 +103,3 @@ def make_plxpr(
         func = run_autograph(func)
 
     return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
-
-    # try:
-    #     return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
-    # except Exception as e:
-    #     msg = f"Unable to convert function {func} to PLxPR format."
-    #     if autograph is False:
-    #         msg += " If your function contains control flow, consider using autograph=True, or read more about creating capture-ready control flow [here](link goes here)."
-    #     else:
-    #         msg += " You can read more about creating capture-ready and AutoGraph compatible control flow at link-goes-here"
-    #     raise CaptureError(msg) from e
