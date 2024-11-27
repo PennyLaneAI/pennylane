@@ -22,6 +22,8 @@ import scipy as sp
 
 import pennylane as qml
 
+# pylint: disable=too-many-arguments
+
 
 def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False):
     r"""Return the double-factorized form of a two-electron integral tensor in spatial basis.
@@ -486,7 +488,7 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
     return (x for x in [chemist_one_body_coeffs, chemist_two_body_coeffs] if x is not None)
 
 
-def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B"):
+def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B", **method_kwargs):
     r"""Performs a block-invariant symmetry shift on the electronic integrals.
 
     The block-invariant symmetry shift (BLISS) method [`arXiv:2304.13772
@@ -513,6 +515,7 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B"):
             to optimize the parameters. Please refer to its `documentation
             <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize>`_
             for the list of all available solvers. Default solver is ``"L-BFGS-B"``.
+        **method_kwargs: keyword arguments to pass when calling ``scipy.optimize.minimize`` with ``method=method``
 
     Returns:
         tuple(array[float], array[float], array[float]): symmetry shifted core, one-body tensor and two-body tensor for the provided terms
@@ -546,7 +549,7 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B"):
         _symmetry_shift_two_body_loss, two=two_electron, xi_idx=xi_idx
     )  # Step 1: Reduce norm of two-body term
 
-    res_two = sp.optimize.minimize(cost_func, params, method=method)
+    res_two = sp.optimize.minimize(cost_func, params, method=method, **method_kwargs)
     _, k2, xi, _, N2, F_ = _symmetry_shift_terms(res_two.x, xi_idx, norb)
     new_two = two_electron - k2 * N2 - F_ / 4
 
@@ -565,7 +568,7 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B"):
 
 def _symmetry_shift_terms(params, xi_idx, norb):
     """Computes the terms required for performing symmetry shift (Eq. 8-9, arXiv:2304.13772)
-    from the flattened optimized parameter array obtained from scipy's optimizer."""
+    from the flattened solution parameter array obtained from scipy optimizer's result."""
     (k1, k2), xi_vec = params[:2], params[2:]
     if not xi_vec.size:  # pragma: no cover
         xi_vec = np.zeros_like(xi_idx[0])
