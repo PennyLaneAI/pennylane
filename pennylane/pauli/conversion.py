@@ -232,8 +232,8 @@ def pauli_decompose(
         check_hermitian (bool): check if the provided matrix is Hermitian if ``True``.
 
     Returns:
-        Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
-        of Pauli operators, returned either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence`
+        Union[~.LinearCombination, ~.PauliSentence]: the matrix decomposed as a linear combination
+        of Pauli operators, returned either as a :class:`~.ops.LinearCombination` or :class:`~.PauliSentence`
         instance.
 
     **Example:**
