@@ -1164,6 +1164,13 @@ class TestPauliSentenceMatrix:
         assert qml.math.allclose(gx, pw1_mat)
         assert qml.math.allclose(gy, pw2_mat)
 
+class HadamardNoPauliRep(qml.Hadamard):
+    """A version of qml.Hadamard without Pauli representation."""
+
+    @property
+    def pauli_rep(self):
+        """Representation as Pauli sentence."""
+        return None
 
 class TestPaulicomms:
     """Test 'native' commutator in PauliWord and PauliSentence"""
@@ -1180,14 +1187,14 @@ class TestPaulicomms:
         with pytest.raises(
             NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
         ):
-            _ = ps1.commutator(qml.Hadamard(0))
+            _ = ps1.commutator(HadamardNoPauliRep(0))
 
     def test_pauli_raises_NotImplementedError_without_pauli_rep_pw(self):
         """Test that a NotImplementedError is raised in PauliWord when ``other`` is an operator without a pauli_rep"""
         with pytest.raises(
             NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
         ):
-            _ = pw1.commutator(qml.Hadamard(0))
+            _ = pw1.commutator(HadamardNoPauliRep(0))
 
     def test_commutators_with_zeros_ps(self):
         """Test that commutators between PauliSentences where one represents the 0 word is treated correctly"""

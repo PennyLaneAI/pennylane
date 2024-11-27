@@ -1407,6 +1407,13 @@ class TestLinearCombinationArithmeticJax:
 
         assert H.compare(H1 @ H2)
 
+class HadamardNoPauliRep(qml.Hadamard):
+    """A version of qml.Hadamard without Pauli representation."""
+
+    @property
+    def pauli_rep(self):
+        """Representation as Pauli sentence."""
+        return None
 
 class TestGrouping:
     """Tests for the grouping functionality"""
@@ -1451,7 +1458,7 @@ class TestGrouping:
     def test_grouping_raises_error(self):
         """Check that compute_grouping raises an error when
         attempting to compute groups for non-Pauli operators"""
-        a = qml.Hadamard(0)
+        a = HadamardNoPauliRep(0)
         b = X(1)
         c = Z(0)
         obs = [a, b, c]
