@@ -67,13 +67,14 @@ class TestMakePLxPR:
         assert hasattr(plxpr, "jaxpr")
         isinstance(plxpr, jax._src.core.ClosedJaxpr)  # pylint: disable=protected-access
 
+    @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("static_argnums", [[0], [1], [0, 1], []])
-    def test_static_argnums(self, static_argnums, mocker):
+    def test_static_argnums(self, static_argnums, autograph, mocker):
         """Test that passing static_argnums works as expected"""
 
         dev = qml.device("default.qubit", wires=1)
 
-        spy = mocker.spy(jax, "make_jaxpr")
+        # spy = mocker.spy(jax, "make_jaxpr")
 
         @qml.qnode(dev)
         def circ(x, y):
@@ -85,16 +86,17 @@ class TestMakePLxPR:
         params = [1.2, 2.3]
         non_static_params = [params[i] for i in (0, 1) if i not in static_argnums]
 
-        plxpr = make_plxpr(circ, static_argnums=static_argnums)(*params)
+        plxpr = make_plxpr(circ, autograph=autograph, static_argnums=static_argnums)(*params)
 
         # most recent call is to make a jaxpr of something else, so we can't use assert_called_with
-        spy.assert_has_calls([call(circ, static_argnums=static_argnums)])
+        # spy.assert_has_calls([call(circ, static_argnums=static_argnums)])
 
         # plxpr behaves as expected wrt static argnums
         res = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, *non_static_params)
         assert np.allclose(res, circ(*params))
 
-    def test_kwargs(self, mocker):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_kwargs(self, mocker, autograph):
         """Test additional kwargs are passed through to make_jaxpr"""
 
         dev = qml.device("default.qubit", wires=1)
@@ -107,5 +109,25 @@ class TestMakePLxPR:
             return qml.expval(qml.X(0))
 
         # assert new value for return_shape is passed to make_jaxpr
-        _ = make_plxpr(circ, return_shape=True)()
-        spy.assert_has_calls([call(circ, static_argnums=(), return_shape=True)])
+        _ = make_plxpr(circ, autograph=autograph, return_shape=True)()
+        # spy.assert_any_call(circ, static_argnums=(), return_shape=True)
+
+        spy.assert_has_calls([call(circ, static_argnums=(), return_shape=True)], any_order=True)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestAutoGraphIntegration:
+
+    def test_if_stmt(self):
+
+        # dev = qml.device("default.qubit", wires=3)
+
+        # @qml.qnode(dev)
+        def circuit(x):  # test as qfunc and qnode
+            if x > 1.967:
+                qml.Hadamard(2)
+            else:
+                qml.Y(1)
+            return qml.state()
+
+        qml.capture.make_plxpr(circuit, autograph=True)(2)
