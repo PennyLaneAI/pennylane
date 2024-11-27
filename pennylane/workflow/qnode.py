@@ -607,6 +607,7 @@ class QNode:
         device: SupportedDeviceAPIs,
         interface: SupportedInterfaceUserInput = "auto",
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
+        *,
         grad_on_execution: Literal[True, False, "best"] = "best",
         cache: Union[Cache, Literal["auto", True, False]] = "auto",
         cachesize: int = 10000,
