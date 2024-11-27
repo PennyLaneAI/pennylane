@@ -462,7 +462,7 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B"):
     r"""Performs a block-invariant symmetry shift on the electronic integrals.
 
     The block-invariant symmetry shift (BLISS) method [`arXiv:2304.13772
-    <https://arxiv.org/pdf/2304.13772>`_] decreases the 1-norm and the
+    <https://arxiv.org/pdf/2304.13772>`_] decreases the one-norm and the
     spectral range of a molecular Hamiltonian :math:`\hat{H}` defined by
     its one-body :math:`T_{pq}` and two-body components. It constructs
     a shifted Hamiltonian (:math:`\hat{H}^{\prime}`), such that:
@@ -474,7 +474,7 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B"):
     where :math:`\hat{N}_e` is the electron number operator, :math:`N_e` is the
     number of electrons of the molecule and :math:`k_u, \xi_{ij} \in \mathbb{R}` are
     the parameters that are optimized with the constraint :math:`\xi_{ij} = \xi_{ji}`
-    in order to minimize the overall one-norm of the :math:`\hat{H}^{\prime}`.
+    to minimize the overall one-norm of the :math:`\hat{H}^{\prime}`.
 
     Args:
         core (array[float]): the contribution of the core orbitals and nuclei
@@ -484,7 +484,7 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B"):
         method (str | callable): solver method used by ``scipy.optimize.minimize``
             to optimize the parameters. Please refer to its `documentation
             <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize>`_
-            for the list of all available solvers. Default solver is `"L-BFGS-B"`.
+            for the list of all available solvers. Default solver is ``"L-BFGS-B"``.
 
     Returns:
         tuple(array[float], array[float], array[float]): symmetry shifted core, one-body tensor and two-body tensor for the provided terms
