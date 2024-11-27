@@ -275,28 +275,23 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         def qfunc_transformed(*args, **kwargs):
             import jax  # pylint: disable=import-outside-toplevel
 
-            nonlocal qfunc
-            if isinstance(qfunc, qml.QNode):
-                # This adds the transform to the qnode's transform_program, but with capture
-                # enabled, a new qnode is used for execution in qnode_prim.impl, and this new
-                # qnode does not inherit the old qnode's transform_program, so the transform
-                # does not get applied during evaluation/execution.
-                qfunc = self._qnode_transform(qfunc, targs, tkwargs)
-
             flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
             jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
 
             n_args = len(args)
+            n_consts = len(jaxpr.consts)
             args_slice = slice(0, n_args)
-            consts_slice = slice(n_args, None)
+            consts_slice = slice(n_args, n_args + n_consts)
+            targs_slice = slice(n_args + n_consts, None)
 
             results = self._primitive.bind(
                 *args,
                 *jaxpr.consts,
+                *targs,
                 inner_jaxpr=jaxpr.jaxpr,
                 args_slice=args_slice,
                 consts_slice=consts_slice,
-                targs=targs,
+                targs_slice=targs_slice,
                 tkwargs=tkwargs,
             )
 
@@ -539,7 +534,7 @@ def _create_transform_primitive(name):
 
     @transform_prim.def_impl
     def _(
-        *all_args, inner_jaxpr, args_slice, consts_slice, targs, tkwargs
+        *all_args, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
     ):  # pylint: disable=unused-argument
         raise NotImplementedError
 

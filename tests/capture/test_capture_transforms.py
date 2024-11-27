@@ -74,8 +74,8 @@ class TestCaptureTransforms:
 
         params = transform_eqn.params
         assert params["args_slice"] == slice(0, 1)
-        assert params["consts_slice"] == slice(1, None)
-        assert params["targs"] == targs
+        assert params["consts_slice"] == slice(1, 1)
+        assert params["targs_slice"] == slice(1, None)
         assert params["tkwargs"] == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
@@ -148,8 +148,8 @@ class TestCaptureTransforms:
 
         params1 = transform_eqn1.params
         assert params1["args_slice"] == slice(0, 1)
-        assert params1["consts_slice"] == slice(1, None)
-        assert params1["targs"] == list(targs1)
+        assert params1["consts_slice"] == slice(1, 1)
+        assert params1["targs_slice"] == slice(1, None)
         assert params1["tkwargs"] == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
@@ -157,8 +157,8 @@ class TestCaptureTransforms:
 
         params2 = transform_eqn2.params
         assert params2["args_slice"] == slice(0, 1)
-        assert params2["consts_slice"] == slice(1, None)
-        assert params2["targs"] == list(targs2)
+        assert params2["consts_slice"] == slice(1, 1)
+        assert params2["targs_slice"] == slice(1, None)
         assert params2["tkwargs"] == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
