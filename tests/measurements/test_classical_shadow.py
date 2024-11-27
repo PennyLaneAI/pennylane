@@ -582,6 +582,12 @@ expected_qft = [
     0,
 ]
 
+class HadamardNoPauliRep(qml.Hadamard):
+
+    @property
+    def pauli_rep(self):
+        return None
+
 
 @pytest.mark.autograd
 class TestExpvalForward:
@@ -614,7 +620,7 @@ class TestExpvalForward:
         circuit = hadamard_circuit(3)
 
         with pytest.raises(ValueError, match="Observable must have a valid pauli representation."):
-            circuit(qml.Hadamard(0) @ qml.Hadamard(2))
+            circuit(HadamardNoPauliRep(0) @ qml.Hadamard(2))
 
 
 # pylint: disable=too-few-public-methods

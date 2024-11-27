@@ -111,6 +111,13 @@ class TestControlledOps:
         assert not qml.is_commuting(op2, op1)
 
 
+class HadamardNoPauliRep(qml.Hadamard):
+
+    @property
+    def pauli_rep(self):
+        return None
+
+
 class TestCommutingFunction:
     """Commutation function tests."""
 
@@ -817,11 +824,11 @@ class TestCommutingFunction:
         "pauli_word_1,pauli_word_2",
         [
             (
-                qml.prod(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
+                qml.prod(qml.PauliX(0), HadamardNoPauliRep(1), qml.Identity(2)),
                 qml.sum(qml.PauliX(0), qml.PauliY(2)),
             ),
-            (qml.PauliX(2), qml.sum(qml.Hadamard(1), qml.prod(qml.PauliX(1), qml.Identity(2)))),
-            (qml.prod(qml.PauliX(1), qml.PauliY(2)), qml.s_prod(0.5, qml.Hadamard(1))),
+            (qml.PauliX(2), qml.sum(HadamardNoPauliRep(1), qml.prod(qml.PauliX(1), qml.Identity(2)))),
+            (qml.prod(qml.PauliX(1), qml.PauliY(2)), qml.s_prod(0.5, HadamardNoPauliRep(1))),
         ],
     )
     def test_non_pauli_word_ops_not_supported(self, pauli_word_1, pauli_word_2):

@@ -428,8 +428,8 @@ def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
 
 invalid_ops = (
     qml.prod(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
-    qml.prod(qml.PauliX(0), qml.Hadamard(1)),
-    qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
+    qml.prod(qml.PauliX(0), qml.PauliRot(0.4, "Y", 1)),
+    qml.sum(qml.PauliZ(0), qml.MultiRZ(0.4, [1, 2])),
 )
 
 

@@ -311,8 +311,8 @@ class TestToOpenFermion:
 
     INVALID_OPS = (
         qml.prod(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
-        qml.prod(qml.PauliX(0), qml.Hadamard(1)),
-        qml.sum(qml.PauliZ(0), qml.Hadamard(1)),
+        qml.prod(qml.PauliX(0), qml.PauliRot(0.6, "Y", 1)),
+        qml.sum(qml.PauliZ(0), qml.MultiRZ(0.2, [1, 2])),
     )
 
     @pytest.mark.parametrize("op", INVALID_OPS)

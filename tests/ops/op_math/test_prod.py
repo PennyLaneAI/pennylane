@@ -163,6 +163,12 @@ class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
+class HadamardNoPauliRep(qml.Hadamard):
+
+    @property
+    def pauli_rep(self):
+        return None
+
 class TestInitialization:  # pylint:disable=too-many-public-methods
     """Test the initialization."""
 
@@ -194,39 +200,39 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
     PROD_TERMS_OP_PAIRS_MIXED = (  # not all operands have pauli representation
         (
-            qml.prod(qml.Hadamard(0), X(1), X(2)),
+            qml.prod(HadamardNoPauliRep(0), X(1), X(2)),
             [1.0],
-            [qml.prod(qml.Hadamard(0), X(1), X(2))],
+            [qml.prod(HadamardNoPauliRep(0), X(1), X(2))],
         ),  # trivial product
         (
-            qml.prod(qml.Hadamard(0), X(1), qml.Identity(2)),
+            qml.prod(HadamardNoPauliRep(0), X(1), qml.Identity(2)),
             [1.0],
-            [qml.prod(qml.Hadamard(0), X(1))],
+            [qml.prod(HadamardNoPauliRep(0), X(1))],
         ),
         (
-            qml.prod(qml.Hadamard(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
+            qml.prod(HadamardNoPauliRep(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
             [2 * 4],
-            [qml.prod(qml.Hadamard(0), X(1), X(2))],
+            [qml.prod(HadamardNoPauliRep(0), X(1), X(2))],
         ),  # product with scalar products inside
         (
-            qml.prod(qml.Hadamard(0), qml.s_prod(4, X(0)), qml.s_prod(2, X(1))),
+            qml.prod(HadamardNoPauliRep(0), qml.s_prod(4, X(0)), qml.s_prod(2, X(1))),
             [2 * 4],
-            [qml.prod(qml.Hadamard(0), X(0), X(1))],
+            [qml.prod(HadamardNoPauliRep(0), X(0), X(1))],
         ),  # product with scalar products on same wire
         (
-            qml.prod(qml.Hadamard(0), qml.s_prod(4, Y(1)), qml.sum(X(2), X(3))),
+            qml.prod(HadamardNoPauliRep(0), qml.s_prod(4, Y(1)), qml.sum(X(2), X(3))),
             [4, 4],
-            [qml.prod(qml.Hadamard(0), Y(1), X(2)), qml.prod(qml.Hadamard(0), Y(1), X(3))],
+            [qml.prod(HadamardNoPauliRep(0), Y(1), X(2)), qml.prod(HadamardNoPauliRep(0), Y(1), X(3))],
         ),  # product with sums inside
         (
             qml.prod(
-                qml.prod(qml.Hadamard(0), X(2), X(3)),
-                qml.s_prod(0.5, qml.sum(qml.Hadamard(5), qml.s_prod(0.4, X(6)))),
+                qml.prod(HadamardNoPauliRep(0), X(2), X(3)),
+                qml.s_prod(0.5, qml.sum(HadamardNoPauliRep(5), qml.s_prod(0.4, X(6)))),
             ),
             [0.5, 0.2],
             [
-                qml.prod(X(2), X(3), qml.Hadamard(5), qml.Hadamard(0)),
-                qml.prod(X(6), X(2), X(3), qml.Hadamard(0)),
+                qml.prod(X(2), X(3), HadamardNoPauliRep(5), HadamardNoPauliRep(0)),
+                qml.prod(X(6), X(2), X(3), HadamardNoPauliRep(0)),
             ],
         ),  # contrived example
     )

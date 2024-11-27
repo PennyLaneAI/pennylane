@@ -754,8 +754,12 @@ class TestProperties:
 
     def test_pauli_rep_none(self):
         """Test that None is produced if any of the summands don't have a _pauli_rep."""
-        op = qml.sum(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
-        assert op.pauli_rep is None
+        op1 = qml.PauliX(wires=0)
+        op2 = qml.PauliRot(1.23, "Y", wires=1)
+        assert op1.pauli_rep is not None
+        assert op2.pauli_rep is None
+        sum_op = qml.sum(op1, op2)
+        assert sum_op.pauli_rep is None
 
     op_pauli_reps_nested = (
         (
@@ -1371,6 +1375,12 @@ class TestArithmetic:
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
 
+class HadamardNoPauliRep(qml.Hadamard):
+
+    @property
+    def pauli_rep(self):
+        return None
+
 class TestGrouping:
     """Test grouping functionality of Sum"""
 
@@ -1388,7 +1398,7 @@ class TestGrouping:
 
     def test_non_pauli_error(self):
         """Test that grouping non-Pauli observables is not supported."""
-        op = Sum(qml.PauliX(0), Prod(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(2))
+        op = Sum(qml.PauliX(0), Prod(qml.PauliZ(0), qml.PauliX(1)), HadamardNoPauliRep(2))
 
         with pytest.raises(
             ValueError, match="Cannot compute grouping for Sums containing non-Pauli"

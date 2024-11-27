@@ -284,6 +284,11 @@ class TestStateReconstructionInterfaces:
 
         assert qml.math.allclose(state, expected, atol=1e-1)
 
+class HadamardNoPauliRep(qml.Hadamard):
+
+    @property
+    def pauli_rep(self):
+        return None
 
 @pytest.mark.autograd
 class TestExpvalEstimation:
@@ -337,24 +342,13 @@ class TestExpvalEstimation:
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    def test_non_pauli_error(self):
-        """Test that an error is raised when a non-Pauli observable is passed"""
-        circuit = hadamard_circuit(3)
-        bits, recipes = circuit()
-        shadow = ClassicalShadow(bits, recipes)
-
-        H = qml.Hadamard(0) @ qml.Hadamard(2)
-
-        with pytest.raises(ValueError, match="Observable must have a valid pauli representation"):
-            shadow.expval(H, k=10)
-
     def test_non_pauli_error_no_pauli_rep(self):
-        """Test that an error is raised when a non-Pauli observable is passed"""
+        """Test that an error is raised when a non-Pauli observable without Pauli rep is passed"""
         circuit = hadamard_circuit(3)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
-        H = qml.Hadamard(0) @ qml.Hadamard(2)
+        H = HadamardNoPauliRep(0) @ qml.Hadamard(2)
 
         with pytest.raises(ValueError, match="Observable must have a valid pauli representation."):
             shadow.expval(H, k=10)
