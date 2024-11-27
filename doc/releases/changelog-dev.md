@@ -4,13 +4,19 @@
 
 <h3>New features since last release</h3>
 
+* Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
+  class. Device developers are encouraged to override these two methods separately instead of the 
+  `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these 
+  two methods or `preprocess`, but not both. In the long term, we will slowly phase out the use of 
+  `preprocess` in favour of these two methods for better separation of concerns.
+  [(#6617)](https://github.com/PennyLaneAI/pennylane/pull/6617)
+
 * Developers of plugin devices now have the option of providing a TOML-formatted configuration file
   to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
-  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
-  [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
   * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
     data class, as well as functions that load and parse the TOML-formatted configuration files.
+    [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
     ```pycon
       >>> from pennylane.devices.capabilities import DeviceCapabilities
@@ -22,6 +28,7 @@
   * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
     that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
     file if it exists. Otherwise, it is set to `None`.
+    [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
     ```python
     from pennylane.devices import Device
@@ -37,9 +44,14 @@
     True
     ```
 
+<h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
+
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+
+* Added utility functions for handling dense matrices in the Lie theory context.
+  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -58,8 +70,15 @@
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
+* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
+  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+
+* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
+
 * Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
 
 <h3>Improvements 🛠</h3>
 
@@ -104,6 +123,23 @@
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
 <h4>Other Improvements</h4>
+
+* Added PyTree support for measurements in a circuit. 
+  [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
+
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Hadamard(0)
+      qml.CNOT([0,1])
+      return {"Probabilities": qml.probs(), "State": qml.state()}
+  ```
+  ```pycon
+  >>> circuit() 
+  {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])} 
+  ```
 
 * `_cache_transform` transform has been moved to its own file located
   at `qml.workflow._cache_transform.py`.
@@ -265,6 +301,7 @@ This release contains contributions from (in alphabetical order):
 Shiwen An,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
