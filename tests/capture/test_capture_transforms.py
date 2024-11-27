@@ -14,7 +14,7 @@
 """
 This submodule tests transforms with program capture
 """
-
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
@@ -28,15 +28,28 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 @transform
-def dummy_transform1(tape, arg1, arg2, kwarg1=None, kwarg2=None):  # pylint: disable=unused-argument
-    """Dummy transform for testing."""
-    return [tape], lambda res: res[0]
+def z_to_hadamard(
+    tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
+):  # pylint: disable=unused-argument
+    """Transform that converts Z gates to H gates."""
+    new_ops = [qml.H(wires=op.wires) if isinstance(op, qml.Z) else op for op in tape.operations]
+    return [qml.tape.QuantumScript(new_ops, tape.measurements)], lambda res: res[0]
 
 
 @transform
-def dummy_transform2(tape, arg3, arg4, kwarg3=None, kwarg4=None):  # pylint: disable=unused-argument
-    """Dummy transform for testing."""
-    return [tape], lambda res: res[0]
+def expval_z_obs_to_x_obs(
+    tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
+):  # pylint: disable=unused-argument
+    """Transform that converts Z observables for expectation values to X observables."""
+    new_measurements = [
+        (
+            qml.expval(qml.X(mp.wires))
+            if isinstance(mp, qml.measurements.ExpectationMP) and isinstance(mp.obs, qml.Z)
+            else mp
+        )
+        for mp in tape.measurements
+    ]
+    return [qml.tape.QuantumScript(tape.operations, new_measurements)], lambda res: res[0]
 
 
 class TestCaptureTransforms:
@@ -51,11 +64,11 @@ class TestCaptureTransforms:
 
         args = (1.5,)
         targs = [0, 1]
-        tkwargs = {"kwarg1": "foo", "kwarg2": "bar"}
+        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
 
-        transformed_func = dummy_transform1(func, *targs, **tkwargs)
+        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        assert (transform_eqn := jaxpr.eqns[0]).primitive == dummy_transform1._primitive
+        assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params = transform_eqn.params
         assert params["args_slice"] == slice(0, 1)
@@ -79,12 +92,12 @@ class TestCaptureTransforms:
 
         args = (1.5,)
         targs = [0, 1]
-        tkwargs = {"kwarg1": "foo", "kwarg2": "bar"}
+        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
 
-        transformed_func = dummy_transform1(func, *targs, **tkwargs)
+        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
 
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        assert (transform_eqn := jaxpr.eqns[0]).primitive == dummy_transform1._primitive
+        assert (transform_eqn := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params = transform_eqn.params
         qnode_jaxpr = params["inner_jaxpr"]
@@ -104,9 +117,9 @@ class TestCaptureTransforms:
 
         args = (1.5,)
         targs = (0, 1)
-        tkwargs = {"kwarg1": "foo", "kwarg2": "bar"}
+        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
 
-        transformed_func = dummy_transform1(func, *targs, **tkwargs)
+        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
         inner_jaxpr = jax.make_jaxpr(func)(*args)
 
@@ -119,23 +132,24 @@ class TestCaptureTransforms:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def func(x):
-            qml.RX(x, 0)
+        def func():
+            qml.Z(0)
+            qml.X(0)
             return qml.expval(qml.Z(0))
 
-        args = (1.5,)
         targs = (0, 1)
-        tkwargs = {"kwarg1": "foo", "kwarg2": "bar"}
+        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
 
-        transformed_func = dummy_transform1(func, *targs, **tkwargs)
-        jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        inner_jaxpr = jax.make_jaxpr(func)(*args)
+        transformed_func = z_to_hadamard(func, *targs, **tkwargs)
+        jaxpr = jax.make_jaxpr(transformed_func)()
+        inner_jaxpr = jax.make_jaxpr(func)()
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)[0]
-        expected = jax.core.eval_jaxpr(inner_jaxpr.jaxpr, inner_jaxpr.consts, *args)[0]
-        assert res == expected == func(*args)
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0]
+        expected = jax.core.eval_jaxpr(inner_jaxpr.jaxpr, inner_jaxpr.consts)[0]
+        assert qml.math.allclose(res, expected)
+        assert qml.math.allclose(res, func())
 
-    def test_multiple_transforms(self):
+    def test_multiple_transforms_capture(self):
         """Test that JAXPR containing a transformed qnode primitive is evaluated correctly."""
 
         def func(x):
@@ -144,15 +158,15 @@ class TestCaptureTransforms:
 
         args = (1.5,)
         targs1 = (0, 1)
-        tkwargs1 = {"kwarg1": "foo", "kwarg2": "bar"}
+        tkwargs1 = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
         targs2 = (2, 3)
-        tkwargs2 = {"kwarg3": "hello", "kwarg4": "world"}
+        tkwargs2 = {"dummy_kwarg1": "hello", "dummy_kwarg2": "world"}
 
-        transformed_func = dummy_transform1(
-            dummy_transform2(func, *targs2, **tkwargs2), *targs1, **tkwargs1
+        transformed_func = z_to_hadamard(
+            expval_z_obs_to_x_obs(func, *targs2, **tkwargs2), *targs1, **tkwargs1
         )
         jaxpr = jax.make_jaxpr(transformed_func)(*args)
-        assert (transform_eqn1 := jaxpr.eqns[0]).primitive == dummy_transform1._primitive
+        assert (transform_eqn1 := jaxpr.eqns[0]).primitive == z_to_hadamard._primitive
 
         params1 = transform_eqn1.params
         assert params1["args_slice"] == slice(0, 1)
@@ -161,7 +175,7 @@ class TestCaptureTransforms:
         assert params1["tkwargs"] == tkwargs1
 
         inner_jaxpr = params1["inner_jaxpr"]
-        assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == dummy_transform2._primitive
+        assert (transform_eqn2 := inner_jaxpr.eqns[0]).primitive == expval_z_obs_to_x_obs._primitive
 
         params2 = transform_eqn2.params
         assert params2["args_slice"] == slice(0, 1)

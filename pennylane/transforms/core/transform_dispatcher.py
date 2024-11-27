@@ -118,10 +118,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             return transformed_tapes, processing_fn
 
         if isinstance(obj, qml.QNode):
-            res = self._qnode_transform(obj, targs, tkwargs)
             if qml.capture.enabled():
-                res = self._capture_callable_transform(res, targs, tkwargs)
-            return res
+                return self._capture_callable_transform(obj, targs, tkwargs)
+            return self._qnode_transform(obj, targs, tkwargs)
 
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
@@ -243,6 +242,14 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         @functools.wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
             import jax  # pylint: disable=import-outside-toplevel
+
+            nonlocal qfunc
+            if isinstance(qfunc, qml.QNode):
+                # This adds the transform to the qnode's transform_program, but with capture
+                # enabled, a new qnode is used for execution in qnode_prim.impl, and this new
+                # qnode does not inherit the old qnode's transform_program, so the transform
+                # does not get applied during evaluation/execution.
+                qfunc = self._qnode_transform(qfunc, targs, tkwargs)
 
             flat_qfunc = qml.capture.flatfn.FlatFn(qfunc)
             jaxpr = jax.make_jaxpr(functools.partial(flat_qfunc, **kwargs))(*args)
