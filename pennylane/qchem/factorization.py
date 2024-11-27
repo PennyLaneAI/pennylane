@@ -523,12 +523,13 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B", 
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = qml.numpy.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad=False)
+    >>> geometry = qml.numpy.array([[0.0, 0.0, 0.0],
+    ...                             [1.398397361, 0.0, 0.0]], requires_grad=False)
     >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name="STO-3G")
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> ctwo = np.swapaxes(two, 1, 3)
-    >>> shifted_core, shifted_one, shifted_two = symmetry_shift(core, one, ctwo, n_elec=mol.n_electrons)
-    >>> print(shifted_two)
+    >>> s_core, s_one, s_two = symmetry_shift(core, one, ctwo, n_elec=mol.n_electrons)
+    >>> print(s_two)
     [[[[ 1.12461110e-02 -1.70030746e-09]
       [-1.70030746e-09 -1.12461660e-02]]
      [[-1.70030746e-09  1.81210462e-01]
@@ -567,7 +568,8 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B", 
 
 
 def _symmetry_shift_terms(params, xi_idx, norb):
-    """Computes the terms required for performing symmetry shift (Eq. 8-9, arXiv:2304.13772)
+    """Computes the terms required for performing symmetry shift
+    (Eq. 8-9, `arXiv:2304.13772 <https://arxiv.org/abs/2304.13772>`_)
     from the flattened solution parameter array obtained from scipy optimizer's result."""
     (k1, k2), xi_vec = params[:2], params[2:]
     if not xi_vec.size:  # pragma: no cover
