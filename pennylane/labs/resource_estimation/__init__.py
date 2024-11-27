@@ -42,9 +42,6 @@ Operators
     ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
-    ~ResourceDoubleExcitation
-    ~ResourceDoubleExcitationMinus
-    ~ResourceDoubleExcitationPlus
     ~ResourceCRot
     ~ResourceCRX
     ~ResourceCRY

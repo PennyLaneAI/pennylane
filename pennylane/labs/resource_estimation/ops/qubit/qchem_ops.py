@@ -19,7 +19,19 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
-    """Resource class for the SingleExcitation gate."""
+    r"""Resource class for the SingleExcitation gate.
+
+    Resources:
+        The resources are obtained by decomposing the following matrix into fundamental gates.
+
+        .. math:: U(\phi) = \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                    0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                    0 & 0 & 0 & 1
+                \end{bmatrix}.
+
+    """
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
@@ -35,7 +47,18 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
 
 
 class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperator):
-    """Resource class for the SingleExcitationMinus gate."""
+    r"""Resource class for the SingleExcitationMinus gate.
+
+    Resources:
+        The resources are obtained by decomposing the following matrix into fundamental gates.
+
+        .. math:: U_-(\phi) = \begin{bmatrix}
+                    e^{-i\phi/2} & 0 & 0 & 0 \\
+                    0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                    0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                    0 & 0 & 0 & e^{-i\phi/2}
+                \end{bmatrix}.
+    """
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
@@ -61,7 +84,18 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
 
 
 class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator):
-    """Resource class for the SingleExcitationPlus gate."""
+    r"""Resource class for the SingleExcitationPlus gate.
+
+    Resources:
+        The resources are obtained by decomposing the following matrix into fundamental gates.
+
+        .. math:: U_+(\phi) = \begin{bmatrix}
+                    e^{i\phi/2} & 0 & 0 & 0 \\
+                    0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                    0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                    0 & 0 & 0 & e^{i\phi/2}
+                \end{bmatrix}.
+    """
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
@@ -87,7 +121,16 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
 
 
 class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
-    """Resource class for the DoubleExcitation gate."""
+    r"""Resource class for the DoubleExcitation gate.
+
+    Resources:
+        The resources are obtained by decomposing the following mapping into fundamental gates.
+
+        .. math::
+
+            &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
+            &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
+    """
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
@@ -112,7 +155,18 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 
 
 class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperator):
-    """Resource class for the DoubleExcitationMinus gate."""
+    r"""Resource class for the DoubleExcitationMinus gate.
+
+
+    Resources:
+        The resources are obtained by decomposing the following mapping into fundamental gates.
+
+        .. math::
+
+            &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+            &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
+            &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
+    """
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
@@ -127,7 +181,17 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
 
 
 class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator):
-    """Resource class for the DoubleExcitationPlus gate."""
+    r"""Resource class for the DoubleExcitationPlus gate.
+
+    Resources:
+        The resources are obtained by decomposing the following mapping into fundamental gates.
+
+        .. math::
+
+            &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+            &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
+            &|x\rangle \rightarrow e^{i\phi/2} |x\rangle,
+    """
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
@@ -143,7 +207,15 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
 
 
 class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
-    """Resource class for the OrbitalRotation gate."""
+    r"""Resource class for the OrbitalRotation gate.
+
+    Resources:
+        The resources are obtained by decomposing the following mapping into fundamental gates.
+
+        .. math::
+            &|\Phi_{0}\rangle = \cos(\phi/2)|\Phi_{0}\rangle - \sin(\phi/2)|\Phi_{1}\rangle\\
+            &|\Phi_{1}\rangle = \cos(\phi/2)|\Phi_{0}\rangle + \sin(\phi/2)|\Phi_{1}\rangle,
+    """
 
     @staticmethod
     def _resource_decomp(**kwargs):
@@ -165,7 +237,18 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
 
 
 class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
-    """Resource class for the FermionicSWAP gate."""
+    r"""Resource class for the FermionicSWAP gate.
+
+    Resources:
+        The resources are obtained by decomposing the following matrix into fundamental gates.
+
+        .. math:: U(\phi) = \begin{bmatrix}
+                    1 & 0 & 0 & 0 \\
+                    0 & e^{i \phi/2} \cos(\phi/2) & -ie^{i \phi/2} \sin(\phi/2) & 0 \\
+                    0 & -ie^{i \phi/2} \sin(\phi/2) & e^{i \phi/2} \cos(\phi/2) & 0 \\
+                    0 & 0 & 0 & e^{i \phi}
+                \end{bmatrix}.
+    """
 
     @staticmethod
     def _resource_decomp(*args, **kwargs):
