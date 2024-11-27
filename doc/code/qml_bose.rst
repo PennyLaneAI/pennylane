@@ -28,5 +28,5 @@ Mapping to qubit operators
 
     ~binary_mapping
     ~unary_mapping
-
+    ~christiansen_mapping
 

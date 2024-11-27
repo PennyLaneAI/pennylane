@@ -294,3 +294,106 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
     qubit_operator.simplify(tol=1e-16)
 
     return qubit_operator
+
+
+def christiansen_mapping(
+    bose_operator: Union[BoseWord, BoseSentence],
+    ps: bool = False,
+    wire_map: dict = None,
+    tol: float = None,
+):
+    r"""Convert a bosonic operator to a qubit operator using the Christiansen mapping.
+
+    This mapping assumes that the maximum number of allowed bosonic states is 2 and works only for
+    Christiansen bosons defined in `J. Chem. Phys. 120, 2140 (2004)
+    <https://pubs.aip.org/aip/jcp/article-abstract/120/5/2140/534128/A-second-quantization-formulation-of-multimode?redirectedFrom=fulltext>`_.
+    The bosonic creation and annihilation operators are mapped to the Pauli operators as
+
+    .. math::
+
+        b^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        b^{\dagger}_n = \frac{X_n - iY_n}{2},
+
+    and
+
+    .. math::
+
+        b_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        b_n = \frac{X_n + iY_n}{2},
+
+    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
+
+    Args:
+        bose_operator(BoseWord, BoseSentence): the bosonic operator
+        ps (bool): Whether to return the result as a PauliSentence instead of an
+            operator. Defaults to False.
+        wire_map (dict): A dictionary defining how to map the states of
+            the Bose operator to qubit wires. If None, integers used to
+            label the bosonic states will be used as wire labels. Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
+
+    Returns:
+        Union[PauliSentence, Operator]: A linear combination of qubit operators.
+    """
+
+    qubit_operator = _christiansen_mapping_dispatch(bose_operator, tol)
+
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
+
+
+@singledispatch
+def _christiansen_mapping_dispatch(bose_operator, tol):
+    """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
+    raise ValueError(f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}")
+
+
+@_christiansen_mapping_dispatch.register
+def _(bose_operator: BoseWord, tol=None):
+
+    qubit_operator = PauliSentence({PauliWord({}): 1.0})
+
+    coeffs = {"+": -0.5j, "-": 0.5j}
+
+    for (_, b_idx), sign in bose_operator.items():
+
+        qubit_operator @= PauliSentence(
+            {
+                PauliWord({**{b_idx: "X"}}): 0.5,
+                PauliWord({**{b_idx: "Y"}}): coeffs[sign],
+            }
+        )
+
+    for pw in qubit_operator:
+        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    qubit_operator.simplify(tol=1e-16)
+
+    return qubit_operator
+
+
+@_christiansen_mapping_dispatch.register
+def _(bose_operator: BoseSentence, tol=None):
+
+    qubit_operator = PauliSentence()
+
+    for bw, coeff in bose_operator.items():
+        bose_word_as_ps = christiansen_mapping(bw, ps=True)
+
+        for pw in bose_word_as_ps:
+            qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
+
+            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    qubit_operator.simplify(tol=1e-16)
+
+    return qubit_operator

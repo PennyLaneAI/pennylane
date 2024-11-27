@@ -44,6 +44,7 @@ from pennylane.bose import (
     BoseWord,
     binary_mapping,
     unary_mapping,
+    christiansen_mapping,
 )
 from pennylane.qchem import (
     taper,
