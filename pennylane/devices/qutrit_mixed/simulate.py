@@ -16,6 +16,7 @@
 from numpy.random import default_rng
 
 import pennylane as qml
+from pennylane.math import Interface
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -42,6 +43,15 @@ INTERFACE_TO_LIKE = {
     "tf": "tensorflow",
     "tensorflow-autograph": "tensorflow",
     "tf-autograph": "tensorflow",
+    # map interface enum
+    Interface.AUTOGRAD: "autograd",
+    Interface.NUMPY: "numpy",
+    Interface.TORCH: "torch",
+    Interface.JAX: "jax",
+    Interface.JAX_JIT: "jax",
+    Interface.TF: "tensorflow",
+    Interface.TF_AUTOGRAPH: "tensorflow",
+    Interface.AUTO: None,
 }
 
 
