@@ -17,12 +17,13 @@ from collections import defaultdict
 from functools import singledispatch
 from typing import Union
 
-from pennylane import numpy as np
+import numpy as np
 
 import pennylane as qml
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .bosonic import BoseSentence, BoseWord
+
 
 # pylint: disable=too-many-branches
 def _get_pauli_op(i, j, qub_id):
@@ -293,6 +294,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
     qubit_operator.simplify(tol=1e-16)
 
     return qubit_operator
+
 
 def christiansen_mapping(
     bose_operator: Union[BoseWord, BoseSentence],
