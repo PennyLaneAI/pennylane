@@ -192,7 +192,7 @@ class TestGrad:
     @pytest.mark.parametrize(
         "diff_method", ("backprop", pytest.param("parameter-shift", marks=pytest.mark.xfail))
     )
-    def test_grad_of_simple_qnode(self, x64_mode, diff_method, mocker):
+    def test_grad_of_simple_qnode(self, x64_mode, diff_method):
         """Test capturing the gradient of a simple qnode."""
         # pylint: disable=protected-access
         initial_mode = jax.config.jax_enable_x64
@@ -308,7 +308,7 @@ class TestGrad:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="backprop")
         def circuit(x, y, z):
             qml.RX(x["a"], wires=0)
             qml.RY(y, wires=0)
@@ -506,7 +506,7 @@ class TestJacobian:
     @pytest.mark.parametrize(
         "diff_method", ("backprop", pytest.param("parameter-shift", marks=pytest.mark.xfail))
     )
-    def test_jacobian_of_simple_qnode(self, x64_mode, diff_method, mocker):
+    def test_jacobian_of_simple_qnode(self, x64_mode, diff_method):
         """Test capturing the gradient of a simple qnode."""
         # pylint: disable=protected-access
         initial_mode = jax.config.jax_enable_x64

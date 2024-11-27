@@ -37,6 +37,7 @@ from .measure import measure
 from .sampling import measure_with_samples
 
 
+# pylint: disable=attribute-defined-outside-init, access-member-before-definition
 class DefaultQubitInterpreter(PlxprInterpreter):
     """Implements a class for interpreting plxpr using python simulation tools.
 
@@ -94,7 +95,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
             if self.stateref is None:
                 raise AttributeError("execution not yet initialized.")
             return self.stateref[key]
-        return super().__getattr__(key)
+        raise AttributeError(f"No attribute {key}")
 
     def __setattr__(self, __name: str, __value) -> None:
         if __name in {"state", "key", "is_state_batched"}:
@@ -157,6 +158,8 @@ def _(self, *invals, reset, postselect):
     self.key, new_key = jax.random.split(self.key, 2)
     mcms = {}
     self.state = apply_operation(mp, self.state, mid_measurements=mcms, prng_key=new_key)
+    if mp.postselect is not None:
+        self.state = self.state / (1 - jax.numpy.abs(mp.postselect - mcms[mp]))
     return mcms[mp]
 
 

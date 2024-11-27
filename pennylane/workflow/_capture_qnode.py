@@ -104,6 +104,10 @@ def _get_qnode_prim():
             raise NotImplementedError(
                 "override shots are not yet supported with the program capture execution."
             )
+        if qnode_kwargs["diff_method"] not in {"backprop", "best"}:
+            raise NotImplementedError(
+                "only backpropagation derivatives are supported at this time."
+            )
 
         consts = args[:n_consts]
         non_const_args = args[n_consts:]
