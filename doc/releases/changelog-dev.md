@@ -69,8 +69,8 @@
 * Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
-* ``qml.qchem.factorize`` method now supports performing double factorization based on Cholesky
-  decomposition and can be used with ``cholesky=True``.
+* `qml.qchem.factorize` method now supports performing double factorization based on Cholesky
+  decomposition and can be used with `cholesky=True`.
   [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
 
 

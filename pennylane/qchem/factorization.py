@@ -35,7 +35,7 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
         tol_factor (float): threshold error value for discarding the negligible factors
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
         cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
-            :math:`L^{(r)}` instead of eigendecomposition. Default is ``False``.
+            :math:`L^{(r)}` instead of eigen decomposition. Default is ``False``.
 
     Returns:
         tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
@@ -129,7 +129,7 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False
         - Decompose the resulting matrix either via eigenvalue decomposition or
           Cholesky decomposition.
 
-        - For the eigenvalue decomposition, keep the :math:`r` eigenvectors that
+        - For the eigen decomposition, keep the :math:`r` eigenvectors that
           have corresponding eigenvalues larger than the threshold.
 
         - While for the Cholesky decomposition, keep the first :math:`r` Cholesky
