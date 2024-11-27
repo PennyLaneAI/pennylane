@@ -4,13 +4,19 @@
 
 <h3>New features since last release</h3>
 
+* Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
+  class. Device developers are encouraged to override these two methods separately instead of the 
+  `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these 
+  two methods or `preprocess`, but not both. In the long term, we will slowly phase out the use of 
+  `preprocess` in favour of these two methods for better separation of concerns.
+  [(#6617)](https://github.com/PennyLaneAI/pennylane/pull/6617)
+
 * Developers of plugin devices now have the option of providing a TOML-formatted configuration file
   to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
-  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
-  [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
   * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
     data class, as well as functions that load and parse the TOML-formatted configuration files.
+    [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
     ```pycon
       >>> from pennylane.devices.capabilities import DeviceCapabilities
@@ -22,6 +28,7 @@
   * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
     that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
     file if it exists. Otherwise, it is set to `None`.
+    [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
     ```python
     from pennylane.devices import Device
@@ -82,6 +89,9 @@
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
+
+* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
+  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
 
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
