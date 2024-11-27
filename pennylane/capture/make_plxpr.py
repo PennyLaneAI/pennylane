@@ -18,6 +18,8 @@ from typing import Callable, Sequence, Union
 
 import pennylane as qml
 
+from .autograph import run_autograph
+
 has_jax = True
 try:
     import jax
@@ -25,7 +27,13 @@ except ImportError:  # pragma: no cover
     has_jax = False
 
 
-def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), **kwargs):
+class CaptureError(Exception):
+    """Errors related to PennyLane's Capture submodule."""
+
+
+def make_plxpr(
+    func: Callable, static_argnums: Union[int, Sequence[int]] = (), autograph=True, **kwargs
+):
     r"""Takes a function and returns a ``Callable`` that, when called, produces a PLxPR representing
     the function with the given args.
 
@@ -91,4 +99,17 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
             "You can enable capture with ``qml.capture.enable()``"
         )
 
+    if autograph:
+        func = run_autograph(func)
+
     return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
+
+    # try:
+    #     return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
+    # except Exception as e:
+    #     msg = f"Unable to convert function {func} to PLxPR format."
+    #     if autograph is False:
+    #         msg += " If your function contains control flow, consider using autograph=True, or read more about creating capture-ready control flow [here](link goes here)."
+    #     else:
+    #         msg += " You can read more about creating capture-ready and AutoGraph compatible control flow at link-goes-here"
+    #     raise CaptureError(msg) from e
