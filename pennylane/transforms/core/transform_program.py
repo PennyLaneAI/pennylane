@@ -493,9 +493,10 @@ class TransformProgram:
         f = partial(_classical_preprocessing, qnode, self[:index])
         classical_jacobian = _jac_map[qnode.interface](f, argnums, *args, **kwargs)
 
-        # autograd and tf cant handle pytrees, so need to squeeze batches
+        # autograd and tf cant handle pytrees, so need to unsqueeze the squeezing
+        # done in _classical_preprocessing
         tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
-        tapes, _ = self[:index]((tape,)) # pylint: disable=not-callable
+        tapes, _ = self[:index]((tape,))  # pylint: disable=not-callable
         multi_tapes = len(tapes) > 1
         if not multi_tapes:
             classical_jacobian = [classical_jacobian]
