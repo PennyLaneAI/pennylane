@@ -557,19 +557,3 @@ def execute(
         )
 
     return post_processing(results)
-
-
-def _get_execution_config(
-    diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
-):
-    """Helper function to get the execution config."""
-    config = qml.devices.ExecutionConfig(
-        interface=interface,
-        gradient_method=diff_method,
-        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
-        use_device_jacobian_product=device_vjp,
-        mcm_config=mcm_config,
-        gradient_keyword_arguments=gradient_kwargs,
-    )
-
-    return device.setup_execution_config(config)
