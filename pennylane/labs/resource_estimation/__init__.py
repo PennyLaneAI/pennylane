@@ -120,10 +120,7 @@ Exceptions
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
-<<<<<<< HEAD
-from .resource_container import CompressedResourceOp, Resources
 from .resource_tracking import DefaultGateSet, get_resources, resource_config
-=======
 
 from .resource_container import (
     CompressedResourceOp,
@@ -134,7 +131,6 @@ from .resource_container import (
     mul_in_parallel,
     substitute,
 )
->>>>>>> labs-resource-sub
 
 from .ops import (
     ResourceAdjoint,
