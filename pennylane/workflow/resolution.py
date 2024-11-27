@@ -134,7 +134,6 @@ def _resolve_diff_method(
     return replace(initial_config, **updated_values)
 
 
-# pylint: disable=protected-access
 def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
