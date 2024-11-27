@@ -57,7 +57,7 @@ def factorize(
     is done using an eigenvalue or Cholesky decomposition to obtain symmetric matrices
     :math:`L^{(r)}` such that :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`,
     where core and leaf tensors are obtained by further diagonalizing each matrix :math:`L^{(r)}`
-    and truncating its eigenvalues (and corresponding eigenvectors) are at a threshold error.
+    and truncating its eigenvalues (and the corresponding eigenvectors) are at a threshold error.
     See theory section for more details.
 
     For compressed double factorization (CDF), i.e., when ``compressed=True``, the above
@@ -68,9 +68,9 @@ def factorize(
 
        \mathcal{L}(U, Z) = \frac{1}{2} \bigg|V_{ijkl} - \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)}\bigg|_{\text{F}} + \rho \sum_r^R \sum_{pq} \bigg|Z_{pq}^{(r)}\bigg|^{\gamma},
 
-    where leaf tensors :math:`U` are defined by antisymmetric orbital rotations :math:`X` such that
-    :math:`U^{(r)} = \exp{(X^{(r)})}`, :math:`\text{F}` represents Frobenius norm, :math:`\rho` is
-    a constant scaling factor, and :math:`\gamma` represents the optional ``L1`` and ``L2``
+    where leaf tensors :math:`U` are defined by the antisymmetric orbital rotations :math:`X` such
+    that :math:`U^{(r)} = \exp{(X^{(r)})}`, :math:`|\cdot|_{\text{F}}` computes the Frobenius norm,
+    :math:`\rho` is a constant scaling factor, and :math:`\gamma` specifies the optional L1 and L2
     regularization. See references `arXiv:2104.08957 <https://arxiv.org/abs/2104.08957>`__
     and `arxiv:2212.07957 <https://arxiv.org/pdf/2212.07957>`__ for more details.
 
@@ -81,34 +81,34 @@ def factorize(
 
     Args:
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
-            basis arranged in chemist notation
-        tol_factor (float): threshold error value for discarding the negligible factors
-            This will be used only when ``compressed=False``
+            basis arranged in chemist notation.
+        tol_factor (float): threshold error value for discarding the negligible factors.
+            This will be used only when ``compressed=False``.
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues.
-            This will be used only when ``compressed=False``
+            This will be used only when ``compressed=False``.
         cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
-            :math:`L^{(r)}` instead of eigendecomposition
+            :math:`L^{(r)}` instead of eigendecomposition. Default is ``False``.
         compressed (bool): use compressed double factorization to optimize the factors returned
             in the decomposition. Look at the keyword arguments (``compression_kwargs``) for
-            the available options which must be provided only when ``compressed=True``
+            the available options which must be provided only when ``compressed=True``.
         regularization (string | None): type of regularization (``"L1"`` or ``"L2"``) to be
-            used for optimizing the factors. Default is to not include any regularization term
+            used for optimizing the factors. Default is to not include any regularization term.
 
     Keyword Args:
         num_factors (int): maximum number of factors that should be optimized for compressed
             double factorization. Default is :math:`2\times N`, where `N` is the number of
-            dimensions of two-electron tensor
+            dimensions of two-electron tensor.
         num_steps (int): maximum number of epochs for optimizing each factor. Default is ``1000``.
         optimizer (optax.optimizer): an optax optimizer instance. If not provided, `Adam
             <https://optax.readthedocs.io/en/latest/api/optimizers.html#optax.adam>`_ is
-            used with ``0.001`` learning rate
+            used with ``0.001`` learning rate.
         init_params (dict[str, TensorLike] | None): Intial values of the orbital rotations
             (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
             a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
             two-electron tensor. If not given, by default, zero matrices will be used if
             ``cholesky=False`` and the core and leaf tensors corresponding to the first
-            ``num_factors`` will be used if ``cholesky=True``
-        norm_prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``
+            ``num_factors`` will be used if ``cholesky=True``.
+        norm_prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``.
 
     Returns:
         tuple(TensorLike, TensorLike, TensorLike): tuple containing symmetric matrices (factors)
@@ -193,6 +193,15 @@ def factorize(
         with the rank :math:`R \leq n^2` where :math:`n` is the number of molecular orbitals.
         The matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that
         are smaller than a given threshold (and their corresponding eigenvectors) are discarded.
+        These can be used to further decompose :math:`V_{ijkl}` in terms of orthonormal matrices
+        :math:`U` (leaf tensors) and symmetric matrices :math:`Z` (core tensors), such that
+
+        .. math::
+
+            V_{ijkl} = \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)},
+
+        where :math:`U^{(r)}` are the eigenvectors of :math:`L^{(r)}` and
+        :math:`Z^{(r)}` are the outer proudct of the eigenvalues of :math:`L^{(r)}`.
 
         The factorization algorithm has the following steps
         [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
@@ -214,6 +223,9 @@ def factorize(
 
         - Diagonalize the :math:`n \times n` matrices and for each matrix keep the eigenvalues (and
           their corresponding eigenvectors) that are larger than a threshold.
+
+        - Compute the orthonormal matrices :math:`U` and the symmetric matrices :math:`Z`
+          from the above eigenvectors and eigenvalues to get the core and leaf tensors.
     """
     shape = qml.math.shape(two_electron)
 
@@ -229,6 +241,7 @@ def factorize(
         )
         factors, f_eigvals, f_eigvecs = _explicit_df_func(two, tol_factor, shape, interface)
 
+        # compute the core tensors and leaf tensors from the factors' eigendecomposition
         core_tensors, leaf_tensors = [], []
         for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs):
             fidx = qml.math.where(qml.math.abs(f_eigval) > tol_eigval)[0]
@@ -255,10 +268,11 @@ def factorize(
         init_params = compression_kwargs.get("init_params", None)
 
         if cholesky and init_params is None:
-            # compute the core and orbital generator tensors from the factors
+            # compute the factors via cholesky decomposition routine
             factors, f_eigvals, f_eigvecs = _double_factorization_cholesky(
                 two, tol_factor, shape, interface, num_factors
             )
+            # compute the core and orbital rotation tensors from the factors
             core_matrices = qml.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
             asym_matrices = [sp.linalg.logm(f_eigvec).real for f_eigvec in f_eigvecs]
             init_params = {"X": asym_matrices, "Z": core_matrices}
@@ -274,7 +288,8 @@ def factorize(
             two_electron, optimizer, num_factors, num_steps, init_params, prefactor, norm_order
         )
 
-        # Since core_tensors are symmetric and not constrained to be rank-one
+        # Since core_tensors are symmetric but not constrained to be rank-one,
+        # factors are computed by using their Schur decompositions.
         upr_tri, unitary = jsp.linalg.schur(core_tensors)
         factors = qml.math.array(
             jnp.einsum(
@@ -292,7 +307,22 @@ def factorize(
 
 
 def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
-    """Double factorization via generalized eigen decomposition"""
+    """Explicit double factorization using generalized eigen decomposition of
+    the two-electron integral tensor described in PRX Quantum 2, 040352 (2021).
+
+    Args:
+        two (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation
+        tol_factor (float): threshold error value for discarding the negligible factors
+        shape (tuple[int, int]): shape for the provided two_electron
+        interface (string): interface for two_electron tensor
+        num_factors (int): number of factors to be computed.
+
+    Returns:
+        tuple(array[array[float]], array[array[float]], array[array[float]]): tuple containing
+        symmetric matrices (factors) approximating the two-electron integral tensor, truncated
+        eigenvalues of the generated factors, and truncated eigenvectors of the generated factors
+    """
     eigvals_r, eigvecs_r = qml.math.linalg.eigh(two)
     eigvals_r = qml.math.array([val for val in eigvals_r if abs(val) > tol_factor])
 
@@ -312,7 +342,7 @@ def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=N
 def _double_factorization_cholesky(
     two, tol_factor=1.0e-10, shape=None, interface=None, num_factors=None
 ):
-    """Double factorization using Cholesky decomposition of the two-electron
+    """Explicit double factorization using Cholesky decomposition of the two-electron
     integral tensor described in J. Chem. Phys. 118, 9481-9484 (2003).
 
     Args:
