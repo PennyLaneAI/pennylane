@@ -328,6 +328,8 @@ class TestResources:
         )
 
         resultant_obj1 = substitute(resource_obj, gate_name, sub_obj, in_place=False)
+        print(resultant_obj1)
+        print(expected_res_obj)
         assert resultant_obj1 == expected_res_obj
 
         resultant_obj2 = substitute(resource_obj, gate_name, sub_obj, in_place=True)
