@@ -84,6 +84,7 @@ Resource Functions
     ~add_in_parallel
     ~mul_in_series
     ~mul_in_parallel
+    ~substitute
 
 Tracking Resources for Custom Operations
 ----------------------------------------
@@ -142,6 +143,7 @@ from .resource import (
     add_in_parallel,
     mul_in_series,
     mul_in_parallel,
+    substitute,
 )
 from .second_quantization import DoubleFactorization
 from .specs import specs

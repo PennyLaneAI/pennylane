@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
-from pennylane.workflow.execution import _cache_transform
+from pennylane.workflow import _cache_transform
 
 
 @pytest.fixture

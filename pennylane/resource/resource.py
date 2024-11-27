@@ -20,6 +20,7 @@ import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Tuple
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
@@ -500,6 +501,103 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
     return Resources(
         new_wires, new_gates, new_gate_types, new_gate_sizes, resources.depth, new_shots
     )
+
+
+def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replacement: Resources):
+    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
+
+    Args:
+        initial_resources (Resources): the :class:`~resource.Resources` object to be modified
+        gate_info (Iterable(str, int)): sequence containing the name of the gate to be replaced and the number of wires it acts on
+        replacement (Resources): the :class:`~resource.Resources` containing the resources that will replace the gate
+
+    Returns:
+        Resources: the updated :class:`~resource.Resources` after substitution
+
+    .. details::
+
+        **Example**
+
+        First we build the :class:`~.resource.Resources`.
+
+        .. code-block:: python3
+
+            from pennylane.measurements import Shots
+            from pennylane.resource import Resources
+
+            initial_resources = Resources(
+                num_wires = 2,
+                num_gates = 3,
+                gate_types = {"RX": 2, "CNOT": 1},
+                gate_sizes = {1: 2, 2: 1},
+                depth = 2,
+                shots = Shots(10)
+            )
+
+            # the RX gates will be replaced by the substitution
+            gate_info = ("RX", 1)
+
+            replacement = Resources(
+                num_wires = 1,
+                num_gates = 7,
+                gate_types = {"Hadamard": 3, "S": 4},
+                gate_sizes = {1: 7},
+                depth = 7
+            )
+
+
+        Now we print the result of the substitution.
+
+        >>> res = qml.resource.substitute(initial_resources, gate_info, replacement)
+        >>> print(res)
+        wires: 2
+        gates: 15
+        depth: 9
+        shots: Shots(total=10)
+        gate_types:
+        {'CNOT': 1, 'H': 6, 'S': 8}
+        gate_sizes:
+        {1: 14, 2: 1}
+    """
+
+    gate_name, num_wires = gate_info
+
+    if not num_wires in initial_resources.gate_sizes:
+        raise ValueError(f"initial_resources does not contain a gate acting on {num_wires} wires.")
+
+    gate_count = initial_resources.gate_types.get(gate_name, 0)
+
+    if gate_count > initial_resources.gate_sizes[num_wires]:
+        raise ValueError(
+            f"Found {gate_count} gates of type {gate_name}, but only {initial_resources.gate_sizes[num_wires]} gates act on {num_wires} wires in initial_resources."
+        )
+
+    if gate_count > 0:
+        new_wires = initial_resources.num_wires
+        new_gates = initial_resources.num_gates - gate_count + (gate_count * replacement.num_gates)
+        replacement_gate_types = _scale_dict(replacement.gate_types, gate_count)
+        replacement_gate_sizes = _scale_dict(replacement.gate_sizes, gate_count)
+
+        new_gate_types = _combine_dict(initial_resources.gate_types, replacement_gate_types)
+        new_gate_types.pop(gate_name)
+
+        new_gate_sizes = copy.copy(initial_resources.gate_sizes)
+        new_gate_sizes[num_wires] -= gate_count
+        new_gate_sizes = _combine_dict(new_gate_sizes, replacement_gate_sizes)
+
+        new_depth = initial_resources.depth + replacement.depth
+
+        wire_diff = num_wires - replacement.num_wires
+        if wire_diff < 0:
+            new_wires = initial_resources.num_wires + abs(wire_diff)
+        else:
+            new_wires = initial_resources.num_wires
+
+        return Resources(
+            new_wires, new_gates, new_gate_types, new_gate_sizes, new_depth, initial_resources.shots
+        )
+
+    return initial_resources
 
 
 def _combine_dict(dict1: dict, dict2: dict):

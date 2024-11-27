@@ -209,25 +209,24 @@ def factorize(
         - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
           :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-        - Decompose the resulting matrix either via Cholesky decomposition or
-          via eigenvalue decomposition.
+        - Decompose the resulting matrix either via eigendecomposition or
+          Cholesky decomposition.
 
-        - For the eigenvalue decomposition, keep the :math:`r` eigenvectors that
-          have corresponding eigenvalues larger than a threshold.
+        - For the eigendecomposition, keep the :math:`r` eigenvectors with
+          corresponding eigenvalues larger than the threshold. Multiply these
+          eigenvectors by the square root of the eigenvalues and reshape them
+          to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
-        - While for the Cholesky decomposition, keep the first :math:`r` vectors
-          that result in an approximation error below the threshold.
+        - While for the Cholesky decomposition, keep the first :math:`r` Cholesky
+          vectors that result in an residual error below the threshold and reshape
+          them to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
-        - Multiply the eigenvectors by the square root of the eigenvalues to obtain
-          matrices :math:`L^{(r)}`.
-
-        - Reshape the selected eigenvectors to :math:`n \times n` matrices.
-
-        - Diagonalize the :math:`n \times n` matrices and for each matrix keep the eigenvalues (and
-          their corresponding eigenvectors) that are larger than a threshold.
+        - Diagonalize the :math:`L^{(r)}` (:math:`n \times n`) matrices and for each
+          matrix keep the eigenvalues (and their corresponding eigenvectors) that are
+          larger than a threshold.
 
         - Compute the orthonormal matrices :math:`U` and the symmetric matrices :math:`Z`
-          from the above eigenvectors and eigenvalues to get the core and leaf tensors.
+          from the retained eigenvalues and eigenvectors to get the core and leaf tensors.
     """
     shape = qml.math.shape(two_electron)
 
