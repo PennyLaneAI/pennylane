@@ -15,6 +15,8 @@
 This submodule tests transforms with program capture
 """
 # pylint: disable=protected-access
+from functools import partial
+
 import pytest
 
 import pennylane as qml
@@ -187,3 +189,37 @@ class TestCaptureTransforms:
         expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
         for eqn1, eqn2 in zip(inner_inner_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
+
+    def test_higher_order_primitives(self):
+        """Test that transforms are captured correctly when used with higher-order primitives."""
+        dev = qml.device("default.qubit", wires=5)
+
+        targs = (0, 1)
+        tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
+
+        @qml.qnode(dev)
+        def f():
+            @partial(z_to_hadamard, dummy_arg1=targs[0], dummy_arg2=targs[1], **tkwargs)
+            @qml.for_loop(3)
+            def g(i):
+                qml.X(i)
+                qml.X(i)
+
+            g()
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == qml.capture.qnode_prim
+
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive == z_to_hadamard._primitive
+
+        loop_jaxpr = qfunc_jaxpr.eqns[0].params["inner_jaxpr"]
+        assert loop_jaxpr.eqns[0].primitive == qml.capture.primitives.for_loop_prim
+
+        loop_body_jaxpr = loop_jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert loop_body_jaxpr.eqns[0].primitive == qml.X._primitive
+        assert loop_body_jaxpr.eqns[1].primitive == qml.X._primitive
+
+        assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive

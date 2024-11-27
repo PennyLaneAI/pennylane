@@ -29,6 +29,13 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
+def _default_plxpr_transform(transform_name):  # pylint: disable=missing-function-docstring
+    def wrapper(*_, **__):
+        raise TransformError(f"{transform_name} cannot be used to transform PLxPR.")
+
+    return wrapper
+
+
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
@@ -71,6 +78,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         is_informative=False,
         final_transform=False,
         use_argnum_in_expand=False,
+        plxpr_transform=None,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
@@ -79,6 +87,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
+        self._plxpr_transform = plxpr_transform or _default_plxpr_transform(
+            self._transform.__name__
+        )
+
         self._use_argnum_in_expand = use_argnum_in_expand
         self._primitive = _create_transform_primitive(self._transform.__name__)
         functools.update_wrapper(self, transform)
@@ -221,20 +233,40 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         if self.expand_transform:
             qnode.add_transform(
                 TransformContainer(
-                    self._expand_transform, targs, tkwargs, use_argnum=self._use_argnum_in_expand
+                    self._expand_transform,
+                    args=targs,
+                    kwargs=tkwargs,
+                    use_argnum=self._use_argnum_in_expand,
                 )
             )
         qnode.add_transform(
             TransformContainer(
                 self._transform,
-                targs,
-                tkwargs,
-                self._classical_cotransform,
-                self._is_informative,
-                self._final_transform,
+                args=targs,
+                kwargs=tkwargs,
+                classical_cotransform=self._classical_cotransform,
+                plxpr_transform=self._plxpr_transform,
+                is_informative=self._is_informative,
+                final_transform=self._final_transform,
             )
         )
         return qnode
+
+    def plxpr_transform(self, primitive, tracers, params, targs, tkwargs, state):
+        """Function for processing primitives to transform PLxPR.
+        Args:
+            primitive (jax.core.Primitive): Primitive to transform
+            tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive
+            params (dict): Dictionary containing keyword arguments/metadata for the primitive
+            targs (Sequence[Any]): Arguments for the transform
+            tkwargs (dict): Keyword arguments for the transform
+            state (dict): Dictionary containing auxiliary information about the environment/state
+                needed to apply the transform
+        Returns:
+            Any: The results of the transformed primitive
+        """
+        # Implemented this way rather than using a property so that the correct docstring is used
+        return self._plxpr_transform(primitive, tracers, params, targs, tkwargs, state)
 
     def _capture_callable_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""
@@ -344,7 +376,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             ):
                 """This function updates the original device transform program to be applied."""
                 program, config = self.original_device.preprocess(execution_config)
-                program.push_back(TransformContainer(self.transform, targs, tkwargs))
+                program.push_back(TransformContainer(self.transform, args=targs, kwargs=tkwargs))
                 return program, config
 
             @property
@@ -397,7 +429,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return tuple(execution_tapes), processing_fn
 
 
-class TransformContainer:
+class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-many-positional-arguments
     """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
     :func:`~.pennylane.transform`.
 
@@ -416,6 +448,7 @@ class TransformContainer:
         args=None,
         kwargs=None,
         classical_cotransform=None,
+        plxpr_transform=None,
         is_informative=False,
         final_transform=False,
         use_argnum=False,
@@ -424,6 +457,7 @@ class TransformContainer:
         self._args = args or []
         self._kwargs = kwargs or {}
         self._classical_cotransform = classical_cotransform
+        self._plxpr_transform = plxpr_transform
         self._is_informative = is_informative
         self._final_transform = is_informative or final_transform
         self._use_argnum = use_argnum
@@ -476,6 +510,11 @@ class TransformContainer:
         return self._classical_cotransform
 
     @property
+    def plxpr_transform(self):
+        """The stored quantum transform's PLxPR transform."""
+        return self._plxpr_transform
+
+    @property
     def is_informative(self):
         """``True`` if the transform is informative."""
         return self._is_informative
@@ -501,12 +540,7 @@ def _create_transform_primitive(name):
     def _(
         *all_args, inner_jaxpr, args_slice, consts_slice, targs, tkwargs
     ):  # pylint: disable=unused-argument
-        args = all_args[args_slice]
-        consts = all_args[consts_slice]
-
-        out = jax.core.eval_jaxpr(inner_jaxpr, consts, *args)
-        out = out if isinstance(out, Sequence) else [out]
-        return out
+        return NotImplementedError
 
     @transform_prim.def_abstract_eval
     def _(*_, inner_jaxpr, **__):

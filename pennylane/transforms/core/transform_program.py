@@ -349,11 +349,12 @@ class TransformProgram:
         self.push_back(
             TransformContainer(
                 transform.transform,
-                targs,
-                tkwargs,
-                transform.classical_cotransform,
-                transform.is_informative,
-                transform.final_transform,
+                args=targs,
+                kwargs=tkwargs,
+                classical_cotransform=transform.classical_cotransform,
+                plxpr_transform=transform.plxpr_transform,
+                is_informative=transform.is_informative,
+                final_transform=transform.final_transform,
             )
         )
 
@@ -376,11 +377,12 @@ class TransformProgram:
         self.insert_front(
             TransformContainer(
                 transform.transform,
-                targs,
-                tkwargs,
-                transform.classical_cotransform,
-                transform.is_informative,
-                transform.final_transform,
+                args=targs,
+                kwargs=tkwargs,
+                classical_cotransform=transform.classical_cotransform,
+                plxpr_transform=transform.plxpr_transform,
+                is_informative=transform.is_informative,
+                final_transform=transform.final_transform,
             )
         )
 
