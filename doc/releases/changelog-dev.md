@@ -37,7 +37,6 @@
   and can be used with ``compressed=True``.
   [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
 
-
 <h3>Improvements 🛠</h3>
 
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
