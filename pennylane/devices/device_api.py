@@ -514,8 +514,8 @@ class Device(abc.ABC):
         finite_shots_capabilities = self.capabilities.filter(finite_shots=True)
         program.add_transform(
             decompose,
-            stopping_condition=analytic_capabilities.supports_operation,
-            stopping_condition_shots=finite_shots_capabilities.supports_operation,
+            stopping_condition=lambda o: analytic_capabilities.supports_operation(o.name),
+            stopping_condition_shots=lambda o: finite_shots_capabilities.supports_operation(o.name),
             name=self.name,
         )
         program.add_transform(

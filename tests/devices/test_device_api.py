@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
-from pennylane.devices.capabilities import DeviceCapabilities
+from pennylane.devices.capabilities import DeviceCapabilities, OperatorProperties
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -328,6 +328,46 @@ class TestPreprocessTransforms:
             assert expected_transform in transform_program
         for other_transform in mcm_transforms - {expected_transform}:
             assert other_transform not in transform_program
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        [EXAMPLE_TOML_FILE_ALL_SUPPORT],
+        indirect=True,
+    )
+    @pytest.mark.parametrize("supports_projector", [True, False])
+    def test_deferred_allow_postselect(self, request, supports_projector):
+        """Tests that the deferred measurements transform validates postselection."""
+
+        class CustomDevice(Device):
+            """A device with capabilities config file defined."""
+
+            config_filepath = request.node.toml_file
+
+            def __init__(self):
+                super().__init__()
+                if supports_projector:
+                    self.capabilities.operations["Projector"] = OperatorProperties()
+
+            def execute(
+                self,
+                circuits: QuantumScriptOrBatch,
+                execution_config: ExecutionConfig = None,
+            ) -> Union[Result, ResultBatch]:
+                return (0,)
+
+        dev = CustomDevice()
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="deferred"))
+        program = dev.preprocess_transforms(config)
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0, postselect=0)], [], shots=10)
+
+        if not supports_projector:
+            with pytest.raises(ValueError, match="Postselection is not allowed on the device"):
+                program((tape,))
+        else:
+            tapes, _ = program((tape,))
+            assert isinstance(tapes[0].operations[0], qml.Projector)
+
 
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""

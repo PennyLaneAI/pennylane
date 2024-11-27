@@ -433,13 +433,17 @@ def decompose(
 def validate_observables(
     tape: QuantumScript,
     stopping_condition: Callable[[qml.operation.Operator], bool],
+    stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     name: str = "device",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Validates the observables and measurements for a circuit.
 
     Args:
         tape (QuantumTape or QNode or Callable): a quantum circuit.
-        stopping_condition (callable): a function that specifies whether or not an observable is accepted.
+        stopping_condition (callable): a function that specifies whether an observable is accepted.
+        stopping_condition_shots (callable): a function that specifies whether an observable is
+            accepted in finite-shots mode. This replaces ``stopping_condition`` if and only if the
+            tape has shots.
         name (str): the name of the device to use in error messages.
 
     Returns:
@@ -459,6 +463,9 @@ def validate_observables(
     qml.DeviceError: Observable Z(0) + Y(0) not supported on device
 
     """
+    if bool(tape.shots) and stopping_condition_shots is not None:
+        stopping_condition = stopping_condition_shots
+
     for m in tape.measurements:
         if m.obs is not None and not stopping_condition(m.obs):
             raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
