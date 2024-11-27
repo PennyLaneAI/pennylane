@@ -404,7 +404,7 @@ class RiemannianGradientOptimizer:
                 circuits, self.circuit.device, diff_method=None
             )  # pragma: no cover
 
-        program, _ = self.circuit.device.preprocess()
+        program = self.circuit.device.preprocess_transforms()
 
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
