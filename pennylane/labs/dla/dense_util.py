@@ -286,6 +286,11 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     if any(isinstance(op, np.ndarray) for op in m):
         m = [qml.pauli_decompose(op).pauli_rep for op in m]
 
+    if any(isinstance(op, Operator) for op in k):
+        k = [op.pauli_rep for op in k]
+    if any(isinstance(op, Operator) for op in m):
+        m = [op.pauli_rep for op in m]
+
     k_space = qml.pauli.PauliVSpace(k, dtype=complex)
     m_space = qml.pauli.PauliVSpace(m, dtype=complex)
 

@@ -72,7 +72,12 @@ def cartan_decomposition(g, involution):
     ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
      [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
 
-    We can check the validity of the decomposition using :func:`~check_cartan_decomp`
+    We can check the validity of the decomposition using :func:`~check_cartan_decomp`.
+
+    >>> check_cartan_decomp(k, m)
+    True
+
+    There are other Cartan decomposition induced by other involutions. For example using :func:`~even_odd_involution`.
 
     >>> k, m = cartan_decomposition(g, even_odd_involution)
     >>> k, m
@@ -81,6 +86,8 @@ def cartan_decomposition(g, involution):
       -1.0 * (Y(0) @ X(1)),
       -1.0 * (X(0) @ Y(1)),
       -1.0 * (Y(0) @ Y(1))])
+    >>> check_cartan_decomp(k, m)
+    True
     """
     # simple implementation assuming all elements in g are already either in k and m
     # TODO: Figure out more general way to do this when the above is not the case
