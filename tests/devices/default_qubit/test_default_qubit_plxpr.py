@@ -23,6 +23,7 @@ pytestmark = pytest.mark.jax
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
+    """Enable and disable plxpr."""
     qml.capture.enable()
     yield
     qml.capture.disable()
@@ -81,7 +82,7 @@ def test_no_prng_key():
     res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
     assert qml.math.allclose(res, jax.numpy.zeros(100))
 
- 
+
 def test_simple_execution():
     """Test the execution, jitting, and gradient of a simple quantum circuit."""
 

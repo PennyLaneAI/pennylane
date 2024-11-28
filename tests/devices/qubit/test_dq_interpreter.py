@@ -57,6 +57,9 @@ def test_setup_and_cleanup():
     dq = DefaultQubitInterpreter(num_wires=2, shots=2, key=key)
     assert dq.stateref is None
 
+    with pytest.raises(AttributeError, match="execution not yet initialized"):
+        _ = dq.state
+
     dq.setup()
     assert isinstance(dq.stateref, dict)
     assert list(dq.stateref.keys()) == ["state", "key", "is_state_batched"]
