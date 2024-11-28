@@ -16,13 +16,13 @@ This module contains tests for functions needed to compute PES object.
 """
 import os
 
-import h5py
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.qchem import vibrational
 
+h5py = pytest.importorskip("h5py")
 AU_TO_CM = 219475
 
 # pylint: disable=too-many-arguments

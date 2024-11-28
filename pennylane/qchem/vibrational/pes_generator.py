@@ -17,11 +17,11 @@ per normal modes on a grid."""
 import itertools
 import subprocess
 
-import h5py
 import numpy as np
 from mpi4py import MPI
 
 import pennylane as qml
+from pennylane.data.base._lazy_modules import h5py
 
 from .vibrational_class import get_dipole, single_point
 
