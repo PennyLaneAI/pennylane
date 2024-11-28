@@ -14,6 +14,7 @@
 """This module contains functions to calculate potential energy surfaces
 per normal modes on a grid."""
 
+import itertools
 import subprocess
 
 import h5py
@@ -22,35 +23,51 @@ from mpi4py import MPI
 
 import pennylane as qml
 
-from .vibrational_class import single_point, get_dipole
+from .vibrational_class import get_dipole, single_point
 
-#constants
-HBAR = 6.022*1.055e12 # (amu)*(angstrom^2/s)
-C_LIGHT = 3*10**8 # m/s
+# pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
+# constants
+HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
+C_LIGHT = 3 * 10**8  # m/s
 AU_TO_CM = 219475
-BOHR_TO_ANG = 0.529177
+BOHR_TO_ANG = 0.5291772106
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-def pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False):
+
+def pes_onemode(
+    molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
+):
     r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
-    local_pes_onebody, local_dipole_onebody = _local_pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method=method, do_dipole=do_dipole)
+    local_pes_onebody, local_dipole_onebody = _local_pes_onemode(
+        molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method=method, do_dipole=do_dipole
+    )
 
-    f = h5py.File("v1data" + f"_{rank}" + '.hdf5', 'w')
-    f.create_dataset('V1_PES',data=local_pes_onebody)
-    if do_dipole:
-        f.create_dataset('D1_DMS',data=local_dipole_onebody)
-    f.close()
+    filename = f"v1data_{rank}.hdf5"
+    with h5py.File(filename, "w") as f:
+        f.create_dataset("V1_PES", data=local_pes_onebody)
+        if do_dipole:
+            f.create_dataset("D1_DMS", data=local_dipole_onebody)
+
     comm.Barrier()
     pes_onebody = None
     dipole_onebody = None
     if rank == 0:
-        pes_onebody, dipole_onebody = _load_pes_onemode(comm.Get_size(),len(freqs_au), len(gauss_grid), do_dipole=do_dipole)
-        subprocess.run(['rm', 'v1data*'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True, check=True)
+        pes_onebody, dipole_onebody = _load_pes_onemode(
+            comm.Get_size(), len(freqs_au), len(gauss_grid), do_dipole=do_dipole
+        )
+        subprocess.run(
+            ["rm", "v1data*"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            shell=True,
+            check=False,
+        )
 
     comm.Barrier()
     pes_onebody = comm.bcast(pes_onebody, root=0)
@@ -61,14 +78,17 @@ def pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="
 
     return pes_onebody, None
 
-def _local_pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False):
+
+def _local_pes_onemode(
+    molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
+):
     r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
     freqs = freqs_au * AU_TO_CM
     quad_order = len(gauss_grid)
     nmodes = len(freqs)
-    init_geom = scf_result.mol.atom
+    init_geom = molecule.coordinates * BOHR_TO_ANG
 
     jobs_on_rank = np.array_split(range(quad_order), size)[rank]
     local_pes_onebody = np.zeros((nmodes, len(jobs_on_rank)), dtype=float)
@@ -76,39 +96,39 @@ def _local_pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, m
     if do_dipole:
         local_dipole_onebody = np.zeros((nmodes, len(jobs_on_rank), 3), dtype=float)
         ref_dipole = get_dipole(scf_result, method)
-    for ii in range(nmodes):
-        displ_vec = displ_vecs[ii]
-        if (freqs[ii].imag) > 1e-6:
+    for mode in range(nmodes):
+        displ_vec = displ_vecs[mode]
+        if (freqs[mode].imag) > 1e-6:
             continue
 
-        idx = 0
-        for jj in jobs_on_rank:
-            pt = gauss_grid[jj]
+        job_idx = 0
+        for job in jobs_on_rank:
+            pt = gauss_grid[job]
             # numerical scaling out front to shrink region
-            scaling = np.sqrt( HBAR / (2 * np.pi * freqs[ii] * 100 * C_LIGHT))
-            positions = np.array([np.array(init_geom[ll][1]) + \
-                                  scaling * pt * displ_vec[ll,:] \
-                            for ll in range(len(molecule.symbols))])
+            scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * C_LIGHT))
+            positions = np.array(init_geom + scaling * pt * displ_vec)
 
-            disp_mol = qml.qchem.Molecule(molecule.symbols,
-                                          positions,
-                                          basis_name=molecule.basis_name,
-                                          charge=molecule.charge,
-                                          mult=molecule.mult,
-                                          unit="angstrom",
-                                          load_data=True)
+            displ_mol = qml.qchem.Molecule(
+                molecule.symbols,
+                positions,
+                basis_name=molecule.basis_name,
+                charge=molecule.charge,
+                mult=molecule.mult,
+                unit="angstrom",
+                load_data=True,
+            )
 
-            disp_hf = single_point(disp_mol, method=method)
+            displ_scf = single_point(displ_mol, method=method)
 
-            omega = freqs_au[ii]
+            omega = freqs_au[mode]
             ho_const = omega / 2
 
-            local_harmonic_pes[ii][idx] = ho_const * (pt**2)
+            local_harmonic_pes[mode][job_idx] = ho_const * (pt**2)
 
-            local_pes_onebody[ii][idx] = disp_hf.e_tot - scf_result.e_tot
+            local_pes_onebody[mode][job_idx] = displ_scf.e_tot - scf_result.e_tot
             if do_dipole:
-                local_dipole_onebody[ii,idx,:] = get_dipole(disp_hf, method) - ref_dipole
-            idx += 1
+                local_dipole_onebody[mode, job_idx, :] = get_dipole(displ_scf, method) - ref_dipole
+            job_idx += 1
 
     if do_dipole:
         return local_pes_onebody, local_dipole_onebody
@@ -117,48 +137,81 @@ def _local_pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, m
 
 def _load_pes_onemode(num_pieces, nmodes, quad_order, do_dipole=False):
     """
-    Loader to combine pes_onebody from multiple ranks.
+    Loader to combine pes_onebody and dipole_onebody from multiple ranks.
     """
-    
+
     pes_onebody = np.zeros((nmodes, quad_order), dtype=float)
 
     if do_dipole:
         dipole_onebody = np.zeros((nmodes, quad_order, 3), dtype=float)
 
-    for ii in range(nmodes):
+    for mode in range(nmodes):
         init_chunk = 0
         for piece in range(num_pieces):
-            f = h5py.File("v1data" + f"_{piece}" + '.hdf5', 'r+')
-            local_pes_onebody = f['V1_PES'][()]
-            local_dipole_onebody = f['D1_DMS'][()]
+            f = h5py.File("v1data" + f"_{piece}" + ".hdf5", "r+")
+            local_pes_onebody = f["V1_PES"][()]
+            local_dipole_onebody = f["D1_DMS"][()]
 
-            end_chunk = local_pes_onebody.shape[1]
-            pes_onebody[ii][init_chunk:init_chunk+end_chunk] = local_pes_onebody[ii]
+            end_chunk = np.array(local_pes_onebody).shape[1]
+            pes_onebody[mode][init_chunk : init_chunk + end_chunk] = local_pes_onebody[mode]
             if do_dipole:
-                dipole_onebody[ii][init_chunk:init_chunk+end_chunk] = local_dipole_onebody[ii]
+                dipole_onebody[mode][init_chunk : init_chunk + end_chunk] = local_dipole_onebody[
+                    mode
+                ]
             init_chunk += end_chunk
 
     if do_dipole:
         return pes_onebody, dipole_onebody
     return pes_onebody, None
 
-def pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, dipole_onebody, method="rhf", do_dipole=False):
+
+def pes_twomode(
+    molecule,
+    scf_result,
+    freqs_au,
+    displ_vecs,
+    gauss_grid,
+    pes_onebody,
+    dipole_onebody,
+    method="rhf",
+    do_dipole=False,
+):
     r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
-    local_pes_twobody, local_dipole_twobody = _local_pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, dipole_onebody, method=method, do_dipole=do_dipole)
+    local_pes_twobody, local_dipole_twobody = _local_pes_twomode(
+        molecule,
+        scf_result,
+        freqs_au,
+        displ_vecs,
+        gauss_grid,
+        pes_onebody,
+        dipole_onebody,
+        method=method,
+        do_dipole=do_dipole,
+    )
 
-    f = h5py.File("v2data" + f"_{rank}" + '.hdf5', 'w')
-    f.create_dataset('V2_PES',data=local_pes_twobody)
-    if do_dipole:
-        f.create_dataset('D2_DMS',data=local_dipole_twobody)
-    f.close()
+    filename = f"v2data_{rank}.hdf5"
+    with h5py.File(filename, "w") as f:
+        f.create_dataset("V2_PES", data=local_pes_twobody)
+        if do_dipole:
+            f.create_dataset("D2_DMS", data=local_dipole_twobody)
+
     comm.Barrier()
     pes_twobody = None
     dipole_twobody = None
     if rank == 0:
-        pes_twobody, dipole_twobody = _load_pes_twomode(comm.Get_size(),len(freqs_au), len(gauss_grid), do_dipole=do_dipole)
-        subprocess.run(['rm', 'v2data*'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True, check=True)
+        pes_twobody, dipole_twobody = _load_pes_twomode(
+            comm.Get_size(), len(freqs_au), len(gauss_grid), do_dipole=do_dipole
+        )
+        subprocess.run(
+            ["rm", "v2data*"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            shell=True,
+            check=False,
+        )
 
     comm.Barrier()
     pes_twobody = comm.bcast(pes_twobody, root=0)
@@ -169,66 +222,77 @@ def pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_oneb
     return pes_twobody, None
 
 
-def _local_pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, dipole_onebody, method="rhf", do_dipole=False):
+def _local_pes_twomode(
+    molecule,
+    scf_result,
+    freqs_au,
+    displ_vecs,
+    gauss_grid,
+    pes_onebody,
+    dipole_onebody,
+    method="rhf",
+    do_dipole=False,
+):
     r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
     freqs = freqs_au * AU_TO_CM
-    init_geom = scf_result.mol.atom
+    init_geom = molecule.coordinates * BOHR_TO_ANG
+    nmodes = len(freqs)
 
-    all_mode_combos = []
-    for aa in range(len(displ_vecs)):
-        for bb in range(len(displ_vecs)):
-            all_mode_combos.append([aa, bb])
+    all_mode_combos = [(mode_a, mode_b) for mode_a in range(nmodes) for mode_b in range(mode_a)]
 
-    all_jobs = []
-    for ii, pt1 in enumerate(gauss_grid):
-        for jj, pt2 in enumerate(gauss_grid):
-            all_jobs.append([ii, pt1, jj, pt2])
-
+    all_jobs = [
+        [i, pt1, j, pt2]
+        for (i, pt1), (j, pt2) in itertools.product(enumerate(gauss_grid), repeat=2)
+    ]
     jobs_on_rank = np.array_split(all_jobs, size)[rank]
-    local_pes_twobody = np.zeros((len(all_mode_combos)*len(jobs_on_rank)))
+
+    local_pes_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank)))
 
     if do_dipole:
-        local_dipole_twobody = np.zeros((len(all_mode_combos)*\
-                                        len(jobs_on_rank), 3), dtype=float)
+        local_dipole_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank), 3), dtype=float)
         ref_dipole = get_dipole(scf_result, method)
 
-    ll = 0
-    for [aa, bb] in all_mode_combos:
-        aa, bb = int(aa), int(bb)
-
-        displ_vec_a = displ_vecs[aa]
-        scaling_a = np.sqrt( HBAR / (2 * np.pi * freqs[aa] * 100 * C_LIGHT))
-
-        if bb >= aa:
-            ll += 1
+    for mode_idx, [mode_a, mode_b] in enumerate(all_mode_combos):
+        mode_a, mode_b = int(mode_a), int(mode_b)
+        if (freqs[mode_a].imag) > 1e-6 or (freqs[mode_b].imag) > 1e-6:
             continue
 
-        displ_vec_b = displ_vecs[bb]
+        displ_vec_a = displ_vecs[mode_a]
+        scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * C_LIGHT))
 
-        if (freqs[aa].imag) > 1e-6 or (freqs[bb].imag) > 1e-6:
-            ll += 1
-            continue
+        displ_vec_b = displ_vecs[mode_b]
 
-        scaling_b = np.sqrt( HBAR / (2 * np.pi * freqs[bb] * 100 * C_LIGHT))
-        mm = 0
-        for [ii, pt1, jj, pt2] in jobs_on_rank:
+        scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * C_LIGHT))
+        for job_idx, [i, pt1, j, pt2] in enumerate(jobs_on_rank):
 
-            ii, jj = int(ii), int(jj)
-            positions = np.array([np.array(init_geom[ll][1]) + \
-                                  scaling_a * pt1 * displ_vec_a[ll,:] + \
-                                  scaling_b * pt2 * displ_vec_b[ll,:] \
-                                  for ll in range(len(molecule.symbols))])
-            disp_mol = qml.qchem.Molecule(molecule.symbols, positions, basis_name=molecule.basis_name, charge=molecule.charge, mult=molecule.mult, unit="angstrom", load_data=True)
-            disp_hf = single_point(disp_mol, method=method)
-            idx = ll*len(jobs_on_rank) + mm
-            local_pes_twobody[idx] = disp_hf.e_tot - pes_onebody[aa, ii] - pes_onebody[bb, jj] - scf_result.e_tot
+            i, j = int(i), int(j)
+            positions = np.array(
+                init_geom + scaling_a * pt1 * displ_vec_a + scaling_b * pt2 * displ_vec_b
+            )
+            displ_mol = qml.qchem.Molecule(
+                molecule.symbols,
+                positions,
+                basis_name=molecule.basis_name,
+                charge=molecule.charge,
+                mult=molecule.mult,
+                unit="angstrom",
+                load_data=True,
+            )
+            displ_scf = single_point(displ_mol, method=method)
+            idx = mode_idx * len(jobs_on_rank) + job_idx
+            local_pes_twobody[idx] = (
+                displ_scf.e_tot - pes_onebody[mode_a, i] - pes_onebody[mode_b, j] - scf_result.e_tot
+            )
 
             if do_dipole:
-                local_dipole_twobody[idx,:] = get_dipole(disp_hf, method) - dipole_onebody[aa,ii,:] -  dipole_onebody[bb,jj,:] - ref_dipole
-            mm += 1
-        ll+=1
+                local_dipole_twobody[idx, :] = (
+                    get_dipole(displ_scf, method)
+                    - dipole_onebody[mode_a, i, :]
+                    - dipole_onebody[mode_b, j, :]
+                    - ref_dipole
+                )
 
     if do_dipole:
         return local_pes_twobody, local_dipole_twobody
@@ -238,118 +302,157 @@ def _local_pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, p
 
 def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
     """
-    Loader to combine pes_twomode from multiple ranks.
+    Loader to combine pes_twomode and dipole_twomode from multiple ranks.
     """
 
     final_shape = (nmodes, nmodes, quad_order, quad_order)
-    nmode_combos = nmodes**2
-    pes_twobody = np.zeros(np.prod(final_shape))
-    if do_dipole:
-        dipole_twobody = np.zeros((np.prod(final_shape), 3))
+    nmode_combos = int(nmodes * (nmodes - 1) / 2)
+    pes_twobody = np.zeros((final_shape))
+    dipole_twobody = np.zeros((final_shape + (3,))) if do_dipole else None
 
-    r0 = 0
-    r1 = 0
+    mode_combo = 0
+    for mode_a in range(nmodes):
+        for mode_b in range(mode_a):
+            local_pes = np.zeros(quad_order**2)
+            local_dipole = np.zeros((quad_order**2, 3)) if do_dipole else None
 
-    for mode_combo in range(nmode_combos):
-        local_pes = np.zeros(quad_order**2)
-        local_dipole = np.zeros((quad_order**2, 3))
-        l0 = 0
-        l1 = 0
-        for piece in range(num_pieces):
-            f = h5py.File("v2data" + f"_{piece}" + '.hdf5', 'r+')
-            local_pes_twobody = f['V2_PES'][()]
-            local_dipole_twobody = f['D2_DMS'][()]
-            pes_chunk = np.array_split(local_pes_twobody, nmode_combos)[mode_combo]
-            dipole_chunk = np.array_split(local_dipole_twobody, nmode_combos, \
-                                                        axis=0)[mode_combo]
-            l1 += len(pes_chunk)
-            local_pes[l0:l1] = pes_chunk
-            local_dipole[l0:l1,:] = dipole_chunk
-            l0 += len(pes_chunk)
+            init_idx = 0
+            end_idx = 0
+            for piece in range(num_pieces):
+                f = h5py.File("v2data" + f"_{piece}" + ".hdf5", "r+")
+                local_pes_twobody = f["V2_PES"][()]
+                pes_chunk = np.array_split(local_pes_twobody, nmode_combos)[mode_combo]
 
-        r1 += len(local_pes)
-        pes_twobody[r0:r1] = local_pes
-        dipole_twobody[r0:r1,:] = local_dipole
-        r0 += len(local_pes)
+                end_idx += len(pes_chunk)
+                local_pes[init_idx:end_idx] = pes_chunk
+                if local_dipole is not None:
+                    local_dipole_twobody = f["D2_DMS"][()]
+                    dipole_chunk = np.array_split(local_dipole_twobody, nmode_combos, axis=0)[
+                        mode_combo
+                    ]
+                    local_dipole[init_idx:end_idx, :] = dipole_chunk
+                init_idx += len(pes_chunk)
 
-    pes_twobody = pes_twobody.reshape(final_shape)
-    dipole_twobody = dipole_twobody.reshape(final_shape+(3,))
+            pes_twobody[mode_a, mode_b, :, :] = local_pes.reshape(quad_order, quad_order)
+            if dipole_twobody is not None:
+                dipole_twobody[mode_a, mode_b, :, :, :] = local_dipole.reshape(
+                    quad_order, quad_order, 3
+                )
+            mode_combo += 1
+
     if do_dipole:
         return pes_twobody, dipole_twobody
     return pes_twobody, None
 
-def _local_pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method="rhf", do_dipole=False):
+
+def _local_pes_threemode(
+    molecule,
+    scf_result,
+    freqs_au,
+    displ_vecs,
+    gauss_grid,
+    pes_onebody,
+    pes_twobody,
+    dipole_onebody,
+    dipole_twobody,
+    method="rhf",
+    do_dipole=False,
+):
     r"""
     Computes the three-mode potential energy surface on a grid in real space,
-    along the normal coordinate directions (or any directions set by the 
+    along the normal coordinate directions (or any directions set by the
     displ_vecs).
     """
     freqs = freqs_au * AU_TO_CM
-    init_geom = scf_result.mol.atom
+    init_geom = molecule.coordinates * BOHR_TO_ANG
+    nmodes = len(freqs)
 
-    all_mode_combos = []
-    for aa in range(len(displ_vecs)):
-        for bb in range(len(displ_vecs)):
-            for cc in range(len(displ_vecs)):
-                all_mode_combos.append([aa, bb, cc])
+    all_mode_combos = [
+        (mode_a, mode_b, mode_c)
+        for mode_a in range(nmodes)
+        for mode_b in range(mode_a)
+        for mode_c in range(mode_b)
+    ]
 
-    all_bos_combos = []
-    for ii, pt1 in enumerate(gauss_grid):
-        for jj, pt2 in enumerate(gauss_grid):
-            for kk, pt3 in enumerate(gauss_grid):
-                all_bos_combos.append([ii, pt1, jj, pt2, kk, pt3])
+    all_jobs = [
+        [i, pt1, j, pt2, k, pt3]
+        for (i, pt1), (j, pt2), (k, pt3) in itertools.product(enumerate(gauss_grid), repeat=3)
+    ]
 
-    boscombos_on_rank = np.array_split(all_bos_combos, size)[rank]
-    local_pes_threebody = np.zeros(len(all_mode_combos)*len(boscombos_on_rank))
+    jobs_on_rank = np.array_split(all_jobs, size)[rank]
+    local_pes_threebody = np.zeros(len(all_mode_combos) * len(jobs_on_rank))
 
     if do_dipole:
-        local_dipole_threebody = np.zeros((len(all_mode_combos)*\
-                                        len(boscombos_on_rank), 3), dtype=float)
+        local_dipole_threebody = np.zeros(
+            (len(all_mode_combos) * len(jobs_on_rank), 3), dtype=float
+        )
         ref_dipole = get_dipole(scf_result, method)
 
-    ll = 0
-    for [aa, bb, cc] in all_mode_combos:
+    mode_combo = 0
+    for mode_combo, [mode_a, mode_b, mode_c] in enumerate(all_mode_combos):
 
-        aa, bb, cc = int(aa), int(bb), int(cc)
-        if bb >= aa or cc >= bb:
-            ll += 1
+        mode_a, mode_b, mode_c = int(mode_a), int(mode_b), int(mode_c)
+
+        if (
+            (freqs[mode_a].imag) > 1e-6
+            or (freqs[mode_b].imag) > 1e-6
+            or (freqs[mode_c].imag) > 1e-6
+        ):
             continue
 
-        if (freqs[aa].imag) > 1e-6 or (freqs[bb].imag) > 1e-6 or (freqs[cc].imag) > 1e-6:
-            ll += 1
-            continue
+        displ_vec_a = displ_vecs[mode_a]
+        scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * C_LIGHT))
 
-        displ_vec_a = displ_vecs[aa]
-        scaling_a = np.sqrt( HBAR / (2 * np.pi * freqs[aa] * 100 * C_LIGHT))
+        displ_vec_b = displ_vecs[mode_b]
+        scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * C_LIGHT))
 
-        displ_vec_b = displ_vecs[bb]
-        scaling_b = np.sqrt( HBAR / (2 * np.pi * freqs[bb] * 100 * C_LIGHT))
+        displ_vec_c = displ_vecs[mode_c]
+        scaling_c = np.sqrt(HBAR / (2 * np.pi * freqs[mode_c] * 100 * C_LIGHT))
 
-        displ_vec_c = displ_vecs[cc]
-        scaling_c = np.sqrt( HBAR / (2 * np.pi * freqs[cc] * 100 * C_LIGHT))
+        for job_idx, [i, pt1, j, pt2, k, pt3] in enumerate(jobs_on_rank):
 
-        mm = 0
-        for [ii, pt1, jj, pt2, kk, pt3] in boscombos_on_rank:
+            i, j, k = int(i), int(j), int(k)
 
-            ii, jj, kk = int(ii), int(jj), int(kk)
+            positions = np.array(
+                init_geom
+                + scaling_a * pt1 * displ_vec_a
+                + scaling_b * pt2 * displ_vec_b
+                + scaling_c * pt3 * displ_vec_c
+            )
 
-            positions = np.array([ np.array(init_geom[ll][1]) + \
-                            scaling_a * pt1 * displ_vec_a[ll,:] + \
-                            scaling_b * pt2 * displ_vec_b[ll,:] + \
-                            scaling_c * pt3 * displ_vec_c[ll,:]
-                                   for ll in range(scf_result.mol.natm)])
-            disp_mol = qml.qchem.Molecule(molecule.symbols, positions, basis_name=molecule.basis_name, charge=molecule.charge, mult=molecule.mult, unit="angstrom", load_data=True)
-            disp_hf = single_point(disp_mol, method=method)
+            displ_mol = qml.qchem.Molecule(
+                molecule.symbols,
+                positions,
+                basis_name=molecule.basis_name,
+                charge=molecule.charge,
+                mult=molecule.mult,
+                unit="angstrom",
+                load_data=True,
+            )
+            displ_scf = single_point(displ_mol, method=method)
 
-            ind = ll*len(boscombos_on_rank) + mm
-            local_pes_threebody[ind] = disp_hf.e_tot - pes_twobody[aa,bb,ii,jj] - pes_twobody[aa,cc,ii,kk] -\
-                pes_twobody[bb,cc,jj,kk] - pes_onebody[aa, ii] - pes_onebody[bb, jj] - pes_onebody[cc,kk] - scf_result.e_tot
+            idx = mode_combo * len(jobs_on_rank) + job_idx
+            local_pes_threebody[idx] = (
+                displ_scf.e_tot
+                - pes_twobody[mode_a, mode_b, i, j]
+                - pes_twobody[mode_a, mode_c, i, k]
+                - pes_twobody[mode_b, mode_c, j, k]
+                - pes_onebody[mode_a, i]
+                - pes_onebody[mode_b, j]
+                - pes_onebody[mode_c, k]
+                - scf_result.e_tot
+            )
             if do_dipole:
-                local_dipole_threebody[ind,:] = get_dipole(disp_hf, method) - dipole_twobody[aa,bb,ii,jj,:] - dipole_twobody[aa,cc,ii,kk,:] - \
-                    dipole_twobody[bb,cc,jj,kk,:] - dipole_onebody[aa,ii,:] -  dipole_onebody[bb,jj,:] - dipole_onebody[cc,kk,:] - ref_dipole
-            mm += 1
-
-        ll += 1
+                local_dipole_threebody[idx, :] = (
+                    get_dipole(displ_scf, method)
+                    - dipole_twobody[mode_a, mode_b, i, j, :]
+                    - dipole_twobody[mode_a, mode_c, i, k, :]
+                    - dipole_twobody[mode_b, mode_c, j, k, :]
+                    - dipole_onebody[mode_a, i, :]
+                    - dipole_onebody[mode_b, j, :]
+                    - dipole_onebody[mode_c, k, :]
+                    - ref_dipole
+                )
 
     comm.Barrier()
     if do_dipole:
@@ -357,94 +460,106 @@ def _local_pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid,
 
     return local_pes_threebody, None
 
-def _load_pes_threemode(num_pieces, nmodes, ngridpoints):
+
+def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
     """
-    Loader to combine pes_threemode from multiple ranks.
+    Loader to combine pes_threemode and dipole_threemode from multiple ranks.
     """
-    final_shape = (nmodes, nmodes, nmodes, \
-                             ngridpoints, ngridpoints, ngridpoints)
-    nmode_combos = nmodes**3
+    final_shape = (nmodes, nmodes, nmodes, quad_order, quad_order, quad_order)
+    nmode_combos = int(nmodes * (nmodes - 1) * (nmodes - 2) / 6)
+    pes_threebody = np.zeros(final_shape)
+    dipole_threebody = np.zeros((final_shape + (3,))) if do_dipole else None
 
-    pes_threebody = np.zeros(np.prod(final_shape))
-    r0 = 0
-    r1 = 0
-    for mode_combo in range(nmode_combos):
-        local_chunk = np.zeros(ngridpoints**3)
+    mode_combo = 0
+    for mode_a in range(nmodes):
+        for mode_b in range(mode_a):
+            for mode_c in range(mode_b):
+                local_pes = np.zeros(quad_order**3)
+                local_dipole = np.zeros((quad_order**3, 3)) if do_dipole else None
 
-        l0 = 0
-        l1 = 0
-        for piece in range(num_pieces):
-            f = h5py.File("v3data" + f"_{piece}" + '.hdf5', 'r+')
-            local_pes_threebody = f['V3_PES'][()]
-            chunk = np.array_split(local_pes_threebody, nmode_combos)[mode_combo]
-            l1 += len(chunk)
-            local_chunk[l0:l1] = chunk
-            l0 += len(chunk)
+                init_idx = 0
+                end_idx = 0
+                for piece in range(num_pieces):
+                    f = h5py.File("v3data" + f"_{piece}" + ".hdf5", "r+")
+                    local_pes_threebody = f["V3_PES"][()]
+                    pes_chunk = np.array_split(local_pes_threebody, nmode_combos)[mode_combo]
 
-        r1 += len(local_chunk)
-        pes_threebody[r0:r1] = local_chunk
-        r0 += len(local_chunk)
+                    end_idx += len(pes_chunk)
+                    local_pes[init_idx:end_idx] = pes_chunk
+                    if do_dipole:
+                        local_dipole_threebody = f["D3_DMS"][()]
+                        dipole_chunk = np.array_split(local_dipole_threebody, nmode_combos, axis=0)[
+                            mode_combo
+                        ]
+                        local_dipole[init_idx:end_idx, :] = dipole_chunk
+                    init_idx += len(pes_chunk)
 
-    pes_threebody = pes_threebody.reshape(final_shape)
+                pes_threebody[mode_a, mode_b, mode_c, :, :] = local_pes.reshape(
+                    quad_order, quad_order, quad_order
+                )
+                if do_dipole:
+                    dipole_threebody[mode_a, mode_b, mode_c, :, :, :, :] = local_dipole.reshape(
+                        quad_order, quad_order, quad_order, 3
+                    )
+                mode_combo += 1
 
-    return pes_threebody
+    if do_dipole:
+        return pes_threebody, dipole_threebody
+    return pes_threebody, None
 
 
-def _load_dipole_threemode(num_pieces, nmodes, ngridpoints):
-    """
-    Loader to combine dipole_threemode from multiple ranks.
-    """
-    final_shape = (nmodes, nmodes, nmodes, \
-                             ngridpoints, ngridpoints, ngridpoints)
-    nmode_combos = nmodes**3
-
-    dipole_threebody = np.zeros((np.prod(final_shape), 3))
-    r0 = 0
-    r1 = 0
-    for mode_combo in range(nmode_combos):
-        local_chunk = np.zeros((ngridpoints**3,3))
-
-        l0 = 0
-        l1 = 0
-        for piece in range(num_pieces):
-            f = h5py.File("v3data" + f"_{piece}" + '.hdf5', 'r+')
-            local_dipole_threebody = f['D3_DMS'][()]
-            chunk = np.array_split(local_dipole_threebody, nmode_combos, \
-                                                        axis=0)[mode_combo]
-            l1 += chunk.shape[0]
-            local_chunk[l0:l1,:] = chunk
-            l0 += chunk.shape[0]
-
-        r1 += local_chunk.shape[0]
-        dipole_threebody[r0:r1,:] = local_chunk
-        r0 += local_chunk.shape[0]
-
-    dipole_threebody = dipole_threebody.reshape(final_shape + (3,))
-
-    return dipole_threebody
-
-def pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method="rhf", do_dipole=False):
+def pes_threemode(
+    molecule,
+    scf_result,
+    freqs_au,
+    displ_vecs,
+    gauss_grid,
+    pes_onebody,
+    pes_twobody,
+    dipole_onebody,
+    dipole_twobody,
+    method="rhf",
+    do_dipole=False,
+):
     r"""Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
-    local_pes_threebody, local_dipole_threebody = _local_pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method=method, do_dipole=do_dipole)
+    local_pes_threebody, local_dipole_threebody = _local_pes_threemode(
+        molecule,
+        scf_result,
+        freqs_au,
+        displ_vecs,
+        gauss_grid,
+        pes_onebody,
+        pes_twobody,
+        dipole_onebody,
+        dipole_twobody,
+        method=method,
+        do_dipole=do_dipole,
+    )
     comm.Barrier()
 
-    f = h5py.File("v3data" + f"_{rank}" + '.hdf5', 'w')
-    f.create_dataset('V3_PES',data=local_pes_threebody)
+    f = h5py.File("v3data" + f"_{rank}" + ".hdf5", "w")
+    f.create_dataset("V3_PES", data=local_pes_threebody)
     if do_dipole:
         dipole_threebody = None
-        f.create_dataset('D3_DMS',data=local_dipole_threebody)
+        f.create_dataset("D3_DMS", data=local_dipole_threebody)
     f.close()
     comm.Barrier()
 
     pes_threebody = None
-    if rank==0:
-        pes_threebody = _load_pes_threemode(comm.Get_size(), len(freqs_au), len(gauss_grid))
-        if do_dipole:
-            dipole_threebody = _load_dipole_threemode(comm.Get_size(), len(freqs_au), len(gauss_grid))
-
-        subprocess.run(['rm', 'v3data*'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True, check=True)
+    if rank == 0:
+        pes_threebody, dipole_threebody = _load_pes_threemode(
+            comm.Get_size(), len(freqs_au), len(gauss_grid), do_dipole
+        )
+        subprocess.run(
+            ["rm", "v3data*"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            shell=True,
+            check=False,
+        )
 
     comm.Barrier()
     pes_threebody = comm.bcast(pes_threebody, root=0)
