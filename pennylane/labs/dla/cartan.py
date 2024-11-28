@@ -47,7 +47,7 @@ def cartan_decomposition(g, involution):
         k (List[Union[PauliSentence, Operator]]): the even parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}`
         m (List[Union[PauliSentence, Operator]]): the odd parity subspace :math:`\Theta(\mathfrak{m}) = \mathfrak{m}`
 
-    .. seealso:: :func:`~even_odd_involution`, :func:`~concurrence_involution`
+    .. seealso:: :func:`~even_odd_involution`, :func:`~concurrence_involution`, :func:`~check_cartan_decomp`
 
     **Example**
 

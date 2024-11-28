@@ -326,7 +326,56 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
 
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
-    """Helper function to check the validity of a Cartan decomposition by checking its commutation relations"""
+    r"""Helper function to check the validity of a Cartan decomposition
+    
+    Check whether of not the following properties are fulfilled.
+    .. math::
+        \begin{align}
+        [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} & \text{ (subalgebra)}\\
+        [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} & \text{ (reductive property)}\\
+        [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k} & \text{ (symmetric property)}
+        \end{align}
+    
+    Args:
+        k (List[PauliSentence]): List of operators of the vertical subspace
+        m (List[PauliSentence]): List of operators of the horizontal subspace
+        verbose: Flat to set whether failures to meet one of criteria should be printed
+    
+    Returns:
+        bool: Whether or not all properties are fulfilled
+    
+    .. see-also:: :func:`~cartan_decomposition`
+    
+    **Example**
+
+    We first construct a simple Lie algebra.
+
+    >>> from pennylane import X, Z
+    >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomposition
+    >>> generators = [X(0) @ X(1), Z(0), Z(1)]
+    >>> g = qml.lie_closure(generators)
+    >>> g
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
+
+    We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
+
+    >>> k, m = cartan_decomposition(g, concurrence_involution)
+    >>> k, m
+    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
+     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
+
+    We can check the validity of the decomposition using ``check_cartan_decomp``.
+
+    >>> check_cartan_decomp(k, m)
+    True
+        
+    
+    """
     if any(isinstance(op, np.ndarray) for op in k):
         k = [qml.pauli_decompose(op).pauli_rep for op in k]
     if any(isinstance(op, np.ndarray) for op in m):
