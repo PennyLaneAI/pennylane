@@ -501,13 +501,13 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
 
-        h = re.ResourceHadamard.resource_rep()
         rz = re.ResourceRZ.resource_rep()
+        ry = re.ResourceRY.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
 
         gate_types[cnot] = 2
         gate_types[rz] = 2
-        gate_types[h] = 2
+        gate_types[ry] = 2
 
         return gate_types
 
@@ -520,15 +520,21 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources()
+        return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceControlled.resources(
-            re.ResourceRX, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceRX, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            )
+        }
+
+    @classmethod
+    def pow_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
 
 class ResourceCRY(qml.CRY, re.ResourceOperator):
@@ -563,19 +569,21 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources()
+        return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceControlled.resources(
-            re.ResourceRY, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceRY, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources()
+        return {cls.resource_rep(): 1}
 
 
 class ResourceCRZ(qml.CRZ, re.ResourceOperator):
@@ -594,10 +602,10 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
         gate_types = {}
 
         cnot = re.ResourceCNOT.resource_rep()
-        rz = re.ResourceRZ.resource_rep()
+        phase = re.ResourcePhaseShift.resource_rep()
 
         gate_types[cnot] = 2
-        gate_types[rz] = 2
+        gate_types[phase] = 2
 
         return gate_types
 
@@ -610,19 +618,21 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources()
+        return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceControlled.resources(
-            re.ResourceRZ, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceRZ, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources()
+        return {cls.resource_rep(): 1}
 
 
 class ResourceCRot(qml.CRot, re.ResourceOperator):
