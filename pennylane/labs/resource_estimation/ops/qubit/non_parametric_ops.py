@@ -67,11 +67,11 @@ class ResourceS(qml.S, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 3}
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): z % 4}
 
 
@@ -190,7 +190,7 @@ class ResourceX(qml.X, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 1}
 
     @staticmethod
@@ -205,7 +205,7 @@ class ResourceX(qml.X, re.ResourceOperator):
         )
 
     @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): z % 2}
 
 

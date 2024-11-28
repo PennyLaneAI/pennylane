@@ -46,7 +46,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
         rz = re.ResourceRZ.resource_rep()
         global_phase = re.ResourceGlobalPhase.resource_rep()
@@ -63,12 +63,12 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceControlledPhaseShift.resources()
@@ -96,14 +96,15 @@ class ResourceRX(qml.RX, re.ResourceOperator):
 
     @staticmethod
     def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=config["error_rx"])
+        return {re.ResourceRX.resource_rep(): 1}
+        # return _rotation_resources(epsilon=config["error_rx"])
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return re.ResourceCRX.resources()
+            return re.ResourceCRX.resources(**kwargs)
 
         raise re.ResourcesNotDefined
 
@@ -124,7 +125,8 @@ class ResourceRY(qml.RY, re.ResourceOperator):
 
     @staticmethod
     def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=config["error_ry"])
+        return {re.ResourceRY.resource_rep(): 1}
+        # return _rotation_resources(epsilon=config["error_ry"])
 
     @staticmethod
     def controlled_resource_decomp(
@@ -157,7 +159,8 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
 
     @staticmethod
     def adjoint_resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
-        return _rotation_resources(epsilon=config["error_rz"])
+        return {re.ResourceRZ.resource_rep(): 1}
+        # return _rotation_resources(epsilon=config["error_rz"])
 
     @staticmethod
     def controlled_resource_decomp(

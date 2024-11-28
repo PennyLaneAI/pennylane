@@ -80,10 +80,8 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
         gate_types = defaultdict(int)
         decomp = base_class.resources(**base_params, **kwargs)
-        for gate, count in decomp.items():
-            resources = gate.op_type.controlled_resource_decomp(
-                num_ctrl_wires, num_ctrl_values, num_work_wires, **gate.params, **kwargs,
-            )
+        for gate, count in decomp.items():            
+            resources = ResourceControlled._resource_decomp(gate.op_type, gate.params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs)
             _scale_dict(resources, count, in_place=True)
             _combine_dict(gate_types, resources, in_place=True)
 
