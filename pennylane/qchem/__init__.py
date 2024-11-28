@@ -22,12 +22,12 @@ from .dipole import dipole_integrals, dipole_moment, fermionic_dipole, molecular
 from .factorization import basis_rotation, factorize, symmetry_shift
 from .givens_decomposition import givens_decomposition
 from .hamiltonian import (
-    diff_hamiltonian,
     electron_integrals,
     fermionic_hamiltonian,
+    diff_hamiltonian,
     molecular_hamiltonian,
 )
-from .hartree_fock import hf_energy, nuclear_energy, scf
+from .hartree_fock import scf, nuclear_energy, hf_energy
 from .integrals import (
     attraction_integral,
     contracted_norm,
@@ -82,4 +82,9 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
-from .vibrational import harmonic_analysis, localize_normal_modes, optimize_geometry, single_point
+from .vibrational import (
+    harmonic_analysis,
+    localize_normal_modes,
+    optimize_geometry,
+    single_point
+)
