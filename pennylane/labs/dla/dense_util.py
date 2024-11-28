@@ -496,7 +496,7 @@ def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, O
 
 
 def check_orthonormal(g: Iterable[Union[PauliSentence, Operator]], inner_product: callable) -> bool:
-    """
+    r"""
     Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``.
 
     Args:
