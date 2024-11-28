@@ -40,6 +40,11 @@ def get_random_mixed_state(num_qubits):
 
 
 @pytest.fixture(scope="package")
+def random_mixed_state():
+    return get_random_mixed_state
+
+
+@pytest.fixture(scope="package")
 def two_qubit_state():
     return get_random_mixed_state(2)
 
