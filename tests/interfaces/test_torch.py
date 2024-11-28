@@ -553,7 +553,7 @@ class TestTorchExecuteIntegration:
                 gradient_method=_gradient_method,
                 grad_on_execution=execute_kwargs.get("grad_on_execution", None),
             )
-            program, _ = device.preprocess(execution_config=config)
+            program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = torch.tensor(0.1, requires_grad=False)

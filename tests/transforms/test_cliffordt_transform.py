@@ -147,7 +147,7 @@ class TestCliffordCompile:
         )
 
         dev = qml.device("default.qubit")
-        transform_program, _ = dev.preprocess()
+        transform_program = dev.preprocess_transforms()
         res1, res2 = qml.execute(
             [old_tape, new_tape], device=dev, transform_program=transform_program
         )
@@ -221,7 +221,7 @@ class TestCliffordCompile:
         )
 
         dev = qml.device("default.qubit")
-        transform_program, _ = dev.preprocess()
+        transform_program = dev.preprocess_transforms()
         res1, res2 = qml.execute(
             [old_tape, new_tape], device=dev, transform_program=transform_program
         )
@@ -249,7 +249,7 @@ class TestCliffordCompile:
         )
 
         dev = qml.device("default.qubit")
-        transform_program, _ = dev.preprocess()
+        transform_program = dev.preprocess_transforms()
         res1, res2 = qml.execute(
             [old_tape, new_tape], device=dev, transform_program=transform_program
         )
