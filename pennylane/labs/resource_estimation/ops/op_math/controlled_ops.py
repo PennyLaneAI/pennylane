@@ -70,9 +70,15 @@ class ResourceCH(qml.CH, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceHadamard.controlled_resource_decomp(
-            num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceHadamard, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): z % 2}
 
 
 class ResourceCY(qml.CY, re.ResourceOperator):
@@ -114,9 +120,11 @@ class ResourceCY(qml.CY, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceY.controlled_resource_decomp(
-            num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceY, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -163,11 +171,13 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return re.ResourceCCZ.resources()
+            return {re.ResourceCCZ.resource_rep(): 1}
 
-        return re.ResourceControlled.resources(
-            re.ResourceZ, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceZ, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -220,9 +230,11 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceControlled.resources(
-            re.ResourceSWAP, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceSWAP, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -267,9 +279,11 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceControlled.resources(
-            re.ResourceZ, {}, num_ctrl_wires + 2, num_ctrl_values + 2, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceZ, {}, num_ctrl_wires + 2, num_ctrl_values + 2, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -306,9 +320,11 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return {re.ResourceToffoli.resource_rep(): 1}
 
-        return re.ResourceMultiControlledX.resources(
-            num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceMultiControlledX.resource_rep(
+                num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -398,9 +414,11 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceMultiControlledX.resources(
-            num_ctrl_wires + 2, num_ctrl_values + 2, num_work_wires
-        )
+        return {
+            re.ResourceMultiControlledX.resource_rep(
+                num_ctrl_wires + 2, num_ctrl_values + 2, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -466,11 +484,13 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         num_ctrl_values,
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources(
-            outer_num_ctrl_wires + num_ctrl_wires,
-            outer_num_ctrl_values + num_ctrl_values,
-            outer_num_work_wires + num_work_wires,
-        )
+        return {
+            cls.resource_rep(
+                outer_num_ctrl_wires + num_ctrl_wires,
+                outer_num_ctrl_values + num_ctrl_values,
+                outer_num_work_wires + num_work_wires,
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(
@@ -529,7 +549,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
         return {
             re.ResourceControlled.resource_rep(
                 re.ResourceRX, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-            )
+            ): 1
         }
 
     @classmethod
@@ -672,9 +692,11 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceControlled.resources(
-            re.ResourceRot, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourceRot, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
 
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
@@ -724,9 +746,11 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return re.ResourceControlled.resources(
-            re.ResourcePhaseShift, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
-        )
+        return {
+            re.ResourceControlled.resource_rep(
+                re.ResourcePhaseShift, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:

@@ -171,15 +171,8 @@ class TestResourceControlled:
     def test_nested_controls(self, nested_op, expected_op):
         """Test the resources for nested Controlled operators."""
 
-        nested_rep = nested_op.resource_rep_from_op()
-        nested_params = nested_rep.params
-        nested_type = nested_rep.op_type
-        nested_resources = nested_type.resources(**nested_params)
-
-        expected_rep = expected_op.resource_rep_from_op()
-        expected_params = expected_rep.params
-        expected_type = expected_rep.op_type
-        expected_resources = expected_type.resources(**expected_params)
+        nested_resources = re.get_resources(nested_op)
+        expected_resources = re.get_resources(expected_op)
 
         assert nested_resources == expected_resources
 
