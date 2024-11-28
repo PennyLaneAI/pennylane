@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the `qml.workflow.resolution._setup_transform_program` helper function"""
-# pylint: disable=redefined-outer-name
 
 from unittest.mock import MagicMock
 
@@ -141,10 +140,9 @@ def test_interface_data_not_supported():
     full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
     assert full_tp.is_empty()
-    assert inner_tp.__contains__(qml.transforms.convert_to_numpy_parameters)
+    assert qml.transforms.convert_to_numpy_parameters in inner_tp
 
 
-# pylint: disable=unnecessary-dunder-call
 def test_interface_data_supported():
     """Test that convert_to_numpy_parameters transform is not added for these cases."""
     config = ExecutionConfig()
@@ -156,7 +154,7 @@ def test_interface_data_supported():
     user_transform_program = TransformProgram()
     _, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
-    assert not inner_tp.__contains__(qml.transforms.convert_to_numpy_parameters)
+    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
     config = ExecutionConfig()
 
@@ -167,7 +165,7 @@ def test_interface_data_supported():
     user_transform_program = TransformProgram()
     _, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
-    assert not inner_tp.__contains__(qml.transforms.convert_to_numpy_parameters)
+    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
     config = ExecutionConfig()
 
@@ -178,7 +176,7 @@ def test_interface_data_supported():
     user_transform_program = TransformProgram()
     _, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
-    assert not inner_tp.__contains__(qml.transforms.convert_to_numpy_parameters)
+    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
 
 
 def test_cache_handling():
