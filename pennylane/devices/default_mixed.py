@@ -1026,7 +1026,7 @@ class DefaultMixedNewAPI(Device):
     @debug_logger
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
@@ -1047,8 +1047,12 @@ class DefaultMixedNewAPI(Device):
         * Supports any qubit channel that provides Kraus matrices
 
         """
+        execution_config = execution_config or ExecutionConfig()
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
+
+        # Defer first since it addes wires to the device
+        transform_program.add_transform(qml.defer_measurements, device=self)
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
@@ -1061,6 +1065,9 @@ class DefaultMixedNewAPI(Device):
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
+        # TODO: If the setup_execution_config method becomes circuit-dependent in the future,
+        # we should handle this case directly within setup_execution_config. This would
+        # eliminate the need for the no_sampling transform in this section.
         if config.gradient_method == "backprop":
             transform_program.add_transform(no_sampling, name="backprop + default.mixed")
 

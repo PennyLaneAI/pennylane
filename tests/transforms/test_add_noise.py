@@ -205,14 +205,14 @@ class TestAddNoiseInterface:
         in_tape = QuantumScript.from_queue(q_in_tape)
         dev = qml.device(dev_name, wires=2)
 
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         res_without_noise = qml.execute(
             [in_tape], dev, qml.gradients.param_shift, transform_program=program
         )
 
         c, n = qml.noise.op_in([qml.RX, qml.RY]), qml.noise.partial_wires(qml.PhaseShift, 0.4)
         new_dev = add_noise(dev, noise_model=qml.NoiseModel({c: n}))
-        new_program, _ = new_dev.preprocess()
+        new_program = new_dev.preprocess_transforms()
         [tape], _ = new_program([in_tape])
         res_with_noise = qml.execute(
             [in_tape], new_dev, qml.gradients.param_shift, transform_program=new_program
