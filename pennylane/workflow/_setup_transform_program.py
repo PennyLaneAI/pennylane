@@ -18,7 +18,6 @@
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane.devices import Device, ExecutionConfig
 from pennylane.transforms.core import TransformProgram
 
 from ._cache_transform import _cache_transform
@@ -54,8 +53,8 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
 
 def _setup_transform_program(
     user_transform_program: TransformProgram,
-    device: Device,
-    resolved_execution_config: ExecutionConfig,
+    device: "qml.devices.Device",
+    resolved_execution_config: "qml.devices.ExecutionConfig",
     cache=None,
     cachesize=10000,
 ) -> tuple[TransformProgram, TransformProgram]:
