@@ -1057,16 +1057,10 @@ class DefaultMixedNewAPI(Device):
 
         # Defer first since it addes wires to the device
         transform_program.add_transform(qml.defer_measurements, device=self)
-
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
             name=self.name,
-        )
-        transform_program.add_transform(validate_measurements, name=self.name)
-        transform_program.add_transform(
-            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         # TODO: If the setup_execution_config method becomes circuit-dependent in the future,
@@ -1077,6 +1071,13 @@ class DefaultMixedNewAPI(Device):
 
         if self.readout_err is not None:
             transform_program.add_transform(warn_readout_error_state)
+
+        # Add the valicate section
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(validate_measurements, name=self.name)
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
 
         return transform_program, config
 
