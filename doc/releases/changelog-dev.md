@@ -84,6 +84,10 @@
   [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
   [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
 
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
+
 <h3>Improvements 🛠</h3>
 
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
