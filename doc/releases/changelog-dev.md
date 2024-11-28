@@ -50,8 +50,13 @@
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
 
+* Added a dense implementation of computing the structure constants in a new function
+  `structure_constants_dense` in `pennylane.labs.dla`.
+  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+
 * Added utility functions for handling dense matrices in the Lie theory context.
   [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
+
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -67,6 +72,9 @@
 * Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
+* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
+  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
+
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
@@ -79,6 +87,13 @@
 * Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
+* `qml.qchem.factorize` method now supports performing double factorization based on Cholesky
+  decomposition and can be used with `cholesky=True`.
+  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
 
 <h3>Improvements 🛠</h3>
 
@@ -89,6 +104,9 @@
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
+
+* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
+  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
 
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
@@ -297,6 +315,7 @@ same information.
 This release contains contributions from (in alphabetical order):
 
 Shiwen An,
+Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
