@@ -33,9 +33,9 @@ from pennylane.devices.capabilities import (
     _get_operations,
     _get_toml_section,
     load_toml_file,
+    observable_stopping_condition_factory,
     parse_toml_document,
     update_device_capabilities,
-    observable_stopping_condition_factory,
 )
 
 
