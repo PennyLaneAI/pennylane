@@ -197,7 +197,7 @@ class CountsMP(SampleMeasurement):
         return (self.obs or self.mv, self._eigvals), metadata
 
     def __repr__(self):
-        if self.mv:
+        if self.mv is not None:
             return f"CountsMP({repr(self.mv)}, all_outcomes={self.all_outcomes})"
         if self.obs:
             return f"CountsMP({self.obs}, all_outcomes={self.all_outcomes})"

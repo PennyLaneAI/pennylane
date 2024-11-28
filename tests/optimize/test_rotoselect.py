@@ -71,7 +71,7 @@ class TestRotoselectOptimizer:
     def test_rotoselect_optimizer(self, x_start, generators, tol):
         """Tests that rotoselect optimizer finds the optimal generators and parameters for the
         VQE circuit defined in `this rotoselect tutorial
-        <https://pennylane.ai/qml/demos/tutorial_rotoselect.html>`_."""
+        <https://pennylane.ai/qml/demos/tutorial_rotoselect>`_."""
 
         # the optimal generators for the 2-qubit VQE circuit
         # H = 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1

@@ -101,7 +101,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
-        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`.
+        TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
         ValueError: The ``hamiltonian`` must have atleast two terms.
         ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian.
         ValueError: The ``order`` is not one or a positive even integer.
@@ -132,7 +132,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     .. warning::
 
         The Trotter-Suzuki decomposition depends on the order of the summed observables. Two
-        mathematically identical :class:`~.Hamiltonian` objects may undergo different time
+        mathematically identical :class:`~.LinearCombination` objects may undergo different time
         evolutions due to the order in which those observables are stored. The order of observables
         can be queried using the :meth:`~.Sum.terms` method.
 
@@ -201,7 +201,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
             )
 
-        if isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
+        if isinstance(hamiltonian, qml.ops.LinearCombination):
             coeffs, ops = hamiltonian.terms()
             if len(coeffs) < 2:
                 raise ValueError(
@@ -222,7 +222,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         if not isinstance(hamiltonian, Sum):
             raise TypeError(
-                f"The given operator must be a PennyLane ~.Hamiltonian, ~.Sum or ~.SProd, got {hamiltonian}"
+                f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
 
         if check_hermitian:
@@ -253,11 +253,11 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.append(self)
         return self
 
-    def resources(self) -> Resources:
-        """The resource requirements for a given instance of the Suzuki-Trotter product.
+    def resources(self) -> qml.resource.Resources:
+        r"""The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
-            Resources: The resources for an instance of ``TrotterProduct``.
+            :class:`~.resource.Resources`: The resources for an instance of ``TrotterProduct``.
         """
         with qml.QueuingManager.stop_recording():
             decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)

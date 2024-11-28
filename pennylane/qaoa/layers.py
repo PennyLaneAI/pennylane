@@ -15,7 +15,6 @@
 Methods that define cost and mixer layers for use in QAOA workflows.
 """
 import pennylane as qml
-from pennylane.operation import Tensor
 
 
 def _diagonal_terms(hamiltonian):
@@ -30,9 +29,7 @@ def _diagonal_terms(hamiltonian):
     """
 
     for op in hamiltonian.terms()[1]:
-        if isinstance(op, Tensor):
-            obs = op.obs
-        elif isinstance(op, qml.ops.Prod):
+        if isinstance(op, qml.ops.Prod):
             obs = op.operands
         else:
             obs = [op]

@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 from pennylane.spin import Lattice
-from pennylane.spin.lattice import _generate_lattice
+from pennylane.spin.lattice import generate_lattice
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 
@@ -781,7 +781,7 @@ def test_add_edge():
 )
 def test_edges_for_shapes(shape, n_cells, expected_edges):
     r"""Test that correct edges are obtained for given lattice shapes"""
-    lattice = _generate_lattice(lattice=shape, n_cells=n_cells)
+    lattice = generate_lattice(lattice=shape, n_cells=n_cells)
     assert sorted(lattice.edges) == sorted(expected_edges)
 
 
@@ -790,7 +790,7 @@ def test_shape_error():
     n_cells = [5, 5, 5]
     lattice = "Octagon"
     with pytest.raises(ValueError, match="Lattice shape, 'Octagon' is not supported."):
-        _generate_lattice(lattice=lattice, n_cells=n_cells)
+        generate_lattice(lattice=lattice, n_cells=n_cells)
 
 
 def test_neighbour_order_error():
@@ -801,7 +801,7 @@ def test_neighbour_order_error():
     custom_edges = [[(0, 1)], [(0, 5)], [(0, 4)]]
     with pytest.raises(
         ValueError,
-        match="custom_edges cannot be specified if neighbour_order argument is set to greater than 1.",
+        match="custom_edges cannot be specified if neighbour_order argument is set to a value other than 1.",
     ):
         Lattice(n_cells=n_cells, vectors=vectors, neighbour_order=2, custom_edges=custom_edges)
 
@@ -926,7 +926,7 @@ def test_dimension_error():
         ValueError,
         match="Argument `n_cells` must be of the correct dimension for" " the given lattice shape.",
     ):
-        _generate_lattice(lattice=lattice, n_cells=n_cells)
+        generate_lattice(lattice=lattice, n_cells=n_cells)
 
 
 @pytest.mark.parametrize(
@@ -942,7 +942,7 @@ def test_dimension_error():
 )
 def test_num_sites_lattice_templates(shape, n_cells, expected_n_sites):
     r"""Test that the correct number of lattice points are generated for the given attributes"""
-    lattice = _generate_lattice(lattice=shape, n_cells=n_cells)
+    lattice = generate_lattice(lattice=shape, n_cells=n_cells)
     assert lattice.n_sites == expected_n_sites
 
 
@@ -1125,5 +1125,5 @@ def test_num_sites_lattice_templates(shape, n_cells, expected_n_sites):
 def test_lattice_points_templates(shape, n_cells, expected_points):
     r"""Test that the correct lattice points are generated for a given template."""
 
-    lattice = _generate_lattice(lattice=shape, n_cells=n_cells)
+    lattice = generate_lattice(lattice=shape, n_cells=n_cells)
     assert np.allclose(expected_points, lattice.lattice_points)

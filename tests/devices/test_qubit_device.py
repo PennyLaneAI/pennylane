@@ -166,12 +166,6 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
     return None
 
 
-def test_deprecated_access():
-    """Test that accessing via top-level is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
-        qml.QubitDevice  # pylint: disable=pointless-statement
-
-
 def test_notimplemented_circuit_hash(mock_qubit_device):
     """Test that the circuit hash property is not implemented"""
     dev = mock_qubit_device()
@@ -423,17 +417,6 @@ class TestExtractStatistics:
         tape = qml.tape.QuantumScript([], [qml.vn_entropy(wires=0)])
 
         with pytest.raises(NotImplementedError, match="Returning the Von Neumann entropy"):
-            dev.statistics(tape)
-
-    def test_vn_entanglement_entropy_with_shot_vectors(self, mock_qubit_device_extract_stats):
-
-        dev = mock_qubit_device_extract_stats()
-        dev.shots = (10, 10)
-        tape = qml.tape.QuantumScript([], [qml.vn_entanglement_entropy(wires0=0, wires1=1)])
-
-        with pytest.raises(
-            NotImplementedError, match="Returning the Von Neumann entanglement entropy"
-        ):
             dev.statistics(tape)
 
     def test_mutual_info_with_shot_vectors(self, mock_qubit_device_extract_stats):

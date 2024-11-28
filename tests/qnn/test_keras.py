@@ -14,12 +14,21 @@
 """
 Tests for the pennylane.qnn.keras module.
 """
+import warnings
 from collections import defaultdict
 
 import numpy as np
 import pytest
 
 import pennylane as qml
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 KerasLayer = qml.qnn.keras.KerasLayer
 

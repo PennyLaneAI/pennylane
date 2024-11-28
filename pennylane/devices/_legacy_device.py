@@ -35,8 +35,8 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-from pennylane.operation import Observable, Operation, Operator, StatePrepBase, Tensor
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.operation import Observable, Operation, Operator, StatePrepBase
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
@@ -465,22 +465,18 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             for mp in observables:
                 obs = mp.obs if isinstance(mp, MeasurementProcess) and mp.obs is not None else mp
-                if isinstance(obs, Tensor):
-                    wires = [ob.wires for ob in obs.obs]
-                else:
-                    wires = obs.wires
 
                 if mp.return_type is Expectation:
-                    results.append(self.expval(obs.name, wires, obs.parameters))
+                    results.append(self.expval(obs.name, obs.wires, obs.parameters))
 
                 elif mp.return_type is Variance:
-                    results.append(self.var(obs.name, wires, obs.parameters))
+                    results.append(self.var(obs.name, obs.wires, obs.parameters))
 
                 elif mp.return_type is Sample:
-                    results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
 
                 elif mp.return_type is Probability:
-                    results.append(list(self.probability(wires=wires).values()))
+                    results.append(list(self.probability(wires=obs.wires).values()))
 
                 elif mp.return_type is State:
                     raise qml.QuantumFunctionError("Returning the state is not supported")
@@ -680,7 +676,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         )
         obs_on_same_wire = len(circuit.obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
-            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit.obs_sharing_wires
+            isinstance(o, LinearCombination) for o in circuit.obs_sharing_wires
         )
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
@@ -753,11 +749,11 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         is_analytic_or_shadow = not finite_shots or has_shadow
         all_obs_usable = self._all_multi_term_obs_supported(circuit)
         exists_multi_term_obs = any(
-            isinstance(m.obs, (Hamiltonian, Sum, Prod, SProd)) for m in circuit.measurements
+            isinstance(m.obs, (Sum, Prod, SProd)) for m in circuit.measurements
         )
         has_overlapping_wires = len(circuit.obs_sharing_wires) > 0
         single_hamiltonian = len(circuit.measurements) == 1 and isinstance(
-            circuit.measurements[0].obs, (Hamiltonian, Sum)
+            circuit.measurements[0].obs, Sum
         )
         single_hamiltonian_with_grouping_known = (
             single_hamiltonian and circuit.measurements[0].obs.grouping_indices is not None
@@ -779,10 +775,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         elif single_hamiltonian_with_grouping_known:
 
             # Use qwc grouping if the circuit contains a single measurement of a
-            # Hamiltonian/Sum with grouping indices already calculated.
+            # Sum with grouping indices already calculated.
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "qwc")
 
-        elif any(isinstance(m.obs, (Hamiltonian, LinearCombination)) for m in circuit.measurements):
+        elif any(isinstance(m.obs, LinearCombination) for m in circuit.measurements):
 
             # Otherwise, use wire-based grouping if the circuit contains a Hamiltonian
             # that is potentially very large.
@@ -821,7 +817,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 return False
 
             if mp.obs.name in (
-                "Hamiltonian",
                 "Sum",
                 "Prod",
                 "SProd",
@@ -1006,23 +1001,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 if o is None:
                     continue
 
-            if isinstance(o, Tensor):
-                # TODO: update when all capabilities keys changed to "supports_tensor_observables"
-                supports_tensor = self.capabilities().get(
-                    "supports_tensor_observables", False
-                ) or self.capabilities().get("tensor_observables", False)
-                if not supports_tensor:
-                    raise qml.DeviceError(
-                        f"Tensor observables not supported on device {self.short_name}"
-                    )
-
-                for i in o.obs:
-                    if not self.supports_observable(i.name):
-                        raise qml.DeviceError(
-                            f"Observable {i.name} not supported on device {self.short_name}"
-                        )
-
-            elif isinstance(o, qml.ops.Prod):
+            if isinstance(o, qml.ops.Prod):
 
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:

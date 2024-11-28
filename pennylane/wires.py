@@ -17,11 +17,24 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 import functools
 import itertools
 from collections.abc import Hashable, Iterable, Sequence
+from importlib import import_module, util
 from typing import Union
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.pytrees import register_pytree
+
+if util.find_spec("jax") is not None:
+    jax = import_module("jax")
+    jax_available = True
+else:
+    jax_available = False
+    jax = None
+
+if jax_available:
+    # pylint: disable=unnecessary-lambda
+    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
 class WireError(Exception):
@@ -50,11 +63,15 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
+    if qml.math.get_interface(wires) == "jax" and not qml.math.is_abstract(wires):
+        wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
+
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
         # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
+
     except TypeError:
         # if not iterable, interpret as single wire label
         try:

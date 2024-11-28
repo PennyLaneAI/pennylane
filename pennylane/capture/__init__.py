@@ -34,7 +34,7 @@ quantum-classical programs.
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
-    ~qnode_call
+    ~make_plxpr
     ~PlxprInterpreter
     ~FlatFn
 
@@ -155,8 +155,8 @@ from .capture_measurements import (
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
 )
-from .capture_qnode import qnode_call
 from .flatfn import FlatFn
+from .make_plxpr import make_plxpr
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -180,21 +180,14 @@ def __getattr__(key):
         return _get_abstract_measurement()
 
     if key == "qnode_prim":
-        from .capture_qnode import _get_qnode_prim
+        from ..workflow._capture_qnode import _get_qnode_prim
 
         return _get_qnode_prim()
 
     if key == "PlxprInterpreter":
-        from .base_interpreter import (
-            PlxprInterpreter,
-        )
+        from .base_interpreter import PlxprInterpreter
 
         return PlxprInterpreter
-
-    if key == "convert_to_tape":
-        from .to_tape import convert_to_tape
-
-        return convert_to_tape
 
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
@@ -209,10 +202,10 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
-    "qnode_call",
     "AbstractOperator",
     "AbstractMeasurement",
     "qnode_prim",
     "PlxprInterpreter",
     "FlatFn",
+    "make_plxpr",
 )

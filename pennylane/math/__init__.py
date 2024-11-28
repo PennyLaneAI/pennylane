@@ -34,7 +34,7 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
+from .matrix_manipulation import expand_matrix, expand_vector, reduce_matrices, get_batch_size
 from .multi_dispatch import (
     add,
     array,
@@ -50,7 +50,6 @@ from .multi_dispatch import (
     gammainc,
     get_trainable_indices,
     iscomplex,
-    jax_argnums_to_tape_trainable,
     kron,
     matmul,
     multi_dispatch,
@@ -152,6 +151,7 @@ __all__ = [
     "dot",
     "einsum",
     "expand_matrix",
+    "expand_vector",
     "expectation_value",
     "eye",
     "fidelity",

@@ -31,6 +31,10 @@ repos:
           "--filter-files",
         ]
       files: ^(pennylane/|tests/)
+-   repo: https://github.com/gauge-sh/tach-pre-commit
+    rev: v0.13.1
+    hooks:
+    -   id: tach
 - repo: local
   hooks:
     - id: pylint
@@ -57,3 +61,16 @@ repos:
           "--rcfile=tests/.pylintrc", # Link to your config file
         ]
       files: ^tests/
+    - id: labs-pylint-test
+      name: labs-pylint-test
+      entry: pylint
+      language: system
+      types: [python]
+      args:
+        [
+          "-rn", # Only display messages
+          "-sn", # Don't display the score
+          "--rcfile=tests/.pylintrc", # Link to your config file
+        ]
+      files: ^pennylane/labs/tests/
+

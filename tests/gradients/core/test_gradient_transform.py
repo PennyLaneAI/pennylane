@@ -250,11 +250,12 @@ class TestGradientTransformIntegration:
         else:
             assert np.allclose(res, expected, atol=atol, rtol=0)
 
-    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 2e-1), ([1000, 1500], 2e-1)])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
-    def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol):
+    def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol, seed):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -280,9 +281,9 @@ class TestGradientTransformIntegration:
             ]
         )
         if isinstance(shots, list):
-            assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
+            assert all(np.allclose(r, expected, atol=atol) for r in res)
         else:
-            assert np.allclose(res, expected, atol=atol, rtol=0)
+            assert np.allclose(res, expected, atol=atol)
 
     @pytest.mark.xfail(reason="Gradient transforms are not compatible with shots and mixed shapes")
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])

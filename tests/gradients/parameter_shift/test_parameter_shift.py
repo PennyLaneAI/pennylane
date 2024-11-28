@@ -1514,7 +1514,6 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
@@ -1797,7 +1796,7 @@ class TestParameterShiftRule:
         # gradients
         exact = np.cos(par)
         gtapes, fn = qml.gradients.param_shift(tape)
-        grad_PS = fn(qml.execute(gtapes, dev, gradient_fn=None))
+        grad_PS = fn(qml.execute(gtapes, dev, diff_method=None))
 
         # different methods must agree
         assert np.allclose(grad_PS, exact, atol=tol, rtol=0)
@@ -2062,10 +2061,10 @@ class TestParameterShiftRule:
         assert gradA[1] == pytest.approx(expected, abs=tol)
         assert gradF[1] == pytest.approx(expected, abs=tol)
 
-    def test_involutory_and_noninvolutory_variance_single_param(self, tol):
+    def test_involutory_and_noninvolutory_variance_single_param(self, tol, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
 
@@ -2418,7 +2417,6 @@ class TestParameterShiftRule:
         # + 2 operations x 2 shifted positions + 1 unshifted term          <-- <H^2>
         assert len(tapes) == (2 * 2 + 1) + (2 * 2 + 1)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
     def test_projector_variance(self, state, tol):
         """Test that the variance of a projector is correctly returned"""
@@ -3321,7 +3319,6 @@ class TestParamShiftGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("broadcast", [True, False])
 class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be

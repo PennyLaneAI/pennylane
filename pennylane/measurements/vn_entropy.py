@@ -65,7 +65,12 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso:: :func:`pennylane.math.vn_entropy`
+    .. note::
+
+        ``qml.vn_entropy`` can also be used to compute the entropy of entanglement between two
+        subsystems by computing the Von Neumann entropy of either of the subsystems.
+
+    .. seealso:: :func:`pennylane.math.vn_entropy`, :func:`pennylane.math.vn_entanglement_entropy`
     """
     wires = Wires(wires)
     return VnEntropyMP(wires=wires, log_base=log_base)
@@ -120,4 +125,9 @@ class VnEntropyMP(StateMeasurement):
         state = qml.math.dm_from_state_vector(state)
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
+        )
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        return qml.math.vn_entropy(
+            density_matrix, indices=self.wires, c_dtype=density_matrix.dtype, base=self.log_base
         )

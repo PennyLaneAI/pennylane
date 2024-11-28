@@ -79,7 +79,7 @@ Defining a device
 
 To run---and later optimize---a quantum circuit, one needs to first specify a *computational device*.
 
-The device is an instance of the :class:`~.pennylane.Device`
+The device is an instance of the :class:`~.pennylane.devices.Device`
 class, and can represent either a simulator or hardware device. They can be
 instantiated using the :func:`device <pennylane.device>` loader.
 
@@ -89,7 +89,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
 PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
 ``'default.gaussian'``, ``'default.clifford'``, and ``'default.tensor'`` simulators; additional devices can be installed as plugins
-(see `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
+(see `available plugins <https://pennylane.ai/plugins>`_ for more details). Note that the
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
 
