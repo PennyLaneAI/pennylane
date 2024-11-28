@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
-from itertools import combinations
+from itertools import combinations, combinations_with_replacement
 from typing import Union
 
 import numpy as np
@@ -34,7 +34,9 @@ def _all_commutators(ops):
 
 
 def structure_constants(
-    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
+    g: list[Union[Operator, PauliWord, PauliSentence]],
+    pauli: bool = False,
+    is_orthogonal: bool = True,
 ) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
@@ -49,10 +51,8 @@ def structure_constants(
 
     .. math:: f^\gamma_{\alpha, \beta} = \frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}{\text{tr}\left( iG_\gamma iG_\gamma \right)}.
 
-    Note that this is just the projection of the commutator on the DLA element :math:`iG_\gamma` via the trace inner product.
-    The inputs are assumed to be orthogonal. However, we neither assume nor enforce normalization of the DLA elements
-    :math:`G_\alpha`, hence the normalization
-    factor :math:`\text{tr}\left( iG_\gamma iG_\gamma \right)` in the projection.
+    The inputs are assumed to be orthogonal unless ``is_orthogonal`` is set to ``False``.
+    However, we neither assume nor enforce normalization of the DLA elements :math:`G_\alpha`.
 
     Args:
         g (List[Union[Operator, PauliWord, PauliSentence]]): The (dynamical) Lie algebra for which we want to compute
@@ -60,6 +60,8 @@ def structure_constants(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
+        is_orthogonal (bool): Whether the set of operators in ``g`` is orthogonal with respect to the trace inner product.
+            Default is ``True``.
 
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
@@ -106,6 +108,59 @@ def structure_constants(
 
     Note that we neither enforce nor assume normalization by default.
 
+    To compute the structure constants of a non-orthogonal set of operators, use the option
+    ``is_orthogonal=False``:
+
+    >>> dla = [qml.X(0), qml.Y(0), qml.X(0) - qml.Z(0)]
+    >>> adjoint_rep = qml.structure_constants(dla, is_orthogonal=False)
+    >>> adjoint_rep[:, 0, 1] # commutator of X_0 and Y_0 consists of first and last operator
+    array([-2.,  0.,  2.])
+
+    .. details::
+        :title: Mathematical details
+
+        Consider a (dynamical) Lie algebra :math:`\{iG_1, iG_2, .. iG_d \}` of dimension :math:`d`.
+        The defining property of the structure constants is that they express the decomposition
+        of commutators in terms of the DLA elements, as described at the top. This can be written
+        as
+
+        .. math::
+            [i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{d-1} f^\gamma_{\alpha, \beta} iG_\gamma.
+
+        Now we may multiply this equation with the adjoint of a DLA element and apply the trace:
+
+        .. math::
+
+            \text{tr}\left(-i G_\eta \cdot \left[i G_\alpha, i G_\beta \right] \right)
+            &= \text{tr}\left(-i G_\eta
+            \sum_{\gamma = 0}^{d-1} f^\gamma_{\alpha, \beta} iG_\gamma\right)\\
+            &= \sum_{\gamma = 0}^{d-1} \underset{g_{\eta \gamma}}{\underbrace{
+            \text{tr}\left(-i G_\eta iG_\gamma\right)}}
+            f^\gamma_{\alpha, \beta} \\
+            \Rightarrow\ f^\gamma_{\alpha, \beta} &= (g^{-1})_{\gamma \eta}
+            \text{tr}\left(-i G_\eta \cdot \left[i G_\alpha, i G_\beta \right] \right).
+
+        Here we introduced the Gram matrix
+        :math:`g_{\alpha\beta} = \text{tr}(-iG_\alpha i G_\beta)` of the DLA elements.
+        Note that this is just the projection of the commutator on the DLA element
+        :math:`iG_\gamma` via the trace inner product.
+
+        Now, if the DLA elements are orthogonal, as assumed by ``structure_constants`` by default,
+        the Gram matrix will be diagonal and simply consist of some rescaling factors, so that the
+        above computation becomes the equation from the very top:
+
+        .. math::
+            f^\gamma_{\alpha, \beta} =
+            \frac{\text{tr}\left(i G_\gamma \cdot \left[i G_\alpha, i G_\beta \right] \right)}
+            {\text{tr}\left( iG_\gamma iG_\gamma \right)}.
+
+        This is cheaper than computing the full Gram matrix, inverting it, and multiplying it to
+        the trace inner products.
+
+        For the case of an orthonormal set of operators, we even have
+        :math:`g_{\alpha\beta}=\delta_{\alpha\beta}`, so that the division in this calculation can
+        be skipped.
+
     """
     if any((op.pauli_rep is None) for op in g):
         raise ValueError(
@@ -119,10 +174,20 @@ def structure_constants(
 
     rep = np.zeros((len(g), len(g), len(g)), dtype=float)
     for i, op in enumerate(g):
+        # if is_orthogonal is activated we will use the norm_squared of the op, otherwise we won't
+        norm_squared = (op @ op).trace() if is_orthogonal else 1
         for (j, k), res in commutators.items():
-            value = (1j * (op @ res).trace()).real
-            value = value / (op @ op).trace()  # v = ∑ (v · e_j / ||e_j||^2) * e_j
+            # if is_orthogonal is activated, use v = ∑ (v · e_j / ||e_j||^2) * e_j
+            value = (1j * (op @ res).trace()).real / norm_squared
             rep[i, j, k] = value
             rep[i, k, j] = -value
+
+    if not is_orthogonal:
+        gram = np.zeros((len(g), len(g)), dtype=float)
+        for (i, op1), (j, op2) in combinations_with_replacement(enumerate(g), r=2):
+            gram[i, j] = gram[j, i] = (op1 @ op2).trace()
+
+        # Contract the structure constants on the upper index with the Gram matrix, see derivation
+        rep = np.tensordot(np.linalg.pinv(gram), rep, axes=[[-1], [0]])
 
     return rep
