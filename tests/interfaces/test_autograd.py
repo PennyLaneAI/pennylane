@@ -852,11 +852,12 @@ class TestHamiltonianWorkflows:
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    @pytest.mark.xfail(reason="parameter shift derivatives do not yet support sums.")
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["diff_method"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
+        if execute_kwargs["diff_method"] != "backprop":
+            pytest.xfail(reason="parameter shift derivatives do not yet support sums.")
 
         coeffs1 = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = pnp.array([0.7], requires_grad=True)

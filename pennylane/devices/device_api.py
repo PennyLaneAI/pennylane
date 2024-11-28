@@ -29,6 +29,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
+from .capabilities import DeviceCapabilities
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 
 
@@ -45,7 +46,7 @@ class Device(abc.ABC):
         **Streamlined interface:** Only methods that are required to interact with the rest of PennyLane will be placed in the
         interface. Developers will be able to clearly see what they can change while still having a fully functional device.
 
-        **Reduction of duplicate methods:** Methods that solve similar problems are combined together. Only one place will have
+        **Reduction of duplicate methods:** Methods that solve similar problems are combined. Only one place will have
         to solve each individual problem.
 
         **Support for dynamic execution configurations:** Properties such as shots belong to specific executions.
@@ -120,6 +121,19 @@ class Device(abc.ABC):
         * ``derivative_order``: Relevant for requested device derivatives.
 
     """
+
+    config_filepath: Optional[str] = None
+    """A device can use a `toml` file to specify the capabilities of the backend device. If this
+    is provided, the file will be loaded into a :class:`~.DeviceCapabilities` object assigned to
+    the :attr:`capabilities` attribute."""
+
+    capabilities: Optional[DeviceCapabilities] = None
+    """A :class:`~.DeviceCapabilities` object describing the capabilities of the backend device."""
+
+    def __init_subclass__(cls, **kwargs):
+        if cls.config_filepath is not None:
+            cls.capabilities = DeviceCapabilities.from_toml_file(cls.config_filepath)
+        super().__init_subclass__(**kwargs)
 
     @property
     def name(self) -> str:

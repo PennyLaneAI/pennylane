@@ -41,7 +41,7 @@ class ResourceOperator(ABC):
             class ResourceQFT(qml.QFT, ResourceOperator):
 
                 @staticmethod
-                def _resource_decomp(num_wires) -> dict[CompressedResourceOp, int]:
+                def _resource_decomp(num_wires) -> Dict[CompressedResourceOp, int]:
                     gate_types = {}
 
                     hadamard = ResourceHadamard.resource_rep()

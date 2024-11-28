@@ -22,20 +22,12 @@ import pytest
 
 import pennylane as qml
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
 from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """Enable and disable the PennyLane JAX capture context around each test."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 def get_qnode_output_eqns(jaxpr):

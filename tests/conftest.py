@@ -160,6 +160,14 @@ def seed(request):
     return original_seed
 
 
+@pytest.fixture(scope="function")
+def enable_disable_plxpr():
+    """enable and disable capture around each test."""
+    qml.capture.enable()
+    yield
+    qml.capture.disable()
+
+
 #######################################################################
 
 try:

@@ -41,14 +41,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     AbstractMeasurement,
 )
 
-pytestmark = pytest.mark.jax
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 def _get_shapes_for(*measurements, shots=qml.measurements.Shots(None), num_device_wires=0):

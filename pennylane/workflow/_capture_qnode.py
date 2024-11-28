@@ -21,9 +21,8 @@ from numbers import Number
 from warnings import warn
 
 import pennylane as qml
+from pennylane.capture import FlatFn
 from pennylane.typing import TensorLike
-
-from .flatfn import FlatFn
 
 has_jax = True
 try:
@@ -135,9 +134,11 @@ def _get_qnode_prim():
             *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
         )
 
+    # pylint: disable=too-many-arguments
     def _qnode_batching_rule(
         batched_args,
         batch_dims,
+        *,
         qnode,
         shots,
         device,
@@ -209,7 +210,7 @@ def _get_qnode_prim():
     return qnode_prim
 
 
-def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
+def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
     Args:

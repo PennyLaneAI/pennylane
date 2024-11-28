@@ -215,7 +215,7 @@ class TestAddNoiseInterface:
         new_program, _ = new_dev.preprocess()
         [tape], _ = new_program([in_tape])
         res_with_noise = qml.execute(
-            [in_tape], new_dev, qml.gradients, transform_program=new_program
+            [in_tape], new_dev, qml.gradients.param_shift, transform_program=new_program
         )
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:

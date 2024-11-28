@@ -32,15 +32,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     while_loop_prim,
 )
 
-pytestmark = pytest.mark.jax
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """Enable and disable the PennyLane JAX capture context manager."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 class SimplifyInterpreter(PlxprInterpreter):

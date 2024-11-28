@@ -31,8 +31,29 @@ def fixture_pyscf_support():
     return pyscf_support
 
 
+@pytest.fixture(scope="session", name="geometric_support")
+def fixture_geometric_support():
+    """Fixture to determine whether geometric is installed."""
+    # pylint: disable=unused-import, import-outside-toplevel
+    try:
+        import geometric
+
+        geometric_support = True
+    except ModuleNotFoundError:
+        geometric_support = False
+
+    return geometric_support
+
+
 @pytest.fixture()
 def skip_if_no_pyscf_support(pyscf_support):
     """Fixture to skip a test if pyscf is not installed."""
     if not pyscf_support:
         pytest.skip("Skipped, pyscf support")
+
+
+@pytest.fixture()
+def skip_if_no_geometric_support(geometric_support):
+    """Fixture to skip a test if geometric is not installed."""
+    if not geometric_support:
+        pytest.skip("Skipped, geometric support")

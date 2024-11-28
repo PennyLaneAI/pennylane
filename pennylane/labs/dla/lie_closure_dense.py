@@ -24,6 +24,8 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
+from .dense_util import trace_inner_product
+
 
 def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis_length: int = 0):
     """Find a linearly independent basis of a list of (skew-) Hermitian matrices
@@ -53,12 +55,8 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
         B = A.copy()
         if len(basis) > 0:
-            B -= np.tensordot(
-                np.tensordot(np.array(basis).conj(), A, axes=[[1, 2], [0, 1]]),
-                basis,
-                axes=[[0], [0]],
-            )
-        if (norm := np.linalg.norm(B)) > tol:  # Tolerance for numerical stability
+            B -= np.tensordot(trace_inner_product(np.array(basis), A), basis, axes=[[0], [0]])
+        if (norm := np.sqrt(trace_inner_product(B, B))) > tol:  # Tolerance for numerical stability
             B /= norm
             basis.append(B)
     return np.array(basis)
@@ -102,7 +100,7 @@ def lie_closure_dense(
     >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
     >>> g = lie_closure_mat(gens, n)
 
-    The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~pauli_decompose`.
+    The result is a ``numpy`` array. We can turn the matrices back into PennyLane operators by employing :func:`~batched_pauli_decompose`.
 
     >>> g_ops = [qml.pauli_decompose(op) for op in g]
 

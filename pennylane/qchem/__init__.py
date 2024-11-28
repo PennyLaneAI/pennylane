@@ -22,12 +22,12 @@ from .dipole import dipole_integrals, dipole_moment, fermionic_dipole, molecular
 from .factorization import basis_rotation, factorize
 from .givens_decomposition import givens_decomposition
 from .hamiltonian import (
+    diff_hamiltonian,
     electron_integrals,
     fermionic_hamiltonian,
-    diff_hamiltonian,
     molecular_hamiltonian,
 )
-from .hartree_fock import scf, nuclear_energy, hf_energy
+from .hartree_fock import hf_energy, nuclear_energy, scf
 from .integrals import (
     attraction_integral,
     contracted_norm,
@@ -82,6 +82,14 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
-from .vibrational.vibrational_class import single_point, harmonic_analysis, optimize_geometry, get_dipole
-from .vibrational.localize_modes import localize_normal_modes
-from .vibrational.pes_generator import pes_onemode, pes_twomode, pes_threemode
+from .vibrational import (
+    harmonic_analysis,
+    localize_normal_modes,
+    optimize_geometry,
+    single_point,
+    get_dipole,
+    pes_onemode,
+    pes_twomode,
+    pes_threemode
+)
+
