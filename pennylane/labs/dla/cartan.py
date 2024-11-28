@@ -67,7 +67,8 @@ def cartan_decomposition(g, involution):
 def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     r"""The Even-Odd involution
 
-    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__, and for Pauli words and sentences comes down to counting Pauli-Y operators.
+    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__,
+    and for Pauli words and sentences comes down to counting non-trivial Paulis in Pauli words.
 
     Args:
         op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
@@ -120,7 +121,8 @@ def _even_odd_involution_op(op: Operator):
 def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
 
-    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__, and for Pauli words and sentences comes down to counting Pauli-Y operators.
+    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__,
+    and for Pauli words and sentences comes down to counting Pauli-Y operators.
 
     Args:
         op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
