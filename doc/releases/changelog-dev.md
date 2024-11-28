@@ -116,7 +116,7 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* PennyLane transforms can now be captured as primitived with experimental program capture enabled.
+* PennyLane transforms can now be captured as primitives with experimental program capture enabled.
   [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
