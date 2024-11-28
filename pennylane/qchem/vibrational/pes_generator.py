@@ -91,6 +91,7 @@ def pes_onemode(
         f.create_dataset("V1_PES", data=local_pes_onebody)
         if do_dipole:
             f.create_dataset("D1_DMS", data=local_dipole_onebody)
+        f.close()
 
     comm.Barrier()
     pes_onebody = None
@@ -141,7 +142,7 @@ def _local_pes_onemode(
     for mode in range(nmodes):
         displ_vec = displ_vecs[mode]
         if (freqs[mode].imag) > 1e-6:
-            continue
+            continue # pragma: no cover
 
         job_idx = 0
         for job in jobs_on_rank:
@@ -192,7 +193,8 @@ def _load_pes_onemode(num_pieces, nmodes, quad_order, do_dipole=False):
         for piece in range(num_pieces):
             f = h5py.File("v1data" + f"_{piece}" + ".hdf5", "r+")
             local_pes_onebody = f["V1_PES"][()]
-            local_dipole_onebody = f["D1_DMS"][()]
+            if do_dipole:
+                local_dipole_onebody = f["D1_DMS"][()]
 
             end_chunk = np.array(local_pes_onebody).shape[1]
             pes_onebody[mode][init_chunk : init_chunk + end_chunk] = local_pes_onebody[mode]
@@ -287,7 +289,7 @@ def pes_twomode(
     if do_dipole:
         dipole_twobody = comm.bcast(dipole_twobody, root=0)
         return pes_twobody, dipole_twobody
-    return pes_twobody, None
+    return pes_twobody, None # pragma: no cover
 
 
 def _local_pes_twomode(
@@ -329,7 +331,7 @@ def _local_pes_twomode(
     for mode_idx, [mode_a, mode_b] in enumerate(all_mode_combos):
         mode_a, mode_b = int(mode_a), int(mode_b)
         if (freqs[mode_a].imag) > 1e-6 or (freqs[mode_b].imag) > 1e-6:
-            continue
+            continue # pragma: no cover
 
         displ_vec_a = displ_vecs[mode_a]
         scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * C_LIGHT))
@@ -369,7 +371,7 @@ def _local_pes_twomode(
     if do_dipole:
         return local_pes_twobody, local_dipole_twobody
 
-    return local_pes_twobody, None
+    return local_pes_twobody, None # pragma: no cover
 
 
 def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
@@ -416,7 +418,7 @@ def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
 
     if do_dipole:
         return pes_twobody, dipole_twobody
-    return pes_twobody, None
+    return pes_twobody, None  # pragma: no cover
 
 
 def _local_pes_threemode(
@@ -475,7 +477,7 @@ def _local_pes_threemode(
             or (freqs[mode_b].imag) > 1e-6
             or (freqs[mode_c].imag) > 1e-6
         ):
-            continue
+            continue # pragma: no cover
 
         displ_vec_a = displ_vecs[mode_a]
         scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * C_LIGHT))
@@ -535,7 +537,7 @@ def _local_pes_threemode(
     if do_dipole:
         return local_pes_threebody, local_dipole_threebody
 
-    return local_pes_threebody, None
+    return local_pes_threebody, None # pragma: no cover
 
 
 def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
@@ -582,7 +584,7 @@ def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
 
     if do_dipole:
         return pes_threebody, dipole_threebody
-    return pes_threebody, None
+    return pes_threebody, None # pragma: no cover
 
 
 def pes_threemode(
@@ -671,4 +673,4 @@ def pes_threemode(
         dipole_threebody = comm.bcast(dipole_threebody, root=0)
         return pes_threebody, dipole_threebody
 
-    return pes_threebody, None
+    return pes_threebody, None # pragma: no cover

@@ -14,7 +14,7 @@
 """
 This module contains tests for functions needed to compute PES object.
 """
-import os
+import os, sys
 
 import numpy as np
 import pytest
@@ -31,8 +31,18 @@ AU_TO_CM = 219475
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 
+def test_import_mpi4py(monkeypatch):
+    """Test if an ImportError is raised by _import_mpi4py function."""
+    # pylint: disable=protected-access
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "mpi4py", None)
+
+        with pytest.raises(ImportError, match="This feature requires mpi4py"):
+            vibrational.pes_generator._import_mpi4py()
+
 @pytest.mark.parametrize(
-    ("sym", "geom", "harmonic_res", "exp_pes_onemode", "exp_dip_onemode"),
+    ("sym", "geom", "harmonic_res", "do_dipole", "exp_pes_onemode", "exp_dip_onemode"),
     # Expected results were obtained using vibrant code
     [
         (
@@ -49,6 +59,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
                     ]
                 ),
             },
+            False,
             np.array(
                 [
                     [
@@ -64,21 +75,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
                     ]
                 ]
             ),
-            np.array(
-                [
-                    [
-                        [-1.64944938e-16, 1.23788916e-16, 1.63989194e-01],
-                        [-1.83439598e-16, 3.39162428e-16, 1.17708005e-01],
-                        [1.05778290e-16, 2.68365451e-16, 7.60769136e-02],
-                        [2.12937257e-16, 2.88191645e-16, 3.69897289e-02],
-                        [0.00000000e00, 0.00000000e00, 0.00000000e00],
-                        [-6.69962210e-17, 2.53813366e-16, -3.52192473e-02],
-                        [-1.49136505e-17, 2.63832036e-16, -6.92725488e-02],
-                        [1.40888251e-16, 1.36994405e-16, -1.03362529e-01],
-                        [1.09576098e-16, 1.60885404e-16, -1.40432255e-01],
-                    ]
-                ]
-            ),
+            None
         ),
         (
             ["H", "H", "S"],
@@ -111,6 +108,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
                     ]
                 ),
             },
+            True,
             np.array(
                 [
                     [
@@ -189,7 +187,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
-def test_onemode_pes(sym, geom, harmonic_res, exp_pes_onemode, exp_dip_onemode):
+def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_dip_onemode):
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
@@ -200,11 +198,14 @@ def test_onemode_pes(sym, geom, harmonic_res, exp_pes_onemode, exp_dip_onemode):
     freqs_au = harmonic_res["freq_wavenumber"] / AU_TO_CM
     displ_vecs = harmonic_res["norm_mode"]
     pes_onebody, dipole_onebody = vibrational.pes_onemode(
-        mol, mol_eq, freqs_au, displ_vecs, gauss_grid, method="RHF", do_dipole=True
+        mol, mol_eq, freqs_au, displ_vecs, gauss_grid, method="RHF", do_dipole=do_dipole
     )
 
     assert np.allclose(pes_onebody, exp_pes_onemode, atol=1e-6)
-    assert np.allclose(dipole_onebody, exp_dip_onemode, atol=1e-6)
+    if do_dipole:
+        assert np.allclose(dipole_onebody, exp_dip_onemode, atol=1e-6)
+    else:
+        assert dipole_onebody==None
 
 
 @pytest.mark.parametrize(
@@ -332,21 +333,15 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
 
     freqs_au = harmonic_res["freq_wavenumber"] / AU_TO_CM
     displ_vecs = harmonic_res["norm_mode"]
-    pes_onebody, dipole_onebody = vibrational.pes_onemode(
-        mol, mol_eq, freqs_au, displ_vecs, gauss_grid, method="RHF", do_dipole=True
-    )
 
-    pes_twobody, dipole_twobody = vibrational.pes_twomode(
-        mol,
-        mol_eq,
-        freqs_au,
-        displ_vecs,
-        gauss_grid,
-        pes_onebody,
-        dipole_onebody,
-        method="rhf",
-        do_dipole=True,
-    )
+    pes_file = os.path.join(ref_dir, ref_file)
+    f = h5py.File(pes_file, "r+")
+    pes_onebody = np.array(f["V1_PES"][()])
+    dipole_onebody = np.array(f["D1_DMS"][()])    
+    pes_twobody = np.array(f["V2_PES"][()])
+    dipole_twobody = np.array(f["D2_DMS"][()])    
+    exp_pes_threemode = np.array(f["V3_PES"][()])
+    exp_dip_threemode = np.array(f["D3_DMS"][()])
 
     pes_threebody, dipole_threebody = vibrational.pes_threemode(
         mol,
@@ -361,10 +356,6 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
         method="rhf",
         do_dipole=True,
     )
-    pes_file = os.path.join(ref_dir, ref_file)
-    f = h5py.File(pes_file, "r+")
-    exp_pes_threemode = np.array(f["V3_PES"][()])
-    exp_dip_threemode = np.array(f["D3_DMS"][()])
 
     assert np.allclose(pes_threebody, exp_pes_threemode, atol=1e-6)
     assert np.allclose(dipole_threebody, exp_dip_threemode, atol=1e-6)
