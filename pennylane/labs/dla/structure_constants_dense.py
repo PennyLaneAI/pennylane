@@ -46,8 +46,9 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
 
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure_dense`.
 
+    >>> from pennylane.labs.dla import lie_closure_dense
     >>> n = 4
-    >>> gens = [X(i) @ X(i+1) + Y(i) @ Y(i+1) + Z(i) @ Z(i+1) for i in range(n-1)]
+    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
     >>> g = lie_closure_dense(gens)
     >>> g.shape
     (12, 16, 16)
@@ -55,6 +56,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
+    >>> from pennylane.labs.dla import structure_constants_dense
     >>> adj = structure_constants_dense(g)
     >>> adj.shape
     (12, 12, 12)
@@ -62,7 +64,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     **Internal representation**
 
     As mentioned above, the input is assumed to be a batch of Hermitian matrices, even though
-    algebra elements are usual skew-Hermitian. That is, the input should represent the operators
+    algebra elements are usually skew-Hermitian. That is, the input should represent the operators
     :math:`G_\alpha` for an algebra basis :math:`\{iG_\alpha\}_\alpha`.
     In an orthonormal basis of this form, the structure constants can then be computed simply via
 
@@ -75,7 +77,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     Structure constants are often discussed using an orthonormal basis of the algebra.
     This function can deal with non-orthonormal bases as well. For this, the Gram
     matrix :math:`g` between the basis elements is taken into account when computing the overlap
-    of a commutator `:math:`[iG_\alpha, iG_\beta]` with all algebra elements :math:`iG_\gamma`.
+    of a commutator :math:`[iG_\alpha, iG_\beta]` with all algebra elements :math:`iG_\gamma`.
     The resulting formula reads
 
     .. math::
