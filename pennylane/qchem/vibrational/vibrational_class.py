@@ -23,7 +23,7 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable
 
-BOHR_TO_ANG = 0.5291772106
+BOHR_TO_ANG = 0.529177
 
 
 def harmonic_analysis(scf_result, method="rhf"):

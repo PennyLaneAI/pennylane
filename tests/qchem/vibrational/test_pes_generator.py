@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane.qchem import vibrational
 
 h5py = pytest.importorskip("h5py")
+
 AU_TO_CM = 219475
 
 # pylint: disable=too-many-arguments
@@ -187,7 +188,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
 def test_onemode_pes(sym, geom, harmonic_res, exp_pes_onemode, exp_dip_onemode):
     r"""Test that the correct onemode PES is obtained."""
 
@@ -245,7 +246,7 @@ def test_onemode_pes(sym, geom, harmonic_res, exp_pes_onemode, exp_dip_onemode):
         )
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
 def test_twomode_pes(sym, geom, harmonic_res, ref_file):
     r"""Test that the correct onemode PES is obtained."""
 
@@ -320,7 +321,7 @@ def test_twomode_pes(sym, geom, harmonic_res, ref_file):
         )
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_pyscf_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
 def test_threemode_pes(sym, geom, harmonic_res, ref_file):
     r"""Test that the correct onemode PES is obtained."""
 

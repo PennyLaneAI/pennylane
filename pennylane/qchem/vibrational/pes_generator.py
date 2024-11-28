@@ -18,7 +18,6 @@ import itertools
 import subprocess
 
 import numpy as np
-from mpi4py import MPI
 
 import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
@@ -26,15 +25,25 @@ from pennylane.data.base._lazy_modules import h5py
 from .vibrational_class import get_dipole, single_point
 
 # pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
+# pylint: disable= import-outside-toplevel, too-many-positional-arguments
+
 # constants
 HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
 C_LIGHT = 3 * 10**8  # m/s
 AU_TO_CM = 219475
 BOHR_TO_ANG = 0.5291772106
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
+
+def _import_mpi4py():
+    """Import mpi4py."""
+    try:
+        import mpi4py
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires mpi4py. It can be installed with: pip install mpi4py."
+        ) from Error
+
+    return mpi4py
 
 
 def pes_onemode(
@@ -43,8 +52,21 @@ def pes_onemode(
     r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
+    _import_mpi4py()
+    from mpi4py import MPI
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
     local_pes_onebody, local_dipole_onebody = _local_pes_onemode(
-        molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method=method, do_dipole=do_dipole
+        comm,
+        molecule,
+        scf_result,
+        freqs_au,
+        displ_vecs,
+        gauss_grid,
+        method=method,
+        do_dipole=do_dipole,
     )
 
     filename = f"v1data_{rank}.hdf5"
@@ -80,11 +102,13 @@ def pes_onemode(
 
 
 def _local_pes_onemode(
-    molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
+    comm, molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
 ):
     r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
+    size = comm.Get_size()
+    rank = comm.Get_rank()
     freqs = freqs_au * AU_TO_CM
     quad_order = len(gauss_grid)
     nmodes = len(freqs)
@@ -179,7 +203,14 @@ def pes_twomode(
     r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
+    _import_mpi4py()
+    from mpi4py import MPI
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
     local_pes_twobody, local_dipole_twobody = _local_pes_twomode(
+        comm,
         molecule,
         scf_result,
         freqs_au,
@@ -223,6 +254,7 @@ def pes_twomode(
 
 
 def _local_pes_twomode(
+    comm,
     molecule,
     scf_result,
     freqs_au,
@@ -236,6 +268,8 @@ def _local_pes_twomode(
     r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
+    size = comm.Get_size()
+    rank = comm.Get_rank()
     freqs = freqs_au * AU_TO_CM
     init_geom = molecule.coordinates * BOHR_TO_ANG
     nmodes = len(freqs)
@@ -308,13 +342,15 @@ def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
     final_shape = (nmodes, nmodes, quad_order, quad_order)
     nmode_combos = int(nmodes * (nmodes - 1) / 2)
     pes_twobody = np.zeros((final_shape))
-    dipole_twobody = np.zeros((final_shape + (3,))) if do_dipole else None
+    if do_dipole:
+        dipole_twobody = np.zeros((final_shape + (3,)))
 
     mode_combo = 0
     for mode_a in range(nmodes):
         for mode_b in range(mode_a):
             local_pes = np.zeros(quad_order**2)
-            local_dipole = np.zeros((quad_order**2, 3)) if do_dipole else None
+            if do_dipole:
+                local_dipole = np.zeros((quad_order**2, 3))
 
             init_idx = 0
             end_idx = 0
@@ -325,7 +361,7 @@ def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
 
                 end_idx += len(pes_chunk)
                 local_pes[init_idx:end_idx] = pes_chunk
-                if local_dipole is not None:
+                if do_dipole:
                     local_dipole_twobody = f["D2_DMS"][()]
                     dipole_chunk = np.array_split(local_dipole_twobody, nmode_combos, axis=0)[
                         mode_combo
@@ -334,7 +370,7 @@ def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
                 init_idx += len(pes_chunk)
 
             pes_twobody[mode_a, mode_b, :, :] = local_pes.reshape(quad_order, quad_order)
-            if dipole_twobody is not None:
+            if do_dipole:
                 dipole_twobody[mode_a, mode_b, :, :, :] = local_dipole.reshape(
                     quad_order, quad_order, 3
                 )
@@ -346,6 +382,7 @@ def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
 
 
 def _local_pes_threemode(
+    comm,
     molecule,
     scf_result,
     freqs_au,
@@ -363,6 +400,9 @@ def _local_pes_threemode(
     along the normal coordinate directions (or any directions set by the
     displ_vecs).
     """
+    size = comm.Get_size()
+    rank = comm.Get_rank()
+
     freqs = freqs_au * AU_TO_CM
     init_geom = molecule.coordinates * BOHR_TO_ANG
     nmodes = len(freqs)
@@ -486,7 +526,7 @@ def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
 
                     end_idx += len(pes_chunk)
                     local_pes[init_idx:end_idx] = pes_chunk
-                    if do_dipole:
+                    if local_dipole is not None:
                         local_dipole_threebody = f["D3_DMS"][()]
                         dipole_chunk = np.array_split(local_dipole_threebody, nmode_combos, axis=0)[
                             mode_combo
@@ -497,7 +537,7 @@ def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
                 pes_threebody[mode_a, mode_b, mode_c, :, :] = local_pes.reshape(
                     quad_order, quad_order, quad_order
                 )
-                if do_dipole:
+                if dipole_threebody is not None:
                     dipole_threebody[mode_a, mode_b, mode_c, :, :, :, :] = local_dipole.reshape(
                         quad_order, quad_order, quad_order, 3
                     )
@@ -524,7 +564,14 @@ def pes_threemode(
     r"""Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
     Simultaneously, can compute the dipole one-body elements."""
 
+    _import_mpi4py()
+    from mpi4py import MPI
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
     local_pes_threebody, local_dipole_threebody = _local_pes_threemode(
+        comm,
         molecule,
         scf_result,
         freqs_au,

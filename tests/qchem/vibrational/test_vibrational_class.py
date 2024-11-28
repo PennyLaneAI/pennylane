@@ -24,7 +24,7 @@ from pennylane.qchem import vibrational
 
 AU_TO_CM = 219475
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 
 
 def test_import_pyscf(monkeypatch):
