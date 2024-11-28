@@ -32,7 +32,7 @@ from pennylane.math import (
     INTERFACE_MAP,
     SUPPORTED_INTERFACE_NAMES,
     SupportedInterfaceUserInput,
-    resolve_interface,
+    _resolve_interface,
 )
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
@@ -174,10 +174,10 @@ def _resolve_execution_config(
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
     # workflow still needs to know if jax-jit is used
-    interface = resolve_interface(execution_config.interface, tapes)
+    interface = _resolve_interface(execution_config.interface, tapes)
     finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
-        resolve_interface("auto", tapes) if execution_config.interface is None else interface
+        _resolve_interface("auto", tapes) if execution_config.interface is None else interface
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 

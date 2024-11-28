@@ -91,7 +91,7 @@ from .utils import (
 )
 from .interface import (
     convert_like,
-    get_canonical_interface_name,
+    _get_canonical_interface_name,
     SupportedInterfaceUserInput,
     jpc_interfaces,
     SUPPORTED_INTERFACE_NAMES,
@@ -101,7 +101,7 @@ from .interface import (
     in_backprop,
     requires_grad,
     is_abstract,
-    resolve_interface,
+    _resolve_interface,
 )
 
 sum = ar.numpy.sum

@@ -505,7 +505,7 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
-def get_jax_interface_name(tapes):
+def _get_jax_interface_name(tapes):
     """Check all parameters in each tape and output the name of the suitable
     JAX interface.
 
@@ -555,7 +555,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def get_canonical_interface_name(interface):
+def _get_canonical_interface_name(interface):
     """Helper function to get the canonical interface.
 
     Args:
@@ -576,7 +576,7 @@ def get_canonical_interface_name(interface):
         ) from exc
 
 
-def resolve_interface(interface, tapes):
+def _resolve_interface(interface, tapes):
     """Helper function to resolve the interface name based on a list of tapes
 
     Args:
@@ -586,7 +586,7 @@ def resolve_interface(interface, tapes):
     Returns:
         str: Interface name"""
 
-    interface = get_canonical_interface_name(interface)
+    interface = _get_canonical_interface_name(interface)
 
     if interface == "auto":
         params = []
@@ -607,6 +607,6 @@ def resolve_interface(interface, tapes):
                 "version of jax to enable the 'jax' interface."  # pragma: no cover
             ) from e  # pragma: no cover
 
-        interface = get_jax_interface_name(tapes)
+        interface = _get_jax_interface_name(tapes)
 
     return interface

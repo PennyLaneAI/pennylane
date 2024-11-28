@@ -113,7 +113,7 @@ class ExecutionConfig:
         """
         if self.interface not in SUPPORTED_INTERFACE_NAMES:
             raise ValueError(
-                f"Unknown interface. interface must be in {SUPPORTED_INTERFACE_NAMES}, got {self.interface} instead."
+                f"Unknown interface. Interface must be in {SUPPORTED_INTERFACE_NAMES}, got {self.interface} instead."
             )
 
         if self.grad_on_execution not in {True, False, None}:
