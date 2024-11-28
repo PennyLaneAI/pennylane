@@ -28,18 +28,18 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
+from pennylane.math import (
+    INTERFACE_MAP,
+    SUPPORTED_INTERFACE_NAMES,
+    SupportedInterfaceUserInput,
+    resolve_interface,
+)
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
 from ._resolve_diff_method import SupportedDiffMethods, _resolve_diff_method
-from .execution import (
-    INTERFACE_MAP,
-    SUPPORTED_INTERFACE_NAMES,
-    SupportedInterfaceUserInput,
-    _get_interface_name,
-)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -174,10 +174,10 @@ def _resolve_execution_config(
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
     # workflow still needs to know if jax-jit is used
-    interface = _get_interface_name(tapes, execution_config.interface)
+    interface = resolve_interface(execution_config.interface, tapes)
     finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
-        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
+        resolve_interface("auto", tapes) if execution_config.interface is None else interface
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 
@@ -296,7 +296,7 @@ class QNode:
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
-            ``qml.workflow.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
+            ``qml.math.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types

@@ -641,11 +641,7 @@ def test_qnode_interface_not_mutated(interface):
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     qlayer = TorchLayer(circuit, weight_shapes)
-    assert (
-        qlayer.qnode.interface
-        == circuit.interface
-        == qml.workflow.execution.INTERFACE_MAP[interface]
-    )
+    assert qlayer.qnode.interface == circuit.interface == qml.math.INTERFACE_MAP[interface]
 
 
 @pytest.mark.torch
