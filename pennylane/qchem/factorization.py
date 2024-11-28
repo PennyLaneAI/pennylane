@@ -310,7 +310,7 @@ def factorize(
 def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
     """Explicit double factorization using eigen decomposition
     of the two-electron integral tensor described in
-    `PRX Quantum 2, 040352 (2021) <https://doi.org/10.1103/PRXQuantum.2.040352>`_.
+    `npj Quantum Information 7, 83 (2021) <https://doi.org/10.1038/s41534-021-00416-z>`_.
 
     Args:
         two (array[array[float]]): two-electron integral tensor in the molecular orbital
@@ -390,7 +390,55 @@ def _double_factorization_cholesky(
 def _double_factorization_compressed(
     two, optimizer, num_factors, num_steps=1000, init_params=None, prefactor=1e-5, norm_order=None
 ):
-    """Compressed double factorization with optional regularization"""
+    r"""Compressed double factorization with optional regularization based on
+    `arXiv:2104.08957 <https://arxiv.org/abs/2104.08957>`__ and
+    `arxiv:2212.07957 <https://arxiv.org/pdf/2212.07957>`__.
+
+    Here we decompose the two-electron tensor :math:`V` in terms of ``R=num_factors`` orthonormal
+    matrices :math:`U` (leaf tensors) and symmetric matrices :math:`Z` (core tensors) such that:
+
+    .. math::
+
+        V_{ijkl} \approx \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)}.
+
+    This is done by optimizing the following cost function :math:`\mathcal{L}` via a greedy
+    approach, i.e., we optimize the leaf-tensor pairs layer-by-layer (or one-by-one) instead
+    of optimizing them all at once as the latter has gives unfavorable performance (and scaling):
+
+    .. math::
+
+       \mathcal{L}(U, Z) = \frac{1}{2} \bigg|V_{ijkl} - \sum_r^R \sum_{pq} U_{ip}^{(r)} U_{jp}^{(r)} Z_{pq}^{(r)} U_{kq}^{(r)} U_{lq}^{(r)}\bigg|_{\text{F}} + \rho \sum_r^R \sum_{pq} \bigg|Z_{pq}^{(r)}\bigg|^{\gamma}.
+
+    First, leaf tensors :math:`U^{(r)} = \exp{(X^{(r)})}` are parameterized by the
+    anti-symmetric orbital rotations :math:`X^{(r)}` to compute the Frobenius norm
+    of the difference between the :math:`V` and the above approximation. A further
+    regularization term penalizing large :math:`|Z^{(r)}|` is added to this after
+    scaling it with a constant factor :math:`\rho`.
+
+    Args:
+        two (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation.
+        optimizer (optax.optimizer): an optax optimizer instance. If not provided, `Adam
+            <https://optax.readthedocs.io/en/latest/api/optimizers.html#optax.adam>`_ is
+            used with ``0.001`` learning rate.
+        num_factors (int): maximum number of factors that should be optimized for compressed
+            double factorization. Default is :math:`2\times N`, where `N` is the number of
+            dimensions of two-electron tensor.
+        num_steps (int): maximum number of epochs for optimizing each factor. Default is ``1000``.
+        init_params (dict[str, TensorLike] | None): intial values of the orbital rotations
+            (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
+            a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
+            two-electron tensor. If not given, by default, zero matrices will be used if
+            ``cholesky=False`` and the core and leaf tensors corresponding to the first
+            ``num_factors`` will be used if ``cholesky=True``.
+        prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``.
+        norm_order (int): type of regularization (``0``: None, ``1``: L1, and ``2``: L2) used for
+            optimizing. Default is to not include any regularization term.
+
+    Returns:
+        tuple(TensorLike, TensorLike): tuple containing core tensors and leaf tensors
+        approximating the two-electron integral tensor.
+    """
     norb = two.shape[0]
     asym_tensors, core_tensors = jnp.zeros((2, 0, norb, norb))
 
@@ -446,7 +494,7 @@ def _compressed_cost_fn(params, two, asym_tensors, core_tensors, norm_order, pre
 
     cdf_two = jnp.einsum("tpk,tqk,tkl,trl,tsl->pqrs", Us, Us, Zs, Us, Us)
 
-    cost = jnp.linalg.norm(cdf_two - two)
+    cost = jnp.linalg.norm(cdf_two - two) ** 2
     if norm_order is not None:
         cost += prefactor * jnp.linalg.norm(Zs, ord=norm_order, axis=(1, 2))[0]
 
