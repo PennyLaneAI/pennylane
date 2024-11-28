@@ -14,6 +14,7 @@
 """Functions to prepare a state."""
 
 from collections.abc import Iterable
+from typing import Union
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -22,7 +23,7 @@ from pennylane import math
 
 def create_initial_state(
     # pylint: disable=unsupported-binary-operation
-    wires: qml.wires.Wires | Iterable,
+    wires: Union[qml.wires.Wires, Iterable],
     prep_operation: qml.operation.StatePrepBase | qml.QubitDensityMatrix = None,
     like: str = None,
 ):
