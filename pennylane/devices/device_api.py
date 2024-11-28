@@ -511,39 +511,26 @@ class Device(abc.ABC):
                 postselect_mode=execution_config.mcm_config.postselect_mode,
             )
 
+        # Handle validations
         program.add_transform(validate_device_wires, self.wires, name=self.name)
-        analytic_capabilities = self.capabilities.filter(finite_shots=False)
-        finite_shots_capabilities = self.capabilities.filter(finite_shots=True)
-        program.add_transform(
-            decompose,
-            stopping_condition=lambda o: analytic_capabilities.supports_operation(o.name),
-            stopping_condition_shots=lambda o: finite_shots_capabilities.supports_operation(o.name),
-            name=self.name,
-        )
+        capabilities_analytic = self.capabilities.filter(finite_shots=False)
+        capabilities_shots = self.capabilities.filter(finite_shots=True)
         program.add_transform(
             validate_measurements,
             analytic_measurements=lambda mp: type(mp).__name__
-            in analytic_capabilities.measurement_processes,
+            in capabilities_analytic.measurement_processes,
             sample_measurements=lambda mp: type(mp).__name__
-            in finite_shots_capabilities.measurement_processes,
+            in capabilities_shots.measurement_processes,
             name=self.name,
         )
         program.add_transform(
             validate_observables,
-            stopping_condition=observable_stopping_condition_factory(analytic_capabilities),
-            stopping_condition_shots=observable_stopping_condition_factory(
-                finite_shots_capabilities
-            ),
+            stopping_condition=observable_stopping_condition_factory(capabilities_analytic),
+            stopping_condition_shots=observable_stopping_condition_factory(capabilities_shots),
             name=self.name,
         )
-        program.add_transform(qml.transforms.broadcast_expand)
-        if not self.capabilities.overlapping_observables:
-            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="wires")
-        elif not self.capabilities.non_commuting_observables:
-            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="qwc")
-        elif not self.capabilities.supports_observable("Sum"):
-            program.add_transform(qml.transforms.split_to_single_terms)
 
+        needs_diagonalization = False
         base_obs = {"PauliZ": qml.Z, "PauliX": qml.X, "PauliY": qml.Y, "Hadamard": qml.H}
         if (
             not all(obs in self.capabilities.observables for obs in base_obs)
@@ -555,11 +542,38 @@ class Device(abc.ABC):
             # its own preprocessing transform.
             and not self.capabilities.non_commuting_observables
         ):
-            supported_base_obs_names = base_obs.keys() & self.capabilities.observables.keys()
-            supported_base_obs = {base_obs[obs] for obs in supported_base_obs_names}
+            needs_diagonalization = True
+        else:
+            # If the circuit does not need diagonalization, we decompose the circuit before
+            # potentially applying `split_non_commuting` that produces multiple tapes with
+            # duplicated operations. Otherwise, `decompose` has to be applied last because
+            # `diagonalize_measurements` may add additional gates that are not supported.
             program.add_transform(
-                qml.transforms.diagonalize_measurements, supported_base_obs=supported_base_obs
+                decompose,
+                stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
+                stopping_condition_shots=lambda o: capabilities_shots.supports_operation(o.name),
+                name=self.name,
             )
+
+        if not self.capabilities.overlapping_observables:
+            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        elif not self.capabilities.non_commuting_observables:
+            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="qwc")
+        elif not self.capabilities.supports_observable("Sum"):
+            program.add_transform(qml.transforms.split_to_single_terms)
+
+        if needs_diagonalization:
+            obs_names = base_obs.keys() & self.capabilities.observables.keys()
+            obs = {base_obs[obs] for obs in obs_names}
+            program.add_transform(qml.transforms.diagonalize_measurements, supported_base_obs=obs)
+            program.add_transform(
+                decompose,
+                stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
+                stopping_condition_shots=lambda o: capabilities_shots.supports_operation(o.name),
+                name=self.name,
+            )
+
+        program.add_transform(qml.transforms.broadcast_expand)
 
         return program
 
