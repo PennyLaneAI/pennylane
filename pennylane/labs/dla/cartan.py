@@ -77,6 +77,23 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
         bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
 
     .. seealso:: :func:`~cartan_decomposition`
+
+    **Example**
+
+    >>> from pennylane import X, Y, Z
+    >>> from pennylane.labs.dla import even_odd_involution
+    >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2)]
+    >>> [even_odd_involution(op) for op in ops]
+    [1, 0, 1]
+
+    Operators with an odd-number of non-identity Paulis yield ``1``, whereas even ones yield ``0``.
+
+    The function also works with dense matrix repsentations.
+
+    >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
+    >>> [even_odd_involution(op_m) for op_m in ops_m]
+    [True, False, True]
+
     """
     return _even_odd_involution(op)
 
@@ -131,6 +148,22 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
         bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
 
     .. seealso:: :func:`~cartan_decomposition`
+
+    **Example**
+
+    >>> from pennylane import X, Y, Z
+    >>> from pennylane.labs.dla import concurrence_involution
+    >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2), Y(0) @ Y(2)]
+    >>> [concurrence_involution(op) for op in ops]
+    [False, True, True, False]
+
+    Operators with an odd-number of ``Y`` operators yield ``1``, whereas even ones yield ``0``.
+
+    The function also works with dense matrix repsentations.
+
+    >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
+    >>> [even_odd_involution(op_m) for op_m in ops_m]
+    [False, True, True, False]
 
     """
     return _concurrence_involution(op)
