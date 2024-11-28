@@ -136,11 +136,11 @@ def calculate_probability(
     # stacking list since diagonal function axis selection parameter names
     # are not consistent across interfaces
     reshaped_state = _reshape_state_as_matrix(state, num_state_wires)
-    if is_state_batched:
-        probs = math.real(math.stack([math.diagonal(dm) for dm in reshaped_state]))
-    else:
-        probs = math.real(math.diagonal(reshaped_state))
+    probs = ProbabilityMP().process_density_matrix(reshaped_state, wire_order)
+    # Convert the interface from numpy to whgatever from the state
+    probs = math.convert_like(probs, state)
 
+    # !NOTE: unclear if this whole post-processing here below is that much necessary
     # if a probability is very small it may round to negative, undesirable.
     # math.clip with None bounds breaks with tensorflow, using this instead:
     probs = math.where(probs < 0, 0, probs)
@@ -148,6 +148,7 @@ def calculate_probability(
         # no need to marginalize
         return probs
 
+    # !NOTE: one thing we can check in the future is if the following code is replacable with first calc rdm and then do probs
     # determine which subsystems are to be summed over
     inactive_wires = Wires.unique_wires([wire_order, wires])
 
