@@ -528,6 +528,9 @@ class Device(abc.ABC):
         elif not self.capabilities.supports_observable("Sum"):
             program.add_transform(qml.transforms.split_to_single_terms)
 
+        # TODO: diagonalization should be part of the default transform program, but we decided
+        #       not to include it in this PR due to complications. See sc-79422
+
         program.add_transform(qml.transforms.broadcast_expand)
 
         # Handle validations
