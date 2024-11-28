@@ -890,7 +890,6 @@ class QNode:
 
         _validate_qfunc_output(self._qfunc_output, self._tape.measurements)
 
-    # pylint: disable=protected-access
     def _execution_component(self, args: tuple, kwargs: dict) -> qml.typing.Result:
         """Construct the transform program and execute the tapes. Helper function for ``__call__``
 
