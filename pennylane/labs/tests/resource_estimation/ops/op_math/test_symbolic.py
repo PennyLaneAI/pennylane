@@ -18,7 +18,6 @@ Tests for symbolic resource operators.
 import pytest
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_container import _scale_dict
 
 # pylint: disable=protected-access,no-self-use
 
