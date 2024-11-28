@@ -15,18 +15,22 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
-from typing import Dict
-from functools import wraps
 from collections import defaultdict
+from functools import wraps
+from typing import Dict
 
 import pennylane as qml
-from pennylane.templates.subroutines.trotter import _recursive_qfunc, _recursive_expression
-from pennylane.labs.resource_estimation import ResourceOperator, CompressedResourceOp, ResourceExp, ResourcesNotDefined
-
+from pennylane.labs.resource_estimation import (
+    CompressedResourceOp,
+    ResourceExp,
+    ResourceOperator,
+    ResourcesNotDefined,
+)
 from pennylane.operation import Operation, Operator
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.templates.subroutines.trotter import _recursive_expression, _recursive_qfunc
 from pennylane.wires import Wires
 
 
@@ -208,7 +212,9 @@ class ResourceTrotterProduct(ErrorOperation, ResourceOperator):
     @staticmethod
     def _resource_decomp(base, time, n, order, **kwargs) -> Dict[CompressedResourceOp, int]:
         k = order // 2
-        first_order_expansion = [ResourceExp.resource_rep(op, (time/n)*1j, num_steps=1) for op in base.operands]
+        first_order_expansion = [
+            ResourceExp.resource_rep(op, (time / n) * 1j, num_steps=1) for op in base.operands
+        ]
 
         if order == 1:
             return defaultdict(int, {cp_rep: n for cp_rep in first_order_expansion})
@@ -220,7 +226,7 @@ class ResourceTrotterProduct(ErrorOperation, ResourceOperator):
         gate_types = defaultdict(int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in cp_rep_rest})
         gate_types[cp_rep_first] = n * (5 ** (k - 1)) + 1
         gate_types[cp_rep_last] = n * (5 ** (k - 1))
-        
+
         return gate_types
 
     def resource_params(self) -> dict:
@@ -586,29 +592,36 @@ class ResourceTrotterizedQfunc(Operation, ResourceOperator):
         return decomp
 
     @staticmethod
-    def _resource_decomp(n, order, reverse, qfunc_compressed_reps, **kwargs) -> Dict[CompressedResourceOp, int]:
+    def _resource_decomp(
+        n, order, reverse, qfunc_compressed_reps, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
         k = order // 2
         if order == 1:
             return defaultdict(int, {cp_rep: n for cp_rep in qfunc_compressed_reps})
-        return defaultdict(int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in qfunc_compressed_reps})
-        
+        return defaultdict(
+            int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in qfunc_compressed_reps}
+        )
 
     def resource_params(self) -> dict:
         with qml.QueuingManager.stop_recording():
             with qml.queuing.AnnotatedQueue() as q:
                 base_hyper_params = ("n", "order", "qfunc", "reverse")
-                
+
                 qfunc_args = self.parameters
-                qfunc_kwargs = {k: v for k, v in self.hyperparameters.items() if not k in base_hyper_params}
-                
+                qfunc_kwargs = {
+                    k: v for k, v in self.hyperparameters.items() if not k in base_hyper_params
+                }
+
                 qfunc = self.hyperparameters["qfunc"]
                 qfunc(*qfunc_args, wires=self.wires, **qfunc_kwargs)
 
-        try: 
+        try:
             qfunc_compressed_reps = tuple(op.resource_rep_from_op() for op in q.queue)
 
         except AttributeError:
-            raise ResourcesNotDefined("Every operation in the TrotterizedQfunc should be a ResourceOperator")
+            raise ResourcesNotDefined(
+                "Every operation in the TrotterizedQfunc should be a ResourceOperator"
+            )
 
         return {
             "n": self.hyperparameters["n"],
@@ -618,7 +631,9 @@ class ResourceTrotterizedQfunc(Operation, ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, qfunc_compressed_reps, n, order, reverse, name=None) -> CompressedResourceOp:
+    def resource_rep(
+        cls, qfunc_compressed_reps, n, order, reverse, name=None
+    ) -> CompressedResourceOp:
         params = {
             "n": n,
             "order": order,
@@ -626,7 +641,7 @@ class ResourceTrotterizedQfunc(Operation, ResourceOperator):
             "qfunc_compressed_reps": qfunc_compressed_reps,
         }
         return CompressedResourceOp(cls, params, name=name)
-    
+
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
         return self.__class__.resource_rep(**self.resource_params(), name=self._name)

@@ -75,7 +75,7 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
             return gate_types
 
-        raise re.ResourcesNotDefined 
+        raise re.ResourcesNotDefined
 
     @classmethod
     def pow_resource_decomp(cls, **kwargs):

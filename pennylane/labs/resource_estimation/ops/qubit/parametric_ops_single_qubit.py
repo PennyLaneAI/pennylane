@@ -197,7 +197,10 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs,
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        **kwargs,
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
             return re.ResourceCRot.resources()

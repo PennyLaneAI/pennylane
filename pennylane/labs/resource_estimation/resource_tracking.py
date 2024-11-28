@@ -289,8 +289,8 @@ def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str
         clean_gate_counts[cmp_res_op._name] += counts
 
     elems_to_pop = []
-    for k,v in clean_gate_counts.items():
-        if v == 0: 
+    for k, v in clean_gate_counts.items():
+        if v == 0:
             elems_to_pop.append(k)
 
     for k in elems_to_pop:

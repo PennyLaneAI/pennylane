@@ -46,7 +46,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
             gate_types = {re.ResourceCH.resource_rep(): 1}
             if num_ctrl_values >= 1:
                 gate_types[re.ResourceX.resource_rep()] = 2 * num_ctrl_values
-            
+
             return gate_types
 
         raise re.ResourcesNotDefined
@@ -170,7 +170,7 @@ class ResourceT(qml.T, re.ResourceOperator):
     def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         """Resources obtained from the identity T^8 = I."""
         return {cls.resource_rep(): z % 8}
-    
+
     @classmethod
     def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs):
         r"""Link to method:
@@ -185,12 +185,13 @@ class ResourceT(qml.T, re.ResourceOperator):
             gate_types[t] = 1
             gate_types[toffoli] = 2
 
-            if num_ctrl_values: 
+            if num_ctrl_values:
                 gate_types[re.ResourceX.resource_rep()] = 2
 
             return gate_types
-        
+
         raise re.ResourcesNotDefined
+
 
 class ResourceX(qml.X, re.ResourceOperator):
     """Resource class for the X gate."""

@@ -80,8 +80,10 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
         gate_types = defaultdict(int)
         decomp = base_class.resources(**base_params, **kwargs)
-        for gate, count in decomp.items():            
-            resources = ResourceControlled._resource_decomp(gate.op_type, gate.params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs)
+        for gate, count in decomp.items():
+            resources = ResourceControlled._resource_decomp(
+                gate.op_type, gate.params, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+            )
             _scale_dict(resources, count, in_place=True)
             _combine_dict(gate_types, resources, in_place=True)
 
@@ -130,7 +132,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             outer_num_ctrl_wires + num_ctrl_wires,
             outer_num_ctrl_values + num_ctrl_values,
             outer_num_work_wires + num_work_wires,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
@@ -237,7 +239,7 @@ def _resources_from_pauli_word(pauli_word, num_wires):
 
     if len_str == 0:
         return {}  # Identity operation has no resources.
-    
+
     if len_str == 1:
         if pauli_string == "X":
             return {re.CompressedResourceOp(re.ResourceRX, {}): 1}
