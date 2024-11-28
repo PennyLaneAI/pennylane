@@ -544,6 +544,23 @@ class Device(abc.ABC):
         elif not self.capabilities.supports_observable("Sum"):
             program.add_transform(qml.transforms.split_to_single_terms)
 
+        base_obs = {"PauliZ": qml.Z, "PauliX": qml.X, "PauliY": qml.Y, "Hadamard": qml.H}
+        if (
+            not all(obs in self.capabilities.observables for obs in base_obs)
+            # This check is to confirm that `split_non_commuting` has been applied, since
+            # `diagonalize_measurements` does not work with non-commuting measurements. If
+            # a device is flexible enough to support non-commuting observables but for some
+            # reason does not support all of `PauliZ`, `PauliX`, `PauliY`, and `Hadamard`,
+            # we consider it enough of an edge case that the device should just implement
+            # its own preprocessing transform.
+            and not self.capabilities.non_commuting_observables
+        ):
+            supported_base_obs_names = base_obs.keys() & self.capabilities.observables.keys()
+            supported_base_obs = {base_obs[obs] for obs in supported_base_obs_names}
+            program.add_transform(
+                qml.transforms.diagonalize_measurements, supported_base_obs=supported_base_obs
+            )
+
         return program
 
     @abc.abstractmethod
