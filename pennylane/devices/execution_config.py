@@ -37,7 +37,7 @@ class MCMConfig:
     discarded and only results for valid shots will be returned. In this case, less samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
     will be of the same size as the original number of shots. If not specified, the device will
-    decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally 
+    decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally
     instead of ``"hw-like"`` when using jax/catalyst"""
 
     def __post_init__(self):

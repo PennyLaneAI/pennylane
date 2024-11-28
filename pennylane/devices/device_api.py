@@ -20,8 +20,8 @@ from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
 from typing import Optional, Union, overload
-import pennylane as qml
 
+import pennylane as qml
 from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
@@ -29,7 +29,6 @@ from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
-from . import MCMConfig
 
 from .capabilities import (
     DeviceCapabilities,
@@ -38,8 +37,8 @@ from .capabilities import (
 )
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .preprocess import (
-    validate_device_wires,
     decompose,
+    validate_device_wires,
     validate_measurements,
     validate_observables,
 )

@@ -19,7 +19,7 @@ import sys
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 import pennylane as qml
 

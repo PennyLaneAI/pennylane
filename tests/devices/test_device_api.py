@@ -30,7 +30,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
-# pylint:disable=unused-argument,too-few-public-methods,unused-variable
+# pylint:disable=unused-argument,too-few-public-methods,unused-variable,protected-access,too-many-arguments
 
 
 def test_execute_method_abstract():

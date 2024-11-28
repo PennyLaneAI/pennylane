@@ -288,7 +288,7 @@ def defer_measurements(
         is_postselecting,
     ) = _collect_mid_measure_info(tape)
 
-    allow_postselect = kwargs.get("allow_postselect", False)
+    allow_postselect = kwargs.get("allow_postselect", True)
 
     if is_postselecting and not allow_postselect:
         raise ValueError(
