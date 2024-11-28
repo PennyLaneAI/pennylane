@@ -235,7 +235,36 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
 
 
 def check_commutation(ops1, ops2, vspace):
-    """Helper function to check things like [k, m] subspace m; expensive"""
+    r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+
+    .. warning:: This function is expensive to compute
+
+    Args:
+        ops1 (Iterable[PauliSentence]): First set of operators
+        ops2 (Iterable[PauliSentence]): Second set of operators
+        vspace (:class:`~PauliVSpace`): The vector space in form of a :class:`~PauliVSpace` that the operators should map to
+
+    Returns:
+        bool: Whether or not :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+
+    **Example**
+
+    >>> from pennylane.labs.dla import check_commutation
+    >>> ops1 = [qml.X(0).pauli_rep]
+    >>> ops2 = [qml.Y(0).pauli_rep]
+    >>> vspace1 = qml.pauli.PauliVSpace([qml.X(0).pauli_rep, qml.Y(0).pauli_rep], dtype=complex)
+
+    Because :math:`[X_0, Y_0] = 2i Z_0`, the commutators do not map to the selected vector space.
+
+    >>> check_commutation(ops1, ops2, vspace1)
+    False
+
+    Instead, we need the full :math:`\mathfrak{su}(2)` space.
+
+    >>> vspace2 = qml.pauli.PauliVSpace([qml.X(0).pauli_rep, qml.Y(0).pauli_rep, qml.Z(0).pauli_rep], dtype=complex)
+    >>> check_commutation(ops1, ops2, vspace2)
+    True
+    """
     assert_vals = []
     for o1 in ops1:
         for o2 in ops2:
