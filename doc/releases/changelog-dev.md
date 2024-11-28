@@ -68,7 +68,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
-* Added submodule 'measure' as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
+* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
   [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
 
