@@ -57,6 +57,9 @@
 * Added utility functions for handling dense matrices in the Lie theory context.
   [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
 
+* Added a ``cartan_decomposition`` function along with two standard involutions ``even_odd_involution`` and ``concurrence_involution``.
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+
 
 <h4>New API for Qubit Mixed</h4>
 
