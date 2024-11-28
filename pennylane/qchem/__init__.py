@@ -90,6 +90,5 @@ from .vibrational import (
     get_dipole,
     pes_onemode,
     pes_twomode,
-    pes_threemode
+    pes_threemode,
 )
-
