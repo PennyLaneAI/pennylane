@@ -49,8 +49,25 @@ def _import_mpi4py():
 def pes_onemode(
     molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
 ):
-    r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
-    Simultaneously, can compute the dipole one-body elements."""
+    r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions
+    (or any directions set by the displ_vecs).
+    Simultaneously, can compute the dipole one-mode elements.
+
+    Args:
+       molecule: Molecule object.
+       scf_result: pyscf object from electronic structure calculations
+       freqs_au: list of normal mode frequencies
+       displ_vecs: list of displacement vectors for each normal mode
+       gauss_grid: sample points for Gauss-Hermite quadrature
+       method: Electronic structure method to define the level of theory
+            for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
+       do_dipole: Whether to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+      A tuple of one-mode potential energy surface and one-mode dipole along
+      the normal-mode coordinates.
+
+    """
 
     _import_mpi4py()
     from mpi4py import MPI
@@ -104,7 +121,8 @@ def pes_onemode(
 def _local_pes_onemode(
     comm, molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
 ):
-    r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
+    r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions
+    (or any directions set by the displ_vecs) for each processor.
     Simultaneously, can compute the dipole one-body elements."""
 
     size = comm.Get_size()
@@ -161,7 +179,7 @@ def _local_pes_onemode(
 
 def _load_pes_onemode(num_pieces, nmodes, quad_order, do_dipole=False):
     """
-    Loader to combine pes_onebody and dipole_onebody from multiple ranks.
+    Loader to combine pes_onebody and dipole_onebody from multiple processors.
     """
 
     pes_onebody = np.zeros((nmodes, quad_order), dtype=float)
@@ -200,8 +218,27 @@ def pes_twomode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
-    Simultaneously, can compute the dipole one-body elements."""
+    r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions
+    (or any directions set by the displ_vecs).
+    Simultaneously, can compute the dipole two-mode elements.
+
+    Args:
+       molecule: Molecule object.
+       scf_result: pyscf object from electronic structure calculations
+       freqs_au: list of normal mode frequencies
+       displ_vecs: list of displacement vectors for each normal mode
+       gauss_grid: sample points for Gauss-Hermite quadrature
+       pes_onebody: one-mode PES
+       dipole_onebody: one-mode dipole
+       method: Electronic structure method to define the level of theory
+            for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
+       do_dipole: Whether to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+      A tuple of two-mode potential energy surface and two-mode dipole along
+      the normal-mode coordinates.
+
+    """
 
     _import_mpi4py()
     from mpi4py import MPI
@@ -265,8 +302,9 @@ def _local_pes_twomode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
-    Simultaneously, can compute the dipole one-body elements."""
+    r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions
+    (or any directions set by the displ_vecs) for each processor.
+    Simultaneously, can compute the dipole two-mode elements."""
 
     size = comm.Get_size()
     rank = comm.Get_rank()
@@ -336,7 +374,7 @@ def _local_pes_twomode(
 
 def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
     """
-    Loader to combine pes_twomode and dipole_twomode from multiple ranks.
+    Loader to combine pes_twobody and dipole_twobody from multiple processors.
     """
 
     final_shape = (nmodes, nmodes, quad_order, quad_order)
@@ -396,9 +434,8 @@ def _local_pes_threemode(
     do_dipole=False,
 ):
     r"""
-    Computes the three-mode potential energy surface on a grid in real space,
-    along the normal coordinate directions (or any directions set by the
-    displ_vecs).
+    Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions
+    (or any directions set by the displ_vecs) for each processor.
     """
     size = comm.Get_size()
     rank = comm.Get_rank()
@@ -503,7 +540,7 @@ def _local_pes_threemode(
 
 def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
     """
-    Loader to combine pes_threemode and dipole_threemode from multiple ranks.
+    Loader to combine pes_threebody and dipole_threebody from multiple processors.
     """
     final_shape = (nmodes, nmodes, nmodes, quad_order, quad_order, quad_order)
     nmode_combos = int(nmodes * (nmodes - 1) * (nmodes - 2) / 6)
@@ -561,8 +598,28 @@ def pes_threemode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions (or any directions set by the displ_vecs).
-    Simultaneously, can compute the dipole one-body elements."""
+    r"""Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions
+    (or any directions set by the displ_vecs).
+    Simultaneously, can compute the dipole three-mode elements.
+
+    Args:
+       molecule: Molecule object.
+       scf_result: pyscf object from electronic structure calculations
+       freqs_au: list of normal mode frequencies
+       displ_vecs: list of displacement vectors for each normal mode
+       gauss_grid: sample points for Gauss-Hermite quadrature
+       pes_onebody: one-mode PES
+       pes_twobody: two-mode PES
+       dipole_onebody: one-mode dipole
+       dipole_twobody: two-mode dipole
+       method: Electronic structure method to define the level of theory
+            for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
+       do_dipole: Whether to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+      A tuple of three-mode potential energy surface and three-mode dipole along
+      the normal-mode coordinates.
+    """
 
     _import_mpi4py()
     from mpi4py import MPI

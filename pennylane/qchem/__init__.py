@@ -90,5 +90,5 @@ from .vibrational import (
     pes_onemode,
     pes_threemode,
     pes_twomode,
-    single_point
+    single_point,
 )
