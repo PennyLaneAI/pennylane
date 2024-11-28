@@ -279,7 +279,24 @@ def check_commutation(ops1, ops2, vspace):
 
 
 def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
-    """Helper function to check if all operators in a set of operators commute"""
+    r"""Helper function to check if all operators in a set of operators commute
+
+    Args:
+        ops (List[Union[PauliSentence, np.ndarray, Operator]]): List of operators to check for mutual commutation
+
+    Returns:
+        bool: Whether or not all operators commute with each other
+
+    **Example**
+
+    >>> from pennylane.labs.dla import check_all_commuting
+    >>> from pennylane import X
+    >>> ops = [X(i) for i in range(10)]
+    >>> check_all_commuting(ops)
+    True
+
+    Operators on different wires (trivially) commute with each other.
+    """
     if all(isinstance(op, PauliSentence) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = oj.commutator(oi)
