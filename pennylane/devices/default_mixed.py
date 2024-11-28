@@ -90,7 +90,6 @@ observables = {
     "Sum",
 }
 
-# !TODO: rename it back to operations after removal of the legacy class
 operations_mixed = {
     "Identity",
     "Snapshot",
@@ -205,6 +204,7 @@ ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
 
 
+# !TODO: when removing this class, rename operations_mixed back to operations
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
 
