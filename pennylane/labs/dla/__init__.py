@@ -68,4 +68,7 @@ from .dense_util import (
     trace_inner_product,
     adjvec_to_op,
     op_to_adjvec,
+    check_commutation,
+    check_all_commuting,
+    check_cartan_decomp,
 )

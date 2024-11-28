@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-# pylint: disable=possibly-used-before-assignment
+# pylint: disable=possibly-used-before-assignment, too-many-return-statements
 from functools import reduce
 from itertools import combinations, combinations_with_replacement
-from typing import Iterable, Optional, Union
+from typing import Iterable, List, Optional, Union
 
 import numpy as np
 from scipy.linalg import sqrtm
@@ -232,6 +232,72 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
     if single_H:
         return H_ops[0]
     return H_ops
+
+
+def check_commutation(ops1, ops2, vspace):
+    """Helper function to check things like [k, m] subspace m; expensive"""
+    assert_vals = []
+    for o1 in ops1:
+        for o2 in ops2:
+            com = o1.commutator(o2)
+            com.simplify()
+            if len(com) != 0:
+                assert_vals.append(not vspace.is_independent(com))
+            else:
+                assert_vals.append(True)
+
+    return all(assert_vals)
+
+
+def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
+    """Helper function to check if all operators in a set of operators commute"""
+    if all(isinstance(op, PauliSentence) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj.commutator(oi)
+            com.simplify()
+            if len(com) != 0:
+                return False
+
+        return True
+
+    if all(isinstance(op, Operator) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = qml.simplify(qml.commutator(oj, oi))
+            if not qml.equal(com, 0 * qml.Identity()):
+                return False
+
+        return True
+
+    if all(isinstance(op, np.ndarray) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj @ oi - oi @ oj
+            if not np.allclose(com, np.zeros_like(com)):
+                return False
+
+        return True
+
+    return NotImplemented
+
+
+def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
+    """Helper function to check the validity of a Cartan decomposition by checking its commutation relations"""
+    if any(isinstance(op, np.ndarray) for op in k):
+        k = [qml.pauli_decompose(op).pauli_rep for op in k]
+    if any(isinstance(op, np.ndarray) for op in m):
+        m = [qml.pauli_decompose(op).pauli_rep for op in m]
+
+    k_space = qml.pauli.PauliVSpace(k, dtype=complex)
+    m_space = qml.pauli.PauliVSpace(m, dtype=complex)
+
+    # Commutation relations for Cartan pair
+    if not (check_kk := check_commutation(k, k, k_space)):
+        _ = print("[k, k] sub k not fulfilled") if verbose else None
+    if not (check_km := check_commutation(k, m, m_space)):
+        _ = print("[k, m] sub m not fulfilled") if verbose else None
+    if not (check_mm := check_commutation(m, m, k_space)):
+        _ = print("[m, m] sub k not fulfilled") if verbose else None
+
+    return all([check_kk, check_km, check_mm])
 
 
 def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) -> np.ndarray:
