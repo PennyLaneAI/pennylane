@@ -443,7 +443,7 @@ class QNSPSAOptimizer:
         tape = qml.workflow.construct_tape(cost)(*params_next, **kwargs)
         tape_loss_next = tape.copy(copy_operations=True)
 
-        program, _ = cost.device.preprocess()
+        program = cost.device.preprocess_transforms()
 
         loss_curr, loss_next = qml.execute(
             [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
