@@ -31,7 +31,7 @@ def _obtain_r2(ytrue, yfit):
 
 def _remove_harmonic(freqs, pes_onebody):
     nmodes, quad_order = np.shape(pes_onebody)
-    gauss_grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
+    gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     harmonic_pes = np.zeros((nmodes, quad_order))
     anh_pes = np.zeros((nmodes, quad_order))
@@ -69,7 +69,6 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
 
 def _twobody_degs(deg, min_deg=3):
     fit_degs = []
-    deg_idx = 0
     for feat_deg in range(min_deg, deg + 1):
         max_deg = feat_deg - 1
         for deg_dist in range(1, max_deg + 1):
@@ -110,9 +109,6 @@ def _fit_twobody(pes_twobody, deg, min_deg=3):
 
     for i1 in range(nmodes):
         for i2 in range(i1):
-            poly2D = PolynomialFeatures(
-                degree=(min_deg, deg), include_bias=False, interaction_only=True
-            )
             Y = []
             for idx in range(num_2D):
                 idx_q1 = idx1[idx]
@@ -142,7 +138,6 @@ def _generate_bin_occupations(max_occ, nbins):
 
 def _threebody_degs(deg, min_deg=3):
     fit_degs = []
-    deg_idx = 0
     for feat_deg in range(min_deg, deg + 1):
         max_deg = feat_deg - 3
         if max_deg < 0:
@@ -189,9 +184,6 @@ def _fit_threebody(pes_threebody, deg, min_deg=3):
     for i1 in range(nmodes):
         for i2 in range(i1):
             for i3 in range(i2):
-                poly3D = PolynomialFeatures(
-                    degree=(min_deg, deg), include_bias=False, interaction_only=True
-                )
                 Y = []
                 for idx in range(num_3D):
                     idx_q1 = idx1[idx]
@@ -213,14 +205,9 @@ def _fit_threebody(pes_threebody, deg, min_deg=3):
 
 
 def taylor_integrals(pes, deg=4, min_deg=3):
-    r"""Returns the coefficients for real-space Hamiltonian.
-    Args:
-            pes: PES object.
-            deg:
-            min_deg:
-    """
+    r"""Computes the Taylor form dipole for a given PES object"""
 
-    nmodes, quad_order, anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onebody)
+    _, _, anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onebody)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, deg, min_deg=min_deg)
     predicted_1D += harmonic_pes
     coeff_arr = [coeff_1D]
@@ -240,9 +227,7 @@ def taylor_integrals(pes, deg=4, min_deg=3):
 
 
 def taylor_integrals_dipole(pes, deg=4, min_deg=1):
-
-    nmodes, quad_order, _ = pes.dipole_onebody.shape
-
+    r"""Calculates Taylor form integrals for dipole construction"""
     f_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onebody[:, :, 0], deg, min_deg=min_deg)
     f_x_arr = [f_x_1D]
     predicted_x_arr = [predicted_x_1D]
