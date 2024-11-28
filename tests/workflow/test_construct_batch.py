@@ -107,7 +107,7 @@ class TestTransformProgramGetter:
         assert p_none == p_dev
         assert len(p_dev) == 9
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
-        assert p_dev == p_grad + dev.preprocess(config)[0]
+        assert p_dev == p_grad + dev.preprocess_transforms(config)
 
         # slicing
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
@@ -147,7 +147,7 @@ class TestTransformProgramGetter:
             gradient_method="adjoint",
             use_device_jacobian_product=False,
         )
-        dev_program = dev.preprocess(config)[0]
+        dev_program = dev.preprocess_transforms(config)
 
         expected = TransformProgram()
         expected.add_transform(qml.transforms.split_non_commuting)
@@ -203,7 +203,9 @@ class TestTransformProgramGetter:
 
         dev_program = get_transform_program(circuit, level="device")
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
-        assert len(dev_program) == 4 + len(circuit.device.preprocess(config)[0])  # currently 8
+        assert len(dev_program) == 4 + len(
+            circuit.device.preprocess_transforms(config)
+        )  # currently 8
         assert dev_program[-1].transform == qml.metric_tensor.transform
 
         full_program = get_transform_program(circuit)

@@ -364,7 +364,7 @@ class TestSupportedGates:
                 pytest.skip("operation not supported.")
         else:
             if ops[operation].name == "QubitDensityMatrix":
-                prog = dev.preprocess()[0]
+                prog = dev.preprocess_transforms()
                 tape = qml.tape.QuantumScript([ops[operation]])
                 try:
                     prog((tape,))
