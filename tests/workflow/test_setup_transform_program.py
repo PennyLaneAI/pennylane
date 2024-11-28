@@ -62,7 +62,7 @@ def test_gradient_expand_transform(mocker, mock_device):
     config = ExecutionConfig()
     config.gradient_method = MagicMock(expand_transform=mock_expand_transform)
 
-    mock_device.preprocess_transforms = mocker.MagicMock(return_value=TransformProgram())
+    mock_device.preprocess_transforms_transforms = mocker.MagicMock(return_value=TransformProgram())
 
     container = qml.transforms.core.TransformContainer(mock_user_transform)
     user_tp = qml.transforms.core.TransformProgram((container,))
@@ -145,14 +145,11 @@ def test_prune_dynamic_transform_with_mcm():
     assert len(program2) == 1
 
 
-def test_device_supports_interface_data(mocker, mock_device):
-    """Test that parameters are converted to numpy if required."""
+def test_interface_data_not_supported(mock_device):
+    """Test that convert_to_numpy_parameters transform is correctly added."""
     config = ExecutionConfig()
     config.interface = "autograd"
     config.gradient_method = "adjoint"
-
-    mock_device.short_name = "default.mixed"
-    mock_device.preprocess = mocker.MagicMock(return_value=(TransformProgram(), config))
 
     user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(user_transform_program, mock_device, config)
@@ -163,10 +160,49 @@ def test_device_supports_interface_data(mocker, mock_device):
     assert full_tp.is_empty()
 
 
+def test_interface_data_supported(mock_device):
+    """Test that convert_to_numpy_parameters transform is not added for these cases."""
+    config = ExecutionConfig()
+
+    config.interface = None
+    config.gradient_method = "adjoint"
+    mock_device.short_name = "mock_device"
+
+    user_transform_program = TransformProgram()
+    full_tp, inner_tp = _setup_transform_program(user_transform_program, mock_device, config)
+
+    assert inner_tp.is_empty()
+    assert full_tp.is_empty()
+
+    config = ExecutionConfig()
+
+    config.interface = "autograd"
+    config.gradient_method = "backprop"
+    mock_device.short_name = "mock_device"
+
+    user_transform_program = TransformProgram()
+    full_tp, inner_tp = _setup_transform_program(user_transform_program, mock_device, config)
+
+    assert inner_tp.is_empty()
+    assert full_tp.is_empty()
+
+    config = ExecutionConfig()
+
+    config.interface = "autograd"
+    config.gradient_method = None
+    mock_device.short_name = "default.mixed"
+
+    user_transform_program = TransformProgram()
+    full_tp, inner_tp = _setup_transform_program(user_transform_program, mock_device, config)
+
+    assert inner_tp.is_empty()
+    assert full_tp.is_empty()
+
+
 def test_cache_handling(mocker, mock_device):
     """Test that caching is handled correctly."""
     config = ExecutionConfig()
-    mock_device.preprocess = mocker.MagicMock(return_value=(TransformProgram(), config))
+    mock_device.preprocess_transforms = mocker.MagicMock(return_value=TransformProgram())
 
     user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(
