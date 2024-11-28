@@ -19,7 +19,7 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
-    r"""Resource class for MultiRZ
+    r"""Resource class for the MultiRZ gate.
 
     Resources:
         .. math::
@@ -47,7 +47,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
 
 
 class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
-    r"""Resource class for PauliRot
+    r"""Resource class for the PauliRot gate.
 
     Resources:
         .. math::
@@ -94,7 +94,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
 
 
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
-    r"""Resource class for IsingXX
+    r"""Resource class for the IsingXX gate.
 
     Resources:
         Ising XX coupling gate
@@ -128,7 +128,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
 
 class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
-    r"""Resource class for IsingYY
+    r"""Resource class for the IsingYY gate.
 
     Resources:
         Ising YY coupling gate
@@ -162,7 +162,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
 
 class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
-    r"""Resource class for IsingXY
+    r"""Resource class for the IsingXY gate.
 
     Resources:
         Ising (XX + YY) coupling gate
@@ -200,7 +200,7 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
 
 class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
-    r"""Resource class for IsingZZ
+    r"""Resource class for the IsingZZ gate.
 
     Resources:
         Ising ZZ coupling gate
@@ -234,7 +234,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
 
 class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
-    r"""Resource class for PSWAP
+    r"""Resource class for the PSWAP gate.
 
     Resources:
         .. math:: PSWAP(\phi) = \begin{bmatrix}

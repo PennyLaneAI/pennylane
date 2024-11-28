@@ -34,23 +34,6 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
-    @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
-
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return {re.ResourceCH.resource_rep(): 1}
-
-        raise re.ResourcesNotDefined
-
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
-
 
 class ResourceS(qml.S, re.ResourceOperator):
     """Resource class for the S gate."""
@@ -58,7 +41,7 @@ class ResourceS(qml.S, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
-        t = ResourceT.resource_rep()
+        t = ResourceT.resource_rep(**kwargs)
         gate_types[t] = 2
 
         return gate_types
@@ -69,14 +52,6 @@ class ResourceS(qml.S, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
-
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 3}
-
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 4}
 
 
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
@@ -129,23 +104,6 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
-    @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
-
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return {re.ResourceCSWAP.resource_rep(): 1}
-
-        raise re.ResourcesNotDefined
-
-    @classmethod
-    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
-
 
 class ResourceT(qml.T, re.ResourceOperator):
     """Resource class for the T gate."""
@@ -161,24 +119,14 @@ class ResourceT(qml.T, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
-    @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        """Resources obtained from the identity T^8 = I."""
-        return {cls.resource_rep(): 7}
-
-    @classmethod
-    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        """Resources obtained from the identity T^8 = I."""
-        return {cls.resource_rep(): z % 8}
-
 
 class ResourceX(qml.X, re.ResourceOperator):
     """Resource class for the X gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        s = re.ResourceS.resource_rep()
-        h = re.ResourceHadamard.resource_rep()
+        s = re.ResourceS.resource_rep(**kwargs)
+        h = re.ResourceHadamard.resource_rep(**kwargs)
 
         gate_types = {}
         gate_types[s] = 2
@@ -192,25 +140,6 @@ class ResourceX(qml.X, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
-
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
-
-    @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs):
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return {re.ResourceCNOT.resource_rep(): 1}
-        if num_ctrl_wires == 2 and num_ctrl_values == 2:
-            return {re.ResourceToffoli.resource_rep(): 1}
-
-        return re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
-        )
-
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
 
 
 class ResourceY(qml.Y, re.ResourceOperator):
@@ -234,30 +163,13 @@ class ResourceY(qml.Y, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
-
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return re.ResourceCY.resources(**kwargs)
-
-        raise re.ResourcesNotDefined
-
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
-
 
 class ResourceZ(qml.Z, re.ResourceOperator):
     """Resource class for the Z gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        s = re.ResourceS.resource_rep()
+        s = re.ResourceS.resource_rep(**kwargs)
 
         gate_types = {}
         gate_types[s] = 2
@@ -270,23 +182,3 @@ class ResourceZ(qml.Z, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
-
-    @classmethod
-    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): 1}
-
-    @staticmethod
-    def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
-    ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return re.ResourceCZ.resources(**kwargs)
-
-        if num_ctrl_wires == 2 and num_ctrl_wires == 2:
-            return re.ResourceCCZ.resources(**kwargs)
-
-        raise re.ResourcesNotDefined
-
-    @classmethod
-    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
