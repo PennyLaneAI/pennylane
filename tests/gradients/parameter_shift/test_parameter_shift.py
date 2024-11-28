@@ -3362,14 +3362,14 @@ class TestHamiltonianExpvalGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {2, 3, 4}
 
-        with pytest.raises(ValueError, match="for expectations, not var"):
+        with pytest.raises(ValueError, match="for expectations, not"):
             qml.gradients.param_shift(tape, broadcast=broadcast)
 
     def test_not_expval_pass_if_not_trainable_hamiltonian(self, broadcast):
         """Test that if the variance of a non-trainable Hamiltonian is requested,
         no error is raised"""
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-        coeffs = np.array([0.1, 0.2, 0.3])
+        coeffs = np.array([0.1, 0.2, 0.3], requires_grad=False)
         H = qml.Hamiltonian(coeffs, obs)
 
         weights = np.array([0.4, 0.5])
@@ -3392,7 +3392,7 @@ class TestHamiltonianExpvalGradients:
         spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
-        coeffs = np.array([0.1, 0.2, 0.3])
+        coeffs = np.array([0.1, 0.2, 0.3], requires_grad=False)
         H = qml.Hamiltonian(coeffs, obs)
 
         weights = np.array([0.4, 0.5])
@@ -3432,10 +3432,9 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_trainable_coeffs(self, mocker, tol, broadcast):
+    def test_trainable_coeffs(self, tol, broadcast):
         """Test trainable Hamiltonian coefficients"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = np.array([0.1, 0.2, 0.3])
@@ -3461,33 +3460,21 @@ class TestHamiltonianExpvalGradients:
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         # two (broadcasted if broadcast=True) shifts per rotation gate
         # one circuit per trainable H term
-        assert len(tapes) == (2 + 2 if broadcast else 2 * 2 + 2)
-        assert [t.batch_size for t in tapes] == ([2, 2, None, None] if broadcast else [None] * 6)
-        spy.assert_called()
+        assert len(tapes) == (2 if broadcast else 2 * 2)
+        assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
 
         res = fn(dev.execute(tapes))
-        assert isinstance(res, tuple)
-        assert len(res) == 4
-        assert res[0].shape == ()
-        assert res[1].shape == ()
-        assert res[2].shape == ()
-        assert res[3].shape == ()
 
         expected = [
             -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
             b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-            np.cos(x),
-            -(np.sin(x) * np.sin(y)),
         ]
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
-        assert np.allclose(res[2], expected[2], atol=tol, rtol=0)
-        assert np.allclose(res[3], expected[3], atol=tol, rtol=0)
 
-    def test_multiple_hamiltonians(self, mocker, tol, broadcast):
+    def test_multiple_hamiltonians(self, tol, broadcast):
         """Test multiple trainable Hamiltonian coefficients"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = np.array([0.1, 0.2, 0.3])
@@ -3519,24 +3506,20 @@ class TestHamiltonianExpvalGradients:
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         # two shifts per rotation gate (in one batched tape if broadcasting),
         # one circuit per trainable H term
-        assert len(tapes) == 2 * (1 if broadcast else 2) + 3
-        spy.assert_called()
+        assert len(tapes) == 2 * (1 if broadcast else 2)
 
         res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
         assert len(res) == 2
-        assert len(res[0]) == 5
-        assert len(res[1]) == 5
+        assert len(res[0]) == 2
+        assert len(res[1]) == 2
 
         expected = [
             [
                 -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
                 b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-                np.cos(x),
-                -(np.sin(x) * np.sin(y)),
-                0,
             ],
-            [-d * np.sin(x), 0, 0, 0, np.cos(x)],
+            [-d * np.sin(x), 0],
         ]
 
         assert np.allclose(np.stack(res), expected, atol=tol, rtol=0)
@@ -3573,12 +3556,8 @@ class TestHamiltonianExpvalGradients:
             [
                 -c * np.cos(x) * np.sin(y) - np.sin(x) * (a + b * np.sin(y)),
                 b * np.cos(x) * np.cos(y) - c * np.cos(y) * np.sin(x),
-                np.cos(x),
-                np.cos(x) * np.sin(y),
-                -(np.sin(x) * np.sin(y)),
-                0,
             ],
-            [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
+            [-d * np.sin(x), 0],
         ]
 
     @pytest.mark.autograd

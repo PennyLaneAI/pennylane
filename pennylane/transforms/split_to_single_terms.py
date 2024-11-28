@@ -24,6 +24,7 @@ from pennylane.transforms import transform
 from pennylane.transforms.split_non_commuting import (
     _processing_fn_no_grouping,
     _split_all_multi_term_obs_mps,
+    shot_vector_support,
 )
 
 
@@ -162,23 +163,13 @@ def split_to_single_terms(tape):
             _processing_fn_no_grouping,
             single_term_obs_mps=single_term_obs_mps,
             offsets=offsets,
-            shots=tape.shots,
             batch_size=tape.batch_size,
         )
 
-        if len(new_tape.measurements) == 1:
-            return process(res)
-
         # we go from ((mp1_res, mp2_res, mp3_res),) as result output
         # to (mp1_res, mp2_res, mp3_res) as expected by _processing_fn_no_grouping
-        res = res[0]
-        if tape.shots.has_partitioned_shots:
-            # swap dimension order of mps vs shot copies for _processing_fn_no_grouping
-            res = [
-                tuple(res[j][i] for j in range(tape.shots.num_copies))
-                for i in range(len(new_tape.measurements))
-            ]
+        return process(res if len(new_tape.measurements) == 1 else res[0])
 
-        return process(res)
-
+    if tape.shots.has_partitioned_shots:
+        return (new_tape,), shot_vector_support(post_processing_split_sums)
     return (new_tape,), post_processing_split_sums
