@@ -293,7 +293,6 @@ def compare_with_capture_disabled(qnode, *args, **kwargs):
     res = qnode(*args, **kwargs)
     qml.capture.disable()
     expected = qnode(*args, **kwargs)
-    print(res, expected)
     return jnp.allclose(res, expected)
 
 
