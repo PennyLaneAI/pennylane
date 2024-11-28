@@ -16,7 +16,6 @@ Code relevant for performing measurements on a qutrit mixed state.
 """
 
 from collections.abc import Callable
-from string import ascii_letters as alphabet
 
 from pennylane import math, queuing
 from pennylane.measurements import (
@@ -93,26 +92,13 @@ def calculate_reduced_density_matrix(
         TensorLike: state or reduced density matrix.
     """
     wires = measurementprocess.wires
+    state_reshaped_as_matrix = _reshape_state_as_matrix(
+        state, _get_num_wires(state, is_state_batched)
+    )
     if not wires:
-        return _reshape_state_as_matrix(state, _get_num_wires(state, is_state_batched))
+        return state_reshaped_as_matrix
 
-    num_obs_wires = len(wires)
-    num_state_wires = _get_num_wires(state, is_state_batched)
-    state_wire_indices_list = list(alphabet[:num_state_wires] * 2)
-    final_state_wire_indices_list = [""] * (2 * num_obs_wires)
-
-    for i, wire in enumerate(wires):
-        col_index = wire + num_state_wires
-        state_wire_indices_list[col_index] = alphabet[col_index]
-        final_state_wire_indices_list[i] = alphabet[wire]
-        final_state_wire_indices_list[i + num_obs_wires] = alphabet[col_index]
-
-    state_wire_indices = "".join(state_wire_indices_list)
-    final_state_wire_indices = "".join(final_state_wire_indices_list)
-
-    state = math.einsum(f"...{state_wire_indices}->...{final_state_wire_indices}", state)
-
-    return _reshape_state_as_matrix(state, len(wires))
+    return math.reduce_dm(state_reshaped_as_matrix, wires)
 
 
 def calculate_probability(
