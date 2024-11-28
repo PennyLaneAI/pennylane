@@ -14,11 +14,27 @@
 """
 This submodule contains a conversion function from plxpr to a tape.
 """
+from copy import copy
 
 import pennylane as qml
+from pennylane.measurements import MeasurementValue
 
 from .base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
 from .primitives import adjoint_transform_prim, cond_prim, ctrl_transform_prim, measure_prim
+
+
+def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
+    """Helper function to update predicates with mid-circuit measurements"""
+    # copy from ops.op_math.condition.py
+    new_conds = [conditions[0]]
+    false_cond = ~conditions[0]
+
+    for c in conditions[1:]:
+        new_conds.append(false_cond & c)
+        false_cond = false_cond & ~c
+
+    new_conds.append(false_cond)
+    return new_conds
 
 
 class CollectOpsandMeas(PlxprInterpreter):
@@ -77,14 +93,15 @@ class CollectOpsandMeas(PlxprInterpreter):
     def interpret_operation(self, op: "pennylane.operation.Operator"):
         self.state["ops"].append(op)
 
-    def interpret_measurement_eqn(self, primitive, *invals, **params):
-        mp = primitive.impl(*invals, **params)
-        self.state["measurements"].append(mp)
-        return mp
+    def interpret_measurement(self, measurement):
+        self.state["measurements"].append(measurement)
+        return measurement
 
 
 # pylint: disable=protected-access
-CollectOpsandMeas._primitive_registrations.update(FlattenedHigherOrderPrimitives)
+CollectOpsandMeas._primitive_registrations.update(
+    FlattenedHigherOrderPrimitives
+)  # pylint: disable=protected-access
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
@@ -123,11 +140,35 @@ def _(self, *invals, n_control, jaxpr, n_consts, **params):
 
 
 @CollectOpsandMeas.register_primitive(cond_prim)
-def _(*all_args, jaxpr_branches, n_consts_per_branch, n_args):
-    """
-    Placeholder for custom logic for hadnling the controlled primitive.
-    """
-    raise NotImplementedError
+def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
+    n_branches = len(jaxpr_branches)
+    conditions = all_args[:n_branches]
+    args = all_args[args_slice]
+
+    # Find predicates that use mid-circuit measurements. We don't check the last
+    # condition as that is always `True`.
+    mcm_conditions = tuple(pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue))
+    if mcm_conditions:
+        if len(mcm_conditions) != len(conditions) - 1:
+            raise ValueError(
+                "Cannot use qml.cond with a combination of mid-circuit measurements "
+                "and other classical conditions as predicates."
+            )
+        conditions = _get_mcm_predicates(mcm_conditions)
+
+    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+        consts = all_args[const_slice]
+        if jaxpr is None:
+            continue
+        if isinstance(pred, qml.measurements.MeasurementValue):
+            child = CollectOpsandMeas()
+            child.eval(jaxpr, consts, *args)
+            assert child.state
+            self.state["ops"].extend(qml.ops.Conditional(pred, op) for op in child.state["ops"])
+        elif pred:
+            return copy(self).eval(jaxpr, consts, *args)
+
+        return ()
 
 
 @CollectOpsandMeas.register_primitive(measure_prim)

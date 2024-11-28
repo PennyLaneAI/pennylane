@@ -37,6 +37,13 @@ from .primitives import (
     while_loop_prim,
 )
 
+FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
+"""
+A dictionary containing flattened style cond, while, and for loop higher order primitives.
+.. code-block::
+    MyInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
+"""
+
 
 def jaxpr_to_jaxpr(
     interpreter: "PlxprInterpreter", jaxpr: "jax.core.Jaxpr", consts, *args
@@ -469,3 +476,50 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     args = invals[n_consts:]
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return jacobian_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
+
+
+def flatten_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
+    """Handle the while loop by a flattened python strategy."""
+    consts_body = invals[:n_consts_body]
+    consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
+    init_state = invals[n_consts_body + n_consts_cond :]
+
+    fn_res = init_state
+    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
+        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
+
+    return fn_res
+
+
+FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
+
+
+def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+    """Handle the cond primitive by a flattened python strategy."""
+    n_branches = len(jaxpr_branches)
+    conditions = invals[:n_branches]
+    args = invals[args_slice]
+
+    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+        consts = invals[const_slice]
+        if pred and jaxpr is not None:
+            return copy(self).eval(jaxpr, consts, *args)
+    return ()
+
+
+FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
+
+
+def flattened_for(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice):
+    """Handle the for loop by a flattened python strategy."""
+    consts = invals[consts_slice]
+    init_state = invals[args_slice]
+
+    res = init_state
+    for i in range(start, stop, step):
+        res = copy(self).eval(jaxpr_body_fn, consts, i, *res)
+
+    return res
+
+
+FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
