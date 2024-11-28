@@ -532,7 +532,7 @@ def _create_transform_primitive(name):
     except ImportError:
         return None
 
-    transform_prim = jax.core.Primitive(name)
+    transform_prim = jax.core.Primitive(name + "_transform")
     transform_prim.multiple_results = True
 
     @transform_prim.def_impl
