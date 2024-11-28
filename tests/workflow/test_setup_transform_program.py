@@ -28,9 +28,9 @@ from pennylane.workflow._setup_transform_program import (
 
 
 @pytest.fixture
-def mock_device(mocker):
+def mock_device():
     """Creates a mock device."""
-    device = mocker.MagicMock()
+    device = MagicMock()
     device.short_name = "mock_device"
     return device
 
@@ -57,12 +57,12 @@ def mock_device_transform(tape):
     return [tape], null_postprocessing
 
 
-def test_gradient_expand_transform(mocker, mock_device):
+def test_gradient_expand_transform(mock_device):
     """Test if gradient expand transform is added to the full_transform_program."""
     config = ExecutionConfig()
     config.gradient_method = MagicMock(expand_transform=mock_expand_transform)
 
-    mock_device.preprocess_transforms_transforms = mocker.MagicMock(return_value=TransformProgram())
+    mock_device.preprocess_transforms_transforms = MagicMock(return_value=TransformProgram())
 
     container = qml.transforms.core.TransformContainer(mock_user_transform)
     user_tp = qml.transforms.core.TransformProgram((container,))
@@ -73,14 +73,14 @@ def test_gradient_expand_transform(mocker, mock_device):
     assert inner_tp.is_empty()  # Should not add anything to inner program
 
 
-def test_device_transform_program(mocker, mock_device):
+def test_device_transform_program(mock_device):
     """Test that the device transform is correctly placed in the transform program."""
     config = ExecutionConfig()
     config.use_device_gradient = True
 
     container = qml.transforms.core.TransformContainer(mock_device_transform)
     device_tp = qml.transforms.core.TransformProgram((container,))
-    mock_device.preprocess_transforms = mocker.MagicMock(return_value=device_tp)
+    mock_device.preprocess_transforms = MagicMock(return_value=device_tp)
 
     user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(user_transform_program, mock_device, config)
@@ -199,10 +199,10 @@ def test_interface_data_supported(mock_device):
     assert full_tp.is_empty()
 
 
-def test_cache_handling(mocker, mock_device):
+def test_cache_handling(mock_device):
     """Test that caching is handled correctly."""
     config = ExecutionConfig()
-    mock_device.preprocess_transforms = mocker.MagicMock(return_value=TransformProgram())
+    mock_device.preprocess_transforms = MagicMock(return_value=TransformProgram())
 
     user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(
