@@ -18,6 +18,7 @@
 from cachetools import LRUCache
 
 import pennylane as qml
+from pennylane.devices import Device, ExecutionConfig
 from pennylane.transforms.core import TransformProgram
 
 from ._cache_transform import _cache_transform
@@ -53,11 +54,24 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
 
 def _setup_transform_program(
     user_transform_program: TransformProgram,
-    device: "qml.devices.Device",
-    resolved_execution_config: "qml.devices.ExecutionConfig",
+    device: Device,
+    resolved_execution_config: ExecutionConfig,
     cache=None,
     cachesize=10000,
 ) -> tuple[TransformProgram, TransformProgram]:
+    """Sets-up the outer and inner transform programs for execution.
+
+    Args:
+        user_transform_program (TransformProgram): the user's transform program
+        device (Device): a Pennylane device
+        resolved_execution_config (ExecutionConfig): the resolved execution config
+        cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
+        a significant reduction in quantum evaluations during gradient computations. Defaults to ``None``.
+        cachesize (int): The size of the cache. Defaults to 10000.
+
+    Returns:
+        tuple[TransformProgram, TransformProgram]: tuple containing the outer and inner transform programs.
+    """
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 
