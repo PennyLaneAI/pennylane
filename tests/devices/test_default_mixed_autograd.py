@@ -45,7 +45,7 @@ class TestQNodeIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.mixed", wires=1)
-        cap = dev.capabilities()
+        cap = dev.target_device.capabilities()
         capabilities = {
             "model": "qubit",
             "supports_finite_shots": True,
@@ -69,7 +69,7 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
+        assert dev.target_device.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct

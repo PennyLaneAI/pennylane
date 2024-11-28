@@ -30,6 +30,36 @@ from pennylane.devices.default_mixed import (
 )
 
 
+# pylint: disable=protected-access
+def test_mid_circuit_measurement_preprocessing():
+    """Test mid-circuit measurement preprocessing not supported with default.mixed device."""
+    dev = DefaultMixedNewAPI(wires=2, shots=1000)
+
+    # Define operations and mid-circuit measurement
+    m0 = qml.measure(0)
+    ops = [*m0.measurements, qml.ops.Conditional(m0, qml.X(0))]
+
+    # Construct the QuantumScript
+    tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(0))])
+
+    # Process the tape with the device's preprocess method
+    transform_program, _ = dev.preprocess()
+
+    # Apply the transform program to the tape
+    processed_tapes, _ = transform_program([tape])
+
+    # There should be one processed tape
+    assert len(processed_tapes) == 1, "Expected exactly one processed tape."
+    processed_tape = processed_tapes[0]
+
+    # Check that mid-circuit measurements have been deferred
+    mid_measure_ops = [
+        op for op in processed_tape.operations if isinstance(op, qml.measurements.MidMeasureMP)
+    ]
+    assert len(mid_measure_ops) == 0, "Mid-circuit measurements were not deferred properly."
+    assert processed_tape.circuit == [qml.CNOT([0, 1]), qml.CNOT([1, 0]), qml.expval(qml.Z(0))]
+
+
 class NoMatOp(qml.operation.Operation):
     """Dummy operation for expanding circuit in qubit devices."""
 
@@ -150,35 +180,33 @@ class TestPreprocessing:
             (qml.s_prod(1.2, qml.PauliX(0)), True),
             (qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.PauliZ(1)), True),
             (qml.prod(qml.PauliX(0), qml.PauliZ(1)), True),
+            # Simple LinearCombination with valid observables
+            (qml.Hamiltonian([1.0, 0.5], [qml.PauliX(0), qml.PauliZ(1)]), True),
+            # LinearCombination with mixed valid/invalid ops
+            (
+                qml.Hamiltonian([1.0, 0.5], [qml.PauliX(0), qml.DepolarizingChannel(0.4, wires=0)]),
+                False,
+            ),
+            # LinearCombination with all invalid ops
+            (
+                qml.Hamiltonian(
+                    [1.0, 0.5], [qml.Snapshot(), qml.DepolarizingChannel(0.4, wires=0)]
+                ),
+                False,
+            ),
+            # Complex LinearCombination
+            (
+                qml.Hamiltonian(
+                    [0.3, 0.7], [qml.prod(qml.PauliX(0), qml.PauliZ(1)), qml.PauliY(2)]
+                ),
+                True,
+            ),
         ],
     )
     def test_accepted_observable(self, obs, expected):
         """Test that observable_stopping_condition works correctly"""
         res = observable_stopping_condition(obs)
         assert res == expected
-
-    @pytest.mark.parametrize(
-        "coeffs, ops, expected",
-        [
-            # Simple LinearCombination with valid observables
-            ([1.0, 0.5], [qml.PauliX(0), qml.PauliZ(1)], True),
-            # LinearCombination with mixed valid/invalid ops
-            ([1.0, 0.5], [qml.PauliX(0), qml.DepolarizingChannel(0.4, wires=0)], False),
-            # LinearCombination with all invalid ops
-            ([1.0, 0.5], [qml.Snapshot(), qml.DepolarizingChannel(0.4, wires=0)], False),
-            # Complex LinearCombination
-            ([0.3, 0.7], [qml.prod(qml.PauliX(0), qml.PauliZ(1)), qml.PauliY(2)], True),
-        ],
-    )
-    def test_linear_combination_observable_condition(self, coeffs, ops, expected):
-        """Test observable_stopping_condition for LinearCombination objects"""
-        H = qml.ops.LinearCombination(coeffs, ops)
-        res = observable_stopping_condition(H)
-        assert res == expected
-
-
-class TestPreprocessingIntegration:
-    """Test preprocess produces output that can be executed by the device."""
 
     def test_batch_transform_no_batching(self):
         """Test that batch_transform does nothing when no batching is required."""

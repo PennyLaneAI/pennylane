@@ -302,7 +302,7 @@ class TestState:
             return state()
 
         state_val = func()
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         scripts, _ = program([func.tape])
         assert len(scripts) == 1
         expected_state, _ = qml.devices.qubit.get_final_state(scripts[0])
@@ -377,7 +377,7 @@ class TestState:
         """Test if an error is raised for devices that are not capable of returning the state.
         This is tested by changing the capability of default.qubit"""
         dev = qml.device("default.mixed", wires=1)
-        capabilities = dev.capabilities().copy()
+        capabilities = dev.target_device.capabilities().copy()
         capabilities["returns_state"] = False
 
         @qml.qnode(dev)
@@ -1022,7 +1022,7 @@ class TestDensityMatrix:
         """Test if an error is raised for devices that are not capable of returning
         the density matrix. This is tested by changing the capability of default.qubit"""
         dev = qml.device("default.mixed", wires=2)
-        capabilities = dev.capabilities().copy()
+        capabilities = dev.target_device.capabilities().copy()
         capabilities["returns_state"] = False
 
         @qml.qnode(dev)
