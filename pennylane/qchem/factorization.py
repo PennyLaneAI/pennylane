@@ -70,8 +70,8 @@ def factorize(
 
     where leaf tensors :math:`U` are defined by the antisymmetric orbital rotations :math:`X` such
     that :math:`U^{(r)} = \exp{(X^{(r)})}`, :math:`|\cdot|_{\text{F}}` computes the Frobenius norm,
-    :math:`\rho` is a constant scaling factor, and :math:`\gamma` specifies the optional L1 and L2
-    regularization. See references `arXiv:2104.08957 <https://arxiv.org/abs/2104.08957>`__
+    :math:`\rho` is a constant scaling factor, and :math:`|\cdot|^\gamma` specifies the optional L1
+    and L2 regularization. See references `arXiv:2104.08957 <https://arxiv.org/abs/2104.08957>`__
     and `arxiv:2212.07957 <https://arxiv.org/pdf/2212.07957>`__ for more details.
 
     .. note::
@@ -221,9 +221,9 @@ def factorize(
           vectors that result in an residual error below the threshold and reshape
           them to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
-        - Diagonalize the :math:`L^{(r)}` (:math:`n \times n`) matrices and for each
-          matrix keep the eigenvalues (and their corresponding eigenvectors) that are
-          larger than a threshold.
+        - Diagonalize the :math:`L^{(r)}` (:math:`n \times n`) matrices and for
+          each matrix keep the eigenvalues (and their corresponding eigenvectors)
+          that are larger than a threshold.
 
         - Compute the orthonormal matrices :math:`U` and the symmetric matrices :math:`Z`
           from the retained eigenvalues and eigenvectors to get the core and leaf tensors.
@@ -430,8 +430,8 @@ def _double_factorization_compressed(
             a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
             two-electron tensor. If not given, by default, zero matrices will be used.
         prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``.
-        norm_order (int): type of regularization (``0``: None, ``1``: L1, and ``2``: L2) used for
-            optimizing. Default is to not include any regularization term.
+        norm_order (int): type of regularization (``0``: None, ``1``: L1, and ``2``: L2) used
+            for optimizing. Default is to not include any regularization term.
 
     Returns:
         tuple(TensorLike, TensorLike): tuple containing core tensors and leaf tensors
