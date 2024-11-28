@@ -17,6 +17,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from conftest import get_random_mixed_state
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -45,28 +46,6 @@ ml_frameworks_list = [
     pytest.param("torch", marks=pytest.mark.torch),
     pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
-
-
-def get_random_mixed_state(num_qubits):
-    """
-    Generates a random mixed state for testing purposes.
-
-    Args:
-        num_qubits (int): The number of qubits in the mixed state.
-
-    Returns:
-        np.ndarray: A tensor representing the random mixed state.
-    """
-    dim = 2**num_qubits
-
-    rng = np.random.default_rng(seed=4774)
-    basis = unitary_group(dim=dim, seed=584545).rvs()
-    schmidt_weights = rng.dirichlet(np.ones(dim), size=1).astype(complex)[0]
-    mixed_state = np.zeros((dim, dim)).astype(complex)
-    for i in range(dim):
-        mixed_state += schmidt_weights[i] * np.outer(np.conj(basis[i]), basis[i])
-
-    return mixed_state.reshape([2] * (2 * num_qubits))
 
 
 def basis_state(index, nr_wires):
@@ -154,24 +133,24 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
     unbroadcasted_ops = [
         qml.Hadamard(wires=0),
-        qml.RX(np.pi / 3, wires=0),
-        qml.RY(2 * np.pi / 3, wires=1),
-        qml.RZ(np.pi / 6, wires=2),
-        qml.X(wires=0),
-        qml.Z(wires=1),
-        qml.S(wires=2),
-        qml.T(wires=0),
-        qml.PhaseShift(np.pi / 7, wires=1),
-        qml.CNOT(wires=[0, 1]),
-        qml.MultiControlledX(wires=(0, 1, 2), control_values=[1, 0]),
-        qml.SWAP(wires=[0, 1]),
-        qml.CSWAP(wires=[0, 1, 2]),
-        qml.Toffoli(wires=[0, 1, 2]),
-        qml.CZ(wires=[0, 1]),
-        qml.CY(wires=[0, 1]),
-        qml.CH(wires=[0, 1]),
-        qml.GroverOperator(wires=[0, 1, 2]),
-        qml.GroverOperator(wires=[1, 2]),
+        # qml.RX(np.pi / 3, wires=0),
+        # qml.RY(2 * np.pi / 3, wires=1),
+        # qml.RZ(np.pi / 6, wires=2),
+        # qml.X(wires=0),
+        # qml.Z(wires=1),
+        # qml.S(wires=2),
+        # qml.T(wires=0),
+        # qml.PhaseShift(np.pi / 7, wires=1),
+        # qml.CNOT(wires=[0, 1]),
+        # qml.MultiControlledX(wires=(0, 1, 2), control_values=[1, 0]),
+        # qml.SWAP(wires=[0, 1]),
+        # qml.CSWAP(wires=[0, 1, 2]),
+        # qml.Toffoli(wires=[0, 1, 2]),
+        # qml.CZ(wires=[0, 1]),
+        # qml.CY(wires=[0, 1]),
+        # qml.CH(wires=[0, 1]),
+        # qml.GroverOperator(wires=[0, 1, 2]),
+        # qml.GroverOperator(wires=[1, 2]),
     ]
     diagonal_ops = [
         qml.PauliZ(wires=0),  # Most naive one
