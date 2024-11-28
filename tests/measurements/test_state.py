@@ -302,7 +302,7 @@ class TestState:
             return state()
 
         state_val = func()
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         scripts, _ = program([func.tape])
         assert len(scripts) == 1
         expected_state, _ = qml.devices.qubit.get_final_state(scripts[0])
