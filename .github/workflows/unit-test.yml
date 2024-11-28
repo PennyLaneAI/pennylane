@@ -109,10 +109,10 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> apt-get install -y $line"
+                echo "Now installing -> sudo apt-get install -y $line"
                 echo ''
                 
-                apt-get install -y $line
+                sudo apt-get install -y $line
             fi
           done <<< "$ADDITIONAL_OS_PACKAGES"
 
