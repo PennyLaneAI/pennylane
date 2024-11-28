@@ -95,7 +95,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self._primitive = _create_transform_primitive(self._transform.__name__)
         functools.update_wrapper(self, transform)
 
-    def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
+    def __call__(
+        self, *targs, **tkwargs
+    ):  # pylint: disable=too-many-return-statements,too-many-branches
         obj = None
 
         if targs:
@@ -145,6 +147,8 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
 
         if callable(obj):
+            if qml.capture.enabled():
+                return self._capture_callable_transform(obj, targs, tkwargs)
             return self._qfunc_transform(obj, targs, tkwargs)
 
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
@@ -304,8 +308,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
-        if qml.capture.enabled():
-            return self._capture_callable_transform(qfunc, targs, tkwargs)
 
         @functools.wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
@@ -523,7 +525,6 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
         return self._final_transform
 
 
-@functools.lru_cache
 def _create_transform_primitive(name):
     try:
         # pylint: disable=import-outside-toplevel
