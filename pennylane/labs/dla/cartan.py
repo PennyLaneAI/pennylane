@@ -51,14 +51,28 @@ def cartan_decomposition(g, involution):
 
     **Example**
 
+    We first construct a simple Lie algebra.
+
     >>> from pennylane import X, Z
     >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomposition
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
+    >>> g
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
+
+    We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
+
     >>> k, m = cartan_decomposition(g, concurrence_involution)
     >>> k, m
     ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
      [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
+
+    We can check the validity of the decomposition using :func:`~check_cartan_decomp`
 
     >>> k, m = cartan_decomposition(g, even_odd_involution)
     >>> k, m
