@@ -15,7 +15,7 @@
 
 import warnings
 from enum import Enum
-from typing import Literal
+from typing import Literal, Union
 
 # pylint: disable=wrong-import-order
 import autoray as ar
@@ -74,7 +74,7 @@ jpc_interfaces = {
 }
 
 
-def get_canonical_interface(user_input: str | None) -> Interface:
+def get_canonical_interface(user_input: Union[str, None]) -> Interface:
     """Retrieve the canonical Interface based on user input."""
     try:
         if user_input in SUPPORTED_INTERFACE_NAMES:
