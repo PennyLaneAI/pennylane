@@ -215,19 +215,6 @@ class TestDiagonalizeObservable:
         with pytest.raises(ValueError, match="Expected measurements on the same wire to commute"):
             _ = _diagonalize_observable(obs, supported_base_obs=device_supported_obs)
 
-    def test_diagonalizing_unknown_observable_raises_error(self):
-        """Test that an unknown observable raises an error when diagonalizing"""
-
-        # pylint: disable=too-few-public-methods
-        class MyObs(qml.operation.Observable):
-
-            @property
-            def name(self):
-                return f"MyObservable[{self.wires}]"
-
-        with pytest.raises(NotImplementedError, match="Unable to convert observable"):
-            _ = _diagonalize_observable(MyObs(wires=[2]))
-
     @pytest.mark.parametrize(
         "obs, input_visited_obs, switch_basis, expected_res",
         [

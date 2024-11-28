@@ -60,6 +60,8 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>` transform
         can be applied.
 
+    .. note::
+        This transform will skip observables that cannot be diagonalized.
 
     **Examples:**
 
@@ -385,7 +387,7 @@ def _diagonalize_observable(
         _visited_obs = (set(), set())
 
     if not isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity)):
-        return _diagonalize_compound_observable(
+        return _diagonalize_non_basic_observable(
             observable, _visited_obs, supported_base_obs=supported_base_obs
         )
 
@@ -419,19 +421,26 @@ def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_suppo
 
 
 @singledispatch
-def _diagonalize_compound_observable(
+def _diagonalize_non_basic_observable(
     observable, _visited_obs, supported_base_obs=_default_supported_obs
 ):
-    """Takes an observable consisting of multiple other observables, and changes all
+    """Takes an observable other than X, Y, Z, H, and I, and diagonalize it.
+
+    For composite observables consisting of multiple other observables, it changes all
     unsupported obs to the measurement basis. Applies diagonalizing gates if changing
-    the basis of an observable whose diagonalizing gates have not already been applied."""
+    the basis of an observable whose diagonalizing gates have not already been applied.
+    For other observables, simply skips and returns the observable as is.
 
-    raise NotImplementedError(
-        f"Unable to convert observable of type {type(observable)} to the measurement basis"
-    )
+    """
+
+    if _visited_obs is None:
+        _visited_obs = (set(), set())
+    _visited_obs[0].add(observable)
+    _visited_obs[1].add(observable.wires[0])
+    return [], observable, _visited_obs
 
 
-@_diagonalize_compound_observable.register
+@_diagonalize_non_basic_observable.register
 def _diagonalize_symbolic_op(
     observable: SymbolicOp, _visited_obs, supported_base_obs=_default_supported_obs
 ):
@@ -448,7 +457,7 @@ def _diagonalize_symbolic_op(
     return diagonalizing_gates, new_observable, _visited_obs
 
 
-@_diagonalize_compound_observable.register
+@_diagonalize_non_basic_observable.register
 def _diagonalize_linear_combination(
     observable: LinearCombination, _visited_obs, supported_base_obs=_default_supported_obs
 ):
@@ -464,7 +473,7 @@ def _diagonalize_linear_combination(
     return diagonalizing_gates, new_observable, _visited_obs
 
 
-@_diagonalize_compound_observable.register
+@_diagonalize_non_basic_observable.register
 def _diagonalize_composite_op(
     observable: CompositeOp, _visited_obs, supported_base_obs=_default_supported_obs
 ):

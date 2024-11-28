@@ -14,6 +14,7 @@
 """
 Tests for the basic default behavior of the Device API.
 """
+import re
 from typing import Optional, Union
 
 import pytest
@@ -471,8 +472,10 @@ class TestPreprocessTransforms:
         with pytest.raises(qml.DeviceError, match=r"Measurement var\(Z\(0\)\) not accepted"):
             _, __ = program((invalid_tape,))
 
-        invalid_tape = QuantumScript([], [qml.expval(qml.PauliX(0))], shots=shots)
-        with pytest.raises(qml.DeviceError, match=r"Observable X\(0\) not supported"):
+        invalid_tape = QuantumScript(
+            [], [qml.expval(qml.Hermitian([[1.0, 0], [0, 1.0]], 0))], shots=shots
+        )
+        with pytest.raises(qml.DeviceError, match=r"Observable Hermitian"):
             _, __ = program((invalid_tape,))
 
         shots_only_meas_tape = QuantumScript([], [qml.counts()], shots=shots)
