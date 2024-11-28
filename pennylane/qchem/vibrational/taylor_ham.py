@@ -22,6 +22,7 @@ from pennylane.bose import BoseSentence, BoseWord
 
 
 def _obtain_r2(ytrue, yfit):
+    """Calculates coefficient of determination of accuracy of fit of a model."""
     ymean = np.sum(ytrue) / len(ytrue)
     ssres = np.sum((ytrue - yfit) ** 2)
     sstot = np.sum((ytrue - ymean) ** 2)
@@ -30,6 +31,7 @@ def _obtain_r2(ytrue, yfit):
 
 
 def _remove_harmonic(freqs, pes_onebody):
+    """Removes the harmonic part from the PES."""
     nmodes, quad_order = np.shape(pes_onebody)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
@@ -45,6 +47,7 @@ def _remove_harmonic(freqs, pes_onebody):
 
 
 def _fit_onebody(anh_pes, deg, min_deg=3):
+    r"""Fits the one-body PES to get one-body coefficients."""
     if deg < min_deg:
         raise Exception(
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
@@ -68,6 +71,7 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
 
 
 def _twobody_degs(deg, min_deg=3):
+    """Finds the degree of fit for two-body coefficients."""
     fit_degs = []
     for feat_deg in range(min_deg, deg + 1):
         max_deg = feat_deg - 1
@@ -80,6 +84,7 @@ def _twobody_degs(deg, min_deg=3):
 
 
 def _fit_twobody(pes_twobody, deg, min_deg=3):
+    """Fits the two-body PES to get two-body coefficients."""
     nmodes, _, quad_order, _ = np.shape(pes_twobody)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
@@ -137,6 +142,7 @@ def _generate_bin_occupations(max_occ, nbins):
 
 
 def _threebody_degs(deg, min_deg=3):
+    """Finds the degree of fit for three-body coefficients."""
     fit_degs = []
     for feat_deg in range(min_deg, deg + 1):
         max_deg = feat_deg - 3
@@ -153,6 +159,7 @@ def _threebody_degs(deg, min_deg=3):
 
 
 def _fit_threebody(pes_threebody, deg, min_deg=3):
+    """Fits the three-body PES to get three-body coefficients."""
     nmodes, _, _, quad_order, _, _ = np.shape(pes_threebody)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
