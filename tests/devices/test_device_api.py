@@ -579,7 +579,13 @@ class TestPreprocessTransforms:
                         }
                     )
                 else:
-                    self.capabilities.observables.update({"PauliZ": OperatorProperties()})
+                    self.capabilities.observables.update(
+                        {
+                            "PauliZ": OperatorProperties(),
+                            "PauliX": OperatorProperties(),
+                            "PauliY": OperatorProperties(),
+                        }
+                    )
 
             def execute(self, circuits, execution_config=DefaultExecutionConfig):
                 return (0,)
@@ -592,6 +598,13 @@ class TestPreprocessTransforms:
             assert qml.transforms.diagonalize_measurements not in program
         else:
             assert qml.transforms.diagonalize_measurements in program
+            for transform_container in program:
+                if transform_container._transform is qml.transforms.diagonalize_measurements:
+                    assert transform_container._kwargs["supported_base_obs"] == {
+                        "PauliZ",
+                        "PauliX",
+                        "PauliY",
+                    }
 
 
 class TestMinimalDevice:
