@@ -49,9 +49,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {"base_class": base_class, "base_params": base_params})
 
     @staticmethod
-    def adjoint_resource_decomp(
-        base_class, base_params
-    ) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(base_class, base_params) -> Dict[re.CompressedResourceOp, int]:
         return {base_class.resource_rep(**base_params): 1}
 
     @staticmethod
@@ -121,13 +119,15 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         num_ctrl_values,
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(
-            base_class,
-            base_params,
-            outer_num_ctrl_wires + num_ctrl_wires,
-            outer_num_ctrl_values + num_ctrl_values,
-            outer_num_work_wires + num_work_wires,
-            ): 1}
+        return {
+            cls.resource_rep(
+                base_class,
+                base_params,
+                outer_num_ctrl_wires + num_ctrl_wires,
+                outer_num_ctrl_values + num_ctrl_values,
+                outer_num_work_wires + num_work_wires,
+            ): 1
+        }
 
     @staticmethod
     def tracking_name(base_class, base_params, num_ctrl_wires, num_ctrl_values, num_work_wires):
