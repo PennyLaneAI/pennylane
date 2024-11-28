@@ -51,6 +51,43 @@ class TestResourceAdjoint:
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
 
+    @pytest.mark.parametrize(
+        "nested_op, expected_op",
+        [
+            (
+                re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2]))),
+                re.ResourceQFT([0, 1, 2]),
+            ),
+            (
+                re.ResourceAdjoint(
+                    re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])))
+                ),
+                re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])),
+            ),
+            (
+                re.ResourceAdjoint(
+                    re.ResourceAdjoint(
+                        re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])))
+                    )
+                ),
+                re.ResourceQFT([0, 1, 2]),
+            ),
+            (
+                re.ResourceAdjoint(
+                    re.ResourceAdjoint(
+                        re.ResourceAdjoint(
+                            re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])))
+                        )
+                    )
+                ),
+                re.ResourceAdjoint(re.ResourceQFT([0, 1, 2])),
+            ),
+        ],
+    )
+    def test_nested_adjoints(self, nested_op, expected_op):
+        """Test the resources of nested Adjoints."""
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
+
 
 class TestResourceControlled:
     """Tests for ResourceControlled"""
@@ -101,6 +138,27 @@ class TestResourceControlled:
         rep = op.resource_rep_from_op()
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
+
+    @pytest.mark.parametrize(
+        "nested_op, expected_op",
+        [
+            (
+                re.ResourceControlled(
+                    re.ResourceControlled(re.ResourceX(0), control_wires=[1]), control_wires=[2]
+                ),
+                re.ResourceToffoli([0, 1, 2]),
+            ),
+            (
+                re.ResourceControlled(
+                    re.ResourceControlled(re.ResourceX(0), control_wires=[1]), control_wires=[2]
+                ),
+                re.ResourceControlled(re.ResourceX(0), control_wires=[1, 2]),
+            ),
+        ],
+    )
+    def test_nested_controls(self, nested_op, expected_op):
+        """Test the resources for nested Controlled operators."""
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
 
 class TestResourcePow:
