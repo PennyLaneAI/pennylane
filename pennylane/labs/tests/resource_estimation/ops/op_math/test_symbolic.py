@@ -53,7 +53,7 @@ class TestResourceAdjoint:
         assert name == expected
 
     @pytest.mark.parametrize(
-        "nested_op, base_op",
+        "nested_op, expected_op",
         [
             (
                 re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2]))),
@@ -85,20 +85,9 @@ class TestResourceAdjoint:
             ),
         ],
     )
-    def test_nested_adjoints(self, nested_op, base_op):
+    def test_nested_adjoints(self, nested_op, expected_op):
         """Test the resources of nested Adjoints."""
-
-        nested_rep = nested_op.resource_rep_from_op()
-        nested_params = nested_rep.params
-        nested_type = nested_rep.op_type
-        nested_resources = nested_type.resources(**nested_params)
-
-        base_op = base_op.resource_rep_from_op()
-        base_params = base_op.params
-        base_type = base_op.op_type
-        base_resources = base_type.resources(**base_params)
-
-        assert nested_resources == base_resources
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
 
 class TestResourceControlled:
@@ -170,11 +159,7 @@ class TestResourceControlled:
     )
     def test_nested_controls(self, nested_op, expected_op):
         """Test the resources for nested Controlled operators."""
-
-        nested_resources = re.get_resources(nested_op)
-        expected_resources = re.get_resources(expected_op)
-
-        assert nested_resources == expected_resources
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
 
 class TestResourcePow:
@@ -206,39 +191,25 @@ class TestResourcePow:
         assert name == expected
 
     @pytest.mark.parametrize(
-        "nested_op, base_op, z",
+        "nested_op, expected_op",
         [
             (
                 re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 2),
-                re.ResourceQFT([0, 1]),
-                4,
+                re.ResourcePow(re.ResourceQFT([0, 1]), 4),
             ),
             (
                 re.ResourcePow(re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 2), 2),
-                re.ResourceQFT([0, 1]),
-                8,
+                re.ResourcePow(re.ResourceQFT([0, 1]), 8),
             ),
             (
                 re.ResourcePow(
                     re.ResourcePow(re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 2), 2),
                     2,
                 ),
-                re.ResourceQFT([0, 1]),
-                16,
+                re.ResourcePow(re.ResourceQFT([0, 1]), 16),
             ),
         ],
     )
-    def test_nested_pow(self, nested_op, base_op, z):
+    def test_nested_pow(self, nested_op, expected_op):
         """Test the resources for nested Pow operators."""
-
-        nested_rep = nested_op.resource_rep_from_op()
-        nested_params = nested_rep.params
-        nested_type = nested_rep.op_type
-        nested_resources = nested_type.resources(**nested_params)
-
-        base_rep = base_op.resource_rep_from_op()
-        base_params = base_rep.params
-        base_type = base_rep.op_type
-        base_resources = base_type.resources(**base_params)
-
-        assert nested_resources == _scale_dict(base_resources, z)
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
