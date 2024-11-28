@@ -191,6 +191,7 @@ from .ops import (
 
 from .templates import (
     ResourceQFT,
+    ResourceQuantumPhaseEstimation,
     ResourceTrotterProduct,
     ResourceTrotterizedQfunc,
     resource_trotterize,

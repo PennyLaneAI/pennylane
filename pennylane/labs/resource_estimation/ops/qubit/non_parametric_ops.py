@@ -42,8 +42,12 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return re.ResourceCH.resources(**kwargs)
+        if num_ctrl_wires == 1:
+            gate_types = {re.ResourceCH.resource_rep(): 1}
+            if num_ctrl_values >= 1:
+                gate_types[re.ResourceX.resource_rep()] = 2 * num_ctrl_values
+            
+            return gate_types
 
         raise re.ResourcesNotDefined
 
@@ -54,7 +58,7 @@ class ResourceS(qml.S, re.ResourceOperator):
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
-        t = ResourceT.resource_rep(**kwargs)
+        t = ResourceT.resource_rep()
         gate_types[t] = 2
 
         return gate_types
@@ -166,15 +170,35 @@ class ResourceT(qml.T, re.ResourceOperator):
     def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         """Resources obtained from the identity T^8 = I."""
         return {cls.resource_rep(): z % 8}
+    
+    @classmethod
+    def controlled_resource_decomp(cls, num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs):
+        r"""Link to method:
+        https://quantumcomputing.stackexchange.com/questions/13132/how-can-we-implement-controlled-t-gate-using-cnot-and-h-s-and-t-gates
+        """
+        if num_ctrl_wires == 1:
+            gate_types = {}
 
+            t = cls.resource_rep()
+            toffoli = re.ResourceToffoli.resource_rep()
+
+            gate_types[t] = 1
+            gate_types[toffoli] = 2
+
+            if num_ctrl_values: 
+                gate_types[re.ResourceX.resource_rep()] = 2
+
+            return gate_types
+        
+        raise re.ResourcesNotDefined
 
 class ResourceX(qml.X, re.ResourceOperator):
     """Resource class for the X gate."""
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        s = re.ResourceS.resource_rep(**kwargs)
-        h = re.ResourceHadamard.resource_rep(**kwargs)
+        s = re.ResourceS.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
 
         gate_types = {}
         gate_types[s] = 2

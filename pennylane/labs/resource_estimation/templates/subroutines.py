@@ -17,7 +17,9 @@ from typing import Dict
 import pennylane as qml
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
+    ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourceAdjoint,
     ResourceHadamard,
     ResourceOperator,
     ResourceSWAP,
@@ -60,3 +62,47 @@ class ResourceQFT(qml.QFT, ResourceOperator):
     @staticmethod
     def tracking_name(num_wires) -> str:
         return f"QFT({num_wires})"
+
+
+class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperator):
+    """Resource class for QPE"""
+
+    # TODO: Add a secondary resource decomp which falls back to op.pow_resource_decomp
+
+    @staticmethod
+    def _resource_decomp(base_class, base_params, num_estimation_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+        gate_types = {}
+        
+        hadamard = ResourceHadamard.resource_rep()
+        adj_qft = ResourceAdjoint.resource_rep(ResourceQFT, {"num_wires": num_estimation_wires}, **kwargs)
+        ctrl_op = ResourceControlled.resource_rep(base_class, base_params, 1, 0, 0, **kwargs)
+
+        gate_types[hadamard] = num_estimation_wires
+        gate_types[adj_qft] = 1
+        gate_types[ctrl_op] = (2**num_estimation_wires) - 1
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        op = self.hyperparameters["unitary"]
+        num_estimation_wires = len(self.hyperparameters["estimation_wires"])
+
+        return {
+            "base_class": type(op),
+            "base_params": op.resource_params(), 
+            "num_estimation_wires": num_estimation_wires,
+        }
+
+    @classmethod
+    def resource_rep(cls, base_class, base_params, num_estimation_wires, **kwargs) -> CompressedResourceOp:
+        params = {
+            "base_class": base_class,
+            "base_params": base_params,
+            "num_estimation_wires": num_estimation_wires,
+        }
+        return CompressedResourceOp(cls, params)
+
+    @staticmethod
+    def tracking_name(base_class, base_params, num_estimation_wires, **kwargs) -> str:
+        return f"QuantumPhaseEstimation({base_class}, {num_estimation_wires})"
+

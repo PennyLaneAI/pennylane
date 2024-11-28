@@ -85,14 +85,14 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             _scale_dict(resources, count, in_place=True)
             _combine_dict(gate_types, resources, in_place=True)
 
-            return gate_types
+        return gate_types
 
     def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params(),
             "num_ctrl_wires": len(self.control_wires),
-            "num_ctrl_values": len([val for val in self.control_values if val]),
+            "num_ctrl_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
         }
 
@@ -233,9 +233,18 @@ class ResourceExp(Exp, re.ResourceOperator):
 
 def _resources_from_pauli_word(pauli_word, num_wires):
     pauli_string = "".join((str(v) for v in pauli_word.values()))
+    len_str = len(pauli_string)
 
-    if len(pauli_string) == 0:
+    if len_str == 0:
         return {}  # Identity operation has no resources.
+    
+    if len_str == 1:
+        if pauli_string == "X":
+            return {re.CompressedResourceOp(re.ResourceRX, {}): 1}
+        if pauli_string == "Y":
+            return {re.CompressedResourceOp(re.ResourceRY, {}): 1}
+        if pauli_string == "Z":
+            return {re.CompressedResourceOp(re.ResourceRZ, {}): 1}
 
     counter = {"X": 0, "Y": 0, "Z": 0}
     for c in pauli_string:
