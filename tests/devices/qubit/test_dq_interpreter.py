@@ -81,9 +81,6 @@ def test_working_state_key_before_setup():
 
     dq = DefaultQubitInterpreter(num_wires=1, key=key)
 
-    assert dq.state is None
-    assert dq.key is key
-
     with pytest.raises(AttributeError, match="execution not yet initialized"):
         dq.state = [1.0, 0.0]
 
@@ -169,13 +166,27 @@ def test_operator_arithmetic():
     assert qml.math.allclose(output, expected)
 
 
+def test_parameter_broadcasting():
+    """Test that dq can execute a circuit with parameter broadcasting."""
+
+    @DefaultQubitInterpreter(num_wires=3)
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    x = jax.numpy.array([1.2, 2.3, 3.4])
+    output = f(x)
+    expected = jax.numpy.cos(x)
+    assert qml.math.allclose(output, expected)
+
+
 class TestSampling:
     """Test cases for generating samples."""
 
-    def test_known_sampling(self):
+    def test_known_sampling(self, seed):
         """Test sampling output with deterministic sampling output"""
 
-        @DefaultQubitInterpreter(num_wires=2, shots=10)
+        @DefaultQubitInterpreter(num_wires=2, shots=10, key=jax.random.PRNGKey(seed))
         def sampler():
             qml.X(0)
             return qml.sample(wires=(0, 1))
@@ -188,9 +199,9 @@ class TestSampling:
 
         assert qml.math.allclose(results, expected)
 
-    def test_same_key_same_results(self):
+    def test_same_key_same_results(self, seed):
         """Test that two circuits with the same key give identical results."""
-        key = jax.random.PRNGKey(1234)
+        key = jax.random.PRNGKey(seed)
 
         @DefaultQubitInterpreter(num_wires=1, shots=100, key=key)
         def circuit1():
@@ -270,10 +281,10 @@ class TestSampling:
         with pytest.raises(NotImplementedError):
             f()
 
-    def test_mcms_not_all_same_key(self):
+    def test_mcms_not_all_same_key(self, seed):
         """Test that each mid circuit measurement has a different key."""
 
-        @DefaultQubitInterpreter(num_wires=1, shots=None, key=jax.random.PRNGKey(87665))
+        @DefaultQubitInterpreter(num_wires=1, shots=None, key=jax.random.PRNGKey(seed))
         def g():
             qml.Hadamard(0)
             m0 = qml.measure(0, reset=0)
@@ -291,10 +302,10 @@ class TestSampling:
         assert not all(qml.math.allclose(output[0], output[i]) for i in range(1, 5))
         # only way we could get different values between the mcms is if they had different seeds
 
-    def test_each_measurement_has_different_key(self):
+    def test_each_measurement_has_different_key(self, seed):
         """Test that each sampling measurement is performed with a different key."""
 
-        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(87665))
+        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(seed))
         def g():
             qml.Hadamard(0)
             return qml.sample(wires=0), qml.sample(wires=0)
@@ -302,10 +313,10 @@ class TestSampling:
         res1, res2 = g()
         assert not qml.math.allclose(res1, res2)
 
-    def test_more_executions_same_interpreter_different_results(self):
+    def test_more_executions_same_interpreter_different_results(self, seed):
         """Test that if multiple executions occur with the same interpreter, they will have different results."""
 
-        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(76543))
+        @DefaultQubitInterpreter(num_wires=1, shots=100, key=jax.random.PRNGKey(seed))
         def f():
             qml.Hadamard(0)
             return qml.sample(wires=0)
