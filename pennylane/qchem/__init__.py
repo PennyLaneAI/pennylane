@@ -82,9 +82,4 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
-from .vibrational import (
-    harmonic_analysis,
-    localize_normal_modes,
-    optimize_geometry,
-    single_point
-)
+from .vibrational import harmonic_analysis, localize_normal_modes, optimize_geometry, single_point
