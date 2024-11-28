@@ -88,9 +88,12 @@ from .utils import (
     allequal,
     cast,
     cast_like,
+    convert_like,
+    in_backprop,
+    requires_grad,
+    is_abstract,
 )
 from .interface import (
-    convert_like,
     _get_canonical_interface_name,
     SupportedInterfaceUserInput,
     jpc_interfaces,
@@ -98,9 +101,6 @@ from .interface import (
     INTERFACE_MAP,
     get_deep_interface,
     get_interface,
-    in_backprop,
-    requires_grad,
-    is_abstract,
     _resolve_interface,
 )
 
