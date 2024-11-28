@@ -55,8 +55,13 @@
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
 
+* Added a dense implementation of computing the structure constants in a new function
+  `structure_constants_dense` in `pennylane.labs.dla`.
+  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+
 * Added utility functions for handling dense matrices in the Lie theory context.
   [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
+
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -84,6 +89,13 @@
 * Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
+* `qml.qchem.factorize` method now supports performing double factorization based on Cholesky
+  decomposition and can be used with `cholesky=True`.
+  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
 
 <h3>Improvements 🛠</h3>
 
@@ -302,6 +314,7 @@ same information.
 This release contains contributions from (in alphabetical order):
 
 Shiwen An,
+Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
