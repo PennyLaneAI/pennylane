@@ -304,7 +304,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
         cls, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 1:
-            return re.ResourceToffoli.resources()
+            return {re.ResourceToffoli.resource_rep(): 1}
 
         return re.ResourceMultiControlledX.resources(
             num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires

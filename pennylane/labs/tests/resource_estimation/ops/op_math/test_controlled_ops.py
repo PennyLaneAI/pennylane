@@ -109,12 +109,14 @@ class TestCNOT:
 
     def test_resources(self):
         """Test that the resources method is not implemented"""
+
         op = re.ResourceCNOT([0, 1])
         with pytest.raises(re.ResourcesNotDefined):
             op.resources()
 
     def test_resource_rep(self):
         """Test the compressed representation"""
+
         op = re.ResourceCNOT([0, 1])
         expected = re.CompressedResourceOp(re.ResourceCNOT, {})
         assert op.resource_rep() == expected
@@ -123,3 +125,38 @@ class TestCNOT:
         """Test that the resource params are correct"""
         op = re.ResourceCNOT([0, 1])
         assert op.resource_params() == {}
+
+    def test_adjoint_decomp(self):
+        """Test that the adjoint decomposition is correct."""
+
+        expected = {re.ResourceCNOT.resource_rep(): 1}
+        assert re.ResourceCNOT.adjoint_resource_decomp() == expected
+
+        cnot = re.ResourceCNOT([0, 1])
+        cnot_dag = re.ResourceAdjoint(re.ResourceCNOT([0, 1]))
+
+        r1 = re.get_resources(cnot)
+        r2 = re.get_resources(cnot_dag)
+
+        assert r1 == r2
+
+    def test_controlled_decomp(self):
+        """Test that the controlled decomposition is correct."""
+
+        expected = {re.ResourceToffoli.resource_rep(): 1}
+        assert re.ResourceCNOT.controlled_resource_decomp(1, 1, 0) == expected
+
+    @pytest.mark.parametrize("z", list(range(10)))
+    def test_pow_decomp(self, z):
+        """Test that the pow decomposition is correct."""
+
+        expected = {re.ResourceCNOT.resource_rep(): z % 2}
+        assert re.ResourceCNOT.pow_resource_decomp(z) == expected
+
+        cnot = re.ResourceCNOT([0, 1])
+        cnot_pow = re.ResourcePow(re.ResourceCNOT([0, 1]), z)
+
+        r1 = re.get_resources(cnot) * (z % 2)
+        r2 = re.get_resources(cnot_pow)
+
+        assert r1 == r2
