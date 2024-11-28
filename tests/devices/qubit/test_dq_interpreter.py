@@ -59,12 +59,14 @@ def test_setup_and_cleanup():
 
     dq.setup()
     assert isinstance(dq.stateref, dict)
-    assert list(dq.stateref.keys()) == ["state", "key"]
+    assert list(dq.stateref.keys()) == ["state", "key", "is_state_batched"]
 
     assert dq.stateref["key"] is key
     assert dq.key is key
 
     assert dq.state is dq.stateref["state"]
+    assert dq.is_state_batched is False
+    assert dq.stateref["is_state_batched"] is False
     expected = jax.numpy.array([[1.0, 0.0], [0.0, 0.0]], dtype=complex)
     assert qml.math.allclose(dq.state, expected)
 
