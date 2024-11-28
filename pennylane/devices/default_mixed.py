@@ -1005,10 +1005,8 @@ class DefaultMixedNewAPI(Device):
             ExecutionConfig: a preprocessed execution config.
         """
         updated_values = {}
-        for option in execution_config.device_options:
-            if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
 
+        # Add gradient related
         if execution_config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"
         updated_values["use_device_gradient"] = execution_config.gradient_method in {
@@ -1016,7 +1014,13 @@ class DefaultMixedNewAPI(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
+
+        # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
+
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
 
         for option in self._device_options:
             if option not in updated_values["device_options"]:
