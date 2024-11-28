@@ -69,15 +69,13 @@ def test_device_transform_program():
     full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
     assert repr(full_tp) == "TransformProgram(device_transform)"
-
-    assert inner_tp.is_empty()  # Should not add anything to inner program
+    assert inner_tp.is_empty()
 
     config.use_device_gradient = False
 
     full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
-    assert full_tp.is_empty()  # Should not add anything to outer program
-
+    assert full_tp.is_empty()
     assert repr(inner_tp) == "TransformProgram(device_transform)"
 
 
@@ -186,7 +184,6 @@ def test_cache_handling():
     full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config, cache=True)
 
     assert repr(inner_tp) == "TransformProgram(_cache_transform)"
-
     assert full_tp.is_empty()
 
     full_tp, inner_tp = _setup_transform_program(
