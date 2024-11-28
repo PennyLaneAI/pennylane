@@ -213,6 +213,7 @@ class TestSetupExecutionConfig:
         [
             ("one-shot", None, 'The "one-shot" MCM method is only supported with finite shots.'),
             ("magic", None, 'Requested MCM method "magic" unsupported by the device.'),
+            ("one-shot", 100, None),
         ],
     )
     def test_mcm_method_validation_without_capabilities(self, mcm_method, shots, expected_error):
@@ -228,8 +229,12 @@ class TestSetupExecutionConfig:
         mcm_config = MCMConfig(mcm_method=mcm_method)
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
         initial_config = ExecutionConfig(mcm_config=mcm_config)
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
-            dev.setup_execution_config(initial_config, tape)
+        if expected_error:
+            with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+                dev.setup_execution_config(initial_config, tape)
+        else:
+            final_config = dev.setup_execution_config(initial_config, tape)
+            assert final_config.mcm_config.mcm_method == mcm_method
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
