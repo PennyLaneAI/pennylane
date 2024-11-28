@@ -22,8 +22,8 @@ import pennylane as qml
 from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
-    OperatorProperties,
     ExecutionCondition,
+    OperatorProperties,
 )
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
