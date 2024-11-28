@@ -412,8 +412,8 @@ def _double_factorization_compressed(
     First, leaf tensors :math:`U^{(r)} = \exp{(X^{(r)})}` are parameterized by the
     anti-symmetric orbital rotations :math:`X^{(r)}` to compute the Frobenius norm
     of the difference between the :math:`V` and the above approximation. A further
-    regularization term penalizing large :math:`|Z^{(r)}|` is added to this after
-    scaling it with a constant factor :math:`\rho`.
+    regularization term penalizing large terms in :math:`|Z^{(r)}|` is added to
+    this after scaling it with a constant factor :math:`\rho` to compute the loss.
 
     Args:
         two (array[array[float]]): two-electron integral tensor in the molecular orbital
@@ -428,9 +428,7 @@ def _double_factorization_compressed(
         init_params (dict[str, TensorLike] | None): intial values of the orbital rotations
             (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
             a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
-            two-electron tensor. If not given, by default, zero matrices will be used if
-            ``cholesky=False`` and the core and leaf tensors corresponding to the first
-            ``num_factors`` will be used if ``cholesky=True``.
+            two-electron tensor. If not given, by default, zero matrices will be used.
         prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``.
         norm_order (int): type of regularization (``0``: None, ``1``: L1, and ``2``: L2) used for
             optimizing. Default is to not include any regularization term.
@@ -448,6 +446,7 @@ def _double_factorization_compressed(
 
     @jit
     def _step(params, opt_state, asym_tensors, core_tensors):
+        """An optimization step for computing the loss and updating the parameters"""
         cost, grads = cost_func(params, asym_tensors=asym_tensors, core_tensors=core_tensors)
         updates, opt_state = optimizer.update(grads, opt_state)
         new_params = optax.apply_updates(params, updates)
