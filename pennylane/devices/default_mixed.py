@@ -63,7 +63,7 @@ from pennylane.tape import QuantumScript
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .preprocess import (
     decompose,
     no_sampling,
