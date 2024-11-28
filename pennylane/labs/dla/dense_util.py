@@ -327,25 +327,26 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
     r"""Helper function to check the validity of a Cartan decomposition
-    
+
     Check whether of not the following properties are fulfilled.
     .. math::
+
         \begin{align}
-        [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} & \text{ (subalgebra)}\\
-        [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} & \text{ (reductive property)}\\
-        [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k} & \text{ (symmetric property)}
+            [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} & \text{ (subalgebra)}\\
+            [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} & \text{ (reductive property)}\\
+            [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k} & \text{ (symmetric property)}
         \end{align}
-    
+
     Args:
         k (List[PauliSentence]): List of operators of the vertical subspace
         m (List[PauliSentence]): List of operators of the horizontal subspace
         verbose: Flat to set whether failures to meet one of criteria should be printed
-    
+
     Returns:
         bool: Whether or not all properties are fulfilled
-    
+
     .. see-also:: :func:`~cartan_decomposition`
-    
+
     **Example**
 
     We first construct a simple Lie algebra.
@@ -373,8 +374,7 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
 
     >>> check_cartan_decomp(k, m)
     True
-        
-    
+
     """
     if any(isinstance(op, np.ndarray) for op in k):
         k = [qml.pauli_decompose(op).pauli_rep for op in k]
