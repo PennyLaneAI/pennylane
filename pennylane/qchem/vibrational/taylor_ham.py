@@ -371,7 +371,8 @@ def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
         taylor_coeffs (list(float)): the coeffs of the taylor integrals
         freqs (list(float)): the frequencies
         is_loc (bool): whether or not if localized
-        Uloc (list(float)): not sure
+        Uloc (list(float)): localization matrix indicating the relationship between original and
+            localized modes
 
     Returns:
         BoseSentence: anharmonic term of the taylor hamiltonian for given coeffs
@@ -425,7 +426,8 @@ def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
         taylor_coeffs (list(float)): the coeffs of the taylor integrals
         freqs (list(float)): the harmonic frequencies
         is_loc (bool): whether or not if localized
-        Uloc (): not sure
+        Uloc (list(float)): localization matrix indicating the relationship between original and
+            localized modes
 
     Returns:
         BoseSentence: taylor hamiltonian for given coeffs
