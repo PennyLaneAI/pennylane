@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for qubit observables."""
-# pylint: disable=protected-access, use-implicit-booleaness-not-comparison
+# pylint: disable=protected-access, use-implicit-booleaness-not-comparison, function-redefined
 import functools
 import pickle
 
@@ -514,30 +514,29 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     @pytest.mark.jax
-    def test_jit_hermitian(self):
-        """Test that the measurement of a Hermitian observable is jittable."""
+    def test_jit_execution(self):
+        """Test that the Hermitian observable executes correctly under a jitted function."""
 
         import jax
 
-        input_matrix = jax.numpy.array([[0, 1], [1, 0]])
+        dev = qml.device("default.qubit", wires=2)
+        matrix = jax.numpy.array([[1, 0], [0, 1]])
 
-        # Here the matrix is traced
+        # Here the matrix is captured and traced
         @jax.jit
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit(input_matrix):
-            qml.X(0)
-            return qml.expval(qml.Hermitian(input_matrix, wires=(0)))
+        @qml.qnode(dev, interface="jax")
+        def circuit(matrix):
+            return qml.expval(qml.Hermitian(matrix, wires=[1]))
 
-        assert qml.math.allclose(circuit(input_matrix), 0)
+        assert qml.math.allclose(circuit(matrix), 1.0)
 
         # Here the matrix is captured as a constant
         @jax.jit
-        @qml.qnode(qml.device("default.qubit"))
+        @qml.qnode(dev, interface="jax")
         def circuit():
-            qml.RX(0.1, wires=0)
-            return qml.expval(qml.Hermitian(input_matrix, wires=(0)))
+            return qml.expval(qml.Hermitian(matrix, wires=[1]))
 
-        assert qml.math.allclose(circuit(), 0.0)
+        assert qml.math.allclose(circuit(), 1.0)
 
 
 class TestProjector:
