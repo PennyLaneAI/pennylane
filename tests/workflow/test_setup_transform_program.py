@@ -52,7 +52,6 @@ def test_gradient_expand_transform():
     user_tp = qml.transforms.core.TransformProgram((container,))
     full_tp, _ = _setup_transform_program(user_tp, device, config)
 
-    assert len(full_tp) == 2
     assert repr(full_tp) == "TransformProgram(mock_user_transform, _expand_transform_param_shift)"
 
 
@@ -69,7 +68,6 @@ def test_device_transform_program():
     user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
-    assert len(full_tp) == 1
     assert repr(full_tp) == "TransformProgram(device_transform)"
 
     assert inner_tp.is_empty()  # Should not add anything to inner program
@@ -80,7 +78,6 @@ def test_device_transform_program():
 
     assert full_tp.is_empty()  # Should not add anything to outer program
 
-    assert len(inner_tp) == 1
     assert repr(inner_tp) == "TransformProgram(device_transform)"
 
 
@@ -188,7 +185,6 @@ def test_cache_handling():
     user_transform_program = TransformProgram()
     full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config, cache=True)
 
-    assert len(inner_tp) == 1
     assert repr(inner_tp) == "TransformProgram(_cache_transform)"
 
     assert full_tp.is_empty()
