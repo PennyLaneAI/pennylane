@@ -511,24 +511,8 @@ class Device(abc.ABC):
                 postselect_mode=execution_config.mcm_config.postselect_mode,
             )
 
-        # Handle validations
-        program.add_transform(validate_device_wires, self.wires, name=self.name)
         capabilities_analytic = self.capabilities.filter(finite_shots=False)
         capabilities_shots = self.capabilities.filter(finite_shots=True)
-        program.add_transform(
-            validate_measurements,
-            analytic_measurements=lambda mp: type(mp).__name__
-            in capabilities_analytic.measurement_processes,
-            sample_measurements=lambda mp: type(mp).__name__
-            in capabilities_shots.measurement_processes,
-            name=self.name,
-        )
-        program.add_transform(
-            validate_observables,
-            stopping_condition=observable_stopping_condition_factory(capabilities_analytic),
-            stopping_condition_shots=observable_stopping_condition_factory(capabilities_shots),
-            name=self.name,
-        )
 
         needs_diagonalization = False
         base_obs = {"PauliZ": qml.Z, "PauliX": qml.X, "PauliY": qml.Y, "Hadamard": qml.H}
@@ -574,6 +558,23 @@ class Device(abc.ABC):
             )
 
         program.add_transform(qml.transforms.broadcast_expand)
+
+        # Handle validations
+        program.add_transform(validate_device_wires, self.wires, name=self.name)
+        program.add_transform(
+            validate_measurements,
+            analytic_measurements=lambda mp: type(mp).__name__
+            in capabilities_analytic.measurement_processes,
+            sample_measurements=lambda mp: type(mp).__name__
+            in capabilities_shots.measurement_processes,
+            name=self.name,
+        )
+        program.add_transform(
+            validate_observables,
+            stopping_condition=observable_stopping_condition_factory(capabilities_analytic),
+            stopping_condition_shots=observable_stopping_condition_factory(capabilities_shots),
+            name=self.name,
+        )
 
         return program
 
