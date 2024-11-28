@@ -135,7 +135,7 @@ class TestBasics:
             r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
-            r" device_options={}, interface=None, derivative_order=1,"
+            r" device_options={}, interface=<Interface.NUMPY: 'numpy'>, derivative_order=1,"
             r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None))>"
         )
 
@@ -154,7 +154,7 @@ class TestBasics:
             r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={}, device_options={},"
-            r" interface=None, derivative_order=1,"
+            r" interface=<Interface.NUMPY: 'numpy'>, derivative_order=1,"
             r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None))>"
         )
 
