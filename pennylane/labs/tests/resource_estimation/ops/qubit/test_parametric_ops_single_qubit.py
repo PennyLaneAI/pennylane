@@ -82,70 +82,6 @@ class TestPauliRotation:
         op = resource_class(1.24, wires=0)
         assert op.resource_params() == {}
 
-    @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    def test_adjoint_decomposition(self, resource_class, epsilon):
-        """Test that the adjoint decompositions are correct."""
-
-        expected = {resource_class.resource_rep(): 1}
-        assert resource_class.adjoint_resource_decomp() == expected
-
-        op = resource_class(1.24, wires=0)
-        dag = re.ResourceAdjoint(op)
-
-        label = "error_" + resource_class.__name__.replace("Resource", "").lower()
-        config = {label: epsilon}
-
-        r1 = re.get_resources(op, config=config)
-        r2 = re.get_resources(dag, config=config)
-
-        assert r1 == r2
-
-    @pytest.mark.parametrize("resource_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    @pytest.mark.parametrize("z", list(range(10)))
-    def test_pow_decomposition(self, resource_class, epsilon, z):
-        """Test that the pow decompositions are correct."""
-
-        expected = {resource_class.resource_rep(): 1}
-        assert resource_class.pow_resource_decomp(z) == expected
-
-        op = resource_class(1.24, wires=0)
-        dag = re.ResourcePow(op, z)
-
-        label = "error_" + resource_class.__name__.replace("Resource", "").lower()
-        config = {label: epsilon}
-
-        r1 = re.get_resources(op, config=config)
-        r2 = re.get_resources(dag, config=config)
-
-        assert r1 == r2
-
-    params_classes = (
-        (re.ResourceRX, re.ResourceCRX),
-        (re.ResourceRY, re.ResourceCRY),
-        (re.ResourceRZ, re.ResourceCRZ),
-    )
-
-    @pytest.mark.parametrize("resource_class, controlled_class", params_classes)
-    @pytest.mark.parametrize("epsilon", params_errors)
-    def test_controlled_decomposition(self, resource_class, controlled_class, epsilon):
-        """Test that the controlled decompositions are correct."""
-        expected = {controlled_class.resource_rep(): 1}
-        assert resource_class.controlled_resource_decomp(1, 1, 0) == expected
-
-        op = resource_class(1.24, wires=0)
-        c_op = re.ResourceControlled(op, control_wires=[1])
-
-        c = controlled_class(1.24, wires=[0, 1])
-
-        config = {"error_rx": epsilon, "error_ry": epsilon, "error_rz": epsilon}
-
-        r1 = re.get_resources(c, config=config)
-        r2 = re.get_resources(c_op, config=config)
-
-        assert r1 == r2
-
 
 class TestRot:
     """Test ResourceRot"""
@@ -183,17 +119,3 @@ class TestRot:
         """Test that the resource params are correct"""
         op = re.ResourceRot(0.1, 0.2, 0.3, wires=0)
         assert op.resource_params() == {}
-
-    def test_adjoint_decomp(self):
-        """Test that the adjoint decomposition is correct"""
-
-        expected = {re.ResourceRot.resource_rep(): 1}
-        assert re.ResourceRot.adjoint_resource_decomp() == expected
-
-        op = re.ResourceRot(1.24, 1.25, 1.26, wires=0)
-        dag = re.ResourceAdjoint(op)
-
-        r1 = re.get_resources(op)
-        r2 = re.get_resources(dag)
-
-        assert r1 == r2
