@@ -265,17 +265,15 @@ def check_commutation(ops1, ops2, vspace):
     >>> check_commutation(ops1, ops2, vspace2)
     True
     """
-    assert_vals = []
     for o1 in ops1:
         for o2 in ops2:
             com = o1.commutator(o2)
             com.simplify()
             if len(com) != 0:
-                assert_vals.append(not vspace.is_independent(com))
-            else:
-                assert_vals.append(True)
+                if vspace.is_independent(com):
+                    return False
 
-    return all(assert_vals)
+    return True
 
 
 def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
