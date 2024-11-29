@@ -329,6 +329,7 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     r"""Helper function to check the validity of a Cartan decomposition
 
     Check whether of not the following properties are fulfilled.
+
     .. math::
 
         \begin{align}
@@ -340,7 +341,7 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     Args:
         k (List[PauliSentence]): List of operators of the vertical subspace
         m (List[PauliSentence]): List of operators of the horizontal subspace
-        verbose: Flat to set whether failures to meet one of criteria should be printed
+        verbose: Whether failures to meet one of the criteria should be printed
 
     Returns:
         bool: Whether or not all properties are fulfilled

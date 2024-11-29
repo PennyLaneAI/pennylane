@@ -40,12 +40,12 @@ def cartan_decomposition(g, involution):
 
     Args:
         g (List[Union[PauliSentence, Operator]]): the (dynamical) Lie algebra to decompose
-        involution (callable): Involution function :math:`\Theta(\cdot)` to act on the input operator, should return ``0/1`` or ``True/False``.
+        involution (callable): Involution function :math:`\Theta(\cdot)` to act on the input operator, should return ``0/1`` or ``False/True``.
             E.g., :func:`~even_odd_involution` or :func:`~concurrence_involution`.
 
     Returns:
         k (List[Union[PauliSentence, Operator]]): the even parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}`
-        m (List[Union[PauliSentence, Operator]]): the odd parity subspace :math:`\Theta(\mathfrak{m}) = \mathfrak{m}`
+        m (List[Union[PauliSentence, Operator]]): the odd parity subspace :math:`\Theta(\mathfrak{m}) = -\mathfrak{m}`
 
     .. seealso:: :func:`~even_odd_involution`, :func:`~concurrence_involution`, :func:`~check_cartan_decomp`
 
@@ -154,7 +154,7 @@ def _even_odd_involution_ps(op: PauliSentence):
     assert all(
         parity[0] == p for p in parity
     ), f"The Even-Odd involution is not well-defined for operator {op} as individual terms have different parity"
-    return parity[0]
+    return bool(parity[0])
 
 
 @_even_odd_involution.register(np.ndarray)
@@ -165,7 +165,11 @@ def _even_odd_involution_matrix(op: np.ndarray):
     YYY = qml.matrix(YYY, range(n))
 
     transformed = YYY @ op.conj() @ YYY
-    return not np.allclose(transformed, op)
+    if np.allclose(transformed, op):
+        return False
+    if np.allclose(transformed, -op):
+        return True
+    raise ValueError(f"The Even-Odd involution is not well-defined for operator {op}.")
 
 
 @_even_odd_involution.register(Operator)
@@ -230,8 +234,13 @@ def _concurrence_involution_pauli(op: PauliSentence):
 
 
 @_concurrence_involution.register(Operator)
-def _concurrence_involution_operation(op: Operator):
+def _concurrence_involution_operator(op: Operator):
     op = op.matrix()
+    if np.allclose(op, -op.T):
+        return True
+    if np.allclose(op, op.T):
+        return False
+    raise ValueError(f"The concurrence canonical decomposition is not well-defined for operator {op}")
     return np.allclose(op, -op.T)
 
 
