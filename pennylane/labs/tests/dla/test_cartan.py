@@ -62,22 +62,29 @@ class TestCartanDecomposition:
     def test_cartan_decomposition_dense(self, g, involution):
         """Test basic properties and Cartan decomposition definitions using dense representations"""
 
-        g = [qml.matrix(op, wire_order=range(3) for op in g]
+        g = [qml.matrix(op, wire_order=range(3)) for op in g]
         k, m = cartan_decomposition(g, involution)
 
         assert all(involution(op) is True for op in k)
         assert all(involution(op) is False for op in m)
 
-        k_space = qml.pauli.PauliVSpace(k)
-        m_space = qml.pauli.PauliVSpace(m)
+        # check currently only works with pauli sentences
+        k_space = qml.pauli.PauliVSpace([qml.pauli_decompose(op).pauli_rep for op in k])
+        m_space = qml.pauli.PauliVSpace([qml.pauli_decompose(op).pauli_rep for op in m])
 
         # Commutation relations for Cartan pair
-        assert check_commutation(k, k, k_space)
-        assert check_commutation(k, m, m_space)
-        assert check_commutation(m, m, k_space)
+        assert check_commutation(k_space.basis, k_space.basis, k_space)
+        assert check_commutation(k_space.basis, m_space.basis, m_space)
+        assert check_commutation(m_space.basis, m_space.basis, k_space)
 
 
-involution_ops = [X(0) @ X(1), X(0) @ X(1) + Y(0) @ Y(1), X(1) + Z(0), Y(0) - Y(0) @ Y(1) @ Y(2), Y(0) @ X(1)]
+involution_ops = [
+    X(0) @ X(1),
+    X(0) @ X(1) + Y(0) @ Y(1),
+    X(1) + Z(0),
+    Y(0) - Y(0) @ Y(1) @ Y(2),
+    Y(0) @ X(1),
+]
 
 
 class TestInvolutions:
@@ -90,7 +97,7 @@ class TestInvolutions:
         res_ps = concurrence_involution(op.pauli_rep)
         res_m = concurrence_involution(op.matrix())
 
-        assert type(res_op) is bool
+        assert isinstance(res_op, bool)
         assert res_op is res_ps
         assert res_op is res_m
 
@@ -101,6 +108,6 @@ class TestInvolutions:
         res_ps = even_odd_involution(op.pauli_rep)
         res_m = even_odd_involution(op.matrix())
 
-        assert type(res_op) is bool
+        assert isinstance(res_op, bool)
         assert res_op is res_ps
         assert res_op is res_m
