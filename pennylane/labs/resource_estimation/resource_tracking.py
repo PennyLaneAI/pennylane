@@ -28,7 +28,8 @@ from .resource_operator import ResourceOperator
 
 # pylint: disable=dangerous-default-value,protected-access
 
-_StandardGateSet = {  # user-friendly gateset for visual checks and initial compilation
+# user-friendly gateset for visual checks and initial compilation
+_StandardGateSet = {
     "PauliX",
     "PauliY",
     "PauliZ",
@@ -44,8 +45,8 @@ _StandardGateSet = {  # user-friendly gateset for visual checks and initial comp
     "PhaseShift",
 }
 
-
-DefaultGateSet = {  # practical/realistic gateset for useful compilation of circuits
+# practical/realistic gateset for useful compilation of circuits
+DefaultGateSet = {
     "Hadamard",
     "CNOT",
     "S",
@@ -54,7 +55,8 @@ DefaultGateSet = {  # practical/realistic gateset for useful compilation of circ
 }
 
 
-resource_config = {  # configurations for further configuration of the decompositions
+# parameters for further configuration of the decompositions
+resource_config = {
     "error_rx": 10e-3,
     "error_ry": 10e-3,
     "error_rz": 10e-3,
