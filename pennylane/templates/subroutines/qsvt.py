@@ -554,8 +554,7 @@ def _compute_qsp_angle(poly_coeffs):
     num_terms = polynomial_matrix.shape[1]
     rotation_angles = np.zeros(num_terms)
 
-    # Adaptation of Algorithm 1 of
-    [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_]
+    # Adaptation of Algorithm 1 [arXiv:2308.01501]
     with qml.QueuingManager.stop_recording():
         for idx in range(num_terms - 1, -1, -1):
 
@@ -574,7 +573,7 @@ def _compute_qsp_angle(poly_coeffs):
 
 def transform_angles(angles, routine1, routine2):
     r"""
-    Transforms a set of angles from one routine to another.
+    Transforms angles for quantum signal processing and quantum singular value transformation routines.
 
     This function converts angles obtained to implement Quantum Signal Processing (QSP) to
     Quantum Singular Value Transformation (QSVT) angles and vice versa.
@@ -591,38 +590,47 @@ def transform_angles(angles, routine1, routine2):
 
     **Example**
 
-    This example applies the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}` to a block-encoding
-    of :math:`x = 0.2`.
-
     .. code-block::
 
-        poly = [0, 1.0, 0, -1/2, 0, 1/3]
-
-        qsp_angles = qml.poly_to_angles(poly, "QSP")
+        qsp_angles = np.array([0.2, 0.3, 0.5])
         qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
 
-        x = 0.2
 
-        # Encodes x in the top left of the matrix
-        block_encoding = qml.RX(2 * np.arccos(x), wires=0)
+    .. details::
+        :title: Usage Details
 
-        projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
+        This example applies the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}` to a block-encoding
+        of :math:`x = 0.2`.
 
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit_qsvt():
-            qml.QSVT(block_encoding, projectors)
-            return qml.state()
+        .. code-block::
 
-        output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
-        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+            poly = [0, 1.0, 0, -1/2, 0, 1/3]
 
-        print("output qsvt: ", output.real)
-        print("P(x) =       ", expected)
+            qsp_angles = qml.poly_to_angles(poly, "QSP")
+            qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
 
-    .. code-block:: pycon
+            x = 0.2
 
-        output qsvt:  0.19610666666647059
-        P(x) =        0.19610666666666668
+            # Encodes x in the top left of the matrix
+            block_encoding = qml.RX(2 * np.arccos(x), wires=0)
+
+            projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
+
+            @qml.qnode(qml.device("default.qubit"))
+            def circuit_qsvt():
+                qml.QSVT(block_encoding, projectors)
+                return qml.state()
+
+            output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
+            expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+
+            print("output qsvt: ", output.real)
+            print("P(x) =       ", expected)
+
+        .. code-block:: pycon
+
+            output qsvt:  0.19610666666647059
+            P(x) =        0.19610666666666668
     """
 
     if routine1 == "QSP" and routine2 == "QSVT":
@@ -654,12 +662,12 @@ def transform_angles(angles, routine1, routine2):
 
 def poly_to_angles(poly, routine, angle_solver="root-finding"):
     r"""
-    Computes the angles needed to implement a polynomial with quantum signal processing (QSP)
+    Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
     or quantum singular value transformation (QSVT).
 
-    The polynomial must have defined parity and real coefficients. It also must meet
-    that :math:`|P(x)| \leq 1` for all :math:`x \in [-1, 1]`. More information about these restriction can be
-    found in [`arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_].
+    The polynomial must have real coefficients and defined parity, i.e. all powers of the polynomial must be even or odd.
+    The polynomial :math:`P(x)` also must meet that all its values are in the interval :math:`[-1, 1]` when :math:`x \in [-1, 1]`.
+    For more details see `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_.
 
     Args:
         poly (tensor-like): coefficients of the polynomial, ordered from lowest to higher degree
@@ -675,39 +683,49 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         AssertionError: if poly is not valid in the chosen subroutine
         AssertionError: if routine or angle_solver specified does not exist
 
-
     **Example**
 
-    This example applies the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}` to a block-encoding
-    of :math:`x = 0.2`.
+    This example generates the qsvt angles for the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}`
 
     .. code-block::
 
         poly = [0, 1.0, 0, -1/2, 0, 1/3]
-
         qsvt_angles = qml.poly_to_angles(poly, "QSVT")
 
-        x = 0.2
 
-        # Encode x in the top left of the matrix
-        block_encoding = qml.RX(2 * np.arccos(x), wires=0)
-        projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
+    .. details::
+        :title: Usage Details
 
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit_qsvt():
-            qml.QSVT(block_encoding, projectors)
-            return qml.state()
+        This example applies the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}` to a block-encoding
+        of :math:`x = 0.2`.
 
-        output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
-        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+        .. code-block::
 
-        print("output qsvt: ", output.real)
-        print("P(x) =       ", expected)
+            poly = [0, 1.0, 0, -1/2, 0, 1/3]
 
-    .. code-block:: pycon
+            qsvt_angles = qml.poly_to_angles(poly, "QSVT")
 
-        output qsvt:  0.19610666666647059
-        P(x) =        0.19610666666666668
+            x = 0.2
+
+            # Encode x in the top left of the matrix
+            block_encoding = qml.RX(2 * np.arccos(x), wires=0)
+            projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
+
+            @qml.qnode(qml.device("default.qubit"))
+            def circuit_qsvt():
+                qml.QSVT(block_encoding, projectors)
+                return qml.state()
+
+            output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
+            expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+
+            print("output qsvt: ", output.real)
+            print("P(x) =       ", expected)
+
+        .. code-block:: pycon
+
+            output qsvt:  0.19610666666647059
+            P(x) =        0.19610666666666668
 
     """
 
