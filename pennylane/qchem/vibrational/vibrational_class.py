@@ -26,6 +26,105 @@ from ..openfermion_pyscf import _import_pyscf
 BOHR_TO_ANG = 0.529177
 
 
+def harmonic_analysis(scf_result, method="rhf"):
+    r"""Performs harmonic analysis by evaluating the Hessian using PySCF routines.
+
+    Args:
+       scf_result: pyscf object from electronic structure calculations
+       method: Electronic structure method to define the level of theory
+            for harmonic analysis. Default is restricted Hartree-Fock ``'rhf'``.
+
+    Returns:
+       pyscf object containing information about the harmonic analysis
+    """
+    pyscf = _import_pyscf()
+    from pyscf.hessian import thermo
+
+    method = method.strip().lower()
+    if method not in ["rhf", "uhf"]:
+        raise ValueError(f"Specified electronic structure method, {method} is not available.")
+
+    hess = getattr(pyscf.hessian, method).Hessian(scf_result).kernel()
+    harmonic_res = thermo.harmonic_analysis(scf_result.mol, hess)
+    return harmonic_res
+
+
+def single_point(molecule, method="rhf"):
+    r"""Runs electronic structure calculation.
+
+    Args:
+      molecule: Molecule object.
+      method: Electronic structure method to define the level of theory.
+              Default is restricted Hartree-Fock 'rhf'.
+
+    Returns:
+      pyscf object from electronic structure calculation
+    """
+    pyscf = _import_pyscf()
+
+    method = method.strip().lower()
+    if method not in ["rhf", "uhf"]:
+        raise ValueError(f"Specified electronic structure method, {method}, is not available.")
+
+    geom = [
+        [symbol, tuple(np.array(molecule.coordinates)[i])]
+        for i, symbol in enumerate(molecule.symbols)
+    ]
+    spin = int((molecule.mult - 1) / 2)
+    mol = pyscf.gto.Mole(atom=geom, symmetry="C1", spin=spin, charge=molecule.charge, unit="Bohr")
+    mol.basis = molecule.basis_name
+    mol.build()
+    if method == "rhf":
+        scf_obj = pyscf.scf.RHF(mol).run(verbose=0)
+    else:
+        scf_obj = pyscf.scf.UHF(mol).run(verbose=0)
+    return scf_obj
+
+
+def _import_geometric():
+    """Import geometric."""
+    try:
+        import geometric
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires geometric. It can be installed with: pip install geometric."
+        ) from Error
+
+    return geometric
+
+
+def optimize_geometry(molecule, method="rhf"):
+    r"""Obtains equilibrium geometry for the molecule.
+
+    Args:
+      molecule: Molecule object.
+      method: Electronic structure method to define the level of theory.
+              Default is restricted Hartree-Fock ``'rhf'``.
+
+    Returns:
+      molecule object with optimized geometry
+
+    """
+    pyscf = _import_pyscf()
+    geometric = _import_geometric()
+    from pyscf.geomopt.geometric_solver import optimize
+
+    scf_res = single_point(molecule, method)
+    geom_eq = optimize(scf_res, maxsteps=100)
+
+    mol_eq = qml.qchem.Molecule(
+        molecule.symbols,
+        geom_eq.atom_coords(unit="B"),
+        unit="Bohr",
+        basis_name=molecule.basis_name,
+        charge=molecule.charge,
+        mult=molecule.mult,
+        load_data=molecule.load_data,
+    )
+
+    scf_result = single_point(mol_eq, method)
+    return mol_eq, scf_result
+
 def _get_rhf_dipole(scf_result):
     """
     Given an restricted Hartree-Fock object, evaluate the dipole moment
