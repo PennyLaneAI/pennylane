@@ -31,7 +31,6 @@ from .vibrational_class import (
     optimize_geometry,
 )
 
-
 # pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
 # pylint: disable= import-outside-toplevel, too-many-positional-arguments, dangerous-default-value
 
