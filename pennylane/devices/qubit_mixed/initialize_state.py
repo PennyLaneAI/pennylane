@@ -24,7 +24,7 @@ from pennylane import math
 def create_initial_state(
     # pylint: disable=unsupported-binary-operation
     wires: Union[qml.wires.Wires, Iterable],
-    prep_operation: qml.operation.StatePrepBase | qml.QubitDensityMatrix = None,
+    prep_operation: Union[qml.operation.StatePrepBase, qml.QubitDensityMatrix] = None,
     like: str = None,
 ):
     r"""
