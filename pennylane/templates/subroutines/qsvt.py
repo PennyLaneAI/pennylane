@@ -554,7 +554,7 @@ def _compute_qsp_angle(poly_coeffs):
     num_terms = polynomial_matrix.shape[1]
     rotation_angles = np.zeros(num_terms)
 
-    # Adaptation of Algorithm 1 [arXiv:2308.01501]
+    # Adaptation of Algorithm 1 of [arXiv:2308.01501]
     with qml.QueuingManager.stop_recording():
         for idx in range(num_terms - 1, -1, -1):
 
@@ -580,7 +580,7 @@ def transform_angles(angles, routine1, routine2):
     The transformation is based on Appendix A.2 of `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_. Note that QSVT is equivalent to taking the reflection convention of QSP.
 
     Args:
-        angles (tensor-like): a list or array of angles to be transformed.
+        angles (tensor-like): angles to be transformed
         routine1 (str): the current routine for which the angles are obtained, must be either ``"QSP"`` or ``"QSVT"``
         routine2 (str): the target routine for which the angles should be transformed,
                         must be either ``"QSP"`` or ``"QSVT"``
