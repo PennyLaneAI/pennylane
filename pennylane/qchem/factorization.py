@@ -105,9 +105,9 @@ def factorize(
         init_params (dict[str, TensorLike] | None): Intial values of the orbital rotations
             (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
             a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
-            two-electron tensor. If not given, by default, zero matrices will be used if
-            ``cholesky=False`` and the core and leaf tensors corresponding to the first
-            ``num_factors`` will be used if ``cholesky=True``.
+            two-electron tensor. If not given, zero matrices will be used if ``cholesky=False``
+            and the core and leaf tensors corresponding to the first ``num_factors`` will be
+            used if ``cholesky=True``.
         norm_prefactor (float): Prefactor for scaling the regularization term. Default is ``1e-5``.
 
     Returns:
@@ -436,7 +436,7 @@ def _double_factorization_compressed(
         init_params (dict[str, TensorLike] | None): Intial values of the orbital rotations
             (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
             a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
-            two-electron tensor. If not given, by default, zero matrices will be used.
+            two-electron tensor. If not given, zero matrices will be used.
         prefactor (float): Prefactor for scaling the regularization term. Default is ``1e-5``.
         norm_order (int): Type of regularization (``0``: None, ``1``: L1, and ``2``: L2) used
             for optimizing. Default is to not include any regularization term.
@@ -513,25 +513,25 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
     rotation unitaries obtained with the basis rotation grouping method.
 
     Args:
-        one_electron (array[float]): one-electron integral matrix in the molecular orbital basis
-        two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
-            basis arranged in chemist notation
-        tol_factor (float): threshold error value for discarding the negligible factors
+        one_electron (array[float]): One-electron integral matrix in the molecular orbital basis.
+        two_electron (array[array[float]]): Two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation.
+        tol_factor (float): Threshold error value for discarding the negligible factors.
 
     Keyword Args:
-        tol_eigval (float): threshold error value for discarding the negligible factor
+        tol_eigval (float): Threshold error value for discarding the negligible factor
             eigenvalues. This can be used only when ``compressed=False``.
-        cholesky (bool): use Cholesky decomposition for the ``two_electron`` instead of
+        cholesky (bool): Use Cholesky decomposition for the ``two_electron`` instead of
             eigendecomposition. Default is ``False``.
-        compressed (bool): use compressed double factorization for decomposing the ``two_electron``.
-        regularization (string | None): type of regularization (``"L1"`` or ``"L2"``) to be
+        compressed (bool): Use compressed double factorization for decomposing the ``two_electron``.
+        regularization (string | None): Type of regularization (``"L1"`` or ``"L2"``) to be
             used for optimizing the factors. Default is to not include any regularization term.
         **compression_kwargs: Look at the keyword arguments (``compression_kwargs``) in the
             :func:`~.factorize` method for all the available options with ``compressed=True``.
 
     Returns:
-        tuple(list[array[float]], list[list[Observable]], list[array[float]]): tuple containing
-        grouped coefficients, grouped observables and basis rotation transformation matrices
+        tuple(list[array[float]], list[list[Observable]], list[array[float]]): Tuple containing
+        grouped coefficients, grouped observables and basis rotation transformation matrices.
 
     **Example**
 
