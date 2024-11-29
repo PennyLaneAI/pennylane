@@ -204,9 +204,11 @@ class ResourceX(qml.X, re.ResourceOperator):
         if num_ctrl_wires == 2 and num_ctrl_values == 0:
             return {re.ResourceToffoli.resource_rep(): 1}
 
-        return {re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
-            ): 1}
+        return {
+            re.ResourceMultiControlledX.resource_rep(
+                num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:

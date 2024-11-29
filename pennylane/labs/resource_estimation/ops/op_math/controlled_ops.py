@@ -99,9 +99,11 @@ class ResourceCY(qml.CY, re.ResourceOperator):
 
         cnot = re.ResourceCNOT.resource_rep()
         s = re.ResourceS.resource_rep()
+        s_dag = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
 
         gate_types[cnot] = 1
-        gate_types[s] = 2  # Assuming S^dagg ~ S in cost!
+        gate_types[s] = 1
+        gate_types[s_dag] = 1
 
         return gate_types
 
