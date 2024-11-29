@@ -285,7 +285,8 @@ def substitute(
 
         Executing the substitution produces:
 
-        >>> res = qml.labs.resource_estimation.substitute(
+        >>> from pennylane.labs.resource_estimation import substitute
+        >>> res = substitute(
         ...     initial_resources, replace_gate_name, replacement_rx_resources,
         ... )
         >>> print(res)
