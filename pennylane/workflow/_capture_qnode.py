@@ -32,6 +32,8 @@ free, but no other gradients methods have support yet.
 *MCM methods other than single branch statistics*.  Mid circuit measurements
 are only handled via a "single branch statistics" algorithm, which will lead to unexpected
 results. Even on analytic devices, once branch will be randomly chosen on each execution.
+Returning measurments based on mid circuit measurements, ``qml.sample(m0)``,
+is also not yet supported on default qubit or lightning.
 
 >>> @qml.qnode(qml.device('default.qubit', wires=1))
 >>> def circuit(x):
