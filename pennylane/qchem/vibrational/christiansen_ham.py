@@ -14,12 +14,9 @@
 """The functions related to the construction of the Christiansen form Hamiltonian."""
 
 import numpy as np
-
 import pennylane as qml
 
-
 # pylint: disable = too-many-branches, too-many-positional-arguments
-
 
 from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
