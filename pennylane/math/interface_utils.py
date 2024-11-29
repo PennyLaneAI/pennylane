@@ -15,16 +15,16 @@
 
 import warnings
 from enum import Enum
-from typing import Literal
+from typing import Literal, Union
 
-# pylint: disable=wrong-import-order
 import autoray as ar
 
 import pennylane as qml
+from pennylane.tape import QuantumScriptBatch
 
 
 class Interface(Enum):
-    """Standard set of interfaces."""
+    """Canonical set of interfaces supported."""
 
     AUTOGRAD = "autograd"
     NUMPY = "numpy"
@@ -56,9 +56,10 @@ INTERFACE_MAP = {
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
 SupportedInterfaceUserInput = Literal[tuple(INTERFACE_MAP.keys())]
+"""list[str]: allowed interface names that the user can input"""
 
 SUPPORTED_INTERFACE_NAMES = list(Interface)
-"""list[str]: allowed interface strings"""
+"""list[Interface]: allowed interface names"""
 
 jpc_interfaces = {
     Interface.AUTOGRAD,
@@ -206,7 +207,7 @@ def get_deep_interface(value):
     return _get_interface_of_single_tensor(itr)
 
 
-def _get_jax_interface_name(tapes) -> Interface:
+def _get_jax_interface_name(tapes: QuantumScriptBatch) -> Interface:
     """Check all parameters in each tape and output the name of the suitable
     JAX interface.
 
@@ -224,8 +225,7 @@ def _get_jax_interface_name(tapes) -> Interface:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
 
     Returns:
-        str: name of JAX interface that fits the tape parameters, "jax" or
-        "jax-jit"
+        Interface: name of JAX interface that fits the tape parameters
     """
     for t in tapes:
         for op in t:
@@ -255,17 +255,17 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _get_canonical_interface_name(user_input) -> Interface:
+def _get_canonical_interface_name(user_input: Union[str, Interface]) -> Interface:
     """Helper function to get the canonical interface.
 
     Args:
-        interface (str): original interface to use as reference
+        interface (str, Interface): reference interface
 
     Raises:
         ValueError: key does not exist in the interface map
 
     Returns:
-        str: new interface
+        Interface: canonical interface
     """
 
     try:
@@ -278,15 +278,15 @@ def _get_canonical_interface_name(user_input) -> Interface:
         ) from exc
 
 
-def _resolve_interface(interface, tapes) -> Interface:
-    """Helper function to resolve the interface name based on a list of tapes
+def _resolve_interface(interface: Interface, tapes: QuantumScriptBatch) -> Interface:
+    """Helper function to resolve the interface name based on a batch of tapes.
 
     Args:
-        interface (str): Original interface to use as reference.
-        tapes (list[.QuantumScript]): Quantum tapes
+        interface (str, Interface): original interface to use as reference
+        tapes (list[.QuantumScript]): quantum tapes
 
     Returns:
-        str: Interface name"""
+        Interface: resolved interface"""
 
     interface = _get_canonical_interface_name(interface)
 
