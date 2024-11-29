@@ -25,7 +25,7 @@ from pennylane.tape.tape import (
 )
 from pennylane.transforms.core import transform
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,unused-argument
 
 _default_supported_obs = (qml.Z, qml.Identity)
 
@@ -286,9 +286,7 @@ def _change_obs_to_Z(observable):
 
 @_change_obs_to_Z.register
 def _change_symbolic_op(observable: SymbolicOp):
-    diagonalizing_gates, [new_base] = diagonalize_qwc_pauli_words(
-        [observable.base],
-    )
+    diagonalizing_gates, [new_base] = diagonalize_qwc_pauli_words([observable.base])
 
     params, hyperparams = observable.parameters, observable.hyperparameters
     hyperparams = copy(hyperparams)
@@ -303,9 +301,7 @@ def _change_symbolic_op(observable: SymbolicOp):
 def _change_linear_combination(observable: LinearCombination):
     coeffs, obs = observable.terms()
 
-    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(
-        obs,
-    )
+    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(obs)
 
     new_observable = LinearCombination(coeffs, new_operands)
 
@@ -314,9 +310,7 @@ def _change_linear_combination(observable: LinearCombination):
 
 @_change_obs_to_Z.register
 def _change_composite_op(observable: CompositeOp):
-    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(
-        observable.operands,
-    )
+    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(observable.operands)
 
     new_observable = observable.__class__(*new_operands)
 
