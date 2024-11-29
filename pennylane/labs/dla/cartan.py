@@ -51,7 +51,7 @@ def cartan_decomp(g, involution):
 
     **Example**
 
-    We first construct a simple Lie algebra.
+    We first construct a Lie algebra.
 
     >>> from pennylane import X, Z
     >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
