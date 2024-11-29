@@ -19,6 +19,7 @@ import pytest
 
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.gradients import param_shift
+from pennylane.math import Interface
 
 
 def test_default_values():
@@ -26,7 +27,7 @@ def test_default_values():
     config = ExecutionConfig()
     assert config.derivative_order == 1
     assert config.device_options == {}
-    assert config.interface is None
+    assert config.interface == Interface.NUMPY
     assert config.gradient_method is None
     assert config.gradient_keyword_arguments == {}
     assert config.grad_on_execution is None
