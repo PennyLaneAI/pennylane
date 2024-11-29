@@ -587,6 +587,7 @@ class TestPreprocessTransforms:
                             "PauliZ": OperatorProperties(),
                             "PauliX": OperatorProperties(),
                             "PauliY": OperatorProperties(),
+                            "Hermitian": OperatorProperties(),
                         }
                     )
 

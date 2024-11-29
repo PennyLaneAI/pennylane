@@ -61,7 +61,11 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         can be applied.
 
     .. note::
-        This transform will skip observables that cannot be diagonalized.
+        This transform will diagonalize what it can, i.e., `qml.X`, `qml.Y`, `qml.Z`, `qml.Hadamard`,
+        `qml.Identity`, or a linear combination of them. Any other observable will be skipped and
+        left undiagonalized. In the context of preprocessing a quantum circuit for execution on a
+        device, observable validation should be performed after this transform to ensure that all
+        undiagonalized observables are supported by the device.
 
     **Examples:**
 

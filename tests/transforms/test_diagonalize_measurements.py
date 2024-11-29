@@ -215,6 +215,21 @@ class TestDiagonalizeObservable:
         with pytest.raises(ValueError, match="Expected measurements on the same wire to commute"):
             _ = _diagonalize_observable(obs, supported_base_obs=device_supported_obs)
 
+    def test_diagonalizing_unknown_observable(self):
+        """Test that an unknown observable is left undiagonalized"""
+
+        # pylint: disable=too-few-public-methods
+        class MyObs(qml.operation.Observable):
+
+            @property
+            def name(self):
+                return f"MyObservable[{self.wires}]"
+
+        initial_tape = qml.tape.QuantumScript([], [qml.expval(MyObs(wires=[2]))])
+        tapes, _ = diagonalize_measurements([initial_tape])
+        assert tapes[0].operations == []
+        assert tapes[0].measurements == [ExpectationMP(MyObs(wires=[2]))]
+
     @pytest.mark.parametrize(
         "obs, input_visited_obs, switch_basis, expected_res",
         [
