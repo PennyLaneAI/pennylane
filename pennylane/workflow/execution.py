@@ -39,12 +39,12 @@ logger.addHandler(logging.NullHandler())
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
+    interface: Interface, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
     """Imports and returns the function that binds derivatives of the required ml framework.
 
     Args:
-        interface (str): The designated ml framework.
+        interface (Interface): The designated ml framework.
 
         grad_on_execution (bool): whether or not the device derivatives are taken upon execution
     Returns:
@@ -156,7 +156,7 @@ def execute(
         diff_method (None, str, TransformDispatcher): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
-        interface (str): The interface that will be used for classical autodifferentiation.
+        interface (str, Interface): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.

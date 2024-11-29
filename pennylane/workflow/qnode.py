@@ -42,19 +42,19 @@ logger.addHandler(logging.NullHandler())
 SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 
-def _convert_to_interface(res, interface):
+def _convert_to_interface(result, interface):
     """
-    Recursively convert res to the given interface.
+    Recursively convert a result to the given interface.
     """
 
     if interface == Interface.NUMPY:
-        return res
+        return result
 
-    if isinstance(res, (list, tuple)):
-        return type(res)(_convert_to_interface(r, interface) for r in res)
+    if isinstance(result, (list, tuple)):
+        return type(result)(_convert_to_interface(r, interface) for r in result)
 
-    if isinstance(res, dict):
-        return {k: _convert_to_interface(v, interface) for k, v in res.items()}
+    if isinstance(result, dict):
+        return {k: _convert_to_interface(v, interface) for k, v in result.items()}
 
     interface_conversion_map = {
         Interface.AUTOGRAD: "autograd",
@@ -67,7 +67,7 @@ def _convert_to_interface(res, interface):
 
     interface_name = interface_conversion_map.get(interface, None)
 
-    return qml.math.asarray(res, like=interface_name)
+    return qml.math.asarray(result, like=interface_name)
 
 
 def _make_execution_config(
@@ -512,7 +512,7 @@ class QNode:
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput = Interface.AUTO,
+        interface: SupportedInterfaceUserInput = "auto",
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         *,
         grad_on_execution: Literal[True, False, "best"] = "best",
