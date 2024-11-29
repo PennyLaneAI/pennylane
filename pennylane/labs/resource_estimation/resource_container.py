@@ -246,13 +246,13 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
 
 
 def substitute(
-    initial_resources: Resources, name: str, replacement_resources: Resources, in_place=False
+    initial_resources: Resources, gate_name: str, replacement_resources: Resources, in_place=False
 ) -> Resources:
     """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
 
     Args:
         initial_resources (Resources): the resources to be modified
-        name (str): the name of the operation to be replaced
+        gate_name (str): the name of the operation to be replaced
         replacement (Resources): the resources to be substituted instead of the gate
         in_place (bool): determines if the initial resources are modified in place or if a new copy is created
 
@@ -296,7 +296,7 @@ def substitute(
         {'CNOT': 1, 'Hadamard': 6, 'S': 8}
     """
 
-    count = initial_resources.gate_types.get(name, 0)
+    count = initial_resources.gate_types.get(gate_name, 0)
 
     if count > 0:
         new_gates = initial_resources.num_gates - count + (count * replacement_resources.num_gates)
@@ -307,7 +307,7 @@ def substitute(
         new_gate_types = _combine_dict(
             initial_resources.gate_types, replacement_gate_types, in_place=in_place
         )
-        new_gate_types.pop(name)
+        new_gate_types.pop(gate_name)
 
         if in_place:
             initial_resources.num_gates = new_gates
