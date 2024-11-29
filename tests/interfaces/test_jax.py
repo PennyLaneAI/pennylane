@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Jax specific tests for execute and default qubit 2."""
+from contextlib import nullcontext
+
 import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
@@ -394,7 +396,15 @@ class TestJaxExecuteIntegration:
 
         def cost(a, b):
             new_tape = tape.bind_new_parameters([a, b], [0, 1])
-            return jnp.hstack(execute([new_tape], device, **execute_kwargs)[0])
+            with (
+                pytest.warns(
+                    DeprecationWarning, match="hstack requires ndarray or scalar arguments"
+                )
+                if shots.has_partitioned_shots
+                else nullcontext()
+            ):
+                result = jnp.hstack(execute([new_tape], device, **execute_kwargs)[0])
+            return result
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
         jac = jac_fn(a, b)
@@ -551,7 +561,15 @@ class TestJaxExecuteIntegration:
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            return jnp.hstack(execute([tape], device, **execute_kwargs)[0])
+            with (
+                pytest.warns(
+                    DeprecationWarning, match="hstack requires ndarray or scalar arguments"
+                )
+                if shots.has_partitioned_shots
+                else nullcontext()
+            ):
+                result = jnp.hstack(execute([tape], device, **execute_kwargs)[0])
+            return result
 
         x = jnp.array(0.543)
         y = jnp.array(-0.654)

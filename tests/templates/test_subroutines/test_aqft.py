@@ -14,6 +14,8 @@
 """
 Unit tests for the aqft template.
 """
+from contextlib import nullcontext
+
 import numpy as np
 import pytest
 
@@ -22,7 +24,7 @@ import pennylane as qml
 
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
-    op = qml.AQFT(order=2, wires=(0, 1, 2))
+    op = qml.AQFT(order=2, wires=(0, 1, 2, 3))
     qml.ops.functions.assert_valid(op)
 
 
@@ -42,16 +44,29 @@ class TestAQFT:
             qml.AQFT(order=order, wires=range(n_qubits))
             return qml.state()
 
-        assert np.allclose(1, circ(n_qubits, order)[0], tol)
+        ctx = (
+            pytest.warns(UserWarning, match=r"The order \(\d+\) is >= to the number of wires - 1")
+            if order >= n_qubits - 1
+            else nullcontext()
+        )
+
+        with ctx:
+            assert np.allclose(1, circ(n_qubits, order)[0], tol)
 
         for i in range(1, n_qubits):
-            assert np.allclose(0, circ(n_qubits, order)[i], tol)
+            with ctx:
+                assert np.allclose(0, circ(n_qubits, order)[i], tol)
 
     @pytest.mark.parametrize("order", [-1, -5.4])
     def test_negative_order(self, order):
         """Test if ValueError is raised for negative orders"""
         with pytest.raises(ValueError, match="Order can not be less than 0"):
-            qml.AQFT(order=order, wires=range(5))
+            with (
+                pytest.warns(UserWarning, match="The order must be an integer")
+                if isinstance(order, float)
+                else nullcontext()
+            ):
+                qml.AQFT(order=order, wires=range(5))
 
     @pytest.mark.parametrize("order", [1.2, 4.6])
     def test_float_order(self, order):
@@ -78,7 +93,8 @@ class TestAQFT:
     def test_matrix_higher_order(self, wires):
         """Test if the matrix from AQFT and QFT are same for higher order"""
 
-        m1 = qml.matrix(qml.AQFT(order=10, wires=range(wires)))
+        with pytest.warns(UserWarning, match=r"The order \(10\) is >= to the number of wires - 1"):
+            m1 = qml.matrix(qml.AQFT(order=10, wires=range(wires)))
         m2 = qml.matrix(qml.QFT(wires=range(wires)))
 
         assert np.allclose(m1, m2)
@@ -87,7 +103,12 @@ class TestAQFT:
     def test_gates(self, order, wires):
         """Test if the AQFT operation consists of only 3 type of gates"""
 
-        op = qml.AQFT(order=order, wires=range(wires))
+        with (
+            pytest.warns(UserWarning, match=r"The order \(\d+\) is >= to the number of wires - 1")
+            if order >= wires - 1
+            else nullcontext()
+        ):
+            op = qml.AQFT(order=order, wires=range(wires))
         decomp = op.decomposition()
 
         for gate in decomp:

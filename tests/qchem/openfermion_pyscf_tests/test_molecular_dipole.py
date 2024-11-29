@@ -280,7 +280,7 @@ def test_differentiable_molecular_dipole(
     r"""Test that molecular_dipole returns the correct eigenvalues with the dhf backend."""
 
     molecule = qml.qchem.Molecule(symbols, geometry, charge=charge)
-    dip_dhf = qml.qchem.molecular_dipole(
+    dip_dhf = qml.qchem.molecular_dipole(  # TODO: causes divide by zero in log2
         molecule,
         method="dhf",
         active_electrons=active_el,

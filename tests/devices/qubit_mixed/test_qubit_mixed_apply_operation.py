@@ -698,7 +698,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         """Tests that the batch_size is set on an operator if it was missing before.
         Mostly useful for TF-autograph since it may have batch size set to None."""
         param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
-        state = np.ones((2, 2)) / 2
+        state = np.ones((2, 2), dtype=complex) / 2
         op = qml.RX(param, 0)
         assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
         state = apply_operation_einsum(op, state)

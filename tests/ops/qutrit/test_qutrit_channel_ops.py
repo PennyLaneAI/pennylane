@@ -458,7 +458,8 @@ class TestQutritChannel:
             qml.QutritChannel(kraus, 0)
             return qml.expval(qml.GellMann(wires=0, index=1))
 
-        qml.grad(func)(0.5)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function"):
+            qml.grad(func)(0.5)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
     def test_integration_jacobian(self, diff_method):
@@ -471,7 +472,8 @@ class TestQutritChannel:
             qml.QutritChannel(kraus, 0)
             return qml.expval(qml.GellMann(wires=0, index=1))
 
-        qml.jacobian(func)(0.5)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function"):
+            qml.jacobian(func)(0.5)
 
     def test_flatten(self):
         """Test flatten method returns kraus matrices and wires"""

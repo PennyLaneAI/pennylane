@@ -14,7 +14,7 @@
 """
 Unit tests for the debugging module.
 """
-from contextlib import nullcontext
+from contextlib import ExitStack, nullcontext
 from unittest.mock import patch
 
 import numpy as np
@@ -150,7 +150,14 @@ class TestSnapshotGeneral:
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the analytical device
-        with pytest.raises(qml.DeviceError):
+        with (
+            pytest.raises(qml.DeviceError),
+            (
+                pytest.warns(UserWarning, match="Snapshots are not supported for the given device")
+                if "lightning" in dev.name or "qutrit" in dev.name
+                else nullcontext()
+            ),
+        ):
             qml.snapshots(circuit)()
 
     def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
@@ -162,7 +169,14 @@ class TestSnapshotGeneral:
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the finite-shot device
-        with pytest.raises(qml.DeviceError):
+        with (
+            pytest.raises(qml.DeviceError),
+            (
+                pytest.warns(UserWarning, match="Snapshots are not supported for the given device")
+                if "lightning" in dev.name or "qutrit" in dev.name
+                else nullcontext()
+            ),
+        ):
             qml.snapshots(circuit)(shots=200)
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
@@ -181,11 +195,21 @@ class TestSnapshotGeneral:
 
             return qml.expval(qml.PauliZ(0))
 
-        with (
-            pytest.warns(UserWarning, match="Requested state or density matrix with finite shots")
-            if isinstance(dev, qml.devices.default_qutrit.DefaultQutrit)
-            else nullcontext()
-        ):
+        ctx = []
+        if "lightning" in dev.name or "qutrit" in dev.name:
+            ctx.append(
+                pytest.warns(UserWarning, match="Snapshots are not supported for the given device")
+            )
+            if "qutrit" in dev.name:
+                ctx.append(
+                    pytest.warns(
+                        UserWarning, match="Requested state or density matrix with finite shots"
+                    )
+                )
+        else:
+            ctx = [nullcontext()]
+        with ExitStack() as stack:
+            _ = [stack.enter_context(c) for c in ctx]
             qml.snapshots(circuit)(shots=200)
 
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
@@ -207,7 +231,7 @@ class TestSnapshotGeneral:
         phi = 0.1
         with (
             pytest.warns(UserWarning, match="Snapshots are not supported for the given device")
-            if "lightning" in dev.name
+            if "lightning" in dev.name or "qutrit" in dev.name
             else nullcontext()
         ):
             result = qml.snapshots(circuit)(phi)
@@ -237,7 +261,12 @@ class TestSnapshotGeneral:
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliX(0))
 
-        result = qml.snapshots(circuit)()
+        with (
+            pytest.warns(UserWarning, match="Snapshots are not supported for the given device")
+            if "lightning" in dev.name or "qutrit" in dev.name
+            else nullcontext()
+        ):
+            result = qml.snapshots(circuit)()
         if isinstance(dev, qml.devices.QutritDevice):
             expected = {"execution_results": np.array(0.66666667)}
         else:
@@ -443,7 +472,12 @@ class TestSnapshotSupportedQNode:
                 return qml.probs([0, 1])
             return qml.state()
 
-        result = qml.snapshots(circuit)()
+        with (
+            pytest.warns(UserWarning, match="Snapshots are not supported")
+            if force_qnode_transform
+            else nullcontext()
+        ):
+            result = qml.snapshots(circuit)()
         expected = {
             0: np.array([1, 0, 0, 0]),
             "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),

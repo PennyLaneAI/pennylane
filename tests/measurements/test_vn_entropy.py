@@ -227,7 +227,8 @@ class TestIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
 
-        grad_entropy = qml.grad(circuit_entropy)(param)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function"):
+            grad_entropy = qml.grad(circuit_entropy)(param)
 
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5

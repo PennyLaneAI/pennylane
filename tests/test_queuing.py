@@ -289,7 +289,8 @@ class TestAnnotatedQueue:
                     pauli(0)
 
         args = [(q1, qml.PauliX), (q2, qml.PauliY)]
-        ThreadPool(2).map(queue_pauli, args)
+        with ThreadPool(2) as pool:
+            pool.map(queue_pauli, args)
         assert len(q1) == n
         assert len(q2) == n
         for queue, expected_op in args:

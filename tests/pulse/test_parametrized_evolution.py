@@ -363,7 +363,7 @@ class TestInitialization:
         diff_t = ParametrizedEvolution(H_0, params_0, t_1, False, False, atol=atol_0)
         diff_atol = ParametrizedEvolution(H_0, params_0, t_0, False, False, atol=atol_1)
         diff_ret_intmdt = ParametrizedEvolution(H_0, params_0, t_0, True, False, atol=atol_0)
-        diff_complementary = ParametrizedEvolution(H_0, params_0, t_0, False, True, atol=atol_0)
+        diff_complementary = ParametrizedEvolution(H_0, params_0, t_0, True, True, atol=atol_0)
 
         assert compare_to.hash == equal.hash
         assert compare_to.hash != diff_H.hash

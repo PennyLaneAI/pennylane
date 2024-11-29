@@ -620,7 +620,7 @@ class BasisStateProjector(Projector, Operation):
             for i, m in enumerate(basis_state):
                 idx = idx + (m << (len(basis_state) - i - 1))
             eigvals = qml.math.zeros(2 ** len(basis_state), like=basis_state)
-            return eigvals.at[idx].set(1.0)
+            return eigvals.at[idx].set(1)
         w = np.zeros(2 ** len(basis_state))
         idx = int("".join(str(i) for i in basis_state), 2)
         w[idx] = 1

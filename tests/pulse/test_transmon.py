@@ -391,7 +391,10 @@ class TestTransmonInteraction:
         """Test that providing list of coupling with wrong length raises error"""
         with pytest.raises(ValueError, match="Number of coupling terms"):
             _ = transmon_interaction(
-                connections=connections, qubit_freq=[0.1], coupling=[0.2, 0.2], wires=[0]
+                connections=connections,
+                qubit_freq=[0.1] * 6,
+                coupling=[0.2, 0.2],
+                wires=list(range(6)),
             )
 
     def test_qubit_freq_and_wires_dont_match(self):

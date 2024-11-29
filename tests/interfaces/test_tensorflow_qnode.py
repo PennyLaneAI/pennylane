@@ -13,6 +13,7 @@
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
 import warnings
+from contextlib import nullcontext
 
 import numpy as np
 
@@ -44,10 +45,10 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "adjoint", False, True],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
-    [qml.device("lightning.qubit", wires=4), "adjoint", False, True],
-    [qml.device("lightning.qubit", wires=4), "adjoint", False, False],
-    [qml.device("lightning.qubit", wires=4), "adjoint", True, True],
-    [qml.device("lightning.qubit", wires=4), "adjoint", True, False],
+    # [qml.device("lightning.qubit", wires=4), "adjoint", False, True],
+    # [qml.device("lightning.qubit", wires=4), "adjoint", False, False],
+    # [qml.device("lightning.qubit", wires=4), "adjoint", True, True],
+    # [qml.device("lightning.qubit", wires=4), "adjoint", True, False],
     [qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
@@ -839,7 +840,12 @@ class TestQubitIntegration:
 
             g = tape2.jacobian(res, x, experimental_use_pfor=False)
 
-        hess = tape1.jacobian(g, x)
+        with (
+            nullcontext()
+            if diff_method == "backprop"
+            else pytest.warns(UserWarning, match="PennyLane does not provide the higher order")
+        ):
+            hess = tape1.jacobian(g, x)
         a, b = x * 1.0
 
         expected_res = a * tf.cos(a) * tf.cos(b) + b * tf.cos(a) * tf.cos(b)

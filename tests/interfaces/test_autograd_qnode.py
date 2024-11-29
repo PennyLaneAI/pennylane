@@ -236,7 +236,6 @@ class TestQNode:
             dev,
             interface=interface,
             h=1e-8,
-            order=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
         )

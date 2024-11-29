@@ -323,7 +323,8 @@ class TestIntegration:
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5
 
-        actual = qml.grad(circuit)(param)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function"):
+            actual = qml.grad(circuit)(param)
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.jax
