@@ -14,6 +14,7 @@
 """Functions related to interfaces"""
 
 import warnings
+
 from enum import Enum
 from typing import Literal
 
@@ -21,7 +22,6 @@ from typing import Literal
 import autoray as ar
 
 import pennylane as qml
-
 
 class Interface(Enum):
     """Standard set of interfaces."""
@@ -68,7 +68,6 @@ jpc_interfaces = {
     Interface.JAX_JIT,
     Interface.TF,
 }
-
 
 def get_interface(*values):
     """Determines the correct framework to dispatch to given a tensor-like object or a
