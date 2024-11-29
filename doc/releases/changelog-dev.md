@@ -50,6 +50,10 @@
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
 
+* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
+  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
+
 * Added a dense implementation of computing the structure constants in a new function
   `structure_constants_dense` in `pennylane.labs.dla`.
   [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
@@ -317,6 +321,7 @@ same information.
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Shiwen An,
 Utkarsh Azad,
 Astral Cai,
