@@ -168,7 +168,11 @@ class TestSampleState:
     def test_invalid_state(self):
         """Test error handling for invalid states."""
         invalid_state = np.zeros((2, 2, 2, 2))  # Zero state is invalid
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        import re
+
+        with pytest.raises(
+            ValueError, match=re.compile(r"probabilities.*do not sum to 1", re.IGNORECASE)
+        ):
             sample_state(invalid_state, 10)
 
 
