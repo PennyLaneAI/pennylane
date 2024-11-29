@@ -859,7 +859,7 @@ class QNode:
 
         warnings.warn(
             "The tape/qtape property is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.get_best_diff_method function.",
+            "Instead, use the qml.workflow.construct_tape function.",
             qml.PennyLaneDeprecationWarning,
         )
         return self._tape
