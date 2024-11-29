@@ -430,9 +430,6 @@ def _diagonalize_non_basic_observable(
     For other observables, simply skips and returns the observable as is.
 
     """
-
-    if _visited_obs is None:
-        _visited_obs = (set(), set())
     _visited_obs[0].add(observable)
     _visited_obs[1].add(observable.wires[0])
     return [], observable, _visited_obs
