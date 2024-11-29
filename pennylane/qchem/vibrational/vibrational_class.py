@@ -23,7 +23,7 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable
 
-BOHR_TO_ANG = 0.529177
+BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
 
 
 def harmonic_analysis(scf_result, method="rhf"):
@@ -35,7 +35,7 @@ def harmonic_analysis(scf_result, method="rhf"):
             for harmonic analysis. Default is restricted Hartree-Fock ``'rhf'``.
 
     Returns:
-       pyscf object containing information about the harmonic analysis
+       a tuple of frequencies of normal modes and their corresponding displacement vectors
     """
     pyscf = _import_pyscf()
     from pyscf.hessian import thermo
@@ -46,10 +46,11 @@ def harmonic_analysis(scf_result, method="rhf"):
 
     hess = getattr(pyscf.hessian, method).Hessian(scf_result).kernel()
     harmonic_res = thermo.harmonic_analysis(scf_result.mol, hess)
-    return harmonic_res
+
+    return harmonic_res["freq_wavenumber"], harmonic_res["norm_mode"]
 
 
-def single_point(molecule, method="rhf"):
+def _single_point(molecule, method="rhf"):
     r"""Runs electronic structure calculation.
 
     Args:
@@ -109,7 +110,7 @@ def optimize_geometry(molecule, method="rhf"):
     geometric = _import_geometric()
     from pyscf.geomopt.geometric_solver import optimize
 
-    scf_res = single_point(molecule, method)
+    scf_res = _single_point(molecule, method)
     geom_eq = optimize(scf_res, maxsteps=100)
 
     mol_eq = qml.qchem.Molecule(
@@ -122,5 +123,5 @@ def optimize_geometry(molecule, method="rhf"):
         load_data=molecule.load_data,
     )
 
-    scf_result = single_point(mol_eq, method)
+    scf_result = _single_point(mol_eq, method)
     return mol_eq, scf_result

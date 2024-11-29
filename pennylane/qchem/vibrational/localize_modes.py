@@ -18,13 +18,22 @@ import warnings
 import numpy as np
 import scipy
 
+import pennylane as qml
+
+# Factor to change units of Frequency
 AU_TO_CM = 219475
 
 # pylint: disable=dangerous-default-value, too-many-statements
 
 
 def _pm_cost(q):
-    r"""Pipek-Mezey cost function whose minimization yields localized displacements."""
+    r"""Pipek-Mezey cost function whose minimization yields localized displacements.
+
+    Args:
+       q: matrix of displacement vectors
+
+    """
+
     nnuc, _, nmodes = q.shape
 
     xi_pm = 0.0
@@ -40,14 +49,32 @@ def _pm_cost(q):
 
 
 def _mat_transform(u, qmat):
-    r"""Returns the rotated displacement vectors matrix for a given rotation unitary u and displacement vectors matrix qmat."""
+    r"""Returns the rotated displacement vectors matrix for a given rotation unitary u and displacement vectors matrix qmat.
+
+    Args:
+       u: unitary rotation matrix
+       qmat: matrix of displacement vectors
+
+    Returns:
+       rotated matrix of displacement vectors
+
+    """
     qloc = np.einsum("qp,iaq->iap", u, qmat)
 
     return qloc
 
 
 def _params_to_unitary(params, nmodes):
-    r"""Transforms a one-dimensional vector of parameters specifying a unitary rotation into its associated matrix u."""
+    r"""Transforms a one-dimensional vector of parameters specifying a unitary rotation into its associated matrix u.
+
+    Args:
+       params: parameters for unitary rotation
+       nmodes: number of normal modes
+
+    Returns:
+       unitary rotation matrix
+
+    """
     ugen = np.zeros((nmodes, nmodes))
 
     idx = 0
@@ -61,7 +88,14 @@ def _params_to_unitary(params, nmodes):
 
 
 def _params_cost(params, qmat, nmodes):
-    r"""Returns the cost function to be minimized for localized displacements."""
+    r"""Returns the cost function to be minimized for localized displacements.
+
+    Args:
+       params: initial parameters
+       qmat: matrix of displacement vectors
+       nmodes: number of normal modes
+
+    """
     uparams = _params_to_unitary(params, nmodes)
     qrot = _mat_transform(uparams, qmat)
 
@@ -69,7 +103,16 @@ def _params_cost(params, qmat, nmodes):
 
 
 def _normalize_q(qmat):
-    r"""Returns the normalized displacement vectors."""
+    r"""Returns the normalized displacement vectors.
+
+    Args:
+       qmat: matrix of displacement vectors
+
+    Returns:
+       normalized matrix of displacement vectors
+
+    """
+
     qnormalized = np.zeros_like(qmat)
     nmodes = qmat.shape[2]
 
@@ -81,13 +124,21 @@ def _normalize_q(qmat):
 
 
 def _localization_unitary(qmat):
-    r"""Returns the unitary matrix to localize the displacement vectors."""
+    r"""Calculates the unitary matrix to localize the displacement vectors and displacement vectors.
+
+    Args:
+       qmat: matrix of displacement vectors associated with normal-modes
+
+    Returns:
+       a tuple of unitary matrix to localize the displacement vectors and localized displacement vectors
+
+    """
 
     nmodes = qmat.shape[2]
     num_params = int(nmodes * (nmodes - 1) / 2)
 
-    np.random.seed(1000)
-    params = 2 * np.pi * np.random.rand(num_params)
+    rng = qml.math.random.default_rng(1000)
+    params = 2 * np.pi * rng.random(num_params)
 
     qnormalized = _normalize_q(qmat)
 
@@ -108,20 +159,27 @@ def _localization_unitary(qmat):
     return uloc, qloc
 
 
-def _localize_modes(freqs, disp_vecs, order=True):
-    r"""Performs the mode localization for a given set of frequencies and displacement vectors as
-    described in this `work <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_
+def _localize_modes(freqs, displ_vecs, order=True):
+    r"""Performs the mode localization for a given set of frequencies and displacement vectors.
+
+    Args:
+       freqs: normal mode frequencies
+       displ_vecs: displacement vectors along the normal modes
+
+    Returns:
+       a tuple of localized frequencies, displacement vectors, and localization matrix
+
     """
     nmodes = len(freqs)
     hess_normal = np.zeros((nmodes, nmodes))
     for m in range(nmodes):
         hess_normal[m, m] = freqs[m] ** 2
 
-    natoms, _ = np.shape(disp_vecs[0])
+    natoms, _ = np.shape(displ_vecs[0])
 
     qmat = np.zeros((natoms, 3, nmodes))
     for m in range(nmodes):
-        dvec = disp_vecs[m]
+        dvec = displ_vecs[m]
         for i in range(natoms):
             for alpha in range(3):
                 qmat[i, alpha, m] = dvec[i, alpha]
@@ -139,64 +197,56 @@ def _localize_modes(freqs, disp_vecs, order=True):
     return loc_freqs, qloc, uloc
 
 
-def localize_normal_modes(results, freq_separation=[2600]):
+def localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
     """
     Localizes normal modes by separating frequencies into specified ranges and applying mode localization.
+    The procedure for localization is described in `JCP 141, 104105 (2014)
+    <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
 
     Args:
-        results (dict): dictionary containing harmonic analysis results
+        freqs: normal mode frequencies in cm^-1
+        displ_vecs: displacement vectors for normal modes
         freq_separation (list): list of frequency separation thresholds in cm^-1. Defaults to [2600].
 
     Returns:
-        tuple:
-            - loc_results (dict): Dictionary with localized mode information:
-                - "freq_wavenumber": Localized frequencies in cm^-1.
-                - "norm_mode": Corresponding normalized displacement vectors.
-            - uloc (array): localization matrix indicating the relationship between original and localized modes
+        A tuple of frequencies, normalized displacement vectors and localization matrix indicating the relationship between
+        original and localized modes.:
+
     """
     if not freq_separation:
         raise ValueError("The `freq_separation` list cannot be empty.")
 
-    freqs_in_cm = results["freq_wavenumber"]
-    freqs = freqs_in_cm / AU_TO_CM
-    disp_vecs = results["norm_mode"]
     nmodes = len(freqs)
 
     num_seps = len(freq_separation)
-    natoms = disp_vecs.shape[1]
-    min_modes = np.nonzero(freqs_in_cm <= freq_separation[0])[0]
+    natoms = displ_vecs.shape[1]
 
-    modes_arr = [min_modes]
+    modes_arr = [min_modes := np.nonzero(freqs <= freq_separation[0])[0]]
     freqs_arr = [freqs[min_modes]]
-    disps_arr = [disp_vecs[min_modes]]
+    displ_arr = [displ_vecs[min_modes]]
 
     for sep_idx in range(num_seps - 1):
         mid_modes = np.nonzero(
-            (freq_separation[sep_idx] <= freqs_in_cm)
-            & (freq_separation[sep_idx + 1] >= freqs_in_cm)
+            (freq_separation[sep_idx] <= freqs) & (freq_separation[sep_idx + 1] >= freqs)
         )[0]
         modes_arr.append(mid_modes)
         freqs_arr.append(freqs[mid_modes])
-        disps_arr.append(disp_vecs[mid_modes])
+        displ_arr.append(displ_vecs[mid_modes])
 
-    max_modes = np.nonzero(freqs_in_cm >= freq_separation[-1])[0]
-
-    modes_arr.append(max_modes)
+    modes_arr.append(max_modes := np.nonzero(freqs >= freq_separation[-1])[0])
     freqs_arr.append(freqs[max_modes])
-    disps_arr.append(disp_vecs[max_modes])
+    displ_arr.append(displ_vecs[max_modes])
 
-    loc_freqs_arr = []
-    qlocs_arr = []
-    ulocs_arr = []
+    loc_freqs_arr, qlocs_arr, ulocs_arr = [], [], []
     for idx in range(num_seps + 1):
         num_freqs = len(freqs_arr[idx])
         freqs_block, qloc, uloc_block = [], np.zeros((natoms, 3, 0)), np.zeros((0, 0))
         if num_freqs > 1:
-            freqs_block, qloc, uloc_block = _localize_modes(freqs_arr[idx], disps_arr[idx])
+            freqs_block, qloc, uloc_block = _localize_modes(freqs_arr[idx], displ_arr[idx])
         elif num_freqs == 1:
             freqs_block = freqs_arr[idx]
             qloc = np.zeros((natoms, 3, 1))
-            qloc[:, :, 0] = disps_arr[idx][0]
+            qloc[:, :, 0] = displ_arr[idx][0]
             uloc_block = np.eye(1)
 
         loc_freqs_arr.append(freqs_block)
@@ -205,19 +255,13 @@ def localize_normal_modes(results, freq_separation=[2600]):
 
     uloc = np.zeros((nmodes, nmodes))
     for idx, indices in enumerate(modes_arr):
-        i, j = np.meshgrid(indices, indices, indexing="ij")
-        uloc[i, j] = ulocs_arr[idx]
+        uloc[np.ix_(indices, indices)] = ulocs_arr[idx]
 
     loc_freqs = np.concatenate(loc_freqs_arr)
-    new_disp = [
+    loc_displ_vecs = [
         qlocs_arr[idx][:, :, m]
         for idx in range(num_seps + 1)
         for m in range(len(loc_freqs_arr[idx]))
     ]
 
-    loc_results = {
-        "freq_wavenumber": loc_freqs * AU_TO_CM,
-        "norm_mode": new_disp,
-    }
-
-    return loc_results, uloc
+    return loc_freqs, loc_displ_vecs, uloc

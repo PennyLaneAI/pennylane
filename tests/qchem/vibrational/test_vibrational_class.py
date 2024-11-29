@@ -24,7 +24,7 @@ from pennylane.qchem import vibrational
 
 AU_TO_CM = 219475
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, protected-access
 
 
 def test_import_pyscf(monkeypatch):
@@ -88,7 +88,7 @@ def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
     r"""Test that correct energy is produced for a given molecule."""
 
     mol = qml.qchem.Molecule(sym, geom, unit=unit, basis_name=basis, load_data=True)
-    scf_obj = vibrational.single_point(mol, method=method)
+    scf_obj = qml.qchem.vibrational.vibrational_class._single_point(mol, method=method)
 
     assert np.isclose(scf_obj.e_tot, expected_energy)
 
@@ -139,22 +139,20 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = vibrational.optimize_geometry(mol)
-    harmonic_res = vibrational.harmonic_analysis(mol_eq[1])
-    assert np.allclose(harmonic_res["norm_mode"], expected_vecs) or np.allclose(
-        harmonic_res["norm_mode"], -1 * np.array(expected_vecs)
+    _, displ_vecs = vibrational.harmonic_analysis(mol_eq[1])
+    assert np.allclose(displ_vecs, expected_vecs) or np.allclose(
+        displ_vecs, -1 * np.array(expected_vecs)
     )
 
 
 @pytest.mark.parametrize(
-    ("harmonic_res", "loc_freqs", "exp_results"),
+    ("freqs", "displ_vecs", "loc_freqs", "exp_results"),
     # Expected results were obtained using vibrant code
     [
         (
             # HF Molecule with Bond distance 1.0 A.
-            {
-                "freq_wavenumber": np.array([4137.96875377]),
-                "norm_mode": np.array([[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]]),
-            },
+            np.array([4137.96875377]),
+            np.array([[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]]),
             [2600],
             {
                 "vecs": [[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]],
@@ -164,28 +162,26 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
         ),
         (
             # H2S Molecule with geometry [[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]]
-            {
-                "freq_wavenumber": np.array([1294.21950382, 2691.27147004, 2718.40232678]),
-                "norm_mode": np.array(
+            np.array([1294.21950382, 2691.27147004, 2718.40232678]),
+            np.array(
+                [
                     [
-                        [
-                            [5.04812381e-17, -4.56823323e-01, 5.19946514e-01],
-                            [1.86137414e-16, 4.56823322e-01, 5.19946514e-01],
-                            [1.35223494e-17, 1.15509844e-11, -3.26953266e-02],
-                        ],
-                        [
-                            [-9.48719985e-18, -5.36045204e-01, -4.43104273e-01],
-                            [1.58761035e-16, 5.36044714e-01, -4.43103833e-01],
-                            [5.31102499e-17, 1.54185981e-08, 2.78633116e-02],
-                        ],
-                        [
-                            [6.52265582e-17, -5.15178735e-01, -4.62528551e-01],
-                            [3.12480469e-16, -5.15179245e-01, 4.62528972e-01],
-                            [1.63797372e-17, 3.23955347e-02, -1.32498366e-08],
-                        ],
-                    ]
-                ),
-            },
+                        [5.04812381e-17, -4.56823323e-01, 5.19946514e-01],
+                        [1.86137414e-16, 4.56823322e-01, 5.19946514e-01],
+                        [1.35223494e-17, 1.15509844e-11, -3.26953266e-02],
+                    ],
+                    [
+                        [-9.48719985e-18, -5.36045204e-01, -4.43104273e-01],
+                        [1.58761035e-16, 5.36044714e-01, -4.43103833e-01],
+                        [5.31102499e-17, 1.54185981e-08, 2.78633116e-02],
+                    ],
+                    [
+                        [6.52265582e-17, -5.15178735e-01, -4.62528551e-01],
+                        [3.12480469e-16, -5.15179245e-01, 4.62528972e-01],
+                        [1.63797372e-17, 3.23955347e-02, -1.32498366e-08],
+                    ],
+                ]
+            ),
             [1000, 2000],
             {
                 "vecs": [
@@ -215,28 +211,26 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
         ),
         (
             # H2S Molecule with geometry [[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]]
-            {
-                "freq_wavenumber": np.array([1294.21950382, 2691.27147004, 2718.40232678]),
-                "norm_mode": np.array(
+            np.array([1294.21950382, 2691.27147004, 2718.40232678]),
+            np.array(
+                [
                     [
-                        [
-                            [5.04812381e-17, -4.56823323e-01, 5.19946514e-01],
-                            [1.86137414e-16, 4.56823322e-01, 5.19946514e-01],
-                            [1.35223494e-17, 1.15509844e-11, -3.26953266e-02],
-                        ],
-                        [
-                            [-9.48719985e-18, -5.36045204e-01, -4.43104273e-01],
-                            [1.58761035e-16, 5.36044714e-01, -4.43103833e-01],
-                            [5.31102499e-17, 1.54185981e-08, 2.78633116e-02],
-                        ],
-                        [
-                            [6.52265582e-17, -5.15178735e-01, -4.62528551e-01],
-                            [3.12480469e-16, -5.15179245e-01, 4.62528972e-01],
-                            [1.63797372e-17, 3.23955347e-02, -1.32498366e-08],
-                        ],
-                    ]
-                ),
-            },
+                        [5.04812381e-17, -4.56823323e-01, 5.19946514e-01],
+                        [1.86137414e-16, 4.56823322e-01, 5.19946514e-01],
+                        [1.35223494e-17, 1.15509844e-11, -3.26953266e-02],
+                    ],
+                    [
+                        [-9.48719985e-18, -5.36045204e-01, -4.43104273e-01],
+                        [1.58761035e-16, 5.36044714e-01, -4.43103833e-01],
+                        [5.31102499e-17, 1.54185981e-08, 2.78633116e-02],
+                    ],
+                    [
+                        [6.52265582e-17, -5.15178735e-01, -4.62528551e-01],
+                        [3.12480469e-16, -5.15179245e-01, 4.62528972e-01],
+                        [1.63797372e-17, 3.23955347e-02, -1.32498366e-08],
+                    ],
+                ]
+            ),
             [2600],
             {
                 "vecs": [
@@ -267,17 +261,19 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
-def test_mode_localization(harmonic_res, loc_freqs, exp_results):
+def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
     r"""Test that mode localization returns correct results."""
 
-    loc_res, uloc = vibrational.localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
-    freqs = loc_res["freq_wavenumber"] / AU_TO_CM
+    freqs, displ_vecs, uloc = vibrational.localize_normal_modes(
+        freqs, displ_vecs, freq_separation=loc_freqs
+    )
+    freqs = freqs / AU_TO_CM
     nmodes = len(freqs)
     for i in range(nmodes):
         res_in_expvecs = any(
             (
-                np.allclose(loc_res["norm_mode"][i], vec, atol=1e-6)
-                or np.allclose(loc_res["norm_mode"][i], -1.0 * np.array(vec), atol=1e-6)
+                np.allclose(displ_vecs[i], vec, atol=1e-6)
+                or np.allclose(displ_vecs[i], -1.0 * np.array(vec), atol=1e-6)
             )
             for vec in exp_results["vecs"]
         )
@@ -286,7 +282,7 @@ def test_mode_localization(harmonic_res, loc_freqs, exp_results):
                 np.allclose(exp_results["vecs"][i], vec, atol=1e-6)
                 or np.allclose(exp_results["vecs"][i], -1.0 * np.array(vec), atol=1e-6)
             )
-            for vec in loc_res["norm_mode"]
+            for vec in displ_vecs
         )
 
         res_in_expuloc = any(
@@ -317,7 +313,7 @@ def test_hess_methoderror():
     symbols = ["H", "H"]
     geom = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
     mol = qml.qchem.Molecule(symbols, geom)
-    mol_scf = vibrational.single_point(mol)
+    mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
     with pytest.raises(
         ValueError, match="Specified electronic structure method, ccsd is not available."
@@ -332,8 +328,8 @@ def test_error_mode_localization():
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_scf = vibrational.single_point(mol)
+    mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
-    harmonic_res = vibrational.harmonic_analysis(mol_scf)
+    freqs, displ_vecs = vibrational.harmonic_analysis(mol_scf)
     with pytest.raises(ValueError, match="The `freq_separation` list cannot be empty."):
-        vibrational.localize_normal_modes(harmonic_res, freq_separation=[])
+        vibrational.localize_normal_modes(freqs, displ_vecs, freq_separation=[])
