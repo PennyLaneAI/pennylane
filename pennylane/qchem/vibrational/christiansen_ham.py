@@ -13,15 +13,17 @@
 # limitations under the License.
 """The functions related to the construction of the Christiansen form Hamiltonian."""
 
-from functools import singledispatch
-from typing import Union
-
 import numpy as np
 
 import pennylane as qml
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.bose import BoseSentence, BoseWord
+
+
+# pylint: disable = too-many-branches, too-many-positional-arguments
+
+
+from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
+
 
 def christiansen_bosonic(
     one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True
@@ -137,40 +139,40 @@ def christiansen_bosonic(
     return obs_sq
 
 
-# def christiansen_hamiltonian(pes, nbos=16, do_cubic=False):
+def christiansen_hamiltonian(pes, nbos=16, do_cubic=False):
 
-#     h_arr = christiansen_integrals(pes, nbos=nbos, do_cubic=do_cubic)
+    h_arr = christiansen_integrals(pes, nbos=nbos, do_cubic=do_cubic)
 
-#     one = h_arr[0]
-#     two = h_arr[1]
-#     three = h_arr[2] if len(h_arr) == 3 else None
-#     cform_bosonic = christiansen_bosonic(one=one, two=two, three=three)
-#     cform_qubit = christiansen_mapping(cform_bosonic)
+    one = h_arr[0]
+    two = h_arr[1]
+    three = h_arr[2] if len(h_arr) == 3 else None
+    cform_bosonic = christiansen_bosonic(one=one, two=two, three=three)
+    cform_qubit = christiansen_mapping(cform_bosonic)
 
-#     return cform_qubit
+    return cform_qubit
 
 
-# def christiansen_dipole(pes, nbos=16, do_cubic=False):
+def christiansen_dipole(pes, nbos=16, do_cubic=False):
 
-#     d_arr = christiansen_integrals_dipole(pes, nbos=nbos, do_cubic=do_cubic)
+    d_arr = christiansen_integrals_dipole(pes, nbos=nbos, do_cubic=do_cubic)
 
-#     one_x = d_arr[0][0, :, :, :]
-#     two_x = d_arr[1][0, :, :, :, :, :, :] if len(d_arr) > 1 else None
-#     three_x = d_arr[2][0, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
-#     cform_bosonic_x = christiansen_bosonic(one=one_x, two=two_x, three=three_x)
-#     print(cform_bosonic_x)
-#     cform_qubit_x = christiansen_mapping(cform_bosonic_x)
+    one_x = d_arr[0][0, :, :, :]
+    two_x = d_arr[1][0, :, :, :, :, :, :] if len(d_arr) > 1 else None
+    three_x = d_arr[2][0, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
+    cform_bosonic_x = christiansen_bosonic(one=one_x, two=two_x, three=three_x)
+    print(cform_bosonic_x)
+    cform_qubit_x = christiansen_mapping(cform_bosonic_x)
 
-#     one_y = d_arr[0][1, :, :, :]
-#     two_y = d_arr[1][1, :, :, :, :, :, :] if len(d_arr) > 1 else None
-#     three_y = d_arr[2][1, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
-#     cform_bosonic_y = christiansen_bosonic(one=one_y, two=two_y, three=three_y)
-#     cform_qubit_y = christiansen_mapping(cform_bosonic_y)
+    one_y = d_arr[0][1, :, :, :]
+    two_y = d_arr[1][1, :, :, :, :, :, :] if len(d_arr) > 1 else None
+    three_y = d_arr[2][1, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
+    cform_bosonic_y = christiansen_bosonic(one=one_y, two=two_y, three=three_y)
+    cform_qubit_y = christiansen_mapping(cform_bosonic_y)
 
-#     one_z = d_arr[0][2, :, :, :]
-#     two_z = d_arr[1][2, :, :, :, :, :, :] if len(d_arr) > 1 else None
-#     three_z = d_arr[2][2, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
-#     cform_bosonic_z = christiansen_bosonic(one=one_z, two=two_z, three=three_z)
-#     cform_qubit_z = christiansen_mapping(cform_bosonic_z)
+    one_z = d_arr[0][2, :, :, :]
+    two_z = d_arr[1][2, :, :, :, :, :, :] if len(d_arr) > 1 else None
+    three_z = d_arr[2][2, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
+    cform_bosonic_z = christiansen_bosonic(one=one_z, two=two_z, three=three_z)
+    cform_qubit_z = christiansen_mapping(cform_bosonic_z)
 
-#     return cform_qubit_x, cform_qubit_y, cform_qubit_z
+    return cform_qubit_x, cform_qubit_y, cform_qubit_z
