@@ -573,10 +573,8 @@ def _compute_qsp_angle(poly_coeffs):
 
 def transform_angles(angles, routine1, routine2):
     r"""
-    Transforms angles for quantum signal processing and quantum singular value transformation routines.
+    Converts angles for quantum signal processing (QSP) and quantum singular value transformation (QSVT) routines.
 
-    This function converts angles obtained to implement Quantum Signal Processing (QSP) to
-    Quantum Singular Value Transformation (QSVT) angles and vice versa.
     The transformation is based on Appendix A.2 of `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_. Note that QSVT is equivalent to taking the reflection convention of QSP.
 
     Args:
@@ -592,8 +590,9 @@ def transform_angles(angles, routine1, routine2):
 
     .. code-block::
 
-        qsp_angles = np.array([0.2, 0.3, 0.5])
-        qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
+        >>> qsp_angles = np.array([0.2, 0.3, 0.5])
+        >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
+        [-6.86858347  1.87079633 -0.28539816]
 
 
     .. details::
@@ -665,32 +664,32 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
     Computes the angles needed to implement a polynomial transformation with quantum signal processing (QSP)
     or quantum singular value transformation (QSVT).
 
-    The polynomial must have real coefficients and defined parity, i.e. all powers of the polynomial must be even or odd.
-    The polynomial :math:`P(x)` also must meet that all its values are in the interval :math:`[-1, 1]` when :math:`x \in [-1, 1]`.
-    For more details see `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_.
+    The polynomial :math:`P(x) = \sum_n a_n x^n` must have :math:`x \in [-1, 1]`, the coefficients :math:`a_n` must be real and all the exponents :math:`n` must be either even or odd. For more details see `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_.
 
     Args:
-        poly (tensor-like): coefficients of the polynomial, ordered from lowest to higher degree
+        poly (tensor-like): coefficients of the polynomial ordered from lowest to highest power. For missing powers, ``0`` must be used.
 
-        routine (str): specifies the routine where the angles will be applied. Could be either: ``"QSP"`` or ``"QSVT"``
+        routine (str): the routine for which the angles are computed. Must be either: ``"QSP"`` or ``"QSVT"``
 
-        angle_solver (str): optional string which specifies the method used to calculate the angles. Default is ``"root-finding"``
+        angle_solver (str): the method used to calculate the angles. Default is ``"root-finding"``.
 
     Returns:
-        (tensor-like): angles corresponding to the specified transformation routine
+        (tensor-like): computed angles for the specified routine
 
     Raises:
-        AssertionError: if poly is not valid in the chosen subroutine
-        AssertionError: if routine or angle_solver specified does not exist
+        AssertionError: if ``poly`` is not valid 
+        AssertionError: if ``routine`` or ``angle_solver`` is not supported
 
     **Example**
 
-    This example generates the qsvt angles for the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}`
+    This example generates the ``QSVT`` angles for the polynomial :math:`P(x) = x - \frac{x^3}{2} + \frac{x^5}{3}`.
 
     .. code-block::
 
-        poly = [0, 1.0, 0, -1/2, 0, 1/3]
-        qsvt_angles = qml.poly_to_angles(poly, "QSVT")
+        >>> poly = [0, 1.0, 0, -1/2, 0, 1/3]
+        >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
+        >>> print(qsvt_angles)
+        [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
 
 
     .. details::
