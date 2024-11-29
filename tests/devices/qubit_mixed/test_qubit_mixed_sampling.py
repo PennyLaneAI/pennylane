@@ -182,9 +182,6 @@ class TestSampleState:
         class CustomSampleMeasurement(SampleMeasurement):
             """A custom measurement process for testing."""
 
-            def __init__(self):
-                super().__init__()
-
             def process_counts(self, counts):
                 return counts
 
