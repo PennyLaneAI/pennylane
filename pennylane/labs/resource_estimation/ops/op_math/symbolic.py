@@ -85,7 +85,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         no_control = cls.resource_rep(base_class, base_params, num_ctrl_wires, 0, num_work_wires)
         x = re.ResourceX.resource_rep()
         gate_types[no_control] = 1
-        gate_types[x] = 2*num_ctrl_values
+        gate_types[x] = 2 * num_ctrl_values
 
         return gate_types
 
@@ -184,6 +184,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         base_name = base_class.tracking_name(**base_params)
         return f"({base_name})**{z}"
 
+
 def zyz_resources(num_ctrl_wires, num_work_wires):
     """The zyz decomposition of a controlled unitary from SU(2)
     defined in https://arxiv.org/pdf/quant-ph/9503016"""
@@ -207,7 +208,7 @@ def zyz_resources(num_ctrl_wires, num_work_wires):
     # Lemma 7.9
     cry = re.ResourceCRY.resource_rep()
     crz = re.ResourceCRZ.resource_rep()
-    multix = re.ResourceMultiControlledX.resource_rep(num_ctrl_wires-1, 0, num_work_wires)
+    multix = re.ResourceMultiControlledX.resource_rep(num_ctrl_wires - 1, 0, num_work_wires)
 
     gate_types[cry] = 2
     gate_types[crz] = 3
