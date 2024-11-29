@@ -189,7 +189,7 @@ def calculate_variance(
     """Find variance of observable.
 
     Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state.
+        measurementprocess (VarianceMP): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
         readout_errors (List[Callable]): List of operators to apply to each wire being measured
