@@ -666,7 +666,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
     or quantum singular value transformation (QSVT).
 
     The polynomial :math:`P(x) = \sum_n a_n x^n` must satisfy :math:`|P(x)| \leq 1` for :math:`x \in [-1, 1]`, the
-    coefficients :math:`a_n` must be real and all the exponents :math:`n` must be either even or odd.
+    coefficients :math:`a_n` must be real and the exponents :math:`n` must be either all even or all odd.
     For more details see `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_.
 
     Args:
