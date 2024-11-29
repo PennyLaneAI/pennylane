@@ -14,26 +14,34 @@
 """
 This module contains the functions needed for two-electron tensor factorization.
 """
+
+from functools import partial
+
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 
+# pylint: disable=too-many-arguments
 
-def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
+
+def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5, cholesky=False):
     r"""Return the double-factorized form of a two-electron integral tensor in spatial basis.
 
     The two-electron tensor :math:`V`, in
-    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_, is first
-    factorized in terms of symmetric matrices :math:`L^{(r)}` such that
-    :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is determined by a
-    threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized and its eigenvalues (and
-    corresponding eigenvectors) are truncated at a threshold error.
+    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
+    is first factorized in terms of symmetric matrices :math:`L^{(r)}` such that
+    :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is
+    determined by a threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized
+    and its eigenvalues (and corresponding eigenvectors) are truncated at a threshold error.
 
     Args:
         two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
             basis arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
+        cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
+            :math:`L^{(r)}` instead of eigen decomposition. Default is ``False``.
 
     Returns:
         tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
@@ -124,43 +132,37 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
         - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
           :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-        - Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
-          corresponding eigenvalues larger than a threshold.
+        - Decompose the resulting matrix either via eigendecomposition or
+          Cholesky decomposition.
 
-        - Multiply the eigenvectors by the square root of the eigenvalues to obtain
-          matrices :math:`L^{(r)}`.
+        - For the eigendecomposition, keep the :math:`r` eigenvectors with
+          corresponding eigenvalues larger than the threshold. Multiply these
+          eigenvectors by the square root of the eigenvalues and reshape them
+          to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
-        - Reshape the selected eigenvectors to :math:`n \times n` matrices.
+        - While for the Cholesky decomposition, keep the first :math:`r` Cholesky
+          vectors that result in an residual error below the threshold and reshape
+          them to :math:`r \times n \times n` matrices to obtain :math:`L^{(r)}`.
 
-        - Diagonalize the :math:`n \times n` matrices and for each matrix keep the eigenvalues (and
-          their corresponding eigenvectors) that are larger than a threshold.
+        - Diagonalize the :math:`L^{(r)}` (:math:`n \times n`) matrices and for each
+          matrix keep the eigenvalues (and their corresponding eigenvectors) that are
+          larger than a threshold.
     """
-    shape = two_electron.shape
+    shape = qml.math.shape(two_electron)
 
     if len(shape) != 4 or len(set(shape)) != 1:
         raise ValueError("The two-electron repulsion tensor must have a (N x N x N x N) shape.")
 
-    n = shape[0]
-    two = two_electron.reshape(n * n, n * n)
+    two_body_tensor = qml.math.reshape(two_electron, (shape[0] * shape[1], -1))
+    interface = qml.math.get_interface(two_body_tensor)
 
-    eigvals_r, eigvecs_r = np.linalg.eigh(two)
-    eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol_factor])
+    if cholesky:
+        factors = _double_factorization_cholesky(two_body_tensor, tol_factor, shape, interface)
+    else:
+        factors = _double_factorization_eigen(two_body_tensor, tol_factor, shape, interface)
 
-    eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
-
-    if eigvals_r.size == 0:
-        raise ValueError(
-            "All factors are discarded. Consider decreasing the first threshold error."
-        )
-
-    vectors = eigvecs_r @ np.diag(np.sqrt(eigvals_r))
-
-    r = len(eigvals_r)
-    factors = np.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)])
-
-    eigvals, eigvecs = np.linalg.eigh(factors)
-    eigvals_m = []
-    eigvecs_m = []
+    eigvals, eigvecs = qml.math.linalg.eigh(factors)
+    eigvals_m, eigvecs_m = [], []
     for n, eigval in enumerate(eigvals):
         idx = [i for i, v in enumerate(eigval) if abs(v) > tol_eigval]
         eigvals_m.append(eigval[idx])
@@ -172,6 +174,77 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
         )
 
     return factors, eigvals_m, eigvecs_m
+
+
+def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=None):
+    """Explicit double factorization using generalized eigendecomposition of
+    the two-electron integral tensor described in PRX Quantum 2, 040352 (2021).
+
+    Args:
+        two (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation
+        tol_factor (float): threshold error value for discarding the negligible factors
+        shape (tuple[int, int]): shape for the provided two_electron
+        interface (string): interface for two_electron tensor
+        num_factors (int): number of factors to be computed.
+
+    Returns:
+        tuple(array[array[float]], array[array[float]], array[array[float]]): tuple containing
+        symmetric matrices (factors) approximating the two-electron integral tensor, truncated
+        eigenvalues of the generated factors, and truncated eigenvectors of the generated factors
+    """
+    eigvals_r, eigvecs_r = qml.math.linalg.eigh(two)
+    eigvals_r = qml.math.array([val for val in eigvals_r if abs(val) > tol_factor])
+
+    eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
+    if eigvals_r.size == 0:
+        raise ValueError(
+            "All factors are discarded. Consider decreasing the first threshold error."
+        )
+    vectors = eigvecs_r @ qml.math.diag(qml.math.sqrt(eigvals_r))
+
+    n, r = shape[0], len(eigvals_r)
+    factors = qml.math.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)], like=interface)
+    return factors
+
+
+def _double_factorization_cholesky(two, tol_factor=1.0e-10, shape=None, interface=None):
+    """Explicit double factorization using Cholesky decomposition of the two-electron
+    integral tensor described in J. Chem. Phys. 118, 9481-9484 (2003).
+
+    Args:
+        two (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation
+        tol_factor (float): threshold error value for discarding the negligible factors
+        shape (tuple[int, int]): shape for the provided two_electron
+        interface (string): interface for two_electron tensor
+        num_factors (int): number of factors to be computed.
+
+    Returns:
+        tuple(array[array[float]], array[array[float]], array[array[float]]): tuple containing
+        symmetric matrices (factors) approximating the two-electron integral tensor, truncated
+        eigenvalues of the generated factors, and truncated eigenvectors of the generated factors
+    """
+    n2 = shape[0] * shape[1]
+    cholesky_vecs = qml.math.zeros((n2, n2 + 1), like=interface)
+    cholesky_diag = qml.math.array(qml.math.diagonal(two).real, like=interface)
+
+    for idx in range(n2 + 1):
+        if (max_err := qml.math.max(cholesky_diag)) < tol_factor:
+            cholesky_vecs = cholesky_vecs[:, :idx]
+            break
+
+        max_idx = qml.math.argmax(cholesky_diag)
+        cholesky_mat = cholesky_vecs[:, :idx]
+        cholesky_vec = (
+            two[:, max_idx] - cholesky_mat @ cholesky_mat[max_idx].conj()
+        ) / qml.math.sqrt(max_err)
+
+        cholesky_vecs[:, idx] = cholesky_vec
+        cholesky_diag -= qml.math.abs(cholesky_vec) ** 2
+
+    factors = cholesky_vecs.T.reshape(-1, shape[0], shape[0])
+    return factors
 
 
 def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
@@ -413,3 +486,114 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
         chemist_one_body_coeffs += one_body_coeffs
 
     return (x for x in [chemist_one_body_coeffs, chemist_two_body_coeffs] if x is not None)
+
+
+def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B", **method_kwargs):
+    r"""Performs a block-invariant symmetry shift on the electronic integrals.
+
+    The block-invariant symmetry shift (BLISS) method [`arXiv:2304.13772
+    <https://arxiv.org/pdf/2304.13772>`_] decreases the one-norm and the
+    spectral range of a molecular Hamiltonian :math:`\hat{H}` defined by
+    its one-body :math:`T_{pq}` and two-body components. It constructs
+    a shifted Hamiltonian (:math:`\hat{H}^{\prime}`), such that:
+
+    .. math::
+
+        H^{\prime}(k_1, k_2, \vec{\xi}) = \hat{H} - k_1 (\hat{N}_e - N_e) - k_2 (\hat{N}_e^2 - \hat{N}_e^2) + \sum_{ij}\xi_{ij} T_{ij} (\hat{N}_e - N_e),
+
+    where :math:`\hat{N}_e` is the electron number operator, :math:`N_e` is the
+    number of electrons of the molecule and :math:`k_u, \xi_{ij} \in \mathbb{R}` are
+    the parameters that are optimized with the constraint :math:`\xi_{ij} = \xi_{ji}`
+    to minimize the overall one-norm of the :math:`\hat{H}^{\prime}`.
+
+    Args:
+        core (array[float]): the contribution of the core orbitals and nuclei
+        one_electron (array[float]): a one-electron integral tensor
+        two_electron (array[float]): a two-electron integral tensor in the chemist notation
+        n_elec (bool): number of electrons in the molecule
+        method (str | callable): solver method used by ``scipy.optimize.minimize``
+            to optimize the parameters. Please refer to its `documentation
+            <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize>`_
+            for the list of all available solvers. Default solver is ``"L-BFGS-B"``.
+        **method_kwargs: keyword arguments to pass when calling ``scipy.optimize.minimize`` with ``method=method``
+
+    Returns:
+        tuple(array[float], array[float], array[float]): symmetry shifted core, one-body tensor and two-body tensor for the provided terms
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = qml.numpy.array([[0.0, 0.0, 0.0],
+    ...                             [1.398397361, 0.0, 0.0]], requires_grad=False)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name="STO-3G")
+    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> ctwo = np.swapaxes(two, 1, 3)
+    >>> s_core, s_one, s_two = symmetry_shift(core, one, ctwo, n_elec=mol.n_electrons)
+    >>> print(s_two)
+    [[[[ 1.12461110e-02 -1.70030746e-09]
+      [-1.70030746e-09 -1.12461660e-02]]
+     [[-1.70030746e-09  1.81210462e-01]
+      [ 1.81210462e-01 -1.70032620e-09]]]
+     [[[-1.70030763e-09  1.81210462e-01]
+      [ 1.81210462e-01 -1.70032598e-09]]
+     [[-1.12461660e-02 -1.70032620e-09]
+      [-1.70032620e-09  1.12461854e-02]]]]
+    """
+    norb = one_electron.shape[0]
+    ki_vec = np.array([0.0, 0.0])
+    xi_mat = np.zeros((norb, norb))
+    xi_idx = np.tril_indices_from(xi_mat)
+    xi_vec = xi_mat[xi_idx]
+
+    params = np.hstack((ki_vec, xi_vec))
+    cost_func = partial(
+        _symmetry_shift_two_body_loss, two=two_electron, xi_idx=xi_idx
+    )  # Step 1: Reduce norm of two-body term
+
+    res_two = sp.optimize.minimize(cost_func, params, method=method, **method_kwargs)
+    _, k2, xi, _, N2, F_ = _symmetry_shift_terms(res_two.x, xi_idx, norb)
+    new_two = two_electron - k2 * N2 - F_ / 4
+
+    params = np.hstack(([0.0, k2], xi[xi_idx]))
+    cost_func = partial(
+        _symmetry_shift_one_body_loss, one=one_electron, n_elec=n_elec, xi_idx=xi_idx
+    )  # Step 2: Reduce norm of one-body term
+
+    res_one = sp.optimize.minimize(cost_func, params, method=method)
+    k1, _, _, N1, _, _ = _symmetry_shift_terms(res_one.x, xi_idx, norb)
+    new_core = core + k1 * n_elec + k2 * n_elec**2
+    new_one = one_electron - k1 * N1 + n_elec * xi / 2
+
+    return new_core, new_one, new_two
+
+
+def _symmetry_shift_terms(params, xi_idx, norb):
+    """Computes the terms required for performing symmetry shift
+    (Eq. 8-9, `arXiv:2304.13772 <https://arxiv.org/abs/2304.13772>`_)
+    from the flattened solution parameter array obtained from scipy optimizer's result."""
+    (k1, k2), xi_vec = params[:2], params[2:]
+    if not xi_vec.size:  # pragma: no cover
+        xi_vec = np.zeros_like(xi_idx[0])
+    xi = np.zeros((norb, norb))
+    xi[xi_idx], xi[xi_idx[::-1]] = xi_vec, xi_vec
+
+    N1 = np.eye(norb)
+    N2 = np.einsum("pq,rs->pqrs", N1, N1)
+    T_ = np.einsum("pq,rs->pqrs", xi, N1)
+    F_ = T_ + np.transpose(T_, (2, 3, 0, 1))
+
+    return k1, k2, xi, N1, N2, F_
+
+
+def _symmetry_shift_two_body_loss(params, two, xi_idx):
+    """Two body loss term for symmetry shift."""
+    _, k2, _, _, N2, F_ = _symmetry_shift_terms(params, xi_idx, two.shape[0])
+    new_two = two - k2 * N2 - F_ / 4
+    return np.linalg.norm(new_two)
+
+
+def _symmetry_shift_one_body_loss(params, one, n_elec, xi_idx):
+    """One body loss term for symmetry shift."""
+    k1, _, xi, N1, _, _ = _symmetry_shift_terms(params, xi_idx, one.shape[0])
+    new_one = one - k1 * N1 + n_elec * xi / 2
+    return np.linalg.norm(new_one)
