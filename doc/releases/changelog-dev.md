@@ -48,6 +48,7 @@
     are added to the device API for devices that provides a TOML configuration file and thus have 
     a `capabilities` property.
     [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
+    [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
@@ -118,6 +119,11 @@
 
 * Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
+
+* The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
+  they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
+  observables that are also unsupported by the device.
+  [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
 <h4>Capturing and representing hybrid programs</h4>
 
