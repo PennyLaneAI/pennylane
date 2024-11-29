@@ -132,7 +132,7 @@ class TestPauliRotation:
     def test_controlled_decomposition(self, resource_class, controlled_class, epsilon):
         """Test that the controlled decompositions are correct."""
         expected = {controlled_class.resource_rep(): 1}
-        assert resource_class.controlled_resource_decomp(1, 1, 0) == expected
+        assert resource_class.controlled_resource_decomp(1, 0, 0) == expected
 
         op = resource_class(1.24, wires=0)
         c_op = re.ResourceControlled(op, control_wires=[1])

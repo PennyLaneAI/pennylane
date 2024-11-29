@@ -102,7 +102,7 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0:
             return {re.ResourceCRX.resource_rep(): 1}
 
         raise re.ResourcesNotDefined
@@ -134,7 +134,7 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0:
             return {re.ResourceCRY.resource_rep(): 1}
 
         raise re.ResourcesNotDefined
@@ -171,7 +171,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0:
             return {re.ResourceCRZ.resource_rep(): 1}
 
         raise re.ResourcesNotDefined

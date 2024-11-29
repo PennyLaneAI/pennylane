@@ -33,7 +33,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
             return base_class.adjoint_resource_decomp(**base_params)
         except re.ResourcesNotDefined:
             gate_types = defaultdict(int)
-            decomp = base_class.resources(**base_params)
+            decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
                 resources = gate.op_type.adjoint_resource_decomp(**gate.params)
                 _scale_dict(resources, count, in_place=True)
@@ -73,7 +73,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             pass
 
         gate_types = defaultdict(int)
-        decomp = base_class.resources(**base_params)
+        decomp = base_class.resources(**base_params, **kwargs)
         for gate, count in decomp.items():
             resources = gate.op_type.controlled_resource_decomp(
                 num_ctrl_wires, num_ctrl_values, num_work_wires, **gate.params
@@ -88,7 +88,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
             "base_class": type(self.base),
             "base_params": self.base.resource_params(),
             "num_ctrl_wires": len(self.control_wires),
-            "num_ctrl_values": len([val for val in self.control_values if val]),
+            "num_ctrl_values": len([val for val in self.control_values if not val]),
             "num_work_wires": len(self.work_wires),
         }
 
@@ -148,7 +148,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
             pass
 
         try:
-            return _scale_dict(base_class.resources(**base_params), z)
+            return _scale_dict(base_class.resources(**base_params, **kwargs), z)
         except re.ResourcesNotDefined:
             pass
 
