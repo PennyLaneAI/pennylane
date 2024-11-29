@@ -677,7 +677,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         (tensor-like): computed angles for the specified routine
 
     Raises:
-        AssertionError: if ``poly`` is not valid 
+        AssertionError: if ``poly`` is not valid
         AssertionError: if ``routine`` or ``angle_solver`` is not supported
 
     **Example**
