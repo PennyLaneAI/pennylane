@@ -522,7 +522,7 @@ def _compute_qsp_angle(poly_coeffs):
     .. details::
         :title: Implementation details
 
-        Based on the appendix A in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_], the target polynomial :math:`F`
+        Based on the appendix A in `arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_, the target polynomial :math:`F`
         is transformed into a new polynomial :math:`P` by following the steps below:
 
         0. The input to the function are the coefficients of :math:`F`. E.g. :math:`[c_0, 0, c_1, 0, c_2]`.
@@ -631,7 +631,7 @@ def transform_angles(angles, routine1, routine2):
         num_angles = len(angles)
         update_vals = np.empty(num_angles)
 
-        update_vals[0] = 3 * np.pi / 4 - (3 + len(angles) % 4) * np.pi / 2
+        update_vals[0] = 3 * np.pi / 4 - (3 + num_angles % 4) * np.pi / 2
         update_vals[1:-1] = np.pi / 2
         update_vals[-1] = -np.pi / 4
         update_vals = qml.math.convert_like(update_vals, angles)
@@ -642,7 +642,7 @@ def transform_angles(angles, routine1, routine2):
         num_angles = len(angles)
         update_vals = np.empty(num_angles)
 
-        update_vals[0] = 3 * np.pi / 4 - (3 + len(angles) % 4) * np.pi / 2
+        update_vals[0] = 3 * np.pi / 4 - (3 + num_angles % 4) * np.pi / 2
         update_vals[1:-1] = np.pi / 2
         update_vals[-1] = -np.pi / 4
         update_vals = qml.math.convert_like(update_vals, angles)
