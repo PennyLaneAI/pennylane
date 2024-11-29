@@ -977,19 +977,13 @@ class DefaultMixedNewAPI(Device):
         circuits: QuantumScript,
         execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
-        interface = (
-            execution_config.interface
-            if execution_config.gradient_method in {"best", "backprop", None}
-            else None
-        )
-
         return tuple(
             simulate(
                 c,
                 rng=self._rng,
                 prng_key=self._prng_key,
                 debugger=self._debugger,
-                interface=interface,
+                interface=execution_config.interface,
                 readout_errors=self.readout_err,
             )
             for c in circuits
@@ -1014,6 +1008,8 @@ class DefaultMixedNewAPI(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
+        if not execution_config.gradient_method in {"best", "backprop", None}:
+            execution_config.interface = None
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
