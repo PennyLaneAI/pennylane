@@ -32,10 +32,10 @@ def _obtain_r2(ytrue, yfit):
 
 def _remove_harmonic(freqs, pes_onebody):
     """Removes the harmonic part from the PES
-    
+
     Args:
         freqs (list(float)): the harmonic frequencies
-        pes_onebody: one body terms of the PES object
+        pes_onebody (list(list(float))): one body terms of the PES object
 
     Returns:
         harmonic part of the PES
@@ -220,7 +220,16 @@ def _fit_threebody(pes_threebody, deg, min_deg=3):
 
 
 def taylor_integrals(pes, deg=4, min_deg=3):
-    r"""Computes the Taylor form dipole for a given PES object"""
+    r"""Computes the Taylor form integrals for Hamiltonian construction
+
+    Args:
+        pes (VibrationalPES): the PES object
+        deg (int): maximum degree of taylor form polynomial
+        min_deg (int): minimum degree of taylor form polynomial
+
+    Returns:
+        coeff_arr (list(list(floats))): the coeffs of the one-body, two-body, three-body terms
+    """
 
     _, _, anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onebody)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, deg, min_deg=min_deg)
@@ -243,66 +252,69 @@ def taylor_integrals(pes, deg=4, min_deg=3):
 
 def taylor_integrals_dipole(pes, deg=4, min_deg=1):
     r"""Calculates Taylor form integrals for dipole construction
-    
+
     Args:
-        pes: the PES object
-        deg: the maximum degree of the taylor polynomial
-        min_deg: the starting degree of the taylor polynomial
+        pes (VibrationalPES): the PES object
+        deg (int): the maximum degree of the taylor polynomial
+        min_deg (int): the minimum degree of the taylor polynomial
 
     Returns:
-        
+        tuple: a tuple containing:
+            - coeffs_x_arr (list(floats)): coefficients for x-displacements
+            - coeffs_y_arr (list(floats)): coefficients for y-displacements
+            - coeffs_z_arr (list(floats)): coefficients for z-displacements
     """
-    f_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onebody[:, :, 0], deg, min_deg=min_deg)
-    f_x_arr = [f_x_1D]
+    coeffs_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onebody[:, :, 0], deg, min_deg=min_deg)
+    coeffs_x_arr = [coeffs_x_1D]
     predicted_x_arr = [predicted_x_1D]
 
-    f_y_1D, predicted_y_1D = _fit_onebody(pes.dipole_onebody[:, :, 1], deg, min_deg=min_deg)
-    f_y_arr = [f_y_1D]
+    coeffs_y_1D, predicted_y_1D = _fit_onebody(pes.dipole_onebody[:, :, 1], deg, min_deg=min_deg)
+    coeffs_y_arr = [coeffs_y_1D]
     predicted_y_arr = [predicted_y_1D]
 
-    f_z_1D, predicted_z_1D = _fit_onebody(pes.dipole_onebody[:, :, 2], deg, min_deg=min_deg)
-    f_z_arr = [f_z_1D]
+    coeffs_z_1D, predicted_z_1D = _fit_onebody(pes.dipole_onebody[:, :, 2], deg, min_deg=min_deg)
+    coeffs_z_arr = [coeffs_z_1D]
     predicted_z_arr = [predicted_z_1D]
 
     if pes.dipole_twobody is not None:
-        f_x_2D, predicted_x_2D = _fit_twobody(
+        coeffs_x_2D, predicted_x_2D = _fit_twobody(
             pes.dipole_twobody[:, :, :, :, 0], deg, min_deg=min_deg
         )
-        f_x_arr.append(f_x_2D)
+        coeffs_x_arr.append(coeffs_x_2D)
         predicted_x_arr.append(predicted_x_2D)
 
-        f_y_2D, predicted_y_2D = _fit_twobody(
+        coeffs_y_2D, predicted_y_2D = _fit_twobody(
             pes.dipole_twobody[:, :, :, :, 1], deg, min_deg=min_deg
         )
-        f_y_arr.append(f_y_2D)
+        coeffs_y_arr.append(coeffs_y_2D)
         predicted_y_arr.append(predicted_y_2D)
 
-        f_z_2D, predicted_z_2D = _fit_twobody(
+        coeffs_z_2D, predicted_z_2D = _fit_twobody(
             pes.dipole_twobody[:, :, :, :, 2], deg, min_deg=min_deg
         )
-        f_z_arr.append(f_z_2D)
+        coeffs_z_arr.append(coeffs_z_2D)
         predicted_z_arr.append(predicted_z_2D)
 
     if pes.dipole_threebody is not None:
-        f_x_3D, predicted_x_3D = _fit_threebody(
+        coeffs_x_3D, predicted_x_3D = _fit_threebody(
             pes.dipole_threebody[:, :, :, :, :, :, 0], deg, min_deg=min_deg
         )
-        f_x_arr.append(f_x_3D)
+        coeffs_x_arr.append(coeffs_x_3D)
         predicted_x_arr.append(predicted_x_3D)
 
-        f_y_3D, predicted_y_3D = _fit_threebody(
+        coeffs_y_3D, predicted_y_3D = _fit_threebody(
             pes.dipole_threebody[:, :, :, :, :, :, 1], deg, min_deg=min_deg
         )
-        f_y_arr.append(f_y_3D)
+        coeffs_y_arr.append(coeffs_y_3D)
         predicted_y_arr.append(predicted_y_3D)
 
-        f_z_3D, predicted_z_3D = _fit_threebody(
+        coeffs_z_3D, predicted_z_3D = _fit_threebody(
             pes.dipole_threebody[:, :, :, :, :, :, 2], deg, min_deg=min_deg
         )
-        f_z_arr.append(f_z_3D)
+        coeffs_z_arr.append(coeffs_z_3D)
         predicted_z_arr.append(predicted_z_3D)
 
-    return f_x_arr, f_y_arr, f_z_arr
+    return coeffs_x_arr, coeffs_y_arr, coeffs_z_arr
 
 
 def _position_to_boson(index, op):

@@ -502,3 +502,27 @@ def test_taylor_bosonic():
 def test_taylor_hamiltonian():
     # taylor_ham =  taylor_hamiltonian()
     pass
+
+
+def test_remove_harmonic():
+    pass
+
+
+def test_fit_onebody():
+    pass
+
+
+def test_fit_twobody():
+    pass
+
+
+def test_fit_threebody():
+    pass
+
+
+def test_twobody_degs():
+    pass
+
+
+def test_threebody_degs():
+    pass
