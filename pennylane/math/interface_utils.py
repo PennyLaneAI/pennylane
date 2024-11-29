@@ -20,7 +20,6 @@ from typing import Literal, Union
 import autoray as ar
 
 import pennylane as qml
-from pennylane.tape import QuantumScriptBatch
 
 
 class Interface(Enum):
@@ -207,7 +206,7 @@ def get_deep_interface(value):
     return _get_interface_of_single_tensor(itr)
 
 
-def _get_jax_interface_name(tapes: QuantumScriptBatch) -> Interface:
+def _get_jax_interface_name(tapes: "qml.tape.QuantumScriptBatch") -> Interface:
     """Check all parameters in each tape and output the name of the suitable
     JAX interface.
 
@@ -278,7 +277,7 @@ def _get_canonical_interface_name(user_input: Union[str, Interface]) -> Interfac
         ) from exc
 
 
-def _resolve_interface(interface: Interface, tapes: QuantumScriptBatch) -> Interface:
+def _resolve_interface(interface: Interface, tapes: "qml.tape.QuantumScriptBatch") -> Interface:
     """Helper function to resolve the interface name based on a batch of tapes.
 
     Args:
