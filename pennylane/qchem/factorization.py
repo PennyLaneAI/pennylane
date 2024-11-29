@@ -118,7 +118,7 @@ def factorize(
 
     Raises:
         ValueError: If the specified regularization type is not supported.
-        ImportError: If the specified packages are not installed for performing compressed double factorization.
+        ImportError: If the specified packages are not installed when ``compressed=True``.
 
     **Example**
 
