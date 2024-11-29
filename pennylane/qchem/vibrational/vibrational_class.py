@@ -126,6 +126,7 @@ def optimize_geometry(molecule, method="rhf"):
     scf_result = _single_point(mol_eq, method)
     return mol_eq, scf_result
 
+
 def _get_rhf_dipole(scf_result):
     """
     Given an restricted Hartree-Fock object, evaluate the dipole moment
@@ -203,7 +204,7 @@ def get_dipole(scf_result, method):
     Args:
        scf_result: pyscf object from electronic structure calculations
        method: Electronic structure method to define the level of theory
-            for dipole moment calculation. Input values cal be ``'rhf'`` or ``'uhf'``.
+            for dipole moment calculation. Input values can be ``'rhf'`` or ``'uhf'``.
             Default is restricted Hartree-Fock ``'rhf'``.
     Returns:
        dipole moment

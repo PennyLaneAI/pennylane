@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
 
-from .vibrational_class import get_dipole, single_point
+from .vibrational_class import _single_point, get_dipole
 
 # pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
 # pylint: disable= import-outside-toplevel, too-many-positional-arguments
@@ -49,8 +49,7 @@ def _import_mpi4py():
 def pes_onemode(
     molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
 ):
-    r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs).
+    r"""Computes the one-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs.
     Simultaneously, can compute the dipole one-mode elements.
 
     Args:
@@ -122,8 +121,7 @@ def pes_onemode(
 def _local_pes_onemode(
     comm, molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
 ):
-    r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs) for each processor.
+    r"""Computes the one-mode potential energy surface on a grid in real space, along thedirections set by the displ_vecs for each processor.
     Simultaneously, can compute the dipole one-body elements.
 
     Args:
@@ -177,7 +175,7 @@ def _local_pes_onemode(
                 load_data=True,
             )
 
-            displ_scf = single_point(displ_mol, method=method)
+            displ_scf = _single_point(displ_mol, method=method)
 
             omega = freqs_au[mode]
             ho_const = omega / 2
@@ -246,8 +244,7 @@ def pes_twomode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs).
+    r"""Computes the two-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs.
     Simultaneously, can compute the dipole two-mode elements.
 
     Args:
@@ -330,8 +327,7 @@ def _local_pes_twomode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs) for each processor.
+    r"""Computes the two-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs) for each processor.
     Simultaneously, can compute the dipole two-mode elements."""
 
     size = comm.Get_size()
@@ -379,7 +375,7 @@ def _local_pes_twomode(
                 unit="angstrom",
                 load_data=True,
             )
-            displ_scf = single_point(displ_mol, method=method)
+            displ_scf = _single_point(displ_mol, method=method)
             idx = mode_idx * len(jobs_on_rank) + job_idx
 
             local_pes_twobody[idx] = (
@@ -473,8 +469,7 @@ def _local_pes_threemode(
     do_dipole=False,
 ):
     r"""
-    Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs) for each processor.
+    Computes the three-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs for each processor.
     """
     size = comm.Get_size()
     rank = comm.Get_rank()
@@ -542,7 +537,7 @@ def _local_pes_threemode(
                 unit="angstrom",
                 load_data=True,
             )
-            displ_scf = single_point(displ_mol, method=method)
+            displ_scf = _single_point(displ_mol, method=method)
 
             idx = mode_combo * len(jobs_on_rank) + job_idx
             local_pes_threebody[idx] = (
@@ -645,8 +640,7 @@ def pes_threemode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs).
+    r"""Computes the three-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs.
     Simultaneously, can compute the dipole three-mode elements.
 
     Args:

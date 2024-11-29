@@ -42,6 +42,7 @@ def test_import_mpi4py(monkeypatch):
         with pytest.raises(ImportError, match="This feature requires mpi4py"):
             vibrational.pes_generator._import_mpi4py()
 
+
 @pytest.mark.parametrize(
     ("sym", "geom", "harmonic_res", "do_dipole", "exp_pes_onemode", "exp_dip_onemode"),
     # Expected results were obtained using vibrant code
@@ -76,7 +77,7 @@ def test_import_mpi4py(monkeypatch):
                     ]
                 ]
             ),
-            None
+            None,
         ),
         (
             ["H", "H", "S"],

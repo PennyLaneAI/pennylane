@@ -343,21 +343,27 @@ def test_error_mode_localization():
             ["H", "F"],
             np.array([[0.0, 0.0, 0.03967368], [0.0, 0.0, 0.96032632]]),
             "RHF",
-            [-3.78176692e-16, -3.50274735e-17, -9.05219767e-01]
+            [-3.78176692e-16, -3.50274735e-17, -9.05219767e-01],
         ),
         (
             ["H", "H", "S"],
-            np.array([[0.0, -1.00688408, -0.9679942], [0.0, 1.00688408, -0.9679942], [0.0, 0.0, -0.0640116]]),
+            np.array(
+                [
+                    [0.0, -1.00688408, -0.9679942],
+                    [0.0, 1.00688408, -0.9679942],
+                    [0.0, 0.0, -0.0640116],
+                ]
+            ),
             "UHF",
-            [1.95258747e-16, 5.62355462e-15, -7.34149703e-01]
-        )
-    ]
+            [1.95258747e-16, 5.62355462e-15, -7.34149703e-01],
+        ),
+    ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_get_dipole(sym, geom, method, expected_dipole):
     r"""Test that the get_dipole function produces correct results."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_scf = vibrational.single_point(mol, method=method)
+    mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol, method=method)
     dipole = vibrational.get_dipole(mol_scf, method=method)
     assert np.allclose(dipole, expected_dipole)
