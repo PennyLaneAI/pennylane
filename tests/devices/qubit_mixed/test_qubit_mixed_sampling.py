@@ -175,6 +175,30 @@ class TestSampleState:
         ):
             sample_state(invalid_state, 10)
 
+    def test_measure_with_samples_not_implemented_error(self):
+        """Test that measure_with_samples raises NotImplementedError for unhandled measurement processes."""
+        from pennylane.measurements import SampleMeasurement
+
+        class CustomSampleMeasurement(SampleMeasurement):
+            """A custom measurement process for testing."""
+
+            def __init__(self):
+                super().__init__()
+
+            def process_counts(self, counts):
+                return counts
+
+            def process_samples(self, samples):
+                return samples
+
+        # Prepare a simple state
+        state = np.array([[1, 0], [0, 0]], dtype=np.complex128)
+        shots = Shots(10)
+        mp = CustomSampleMeasurement()
+
+        with pytest.raises(NotImplementedError):
+            measure_with_samples(mp, state, shots)
+
 
 class TestMeasurements:
     """Test different measurement types"""
@@ -260,6 +284,35 @@ class TestMeasurements:
         )
         assert isinstance(result, (float, np.floating)), "Result is not a floating point number"
 
+    def test_measure_sum_with_samples_partitioned_shots(self):
+        """Test measuring a Sum observable with partitioned shots."""
+        # Create a simple state
+        state = create_initial_state((0, 1))
+
+        # Define a Sum observable
+        obs = qml.PauliZ(0) + qml.PauliX(1)
+
+        # Wrap it in an expectation measurement process
+        mp = qml.expval(obs)
+
+        # Define partitioned shots
+        shots = Shots((100, 200))
+
+        # Perform measurement
+        result = measure_with_samples(
+            mp,
+            state,
+            shots,
+        )
+
+        # Check that result is a tuple of results
+        assert isinstance(result, tuple), "Result is not a tuple for partitioned shots"
+        assert len(result) == 2, f"Result length {len(result)} does not match expected length 2"
+        # Each result should be a float
+        assert all(
+            isinstance(r, (float, np.floating)) for r in result
+        ), "Not all results are floating point numbers"
+
 
 class TestBatchedOperations:
     """Test batched state handling"""
@@ -310,6 +363,36 @@ class TestBatchedOperations:
                 shots.total_shots,
                 2,
             ), f"Result shape {result.shape} does not match expected shape"
+
+    @pytest.mark.parametrize("shots", [Shots(1000)])
+    def test_batched_expectation_measurement(self, shots):
+        """Test expectation value measurements on batched states."""
+        # Create batched states
+        state_vectors = [
+            np.array([1, 0]),  # |0⟩
+            np.array([0, 1]),  # |1⟩
+        ]
+        states = [get_dm_of_state(state_vector, 1) for state_vector in state_vectors]
+        batched_states = math.stack(states)
+
+        # Define an observable
+        obs = qml.PauliZ(0)
+
+        # Perform measurement
+        result = measure_with_samples(
+            qml.expval(obs),
+            batched_states,
+            shots,
+            is_state_batched=True,
+        )
+
+        # Check the results
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (2,)
+        expected_results = np.array([1.0, -1.0])
+        assert np.allclose(
+            result, expected_results, atol=APPROX_ATOL
+        ), f"Results {result} differ from expected {expected_results}"
 
 
 class TestJaxSampling:
