@@ -55,7 +55,18 @@ def _remove_harmonic(freqs, pes_onebody):
 
 
 def _fit_onebody(anh_pes, deg, min_deg=3):
-    r"""Fits the one-body PES to get one-body coefficients."""
+    r"""Fits the one-body PES to get one-body coefficients.
+
+    Args:
+        anh_pes (list(list(float))): anharmonic part of the PES object
+        deg (int): maximum degree of taylor form polynomial
+        min_deg (int): minimum degree of taylor form polynomial
+
+    Returns:
+        tuple (list(list(float)), list(list(float))):
+            - the one-body coefficients
+            - the predicted one-body PES using fitted coefficients
+    """
     if deg < min_deg:
         raise Exception(
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
@@ -79,7 +90,19 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
 
 
 def _twobody_degs(deg, min_deg=3):
-    """Finds the degree of fit for two-body coefficients."""
+    """Finds the degree of fit for two-body coefficients.
+
+    Args:
+        deg (int): the maximum total degree of the polynomial expansion
+        min_deg (int): The minimum degree to include in the expansion.
+            Defaults to 3.
+
+    Returns:
+        list(tuple): A list of tuples `(q1deg, q2deg)` where:
+            - `q1deg` (int): The degree of the polynomial in the first variable (`q1`).
+            - `q2deg` (int): The degree of the polynomial in the second variable (`q2`).
+            - `q1deg + q2deg = feat_deg` for each combination, where `min_deg <= feat_deg <= deg`.
+    """
     fit_degs = []
     for feat_deg in range(min_deg, deg + 1):
         max_deg = feat_deg - 1
@@ -92,7 +115,18 @@ def _twobody_degs(deg, min_deg=3):
 
 
 def _fit_twobody(pes_twobody, deg, min_deg=3):
-    """Fits the two-body PES to get two-body coefficients."""
+    r"""Fits the two-body PES to get two-body coefficients.
+
+    Args:
+        two-body PES (list(list(float))): two-body PES object
+        deg (int): maximum degree of taylor form polynomial
+        min_deg (int): minimum degree of taylor form polynomial
+
+    Returns:
+        tuple (list(list(float)), list(list(float))):
+            - the two-body coefficients
+            - the predicted two-body PES using fitted coefficients
+    """
     nmodes, _, quad_order, _ = np.shape(pes_twobody)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
@@ -150,7 +184,20 @@ def _generate_bin_occupations(max_occ, nbins):
 
 
 def _threebody_degs(deg, min_deg=3):
-    """Finds the degree of fit for three-body coefficients."""
+    """Finds the degree of fit for three-body coefficients.
+
+    Args:
+        deg (int): the maximum total degree of the polynomial expansion
+        min_deg (int): The minimum degree to include in the expansion.
+            Defaults to 3.
+
+    Returns:
+        list(tuple): A list of tuples `(q1deg, q2deg, q3deg)` where:
+            - `q1deg` (int): The degree of the polynomial in the first variable (`q1`).
+            - `q2deg` (int): The degree of the polynomial in the second variable (`q2`).
+            - `q3deg` (int): The degree of the polynomial in the second variable (`q3`).
+            - `q1deg + q2deg + q3deg = feat_deg` for each combination, where `min_deg <= feat_deg <= deg`.
+    """
     fit_degs = []
     for feat_deg in range(min_deg, deg + 1):
         max_deg = feat_deg - 3
@@ -167,7 +214,18 @@ def _threebody_degs(deg, min_deg=3):
 
 
 def _fit_threebody(pes_threebody, deg, min_deg=3):
-    """Fits the three-body PES to get three-body coefficients."""
+    r"""Fits the three-body PES to get three-body coefficients.
+
+    Args:
+        three-body PES (list(list(float))): three-body PES object
+        deg (int): maximum degree of taylor form polynomial
+        min_deg (int): minimum degree of taylor form polynomial
+
+    Returns:
+        tuple (list(list(float)), list(list(float))):
+            - the three-body coefficients
+            - the predicted three-body PES using fitted coefficients
+    """
     nmodes, _, _, quad_order, _, _ = np.shape(pes_threebody)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
@@ -481,7 +539,16 @@ def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
 
 
 def taylor_hamiltonian(pes_object, deg=4, min_deg=3):
-    """Compute taylor hamiltonian from PES object"""
+    """Compute taylor hamiltonian from PES object
+
+    Args:
+        pes_object(VibrationalPES): the PES object
+        deg (int): the maximum degree of the taylor polynomial
+        min_deg (int): the minimum degree of the taylor polynomial
+
+    Returns:
+        BoseSentence: taylor hamiltonian for given PES and degree
+    """
     coeffs_arr = taylor_integrals(pes_object, deg, min_deg)
     freqs = taylor_integrals_dipole(pes_object, deg, min_deg)
     ham = taylor_bosonic(coeffs_arr, freqs)
