@@ -24,7 +24,7 @@ from pennylane.pauli import PauliSentence
 
 
 def cartan_decomp(g, involution):
-    r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \plus \mathfrak{m}`.
+    r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
     :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` into orthogonal complements.
