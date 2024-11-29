@@ -622,8 +622,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert new_dev.original_device is dev
         assert repr(new_dev).startswith("Transformed Device")
 
-        program, _ = dev.preprocess()
-        new_program, _ = new_dev.preprocess()
+        program = dev.preprocess_transforms()
+        new_program = new_dev.preprocess_transforms()
 
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
@@ -651,8 +651,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert new_dev.original_device is dev
         assert repr(new_dev).startswith("Transformed Device")
 
-        program, _ = dev.preprocess()
-        new_program, _ = new_dev.preprocess()
+        program = dev.preprocess_transforms()
+        new_program = new_dev.preprocess_transforms()
 
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
