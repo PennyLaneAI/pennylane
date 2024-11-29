@@ -235,7 +235,11 @@ def _concurrence_involution_pauli(op: PauliSentence):
 
 @_concurrence_involution.register(Operator)
 def _concurrence_involution_operator(op: Operator):
-    op = op.matrix()
+    return _concurrence_involution_matrix(op.matrix())
+
+
+@_concurrence_involution.register(np.ndarray)
+def _concurrence_involution_matrix(op: np.ndarray):
     if np.allclose(op, -op.T):
         return True
     if np.allclose(op, op.T):
@@ -243,8 +247,3 @@ def _concurrence_involution_operator(op: Operator):
     raise ValueError(
         f"The concurrence canonical decomposition is not well-defined for operator {op}"
     )
-
-
-@_concurrence_involution.register(np.ndarray)
-def _concurrence_involution_matrix(op: np.ndarray):
-    return np.allclose(op, -op.T)
