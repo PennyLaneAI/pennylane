@@ -63,6 +63,14 @@ Templates
 
     ~ResourceQFT
 
+Tracking Resources
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~get_resources
+
 Exceptions
 ~~~~~~~~~~
 
@@ -74,6 +82,7 @@ Exceptions
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
 from .resource_container import CompressedResourceOp, Resources
+from .resource_tracking import DefaultGateSet, get_resources, resource_config
 
 from .ops import (
     ResourceCNOT,
