@@ -60,8 +60,13 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     """Resource class for the ControlledSequence template."""
 
     @staticmethod
-    def _resource_decomp(base_class, base_params, num_ctrl_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        return {re.ResourceControlled.resource_rep(base_class, base_params, 1, 0, 0): 2**num_ctrl_wires - 1}
+    def _resource_decomp(
+        base_class, base_params, num_ctrl_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        return {
+            re.ResourceControlled.resource_rep(base_class, base_params, 1, 0, 0): 2**num_ctrl_wires
+            - 1
+        }
 
     def resource_params(self) -> dict:
         return {
@@ -143,7 +148,9 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
     """Resource class for the Multiplier template."""
 
     @staticmethod
-    def _resource_decomp(mod, num_work_wires, num_x_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(
+        mod, num_work_wires, num_x_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         if mod == 2**num_x_wires:
             num_aux_wires = num_x_wires
             num_aux_swap = num_x_wires
@@ -201,7 +208,9 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     """Resource class for the ModExp template."""
 
     @staticmethod
-    def _resource_decomp(mod, num_output_wires, num_work_wires, num_x_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(
+        mod, num_output_wires, num_work_wires, num_x_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         mult_resources = ResourceMultiplier._resource_decomp(mod, num_work_wires, num_output_wires)
         gate_types = {}
 
@@ -225,7 +234,9 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, mod, num_output_wires, num_work_wires, num_x_wires) -> re.CompressedResourceOp:
+    def resource_rep(
+        cls, mod, num_output_wires, num_work_wires, num_x_wires
+    ) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(
             cls,
             {
