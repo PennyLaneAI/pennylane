@@ -137,8 +137,8 @@
 
 <h4>Other Improvements</h4>
 
-* Moved all interface handling logic to `inference.py` in the `qml.math` module.
-  [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
+* Standardized supported interfaces to an internal Enum object. 
+  [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
