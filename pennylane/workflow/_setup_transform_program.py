@@ -59,6 +59,19 @@ def _setup_transform_program(
     cache=None,
     cachesize=10000,
 ) -> tuple[TransformProgram, TransformProgram]:
+    """Sets-up the outer and inner transform programs for execution.
+
+    Args:
+        user_transform_program (TransformProgram): the user's transform program
+        device (Device): a Pennylane device
+        resolved_execution_config (ExecutionConfig): the resolved execution config
+        cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
+        a significant reduction in quantum evaluations during gradient computations. Defaults to ``None``.
+        cachesize (int): The size of the cache. Defaults to 10000.
+
+    Returns:
+        tuple[TransformProgram, TransformProgram]: tuple containing the outer and inner transform programs.
+    """
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
 

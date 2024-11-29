@@ -12,35 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the `qml.workflow.resolution._setup_transform_program` helper function"""
-# pylint: disable=redefined-outer-name
 
 from unittest.mock import MagicMock
 
-import pytest
-
 import pennylane as qml
-from pennylane.math import Interface
+from pennylane.devices import ExecutionConfig
 from pennylane.transforms.core import TransformProgram
 from pennylane.workflow._setup_transform_program import (
     _prune_dynamic_transform,
     _setup_transform_program,
 )
-
-
-@pytest.fixture
-def mock_execution_config(mocker):
-    """Creates a mock execution configuration."""
-    return mocker.MagicMock(
-        interface=Interface.NUMPY, gradient_method=None, use_device_gradient=False
-    )
-
-
-@pytest.fixture
-def mock_device(mocker):
-    """Creates a mock device."""
-    device = mocker.MagicMock()
-    device.short_name = "mock_device"
-    return device
 
 
 def null_postprocessing(results):
@@ -50,67 +31,52 @@ def null_postprocessing(results):
     return results[0]
 
 
-def mock_expand_transform(tape):
-    """Mock expand transform function"""
-    return [tape], null_postprocessing
-
-
 def mock_user_transform(tape):
     """Mock user transform function"""
     return [tape], null_postprocessing
 
 
-def mock_device_transform(tape):
+def device_transform(tape):
     """Mock user transform function"""
     return [tape], null_postprocessing
 
 
-def test_gradient_expand_transform(mocker, mock_device, mock_execution_config):
+def test_gradient_expand_transform():
     """Test if gradient expand transform is added to the full_transform_program."""
-    mock_execution_config.gradient_method = MagicMock(expand_transform=mock_expand_transform)
-    mock_execution_config.gradient_keyword_arguments = {"arg1": "value1"}
+    config = ExecutionConfig()
+    config.gradient_method = qml.gradients.param_shift
 
-    mock_device.preprocess = mocker.MagicMock(
-        return_value=(TransformProgram(), mock_execution_config)
-    )
+    device = qml.device("default.qubit")
 
     container = qml.transforms.core.TransformContainer(mock_user_transform)
     user_tp = qml.transforms.core.TransformProgram((container,))
-    full_tp, inner_tp = _setup_transform_program(user_tp, mock_device, mock_execution_config)
+    full_tp, _ = _setup_transform_program(user_tp, device, config)
 
-    assert len(full_tp) == 2
-    assert repr(full_tp) == "TransformProgram(mock_user_transform, mock_expand_transform)"
-    assert inner_tp.is_empty()  # Should not add anything to inner program
+    assert repr(full_tp) == "TransformProgram(mock_user_transform, _expand_transform_param_shift)"
 
 
-def test_device_transform_program(mocker, mock_device, mock_execution_config):
+def test_device_transform_program():
     """Test that the device transform is correctly placed in the transform program."""
-    mock_execution_config.use_device_gradient = True
+    config = ExecutionConfig()
+    config.use_device_gradient = True
 
-    container = qml.transforms.core.TransformContainer(mock_device_transform)
+    container = qml.transforms.core.TransformContainer(device_transform)
     device_tp = qml.transforms.core.TransformProgram((container,))
-    mock_device.preprocess_transforms = mocker.MagicMock(return_value=device_tp)
+    device = qml.device("default.qubit")
+    device.preprocess_transforms = MagicMock(return_value=device_tp)
 
     user_transform_program = TransformProgram()
-    full_tp, inner_tp = _setup_transform_program(
-        user_transform_program, mock_device, mock_execution_config
-    )
+    full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
-    assert len(full_tp) == 1
-    assert repr(full_tp) == "TransformProgram(mock_device_transform)"
+    assert repr(full_tp) == "TransformProgram(device_transform)"
+    assert inner_tp.is_empty()
 
-    assert inner_tp.is_empty()  # Should not add anything to inner program
+    config.use_device_gradient = False
 
-    mock_execution_config.use_device_gradient = False
+    full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
-    full_tp, inner_tp = _setup_transform_program(
-        user_transform_program, mock_device, mock_execution_config
-    )
-
-    assert full_tp.is_empty()  # Should not add anything to outer program
-
-    assert repr(inner_tp) == "TransformProgram(mock_device_transform)"
-    assert len(inner_tp) == 1
+    assert full_tp.is_empty()
+    assert repr(inner_tp) == "TransformProgram(device_transform)"
 
 
 def test_prune_dynamic_transform():
@@ -158,45 +124,70 @@ def test_prune_dynamic_transform_with_mcm():
     assert len(program2) == 1
 
 
-def test_device_supports_interface_data(mocker, mock_device, mock_execution_config):
-    """Test that parameters are converted to numpy if required."""
-    mock_execution_config.interface = "autograd"
-    mock_execution_config.gradient_method = "adjoint"
-
-    mock_device.short_name = "default.mixed"
-    mock_device.preprocess = mocker.MagicMock(
-        return_value=(TransformProgram(), mock_execution_config)
-    )
+def test_interface_data_not_supported():
+    """Test that convert_to_numpy_parameters transform is correctly added."""
+    config = ExecutionConfig()
+    config.interface = "autograd"
+    config.gradient_method = "adjoint"
+    device = qml.device("default.qubit")
 
     user_transform_program = TransformProgram()
-    full_tp, inner_tp = _setup_transform_program(
-        user_transform_program, mock_device, mock_execution_config
-    )
-
-    assert len(inner_tp) == 1
-    assert repr(inner_tp) == "TransformProgram(convert_to_numpy_parameters)"
+    full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config)
 
     assert full_tp.is_empty()
+    assert qml.transforms.convert_to_numpy_parameters in inner_tp
 
 
-def test_cache_handling(mocker, mock_device, mock_execution_config):
+def test_interface_data_supported():
+    """Test that convert_to_numpy_parameters transform is not added for these cases."""
+    config = ExecutionConfig()
+
+    config.interface = "autograd"
+    config.gradient_method = None
+    device = qml.device("default.mixed", wires=1)
+
+    user_transform_program = TransformProgram()
+    _, inner_tp = _setup_transform_program(user_transform_program, device, config)
+
+    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+
+    config = ExecutionConfig()
+
+    config.interface = "autograd"
+    config.gradient_method = "backprop"
+    device = qml.device("default.qubit")
+
+    user_transform_program = TransformProgram()
+    _, inner_tp = _setup_transform_program(user_transform_program, device, config)
+
+    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+
+    config = ExecutionConfig()
+
+    config.interface = None
+    config.gradient_method = "backprop"
+    device = qml.device("default.qubit")
+
+    user_transform_program = TransformProgram()
+    _, inner_tp = _setup_transform_program(user_transform_program, device, config)
+
+    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
+
+
+def test_cache_handling():
     """Test that caching is handled correctly."""
-    mock_device.preprocess = mocker.MagicMock(
-        return_value=(TransformProgram(), mock_execution_config)
-    )
+    config = ExecutionConfig()
+    device = qml.device("default.qubit")
+    device.preprocess_transforms = MagicMock(return_value=TransformProgram())
 
     user_transform_program = TransformProgram()
-    full_tp, inner_tp = _setup_transform_program(
-        user_transform_program, mock_device, mock_execution_config, cache=True
-    )
+    full_tp, inner_tp = _setup_transform_program(user_transform_program, device, config, cache=True)
 
-    assert len(inner_tp) == 1
     assert repr(inner_tp) == "TransformProgram(_cache_transform)"
-
     assert full_tp.is_empty()
 
     full_tp, inner_tp = _setup_transform_program(
-        user_transform_program, mock_device, mock_execution_config, cache=False
+        user_transform_program, device, config, cache=False
     )
 
     assert full_tp.is_empty()
