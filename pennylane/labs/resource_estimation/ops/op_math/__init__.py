@@ -14,3 +14,4 @@
 r"""This module contains experimental resource estimation functionality. """
 
 from .controlled_ops import *
+from .symbolic import *

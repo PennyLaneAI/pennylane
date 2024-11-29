@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,60 +17,24 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 import copy
 from collections import defaultdict
 from functools import wraps
+from typing import Dict
 
 import pennylane as qml
+from pennylane.labs.resource_estimation import (
+    CompressedResourceOp,
+    ResourceExp,
+    ResourceOperator,
+    ResourcesNotDefined,
+)
 from pennylane.operation import Operation, Operator
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
-from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.templates.subroutines.trotter import _recursive_expression, _recursive_qfunc
 from pennylane.wires import Wires
 
-from ...operation import FlatPytree
 
-
-def _scalar(order):
-    """Compute the scalar used in the recursive expression.
-
-    Args:
-        order (int): order of Trotter product (assume order is an even integer > 2).
-
-    Returns:
-        float: scalar to be used in the recursive expression.
-    """
-    root = 1 / (order - 1)
-    return (4 - 4**root) ** -1
-
-
-@qml.QueuingManager.stop_recording()
-def _recursive_expression(x, order, ops):
-    """Generate a list of operations using the
-    recursive expression which defines the Trotter product.
-
-    Args:
-        x (complex): the evolution 'time'
-        order (int): the order of the Trotter expansion
-        ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
-
-    Returns:
-        list: the approximation as product of exponentials of the Hamiltonian terms
-    """
-    if order == 1:
-        return [qml.exp(op, x * 1j) for op in ops]
-
-    if order == 2:
-        return [qml.exp(op, x * 0.5j) for op in ops + ops[::-1]]
-
-    scalar_1 = _scalar(order)
-    scalar_2 = 1 - 4 * scalar_1
-
-    ops_lst_1 = _recursive_expression(scalar_1 * x, order - 2, ops)
-    ops_lst_2 = _recursive_expression(scalar_2 * x, order - 2, ops)
-
-    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
-
-
-class TrotterProduct(ErrorOperation, ResourcesOperation):
+class ResourceTrotterProduct(ErrorOperation, ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 
@@ -245,6 +209,44 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
 
+    @staticmethod
+    def _resource_decomp(base, time, n, order, **kwargs) -> Dict[CompressedResourceOp, int]:
+        k = order // 2
+        first_order_expansion = [
+            ResourceExp.resource_rep(op, (time / n) * 1j, num_steps=1) for op in base.operands
+        ]
+
+        if order == 1:
+            return defaultdict(int, {cp_rep: n for cp_rep in first_order_expansion})
+
+        cp_rep_first = first_order_expansion[0]
+        cp_rep_last = first_order_expansion[-1]
+        cp_rep_rest = first_order_expansion[1:-1]
+
+        gate_types = defaultdict(int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in cp_rep_rest})
+        gate_types[cp_rep_first] = n * (5 ** (k - 1)) + 1
+        gate_types[cp_rep_last] = n * (5 ** (k - 1))
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {
+            "n": self.hyperparameters["n"],
+            "time": self.parameters[-1],
+            "base": self.hyperparameters["base"],
+            "order": self.hyperparameters["order"],
+        }
+
+    @classmethod
+    def resource_rep(cls, base, time, n, order) -> CompressedResourceOp:
+        params = {
+            "n": n,
+            "time": time,
+            "base": base,
+            "order": order,
+        }
+        return CompressedResourceOp(cls, params)
+
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
@@ -256,29 +258,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.remove(self.hyperparameters["base"])
         context.append(self)
         return self
-
-    def resources(self) -> qml.resource.Resources:
-        r"""The resource requirements for a given instance of the Suzuki-Trotter product.
-
-        Returns:
-            :class:`~.resource.Resources`: The resources for an instance of ``TrotterProduct``.
-        """
-        with qml.QueuingManager.stop_recording():
-            decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
-
-        num_wires = len(self.wires)
-        num_gates = len(decomp)
-
-        depth = qml.tape.QuantumScript(ops=decomp).graph.get_depth()
-
-        gate_types = defaultdict(int)
-        gate_sizes = defaultdict(int)
-
-        for op in decomp:
-            gate_types[op.name] += 1
-            gate_sizes[len(op.wires)] += 1
-
-        return Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
 
     def error(
         self, method: str = "commutator-bound", fast: bool = True
@@ -450,7 +429,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         return decomp
 
 
-class TrotterizedQfunc(Operation):
+class ResourceTrotterizedQfunc(Operation, ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation applied to a set of
     operations defined in a function.
 
@@ -612,6 +591,61 @@ class TrotterizedQfunc(Operation):
 
         return decomp
 
+    @staticmethod
+    def _resource_decomp(
+        n, order, reverse, qfunc_compressed_reps, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        k = order // 2
+        if order == 1:
+            return defaultdict(int, {cp_rep: n for cp_rep in qfunc_compressed_reps})
+        return defaultdict(
+            int, {cp_rep: 2 * n * (5 ** (k - 1)) for cp_rep in qfunc_compressed_reps}
+        )
+
+    def resource_params(self) -> dict:
+        with qml.QueuingManager.stop_recording():
+            with qml.queuing.AnnotatedQueue() as q:
+                base_hyper_params = ("n", "order", "qfunc", "reverse")
+
+                qfunc_args = self.parameters
+                qfunc_kwargs = {
+                    k: v for k, v in self.hyperparameters.items() if not k in base_hyper_params
+                }
+
+                qfunc = self.hyperparameters["qfunc"]
+                qfunc(*qfunc_args, wires=self.wires, **qfunc_kwargs)
+
+        try:
+            qfunc_compressed_reps = tuple(op.resource_rep_from_op() for op in q.queue)
+
+        except AttributeError:
+            raise ResourcesNotDefined(
+                "Every operation in the TrotterizedQfunc should be a ResourceOperator"
+            )
+
+        return {
+            "n": self.hyperparameters["n"],
+            "order": self.hyperparameters["order"],
+            "reverse": self.hyperparameters["reverse"],
+            "qfunc_compressed_reps": qfunc_compressed_reps,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, qfunc_compressed_reps, n, order, reverse, name=None
+    ) -> CompressedResourceOp:
+        params = {
+            "n": n,
+            "order": order,
+            "reverse": reverse,
+            "qfunc_compressed_reps": qfunc_compressed_reps,
+        }
+        return CompressedResourceOp(cls, params, name=name)
+
+    def resource_rep_from_op(self) -> CompressedResourceOp:
+        """Returns a compressed representation directly from the operator"""
+        return self.__class__.resource_rep(**self.resource_params(), name=self._name)
+
     def _flatten(self):
         """Serialize the operation into trainable and non-trainable components.
 
@@ -674,7 +708,7 @@ class TrotterizedQfunc(Operation):
         return cls(*data, **dict(metadata))
 
 
-def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
+def resource_trotterize(qfunc, n=1, order=2, reverse=False, name=None):
     r"""Generates higher order Suzuki-Trotter product formulas from a set of
     operations defined in a function.
 
@@ -732,21 +766,21 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
 
     .. code-block:: python3
 
-        def first_order_expansion(time, theta, phi, wires, flip=False):
-            "This is the first order expansion (U_1)."
-            qml.RX(time*theta, wires[0])
-            qml.RY(time*phi, wires[1])
-            if flip:
-                qml.CNOT(wires=wires[:2])
+def first_order_expansion(time, theta, phi, wires, flip=False):
+    "This is the first order expansion (U_1)."
+    ResourceRX(time*theta, wires[0])
+    ResourceRY(time*phi, wires[1])
+    if flip:
+        ResourceCNOT(wires=wires[:2])
 
-        @qml.qnode(qml.device("default.qubit"))
-        def my_circuit(time, theta, phi, num_trotter_steps):
-            qml.trotterize(
-                first_order_expansion,
-                n=num_trotter_steps,
-                order=2,
-            )(time, theta, phi, wires=['a', 'b', 'c'], flip=True)
-            return qml.state()
+@qml.qnode(qml.device("default.qubit"))
+def my_circuit(time, theta, phi, num_trotter_steps):
+    resource_trotterize(
+        first_order_expansion,
+        n=num_trotter_steps,
+        order=2,
+    )(time, theta, phi, wires=['a', 'b', 'c'], flip=True)
+    return qml.state()
         
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
             
@@ -768,46 +802,8 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
     def wrapper(*args, **kwargs):
         time = args[0]
         other_args = args[1:]
-        return TrotterizedQfunc(
+        return ResourceTrotterizedQfunc(
             time, *other_args, qfunc=qfunc, n=n, order=order, reverse=reverse, name=name, **kwargs
         )
 
     return wrapper
-
-
-@qml.QueuingManager.stop_recording()
-def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs):
-    """Generate a list of operations using the
-    recursive expression which defines the Trotter product.
-    Args:
-        time (float): the evolution 'time'
-        order (int): the order of the Trotter expansion
-        ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
-    Returns:
-        list: the approximation as product of exponentials of the Hamiltonian terms
-    """
-    if order == 1:
-        with qml.tape.QuantumTape() as tape:
-            qfunc(time, *qfunc_args, wires=wires, **qfunc_kwargs)
-        return tape.operations[::-1] if reverse else tape.operations
-
-    if order == 2:
-        with qml.tape.QuantumTape() as tape:
-            qfunc(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
-        return (
-            tape.operations[::-1] + tape.operations
-            if reverse
-            else tape.operations + tape.operations[::-1]
-        )
-
-    scalar_1 = _scalar(order)
-    scalar_2 = 1 - 4 * scalar_1
-
-    ops_lst_1 = _recursive_qfunc(
-        scalar_1 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
-    )
-    ops_lst_2 = _recursive_qfunc(
-        scalar_2 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
-    )
-
-    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)

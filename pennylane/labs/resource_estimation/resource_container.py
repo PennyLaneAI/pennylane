@@ -14,7 +14,7 @@
 r"""Base classes for resource estimation."""
 import copy
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from pennylane.labs.resource_estimation import ResourceOperator
 
@@ -38,7 +38,7 @@ class CompressedResourceOp:
         Hadamard(num_wires=1)
     """
 
-    def __init__(self, op_type, params: dict) -> None:
+    def __init__(self, op_type, params: dict, name=None) -> None:
         r"""Instantiate the light weight class corresponding to the operator type and parameters.
 
         Args:
@@ -59,10 +59,10 @@ class CompressedResourceOp:
         if not issubclass(op_type, ResourceOperator):
             raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
 
-        self._name = (op_type.__name__).replace("Resource", "")
         self.op_type = op_type
         self.params = params
-        self._hashable_params = tuple(params.items())
+        self._hashable_params = _make_hashable(params)
+        self._name = name or op_type.tracking_name(**params)
 
     def __hash__(self) -> int:
         return hash((self._name, self._hashable_params))
@@ -106,9 +106,13 @@ class Resources:
         {'Hadamard': 1, 'CNOT': 1}
     """
 
-    num_wires: int = 0
-    num_gates: int = 0
-    gate_types: defaultdict = field(default_factory=lambda: defaultdict(int))
+    def __init__(self, num_wires: int = 0, num_gates: int = 0, gate_types: dict = None):
+        if gate_types is None:
+            gate_types = {}
+
+        self.num_wires = num_wires
+        self.num_gates = num_gates
+        self.gate_types = defaultdict(int, gate_types)
 
     def __add__(self, other: "Resources") -> "Resources":
         """Add two resources objects in series"""
@@ -238,6 +242,73 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
     return Resources(new_wires, new_gates, new_gate_types)
 
 
+def substitute(
+    initial_resources: Resources, name: str, replacement_resources: Resources, in_place=False
+) -> Resources:
+    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
+
+    Args:
+        initial_resources (Resources): the :class:`~.Resources` object to be modified
+        name (str): the name of the gate to be replaced
+        replacement (Resources): the :class:`~.Resources` containing the resources that will replace the gate
+
+    Returns:
+        Resources: the updated :class:`~.Resources` after substitution
+
+    .. details::
+
+        **Example**
+
+        First we build the :class:`~.Resources`.
+
+        .. code-block:: python3
+
+            from pennylane.labs.resource_estimation import Resources
+
+            initial_resources = Resources(
+                num_wires = 2,
+                num_gates = 3,
+                gate_types = {"RX": 2, "CNOT": 1},
+            )
+
+            replacement = Resources(
+                num_wires = 1,
+                num_gates = 7,
+                gate_types = {"Hadamard": 3, "S": 4},
+            )
+
+        Now we print the result of the substitution.
+
+        >>> res = qml.labs.resource_estimation.substitute(initial_resources, name, replacement)
+        >>> print(res)
+        wires: 2
+        gates: 15
+        gate_types:
+        {'CNOT': 1, 'Hadamard': 6, 'S': 8}
+    """
+
+    count = initial_resources.gate_types.get(name, 0)
+
+    if count > 0:
+        new_gates = initial_resources.num_gates - count + (count * replacement_resources.num_gates)
+
+        replacement_gate_types = _scale_dict(
+            replacement_resources.gate_types, count, in_place=in_place
+        )
+        new_gate_types = _combine_dict(
+            initial_resources.gate_types, replacement_gate_types, in_place=in_place
+        )
+        new_gate_types.pop(name)
+
+        if in_place:
+            initial_resources.num_gates = new_gates
+            return initial_resources
+
+        return Resources(initial_resources.num_wires, new_gates, new_gate_types)
+
+    return initial_resources
+
+
 def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
     r"""Private function which combines two dictionaries together."""
     combined_dict = dict1 if in_place else copy.copy(dict1)
@@ -257,3 +328,10 @@ def _scale_dict(dict1: defaultdict, scalar: int, in_place=False):
         combined_dict[k] *= scalar
 
     return combined_dict
+
+
+def _make_hashable(d: dict) -> tuple:
+    if isinstance(d, dict):
+        return tuple((name, _make_hashable(value)) for name, value in d.items())
+
+    return d

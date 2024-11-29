@@ -92,7 +92,7 @@ class ResourceOperator(ABC):
     @abstractmethod
     def resource_params(self) -> dict:
         """Returns a dictionary containing the minimal information needed to
-        compute a comparessed representation."""
+        compute a compressed representation"""
 
     @classmethod
     @abstractmethod
@@ -103,6 +103,35 @@ class ResourceOperator(ABC):
     def resource_rep_from_op(self) -> CompressedResourceOp:
         """Returns a compressed representation directly from the operator"""
         return self.__class__.resource_rep(**self.resource_params())
+
+    @classmethod
+    def adjoint_resource_decomp(cls, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation of the adjoint of the operator"""
+        raise ResourcesNotDefined
+
+    @classmethod
+    def controlled_resource_decomp(
+        cls, num_ctrl_wires, num_ctrl_values, num_work_wires, *args, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation of the controlled version of the operator"""
+        raise ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z, *args, **kwargs) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation of the operator raised to a power"""
+        raise ResourcesNotDefined
+
+    @classmethod
+    def exp_resource_decomp(
+        cls, scalar, num_steps, *args, **kwargs
+    ) -> Dict[CompressedResourceOp, int]:
+        """Returns a compressed representation for the resources of the exponentiated operator"""
+        raise ResourcesNotDefined
+
+    @classmethod
+    def tracking_name(cls, *args, **kwargs) -> str:
+        """Returns a name used to track the operator during resource estimation."""
+        return cls.__name__.replace("Resource", "")
 
 
 class ResourcesNotDefined(Exception):

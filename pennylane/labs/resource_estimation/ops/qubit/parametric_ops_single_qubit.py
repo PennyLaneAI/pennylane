@@ -46,7 +46,7 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(*args, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
         rz = re.ResourceRZ.resource_rep()
         global_phase = re.ResourceGlobalPhase.resource_rep()
@@ -62,12 +62,29 @@ class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @classmethod
+    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceControlledPhaseShift.resources()
+
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
 
 class ResourceRX(qml.RX, re.ResourceOperator):
     """Resource class for the RX gate."""
 
     @staticmethod
-    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_rx"])
 
     def resource_params(self) -> dict:
@@ -77,12 +94,26 @@ class ResourceRX(qml.RX, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @staticmethod
+    def adjoint_resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return {re.ResourceRX.resource_rep(): 1}
+        # return _rotation_resources(epsilon=config["error_rx"])
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCRX.resources(**kwargs)
+
+        raise re.ResourcesNotDefined
+
 
 class ResourceRY(qml.RY, re.ResourceOperator):
     """Resource class for the RY gate."""
 
     @staticmethod
-    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_ry"])
 
     def resource_params(self) -> dict:
@@ -91,6 +122,20 @@ class ResourceRY(qml.RY, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @staticmethod
+    def adjoint_resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return {re.ResourceRY.resource_rep(): 1}
+        # return _rotation_resources(epsilon=config["error_ry"])
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCRY.resources()
+
+        raise re.ResourcesNotDefined
 
 
 class ResourceRZ(qml.RZ, re.ResourceOperator):
@@ -102,7 +147,7 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         return _rotation_resources(epsilon=config["error_rz"])
 
     def resource_params(self) -> dict:
@@ -112,15 +157,29 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @staticmethod
+    def adjoint_resource_decomp(config, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return {re.ResourceRZ.resource_rep(): 1}
+        # return _rotation_resources(epsilon=config["error_rz"])
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCRZ.resources()
+
+        raise re.ResourcesNotDefined
+
 
 class ResourceRot(qml.Rot, re.ResourceOperator):
     """Resource class for the Rot gate."""
 
     @staticmethod
-    def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
-        rx = ResourceRX.resource_rep()
-        ry = ResourceRY.resource_rep()
-        rz = ResourceRZ.resource_rep()
+    def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
+        rx = ResourceRX.resource_rep(**kwargs)
+        ry = ResourceRY.resource_rep(**kwargs)
+        rz = ResourceRZ.resource_rep(**kwargs)
 
         gate_types = {rx: 1, ry: 1, rz: 1}
         return gate_types
@@ -131,3 +190,23 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
     @classmethod
     def resource_rep(cls) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources()
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        **kwargs,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+            return re.ResourceCRot.resources()
+
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return cls.resources()
