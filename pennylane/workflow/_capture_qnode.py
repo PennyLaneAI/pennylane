@@ -97,6 +97,9 @@ currently jittable, we will need to register a lowering for the qnode primitive.
 need to figure out where to apply a ``jax.pure_callback`` for devices like lightning qubit that are
 not jittable.
 
+*Result caching*. The new workflow is not capable of caching the results of executions, and we have
+not even started thinking about how it might be possible to do so.
+
 *Unknown other features*. The workflow currently has limited testing, so this list of unsupported
 features is non-exhaustive.
 
