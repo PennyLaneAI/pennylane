@@ -330,11 +330,9 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
 
     .. math::
 
-        \begin{align}
             [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} & \text{ (subalgebra)}\\
             [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} & \text{ (reductive property)}\\
             [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k} & \text{ (symmetric property)}
-        \end{align}
 
     Args:
         k (List[PauliSentence]): List of operators of the vertical subspace
