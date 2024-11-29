@@ -32,7 +32,7 @@ def harmonic_analysis(scf_result, method="rhf"):
     Args:
        scf_result: pyscf object from electronic structure calculations
        method: Electronic structure method to define the level of theory
-            for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
+            for harmonic analysis. Default is restricted Hartree-Fock ``'rhf'``.
 
     Returns:
        pyscf object containing information about the harmonic analysis
