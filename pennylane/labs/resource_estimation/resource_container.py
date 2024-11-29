@@ -112,7 +112,9 @@ class Resources:
         self.num_wires = num_wires
         self.num_gates = num_gates
         self.gate_types = (
-            gate_types if (isinstance(gate_types, defaultdict) and isinstance(gate_types.default_factory, int)) else defaultdict(int, gate_types)
+            gate_types
+            if (isinstance(gate_types, defaultdict) and isinstance(gate_types.default_factory, int))
+            else defaultdict(int, gate_types)
         )
 
     def __add__(self, other: "Resources") -> "Resources":
@@ -261,14 +263,14 @@ def substitute(
 
         **Example**
 
-        In this example we replace the resources for the :code:`RX` gate. First we build the :class:`~.Resources`: 
+        In this example we replace the resources for the :code:`RX` gate. First we build the :class:`~.Resources`:
 
         .. code-block:: python3
 
             from pennylane.labs.resource_estimation import Resources
 
             replace_gate_name = "RX"
-            
+
             initial_resources = Resources(
                 num_wires = 2,
                 num_gates = 3,
