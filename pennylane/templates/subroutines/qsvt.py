@@ -525,13 +525,13 @@ def _compute_qsp_angle(poly_coeffs):
         Based on the appendix A in `arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_, the target polynomial :math:`F`
         is transformed into a new polynomial :math:`P` by following the steps below:
 
-        0. The input to the function are the coefficients of :math:`F`. E.g. :math:`[c_0, 0, c_1, 0, c_2]`.
+        0. The input to the function are the coefficients of :math:`F`, e.g. :math:`[c_0, 0, c_1, 0, c_2]`.
         1. We express the polynomial in the Chebyshev basis by applying the Chebyshev transform. This generates
            a new representation :math:`[a_0, 0, a_1, 0, a_2]`.
         2. We generate :math:`P` by reordering the array, moving the zeros to the initial positions.
            :math:`P = [0, 0, a_0, a_1, a_2]`.
 
-        The polynomial :math:`P` can now be used in Algorithm 1 [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_]
+        The polynomial :math:`P` can now be used in Algorithm 1 of [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_]
         in order to find the desired angles.
 
         The above algorithm is specific to Generalized-QSP so an adaptation has been made to return the required angles:
@@ -554,7 +554,8 @@ def _compute_qsp_angle(poly_coeffs):
     num_terms = polynomial_matrix.shape[1]
     rotation_angles = np.zeros(num_terms)
 
-    # Adaptation of Algorithm 1
+    # Adaptation of Algorithm 1 of
+    [`arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_]
     with qml.QueuingManager.stop_recording():
         for idx in range(num_terms - 1, -1, -1):
 
@@ -575,17 +576,14 @@ def transform_angles(angles, routine1, routine2):
     r"""
     Transforms a set of angles from one routine to another.
 
-    This function adjusts the angles according to the specified transformation
-    between two routines, either from Quantum Signal Processing (QSP) to
-    Quantum Singular Value Transformation (QSVT) or vice versa.
-
-    The transformation is based in Appendix A.2 [`arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_],
-    since QSVT is equivalent to taking the reflection convention of QSP.
+    This function converts angles obtained to implement Quantum Signal Processing (QSP) to
+    Quantum Singular Value Transformation (QSVT) angles and vice versa.
+    The transformation is based on Appendix A.2 of `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_. Note that QSVT is equivalent to taking the reflection convention of QSP.
 
     Args:
         angles (tensor-like): a list or array of angles to be transformed.
-        routine1 (str): the current routine of the angles, must be either ``"QSP"`` or ``"QSVT"``
-        routine2 (str): the target routine to which the angles should be transformed,
+        routine1 (str): the current routine for which the angles are obtained, must be either ``"QSP"`` or ``"QSVT"``
+        routine2 (str): the target routine for which the angles should be transformed,
                         must be either ``"QSP"`` or ``"QSVT"``
 
     Returns:
@@ -657,7 +655,7 @@ def transform_angles(angles, routine1, routine2):
 def poly_to_angles(poly, routine, angle_solver="root-finding"):
     r"""
     Computes the angles needed to implement a polynomial with quantum signal processing (QSP)
-    or quantum singular value transformation (QSVT) routines.
+    or quantum singular value transformation (QSVT).
 
     The polynomial must have defined parity and real coefficients. It also must meet
     that :math:`|P(x)| \leq 1` for all :math:`x \in [-1, 1]`. More information about these restriction can be
