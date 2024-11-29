@@ -50,6 +50,10 @@
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
 
+* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
+  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
+
 * Added a dense implementation of computing the structure constants in a new function
   `structure_constants_dense` in `pennylane.labs.dla`.
   [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
@@ -178,6 +182,10 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
+* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or 
+  resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
+  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
@@ -315,6 +323,7 @@ same information.
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Shiwen An,
 Utkarsh Azad,
 Astral Cai,
