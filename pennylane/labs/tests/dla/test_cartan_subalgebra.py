@@ -18,7 +18,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import X, Z
 from pennylane.labs.dla import (
-    cartan_decomposition,
+    cartan_decomp,
     cartan_subalgebra,
     check_cartan_decomp,
     even_odd_involution,
@@ -31,7 +31,7 @@ def test_Ising2():
     gens = [op.pauli_rep for op in gens]
     g = qml.lie_closure(gens, pauli=True)
 
-    k, m = cartan_decomposition(g, even_odd_involution)
+    k, m = cartan_decomp(g, even_odd_involution)
     assert check_cartan_decomp(k, m)
 
     g = k + m

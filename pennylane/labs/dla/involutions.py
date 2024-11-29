@@ -35,7 +35,7 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
         bool: Accordingly to whether ``op`` should go to the even or odd subspace of the
         decomposition
 
-    .. seealso:: :func:`~cartan_decomposition`
+    .. seealso:: :func:`~cartan_decomp`
 
     **Example**
 
@@ -46,10 +46,10 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
     >>> g = [_.pauli_rep for _ in g]
     >>> g = g[1:] # remove identity
 
-    We perform the first iteration on the first qubit. We use :func:`~cartan_decomposition`.
+    We perform the first iteration on the first qubit. We use :func:`~cartan_decomp`.
 
     >>> from functools import partial
-    >>> k0, m0 = cartan_decomposition(g, partial(khaneja_glaser_involution, wire=0))
+    >>> k0, m0 = cartan_decomp(g, partial(khaneja_glaser_involution, wire=0))
     >>> print(f"First iteration: {len(k0)}, {len(m0)}")
     First iteration: 31, 32
     >>> assert qml.labs.dla.check_cartan_decomp(k0, m0) # check Cartan commutation relations
@@ -57,12 +57,12 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
     We continue this recursive process on the :math:`\mathfrak{k}` subalgebra with the other
     two wires.
 
-    >>> k1, m1 = cartan_decomposition(k0, partial(khaneja_glaser_involution, wire=1))
+    >>> k1, m1 = cartan_decomp(k0, partial(khaneja_glaser_involution, wire=1))
     >>> assert check_cartan_decomp(k1, m1)
     >>> print(f"Second iteration: {len(k1)}, {len(m1)}")
     Second iteration: 15, 16
 
-    >>> k2, m2 = cartan_decomposition(k1, partial(khaneja_glaser_involution, wire=2))
+    >>> k2, m2 = cartan_decomp(k1, partial(khaneja_glaser_involution, wire=2))
     >>> assert check_cartan_decomp(k2, m2)
     >>> print(f"Third iteration: {len(k2)}, {len(m2)}")
     Third iteration: 7, 8

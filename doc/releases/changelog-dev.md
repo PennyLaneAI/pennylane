@@ -56,6 +56,10 @@
 
 * Added utility functions for handling dense matrices in the Lie theory context.
   [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
+
+* Added a ``cartan_decomp`` function along with two standard involutions ``even_odd_involution`` and ``concurrence_involution``.
+  [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
 
 
 <h4>New API for Qubit Mixed</h4>
@@ -71,6 +75,9 @@
   
 * Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
+
+* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
+  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
 
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
@@ -255,6 +262,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * The `tape` and `qtape` properties of `QNode` have been deprecated. 
   Instead, use the `qml.workflow.construct_tape` function.
   [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
+  [(#6650)](https://github.com/PennyLaneAI/pennylane/pull/6650)
 
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
