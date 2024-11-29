@@ -107,12 +107,13 @@ class Resources:
     """
 
     def __init__(self, num_wires: int = 0, num_gates: int = 0, gate_types: dict = None):
-        if gate_types is None:
-            gate_types = {}
+        gate_types = gate_types or {}
 
         self.num_wires = num_wires
         self.num_gates = num_gates
-        self.gate_types = defaultdict(int, gate_types)
+        self.gate_types = (
+            gate_types if (isinstance(gate_types, defaultdict) and isinstance(gate_types.default_factory, int)) else defaultdict(int, gate_types)
+        )
 
     def __add__(self, other: "Resources") -> "Resources":
         """Add two resources objects in series"""
@@ -248,9 +249,10 @@ def substitute(
     """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
 
     Args:
-        initial_resources (Resources): the :class:`~.Resources` object to be modified
-        name (str): the name of the gate to be replaced
-        replacement (Resources): the :class:`~.Resources` containing the resources that will replace the gate
+        initial_resources (Resources): the resources to be modified
+        name (str): the name of the operation to be replaced
+        replacement (Resources): the resources to be substituted instead of the gate
+        in_place (bool): determines if the initial resources are modified in place or if a new copy is created
 
     Returns:
         Resources: the updated :class:`~.Resources` after substitution
@@ -259,27 +261,31 @@ def substitute(
 
         **Example**
 
-        First we build the :class:`~.Resources`.
+        In this example we replace the resources for the :code:`RX` gate. First we build the :class:`~.Resources`: 
 
         .. code-block:: python3
 
             from pennylane.labs.resource_estimation import Resources
 
+            replace_gate_name = "RX"
+            
             initial_resources = Resources(
                 num_wires = 2,
                 num_gates = 3,
                 gate_types = {"RX": 2, "CNOT": 1},
             )
 
-            replacement = Resources(
+            replacement_rx_resources = Resources(
                 num_wires = 1,
                 num_gates = 7,
                 gate_types = {"Hadamard": 3, "S": 4},
             )
 
-        Now we print the result of the substitution.
+        Executing the substitution produces:
 
-        >>> res = qml.labs.resource_estimation.substitute(initial_resources, name, replacement)
+        >>> res = qml.labs.resource_estimation.substitute(
+        ...     initial_resources, replace_gate_name, replacement_rx_resources,
+        ... )
         >>> print(res)
         wires: 2
         gates: 15
