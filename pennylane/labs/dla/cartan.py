@@ -107,7 +107,7 @@ def cartan_decomp(
 
 
 # dispatch to different input types
-def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
+def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
     r"""The Even-Odd involution
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__.
@@ -182,7 +182,7 @@ def _even_odd_involution_op(op: Operator):
 
 
 # dispatch to different input types
-def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
+def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__.
