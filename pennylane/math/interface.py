@@ -234,12 +234,11 @@ def _get_jax_interface_name(tapes):
         for op in t:
             # Unwrap the observable from a MeasurementProcess
             if not isinstance(op, qml.ops.Prod):
-                op = op.obs if hasattr(op, "obs") else op
+                op = getattr(op, "obs", op)
             if op is not None:
                 # Some MeasurementProcess objects have op.obs=None
-                for param in op.data:
-                    if qml.math.is_abstract(param):
-                        return "jax-jit"
+                if any(qml.math.is_abstract(param) for param in op.data):
+                    return "jax-jit"
 
     return "jax"
 
