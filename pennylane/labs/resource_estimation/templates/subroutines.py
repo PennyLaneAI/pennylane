@@ -14,6 +14,7 @@
 r"""Resource operators for PennyLane subroutine templates."""
 from typing import Dict
 
+import numpy as np
 import pennylane as qml
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
@@ -23,6 +24,8 @@ from pennylane.labs.resource_estimation import (
     ResourceHadamard,
     ResourceOperator,
     ResourceSWAP,
+    ResourceT,
+    ResourceCNOT,
 )
 
 # pylint: disable=arguments-differ
@@ -111,3 +114,35 @@ class ResourceQuantumPhaseEstimation(qml.QuantumPhaseEstimation, ResourceOperato
     @staticmethod
     def tracking_name(base_class, base_params, num_estimation_wires, **kwargs) -> str:
         return f"QuantumPhaseEstimation({base_class}, {num_estimation_wires})"
+
+
+class ResourceStatePrep(qml.StatePrep, ResourceOperator):
+    """Resource class for QFT.
+
+    Resources:
+        The resources are obtained from the standard decomposition of QFT as presented
+        in (chapter 5) `Nielsen, M.A. and Chuang, I.L. (2011) Quantum Computation and Quantum Information
+        <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
+    """
+
+    @staticmethod
+    def _resource_decomp(num_wires, **kwargs) -> Dict[CompressedResourceOp, int]:
+        gate_types = {}
+        t = ResourceT.resource_rep()
+        cnot = ResourceCNOT.resource_rep()
+
+        r_count = 2**(num_wires + 2) - 5
+        t_count = round(3 * np.log(1 / 10e-3))
+        cnot_count = 2**(num_wires + 2) - 4*num_wires - 4
+        
+        gate_types[t] = r_count*t_count
+        gate_types[cnot] = cnot_count
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
+    @classmethod
+    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+        params = {"num_wires": num_wires}
+        return CompressedResourceOp(cls, params)
