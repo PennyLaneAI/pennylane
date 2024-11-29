@@ -409,6 +409,7 @@ class TestProbs:
     ):  # pylint: disable=too-many-arguments
         """Test that probs for mid-circuit measurement values
         are correct for a measurement value list."""
+
         dev = qml.device("default.qubit", seed=seed)
 
         @qml.qnode(dev)
