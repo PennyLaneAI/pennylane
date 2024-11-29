@@ -205,7 +205,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
     if do_dipole:
         assert np.allclose(dipole_onebody, exp_dip_onemode, atol=1e-6)
     else:
-        assert dipole_onebody==None
+        assert dipole_onebody is None
 
 
 @pytest.mark.parametrize(
@@ -337,9 +337,9 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
     pes_file = os.path.join(ref_dir, ref_file)
     f = h5py.File(pes_file, "r+")
     pes_onebody = np.array(f["V1_PES"][()])
-    dipole_onebody = np.array(f["D1_DMS"][()])    
+    dipole_onebody = np.array(f["D1_DMS"][()])
     pes_twobody = np.array(f["V2_PES"][()])
-    dipole_twobody = np.array(f["D2_DMS"][()])    
+    dipole_twobody = np.array(f["D2_DMS"][()])
     exp_pes_threemode = np.array(f["V3_PES"][()])
     exp_dip_threemode = np.array(f["D3_DMS"][()])
 

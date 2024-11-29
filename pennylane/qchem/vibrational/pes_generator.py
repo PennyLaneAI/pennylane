@@ -54,7 +54,7 @@ def pes_onemode(
     Simultaneously, can compute the dipole one-mode elements.
 
     Args:
-       molecule: Molecule object.
+       molecule: Molecule object
        scf_result: pyscf object from electronic structure calculations
        freqs_au: list of normal mode frequencies
        displ_vecs: list of displacement vectors for each normal mode
@@ -64,8 +64,8 @@ def pes_onemode(
        do_dipole: Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-      A tuple of one-mode potential energy surface and one-mode dipole along
-      the normal-mode coordinates.
+       A tuple of one-mode potential energy surface and one-mode dipole along
+       the normal-mode coordinates.
 
     """
 
@@ -124,7 +124,23 @@ def _local_pes_onemode(
 ):
     r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions
     (or any directions set by the displ_vecs) for each processor.
-    Simultaneously, can compute the dipole one-body elements."""
+    Simultaneously, can compute the dipole one-body elements.
+
+    Args:
+       molecule: Molecule object
+       scf_result: pyscf object from electronic structure calculations
+       freqs_au: list of normal mode frequencies
+       displ_vecs: list of displacement vectors for each normal mode
+       gauss_grid: sample points for Gauss-Hermite quadrature
+       method: Electronic structure method to define the level of theory
+            for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
+       do_dipole: Whether to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+       A tuple of one-mode potential energy surface and one-mode dipole along
+       the normal-mode coordinates.
+
+    """
 
     size = comm.Get_size()
     rank = comm.Get_rank()
@@ -142,7 +158,7 @@ def _local_pes_onemode(
     for mode in range(nmodes):
         displ_vec = displ_vecs[mode]
         if (freqs[mode].imag) > 1e-6:
-            continue # pragma: no cover
+            continue  # pragma: no cover
 
         job_idx = 0
         for job in jobs_on_rank:
@@ -178,11 +194,21 @@ def _local_pes_onemode(
     return local_pes_onebody, None
 
 
-def _load_pes_onemode(num_pieces, nmodes, quad_order, do_dipole=False):
+def _load_pes_onemode(num_proc, nmodes, quad_order, do_dipole=False):
     """
     Loader to combine pes_onebody and dipole_onebody from multiple processors.
-    """
 
+    Args:
+       num_proc: number of processors
+       nmodes: number of normal modes
+       quad_order: order for Gauss-Hermite quadratures
+       do_dipole: Whether to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+       A tuple of one-mode potential energy surface and one-mode dipole along
+       the normal-mode coordinates.
+
+    """
     pes_onebody = np.zeros((nmodes, quad_order), dtype=float)
 
     if do_dipole:
@@ -190,8 +216,8 @@ def _load_pes_onemode(num_pieces, nmodes, quad_order, do_dipole=False):
 
     for mode in range(nmodes):
         init_chunk = 0
-        for piece in range(num_pieces):
-            f = h5py.File("v1data" + f"_{piece}" + ".hdf5", "r+")
+        for proc in range(num_proc):
+            f = h5py.File("v1data" + f"_{proc}" + ".hdf5", "r+")
             local_pes_onebody = f["V1_PES"][()]
             if do_dipole:
                 local_dipole_onebody = f["D1_DMS"][()]
@@ -237,8 +263,8 @@ def pes_twomode(
        do_dipole: Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-      A tuple of two-mode potential energy surface and two-mode dipole along
-      the normal-mode coordinates.
+       A tuple of two-mode potential energy surface and two-mode dipole along
+       the normal-mode coordinates.
 
     """
 
@@ -289,7 +315,7 @@ def pes_twomode(
     if do_dipole:
         dipole_twobody = comm.bcast(dipole_twobody, root=0)
         return pes_twobody, dipole_twobody
-    return pes_twobody, None # pragma: no cover
+    return pes_twobody, None  # pragma: no cover
 
 
 def _local_pes_twomode(
@@ -321,7 +347,6 @@ def _local_pes_twomode(
         for (i, pt1), (j, pt2) in itertools.product(enumerate(gauss_grid), repeat=2)
     ]
     jobs_on_rank = np.array_split(all_jobs, size)[rank]
-
     local_pes_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank)))
 
     if do_dipole:
@@ -329,9 +354,9 @@ def _local_pes_twomode(
         ref_dipole = get_dipole(scf_result, method)
 
     for mode_idx, [mode_a, mode_b] in enumerate(all_mode_combos):
-        mode_a, mode_b = int(mode_a), int(mode_b)
+
         if (freqs[mode_a].imag) > 1e-6 or (freqs[mode_b].imag) > 1e-6:
-            continue # pragma: no cover
+            continue  # pragma: no cover
 
         displ_vec_a = displ_vecs[mode_a]
         scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * C_LIGHT))
@@ -356,6 +381,7 @@ def _local_pes_twomode(
             )
             displ_scf = single_point(displ_mol, method=method)
             idx = mode_idx * len(jobs_on_rank) + job_idx
+
             local_pes_twobody[idx] = (
                 displ_scf.e_tot - pes_onebody[mode_a, i] - pes_onebody[mode_b, j] - scf_result.e_tot
             )
@@ -371,12 +397,23 @@ def _local_pes_twomode(
     if do_dipole:
         return local_pes_twobody, local_dipole_twobody
 
-    return local_pes_twobody, None # pragma: no cover
+    return local_pes_twobody, None  # pragma: no cover
 
 
-def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
+def _load_pes_twomode(num_proc, nmodes, quad_order, do_dipole=False):
     """
     Loader to combine pes_twobody and dipole_twobody from multiple processors.
+
+    Args:
+       num_proc: number of processors
+       nmodes: number of normal modes
+       quad_order: order for Gauss-Hermite quadratures
+       do_dipole: Whether to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+       A tuple of one-mode potential energy surface and one-mode dipole along
+       the normal-mode coordinates.
+
     """
 
     final_shape = (nmodes, nmodes, quad_order, quad_order)
@@ -394,8 +431,8 @@ def _load_pes_twomode(num_pieces, nmodes, quad_order, do_dipole=False):
 
             init_idx = 0
             end_idx = 0
-            for piece in range(num_pieces):
-                f = h5py.File("v2data" + f"_{piece}" + ".hdf5", "r+")
+            for proc in range(num_proc):
+                f = h5py.File("v2data" + f"_{proc}" + ".hdf5", "r+")
                 local_pes_twobody = f["V2_PES"][()]
                 pes_chunk = np.array_split(local_pes_twobody, nmode_combos)[mode_combo]
 
@@ -470,14 +507,12 @@ def _local_pes_threemode(
     mode_combo = 0
     for mode_combo, [mode_a, mode_b, mode_c] in enumerate(all_mode_combos):
 
-        mode_a, mode_b, mode_c = int(mode_a), int(mode_b), int(mode_c)
-
         if (
             (freqs[mode_a].imag) > 1e-6
             or (freqs[mode_b].imag) > 1e-6
             or (freqs[mode_c].imag) > 1e-6
         ):
-            continue # pragma: no cover
+            continue  # pragma: no cover
 
         displ_vec_a = displ_vecs[mode_a]
         scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * C_LIGHT))
@@ -491,7 +526,6 @@ def _local_pes_threemode(
         for job_idx, [i, pt1, j, pt2, k, pt3] in enumerate(jobs_on_rank):
 
             i, j, k = int(i), int(j), int(k)
-
             positions = np.array(
                 init_geom
                 + scaling_a * pt1 * displ_vec_a
@@ -537,12 +571,23 @@ def _local_pes_threemode(
     if do_dipole:
         return local_pes_threebody, local_dipole_threebody
 
-    return local_pes_threebody, None # pragma: no cover
+    return local_pes_threebody, None  # pragma: no cover
 
 
-def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
+def _load_pes_threemode(num_proc, nmodes, quad_order, do_dipole):
     """
     Loader to combine pes_threebody and dipole_threebody from multiple processors.
+
+    Args:
+       num_proc: number of processors
+       nmodes: number of normal modes
+       quad_order: order for Gauss-Hermite quadratures
+       do_dipole: Whether to calculate the dipole elements. Default is ``False``.
+
+    Returns:
+       A tuple of one-mode potential energy surface and one-mode dipole along
+       the normal-mode coordinates.
+
     """
     final_shape = (nmodes, nmodes, nmodes, quad_order, quad_order, quad_order)
     nmode_combos = int(nmodes * (nmodes - 1) * (nmodes - 2) / 6)
@@ -558,8 +603,8 @@ def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
 
                 init_idx = 0
                 end_idx = 0
-                for piece in range(num_pieces):
-                    f = h5py.File("v3data" + f"_{piece}" + ".hdf5", "r+")
+                for proc in range(num_proc):
+                    f = h5py.File("v3data" + f"_{proc}" + ".hdf5", "r+")
                     local_pes_threebody = f["V3_PES"][()]
                     pes_chunk = np.array_split(local_pes_threebody, nmode_combos)[mode_combo]
 
@@ -584,7 +629,7 @@ def _load_pes_threemode(num_pieces, nmodes, quad_order, do_dipole):
 
     if do_dipole:
         return pes_threebody, dipole_threebody
-    return pes_threebody, None # pragma: no cover
+    return pes_threebody, None  # pragma: no cover
 
 
 def pes_threemode(
@@ -619,8 +664,8 @@ def pes_threemode(
        do_dipole: Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-      A tuple of three-mode potential energy surface and three-mode dipole along
-      the normal-mode coordinates.
+       A tuple of three-mode potential energy surface and three-mode dipole along
+       the normal-mode coordinates.
     """
 
     _import_mpi4py()
@@ -673,4 +718,4 @@ def pes_threemode(
         dipole_threebody = comm.bcast(dipole_threebody, root=0)
         return pes_threebody, dipole_threebody
 
-    return pes_threebody, None # pragma: no cover
+    return pes_threebody, None  # pragma: no cover

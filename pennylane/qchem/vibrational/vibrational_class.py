@@ -26,20 +26,26 @@ from ..openfermion_pyscf import _import_pyscf
 BOHR_TO_ANG = 0.529177
 
 
-def _get_rhf_dipole(disp_hf):
+def _get_rhf_dipole(scf_result):
     """
     Given an restricted Hartree-Fock object, evaluate the dipole moment
     in the restricted Hartree-Fock state.
+
+    Args:
+       scf_result: pyscf object from electronic structure calculations
+
+    Returns:
+       dipole moment
     """
 
-    charges = disp_hf.mol.atom_charges()
-    coords = disp_hf.mol.atom_coords()
-    masses = disp_hf.mol.atom_mass_list(isotope_avg=True)
+    charges = scf_result.mol.atom_charges()
+    coords = scf_result.mol.atom_coords()
+    masses = scf_result.mol.atom_mass_list(isotope_avg=True)
     nuc_mass_center = np.einsum("z,zx->x", masses, coords) / masses.sum()
-    disp_hf.mol.set_common_orig_(nuc_mass_center)
-    dip_ints = disp_hf.mol.intor("int1e_r", comp=3)
+    scf_result.mol.set_common_orig_(nuc_mass_center)
+    dip_ints = scf_result.mol.intor("int1e_r", comp=3)
 
-    t_dm1 = disp_hf.make_rdm1()
+    t_dm1 = scf_result.make_rdm1()
     if len(t_dm1.shape) == 3:
         dipole_e_alpha = np.einsum("xij,ji->x", dip_ints, t_dm1[0, ::])
         dipole_e_beta = np.einsum("xij,ji->x", dip_ints, t_dm1[1, ::])
@@ -56,21 +62,28 @@ def _get_rhf_dipole(disp_hf):
     return dipole
 
 
-def _get_uhf_dipole(disp_hf):
+def _get_uhf_dipole(scf_result):
     """
     Given an unrestricted Hartree-Fock object, evaluate the dipole moment
     in the unrestricted Hartree-Fock state.
+
+    Args:
+       scf_result: pyscf object from electronic structure calculations
+
+    Returns:
+       dipole moment
+
     """
 
-    charges = disp_hf.mol.atom_charges()
-    coords = disp_hf.mol.atom_coords()
-    masses = disp_hf.mol.atom_mass_list(isotope_avg=True)
+    charges = scf_result.mol.atom_charges()
+    coords = scf_result.mol.atom_coords()
+    masses = scf_result.mol.atom_mass_list(isotope_avg=True)
     nuc_mass_center = np.einsum("z,zx->x", masses, coords) / masses.sum()
-    disp_hf.mol.set_common_orig_(nuc_mass_center)
+    scf_result.mol.set_common_orig_(nuc_mass_center)
 
-    t_dm1_alpha, t_dm1_beta = disp_hf.make_rdm1()
+    t_dm1_alpha, t_dm1_beta = scf_result.make_rdm1()
 
-    dip_ints = disp_hf.mol.intor("int1e_r", comp=3)
+    dip_ints = scf_result.mol.intor("int1e_r", comp=3)
     dipole_e_alpha = np.einsum("xij,ji->x", dip_ints, t_dm1_alpha)
     dipole_e_beta = np.einsum("xij,ji->x", dip_ints, t_dm1_beta)
     dipole_e = dipole_e_alpha + dipole_e_beta
@@ -84,10 +97,20 @@ def _get_uhf_dipole(disp_hf):
     return dipole
 
 
-def get_dipole(hf, method):
-    r"""Evaluate the dipole moment for a Hartree-Fock state."""
+def get_dipole(scf_result, method):
+    r"""Evaluate the dipole moment for a Hartree-Fock state.
+
+    Args:
+       scf_result: pyscf object from electronic structure calculations
+       method: Electronic structure method to define the level of theory
+            for dipole moment calculation. Input values cal be ``'rhf'`` or ``'uhf'``.
+            Default is restricted Hartree-Fock ``'rhf'``.
+    Returns:
+       dipole moment
+
+    """
     method = method.strip().lower()
     if method == "rhf":
-        return _get_rhf_dipole(hf)
+        return _get_rhf_dipole(scf_result)
 
-    return _get_uhf_dipole(hf)
+    return _get_uhf_dipole(scf_result)

@@ -85,7 +85,6 @@ from .tapering import (
 from .vibrational import (
     get_dipole,
     harmonic_analysis,
-    localize_normal_modes,
     optimize_geometry,
     pes_onemode,
     pes_threemode,
