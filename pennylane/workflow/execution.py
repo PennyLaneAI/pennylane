@@ -23,14 +23,14 @@ from functools import partial
 from typing import Optional, Union
 from warnings import warn
 
-from cachetools import Cache, LRUCache
+from cachetools import Cache
 
 import pennylane as qml
 from pennylane.math import _resolve_interface, jpc_interfaces
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
-from ._cache_transform import _cache_transform
+from ._setup_transform_program import _setup_transform_program
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
 logger = logging.getLogger(__name__)
@@ -92,9 +92,7 @@ def _get_ml_boundary_execute(
     return ml_boundary
 
 
-def _make_inner_execute(
-    device, cache, inner_transform, execution_config=None, numpy_only=True
-) -> Callable:
+def _make_inner_execute(device, inner_transform, execution_config=None) -> Callable:
     """Construct the function that will execute the tapes inside the ml framework registration
     for the 1st order derivatives.
 
@@ -116,15 +114,7 @@ def _make_inner_execute(
             cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
 
-        transform_program = qml.transforms.core.TransformProgram(inner_transform)
-
-        if numpy_only:
-            transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
-
-        if cache is not None:
-            transform_program.add_transform(_cache_transform, cache=cache)
-
-        transformed_tapes, transform_post_processing = transform_program(tapes)
+        transformed_tapes, transform_post_processing = inner_transform(tapes)
 
         if transformed_tapes:
             results = device.execute(transformed_tapes, execution_config=execution_config)
@@ -317,38 +307,13 @@ def execute(
         )
         config = device.setup_execution_config(config)
 
-    is_gradient_transform = isinstance(diff_method, qml.transforms.core.TransformDispatcher)
-    transform_program, inner_transform = _make_transform_programs(
-        device, config, inner_transform, transform_program, is_gradient_transform
-    )
+    # pylint: disable=protected-access
+    if transform_program is None or inner_transform is None:
+        transform_program, inner_transform = _setup_transform_program(
+            transform_program, device, config, cache, cachesize
+        )
 
-    # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
-    if cache is True:
-        cache = LRUCache(maxsize=cachesize)
-        setattr(cache, "_persistent_cache", False)
-
-    # Ensure that ``cache`` is not a Boolean to simplify downstream code.
-    elif cache is False:
-        cache = None
-
-    # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = interface == "numpy" or config.gradient_method in {
-        None,
-        "backprop",
-    }
-    device_supports_interface_data = no_interface_boundary_required and (
-        interface == "numpy"
-        or config.gradient_method == "backprop"
-        or getattr(device, "short_name", "") == "default.mixed"
-    )
-
-    inner_execute = _make_inner_execute(
-        device,
-        cache,
-        inner_transform,
-        config,
-        numpy_only=not device_supports_interface_data,
-    )
+    inner_execute = _make_inner_execute(device, inner_transform, config)
 
     # moved to its own explicit step so that it will be easier to remove
     def inner_execute_with_empty_jac(tapes, **_):
@@ -366,6 +331,10 @@ def execute(
         return post_processing(tapes)
 
     # Exiting early if we do not need to deal with an interface boundary
+    no_interface_boundary_required = interface == "numpy" or config.gradient_method in {
+        None,
+        "backprop",
+    }
     if no_interface_boundary_required:
         results = inner_execute(tapes)
         return post_processing(results)
@@ -482,24 +451,3 @@ def execute(
         )
 
     return post_processing(results)
-
-
-def _make_transform_programs(
-    device, config, inner_transform, transform_program, is_gradient_transform
-):
-    """helper function to make the transform programs."""
-
-    # If diff_method is a gradient transform, device preprocessing should happen in
-    # inner execute (inside the ml boundary).
-    if is_gradient_transform:
-        if inner_transform is None:
-            inner_transform = device.preprocess_transforms(config)
-        if transform_program is None:
-            transform_program = qml.transforms.core.TransformProgram()
-    else:
-        if inner_transform is None:
-            inner_transform = qml.transforms.core.TransformProgram()
-        if transform_program is None:
-            transform_program = device.preprocess_transforms(config)
-
-    return transform_program, inner_transform

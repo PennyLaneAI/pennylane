@@ -20,7 +20,6 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import replace
 from typing import Any, Literal, Optional, Union, get_args
 
 from cachetools import Cache
@@ -28,18 +27,14 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
-from pennylane.math import (
-    INTERFACE_MAP,
-    SUPPORTED_INTERFACE_NAMES,
-    SupportedInterfaceUserInput,
-    _resolve_interface,
-)
+from pennylane.math import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
 from pennylane.measurements import MidMeasureMP
-from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
-from ._resolve_diff_method import SupportedDiffMethods, _resolve_diff_method
+from ._setup_transform_program import _setup_transform_program
+from .resolution import SupportedDiffMethods, _resolve_execution_config
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -99,91 +94,6 @@ def _make_execution_config(
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
         mcm_config=mcm_config or qml.devices.MCMConfig(),
     )
-
-
-def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool
-) -> "qml.devices.MCMConfig":
-    """Helper function to resolve the mid-circuit measurements configuration based on
-    execution parameters"""
-    updated_values = {}
-
-    if not finite_shots:
-        updated_values["postselect_mode"] = None
-        if mcm_config.mcm_method == "one-shot":
-            raise ValueError(
-                f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
-            )
-
-    if mcm_config.mcm_method == "single-branch-statistics":
-        raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
-
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
-        # This is a current limitation of defer_measurements. "hw-like" behaviour is
-        # not yet accessible.
-        if mcm_config.postselect_mode == "hw-like":
-            raise ValueError(
-                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
-                "mcm_method='deferred'."
-            )
-        updated_values["postselect_mode"] = "fill-shots"
-
-    if (
-        finite_shots
-        and "jax" in interface
-        and mcm_config.mcm_method in (None, "one-shot")
-        and mcm_config.postselect_mode in (None, "hw-like")
-    ):
-        updated_values["postselect_mode"] = "pad-invalid-samples"
-
-    return replace(mcm_config, **updated_values)
-
-
-def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tapes: QuantumScriptBatch,
-    transform_program: TransformProgram,
-) -> "qml.devices.ExecutionConfig":
-    """Resolves the execution configuration for non-device specific properties.
-
-    Args:
-        execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
-        device (qml.devices.Device): a Pennylane device
-        tapes (QuantumScriptBatch): a batch of tapes
-        transform_program (TransformProgram): a program of transformations to be applied to the tapes
-
-    Returns:
-        qml.devices.ExecutionConfig: resolved execution configuration
-    """
-    updated_values = {}
-    updated_values["gradient_keyword_arguments"] = dict(execution_config.gradient_keyword_arguments)
-
-    if (
-        "lightning" in device.name
-        and qml.metric_tensor in transform_program
-        and execution_config.gradient_method == "best"
-    ):
-        execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
-
-    if execution_config.gradient_method is qml.gradients.param_shift_cv:
-        updated_values["gradient_keyword_arguments"]["dev"] = device
-
-    # Mid-circuit measurement configuration validation
-    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
-    # workflow still needs to know if jax-jit is used
-    interface = _resolve_interface(execution_config.interface, tapes)
-    finite_shots = any(tape.shots for tape in tapes)
-    mcm_interface = (
-        _resolve_interface("auto", tapes) if execution_config.interface is None else interface
-    )
-    mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
-
-    updated_values["mcm_config"] = mcm_config
-
-    return replace(execution_config, **updated_values)
 
 
 def _to_qfunc_output_type(
@@ -280,7 +190,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
-# pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-instance-attributes
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -601,6 +511,7 @@ class QNode:
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         func: Callable,
@@ -998,32 +909,24 @@ class QNode:
         config = _resolve_execution_config(
             config, self.device, (self._tape,), self.transform_program
         )
-        device_transform_program, config = self.device.preprocess(execution_config=config)
 
-        full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
-        inner_transform_program = qml.transforms.core.TransformProgram()
-        # Add the gradient expand to the program if necessary
-        if getattr(config.gradient_method, "expand_transform", False):
-            full_transform_program.add_transform(
-                qml.transform(config.gradient_method.expand_transform),
-                **config.gradient_keyword_arguments,
-            )
-
-        if config.use_device_gradient:
-            full_transform_program += device_transform_program
-        else:
-            inner_transform_program += device_transform_program
+        outer_transform_program, inner_transform_program = _setup_transform_program(
+            self.transform_program,
+            self.device,
+            config,
+            execute_kwargs["cache"],
+            execute_kwargs["cachesize"],
+        )
 
         # Calculate the classical jacobians if necessary
-        full_transform_program.set_classical_component(self, args, kwargs)
-        _prune_dynamic_transform(full_transform_program, inner_transform_program)
+        outer_transform_program.set_classical_component(self, args, kwargs)
 
         res = qml.execute(
             (self._tape,),
             device=self.device,
             diff_method=config.gradient_method,
             interface=config.interface,
-            transform_program=full_transform_program,
+            transform_program=outer_transform_program,
             inner_transform=inner_transform_program,
             config=config,
             gradient_kwargs=config.gradient_keyword_arguments,
@@ -1080,30 +983,3 @@ def qnode(device, **kwargs):
 
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
-
-
-def _prune_dynamic_transform(outer_transform, inner_transform):
-    """Ensure a single ``dynamic_one_shot`` transform is applied.
-
-    Sometimes device preprocess contains a ``mid_circuit_measurements`` transform, which will
-    be added to the inner transform program. If the user then applies a ``dynamic_one_shot``
-    manually, it will duplicate the ``mid_circuit_measurements`` transform. This function ensures
-    that there is only one ``dynamic_one_shot`` transform in the outer and inner transform
-    programs combined.
-
-    """
-
-    all_transforms = outer_transform + inner_transform
-    type_to_keep = 0
-    if any("mid_circuit_measurements" in str(t) for t in all_transforms):
-        type_to_keep = 2
-    elif any("dynamic_one_shot" in str(t) for t in all_transforms):
-        type_to_keep = 1
-
-    if type_to_keep == 0:
-        return
-
-    dynamic_transform_found = inner_transform.prune_dynamic_transform(type_to_keep)
-    if dynamic_transform_found:
-        type_to_keep = 0
-    outer_transform.prune_dynamic_transform(type_to_keep)
