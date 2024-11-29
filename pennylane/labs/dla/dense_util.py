@@ -279,6 +279,8 @@ def check_commutation(ops1, ops2, vspace):
 def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
     r"""Helper function to check if all operators in a set of operators commute
 
+    .. warning:: This function is expensive to compute
+
     Args:
         ops (List[Union[PauliSentence, np.ndarray, Operator]]): List of operators to check for mutual commutation
 
@@ -324,7 +326,7 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
 
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
-    r"""Helper function to check the validity of a Cartan decomposition
+    r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
 
     Check whether of not the following properties are fulfilled.
 
@@ -333,6 +335,8 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
             [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} & \text{ (subalgebra)}\\
             [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} & \text{ (reductive property)}\\
             [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k} & \text{ (symmetric property)}
+
+    .. warning:: This function is expensive to compute
 
     Args:
         k (List[PauliSentence]): List of operators of the vertical subspace
