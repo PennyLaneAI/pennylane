@@ -23,7 +23,7 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 
-def cartan_decomposition(g, involution):
+def cartan_decomp(g, involution):
     r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \plus \mathfrak{m}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
@@ -54,7 +54,7 @@ def cartan_decomposition(g, involution):
     We first construct a simple Lie algebra.
 
     >>> from pennylane import X, Z
-    >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomposition
+    >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
@@ -67,7 +67,7 @@ def cartan_decomposition(g, involution):
 
     We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
 
-    >>> k, m = cartan_decomposition(g, concurrence_involution)
+    >>> k, m = cartan_decomp(g, concurrence_involution)
     >>> k, m
     ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
      [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
@@ -79,7 +79,7 @@ def cartan_decomposition(g, involution):
 
     There are other Cartan decomposition induced by other involutions. For example using :func:`~even_odd_involution`.
 
-    >>> k, m = cartan_decomposition(g, even_odd_involution)
+    >>> k, m = cartan_decomp(g, even_odd_involution)
     >>> k, m
     ([Z(0), Z(1)],
      [X(0) @ X(1),
@@ -116,7 +116,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     Returns:
         bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
 
-    .. seealso:: :func:`~cartan_decomposition`
+    .. seealso:: :func:`~cartan_decomp`
 
     **Example**
 
@@ -191,7 +191,7 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     Returns:
         bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
 
-    .. seealso:: :func:`~cartan_decomposition`
+    .. seealso:: :func:`~cartan_decomp`
 
     **Example**
 
@@ -240,8 +240,9 @@ def _concurrence_involution_operator(op: Operator):
         return True
     if np.allclose(op, op.T):
         return False
-    raise ValueError(f"The concurrence canonical decomposition is not well-defined for operator {op}")
-    return np.allclose(op, -op.T)
+    raise ValueError(
+        f"The concurrence canonical decomposition is not well-defined for operator {op}"
+    )
 
 
 @_concurrence_involution.register(np.ndarray)

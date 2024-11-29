@@ -346,14 +346,14 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     Returns:
         bool: Whether or not all properties are fulfilled
 
-    .. see-also:: :func:`~cartan_decomposition`
+    .. see-also:: :func:`~cartan_decomp`
 
     **Example**
 
     We first construct a simple Lie algebra.
 
     >>> from pennylane import X, Z
-    >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomposition
+    >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
@@ -366,7 +366,7 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
 
     We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
 
-    >>> k, m = cartan_decomposition(g, concurrence_involution)
+    >>> k, m = cartan_decomp(g, concurrence_involution)
     >>> k, m
     ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
      [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])

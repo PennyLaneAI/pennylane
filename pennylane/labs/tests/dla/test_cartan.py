@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import cartan_decomposition, concurrence_involution, even_odd_involution
+from pennylane.labs.dla import cartan_decomp, concurrence_involution, even_odd_involution
 
 
 def check_commutation(ops1, ops2, vspace):
@@ -40,11 +40,11 @@ Heisenberg3 = qml.lie_closure(
 class TestCartanDecomposition:
     @pytest.mark.parametrize("involution", [even_odd_involution, concurrence_involution])
     @pytest.mark.parametrize("g", [Ising2, Ising3, Heisenberg3])
-    def test_cartan_decomposition(self, g, involution):
+    def test_cartan_decomp(self, g, involution):
         """Test basic properties and Cartan decomposition definitions"""
 
         g = [op.pauli_rep for op in g]
-        k, m = cartan_decomposition(g, involution)
+        k, m = cartan_decomp(g, involution)
 
         assert all(involution(op) is True for op in k)
         assert all(involution(op) is False for op in m)
@@ -59,11 +59,11 @@ class TestCartanDecomposition:
 
     @pytest.mark.parametrize("involution", [even_odd_involution, concurrence_involution])
     @pytest.mark.parametrize("g", [Ising2, Ising3, Heisenberg3])
-    def test_cartan_decomposition_dense(self, g, involution):
+    def test_cartan_decomp_dense(self, g, involution):
         """Test basic properties and Cartan decomposition definitions using dense representations"""
 
         g = [qml.matrix(op, wire_order=range(3)) for op in g]
-        k, m = cartan_decomposition(g, involution)
+        k, m = cartan_decomp(g, involution)
 
         assert all(involution(op) is True for op in k)
         assert all(involution(op) is False for op in m)
