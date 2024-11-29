@@ -22,7 +22,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .interface import get_interface
+from .interface_utils import get_interface
 
 
 def allequal(tensor1, tensor2, **kwargs):

@@ -22,7 +22,7 @@ import numpy as np
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
 
-from .interface import get_deep_interface
+from .interface_utils import get_deep_interface
 from .utils import is_abstract
 
 

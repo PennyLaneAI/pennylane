@@ -93,7 +93,7 @@ from .utils import (
     requires_grad,
     is_abstract,
 )
-from .interface import (
+from .interface_utils import (
     _get_canonical_interface_name,
     SupportedInterfaceUserInput,
     jpc_interfaces,
