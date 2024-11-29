@@ -17,6 +17,8 @@ This module contains the qml.map_wires function.
 from collections.abc import Callable
 from typing import Union, overload
 
+from functools import partial
+
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import MeasurementProcess
@@ -133,7 +135,25 @@ def processing_fn(res):
     return res[0]
 
 
-@transform
+def _map_wires_plxpr_transform(
+    primitive, tracers, params, targs, tkwargs, state=None
+):  # pylint: disable=unused-argument, too-many-arguments, too-many-positional-arguments
+    """Implementation for ``_map_wires_transform`` with program capture"""
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture import TransformTracer
+
+    print(
+        f"_map_wires_plxpr_transform called with \nprimitive: {primitive}, \ntracers: {tracers}, \nparams: {params}, \ntargs: {targs}, \ntkwargs: {tkwargs}"
+    )
+
+    with qml.QueuingManager.stop_recording():
+        tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
+        op = primitive.impl(*tracers_in, **params)
+        print(f"op: {op}")
+
+    raise NotImplementedError("This function is not implemented yet.")
+
+@partial(transform, plxpr_transform=_map_wires_plxpr_transform)
 def _map_wires_transform(
     tape: QuantumScript, wire_map=None, queue=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
