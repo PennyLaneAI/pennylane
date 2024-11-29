@@ -31,7 +31,15 @@ def _obtain_r2(ytrue, yfit):
 
 
 def _remove_harmonic(freqs, pes_onebody):
-    """Removes the harmonic part from the PES."""
+    """Removes the harmonic part from the PES
+    
+    Args:
+        freqs (list(float)): the harmonic frequencies
+        pes_onebody: one body terms of the PES object
+
+    Returns:
+        harmonic part of the PES
+    """
     nmodes, quad_order = np.shape(pes_onebody)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
@@ -234,7 +242,16 @@ def taylor_integrals(pes, deg=4, min_deg=3):
 
 
 def taylor_integrals_dipole(pes, deg=4, min_deg=1):
-    r"""Calculates Taylor form integrals for dipole construction"""
+    r"""Calculates Taylor form integrals for dipole construction
+    
+    Args:
+        pes: the PES object
+        deg: the maximum degree of the taylor polynomial
+        min_deg: the starting degree of the taylor polynomial
+
+    Returns:
+        
+    """
     f_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onebody[:, :, 0], deg, min_deg=min_deg)
     f_x_arr = [f_x_1D]
     predicted_x_arr = [predicted_x_1D]

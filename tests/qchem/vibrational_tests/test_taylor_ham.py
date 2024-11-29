@@ -15,11 +15,11 @@
 
 import numpy as np
 
-from pennylane.labs.vibrational_ham.bosonic import (
+from pennylane.bose import (
     BoseWord,
     BoseSentence,
 )
-from pennylane.labs.vibrational_ham.taylor_ham import (
+from pennylane.qchem.vibrational.taylor_ham import (
     taylor_anharmonic,
     taylor_bosonic,
     taylor_hamiltonian,
