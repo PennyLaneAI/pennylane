@@ -119,7 +119,7 @@ from pennylane.typing import TensorLike
 has_jax = True
 try:
     import jax
-    from jax.interpreters import ad, batching
+    from jax.interpreters import ad, batching, mlir
 except ImportError:
     has_jax = False
 
@@ -299,6 +299,8 @@ def _get_qnode_prim():
     ad.primitive_jvps[qnode_prim] = _qnode_jvp
 
     batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
+
+    mlir.register_lowering(qnode_prim, mlir.lower_fun(qnode_impl, multiple_results=True))
 
     return qnode_prim
 
