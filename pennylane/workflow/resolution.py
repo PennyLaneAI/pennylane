@@ -20,11 +20,9 @@ from typing import Literal, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
-
 from pennylane.math import _resolve_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
-
 
 SupportedDiffMethods = Literal[
     None,
