@@ -28,7 +28,7 @@ from .resource_operator import ResourceOperator
 
 # pylint: disable=dangerous-default-value,protected-access
 
-_StandardGateSet = {
+_StandardGateSet = {  # user-friendly gateset for visual checks and initial compilation
     "PauliX",
     "PauliY",
     "PauliZ",
@@ -45,7 +45,7 @@ _StandardGateSet = {
 }
 
 
-DefaultGateSet = {
+DefaultGateSet = {  # practical/realistic gateset for useful compilation of circuits
     "Hadamard",
     "CNOT",
     "S",
@@ -54,7 +54,7 @@ DefaultGateSet = {
 }
 
 
-resource_config = {
+resource_config = {  # configurations for further configuration of the decompositions
     "error_rx": 10e-3,
     "error_ry": 10e-3,
     "error_rz": 10e-3,
@@ -69,15 +69,15 @@ def get_resources(
     in the gate_set.
 
     Args:
-        obj (Union[Operation, Callable, QuantumScript]): The quantum circuit or operation to obtain resources from.
-        gate_set (Set, optional): A set (str) specifying the names of operations to track. Defaults to DefaultGateSet.
-        config (Dict, optional): Additional configurations to specify how resources are tracked. Defaults to resource_config.
+        obj (Union[Operation, Callable, QuantumScript]): the quantum circuit or operation to obtain resources from
+        gate_set (Set, optional): python set of strings specifying the names of operations to track
+        config (Dict, optional): dictionary of additiona; configurations that specify how resources are computed
 
     Returns:
-        Resources: The total resources of the quantum circuit.
+        Resources: the total resources of the quantum circuit
 
     Raises:
-        TypeError: "Could not obtain resources for obj of type (type(obj))".
+        TypeError: could not obtain resources for obj of type `type(obj)`
 
     **Example**
 
@@ -176,7 +176,7 @@ def resources_from_operation(
 def resources_from_qfunc(
     obj: Callable, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Callable:
-    """Get resources from a quantum function which queues operations!"""
+    """Get resources from a quantum function which queues operations"""
 
     @wraps(obj)
     def wrapper(*args, **kwargs):
