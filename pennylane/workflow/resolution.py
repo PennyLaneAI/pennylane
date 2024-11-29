@@ -20,10 +20,9 @@ from typing import Literal, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
+from pennylane.math import _resolve_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
-
-from .execution import _get_interface_name
 
 SupportedDiffMethods = Literal[
     None,
@@ -169,10 +168,10 @@ def _resolve_execution_config(
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
     # workflow still needs to know if jax-jit is used
-    interface = _get_interface_name(tapes, execution_config.interface)
+    interface = _resolve_interface(execution_config.interface, tapes)
     finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
-        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
+        _resolve_interface("auto", tapes) if execution_config.interface is None else interface
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 
