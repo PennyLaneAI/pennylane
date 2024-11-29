@@ -181,7 +181,7 @@ def calculate_probability(
 
 
 def calculate_variance(
-    measurementprocess: StateMeasurement,
+    measurementprocess: VarianceMP,
     state: TensorLike,
     is_state_batched: bool = False,
     readout_errors: list[Callable] = None,
