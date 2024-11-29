@@ -16,18 +16,29 @@
 """
 
 from dataclasses import replace
-from typing import get_args
+from typing import Literal, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
 from pennylane.transforms.core import TransformDispatcher
-from pennylane.workflow.qnode import SupportedDeviceAPIs, SupportedDiffMethods
+
+SupportedDiffMethods = Literal[
+    None,
+    "best",
+    "device",
+    "backprop",
+    "adjoint",
+    "parameter-shift",
+    "hadamard",
+    "finite-diff",
+    "spsa",
+]
 
 
 @debug_logger
 def _resolve_diff_method(
     initial_config: "qml.devices.ExecutionConfig",
-    device: SupportedDeviceAPIs,
+    device: "qml.devices.Device",
     tape: "qml.tape.QuantumTape" = None,
 ) -> "qml.devices.ExecutionConfig":
     """
@@ -48,7 +59,7 @@ def _resolve_diff_method(
         return initial_config
 
     if device.supports_derivatives(initial_config, circuit=tape):
-        new_config = device.preprocess(initial_config)[1]
+        new_config = device.setup_execution_config(initial_config)
         return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:

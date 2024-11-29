@@ -21,8 +21,38 @@ Experimental Lie theory features
     :toctree: api
 
     ~lie_closure_dense
+    ~structure_constants_dense
+
+
+Utility functions
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~adjvec_to_op
+    ~change_basis_ad_rep
+    ~check_orthonormal
+    ~op_to_adjvec
+    ~orthonormalize
+    ~pauli_coefficients
+    ~batched_pauli_decompose
+    ~trace_inner_product
 
 
 """
 
 from .lie_closure_dense import lie_closure_dense
+from .structure_constants_dense import structure_constants_dense
+from .dense_util import (
+    change_basis_ad_rep,
+    pauli_coefficients,
+    batched_pauli_decompose,
+    orthonormalize,
+    check_orthonormal,
+    trace_inner_product,
+    adjvec_to_op,
+    op_to_adjvec,
+)
