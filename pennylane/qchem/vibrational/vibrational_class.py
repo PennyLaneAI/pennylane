@@ -32,7 +32,8 @@ def harmonic_analysis(scf_result, method="rhf"):
     Args:
        scf_result: pyscf object from electronic structure calculations
        method: Electronic structure method to define the level of theory
-            for harmonic analysis. Default is restricted Hartree-Fock ``'rhf'``.
+            for harmonic analysis. Input values can be ``'rhf'`` or ``'uhf'``.
+            Default is restricted Hartree-Fock ``'rhf'``.
 
     Returns:
        a tuple of frequencies of normal modes and their corresponding displacement vectors
@@ -56,6 +57,7 @@ def _single_point(molecule, method="rhf"):
     Args:
       molecule: Molecule object.
       method: Electronic structure method to define the level of theory.
+              Input values can be ``'rhf'`` or ``'uhf'``.
               Default is restricted Hartree-Fock 'rhf'.
 
     Returns:
@@ -100,6 +102,7 @@ def optimize_geometry(molecule, method="rhf"):
     Args:
       molecule: Molecule object.
       method: Electronic structure method to define the level of theory.
+              Input values can be ``'rhf'`` or ``'uhf'``.
               Default is restricted Hartree-Fock ``'rhf'``.
 
     Returns:
