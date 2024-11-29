@@ -64,20 +64,20 @@ class TestResourceControlled:
             "base_class": re.ResourceQFT,
             "base_params": base.resource_params(),
             "num_ctrl_wires": 1,
-            "num_ctrl_values": 1,
+            "num_ctrl_values": 0,
             "num_work_wires": 0,
         }
 
     @pytest.mark.parametrize(
         "op, expected",
         [
-            (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), "C(QFT(2),1,1,0)"),
+            (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), "C(QFT(2),1,0,0)"),
             (
                 re.ResourceControlled(
                     re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]),
                     control_wires=[3],
                 ),
-                "C(C(QFT(2),1,1,0),1,1,0)",
+                "C(C(QFT(2),1,0,0),1,0,0)",
             ),
             (
                 re.ResourceControlled(
