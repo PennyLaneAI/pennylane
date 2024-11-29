@@ -581,7 +581,7 @@ def transform_angles(angles, routine1, routine2):
         angles (tensor-like): angles to be transformed
         routine1 (str): the current routine for which the angles are obtained, must be either ``"QSP"`` or ``"QSVT"``
         routine2 (str): the target routine for which the angles should be transformed,
-                        must be either ``"QSP"`` or ``"QSVT"``
+            must be either ``"QSP"`` or ``"QSVT"``
 
     Returns:
         tensor-like: the transformed angles as an array
@@ -592,6 +592,7 @@ def transform_angles(angles, routine1, routine2):
 
         >>> qsp_angles = np.array([0.2, 0.3, 0.5])
         >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
+        >>> print(qsvt_angles)
         [-6.86858347  1.87079633 -0.28539816]
 
 
@@ -667,9 +668,9 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
     The polynomial :math:`P(x) = \sum_n a_n x^n` must have :math:`x \in [-1, 1]`, the coefficients :math:`a_n` must be real and all the exponents :math:`n` must be either even or odd. For more details see `arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_.
 
     Args:
-        poly (tensor-like): coefficients of the polynomial ordered from lowest to highest power. For missing powers, ``0`` must be used.
+        poly (tensor-like): coefficients of the polynomial ordered from lowest to highest power
 
-        routine (str): the routine for which the angles are computed. Must be either: ``"QSP"`` or ``"QSVT"``
+        routine (str): the routine for which the angles are computed. Must be either ``"QSP"`` or ``"QSVT"``.
 
         angle_solver (str): the method used to calculate the angles. Default is ``"root-finding"``.
 
