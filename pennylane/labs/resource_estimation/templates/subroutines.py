@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
 
+from typing import Dict
+
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
@@ -29,7 +31,7 @@ class ResourceQFT(qml.QFT, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(num_wires, **kwargs):
+    def _resource_decomp(num_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
 
         hadamard = re.ResourceHadamard.resource_rep()
@@ -46,9 +48,8 @@ class ResourceQFT(qml.QFT, re.ResourceOperator):
         return {"num_wires": len(self.wires)}
 
     @classmethod
-    def resource_rep(cls, num_wires):
-        params = {"num_wires": num_wires}
-        return CompressedResourceOp(cls, params)
+    def resource_rep(cls, num_wires) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {"num_wires": num_wires})
 
     @staticmethod
     def tracking_name(num_wires) -> str:
@@ -59,11 +60,10 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
     """Resource class for the ControlledSequence template."""
 
     @staticmethod
-    def _resource_decomp(base_class, base_params, num_ctrl_wires):
-        controlled = re.ResourceControlled.resource_rep(base_class, base_params, 1, 0)
-        return {controlled: 2**num_ctrl_wires - 1}
+    def _resource_decomp(base_class, base_params, num_ctrl_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+        return {re.ResourceControlled.resource_rep(base_class, base_params, 1, 0, 0): 2**num_ctrl_wires - 1}
 
-    def resource_params(self):
+    def resource_params(self) -> dict:
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params(),
@@ -71,7 +71,7 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, base_class, base_params, num_ctrl_wires):
+    def resource_rep(cls, base_class, base_params, num_ctrl_wires) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(
             cls,
             {
@@ -81,12 +81,17 @@ class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
             },
         )
 
+    @staticmethod
+    def tracking_name(base_class, base_params, num_ctrl_wires) -> str:
+        base_name = base_class.tracking_name(**base_params)
+        return f"ControlledSequence({base_name}, {num_ctrl_wires})"
+
 
 class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
     """Resource class for the PhaseAdder template."""
 
     @staticmethod
-    def _resource_decomp(mod, num_x_wires):
+    def _resource_decomp(mod, num_x_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         if mod == 2**num_x_wires:
             return {re.ResourcePhaseShift.resource_rep(): num_x_wires}
 
@@ -106,6 +111,7 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
             {},
             1,
             0,
+            0,
         )
 
         cnot = re.ResourceCNOT.resource_rep()
@@ -122,14 +128,14 @@ class ResourcePhaseAdder(qml.PhaseAdder, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    def resource_params(self) -> dict:
         return {
             "mod": self.hyperparameters["mod"],
             "num_x_wires": len(self.hyperparameters["x_wires"]),
         }
 
     @classmethod
-    def resource_rep(cls, mod, num_x_wires):
+    def resource_rep(cls, mod, num_x_wires) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {"mod": mod, "num_x_wires": num_x_wires})
 
 
@@ -137,7 +143,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
     """Resource class for the Multiplier template."""
 
     @staticmethod
-    def _resource_decomp(mod, num_work_wires, num_x_wires):
+    def _resource_decomp(mod, num_work_wires, num_x_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         if mod == 2**num_x_wires:
             num_aux_wires = num_x_wires
             num_aux_swap = num_x_wires
@@ -177,7 +183,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    def resource_params(self) -> dict:
         return {
             "mod": self.hyperparameters["mod"],
             "num_work_wires": len(self.hyperparameters["work_wires"]),
@@ -185,7 +191,7 @@ class ResourceMultiplier(qml.Multiplier, re.ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, mod, num_work_wires, num_x_wires):
+    def resource_rep(cls, mod, num_work_wires, num_x_wires) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(
             cls, {"mod": mod, "num_work_wires": num_work_wires, "num_x_wires": num_x_wires}
         )
@@ -195,7 +201,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
     """Resource class for the ModExp template."""
 
     @staticmethod
-    def _resource_decomp(mod, num_output_wires, num_work_wires, num_x_wires, **kwargs):
+    def _resource_decomp(mod, num_output_wires, num_work_wires, num_x_wires, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         mult_resources = ResourceMultiplier._resource_decomp(mod, num_work_wires, num_output_wires)
         gate_types = {}
 
@@ -210,7 +216,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
 
         return gate_types
 
-    def resource_params(self):
+    def resource_params(self) -> dict:
         return {
             "mod": self.hyperparameters["mod"],
             "num_output_wires": len(self.hyperparameters["output_wires"]),
@@ -219,7 +225,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, mod, num_output_wires, num_work_wires, num_x_wires):
+    def resource_rep(cls, mod, num_output_wires, num_work_wires, num_x_wires) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(
             cls,
             {
