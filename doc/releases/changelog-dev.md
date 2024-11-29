@@ -86,6 +86,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
   [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
+* Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
+  [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
+
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
 
