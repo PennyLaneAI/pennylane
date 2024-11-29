@@ -89,9 +89,10 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
 
-* `qml.qchem.factorize` method now supports performing double factorization based on Cholesky
-  decomposition and can be used with `cholesky=True`.
+* The `qml.qchem.factorize` function now supports new methods for double factorization:
+  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
   [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
 
 * Added `qml.qchem.symmetry_shift` function to perform the
   [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
