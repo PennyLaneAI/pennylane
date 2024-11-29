@@ -193,7 +193,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational.single_point(mol)
+    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
@@ -254,7 +254,7 @@ def test_twomode_pes(sym, geom, harmonic_res, ref_file):
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational.single_point(mol)
+    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
@@ -329,7 +329,7 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational.single_point(mol)
+    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
