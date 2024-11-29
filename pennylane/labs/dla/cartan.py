@@ -124,7 +124,7 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     >>> from pennylane.labs.dla import even_odd_involution
     >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2)]
     >>> [even_odd_involution(op) for op in ops]
-    [1, 0, 1]
+    [True, False, True]
 
     Operators with an odd-number of non-identity Paulis yield ``1``, whereas even ones yield ``0``.
 
