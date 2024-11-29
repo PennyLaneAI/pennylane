@@ -282,7 +282,7 @@ class ResourceZ(qml.Z, re.ResourceOperator):
         if num_ctrl_wires == 1 and num_ctrl_values == 0:
             return re.ResourceCZ.resources(**kwargs)
 
-        if num_ctrl_wires == 2 and num_ctrl_wires == 2:
+        if num_ctrl_wires == 2 and num_ctrl_wires == 0:
             return re.ResourceCCZ.resources(**kwargs)
 
         raise re.ResourcesNotDefined
