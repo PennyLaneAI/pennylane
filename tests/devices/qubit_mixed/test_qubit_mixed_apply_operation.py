@@ -17,7 +17,6 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from conftest import get_random_mixed_state
 from scipy.stats import unitary_group
 
 import pennylane as qml
