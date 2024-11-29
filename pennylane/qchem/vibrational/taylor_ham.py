@@ -30,17 +30,17 @@ def _obtain_r2(ytrue, yfit):
     return 1 - ssres / sstot
 
 
-def _remove_harmonic(freqs, pes_onebody):
+def _remove_harmonic(freqs, pes_onemode):
     """Removes the harmonic part from the PES
 
     Args:
         freqs (list(float)): the harmonic frequencies
-        pes_onebody (list(list(float))): one body terms of the PES object
+        pes_onemode (list(list(float))): one body terms of the PES object
 
     Returns:
         harmonic part of the PES
     """
-    nmodes, quad_order = np.shape(pes_onebody)
+    nmodes, quad_order = np.shape(pes_onemode)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     harmonic_pes = np.zeros((nmodes, quad_order))
@@ -49,7 +49,7 @@ def _remove_harmonic(freqs, pes_onebody):
     for ii in range(nmodes):
         ho_const = freqs[ii] / 2
         harmonic_pes[ii, :] = ho_const * (gauss_grid**2)
-        anh_pes[ii, :] = pes_onebody[ii, :] - harmonic_pes[ii, :]
+        anh_pes[ii, :] = pes_onemode[ii, :] - harmonic_pes[ii, :]
 
     return nmodes, quad_order, anh_pes, harmonic_pes
 
@@ -114,7 +114,7 @@ def _twobody_degs(deg, min_deg=3):
     return fit_degs
 
 
-def _fit_twobody(pes_twobody, deg, min_deg=3):
+def _fit_twobody(pes_twomode, deg, min_deg=3):
     r"""Fits the two-body PES to get two-body coefficients.
 
     Args:
@@ -127,7 +127,7 @@ def _fit_twobody(pes_twobody, deg, min_deg=3):
             - the two-body coefficients
             - the predicted two-body PES using fitted coefficients
     """
-    nmodes, _, quad_order, _ = np.shape(pes_twobody)
+    nmodes, _, quad_order, _ = np.shape(pes_twomode)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     if deg < min_deg:
@@ -139,7 +139,7 @@ def _fit_twobody(pes_twobody, deg, min_deg=3):
     num_fs = len(fit_degs)
     fs = np.zeros((nmodes, nmodes, num_fs))
 
-    predicted_2D = np.zeros_like(pes_twobody)
+    predicted_2D = np.zeros_like(pes_twomode)
 
     grid_2D = np.array(np.meshgrid(gauss_grid, gauss_grid))
     q1 = grid_2D[0, ::].flatten()
@@ -160,7 +160,7 @@ def _fit_twobody(pes_twobody, deg, min_deg=3):
             for idx in range(num_2D):
                 idx_q1 = idx1[idx]
                 idx_q2 = idx2[idx]
-                Y.append(pes_twobody[i1, i2, idx_q1, idx_q2])
+                Y.append(pes_twomode[i1, i2, idx_q1, idx_q2])
             poly2D_reg_model = LinearRegression()
             poly2D_reg_model.fit(features, Y)
             fs[i1, i2, :] = poly2D_reg_model.coef_
@@ -213,7 +213,7 @@ def _threebody_degs(deg, min_deg=3):
     return fit_degs
 
 
-def _fit_threebody(pes_threebody, deg, min_deg=3):
+def _fit_threebody(pes_threemode, deg, min_deg=3):
     r"""Fits the three-body PES to get three-body coefficients.
 
     Args:
@@ -226,7 +226,7 @@ def _fit_threebody(pes_threebody, deg, min_deg=3):
             - the three-body coefficients
             - the predicted three-body PES using fitted coefficients
     """
-    nmodes, _, _, quad_order, _, _ = np.shape(pes_threebody)
+    nmodes, _, _, quad_order, _, _ = np.shape(pes_threemode)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     if deg < min_deg:
@@ -234,7 +234,7 @@ def _fit_threebody(pes_threebody, deg, min_deg=3):
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
         )
 
-    predicted_3D = np.zeros_like(pes_threebody)
+    predicted_3D = np.zeros_like(pes_threemode)
     fit_degs = _threebody_degs(deg)
     num_fs = len(fit_degs)
     fs = np.zeros((nmodes, nmodes, nmodes, num_fs))
@@ -262,7 +262,7 @@ def _fit_threebody(pes_threebody, deg, min_deg=3):
                     idx_q1 = idx1[idx]
                     idx_q2 = idx2[idx]
                     idx_q3 = idx3[idx]
-                    Y.append(pes_threebody[i1, i2, i3, idx_q1, idx_q2, idx_q3])
+                    Y.append(pes_threemode[i1, i2, i3, idx_q1, idx_q2, idx_q3])
 
                 poly3D_reg_model = LinearRegression()
                 poly3D_reg_model.fit(features, Y)
@@ -289,19 +289,19 @@ def taylor_integrals(pes, deg=4, min_deg=3):
         coeff_arr (list(list(floats))): the coeffs of the one-body, two-body, three-body terms
     """
 
-    _, _, anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onebody)
+    _, _, anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, deg, min_deg=min_deg)
     predicted_1D += harmonic_pes
     coeff_arr = [coeff_1D]
     predicted_arr = [predicted_1D]
 
-    if pes.pes_twobody is not None:
-        coeff_2D, predicted_2D = _fit_twobody(pes.pes_twobody, deg, min_deg=min_deg)
+    if pes.pes_twomode is not None:
+        coeff_2D, predicted_2D = _fit_twobody(pes.pes_twomode, deg, min_deg=min_deg)
         coeff_arr.append(coeff_2D)
         predicted_arr.append(predicted_2D)
 
-    if pes.pes_threebody is not None:
-        coeff_3D, predicted_3D = _fit_threebody(pes.pes_threebody, deg, min_deg=min_deg)
+    if pes.pes_threemode is not None:
+        coeff_3D, predicted_3D = _fit_threebody(pes.pes_threemode, deg, min_deg=min_deg)
         coeff_arr.append(coeff_3D)
         predicted_arr.append(predicted_3D)
 
@@ -322,52 +322,52 @@ def taylor_integrals_dipole(pes, deg=4, min_deg=1):
             - coeffs_y_arr (list(floats)): coefficients for y-displacements
             - coeffs_z_arr (list(floats)): coefficients for z-displacements
     """
-    coeffs_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onebody[:, :, 0], deg, min_deg=min_deg)
+    coeffs_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onemode[:, :, 0], deg, min_deg=min_deg)
     coeffs_x_arr = [coeffs_x_1D]
     predicted_x_arr = [predicted_x_1D]
 
-    coeffs_y_1D, predicted_y_1D = _fit_onebody(pes.dipole_onebody[:, :, 1], deg, min_deg=min_deg)
+    coeffs_y_1D, predicted_y_1D = _fit_onebody(pes.dipole_onemode[:, :, 1], deg, min_deg=min_deg)
     coeffs_y_arr = [coeffs_y_1D]
     predicted_y_arr = [predicted_y_1D]
 
-    coeffs_z_1D, predicted_z_1D = _fit_onebody(pes.dipole_onebody[:, :, 2], deg, min_deg=min_deg)
+    coeffs_z_1D, predicted_z_1D = _fit_onebody(pes.dipole_onemode[:, :, 2], deg, min_deg=min_deg)
     coeffs_z_arr = [coeffs_z_1D]
     predicted_z_arr = [predicted_z_1D]
 
-    if pes.dipole_twobody is not None:
+    if pes.dipole_twomode is not None:
         coeffs_x_2D, predicted_x_2D = _fit_twobody(
-            pes.dipole_twobody[:, :, :, :, 0], deg, min_deg=min_deg
+            pes.dipole_twomode[:, :, :, :, 0], deg, min_deg=min_deg
         )
         coeffs_x_arr.append(coeffs_x_2D)
         predicted_x_arr.append(predicted_x_2D)
 
         coeffs_y_2D, predicted_y_2D = _fit_twobody(
-            pes.dipole_twobody[:, :, :, :, 1], deg, min_deg=min_deg
+            pes.dipole_twomode[:, :, :, :, 1], deg, min_deg=min_deg
         )
         coeffs_y_arr.append(coeffs_y_2D)
         predicted_y_arr.append(predicted_y_2D)
 
         coeffs_z_2D, predicted_z_2D = _fit_twobody(
-            pes.dipole_twobody[:, :, :, :, 2], deg, min_deg=min_deg
+            pes.dipole_twomode[:, :, :, :, 2], deg, min_deg=min_deg
         )
         coeffs_z_arr.append(coeffs_z_2D)
         predicted_z_arr.append(predicted_z_2D)
 
-    if pes.dipole_threebody is not None:
+    if pes.dipole_threemode is not None:
         coeffs_x_3D, predicted_x_3D = _fit_threebody(
-            pes.dipole_threebody[:, :, :, :, :, :, 0], deg, min_deg=min_deg
+            pes.dipole_threemode[:, :, :, :, :, :, 0], deg, min_deg=min_deg
         )
         coeffs_x_arr.append(coeffs_x_3D)
         predicted_x_arr.append(predicted_x_3D)
 
         coeffs_y_3D, predicted_y_3D = _fit_threebody(
-            pes.dipole_threebody[:, :, :, :, :, :, 1], deg, min_deg=min_deg
+            pes.dipole_threemode[:, :, :, :, :, :, 1], deg, min_deg=min_deg
         )
         coeffs_y_arr.append(coeffs_y_3D)
         predicted_y_arr.append(predicted_y_3D)
 
         coeffs_z_3D, predicted_z_3D = _fit_threebody(
-            pes.dipole_threebody[:, :, :, :, :, :, 2], deg, min_deg=min_deg
+            pes.dipole_threemode[:, :, :, :, :, :, 2], deg, min_deg=min_deg
         )
         coeffs_z_arr.append(coeffs_z_3D)
         predicted_z_arr.append(predicted_z_3D)
@@ -550,6 +550,5 @@ def taylor_hamiltonian(pes_object, deg=4, min_deg=3):
         BoseSentence: taylor hamiltonian for given PES and degree
     """
     coeffs_arr = taylor_integrals(pes_object, deg, min_deg)
-    freqs = taylor_integrals_dipole(pes_object, deg, min_deg)
-    ham = taylor_bosonic(coeffs_arr, freqs)
+    ham = taylor_bosonic(coeffs_arr, pes_object.freqs, is_loc=pes_object.localized, Uloc=pes_object.uloc)
     return ham

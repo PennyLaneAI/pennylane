@@ -298,6 +298,11 @@ class BoseWord(dict):
         left_pointer = 0
         # The right pointer iterates through all operators in the BoseWord
         for right_pointer in range(len_op):
+            if left_pointer > 0:
+                bw_as_list = sorted(list(bw.keys()))
+                if bw_as_list[left_pointer - 1][1] > bw_as_list[left_pointer][1]:
+                    temp_bs = bw.shift_operator(left_pointer - 1, left_pointer)
+                    bw = list(temp_bs.items())[0][0]
             # The right pointer finds the leftmost creation operator
             if self[bw_terms[right_pointer]] == "+":
                 # This ensures that the left pointer starts at the leftmost annihilation term
