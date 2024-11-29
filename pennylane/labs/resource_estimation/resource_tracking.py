@@ -70,13 +70,13 @@ def get_resources(
 
     Args:
         obj (Union[Operation, Callable, QuantumScript]): The quantum circuit or operation to obtain resources from.
-        gate_set (Set, optional): A set (str) specifying the names of opertions to track. Defaults to DefaultGateSet.
+        gate_set (Set, optional): A set (str) specifying the names of operations to track. Defaults to DefaultGateSet.
         config (Dict, optional): Additional configurations to specify how resources are tracked. Defaults to resource_config.
 
     Returns:
         Resources: The total resources of the quantum circuit.
 
-    Rasies:
+    Raises:
         TypeError: "Could not obtain resources for obj of type (type(obj))".
 
     **Example**
@@ -275,7 +275,7 @@ def _temp_map_func(op: Operation) -> ResourceOperator:
 
 def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str, int]:
     """Map resources with gate_types made from CompressedResourceOps
-    into one which tracks just strings of operations!
+    into one which tracks just strings of operations.
 
     Args:
         gate_counts (Dict[CompressedResourceOp, int]): gate counts in terms of compressed resource ops
@@ -296,10 +296,10 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
     """Convert the sequence of operations to a list of compressed resource ops.
 
     Args:
-        ops (Iterable[Operation]): set of operations to convert.
+        ops (Iterable[Operation]): set of operations to convert
 
     Returns:
-        List[CompressedResourceOp]: set of converted compressed resource ops.
+        List[CompressedResourceOp]: set of converted compressed resource ops
     """
     cmp_rep_ops = []
     for op in ops:
