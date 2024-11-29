@@ -29,7 +29,7 @@ def cartan_decomp(g, involution):
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
     :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` into orthogonal complements.
     This is realized by an involution :math:`\Theta(g)` that maps each operator :math:`g \in \mathfrak{g}`
-    back to itself after two consecutive applications, i.e., :math:`\Theta(\Theta(g)) = g \forall g \in \mathfrak{g}`.
+    back to itself after two consecutive applications, i.e., :math:`\Theta(\Theta(g)) = g \ \forall g \in \mathfrak{g}`.
 
     The ``involution`` argument can be any function that maps the operators in the provided ``g`` to a boolean output.
     ``True`` for operators that go into :math:`\mathfrak{k}` and ``False`` for operators in :math:`\mathfrak{m}`.
@@ -54,7 +54,7 @@ def cartan_decomp(g, involution):
     We first construct a Lie algebra.
 
     >>> from pennylane import X, Z
-    >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
+    >>> from pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
@@ -79,6 +79,7 @@ def cartan_decomp(g, involution):
 
     There are other Cartan decomposition induced by other involutions. For example using :func:`~even_odd_involution`.
 
+    >>> from pennylane.labs.dla import check_cartan_decomp
     >>> k, m = cartan_decomp(g, even_odd_involution)
     >>> k, m
     ([Z(0), Z(1)],
@@ -107,8 +108,8 @@ def cartan_decomp(g, involution):
 def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     r"""The Even-Odd involution
 
-    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__,
-    and for Pauli words and sentences comes down to counting non-trivial Paulis in Pauli words.
+    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__.
+    For Pauli words and sentences, it comes down to counting non-trivial Paulis in Pauli words.
 
     Args:
         op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
@@ -126,9 +127,9 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     >>> [even_odd_involution(op) for op in ops]
     [True, False, True]
 
-    Operators with an odd-number of non-identity Paulis yield ``1``, whereas even ones yield ``0``.
+    Operators with an odd number of non-identity Paulis yield ``1``, whereas even ones yield ``0``.
 
-    The function also works with dense matrix repsentations.
+    The function also works with dense matrix representations.
 
     >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
     >>> [even_odd_involution(op_m) for op_m in ops_m]
@@ -182,8 +183,8 @@ def _even_odd_involution_op(op: Operator):
 def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
 
-    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__,
-    and for Pauli words and sentences comes down to counting Pauli-Y operators.
+    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__.
+    For Pauli words and sentences, it comes down to counting Pauli-Y operators.
 
     Args:
         op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
@@ -201,9 +202,9 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     >>> [concurrence_involution(op) for op in ops]
     [False, True, True, False]
 
-    Operators with an odd-number of ``Y`` operators yield ``1``, whereas even ones yield ``0``.
+    Operators with an odd number of ``Y`` operators yield ``1``, whereas even ones yield ``0``.
 
-    The function also works with dense matrix repsentations.
+    The function also works with dense matrix representations.
 
     >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
     >>> [even_odd_involution(op_m) for op_m in ops_m]

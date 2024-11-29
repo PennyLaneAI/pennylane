@@ -349,7 +349,7 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     We first construct a Lie algebra.
 
     >>> from pennylane import X, Z
-    >>> rom pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
+    >>> from pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
     >>> g = qml.lie_closure(generators)
     >>> g
@@ -369,6 +369,7 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
 
     We can check the validity of the decomposition using ``check_cartan_decomp``.
 
+    >>> from pennylane.labs.dla import check_cartan_decomp
     >>> check_cartan_decomp(k, m)
     True
 
