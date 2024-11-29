@@ -13,7 +13,7 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 from functools import singledispatch
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -25,7 +25,7 @@ from pennylane.pauli import PauliSentence
 
 def cartan_decomp(
     g: List[Union[PauliSentence, Operator]], involution: callable
-) -> tuple(List[Union[PauliSentence, Operator]], List[Union[PauliSentence, Operator]]):
+) -> Tuple[List[Union[PauliSentence, Operator]], List[Union[PauliSentence, Operator]]]:
     r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`.
 
     Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
