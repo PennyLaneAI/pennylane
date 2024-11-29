@@ -359,3 +359,53 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
 
     assert np.allclose(pes_threebody, exp_pes_threemode, atol=1e-6)
     assert np.allclose(dipole_threebody, exp_dip_threemode, atol=1e-6)
+
+
+def test_quad_order_error():
+    r"""Test that an error is raised if invalid value of quad_order is provided."""
+
+    sym = ["H", "F"]
+    geom = np.array([[0.0, 0.0, 0.0],[1.0, 0.0, 0.0]])
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+        
+    with pytest.raises(ValueError, match="Number of sample points cannot be less than 1."):
+        vibrational.vibrational_pes(mol, quad_order=-1)
+
+def test_dipole_order_error():
+    r"""Test that an error is raised if invalid value of dipole_level is provided."""
+
+    sym = ["H", "F"]
+    geom = np.array([[0.0, 0.0, 0.0],[1.0, 0.0, 0.0]])
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+        
+    with pytest.raises(ValueError, match="The method only supports calculation of one-mode, two-mode and three-mode dipoles."):
+        vibrational.vibrational_pes(mol, dipole_level = 4)
+
+@pytest.mark.parametrize(
+    ("sym", "geom", "dipole_level", "result_file"),
+    # Expected results were obtained using vibrant code
+    [
+        (
+            ["H", "F"],
+            np.array([[0.0, 0.0, 0.03967368], [0.0, 0.0, 0.96032632]]),
+            1,
+            "HF.hdf5"
+        )
+    ]
+)
+def test_vibrational_pes(sym, geom, dipole_level, result_file):
+    r"""Test that vibrational_pes returns correct object."""
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+
+    vib_obj = vibrational.vibrational_pes(mol, dipole_level=dipole_level)
+
+    pes_file = os.path.join(ref_dir, result_file)
+    f = h5py.File(pes_file, "r+")
+    exp_pes_onemode = np.array(f["V1_PES"][()])
+    exp_dip_onemode = np.array(f["D1_DMS"][()])
+
+    nmodes = len(vib_obj.freqs)
+    
+    for i in range(nmodes):
+        assert (np.allclose(vib_obj.pes_onemode[i], exp_pes_onemode[i], atol=1e-5)
+            or np.allclose(vib_obj.pes_onemode[i], exp_pes_onemode[i][::-1], atol=1e-5))

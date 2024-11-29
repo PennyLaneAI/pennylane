@@ -22,7 +22,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
 
-from .vibrational_class import get_dipole, single_point
+from .vibrational_class import get_dipole, single_point, optimize_geometry, harmonic_analysis, VibrationalPES
+from .localize_modes import localize_normal_modes
 
 # pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
 # pylint: disable= import-outside-toplevel, too-many-positional-arguments
@@ -719,3 +720,81 @@ def pes_threemode(
         return pes_threebody, dipole_threebody
 
     return pes_threebody, None  # pragma: no cover
+
+def vibrational_pes(molecule, quad_order=9, method="rhf", localize=True, loc_freqs=[2600], do_cubic=False, dipole_level=2):
+
+    r"""Builds potential energy surfaces over the normal modes.
+
+    Args:
+       molecule: Molecule object
+       quad_order: Order for Gauss-Hermite quadratures. Default value is 9.
+       method: Electronic structure method to define the level of theory, input values can be ``'rhf'`` or ``'uhf'``.
+               Default is restricted Hartree-Fock 'rhf'.
+       localize: Whether to perform normal mode localization.
+       loc_freqs: Array of frequencies (in cm-1) where separation happens for mode localization.
+       do_cubic: Whether to include three-mode couplings. Default is False
+       dipole_level: Defines the level upto which dipole matrix elements are to be calculated. Input values can be
+                     1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole respectively. Default
+                     value is 2.
+
+    Returns:
+       VibrationalPES object.
+ 
+    """
+    if dipole_level > 3 or dipole_level < 1:
+        raise ValueError("The method only supports calculation of one-mode, two-mode and three-mode dipoles. Please provide a value"
+                          "between 1 and 3.")
+    if quad_order < 1:
+        raise ValueError("Number of sample points cannot be less than 1.")
+
+    _import_mpi4py()
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    molecule, scf_result = optimize_geometry(molecule, method)
+    
+    harmonic_res = None
+    loc_res = None
+    uloc = None
+    displ_vecs = None
+    if rank == 0:
+        harmonic_res = harmonic_analysis(scf_result, method)   
+        displ_vecs = harmonic_res["norm_mode"]
+        if localize:
+            loc_res, uloc = localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
+            displ_vecs = loc_res["norm_mode"]
+
+    # Broadcast data to all threads
+    harmonic_res = comm.bcast(harmonic_res, root=0)
+    displ_vecs = np.array(comm.bcast(displ_vecs, root=0))
+    loc_res = comm.bcast(loc_res, root=0)
+    uloc = np.array(comm.bcast(uloc, root=0))
+            
+    comm.Barrier()
+
+    freqs_au = loc_res['freq_wavenumber'] / AU_TO_CM
+    gauss_grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
+
+    pes_onebody, dipole_onebody = pes_onemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method=method, do_dipole=True)
+    comm.Barrier()
+
+    # build PES -- two-body
+    if dipole_level < 2:
+        do_dipole = False
+
+    pes_twobody, dipole_twobody = pes_twomode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, dipole_onebody, method=method, do_dipole=do_dipole)
+    comm.Barrier()
+
+    pes_arr = [pes_onebody, pes_twobody]
+    dipole_arr = [dipole_onebody, dipole_twobody]
+    
+    if do_cubic:
+        if dipole_level < 3:
+            do_dipole = False
+
+        pes_threebody, dipole_threebody = pes_threemode(molecule, scf_result, freqs_au, displ_vecs, gauss_grid, pes_onebody, pes_twobody, dipole_onebody, dipole_twobody, method=method, do_dipole=do_dipole)
+        comm.Barrier()
+        pes_arr = [pes_onebody, pes_twobody, pes_threebody]
+        dipole_arr = [dipole_onebody, dipole_twobody, dipole_threebody]
+
+    return VibrationalPES(freqs_au, gauss_grid, gauss_weights, uloc, pes_arr, dipole_arr, localize, dipole_level)
