@@ -81,8 +81,6 @@ Tracking Resources
     :toctree: api
 
     ~get_resources
-    ~DefaultGateSet
-    ~resource_config
 
 Exceptions
 ~~~~~~~~~~
