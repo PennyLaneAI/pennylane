@@ -526,3 +526,9 @@ def test_twobody_degs():
 
 def test_threebody_degs():
     pass
+
+def test_taylor_integrals():
+    pass
+
+def test_taylor_integrals_dipole():
+    pass
