@@ -408,7 +408,7 @@ def observable_stopping_condition_factory(
 ) -> Callable[[qml.operation.Operator], bool]:
     """Returns a default observable validation check from a capabilities object.
 
-    The returned function check if an observable is supported, for composite and nested
+    The returned function checks if an observable is supported, for composite and nested
     observables, check that the operands are supported.
 
     """
