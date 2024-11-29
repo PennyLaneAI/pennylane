@@ -80,41 +80,45 @@ def factorize(
         Install them using ``pip install jax optax``.
 
     Args:
-        two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
+        two_electron (array[array[float]]): Two-electron integral tensor in the molecular orbital
             basis arranged in chemist notation.
-        tol_factor (float): threshold error value for discarding the negligible factors.
+        tol_factor (float): Threshold error value for discarding the negligible factors.
             This will be used only when ``compressed=False``.
-        tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues.
+        tol_eigval (float): Threshold error value for discarding the negligible factor eigenvalues.
             This will be used only when ``compressed=False``.
-        cholesky (bool): use Cholesky decomposition for obtaining the symmetric matrices
+        cholesky (bool): Use Cholesky decomposition for obtaining the symmetric matrices
             :math:`L^{(r)}` instead of eigendecomposition. Default is ``False``.
-        compressed (bool): use compressed double factorization to optimize the factors returned
+        compressed (bool): Use compressed double factorization to optimize the factors returned
             in the decomposition. Look at the keyword arguments (``compression_kwargs``) for
             the available options which must be provided only when ``compressed=True``.
-        regularization (string | None): type of regularization (``"L1"`` or ``"L2"``) to be
+        regularization (string | None): Type of regularization (``"L1"`` or ``"L2"``) to be
             used for optimizing the factors. Default is to not include any regularization term.
 
     Keyword Args:
-        num_factors (int): maximum number of factors that should be optimized for compressed
+        num_factors (int): Maximum number of factors that should be optimized for compressed
             double factorization. Default is :math:`2\times N`, where `N` is the number of
             dimensions of two-electron tensor.
-        num_steps (int): maximum number of epochs for optimizing each factor. Default is ``1000``.
-        optimizer (optax.optimizer): an optax optimizer instance. If not provided, `Adam
+        num_steps (int): Maximum number of epochs for optimizing each factor. Default is ``1000``.
+        optimizer (optax.optimizer): An optax optimizer instance. If not provided, `Adam
             <https://optax.readthedocs.io/en/latest/api/optimizers.html#optax.adam>`_ is
             used with ``0.001`` learning rate.
-        init_params (dict[str, TensorLike] | None): intial values of the orbital rotations
+        init_params (dict[str, TensorLike] | None): Intial values of the orbital rotations
             (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
             a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
             two-electron tensor. If not given, by default, zero matrices will be used if
             ``cholesky=False`` and the core and leaf tensors corresponding to the first
             ``num_factors`` will be used if ``cholesky=True``.
-        norm_prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``.
+        norm_prefactor (float): Prefactor for scaling the regularization term. Default is ``1e-5``.
 
     Returns:
-        tuple(TensorLike, TensorLike, TensorLike): tuple containing symmetric matrices (factors)
+        tuple(TensorLike, TensorLike, TensorLike): Tuple containing symmetric matrices (factors)
         approximating the two-electron integral tensor and core tensors and leaf tensors of
         the generated factors. In the explicit case where the core and leaf tensors could be
         truncated, they will be returned as a list.
+
+    Raises:
+        ValueError: If the specified regularization type is not supported.
+        ImportError: If the specified packages are not installed for performing compressed double factorization.
 
     **Example**
 
@@ -124,14 +128,14 @@ def factorize(
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to chemist notation
-    >>> factors, cores, leaves = factorize(two, 1e-5, 1e-5)
+    >>> factors, cores, leaves = qml.qchem.factorize(two, 1e-5, 1e-5)
     >>> print(factors)
-    [[[ 1.06723440e-01  9.73575768e-15]
-      [ 8.36288956e-15 -1.04898533e-01]]
-     [[-2.20945401e-13 -4.25688222e-01]
-      [-4.25688222e-01 -2.98228790e-13]]
-     [[-8.14472856e-01  5.01669019e-13]
-      [ 5.01689072e-13 -8.28642140e-01]]]
+    [[[-1.06723440e-01  6.42958741e-15]
+      [ 7.71977824e-15  1.04898533e-01]]
+     [[ 1.71099288e-13 -4.25688222e-01]
+      [-4.25688222e-01  2.31561666e-13]]
+     [[-8.14472856e-01 -3.89054708e-13]
+      [-3.88994463e-13 -8.28642140e-01]]]
 
     .. details::
         :title: Theory
@@ -261,7 +265,11 @@ def factorize(
                 "pip install jax optax"
             )  # pragma: no cover
 
-        norm_order = {None: None, "L1": 1, "L2": 2}.get(regularization, None)
+        norm_order = {None: None, "L1": 1, "L2": 2}.get(regularization, "LX")
+        if norm_order == "LX":
+            raise ValueError(
+                f"Supported regularization types include 'L1' and 'L2', got {regularization}."
+            )
         optimizer = compression_kwargs.get("optimizer", optax.adam(learning_rate=0.001))
         num_steps = compression_kwargs.get("num_steps", 1000)
         num_factors = compression_kwargs.get("num_factors", 2 * shape[0])
@@ -403,7 +411,7 @@ def _double_factorization_compressed(
 
     This is done by optimizing the following cost function :math:`\mathcal{L}` via a greedy
     approach, i.e., we optimize the leaf-tensor pairs layer-by-layer (or one-by-one) instead
-    of optimizing them all at once as the latter has gives unfavorable performance (and scaling):
+    of optimizing them all at once as the latter gives unfavorable performance (and scaling):
 
     .. math::
 
@@ -416,25 +424,25 @@ def _double_factorization_compressed(
     this after scaling it with a constant factor :math:`\rho` to compute the loss.
 
     Args:
-        two (array[array[float]]): two-electron integral tensor in the molecular orbital
+        two (array[array[float]]): Two-electron integral tensor in the molecular orbital
             basis arranged in chemist notation.
-        optimizer (optax.optimizer): an optax optimizer instance. If not provided, `Adam
+        optimizer (optax.optimizer): An optax optimizer instance. If not provided, `Adam
             <https://optax.readthedocs.io/en/latest/api/optimizers.html#optax.adam>`_ is
             used with ``0.001`` learning rate.
-        num_factors (int): maximum number of factors that should be optimized for compressed
+        num_factors (int): Maximum number of factors that should be optimized for compressed
             double factorization. Default is :math:`2\times N`, where `N` is the number of
             dimensions of two-electron tensor.
-        num_steps (int): maximum number of epochs for optimizing each factor. Default is ``1000``.
-        init_params (dict[str, TensorLike] | None): intial values of the orbital rotations
+        num_steps (int): Maximum number of epochs for optimizing each factor. Default is ``1000``.
+        init_params (dict[str, TensorLike] | None): Intial values of the orbital rotations
             (:math:`X`) and core tensors (:math:`Z`) of shape ``(num_factors, N, N)`` given as
             a dictionary with keys ``"X"`` and ``"Z"``, where `N` is the number of dimension of
             two-electron tensor. If not given, by default, zero matrices will be used.
-        prefactor (float): prefactor for scaling the regularization term. Default is ``1e-5``.
-        norm_order (int): type of regularization (``0``: None, ``1``: L1, and ``2``: L2) used
+        prefactor (float): Prefactor for scaling the regularization term. Default is ``1e-5``.
+        norm_order (int): Type of regularization (``0``: None, ``1``: L1, and ``2``: L2) used
             for optimizing. Default is to not include any regularization term.
 
     Returns:
-        tuple(TensorLike, TensorLike): tuple containing core tensors and leaf tensors
+        tuple(TensorLike, TensorLike): Tuple containing core tensors and leaf tensors
         approximating the two-electron integral tensor.
     """
     norb = two.shape[0]
@@ -512,14 +520,14 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
 
     Keyword Args:
         tol_eigval (float): threshold error value for discarding the negligible factor
-            eigenvalues. This can be used only when ``compressed=False``
+            eigenvalues. This can be used only when ``compressed=False``.
         cholesky (bool): use Cholesky decomposition for the ``two_electron`` instead of
             eigendecomposition. Default is ``False``.
         compressed (bool): use compressed double factorization for decomposing the ``two_electron``.
         regularization (string | None): type of regularization (``"L1"`` or ``"L2"``) to be
-            used for optimizing the factors. Default is to not include any regularization term
+            used for optimizing the factors. Default is to not include any regularization term.
         **compression_kwargs: Look at the keyword arguments (``compression_kwargs``) in the
-            :func:`~.factorize` method for all the available options with ``compressed=True``
+            :func:`~.factorize` method for all the available options with ``compressed=True``.
 
     Returns:
         tuple(list[array[float]], list[list[Observable]], list[array[float]]): tuple containing
@@ -534,15 +542,15 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> coeffs, ops, unitaries = basis_rotation(one, two, tol_factor=1.0e-5)
     >>> print(coeffs)
-    [array([ 0.84064649, -2.59579282,  0.84064649,  0.45724992,  0.45724992]),
-     array([ 9.57150297e-05,  5.60006390e-03,  9.57150297e-05,  2.75092558e-03,
-            -9.73801723e-05, -2.79878310e-03, -9.73801723e-05, -2.79878310e-03,
-            -2.79878310e-03, -2.79878310e-03,  2.84747318e-03]),
-     array([ 0.04530262, -0.04530262, -0.04530262, -0.04530262, -0.04530262,
-            0.09060523,  0.04530262]),
-     array([-0.66913628,  1.6874169 , -0.66913628,  0.16584151, -0.68077716,
-            0.16872663, -0.68077716,  0.16872663,  0.16872663,  0.16872663,
-            0.17166195])]
+    [array([-2.59579282,  0.84064649,  0.84064649,  0.45724992,  0.45724992]),
+     array([ 5.60006390e-03, -9.73801723e-05, -9.73801723e-05,  2.84747318e-03,
+             9.57150297e-05, -2.79878310e-03,  9.57150297e-05, -2.79878310e-03,
+            -2.79878310e-03, -2.79878310e-03,  2.75092558e-03]),
+     array([ 0.09060523,  0.04530262, -0.04530262, -0.04530262, -0.04530262,
+            -0.04530262,  0.04530262]),
+     array([ 1.6874169 , -0.68077716, -0.68077716,  0.17166195, -0.66913628,
+             0.16872663, -0.66913628,  0.16872663,  0.16872663,  0.16872663,
+             0.16584151])]
 
     .. details::
         :title: Theory
@@ -656,7 +664,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
     c_group, o_group = [], []
     for op in ops:
         c_g, o_g = op.simplify().terms()
-        c_group.append(c_g)
+        c_group.append(np.array(c_g))
         o_group.append(o_g)
 
     u_transform = list([t_eigvecs] + list(v_unitaries))  # Inverse of diagonalizing unitaries

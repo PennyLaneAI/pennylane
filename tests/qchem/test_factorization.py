@@ -166,6 +166,38 @@ def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
     )
 
 
+@pytest.mark.external
+@pytest.mark.parametrize(
+    "two_tensor",
+    [
+        # two-electron tensor computed as
+        # symbols  = ['H', 'H']
+        # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
+        # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        # core, one, two = qml.qchem.electron_integrals(mol)()
+        # two = np.swapaxes(two, 1, 3) # convert to chemist notation
+        np.array(
+            [
+                [
+                    [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
+                    [[-2.85965696e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                ],
+                [
+                    [[-2.85854673e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                    [[6.63711349e-01, -2.63677968e-13], [-2.63788991e-13, 6.97651447e-01]],
+                ],
+            ]
+        ),
+    ],
+)
+def test_regularization_error(two_tensor):
+    r"""Test that the factorize function raises an error when incorrect regularization is provided."""
+    _ = pytest.importorskip("optax")
+
+    with pytest.raises(ValueError, match="Supported regularization types include"):
+        qml.qchem.factorize(two_tensor, compressed=True, regularization=True)
+
+
 @pytest.mark.parametrize(
     "two_tensor",
     [
