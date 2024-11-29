@@ -99,7 +99,7 @@ def optimize_geometry(molecule, method="rhf"):
     Args:
       molecule: Molecule object.
       method: Electronic structure method to define the level of theory.
-              Default is restricted Hartree-Fock 'rhf'.
+              Default is restricted Hartree-Fock ``'rhf'``.
 
     Returns:
       molecule object with optimized geometry
