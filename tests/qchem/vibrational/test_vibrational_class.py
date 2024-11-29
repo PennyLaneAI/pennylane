@@ -26,6 +26,7 @@ AU_TO_CM = 219475
 
 # pylint: disable=too-many-arguments
 
+
 @pytest.mark.parametrize(
     ("sym", "geom", "method", "expected_dipole"),
     # Expected energy was obtained using pyscf
@@ -34,15 +35,21 @@ AU_TO_CM = 219475
             ["H", "F"],
             np.array([[0.0, 0.0, 0.03967368], [0.0, 0.0, 0.96032632]]),
             "RHF",
-            [-3.78176692e-16, -3.50274735e-17, -9.05219767e-01]
+            [-3.78176692e-16, -3.50274735e-17, -9.05219767e-01],
         ),
         (
             ["H", "H", "S"],
-            np.array([[0.0, -1.00688408, -0.9679942], [0.0, 1.00688408, -0.9679942], [0.0, 0.0, -0.0640116]]),
+            np.array(
+                [
+                    [0.0, -1.00688408, -0.9679942],
+                    [0.0, 1.00688408, -0.9679942],
+                    [0.0, 0.0, -0.0640116],
+                ]
+            ),
             "UHF",
-            [1.95258747e-16, 5.62355462e-15, -7.34149703e-01]
-        )
-    ]
+            [1.95258747e-16, 5.62355462e-15, -7.34149703e-01],
+        ),
+    ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_get_dipole(sym, geom, method, expected_dipole):

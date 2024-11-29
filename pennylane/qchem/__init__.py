@@ -90,4 +90,6 @@ from .vibrational import (
     pes_threemode,
     pes_twomode,
     single_point,
+    vibrational_pes,
+    VibrationalPES
 )

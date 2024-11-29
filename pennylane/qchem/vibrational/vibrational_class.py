@@ -15,19 +15,21 @@
 This object stores all the necessary information to construct
 vibrational Hamiltonian for a given molecule."""
 
+from dataclasses import dataclass
+
 import numpy as np
 
 import pennylane as qml
 
 from ..openfermion_pyscf import _import_pyscf
-from dataclasses import dataclass
 
-# pylint: disable=import-outside-toplevel, unused-variable
+# pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
 BOHR_TO_ANG = 0.529177
 
+
 @dataclass
-class VibrationalPES():
+class VibrationalPES:
     r"""Data class to save the PES information to an object.
 
     Args:
@@ -43,19 +45,31 @@ class VibrationalPES():
                      value is 2.
 
     """
-    def __init__(self, freqs, gauss_grid, gauss_weights, uloc, pes_arr, dipole_arr, localized=True, dipole_level=2):
+
+    def __init__(
+        self,
+        freqs,
+        gauss_grid,
+        gauss_weights,
+        uloc,
+        pes_arr,
+        dipole_arr,
+        localized=True,
+        dipole_level=2,
+    ):
         self.freqs = freqs
         self.gauss_grid = gauss_grid
         self.gauss_weights = gauss_weights
         self.uloc = uloc
         self.pes_onemode = pes_arr[0]
         self.pes_twomode = pes_arr[1]
-        self.pes_threemode = pes_arr[2] if len(pes_arr)>2 else None
+        self.pes_threemode = pes_arr[2] if len(pes_arr) > 2 else None
         self.dipole_onemode = dipole_arr[0]
-        self.dipole_twomode = dipole_arr[1] if dipole_level>=2 else None
-        self.dipole_threemode = dipole_arr[2] if dipole_level>=3 else None
+        self.dipole_twomode = dipole_arr[1] if dipole_level >= 2 else None
+        self.dipole_threemode = dipole_arr[2] if dipole_level >= 3 else None
         self.localized = localized
         self.dipole_level = dipole_level
+
 
 def _get_rhf_dipole(scf_result):
     """
