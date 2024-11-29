@@ -28,6 +28,7 @@ from .resource_operator import ResourceOperator
 
 # pylint: disable=dangerous-default-value,protected-access
 
+# user-friendly gateset for visual checks and initial compilation
 _StandardGateSet = {
     "PauliX",
     "PauliY",
@@ -44,7 +45,7 @@ _StandardGateSet = {
     "PhaseShift",
 }
 
-
+# practical/realistic gateset for useful compilation of circuits
 DefaultGateSet = {
     "Hadamard",
     "CNOT",
@@ -54,6 +55,7 @@ DefaultGateSet = {
 }
 
 
+# parameters for further configuration of the decompositions
 resource_config = {
     "error_rx": 10e-3,
     "error_ry": 10e-3,
@@ -69,15 +71,15 @@ def get_resources(
     in the gate_set.
 
     Args:
-        obj (Union[Operation, Callable, QuantumScript]): The quantum circuit or operation to obtain resources from.
-        gate_set (Set, optional): A set (str) specifying the names of opertions to track. Defaults to DefaultGateSet.
-        config (Dict, optional): Additional configurations to specify how resources are tracked. Defaults to resource_config.
+        obj (Union[Operation, Callable, QuantumScript]): the quantum circuit or operation to obtain resources from
+        gate_set (Set, optional): python set of strings specifying the names of operations to track
+        config (Dict, optional): dictionary of additiona; configurations that specify how resources are computed
 
     Returns:
-        Resources: The total resources of the quantum circuit.
+        Resources: the total resources of the quantum circuit
 
-    Rasies:
-        TypeError: "Could not obtain resources for obj of type (type(obj))".
+    Raises:
+        TypeError: could not obtain resources for obj of type `type(obj)`
 
     **Example**
 
@@ -86,6 +88,7 @@ def get_resources(
 
     .. code-block:: python
 
+        import copy
         import pennylane.labs.resource_estimation as re
 
         def my_circuit():
@@ -175,7 +178,7 @@ def resources_from_operation(
 def resources_from_qfunc(
     obj: Callable, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Callable:
-    """Get resources from a quantum function which queues operations!"""
+    """Get resources from a quantum function which queues operations"""
 
     @wraps(obj)
     def wrapper(*args, **kwargs):
@@ -275,7 +278,7 @@ def _temp_map_func(op: Operation) -> ResourceOperator:
 
 def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str, int]:
     """Map resources with gate_types made from CompressedResourceOps
-    into one which tracks just strings of operations!
+    into one which tracks just strings of operations.
 
     Args:
         gate_counts (Dict[CompressedResourceOp, int]): gate counts in terms of compressed resource ops
@@ -296,10 +299,10 @@ def _operations_to_compressed_reps(ops: Iterable[Operation]) -> List[CompressedR
     """Convert the sequence of operations to a list of compressed resource ops.
 
     Args:
-        ops (Iterable[Operation]): set of operations to convert.
+        ops (Iterable[Operation]): set of operations to convert
 
     Returns:
-        List[CompressedResourceOp]: set of converted compressed resource ops.
+        List[CompressedResourceOp]: set of converted compressed resource ops
     """
     cmp_rep_ops = []
     for op in ops:
