@@ -24,8 +24,8 @@ from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .interface import get_interface, requires_grad
-from .utils import cast, cast_like
+from .interface_utils import get_interface
+from .utils import cast, cast_like, requires_grad
 
 
 # pylint:disable=redefined-outer-name

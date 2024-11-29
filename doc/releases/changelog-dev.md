@@ -137,6 +137,9 @@
 
 <h4>Other Improvements</h4>
 
+* Moved all interface handling logic to `inference.py` in the `qml.math` module.
+  [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
+
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
@@ -258,6 +261,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * The `tape` and `qtape` properties of `QNode` have been deprecated. 
   Instead, use the `qml.workflow.construct_tape` function.
   [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
+  [(#6650)](https://github.com/PennyLaneAI/pennylane/pull/6650)
 
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)

@@ -88,21 +88,21 @@ from .utils import (
     allequal,
     cast,
     cast_like,
-)
-from .interface import (
     convert_like,
-    Interface,
-    get_canonical_interface,
+    in_backprop,
+    requires_grad,
+    is_abstract,
+)
+from .interface_utils import (
+    _get_canonical_interface_name,
     SupportedInterfaceUserInput,
     jpc_interfaces,
     SUPPORTED_INTERFACE_NAMES,
     INTERFACE_MAP,
     get_deep_interface,
     get_interface,
-    in_backprop,
-    requires_grad,
-    is_abstract,
-    _get_interface_name,
+    _resolve_interface,
+    Interface,
 )
 
 sum = ar.numpy.sum

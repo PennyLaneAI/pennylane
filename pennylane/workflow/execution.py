@@ -26,7 +26,7 @@ from warnings import warn
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.math import Interface, _get_interface_name, jpc_interfaces
+from pennylane.math import Interface, _resolve_interface, jpc_interfaces
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
@@ -279,7 +279,7 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
-    interface = _get_interface_name(tapes, interface)
+    interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {Interface.JAX, Interface.JAX_JIT}:
         grad_on_execution = grad_on_execution if isinstance(diff_method, Callable) else False

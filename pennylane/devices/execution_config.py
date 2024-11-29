@@ -17,7 +17,7 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
-from pennylane.math import get_canonical_interface
+from pennylane.math import _get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
 
@@ -111,7 +111,7 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        self.interface = get_canonical_interface(self.interface)
+        self.interface = _get_canonical_interface_name(self.interface)
 
         if self.grad_on_execution not in {True, False, None}:
             raise ValueError(

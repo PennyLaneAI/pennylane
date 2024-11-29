@@ -27,7 +27,7 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface
+from pennylane.math import Interface, SupportedInterfaceUserInput, _get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
@@ -202,7 +202,7 @@ class QNode:
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
-            ``qml.workflow.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
+            ``qml.math.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
@@ -567,7 +567,7 @@ class QNode:
         self.func = func
         self.device = device
         self._interface = (
-            Interface.NUMPY if diff_method is None else get_canonical_interface(interface)
+            Interface.NUMPY if diff_method is None else _get_canonical_interface_name(interface)
         )
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
@@ -629,7 +629,7 @@ class QNode:
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
-        self._interface = get_canonical_interface(value)
+        self._interface = _get_canonical_interface_name(value)
 
     @property
     def transform_program(self) -> TransformProgram:
@@ -845,7 +845,7 @@ class QNode:
 
         warnings.warn(
             "The tape/qtape property is deprecated and will be removed in v0.41. "
-            "Instead, use the qml.workflow.get_best_diff_method function.",
+            "Instead, use the qml.workflow.construct_tape function.",
             qml.PennyLaneDeprecationWarning,
         )
         return self._tape
@@ -945,7 +945,7 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             try:
-                interface = get_canonical_interface(interface)
+                interface = _get_canonical_interface_name(interface)
             except ValueError:
                 interface = Interface.AUTO
             self._interface = interface
