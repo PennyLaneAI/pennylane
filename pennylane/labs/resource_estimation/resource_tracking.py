@@ -86,6 +86,7 @@ def get_resources(
 
     .. code-block:: python
 
+        import copy
         import pennylane.labs.resource_estimation as re
 
         def my_circuit():
