@@ -483,10 +483,10 @@ def _complementary_poly(poly_coeffs):
     For more details see `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`_.
 
     Args:
-        poly_coeffs (array-like): coefficients of the complex polynomial P
+        poly_coeffs (tensor-like): coefficients of the complex polynomial P
 
     Returns:
-        array-like: coefficients of the complementary polynomial Q
+        tensor-like: coefficients of the complementary polynomial Q
     """
     poly_degree = len(poly_coeffs) - 1
 
@@ -514,10 +514,10 @@ def _compute_qsp_angle(poly_coeffs):
     The method for computing the QSP angles is adapted from the approach described in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_] for Generalized-QSP.
 
     Args:
-        poly_coeffs (array-like): coefficients of the input polynomial F
+        poly_coeffs (tensor-like): coefficients of the input polynomial F
 
     Returns:
-        (array-like): QSP angles corresponding to the input polynomial F
+        (tensor-like): QSP angles corresponding to the input polynomial F
 
     .. details::
         :title: Implementation details
@@ -583,13 +583,13 @@ def transform_angles(angles, routine1, routine2):
     since QSVT is equivalent to taking the reflection convention of QSP.
 
     Args:
-        angles (array-like): a list or array of angles to be transformed.
+        angles (tensor-like): a list or array of angles to be transformed.
         routine1 (str): the current routine of the angles, must be either ``"QSP"`` or ``"QSVT"``
         routine2 (str): the target routine to which the angles should be transformed,
                         must be either ``"QSP"`` or ``"QSVT"``
 
     Returns:
-        array-like: the transformed angles as an array
+        tensor-like: the transformed angles as an array
 
     **Example**
 
@@ -664,14 +664,14 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
     found in [`arXiv:2105.02859 <https://arxiv.org/abs/2105.02859>`_].
 
     Args:
-        poly (array-like): coefficients of the polynomial, ordered from lowest to higher degree
+        poly (tensor-like): coefficients of the polynomial, ordered from lowest to higher degree
 
         routine (str): specifies the routine where the angles will be applied. Could be either: ``"QSP"`` or ``"QSVT"``
 
         angle_solver (str): optional string which specifies the method used to calculate the angles. Default is ``"root-finding"``
 
     Returns:
-        (array-like): angles corresponding to the specified transformation routine
+        (tensor-like): angles corresponding to the specified transformation routine
 
     Raises:
         AssertionError: if poly is not valid in the chosen subroutine
