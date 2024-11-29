@@ -18,7 +18,6 @@ import pennylane.labs.resource_estimation as re
 # pylint: disable=use-implicit-booleaness-not-comparison,no-self-use
 
 
-# TODO: implement in resource_symbolic_ops branch
 class TestSingleExcitation:
     """Tests for the ResourceSingleExcitation class."""
 
@@ -185,8 +184,8 @@ class TestDoubleExcitationMinus:
         expected = {
             re.ResourceGlobalPhase.resource_rep(): 1,
             re.ResourceDoubleExcitation.resource_rep(): 1,
-            re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1): 2,
-            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1): 2,
+            re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0): 2,
+            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0): 2,
         }
         assert re.ResourceDoubleExcitationMinus.resources() == expected
 
@@ -206,8 +205,8 @@ class TestDoubleExcitationMinus:
         expected = {
             re.ResourceGlobalPhase.resource_rep(): 1,
             re.ResourceDoubleExcitation.resource_rep(): 1,
-            re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1): 2,
-            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1): 2,
+            re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0): 2,
+            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0): 2,
         }
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type
@@ -223,8 +222,8 @@ class TestDoubleExcitationPlus:
         expected = {
             re.ResourceGlobalPhase.resource_rep(): 1,
             re.ResourceDoubleExcitation.resource_rep(): 1,
-            re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1): 2,
-            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1): 2,
+            re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0): 2,
+            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0): 2,
         }
         assert re.ResourceDoubleExcitationPlus.resources() == expected
 
@@ -244,8 +243,8 @@ class TestDoubleExcitationPlus:
         expected = {
             re.ResourceGlobalPhase.resource_rep(): 1,
             re.ResourceDoubleExcitation.resource_rep(): 1,
-            re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1): 2,
-            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1): 2,
+            re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0): 2,
+            re.ResourceControlled.resource_rep(re.ResourcePhaseShift, {}, 3, 1, 0): 2,
         }
         op_compressed_rep = op.resource_rep_from_op()
         op_resource_type = op_compressed_rep.op_type

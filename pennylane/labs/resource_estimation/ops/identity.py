@@ -35,15 +35,15 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @staticmethod
-    def adjoint_resource_decomp():
+    def adjoint_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         return {}
 
     @staticmethod
-    def controlled_resource_decomp():
+    def controlled_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         return {}
 
     @staticmethod
-    def pow_resource_decomp():
+    def pow_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         return {}
 
 
@@ -62,13 +62,13 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @staticmethod
-    def adjoint_resource_decomp():
+    def adjoint_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         return {}
 
     @staticmethod
-    def controlled_resource_decomp():
+    def controlled_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         return {}
 
     @staticmethod
-    def pow_resource_decomp():
+    def pow_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
         return {}

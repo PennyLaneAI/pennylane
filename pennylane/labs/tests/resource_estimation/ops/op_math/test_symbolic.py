@@ -18,7 +18,6 @@ Tests for symbolic resource operators.
 import pytest
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_container import _scale_dict
 
 # pylint: disable=protected-access,no-self-use
 
@@ -36,15 +35,24 @@ class TestResourceAdjoint:
             "base_params": base.resource_params(),
         }
 
-    def test_name(self):
-        """Test that the name of the compressed representation is correct"""
-
-        base = re.ResourceQFT(wires=[0, 1, 2])
-        op = re.ResourceAdjoint(base=base)
-        assert op.resource_rep_from_op()._name == "Adjoint(QFT)"
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (re.ResourceAdjoint(re.ResourceQFT([0, 1])), "Adjoint(QFT(2))"),
+            (
+                re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1]))),
+                "Adjoint(Adjoint(QFT(2)))",
+            ),
+        ],
+    )
+    def test_tracking_name(self, op, expected):
+        """Test that the tracking name is correct"""
+        rep = op.resource_rep_from_op()
+        name = rep.op_type.tracking_name(**rep.params)
+        assert name == expected
 
     @pytest.mark.parametrize(
-        "nested_op, base_op",
+        "nested_op, expected_op",
         [
             (
                 re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1, 2]))),
@@ -76,20 +84,9 @@ class TestResourceAdjoint:
             ),
         ],
     )
-    def test_nested_adjoints(self, nested_op, base_op):
+    def test_nested_adjoints(self, nested_op, expected_op):
         """Test the resources of nested Adjoints."""
-
-        nested_rep = nested_op.resource_rep_from_op()
-        nested_params = nested_rep.params
-        nested_type = nested_rep.op_type
-        nested_resources = nested_type.resources(**nested_params)
-
-        base_op = base_op.resource_rep_from_op()
-        base_params = base_op.params
-        base_type = base_op.op_type
-        base_resources = base_type.resources(**base_params)
-
-        assert nested_resources == base_resources
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
 
 class TestResourceControlled:
@@ -108,12 +105,39 @@ class TestResourceControlled:
             "num_work_wires": 0,
         }
 
-    def test_name(self):
-        """Test that the name of the compressed representation is correct"""
-
-        base = re.ResourceQFT(wires=[0, 1, 2])
-        op = re.ResourceControlled(base=base, control_wires=[3])
-        assert op.resource_rep_from_op()._name == "Controlled(QFT, wires=1)"
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), "C(QFT(2),1,1,0)"),
+            (
+                re.ResourceControlled(
+                    re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]),
+                    control_wires=[3],
+                ),
+                "C(C(QFT(2),1,1,0),1,1,0)",
+            ),
+            (
+                re.ResourceControlled(
+                    re.ResourceQFT([0, 1]), control_wires=[2, 3], control_values=[0, 1]
+                ),
+                "C(QFT(2),2,1,0)",
+            ),
+            (
+                re.ResourceControlled(
+                    re.ResourceQFT([0, 1]),
+                    control_wires=[2, 3],
+                    control_values=[0, 1],
+                    work_wires=[4],
+                ),
+                "C(QFT(2),2,1,1)",
+            ),
+        ],
+    )
+    def test_tracking_name(self, op, expected):
+        """Test that the tracking name is correct"""
+        rep = op.resource_rep_from_op()
+        name = rep.op_type.tracking_name(**rep.params)
+        assert name == expected
 
     @pytest.mark.parametrize(
         "nested_op, expected_op",
@@ -134,18 +158,7 @@ class TestResourceControlled:
     )
     def test_nested_controls(self, nested_op, expected_op):
         """Test the resources for nested Controlled operators."""
-
-        nested_rep = nested_op.resource_rep_from_op()
-        nested_params = nested_rep.params
-        nested_type = nested_rep.op_type
-        nested_resources = nested_type.resources(**nested_params)
-
-        expected_rep = expected_op.resource_rep_from_op()
-        expected_params = expected_rep.params
-        expected_type = expected_rep.op_type
-        expected_resources = expected_type.resources(**expected_params)
-
-        assert nested_resources == expected_resources
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
 
 class TestResourcePow:
@@ -162,47 +175,40 @@ class TestResourcePow:
             "base_params": base.resource_params(),
         }
 
-    def test_name(self):
-        """Test that the name of the compressed representation is correct"""
-
-        base = re.ResourceQFT(wires=[0, 1, 2])
-        op = re.ResourcePow(base=base, z=5)
-        assert op.resource_rep_from_op()._name == "QFT**5"
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (re.ResourcePow(re.ResourceQFT([0, 1]), 2), "(QFT(2))**2"),
+            (re.ResourcePow(re.ResourceAdjoint(re.ResourceQFT([0, 1])), 2), "(Adjoint(QFT(2)))**2"),
+            (re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 3), "((QFT(2))**2)**3"),
+        ],
+    )
+    def test_tracking_name(self, op, expected):
+        """Test that the tracking name is correct"""
+        rep = op.resource_rep_from_op()
+        name = rep.op_type.tracking_name(**rep.params)
+        assert name == expected
 
     @pytest.mark.parametrize(
-        "nested_op, base_op, z",
+        "nested_op, expected_op",
         [
             (
                 re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 2),
-                re.ResourceQFT([0, 1]),
-                4,
+                re.ResourcePow(re.ResourceQFT([0, 1]), 4),
             ),
             (
                 re.ResourcePow(re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 2), 2),
-                re.ResourceQFT([0, 1]),
-                8,
+                re.ResourcePow(re.ResourceQFT([0, 1]), 8),
             ),
             (
                 re.ResourcePow(
                     re.ResourcePow(re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 2), 2),
                     2,
                 ),
-                re.ResourceQFT([0, 1]),
-                16,
+                re.ResourcePow(re.ResourceQFT([0, 1]), 16),
             ),
         ],
     )
-    def test_nested_pow(self, nested_op, base_op, z):
+    def test_nested_pow(self, nested_op, expected_op):
         """Test the resources for nested Pow operators."""
-
-        nested_rep = nested_op.resource_rep_from_op()
-        nested_params = nested_rep.params
-        nested_type = nested_rep.op_type
-        nested_resources = nested_type.resources(**nested_params)
-
-        base_rep = base_op.resource_rep_from_op()
-        base_params = base_rep.params
-        base_type = base_rep.op_type
-        base_resources = base_type.resources(**base_params)
-
-        assert nested_resources == _scale_dict(base_resources, z)
+        assert re.get_resources(nested_op) == re.get_resources(expected_op)

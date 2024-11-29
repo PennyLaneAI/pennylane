@@ -48,7 +48,11 @@ class ResourceQFT(qml.QFT, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, num_wires):
         params = {"num_wires": num_wires}
-        return re.CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, params)
+
+    @staticmethod
+    def tracking_name(num_wires) -> str:
+        return f"QFT({num_wires})"
 
 
 class ResourceControlledSequence(qml.ControlledSequence, re.ResourceOperator):
@@ -196,7 +200,7 @@ class ResourceModExp(qml.ModExp, re.ResourceOperator):
         gate_types = {}
 
         for comp_rep in mult_resources.items():
-            new_rep = re.ResourceControlled.resource_rep(comp_rep.op_type, comp_rep.params, 1, 0)
+            new_rep = re.ResourceControlled.resource_rep(comp_rep.op_type, comp_rep.params, 1, 0, 0)
 
             # cancel out QFTs from consecutive Multipliers
             if comp_rep._name in ("QFT", "Adjoint(QFT)"):
