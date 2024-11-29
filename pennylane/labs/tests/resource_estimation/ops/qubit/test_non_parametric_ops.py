@@ -50,7 +50,7 @@ class TestHadamard:
     def test_controlled_decomp(self):
         """Test that the controlled decomposition is correct."""
         expected = {re.ResourceCH.resource_rep(): 1}
-        assert re.ResourceHadamard.controlled_resource_decomp(1, 1, 0) == expected
+        assert re.ResourceHadamard.controlled_resource_decomp(1, 0, 0) == expected
 
         controlled_h = re.ResourceControlled(re.ResourceHadamard(0), control_wires=[1])
         ch = re.ResourceCH([0, 1])
@@ -116,7 +116,7 @@ class TestSWAP:
     def test_controlled_decomp(self):
         """Test that the controlled decomposition is correct."""
         expected = {re.ResourceCSWAP.resource_rep(): 1}
-        assert re.ResourceSWAP.controlled_resource_decomp(1, 1, 0) == expected
+        assert re.ResourceSWAP.controlled_resource_decomp(1, 0, 0) == expected
 
         controlled_swap = re.ResourceControlled(re.ResourceSWAP([0, 1]), control_wires=[2])
         cswap = re.ResourceCSWAP([0, 1, 2])
