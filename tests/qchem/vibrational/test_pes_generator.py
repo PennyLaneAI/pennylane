@@ -27,7 +27,7 @@ h5py = pytest.importorskip("h5py")
 
 AU_TO_CM = 219475
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, protected-access
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -77,7 +77,7 @@ def test_import_mpi4py(monkeypatch):
                     ]
                 ]
             ),
-            None
+            None,
         ),
         (
             ["H", "H", "S"],
@@ -193,7 +193,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational.single_point(mol)
+    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
@@ -254,7 +254,7 @@ def test_twomode_pes(sym, geom, harmonic_res, ref_file):
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational.single_point(mol)
+    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
@@ -329,7 +329,7 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational.single_point(mol)
+    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
@@ -393,7 +393,7 @@ def test_dipole_order_error():
     # Expected results were obtained using vibrant code
     [
         (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5"),
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5")
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5"),
     ],
 )
 def test_vibrational_pes(sym, geom, dipole_level, result_file):

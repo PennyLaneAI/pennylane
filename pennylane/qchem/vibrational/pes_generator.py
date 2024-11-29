@@ -23,8 +23,13 @@ import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
 
 from .localize_modes import localize_normal_modes
-from .vibrational_class import (VibrationalPES, get_dipole, harmonic_analysis,
-                                optimize_geometry, single_point)
+from .vibrational_class import (
+    VibrationalPES,
+    _single_point,
+    get_dipole,
+    harmonic_analysis,
+    optimize_geometry,
+)
 
 # pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
 # pylint: disable= import-outside-toplevel, too-many-positional-arguments, dangerous-default-value
@@ -32,8 +37,8 @@ from .vibrational_class import (VibrationalPES, get_dipole, harmonic_analysis,
 # constants
 HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
 C_LIGHT = 3 * 10**8  # m/s
-AU_TO_CM = 219475
-BOHR_TO_ANG = 0.5291772106
+AU_TO_CM = 219475  # factor to convert hartree to cm^-1
+BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
 
 
 def _import_mpi4py():
@@ -51,8 +56,7 @@ def _import_mpi4py():
 def pes_onemode(
     molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
 ):
-    r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs).
+    r"""Computes the one-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs.
     Simultaneously, can compute the dipole one-mode elements.
 
     Args:
@@ -124,8 +128,7 @@ def pes_onemode(
 def _local_pes_onemode(
     comm, molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
 ):
-    r"""Computes the one-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs) for each processor.
+    r"""Computes the one-mode potential energy surface on a grid in real space, along thedirections set by the displ_vecs for each processor.
     Simultaneously, can compute the dipole one-body elements.
 
     Args:
@@ -179,7 +182,7 @@ def _local_pes_onemode(
                 load_data=True,
             )
 
-            displ_scf = single_point(displ_mol, method=method)
+            displ_scf = _single_point(displ_mol, method=method)
 
             omega = freqs_au[mode]
             ho_const = omega / 2
@@ -248,8 +251,7 @@ def pes_twomode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs).
+    r"""Computes the two-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs.
     Simultaneously, can compute the dipole two-mode elements.
 
     Args:
@@ -332,8 +334,7 @@ def _local_pes_twomode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the two-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs) for each processor.
+    r"""Computes the two-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs) for each processor.
     Simultaneously, can compute the dipole two-mode elements."""
 
     size = comm.Get_size()
@@ -381,7 +382,7 @@ def _local_pes_twomode(
                 unit="angstrom",
                 load_data=True,
             )
-            displ_scf = single_point(displ_mol, method=method)
+            displ_scf = _single_point(displ_mol, method=method)
             idx = mode_idx * len(jobs_on_rank) + job_idx
 
             local_pes_twobody[idx] = (
@@ -475,8 +476,7 @@ def _local_pes_threemode(
     do_dipole=False,
 ):
     r"""
-    Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs) for each processor.
+    Computes the three-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs for each processor.
     """
     size = comm.Get_size()
     rank = comm.Get_rank()
@@ -544,7 +544,7 @@ def _local_pes_threemode(
                 unit="angstrom",
                 load_data=True,
             )
-            displ_scf = single_point(displ_mol, method=method)
+            displ_scf = _single_point(displ_mol, method=method)
 
             idx = mode_combo * len(jobs_on_rank) + job_idx
             local_pes_threebody[idx] = (
@@ -647,8 +647,7 @@ def pes_threemode(
     method="rhf",
     do_dipole=False,
 ):
-    r"""Computes the three-mode potential energy surface on a grid in real space, along the normal coordinate directions
-    (or any directions set by the displ_vecs).
+    r"""Computes the three-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs.
     Simultaneously, can compute the dipole three-mode elements.
 
     Args:
@@ -765,26 +764,24 @@ def vibrational_pes(
     rank = comm.Get_rank()
     molecule, scf_result = optimize_geometry(molecule, method)
 
-    harmonic_res = None
-    loc_res = None
+    freqs = None
     uloc = None
     displ_vecs = None
     if rank == 0:
-        harmonic_res = harmonic_analysis(scf_result, method)
-        displ_vecs = harmonic_res["norm_mode"]
+        freqs, displ_vecs = harmonic_analysis(scf_result, method)
         if localize:
-            loc_res, uloc = localize_normal_modes(harmonic_res, freq_separation=loc_freqs)
-            displ_vecs = loc_res["norm_mode"]
+            freqs, displ_vecs, uloc = localize_normal_modes(
+                freqs, displ_vecs, freq_separation=loc_freqs
+            )
 
     # Broadcast data to all threads
-    harmonic_res = comm.bcast(harmonic_res, root=0)
+    freqs = comm.bcast(freqs, root=0)
     displ_vecs = np.array(comm.bcast(displ_vecs, root=0))
-    loc_res = comm.bcast(loc_res, root=0)
     uloc = np.array(comm.bcast(uloc, root=0))
 
     comm.Barrier()
 
-    freqs_au = loc_res["freq_wavenumber"] / AU_TO_CM
+    freqs_au = freqs / AU_TO_CM
     gauss_grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
 
     do_dipole = True
