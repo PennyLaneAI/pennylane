@@ -30,7 +30,7 @@ BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
 
 @dataclass
 class VibrationalPES:
-    r"""Data class to save the PES information to an object.
+    r"""Data class to save potential energy surface information computed along vibrational normal modes.
 
     Args:
        freqs: normal-mode frequencies
