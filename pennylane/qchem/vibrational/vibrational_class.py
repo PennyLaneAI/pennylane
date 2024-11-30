@@ -106,7 +106,7 @@ def optimize_geometry(molecule, method="rhf"):
               Default is restricted Hartree-Fock ``'rhf'``.
 
     Returns:
-      molecule object with optimized geometry
+      Molecule object with optimized geometry
 
     """
     pyscf = _import_pyscf()
