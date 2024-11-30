@@ -210,7 +210,7 @@ def localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
 
     Returns:
         A tuple of frequencies, normalized displacement vectors and localization matrices describing the relationship between
-        original and localized modes.:
+        original and localized modes.
 
     """
     if not freq_separation:
