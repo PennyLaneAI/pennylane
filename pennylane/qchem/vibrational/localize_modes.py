@@ -200,7 +200,7 @@ def _localize_modes(freqs, displ_vecs, order=True):
 def localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
     """
     Localizes normal modes by separating frequencies into specified ranges and applying mode localization.
-    The procedure for localization is described in `JCP 141, 104105 (2014)
+    The procedure for localization is described in `J. Chem. Phys. 141, 104105 (2014)
     <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
 
     Args:
