@@ -4,13 +4,19 @@
 
 <h3>New features since last release</h3>
 
+* Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
+  class. Device developers are encouraged to override these two methods separately instead of the 
+  `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these 
+  two methods or `preprocess`, but not both. In the long term, we will slowly phase out the use of 
+  `preprocess` in favour of these two methods for better separation of concerns.
+  [(#6617)](https://github.com/PennyLaneAI/pennylane/pull/6617)
+
 * Developers of plugin devices now have the option of providing a TOML-formatted configuration file
   to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
-  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
-  [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
   * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
     data class, as well as functions that load and parse the TOML-formatted configuration files.
+    [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
     ```pycon
       >>> from pennylane.devices.capabilities import DeviceCapabilities
@@ -22,6 +28,7 @@
   * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
     that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
     file if it exists. Otherwise, it is set to `None`.
+    [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
 
     ```python
     from pennylane.devices import Device
@@ -37,9 +44,23 @@
     True
     ```
 
+<h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
+
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+
+* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
+  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
+
+* Added a dense implementation of computing the structure constants in a new function
+  `structure_constants_dense` in `pennylane.labs.dla`.
+  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+
+* Added utility functions for handling dense matrices in the Lie theory context.
+  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
+
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -55,6 +76,9 @@
 * Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
+* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
+  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
+
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
@@ -63,8 +87,23 @@
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
 
+* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
+  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+
+* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
+
 * Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
+* The `qml.qchem.factorize` function now supports new methods for double factorization:
+  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
+  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
+
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
 
 <h3>Improvements 🛠</h3>
 
@@ -75,6 +114,9 @@
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
+
+* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
+  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
 
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
@@ -105,6 +147,23 @@
 
 <h4>Other Improvements</h4>
 
+* Added PyTree support for measurements in a circuit. 
+  [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
+
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Hadamard(0)
+      qml.CNOT([0,1])
+      return {"Probabilities": qml.probs(), "State": qml.state()}
+  ```
+  ```pycon
+  >>> circuit() 
+  {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])} 
+  ```
+
 * `_cache_transform` transform has been moved to its own file located
   at `qml.workflow._cache_transform.py`.
   [(#6624)](https://github.com/PennyLaneAI/pennylane/pull/6624)
@@ -126,6 +185,10 @@
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
+* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or 
+  resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
+  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
@@ -209,6 +272,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * The `tape` and `qtape` properties of `QNode` have been deprecated. 
   Instead, use the `qml.workflow.construct_tape` function.
   [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
+  [(#6650)](https://github.com/PennyLaneAI/pennylane/pull/6650)
 
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
@@ -262,9 +326,12 @@ same information.
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Shiwen An,
+Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,

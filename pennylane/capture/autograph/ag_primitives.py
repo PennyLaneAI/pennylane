@@ -33,7 +33,7 @@ try:
     import jax
     import jax.numpy as jnp
 
-except ImportError:
+except ImportError:  # pragma: no cover
     has_jax = False
 
 
@@ -49,7 +49,8 @@ class AutoGraphError(Exception):
     """Errors related to PennyLane's AutoGraph submodule."""
 
 
-def assert_results(results, var_names):
+def _assert_results(results, var_names):
+
     """Assert that none of the results are undefined, i.e. have no value."""
 
     assert len(results) == len(var_names)
@@ -83,22 +84,22 @@ def if_stmt(
         set_state(init_state)
         true_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     @functional_cond.otherwise
     def functional_cond():
         set_state(init_state)
         false_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     results = functional_cond()
     set_state(results)
 
 
-def assert_iteration_inputs(inputs, symbol_names):
-    """All loop carried values, variables that are updated each iteration or accessed after the
-    loop terminates, need to be initialized prior to entering the loop.
+def _assert_iteration_inputs(inputs, symbol_names):
+    """Assert that all loop carried values, variables that are updated each iteration or accessed after the
+    loop terminates, are initialized prior to entering the loop.
 
     The reason is two-fold:
       - the type information from those variables is required for tracing
@@ -106,9 +107,13 @@ def assert_iteration_inputs(inputs, symbol_names):
         of execution paths
 
     Additionally, these types need to be valid JAX types.
+
+    Args:
+        inputs (Tuple): The loop carried values
+        symbol_names (Tuple[str]): The names of the loop carried values.
     """
 
-    if not has_jax:
+    if not has_jax:  # pragma: no cover
         raise ImportError("autograph capture requires JAX to be installed.")
 
     for i, inp in enumerate(inputs):
@@ -290,7 +295,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
     """Dispatch to a PennyLane implementation of while loops."""
 
     init_iter_args = get_state()
-    assert_iteration_inputs(init_iter_args, symbol_names)
+    _assert_iteration_inputs(init_iter_args, symbol_names)
 
     def test(state):
         old = get_state()
