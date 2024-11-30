@@ -56,10 +56,9 @@ def pes_onemode(
        scf_result: pyscf object from electronic structure calculations
        freqs: list of vibrational frequencies in atomic units
        vectors: list of displacement vectors for each normal mode
-       gauss_grid: sample points for Gauss-Hermite quadrature
-       method: Electronic structure method to define the level of theory
-            for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
-       do_dipole: Whether to calculate the dipole elements. Default is ``False``.
+       grid: sample points for Gauss-Hermite quadrature
+       method: Electronic structure method that can be either restricted and unrestricted Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+       dipole: Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
        A tuple of one-mode potential energy surface and one-mode dipole along
