@@ -49,8 +49,7 @@ def _import_mpi4py():
 def pes_onemode(
     molecule, scf_result, freqs_au, displ_vecs, gauss_grid, method="rhf", do_dipole=False
 ):
-    r"""Computes the one-mode potential energy surface on a grid in real space, along the directions set by the displ_vecs.
-    Simultaneously, can compute the dipole one-mode elements.
+    r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
     Args:
        molecule: Molecule object
