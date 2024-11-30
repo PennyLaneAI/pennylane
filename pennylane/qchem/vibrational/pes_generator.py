@@ -61,8 +61,8 @@ def pes_onemode(
        dipole: Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of one-mode potential energy surface and one-mode dipole along
-       the normal-mode coordinates.
+       tuple of one-mode potential energy surface and one-mode dipole along
+       the normal-mode coordinates
 
     """
 
