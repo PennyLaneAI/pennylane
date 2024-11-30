@@ -43,7 +43,7 @@ class TestResourceCH:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -68,7 +68,7 @@ class TestResourceCY:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -93,7 +93,7 @@ class TestResourceCZ:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -117,7 +117,7 @@ class TestResourceCSWAP:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -141,7 +141,7 @@ class TestResourceCCZ:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -162,7 +162,7 @@ class TestResourceCNOT:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -190,7 +190,7 @@ class TestResourceToffoli:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -307,7 +307,7 @@ class TestResourceCRX:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -332,7 +332,7 @@ class TestResourceCRY:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -357,7 +357,7 @@ class TestResourceCRZ:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 
@@ -382,7 +382,7 @@ class TestResourceCRot:
 
     def test_resource_params(self):
         """Test that the resource_params are produced as expected."""
-        expected_params = dict()
+        expected_params = {}
         assert self.op.resource_params() == expected_params
 
 

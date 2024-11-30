@@ -315,7 +315,10 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        **kwargs,  # pylint: disable=unused-argument
     ) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
         cnot = re.ResourceCNOT.resource_rep()
