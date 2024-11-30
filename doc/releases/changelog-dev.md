@@ -184,6 +184,9 @@
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
 
+* Added native `ResourceOperator` subclasses for each of the controlled operators.
+  [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
