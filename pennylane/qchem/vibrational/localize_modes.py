@@ -206,7 +206,7 @@ def localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
     Args:
         freqs: normal mode frequencies in ``cm^-1``
         displ_vecs: displacement vectors for normal modes
-        freq_separation (list): list of frequency separation thresholds in cm^-1. Defaults to [2600].
+        freq_separation (list): list of frequency separation thresholds in ``cm^-1``. Default is ``[2600]``.
 
     Returns:
         A tuple of frequencies, normalized displacement vectors and localization matrix indicating the relationship between
