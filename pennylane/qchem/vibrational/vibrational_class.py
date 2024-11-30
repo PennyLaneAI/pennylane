@@ -100,7 +100,7 @@ def optimize_geometry(molecule, method="rhf"):
     r"""Obtains equilibrium geometry for the molecule.
 
     Args:
-      molecule: Molecule object.
+      molecule: Molecule object
       method: Electronic structure method that can be either restricted and unrestricted Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
