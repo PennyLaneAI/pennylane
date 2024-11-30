@@ -204,7 +204,7 @@ def localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
     <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
 
     Args:
-        freqs: normal mode frequencies in cm^-1
+        freqs: normal mode frequencies in ``cm^-1``
         displ_vecs: displacement vectors for normal modes
         freq_separation (list): list of frequency separation thresholds in cm^-1. Defaults to [2600].
 
