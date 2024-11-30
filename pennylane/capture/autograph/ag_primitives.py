@@ -241,14 +241,14 @@ def for_stmt(
         enum_start = iteration_target.start_idx
         try:
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught
+        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
             exception_raised = e
     else:
         start, stop, step = 0, len(iteration_target), 1
         enum_start = None
         try:
             iteration_array = jnp.asarray(iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught
+        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
             exception_raised = e
 
     if exception_raised:
@@ -487,7 +487,7 @@ class PRange:
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, super-init-not-called
 class PEnumerate(enumerate):
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.
