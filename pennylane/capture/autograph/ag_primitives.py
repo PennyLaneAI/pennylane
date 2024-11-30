@@ -32,7 +32,6 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
-
 except ImportError:  # pragma: no cover
     has_jax = False
 
@@ -50,7 +49,6 @@ class AutoGraphError(Exception):
 
 
 def _assert_results(results, var_names):
-
     """Assert that none of the results are undefined, i.e. have no value."""
 
     assert len(results) == len(var_names)
@@ -140,7 +138,7 @@ def _assert_iteration_inputs(inputs, symbol_names):
             ) from e
 
 
-def assert_iteration_results(inputs, outputs, symbol_names):
+def _assert_iteration_results(inputs, outputs, symbol_names):
     """The results of a for loop should have the identical type as the inputs since they are
     "passed" as inputs to the next iteration. A mismatch here may indicate that a loop-carried
     variable was initialized with the wrong type.
@@ -173,7 +171,7 @@ def _call_pennylane_for(
     # Ensure iteration arguments are properly initialized. We cannot process uninitialized
     # loop carried values as we need their type information for tracing.
     init_iter_args = get_state()
-    assert_iteration_inputs(init_iter_args, symbol_names)
+    _assert_iteration_inputs(init_iter_args, symbol_names)
 
     @qml.for_loop(start, stop, step)
     def functional_for(i, *iter_args):
@@ -197,7 +195,7 @@ def _call_pennylane_for(
         return get_state()
 
     final_iter_args = functional_for(*init_iter_args)
-    assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
+    _assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
     return final_iter_args
 
 
