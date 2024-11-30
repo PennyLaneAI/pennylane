@@ -55,7 +55,7 @@ def pes_onemode(
        molecule: Molecule object
        scf_result: pyscf object from electronic structure calculations
        freqs: list of vibrational frequencies in atomic units
-       displ_vecs: list of displacement vectors for each normal mode
+       vectors: list of displacement vectors for each normal mode
        gauss_grid: sample points for Gauss-Hermite quadrature
        method: Electronic structure method to define the level of theory
             for harmonic analysis. Default is restricted Hartree-Fock 'rhf'.
