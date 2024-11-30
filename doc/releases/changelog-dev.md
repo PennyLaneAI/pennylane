@@ -82,8 +82,9 @@
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
 
-* Support is added for if/else statements in circuits executed with `qml.capture.enabled`, via `autograph`
+* Support is added for `if`/`else` statements and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`.
   [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
