@@ -48,7 +48,7 @@ def dev(request):
 def calculate_reference(tape):
     """Calculate the reference value of the tape using DefaultQubit."""
     ref_dev = DefaultQubit(max_workers=1)
-    program, _ = ref_dev.preprocess()
+    program = ref_dev.preprocess_transforms()
     tapes, transf_fn = program([tape])
     results = ref_dev.execute(tapes)
     return transf_fn(results)

@@ -46,6 +46,7 @@ class AutoGraphError(Exception):
 
 
 def _assert_results(results, var_names):
+
     """Assert that none of the results are undefined, i.e. have no value."""
 
     assert len(results) == len(var_names)
@@ -58,6 +59,7 @@ def _assert_results(results, var_names):
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
+
 def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
