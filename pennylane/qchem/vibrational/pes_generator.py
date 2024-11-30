@@ -735,14 +735,14 @@ def vibrational_pes(
 
     Args:
        molecule: Molecule object
-       quad_order: Order for Gauss-Hermite quadratures. Default value is 9.
+       quad_order: Order for Gauss-Hermite quadratures. Default value is ``9``.
        method: Electronic structure method to define the level of theory, input values can be ``'rhf'`` or ``'uhf'``.
                Default is restricted Hartree-Fock 'rhf'.
-       localize: Whether to perform normal mode localization.
-       loc_freqs: Array of frequencies (in cm-1) where separation happens for mode localization.
-       do_cubic: Whether to include three-mode couplings. Default is False
-       dipole_level: Defines the level upto which dipole matrix elements are to be calculated. Input values can be
-                     1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole respectively. Default
+       localize: Whether to perform normal mode localization. Default is ``False``.
+       freqs: Array of frequencies in ``cm^-1`` where separation happens for mode localization.
+       cubic: Whether to include three-mode couplings. Default is ``False``.
+       dipole_level: Defines the level up to which dipole matrix elements are to be calculated. Input values can be
+                     ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
                      value is 1.
 
     Returns:
