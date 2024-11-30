@@ -731,7 +731,7 @@ def vibrational_pes(
     do_cubic=False,
     dipole_level=1,
 ):
-    r"""Builds potential energy surfaces over the normal modes.
+    r"""Computes potential energy surfaces along vibrational normal modes.
 
     Args:
        molecule: Molecule object
