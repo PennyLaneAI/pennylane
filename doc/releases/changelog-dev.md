@@ -80,7 +80,7 @@
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
-* Added Pauli String representations for the gates X, Y, Z, H, S, T, SX, SWAP, ISWAP, ECR, SISWAP, RX, RY, RZ, Rot, U1, U2, U2.
+* Added Pauli String representations for the gates X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP.
   [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
   
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
