@@ -19,7 +19,7 @@ from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
 from .convert_openfermion import from_openfermion, to_openfermion
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole, molecular_dipole
-from .factorization import basis_rotation, factorize
+from .factorization import basis_rotation, factorize, symmetry_shift
 from .givens_decomposition import givens_decomposition
 from .hamiltonian import (
     electron_integrals,
