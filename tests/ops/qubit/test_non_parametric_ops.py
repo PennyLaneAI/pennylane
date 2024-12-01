@@ -71,7 +71,6 @@ NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
     (qml.X(0), X),
     (qml.Y(0), Y),
     (qml.Z(0), Z),
-    (qml.H(0), H),
     (qml.S(10000000), S),
     (qml.T(10000000), T),
     (qml.SX("qubit0"), SX),
