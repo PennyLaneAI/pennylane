@@ -43,17 +43,14 @@ class GQSP(Operation):
     Args:
 
         unitary (Operator): The unitary operator to be applied in the generalized quantum signal processing (GQSP) circuit.
-
-        angles (array[float]): An array of angles with shape `(3, d+1)`, where `d` is the degree of the desired polynomial.
+        angles (tensor[float]): An array of angles with shape `(3, d+1)`, where `d` is the degree of the desired polynomial.
             These angles define the coefficients for the polynomial transformation applied to the unitary matrix.
-
         control (Union[Wires, int, str]): The control qubit used to encode the polynomial transformation on the unitary
             operator.
 
     .. note::
 
-        To calculate the angles given a polynomial ``poly``, it can be used the
-        function :func:`~.math.poly_to_angles` by choosing the routine ``"GQSP"``.
+        :func:`~.math.poly_to_angles` can be used to calculate the angles given a polynomial ``poly`` with ``routine="GQSP"``.
 
     Example:
 
@@ -75,7 +72,6 @@ class GQSP(Operation):
             qml.GQSP(unitary(wires = 1), angles, control = 0)
             return qml.state()
 
-
         matrix = qml.matrix(circuit, wire_order=[0, 1])(angles)
 
     .. code-block:: pycon
@@ -83,8 +79,6 @@ class GQSP(Operation):
         >>> print(np.round(matrix,3)[:2, :2])
         [[0.387+0.198j 0.03 -0.089j]
         [0.03 -0.089j 0.387+0.198j]]
-
-
     """
 
     grad_method = None

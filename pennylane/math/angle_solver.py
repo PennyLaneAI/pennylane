@@ -149,13 +149,13 @@ def poly_to_angles(P, routine):
     By default, returns QSP angles.
 
     Args:
-        P (array-like): Coefficients of the polynomial, ordered from lowest to higher degree.
+        P (TensorLike): Coefficients of the polynomial, ordered from lowest to highest degree.
                         The polynomial must have defined parity and real coefficients.
 
-        routine (str):  Specifies the type of angle transformation required. Must be either: "QSP", "QSVT" or "GQSP".
+        routine (str):  Specifies the algorithmic routine for which angle transformation is computed. Must be either: ``"QSP"``, ``"QSVT"`` or ``"GQSP"``.
 
     Returns:
-        (array-like): Angles corresponding to the specified transformation routine.
+        (TensorLike): Angles corresponding to the specified transformation routine.
     """
 
     if routine == "GQSP":
@@ -175,20 +175,19 @@ def poly_to_angles(P, routine):
 
 def GQSP_angles(P):
     r"""
-    Computes the Generalized Quantum Signal Processing (GQSP) angles given a polynomial P [arXiv:2308.01501].
+    Computes the angle for generalized quantum signal processing (GQSP) given a polynomial P [arXiv:2308.01501].
 
     Args:
-        P (array-like): Coefficients of the input polynomial P.
+        P (TensorLike): Coefficients of the input polynomial P.
 
     Returns:
-        angles (array-like): GQSP angles corresponding to the input polynomial P. The shape is (3, P-degree)
+        angles (TensorLike): GQSP angles corresponding to the input polynomial P. The shape is (3, P-degree)
     """
 
     Q = complementary_poly(P)
 
     def gqsp_u3_gate(theta, phi, lambd):
         # Matrix definition of U3 gate chosen in the GQSP paper
-
         exp_phi = np.exp(1j * phi)
         exp_lambda = np.exp(1j * lambd)
         exp_lambda_phi = np.exp(1j * (lambd + phi))
