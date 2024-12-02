@@ -20,7 +20,7 @@ from typing import Literal, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
-from pennylane.math import _resolve_interface
+from pennylane.math import INTERFACE_MAP, _get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
 
@@ -35,6 +35,91 @@ SupportedDiffMethods = Literal[
     "finite-diff",
     "spsa",
 ]
+
+
+def _get_jax_interface_name(tapes):
+    """Check all parameters in each tape and output the name of the suitable
+    JAX interface.
+
+    This function checks each tape and determines if any of the gate parameters
+    was transformed by a JAX transform such as ``jax.jit``. If so, it outputs
+    the name of the JAX interface with jit support.
+
+    Note that determining if jit support should be turned on is done by
+    checking if parameters are abstract. Parameters can be abstract not just
+    for ``jax.jit``, but for other JAX transforms (vmap, pmap, etc.) too. The
+    reason is that JAX doesn't have a public API for checking whether or not
+    the execution is within the jit transform.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+
+    Returns:
+        str: name of JAX interface that fits the tape parameters, "jax" or
+        "jax-jit"
+    """
+    for t in tapes:
+        for op in t:
+            # Unwrap the observable from a MeasurementProcess
+            if not isinstance(op, qml.ops.Prod):
+                op = getattr(op, "obs", op)
+            if op is not None:
+                # Some MeasurementProcess objects have op.obs=None
+                if any(qml.math.is_abstract(param) for param in op.data):
+                    return "jax-jit"
+
+    return "jax"
+
+
+# pylint: disable=import-outside-toplevel
+def _use_tensorflow_autograph():
+    """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
+    try:  # pragma: no cover
+        import tensorflow as tf
+    except ImportError as e:  # pragma: no cover
+        raise qml.QuantumFunctionError(  # pragma: no cover
+            "tensorflow not found. Please install the latest "  # pragma: no cover
+            "version of tensorflow supported by Pennylane "  # pragma: no cover
+            "to enable the 'tensorflow' interface."  # pragma: no cover
+        ) from e  # pragma: no cover
+
+    return not tf.executing_eagerly()
+
+
+def _resolve_interface(interface, tapes):
+    """Helper function to resolve the interface name based on a list of tapes
+
+    Args:
+        interface (str): Original interface to use as reference.
+        tapes (list[.QuantumScript]): Quantum tapes
+
+    Returns:
+        str: Interface name"""
+
+    interface = _get_canonical_interface_name(interface)
+
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = get_interface(*params)
+        if interface != "numpy":
+            interface = INTERFACE_MAP.get(interface, None)
+    if interface == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
+    if interface == "jax":
+        # pylint: disable=unused-import
+        try:  # pragma: no cover
+            import jax
+        except ImportError as e:  # pragma: no cover
+            raise qml.QuantumFunctionError(  # pragma: no cover
+                "jax not found. Please install the latest "  # pragma: no cover
+                "version of jax to enable the 'jax' interface."  # pragma: no cover
+            ) from e  # pragma: no cover
+
+        interface = _get_jax_interface_name(tapes)
+
+    return interface
 
 
 def _resolve_mcm_config(
@@ -181,3 +266,39 @@ def _resolve_execution_config(
     execution_config = device.setup_execution_config(execution_config)
 
     return execution_config
+
+
+def _resolve_interface(interface, tapes):
+    """Helper function to resolve the interface name based on a list of tapes
+
+    Args:
+        interface (str): Original interface to use as reference.
+        tapes (list[.QuantumScript]): Quantum tapes
+
+    Returns:
+        str: Interface name"""
+
+    interface = _get_canonical_interface_name(interface)
+
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = get_interface(*params)
+        if interface != "numpy":
+            interface = INTERFACE_MAP.get(interface, None)
+    if interface == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
+    if interface == "jax":
+        # pylint: disable=unused-import
+        try:  # pragma: no cover
+            import jax
+        except ImportError as e:  # pragma: no cover
+            raise qml.QuantumFunctionError(  # pragma: no cover
+                "jax not found. Please install the latest "  # pragma: no cover
+                "version of jax to enable the 'jax' interface."  # pragma: no cover
+            ) from e  # pragma: no cover
+
+        interface = _get_jax_interface_name(tapes)
+
+    return interface

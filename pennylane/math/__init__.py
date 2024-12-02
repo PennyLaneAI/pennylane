@@ -100,7 +100,6 @@ from .interface_utils import (
     INTERFACE_MAP,
     get_deep_interface,
     get_interface,
-    _resolve_interface,
 )
 
 sum = ar.numpy.sum

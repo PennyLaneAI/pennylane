@@ -26,12 +26,12 @@ from warnings import warn
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.math import _resolve_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
 from ._setup_transform_program import _setup_transform_program
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
+from .resolution import _resolve_interface
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
