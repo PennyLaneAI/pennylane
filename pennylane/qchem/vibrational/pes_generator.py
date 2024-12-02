@@ -52,7 +52,7 @@ def _import_mpi4py():
     return mpi4py
 
 
-def pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
+def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
     Args:
@@ -230,7 +230,7 @@ def _load_pes_onemode(num_proc, nmodes, quad_order, dipole=False):
     return pes_onebody, None
 
 
-def pes_twomode(
+def _pes_twomode(
     molecule,
     scf_result,
     freqs,
@@ -658,7 +658,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
     return pes_threebody, None  # pragma: no cover
 
 
-def pes_threemode(
+def _pes_threemode(
     molecule,
     scf_result,
     freqs,
@@ -807,7 +807,7 @@ def vibrational_pes(
     grid, gauss_weights = np.polynomial.hermite.hermgauss(quad_order)
 
     dipole = True
-    pes_onebody, dipole_onebody = pes_onemode(
+    pes_onebody, dipole_onebody = _pes_onemode(
         molecule, scf_result, freqs, displ_vecs, grid, method=method, dipole=dipole
     )
     comm.Barrier()
@@ -816,7 +816,7 @@ def vibrational_pes(
     if dipole_level < 2:
         dipole = False
 
-    pes_twobody, dipole_twobody = pes_twomode(
+    pes_twobody, dipole_twobody = _pes_twomode(
         molecule,
         scf_result,
         freqs,
@@ -836,7 +836,7 @@ def vibrational_pes(
         if dipole_level < 3:
             dipole = False
 
-        pes_threebody, dipole_threebody = pes_threemode(
+        pes_threebody, dipole_threebody = _pes_threemode(
             molecule,
             scf_result,
             freqs,

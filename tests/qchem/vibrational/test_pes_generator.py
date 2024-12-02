@@ -200,7 +200,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
 
     freqs = harmonic_res["freq_wavenumber"]
     displ_vecs = harmonic_res["norm_mode"]
-    pes_onebody, dipole_onebody = pes_generator.pes_onemode(
+    pes_onebody, dipole_onebody = pes_generator._pes_onemode(
         mol, mol_eq, freqs, displ_vecs, gauss_grid, method="RHF", dipole=do_dipole
     )
 
@@ -261,11 +261,11 @@ def test_twomode_pes(sym, geom, harmonic_res, ref_file):
 
     freqs = harmonic_res["freq_wavenumber"]
     vectors = harmonic_res["norm_mode"]
-    pes_onebody, dipole_onebody = pes_generator.pes_onemode(
+    pes_onebody, dipole_onebody = pes_generator._pes_onemode(
         mol, mol_eq, freqs, vectors, gauss_grid, method="RHF", dipole=True
     )
 
-    pes_twobody, dipole_twobody = pes_generator.pes_twomode(
+    pes_twobody, dipole_twobody = pes_generator._pes_twomode(
         mol,
         mol_eq,
         freqs,
@@ -346,7 +346,7 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
     exp_pes_threemode = np.array(f["V3_PES"][()])
     exp_dip_threemode = np.array(f["D3_DMS"][()])
 
-    pes_threebody, dipole_threebody = pes_generator.pes_threemode(
+    pes_threebody, dipole_threebody = pes_generator._pes_threemode(
         mol,
         mol_eq,
         freqs,
