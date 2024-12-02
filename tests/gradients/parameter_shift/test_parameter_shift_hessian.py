@@ -1572,7 +1572,7 @@ class TestParameterShiftHessianQNode:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.param_shift_hessian(c)(x)) for c in circuits]
-        expected = [(3, 3), (1, 3, 3), (2, 3, 3), (3, 3, 4), (1, 3, 3, 4), (2, 3, 3, 4)]
+        expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
 
         assert all(t == e for t, e in zip(transform, expected))
 

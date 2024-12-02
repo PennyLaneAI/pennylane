@@ -509,7 +509,7 @@ class TestTensorflowExecuteIntegration:
                 gradient_method=_gradient_method,
                 grad_on_execution=execute_kwargs.get("grad_on_execution", None),
             )
-            program, _ = device.preprocess(execution_config=config)
+            program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = tf.constant(0.1)
@@ -807,11 +807,12 @@ class TestHamiltonianWorkflows:
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
         assert np.allclose(jac, expected, atol=atol_for_shots(shots), rtol=0)
 
-    @pytest.mark.xfail(reason="parameter shift derivatives do not yet support sums.")
     def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, shots):
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["diff_method"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
+        if execute_kwargs["diff_method"] != "backprop":
+            pytest.xfail(reason="parameter shift derivatives do not yet support sums.")
 
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)
