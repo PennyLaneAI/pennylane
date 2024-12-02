@@ -228,6 +228,7 @@ def run(
         # within execute_and_gradients, so providing a diff_method
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
+
     elif resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
         # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
         cache_full_jacobian = (
