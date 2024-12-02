@@ -179,7 +179,7 @@ def test_overriding_shots(x64_mode):
         (50,), jax.numpy.int64 if x64_mode else jax.numpy.int32
     )
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError, match="override shots are not yet supported"):
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 

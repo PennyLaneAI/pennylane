@@ -119,7 +119,7 @@
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
   captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
   only works with a reduced feature set.
-  [(#6496)](https://github.com/PennyLaneAI/pennylane/pull/6596)
+  [(#6596)](https://github.com/PennyLaneAI/pennylane/pull/6596)
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
