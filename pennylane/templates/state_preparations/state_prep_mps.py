@@ -28,8 +28,8 @@ class MPSPrep(Operation):
 
 
     Args:
-        mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS
-            site matrices. See Usage Deatils for more information on dimensions.
+        mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
+            product of MPS site matrices. See Usage Deatils for more information on dimensions.
 
         wires (Sequence[int]): wires that the template acts on
 
@@ -62,31 +62,41 @@ class MPSPrep(Operation):
             qml.MPSPrep(mps, wires = [0,1,2])
             return qml.state()
 
+    .. code-block:: pycon
+
+        >>> print(circuit())
+        [ 0.    +0.j  0.    +0.j  0.    +0.j -0.1066+0.j  0.    +0.j  0.    +0.j
+          0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j
+          0.9943+0.j  0.    +0.j  0.    +0.j  0.    +0.j]
+
     .. details::
         :title: Usage Details
 
-    The input matrix product state must be a list of :math:`n` tensors :math:`[A^{(1)}, ..., A^{(n)}]`
-    with shapes :math:`d_0, ..., d_n`, respectively. The first and last tensors have rank ``2`` 
-    while the intermediate tensors have rank ``3``. 
+        The input matrix product state must be a list of :math:`n` tensors :math:`[A^{(1)}, ..., A^{(n)}]`
+        with shapes :math:`d_0, ..., d_n`, respectively. The first and last tensors have rank ``2``
+        while the intermediate tensors have rank ``3``.
 
-    The first tensor must have the shape :math:`d_0 = (d_{00}, d_{01})` where :math:`d_{00}` 
-    and :math:`d_{01}`  correspond to the physical dimension of the site and an auxiliary bond
-    dimension connecting it to the next tensor, respectively. 
+        The first tensor must have the shape :math:`d_0 = (d_{00}, d_{01})` where :math:`d_{00}`
+        and :math:`d_{01}`  correspond to the physical dimension of the site and an auxiliary bond
+        dimension connecting it to the next tensor, respectively.
 
-    The last tensor must have the shape :math:`d_0 = (d_{n0}, d_{n1})` where :math:`d_{n0}` 
-    and :math:`d_{n1}` represent the auxiliary dimension from the previous site and the physical
-    dimension of the site, respectively.
+        The last tensor must have the shape :math:`d_n = (d_{n0}, d_{n1})` where :math:`d_{n0}`
+        and :math:`d_{n1}` represent the auxiliary dimension from the previous site and the physical
+        dimension of the site, respectively.
 
-    The intermediate tensors must have the shape :math:`(d_{j,0}, d_{j,1},` and :math:`d_{j,2}`, where:
-        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor.
-        - :math:`d_{j,1}` is the physical dimension for the site.
-        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor.       
-    Importantly, the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
+        The intermediate tensors must have the shape :math:`d_{j,0}`, :math:`d_{j,1},` and :math:`d_{j,2}`, where:
+
+            - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor.
+            - :math:`d_{j,1}` is the physical dimension for the site.
+            - :math:`d_{j,2}` is the bond dimension connecting to the next tensor.
+
+        Importantly, the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
 
         Additionally, the physical dimension of the site should always be fixed at :math:`2`,
         while the other dimensions must be powers of two.
 
-        The following input is a valid ``mps`` containing four tensors with dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]`, that satisfy the criteria described above.
+        The following input is a valid ``mps`` containing four tensors with
+        dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]`, that satisfy the criteria described above.
 
         .. code-block::
 
@@ -108,7 +118,6 @@ class MPSPrep(Operation):
                 ),
                 np.array([[-1.0, -0.0], [-0.0, -1.0]]),
             ]
-
     """
 
     def __init__(self, mps, wires, id=None):
