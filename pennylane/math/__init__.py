@@ -96,7 +96,6 @@ from .utils import (
     requires_grad,
 )
 
-from .angle_solver import *
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy

@@ -150,12 +150,12 @@ class GQSP(Operation):
         op_list.append(qml.X(control))
         op_list.append(qml.Z(control))
 
-        for theta, phi, lam in zip(thetas[1:], phis[1:], lambds[1:]):
+        for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
 
             op_list.append(qml.ctrl(unitary, control=control, control_values=0))
 
             op_list.append(qml.X(control))
-            op_list.append(qml.U3(2 * theta, phi, lam, wires=control))
+            op_list.append(qml.U3(2 * theta, phi, lamb, wires=control))
             op_list.append(qml.X(control))
             op_list.append(qml.Z(control))
 

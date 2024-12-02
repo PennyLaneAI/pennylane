@@ -571,6 +571,65 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
+def compute_gqsp_angles(poly_coeffs):
+    r"""
+    Computes the Generalized Quantum Signal Processing (GQSP) angles given the coefficients of a polynomial P.
+
+    The method for computing the GQSP angles is based on the algorithm described in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_].
+    The complementary polynomial is calculated using root-finding methods.
+
+    Args:
+        poly_coeffs (tensor-like): Coefficients of the input polynomial P.
+
+    Returns:
+        (tensor-like): QSP angles corresponding to the input polynomial P. The shape is (3, P-degree)
+    """
+
+    complementary = _complementary_poly(poly_coeffs)
+
+    def gqsp_u3_gate(theta, phi, lambd):
+        # Matrix definition of U3 gate chosen in the GQSP paper
+        exp_phi = qml.math.exp(1j * phi)
+        exp_lambda = qml.math.exp(1j * lambd)
+        exp_lambda_phi = qml.math.exp(1j * (lambd + phi))
+
+        matrix = np.array(
+            [
+                [exp_lambda_phi * qml.math.cos(theta), exp_phi * qml.math.sin(theta)],
+                [exp_lambda * qml.math.sin(theta), -qml.math.cos(theta)],
+            ],
+            dtype=complex,
+        )
+
+        return matrix
+
+    # Algorithm 1 in [arXiv:2308.01501]
+    input_data = qml.math.array([poly_coeffs, complementary])
+    num_elements = input_data.shape[1]
+
+    angles_theta, angles_phi, angles_lambda = qml.math.zeros([3, num_elements])
+
+    for idx in range(num_elements - 1, -1, -1):
+
+        component_a, component_b = input_data[:, idx]
+        angles_theta[idx] = qml.math.arctan2(np.abs(component_b), qml.math.abs(component_a))
+        angles_phi[idx] = (
+            0
+            if qml.math.isclose(qml.math.abs(component_b), 0, atol=1e-10)
+            else qml.math.angle(component_a * qml.math.conj(component_b))
+        )
+
+        if idx == 0:
+            angles_lambda[0] = qml.math.angle(component_b)
+        else:
+            updated_matrix = (
+                gqsp_u3_gate(angles_theta[idx], angles_phi[idx], 0).conj().T @ input_data
+            )
+            input_data = qml.math.array([updated_matrix[0][1 : idx + 1], updated_matrix[1][0:idx]])
+
+    return angles_theta, angles_phi, angles_lambda
+
+
 def transform_angles(angles, routine1, routine2):
     r"""
     Converts angles for quantum signal processing (QSP) and quantum singular value transformation (QSVT) routines.
@@ -766,4 +825,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
+
+    if routine == "GQSP":
+        return compute_gqsp_angles(poly)
     raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")

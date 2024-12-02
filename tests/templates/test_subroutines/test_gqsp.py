@@ -51,7 +51,7 @@ class TestGQSP:
     def test_correct_solution(self, unitary, poly):
         """Test that poly_to_angles and GQSP produce the correct solution"""
 
-        angles = qml.math.poly_to_angles(poly, "GQSP")
+        angles = qml.poly_to_angles(poly, "GQSP")
 
         dev = qml.device("default.qubit")
 
