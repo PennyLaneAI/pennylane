@@ -328,7 +328,6 @@ class TestIntegration:
         assert check_cache(fn)
         assert check_cache(inner)
 
-    @pytest.mark.xfail(reason="decorated transforms are not applied yet with capture enabled")
     def test_tape_transform(self):
         """Test if tape transform is applied when autograph is on."""
 
