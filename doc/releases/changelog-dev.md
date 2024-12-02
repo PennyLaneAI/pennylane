@@ -61,6 +61,11 @@
 * Added utility functions for handling dense matrices in the Lie theory context.
   [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
 
+* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
+added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -80,7 +85,10 @@
   [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
 
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
-  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
+  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
+
+* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
+  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
 
 * Support is added for `if`/`else` statements and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`.
   [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
@@ -88,12 +96,6 @@
 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
-
-* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
-  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
-
-* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
-  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
 * The `qml.qchem.factorize` function now supports new methods for double factorization:
   Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
@@ -129,6 +131,9 @@
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* PennyLane transforms can now be captured as primitives with experimental program capture enabled.
+  [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
