@@ -510,7 +510,7 @@ class TestCNOT:
         """Test that the controlled decomposition is correct."""
 
         expected = {re.ResourceToffoli.resource_rep(): 1}
-        assert re.ResourceCNOT.controlled_resource_decomp(1, 1, 0) == expected
+        assert re.ResourceCNOT.controlled_resource_decomp(1, 0, 0) == expected
 
     @pytest.mark.parametrize("z", list(range(10)))
     def test_pow_decomp(self, z):

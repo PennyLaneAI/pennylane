@@ -30,10 +30,9 @@ class ResourceCH(qml.CH, re.ResourceOperator):
         .. math::
 
             \begin{align}
-                \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \dot \hat{Z}  \dot \hat{R}_{y}(\frac{-\pi}{4}), \\
-                \hat{Z} &= \hat{H} \dot \hat{X}  \dot \hat{H}
+                \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \cdot \hat{Z}  \cdot \hat{R}_{y}(\frac{-\pi}{4}), \\
+                \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
             \end{align}
-
 
         We can control on the Pauli-X gate to obtain our controlled Hadamard gate.
 
@@ -85,7 +84,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Y} = \hat{S} \dot \hat{X} \dot \hat{S}^{\dagger}.
+        .. math:: \hat{Y} = \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}.
 
         We can control on the Pauli-X gate to obtain our controlled-Y gate.
 
@@ -137,7 +136,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}.
+        .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
         We can control on the Pauli-X gate to obtain our controlled-Z gate.
 
@@ -247,7 +246,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}.
+        .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
         We replace the Pauli-X gate with a Toffoli gate to obtain our control-control-Z gate.
     """
@@ -361,12 +360,14 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         h = re.ResourceHadamard.resource_rep()
         s = re.ResourceS.resource_rep()
         cz = re.ResourceCZ.resource_rep()
+        t_dag = re.ResourceAdjoint(re.ResourceT, {})
 
         gate_types[cnot] = 9
         gate_types[h] = 3
         gate_types[s] = 1
         gate_types[cz] = 1
-        gate_types[t] = 2 + 2 * (7)  # T^dagg = 7*T in cost
+        gate_types[t] = 2
+        gate_types[t_dag] = 2
 
         return gate_types
 
@@ -455,17 +456,17 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         **kwargs,  # pylint: disable=unused-argument
     ) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
-        cnot = re.ResourceCNOT.resource_rep()
-        toffoli = re.ResourceToffoli.resource_rep()
 
         if num_ctrl_values:
             x = re.ResourceX.resource_rep()
             gate_types[x] = num_ctrl_values * 2
 
+        cnot = re.ResourceCNOT.resource_rep()
         if num_ctrl_wires == 1:
             gate_types[cnot] = 1
             return gate_types
 
+        toffoli = re.ResourceToffoli.resource_rep()
         if num_ctrl_wires == 2:
             gate_types[toffoli] = 1
             return gate_types
@@ -475,7 +476,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             gate_types[toffoli] = 1
             return gate_types
 
-        gate_types[cnot] = 36 * num_ctrl_wires - 111  # Barenco 1995
+        gate_types[cnot] = 36 * num_ctrl_wires - 111
         return gate_types
 
     def resource_params(self) -> dict:
@@ -538,18 +539,14 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
     r"""Resource class for CRX
 
     Resources:
+        The resources are based from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
-        The resources are derived from the following identities:
+        .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
-        .. math::
+        we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard` gates.
+        The expression for controlled-RZ gates is used as defined in the reference above.
 
-            \begin{align}
-                \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}, \\
-                \hat{X} &= \hat{H} \dot \hat{Z}  \dot \hat{H}
-            \end{align}
-
-        The expression for controlled-RZ gates is used as defined in (figure 1b.) the paper
-        `T-count and T-depth of any multi-qubit unitary <https://arxiv.org/pdf/2110.10292>`_.
     """
 
     @staticmethod
@@ -583,7 +580,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceRX, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourceRX, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -596,10 +593,14 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
     r"""Resource class for CRY
 
     Resources:
-        The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        The resources are based from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
 
-        .. math:: \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}.
+        .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
+
+        By replacing the :code:`X` gates with :code:`CNOT` gates, we obtain a controlled-version of this
+        identity. Thus we are able to constructively or destructively interfere the gates based on the value
+        of the control qubit.
 
     """
 
@@ -632,7 +633,7 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceRY, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourceRY, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -646,9 +647,13 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
     Resources:
         The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived from the following identity:
+        unitary <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
 
-        .. math:: \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}.
+        .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
+
+        By replacing the :code:`X` gates with :code:`CNOT` gates, we obtain a controlled-version of this
+        identity. Thus we are able to constructively or destructively interfere the gates based on the value
+        of the control qubit.
 
     """
 
@@ -681,7 +686,7 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceRZ, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourceRZ, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -700,13 +705,13 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
         .. math::
 
             \begin{align}
-                \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}, \\
-                \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}.
+                \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}, \\
+                \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
             \end{align}
 
         This identity is applied along with some clever choices for the angle values to combine rotation;
         the final circuit takes the form:
-        
+
         .. code-block:: bash
 
             ctrl: ─────╭●─────────╭●─────────┤
@@ -745,7 +750,7 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceRot, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourceRot, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -791,7 +796,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourcePhaseShift, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourcePhaseShift, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 

@@ -27,8 +27,16 @@ from malt.operators.variables import Undefined
 
 import pennylane as qml
 
+has_jax = True
+try:
+    import jax
+except ImportError:  # pragma: no cover
+    has_jax = False
+
+
 __all__ = [
     "if_stmt",
+    "while_stmt",
     "converted_call",
 ]
 
@@ -37,7 +45,7 @@ class AutoGraphError(Exception):
     """Errors related to PennyLane's AutoGraph submodule."""
 
 
-def assert_results(results, var_names):
+def _assert_results(results, var_names):
     """Assert that none of the results are undefined, i.e. have no value."""
 
     assert len(results) == len(var_names)
@@ -49,7 +57,9 @@ def assert_results(results, var_names):
     return results
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+
+
 def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
@@ -71,16 +81,91 @@ def if_stmt(
         set_state(init_state)
         true_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     @functional_cond.otherwise
     def functional_cond():
         set_state(init_state)
         false_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     results = functional_cond()
+    set_state(results)
+
+
+def _assert_iteration_inputs(inputs, symbol_names):
+    """Assert that all loop carried values, variables that are updated each iteration or accessed after the
+    loop terminates, are initialized prior to entering the loop.
+
+    The reason is two-fold:
+      - the type information from those variables is required for tracing
+      - we want to avoid accessing a variable that is uninitialized, or uninitialized in a subset
+        of execution paths
+
+    Additionally, these types need to be valid JAX types.
+
+    Args:
+        inputs (Tuple): The loop carried values
+        symbol_names (Tuple[str]): The names of the loop carried values.
+    """
+
+    if not has_jax:  # pragma: no cover
+        raise ImportError("autograph capture requires JAX to be installed.")
+
+    for i, inp in enumerate(inputs):
+        if isinstance(inp, Undefined):
+            raise AutoGraphError(
+                f"The variable '{inp}' is potentially uninitialized:\n"
+                " - you may have forgotten to initialize it prior to accessing it inside a loop, or"
+                "\n"
+                " - you may be attempting to access a variable local to the body of a loop in an "
+                "outer scope.\n"
+                f"Please ensure '{inp}' is initialized with a value before entering the loop."
+            )
+
+        try:
+            jax.api_util.shaped_abstractify(inp)
+        except TypeError as e:
+            raise AutoGraphError(
+                f"The variable '{symbol_names[i]}' was initialized with type {type(inp)}, "
+                "which is not compatible with JAX. Typically, this is the case for non-numeric "
+                "values.\n"
+                "You may still use such a variable as a constant inside a loop, but it cannot "
+                "be updated from one iteration to the next, or accessed outside the loop scope "
+                "if it was defined inside of it."
+            ) from e
+
+
+def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names):
+    """Dispatch to a PennyLane implementation of while loops."""
+
+    init_iter_args = get_state()
+    _assert_iteration_inputs(init_iter_args, symbol_names)
+
+    def test(state):
+        old = get_state()
+        set_state(state)
+        res = loop_test()
+        set_state(old)
+        return res
+
+    @qml.while_loop(test)
+    def functional_while(iter_args):
+        set_state(iter_args)
+        loop_body()
+        return get_state()
+
+    final_iter_args = functional_while(init_iter_args)
+
+    return final_iter_args
+
+
+def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
+    """An implementation of the AutoGraph 'while ..' statement. The interface is defined by
+    AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
+
+    results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
 
 
