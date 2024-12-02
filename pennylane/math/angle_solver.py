@@ -173,7 +173,7 @@ def poly_to_angles(P, routine):
     return QSP_angles(P)
 
 
-def GQSP_angles(P):
+def GQSP_angles(P): 
     r"""
     Computes the angle for generalized quantum signal processing (GQSP) given a polynomial P [arXiv:2308.01501].
 
