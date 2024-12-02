@@ -129,7 +129,7 @@ def optimize_geometry(molecule, method="rhf"):
 
 def _get_rhf_dipole(scf_result):
     """
-    Given an restricted Hartree-Fock object, evaluate the dipole moment
+    Given a restricted Hartree-Fock object, evaluate the dipole moment
     in the restricted Hartree-Fock state.
 
     Args:
