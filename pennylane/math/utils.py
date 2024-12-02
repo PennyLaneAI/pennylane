@@ -267,12 +267,10 @@ def _get_interface_of_single_tensor(tensor):
     >>> get_interface(x)
     'autograd'
     """
-    modules = tensor.__class__.__module__.split(".")
-    namespace = modules[0]
-    submodule = modules[1] if len(modules) > 1 else None
+    namespace = tensor.__class__.__module__.split(".")[0]
 
     if namespace == "pennylane":
-        return "jax" if submodule == "capture" else "autograd"
+        return "jax" if "Tracer" in tensor.__class__.__name__ else "autograd"
 
     if namespace == "autograd":
         return "autograd"
@@ -407,8 +405,8 @@ def is_abstract(tensor, like=None):
 
     if interface == "jax":
         import jax
-        from jax.interpreters.partial_eval import DynamicJaxprTracer
 
+        # from jax.interpreters.partial_eval import DynamicJaxprTracer
         # from pennylane.capture import TransformTracer
 
         if isinstance(
