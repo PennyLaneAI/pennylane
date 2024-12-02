@@ -251,7 +251,7 @@ class TestDoubleExcitationPlus:
         assert op_resource_type.resources(**op_resource_params) == expected
 
 
-class TestOribatlRotation:
+class TestOrbitalRotation:
     """Tests for the ResourceOrbitalRotation class."""
 
     def test_resources(self):

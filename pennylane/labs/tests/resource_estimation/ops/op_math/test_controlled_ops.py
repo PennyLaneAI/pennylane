@@ -177,7 +177,8 @@ class TestResourceToffoli:
 
         expected_resources = {
             re.ResourceS.resource_rep(): 1,
-            re.ResourceT.resource_rep(): 16,
+            re.ResourceT.resource_rep(): 2,
+            re.ResourceAdjoint.resource_rep(re.ResourceT, {}): 2,
             re.ResourceCZ.resource_rep(): 1,
             re.ResourceCNOT.resource_rep(): 9,
             re.ResourceHadamard.resource_rep(): 3,
