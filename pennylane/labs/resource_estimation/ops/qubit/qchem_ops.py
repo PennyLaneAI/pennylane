@@ -243,34 +243,6 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
         return re.CompressedResourceOp(cls, {})
 
 
-class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
-    r"""Resource class for the OrbitalRotation gate.
-
-    Resources:
-        The resources are obtained by decomposing the following mapping into fundamental gates.
-
-        .. math::
-            &|\Phi_{0}\rangle = \cos(\phi/2)|\Phi_{0}\rangle - \sin(\phi/2)|\Phi_{1}\rangle\\
-            &|\Phi_{1}\rangle = \cos(\phi/2)|\Phi_{0}\rangle + \sin(\phi/2)|\Phi_{1}\rangle,
-    """
-
-    @staticmethod
-    def _resource_decomp(**kwargs):
-        fermionic_swap = re.ResourceFermionicSWAP.resource_rep(**kwargs)
-        single_excitation = re.ResourceSingleExcitation.resource_rep(**kwargs)
-
-        gate_types = {}
-        gate_types[fermionic_swap] = 2
-        gate_types[single_excitation] = 2
-
-        return gate_types
-
-    def resource_params(self):
-        return {}
-
-    @classmethod
-    def resource_rep(cls, **kwargs):
-        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
