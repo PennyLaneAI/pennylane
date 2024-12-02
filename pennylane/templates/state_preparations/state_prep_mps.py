@@ -29,7 +29,7 @@ class MPSPrep(Operation):
 
     Args:
         mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
-            product of MPS site matrices. See Usage Deatils for more information on dimensions.
+            product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on
 
@@ -72,9 +72,9 @@ class MPSPrep(Operation):
     .. details::
         :title: Usage Details
 
-        The input matrix product state must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`
-        with shapes :math:`d_0, ..., d_{n-1}`, respectively. The first and last tensors have rank ``2``
-        while the intermediate tensors have rank ``3``.
+        The input MPS must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`
+        with shapes :math:`d_0, ..., d_{n-1}`, respectively. The first and last tensors have rank :math:`2`
+        while the intermediate tensors have rank :math:`3`.
 
         The first tensor must have the shape :math:`d_0 = (d_{0,0}, d_{0,1})` where :math:`d_{0,0}`
         and :math:`d_{0,1}`  correspond to the physical dimension of the site and an auxiliary bond
@@ -86,17 +86,17 @@ class MPSPrep(Operation):
 
         The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
 
-        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor.
-        - :math:`d_{j,1}` is the physical dimension for the site.
-        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor.
+        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor
+        - :math:`d_{j,1}` is the physical dimension for the site
+        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor
 
-        Importantly, the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
+        Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
 
         Additionally, the physical dimension of the site should always be fixed at :math:`2`,
         while the other dimensions must be powers of two.
 
-        The following input is a valid ``mps`` containing four tensors with
-        dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]`, that satisfy the criteria described above.
+        The following examples shows a valid MPS input containing four tensors with
+        dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
 
         .. code-block::
 
