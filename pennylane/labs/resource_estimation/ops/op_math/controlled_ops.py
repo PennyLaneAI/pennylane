@@ -21,7 +21,7 @@ import pennylane.labs.resource_estimation as re
 
 
 class ResourceCH(qml.CH, re.ResourceOperator):
-    r"""Resource class for CH gate.
+    r"""Resource class for the CH gate.
 
     Resources:
         The resources are derived from the following identities (as presented in this
@@ -61,7 +61,7 @@ class ResourceCH(qml.CH, re.ResourceOperator):
 
 
 class ResourceCY(qml.CY, re.ResourceOperator):
-    r"""Resource class for CY gate.
+    r"""Resource class for the CY gate.
 
     Resources:
         The resources are derived from the following identity:
@@ -93,7 +93,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
 
 
 class ResourceCZ(qml.CZ, re.ResourceOperator):
-    r"""Resource class for CZ
+    r"""Resource class for the CZ gate.
 
     Resources:
         The resources are derived from the following identity:
@@ -125,7 +125,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
 
 
 class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
-    r"""Resource class for CSWAP
+    r"""Resource class for the CSWAP gate.
 
     Resources:
         The resources are taken (figure 1d) from the paper `Shallow unitary decompositions
@@ -164,7 +164,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
 
 
 class ResourceCCZ(qml.CCZ, re.ResourceOperator):
-    r"""Resource class for CCZ
+    r"""Resource class for the CCZ gate.
 
     Resources:
         The resources are derived from the following identity:
@@ -195,7 +195,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
 
 
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
-    r"""Resource class for CNOT
+    r"""Resource class for the CNOT gate.
 
     Resources:
         There is no further decomposition provided for this gate.
@@ -215,7 +215,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
 
 
 class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
-    r"""Resource class for Toffoli
+    r"""Resource class for the Toffoli gate.
 
     Resources:
         The resources are obtained from (in figure 1.) the paper `Novel constructions for the fault-tolerant
@@ -291,7 +291,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
 
 class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
-    r"""Resource class for MultiControlledX
+    r"""Resource class for the MultiControlledX gate.
 
     Resources:
         The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
@@ -370,10 +370,10 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
 
 class ResourceCRX(qml.CRX, re.ResourceOperator):
-    r"""Resource class for CRX
+    r"""Resource class for the CRX gate.
 
     Resources:
-        The resources are based from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
         .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
@@ -406,10 +406,10 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
 
 class ResourceCRY(qml.CRY, re.ResourceOperator):
-    r"""Resource class for CRY
+    r"""Resource class for the CRY gate.
 
     Resources:
-        The resources are based from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        The resources are taken from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
 
         .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
@@ -441,7 +441,7 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
 
 
 class ResourceCRZ(qml.CRZ, re.ResourceOperator):
-    r"""Resource class for CRZ
+    r"""Resource class for the CRZ gate.
 
     Resources:
         The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
@@ -476,7 +476,7 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
 
 class ResourceCRot(qml.CRot, re.ResourceOperator):
-    r"""Resource class for CRot
+    r"""Resource class for the CRot gate.
 
     Resources:
         The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
