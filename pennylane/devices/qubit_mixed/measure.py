@@ -73,6 +73,7 @@ def calculate_expval(
     return math.dot(probs, eigvals)
 
 
+# pylint: disable=unused-argument
 def calculate_reduced_density_matrix(
     measurementprocess: StateMeasurement,
     state: TensorLike,
