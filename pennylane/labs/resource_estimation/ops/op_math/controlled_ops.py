@@ -81,7 +81,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
         s = re.ResourceS.resource_rep()
 
         gate_types[cnot] = 1
-        gate_types[s] = 1 + 3  # S^dagg = 3*S in cost
+        gate_types[s] = 1 + 3  # S^dagg = 3*S in cost  TODO: Update with Adjoint(S)
 
         return gate_types
 
@@ -250,7 +250,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         gate_types[h] = 3
         gate_types[s] = 1
         gate_types[cz] = 1
-        gate_types[t] = 2 + 2 * (7)  # T^dagg = 7*T in cost
+        gate_types[t] = 2 + 2 * (7)  # T^dagg = 7*T in cost  TODO: Update with Adjoint(T)
 
         return gate_types
 
@@ -321,17 +321,17 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         **kwargs,  # pylint: disable=unused-argument
     ) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
-        cnot = re.ResourceCNOT.resource_rep()
-        toffoli = re.ResourceToffoli.resource_rep()
 
         if num_ctrl_values:
             x = re.ResourceX.resource_rep()
             gate_types[x] = num_ctrl_values * 2
 
+        cnot = re.ResourceCNOT.resource_rep()
         if num_ctrl_wires == 1:
             gate_types[cnot] = 1
             return gate_types
 
+        toffoli = re.ResourceToffoli.resource_rep()
         if num_ctrl_wires == 2:
             gate_types[toffoli] = 1
             return gate_types
