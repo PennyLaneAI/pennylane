@@ -220,7 +220,6 @@ def execute(
     config = replace(
         config,
         interface=interface,
-        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         derivative_order=max_diff,
     )
 

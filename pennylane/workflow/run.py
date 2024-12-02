@@ -136,6 +136,7 @@ def run(
     Returns:
         ResultBatch: results of the execution
     """
+    print(resolved_execution_config.interface)
     cache = _cache_transform in inner_transform_program
     inner_execute = _make_inner_execute(device, inner_transform_program, resolved_execution_config)
     diff_method = resolved_execution_config.gradient_method
