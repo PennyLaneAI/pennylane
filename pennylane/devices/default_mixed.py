@@ -55,12 +55,11 @@ from ._qubit_device import QubitDevice
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
-from typing import Optional, Union
+from typing import Optional
 
 from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.transforms.core import TransformProgram
 from pennylane.tape import QuantumScript
-from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .execution_config import ExecutionConfig
@@ -73,7 +72,6 @@ from .preprocess import (
     validate_observables,
 )
 from .modifiers import simulator_tracking, single_tape_support
-from .qubit_mixed.simulate import simulate
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -976,24 +974,8 @@ class DefaultMixedNewAPI(Device):
         self,
         circuits: QuantumScript,
         execution_config: Optional[ExecutionConfig] = None,
-    ) -> Union[Result, ResultBatch]:
-        interface = (
-            execution_config.interface
-            if execution_config.gradient_method in {"best", "backprop", None}
-            else None
-        )
-
-        return tuple(
-            simulate(
-                c,
-                rng=self._rng,
-                prng_key=self._prng_key,
-                debugger=self._debugger,
-                interface=interface,
-                readout_errors=self.readout_err,
-            )
-            for c in circuits
-        )
+    ) -> None:
+        raise NotImplementedError
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
