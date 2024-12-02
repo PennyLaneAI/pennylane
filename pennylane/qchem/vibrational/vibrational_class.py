@@ -35,7 +35,10 @@ def _harmonic_analysis(scf_result, method="rhf"):
                 Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-       a tuple of normal modes frequencies and their corresponding displacement vectors
+       (tuple): A tuple containing the following:
+        - (list[float]): normal mode frequencies in ``cm^-1``
+        - (TensorLike[float]): corresponding displacement vectors for each normal mode
+
     """
     pyscf = _import_pyscf()
     from pyscf.hessian import thermo
@@ -54,12 +57,13 @@ def _single_point(molecule, method="rhf"):
     r"""Runs electronic structure calculation.
 
     Args:
-      molecule (~qchem.molecule.Molecule): Molecule object.
-      method (str): Electronic structure method that can be either restricted and unrestricted
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object.
+       method (str): Electronic structure method that can be either restricted and unrestricted
                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-      pyscf.scf object from electronic structure calculation
+       pyscf.scf object from electronic structure calculation
+
     """
     pyscf = _import_pyscf()
 
@@ -98,12 +102,14 @@ def optimize_geometry(molecule, method="rhf"):
     r"""Obtains equilibrium geometry for the molecule.
 
     Args:
-      molecule (~qchem.molecule.Molecule): Molecule object
-      method (str): Electronic structure method that can be either restricted and unrestricted
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+       method (str): Electronic structure method that can be either restricted and unrestricted
                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-      Molecule object with optimized geometry
+       (tuple): A tuple containing the following:
+        - :func:`~pennylane.qchem.molecule.Molecule` object with optimized geometry
+        - pyscf.scf object
 
     """
     pyscf = _import_pyscf()
@@ -133,10 +139,10 @@ def _get_rhf_dipole(scf_result):
     in the restricted Hartree-Fock state.
 
     Args:
-       scf_result: pyscf object from electronic structure calculations
+       scf_result(pyscf.scf object): pyscf object from electronic structure calculations
 
     Returns:
-       dipole moment
+       (TensorLike[float]): dipole moment
     """
 
     charges = scf_result.mol.atom_charges()
@@ -169,10 +175,10 @@ def _get_uhf_dipole(scf_result):
     in the unrestricted Hartree-Fock state.
 
     Args:
-       scf_result: pyscf object from electronic structure calculations
+       scf_result(pyscf.scf object): pyscf object from electronic structure calculations
 
     Returns:
-       dipole moment
+       (TensorLike[float]): dipole moment
 
     """
 
@@ -202,12 +208,12 @@ def _get_dipole(scf_result, method):
     r"""Evaluate the dipole moment for a Hartree-Fock state.
 
     Args:
-       scf_result: pyscf object from electronic structure calculations
-       method: Electronic structure method to define the level of theory
-            for dipole moment calculation. Input values can be ``'rhf'`` or ``'uhf'``.
-            Default is restricted Hartree-Fock ``'rhf'``.
+       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+       method (str): Electronic structure method that can be either restricted and unrestricted
+                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+
     Returns:
-       dipole moment
+       (TensorLike[float]): dipole moment
 
     """
     method = method.strip().lower()

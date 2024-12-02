@@ -30,7 +30,7 @@ from .vibrational_class import _get_dipole, _single_point
 # constants
 HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
 C_LIGHT = 3 * 10**8  # m/s
-BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
+BOHR_TO_ANG = 0.5291772106  # Factor to convert bohr to angstrom
 
 
 def _import_mpi4py():
@@ -59,8 +59,10 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       tuple of one-mode potential energy surface and one-mode dipole along
-       the normal-mode coordinates
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): one-mode potential energy surface
+        - (TensorLike[float] or None): one-mode dipole, returns ``None``
+                if dipole is set to ``False``
 
     """
 
@@ -124,7 +126,7 @@ def _local_pes_onemode(
        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of normal mode frequencies in cm^-1
+       freqs (list[float]): list of normal mode frequencies in ``cm^-1``
        vectors (tensorlike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
        method (str): Electronic structure method that can be either restricted and unrestricted
@@ -132,8 +134,10 @@ def _local_pes_onemode(
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of one-mode potential energy surface and one-mode dipole along
-       the normal-mode coordinates.
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): one-mode potential energy surface
+        - (TensorLike[float] or None): one-mode dipole, returns ``None``
+                if dipole is set to ``False``
 
     """
 
@@ -154,8 +158,7 @@ def _local_pes_onemode(
         if (freqs[mode].imag) > 1e-6:
             continue  # pragma: no cover
 
-        job_idx = 0
-        for job in jobs_on_rank:
+        for job_idx, job in enumerate(jobs_on_rank):
             pt = grid[job]
             scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * C_LIGHT))
             positions = np.array(init_geom + scaling * pt * vec)
@@ -175,7 +178,6 @@ def _local_pes_onemode(
             local_pes_onebody[mode][job_idx] = displ_scf.e_tot - scf_result.e_tot
             if dipole:
                 local_dipole_onebody[mode, job_idx, :] = _get_dipole(displ_scf, method) - ref_dipole
-            job_idx += 1
 
     if dipole:
         return local_pes_onebody, local_dipole_onebody
@@ -193,8 +195,10 @@ def _load_pes_onemode(num_proc, nmodes, quad_order, dipole=False):
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of one-mode potential energy surface and one-mode dipole along
-       the normal-mode coordinates.
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): one-mode potential energy surface
+        - (TensorLike[float] or None): one-mode dipole, returns ``None``
+                if dipole is set to ``False``
 
     """
     pes_onebody = np.zeros((nmodes, quad_order), dtype=float)
@@ -250,8 +254,10 @@ def _pes_twomode(
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of two-mode potential energy surface and two-mode dipole along
-       the normal-mode coordinates.
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): two-mode potential energy surface
+        - (TensorLike[float] or None): two-mode dipole, returns ``None``
+                if dipole is set to ``False``
 
     """
 
@@ -324,7 +330,7 @@ def _local_pes_twomode(
        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes.
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``.
+       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (tensorlike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
        pes_onebody (tensorlike[float]): one-mode PES
@@ -334,8 +340,10 @@ def _local_pes_twomode(
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of two-mode potential energy surface and two-mode dipole along
-       the normal-mode coordinates.
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): two-mode potential energy surface
+        - (TensorLike[float] or None): two-mode dipole, returns ``None``
+                if dipole is set to ``False``
 
     """
 
@@ -412,8 +420,10 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of one-mode potential energy surface and one-mode dipole along
-       the normal-mode coordinates.
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): two-mode potential energy surface
+        - (TensorLike[float] or None): two-mode dipole, returns ``None``
+                if dipole is set to ``False``
 
     """
 
@@ -480,7 +490,7 @@ def _local_pes_threemode(
        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes.
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``.
+       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (tensorlike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
        pes_onebody (tensorlike[float]): one-mode PES
@@ -491,8 +501,10 @@ def _local_pes_threemode(
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of two-mode potential energy surface and two-mode dipole along
-       the normal-mode coordinates.
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): three-mode potential energy surface
+        - (TensorLike[float] or None): three-mode dipole, returns ``None``
+                if dipole is set to ``False``
 
     """
 
@@ -604,8 +616,10 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
        dipole: Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of one-mode potential energy surface and one-mode dipole along
-       the normal-mode coordinates.
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): three-mode potential energy surface
+        - (TensorLike[float] or None): three-mode dipole, returns ``None``
+                if dipole is set to ``False``
 
     """
     final_shape = (nmodes, nmodes, nmodes, quad_order, quad_order, quad_order)
@@ -670,7 +684,7 @@ def _pes_threemode(
     Args:
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``.
+       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (tensorlike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
        pes_onebody (tensorlike[float]): one-mode PES
@@ -681,8 +695,11 @@ def _pes_threemode(
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       A tuple of three-mode potential energy surface and three-mode dipole along
-       the normal-mode coordinates.
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]): three-mode potential energy surface
+        - (TensorLike[float] or None): three-mode dipole, returns ``None``
+                if dipole is set to ``False``
+
     """
 
     _import_mpi4py()
