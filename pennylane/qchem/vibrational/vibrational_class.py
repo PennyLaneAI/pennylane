@@ -104,7 +104,7 @@ def optimize_geometry(molecule, method="rhf"):
     Args:
        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
        method (str): Electronic structure method that can be either restricted and unrestricted
-               Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+           Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
        (tuple): A tuple containing the following:
