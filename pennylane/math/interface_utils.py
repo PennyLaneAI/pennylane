@@ -60,15 +60,6 @@ SupportedInterfaceUserInput = Literal[tuple(INTERFACE_MAP.keys())]
 SUPPORTED_INTERFACE_NAMES = list(Interface)
 """list[Interface]: allowed interface names"""
 
-jpc_interfaces = {
-    Interface.AUTOGRAD,
-    Interface.NUMPY,
-    Interface.TORCH,
-    Interface.JAX,
-    Interface.JAX_JIT,
-    Interface.TF,
-}
-
 
 def get_interface(*values):
     """Determines the correct framework to dispatch to given a tensor-like object or a

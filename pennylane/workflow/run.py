@@ -20,7 +20,7 @@ from functools import partial
 from typing import Callable
 
 import pennylane as qml
-from pennylane.math import Interface, jpc_interfaces
+from pennylane.math import Interface
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import ResultBatch
 from pennylane.workflow import _cache_transform
@@ -100,9 +100,7 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
 
         Closure Variables:
             expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
-            numpy_only (bool): whether to convert the data to numpy or leave as is
             device (qml.devices.Device)
-            cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
 
         transformed_tapes, transform_post_processing = inner_transform(tapes)
@@ -138,16 +136,16 @@ def run(
     Returns:
         ResultBatch: results of the execution
     """
-    inner_execute = _make_inner_execute(device, inner_transform_program, resolved_execution_config)
     cache = _cache_transform in inner_transform_program
+    inner_execute = _make_inner_execute(device, inner_transform_program, resolved_execution_config)
+    diff_method = resolved_execution_config.gradient_method
 
     # moved to its own explicit step so that it will be easier to remove
     def inner_execute_with_empty_jac(tapes, **_):
         return inner_execute(tapes), []
 
-    if resolved_execution_config.interface in jpc_interfaces:
-        execute_fn = inner_execute
-    else:
+    execute_fn = inner_execute
+    if resolved_execution_config.interface == Interface.TF_AUTOGRAPH:
         execute_fn = inner_execute_with_empty_jac
 
     # Exiting early if we do not need to deal with an interface boundary
@@ -165,14 +163,14 @@ def run(
 
     if (
         resolved_execution_config.use_device_jacobian_product
-        and resolved_execution_config.interface in jpc_interfaces
+        and resolved_execution_config.interface != Interface.TF_AUTOGRAPH
     ):
         jpc = DeviceJacobianProducts(device, resolved_execution_config)
 
     elif resolved_execution_config.use_device_gradient:
         jpc = DeviceDerivatives(device, resolved_execution_config)
 
-        if resolved_execution_config.interface in jpc_interfaces:
+        if resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
             execute_fn = (
                 jpc.execute_and_cache_jacobian
                 if resolved_execution_config.grad_on_execution
@@ -197,7 +195,7 @@ def run(
 
             execute_fn = wrap_execute_and_compute_derivatives
 
-            resolved_execution_config.gradient_method = None
+            diff_method = None
 
         else:
 
@@ -223,14 +221,14 @@ def run(
                 numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
                 return device.compute_derivatives(numpy_tapes, resolved_execution_config)
 
-            resolved_execution_config.gradient_method = device_compute_derivatives
+            diff_method = device_compute_derivatives
 
     elif resolved_execution_config.grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
-        # within execute_and_gradients, so providing a resolved_execution_config.gradient_method
+        # within execute_and_gradients, so providing a diff_method
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
-    elif resolved_execution_config.interface in jpc_interfaces:
+    elif resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
         # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
         cache_full_jacobian = (
             resolved_execution_config.interface == Interface.AUTOGRAD
@@ -243,7 +241,7 @@ def run(
         # this mechanism unpacks the currently existing recursion
         jpc = TransformJacobianProducts(
             execute_fn,
-            resolved_execution_config.gradient_method,
+            diff_method,
             resolved_execution_config.gradient_keyword_arguments,
             cache_full_jacobian,
         )
@@ -262,7 +260,7 @@ def run(
             )
             jpc = TransformJacobianProducts(
                 execute_fn,
-                resolved_execution_config.gradient_method,
+                diff_method,
                 resolved_execution_config.gradient_keyword_arguments,
             )
 
@@ -287,14 +285,14 @@ def run(
         differentiable=resolved_execution_config.derivative_order > 1,
     )
 
-    if resolved_execution_config.interface in jpc_interfaces:
+    if resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
         results = ml_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
             tapes,
             device,
             execute_fn,
-            resolved_execution_config.gradient_method,
+            diff_method,
             resolved_execution_config.gradient_keyword_arguments,
             _n=1,
             max_diff=resolved_execution_config.derivative_order,

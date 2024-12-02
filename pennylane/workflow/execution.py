@@ -232,6 +232,7 @@ def execute(
 
     #### Executing the configured setup #####
     tapes, post_processing = transform_program(tapes)
+
     if transform_program.is_informative:
         return post_processing(tapes)
 
