@@ -53,7 +53,7 @@ def _process_samples(
     samples,
     wire_order,
 ):
-    """Processes samples like SampleMP.process_samples, but fixed for qubits"""
+    """Processes samples like SampleMP.process_samples, but different in need of some special cases e.g. CountsMP"""
     wire_map = dict(zip(wire_order, range(len(wire_order))))
     mapped_wires = [wire_map[w] for w in mp.wires]
 
@@ -69,8 +69,9 @@ def _process_samples(
 
     # Replace the basis state in the computational basis with the correct eigenvalue.
     # Extract only the columns of the basis samples required based on ``wires``.
-    powers_of_three = 2 ** qml.math.arange(num_wires)[::-1]
-    indices = qml.math.array(samples @ powers_of_three)
+    # This step converts e.g. 110 -> 6
+    powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]  # e.g. [1, 2, 4, ...]
+    indices = qml.math.array(samples @ powers_of_two)
     return mp.eigvals()[indices]
 
 
@@ -219,115 +220,6 @@ def _measure_sum_with_samples(
     return _sum_for_single_shot(shots)
 
 
-def _sample_state_jax(
-    state,
-    shots: int,
-    prng_key,
-    is_state_batched: bool = False,
-    wires=None,
-    readout_errors: list[Callable] = None,
-) -> np.ndarray:
-    """Returns a series of samples of a state for the JAX interface based on the PRNG.
-
-    Args:
-        state (array[complex]): A state vector to be sampled
-        shots (int): The number of samples to take
-        prng_key (jax.random.PRNGKey): A``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator.
-        is_state_batched (bool): whether the state is batched or not
-        wires (Sequence[int]): The wires to sample
-        readout_errors (List[Callable]): List of channels to apply to each wire being measured
-        to simulate readout errors.
-
-    Returns:
-        ndarray[int]: Sample values of the shape (shots, num_wires)
-    """
-    # pylint: disable=import-outside-toplevel
-
-    total_indices = _get_num_wires(state, is_state_batched)
-    state_wires = qml.wires.Wires(range(total_indices))
-
-    wires_to_sample = wires or state_wires
-    num_wires = len(wires_to_sample)
-
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
-
-    state_len = len(state)
-
-    return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
-
-
-def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len):
-    """
-    Sample from a probability distribution for a qubit system using JAX.
-
-    This function generates samples based on the given probability distribution
-    for a qubit system with a specified number of wires. It can handle both
-    batched and non-batched probability distributions. This function uses JAX
-    for potential GPU acceleration and improved performance.
-
-    Args:
-        probs (jnp.ndarray): Probability distribution to sample from. For non-batched
-            input, this should be a 1D array of length 2**num_wires. For
-            batched input, this should be a 2D array where each row is a separate
-            probability distribution.
-        shots (int): Number of samples to generate.
-        num_wires (int): Number of wires in the qubit system.
-        is_state_batched (bool): Whether the input probabilities are batched.
-        prng_key (jax.random.PRNGKey): JAX PRNG key for random number generation.
-        state_len (int): Length of the state (relevant for batched inputs).
-
-    Returns:
-        jnp.ndarray: An array of samples. For non-batched input, the shape is
-        (shots, num_wires). For batched input, the shape is
-        (batch_size, shots, num_wires).
-
-    Example:
-        >>> import jax
-        >>> import jax.numpy as jnp
-        >>> probs = jnp.array([0.2, 0.8])  # For a single-wire qubit system
-        >>> shots = 1000
-        >>> num_wires = 1
-        >>> is_state_batched = False
-        >>> prng_key = jax.random.PRNGKey(42)
-        >>> state_len = 1
-        >>> samples = _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
-        >>> samples.shape
-        (1000, 1)
-
-    Note:
-        This function requires JAX to be installed. It internally imports JAX
-        and its numpy module (jnp).
-    """
-    # pylint: disable=import-outside-toplevel
-    import jax
-    import jax.numpy as jnp
-
-    key = prng_key
-
-    basis_states = np.arange(2**num_wires)
-    if is_state_batched:
-        # Produce separate keys for each of the probabilities along the broadcasted axis
-        keys = []
-        for _ in range(state_len):
-            key, subkey = jax.random.split(key)
-            keys.append(subkey)
-        samples = jnp.array(
-            [
-                jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
-                for _key, prob in zip(keys, probs)
-            ]
-        )
-    else:
-        samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
-
-    res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
-    for i in range(num_wires):
-        res[..., -(i + 1)] = (samples // (2**i)) % 2
-    return res
-
-
 def sample_state(
     state,
     shots: int,
@@ -355,15 +247,6 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    if prng_key is not None:
-        return _sample_state_jax(
-            state,
-            shots,
-            prng_key,
-            is_state_batched=is_state_batched,
-            wires=wires,
-            readout_errors=readout_errors,
-        )
 
     total_indices = _get_num_wires(state, is_state_batched)
     state_wires = qml.wires.Wires(range(total_indices))
@@ -374,35 +257,8 @@ def sample_state(
     with qml.queuing.QueuingManager.stop_recording():
         probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
 
-    return sample_probs(probs, shots, num_wires, is_state_batched, rng)
-
-
-def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
-    """
-    Sample from a probability distribution for a qubit system.
-
-    This function generates samples based on the given probability distribution
-    for a qubit system with a specified number of wires. It can handle both
-    batched and non-batched probability distributions.
-
-    Args:
-        probs (ndarray): Probability distribution to sample from. For non-batched
-            input, this should be a 1D array of length 2**num_wires. For
-            batched input, this should be a 2D array where each row is a separate
-            probability distribution.
-        shots (int): Number of samples to generate.
-        num_wires (int): Number of wires in the qubit system.
-        is_state_batched (bool): Whether the input probabilities are batched.
-        rng (Optional[Generator]): Random number generator to use. If None, a new
-            generator will be created.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
-
-    Returns:
-        ndarray: An array of samples. For non-batched input, the shape is
-        (shots, num_wires). For batched input, the shape is
-        (batch_size, shots, num_wires).
-    """
+    # After getting the correct probs, there's no difference between mixed states and pure states.
+    # Therefore, we directly re-use the sample_probs from the module qubit.
     return qml.devices.qubit.sampling.sample_probs(
         probs, shots, num_wires, is_state_batched, rng, prng_key=prng_key
     )
