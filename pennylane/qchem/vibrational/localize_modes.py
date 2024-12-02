@@ -196,6 +196,7 @@ def _localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
                     original and localized modes.
 
     """
+    freqs, displ_vecs, freq_separation = freqs, vecs, bins
     if not freq_separation:
         raise ValueError("The `freq_separation` list cannot be empty.")
 
