@@ -124,7 +124,6 @@ def run(
     device: "qml.devices.Device",
     resolved_execution_config: "qml.devices.ExecutionConfig",
     inner_transform_program: TransformProgram,
-    max_diff: int = 1,
     cache: Union[None, bool, dict, Cache] = True,
 ) -> ResultBatch:
     """
@@ -137,7 +136,6 @@ def run(
             execution and differentiation settings.
         inner_transform_program (TransformProgram): The transformation program to apply
             to the quantum scripts before execution.
-        max_diff (int): Maximum order of differentiation. Defaults to 1.
         cache (Union[None, bool, dict, Cache]): Cache for intermediate results during
             execution. Defaults to True.
 
@@ -252,7 +250,7 @@ def run(
             resolved_execution_config.gradient_keyword_arguments,
             cache_full_jacobian,
         )
-        for i in range(1, max_diff):
+        for i in range(1, resolved_execution_config.derivative_order):
             differentiable = i > 1
             ml_boundary_execute = _get_ml_boundary_execute(
                 resolved_execution_config.interface,
@@ -289,7 +287,7 @@ def run(
         resolved_execution_config.interface,
         resolved_execution_config.grad_on_execution,
         resolved_execution_config.use_device_jacobian_product,
-        differentiable=max_diff > 1,
+        differentiable=resolved_execution_config.derivative_order > 1,
     )
 
     if resolved_execution_config.interface in jpc_interfaces:
@@ -302,7 +300,7 @@ def run(
             resolved_execution_config.gradient_method,
             resolved_execution_config.gradient_keyword_arguments,
             _n=1,
-            max_diff=max_diff,
+            max_diff=resolved_execution_config.derivative_order,
         )
 
     return results

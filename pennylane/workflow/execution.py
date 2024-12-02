@@ -213,6 +213,7 @@ def execute(
             use_device_jacobian_product=device_vjp,
             mcm_config=mcm_config,
             gradient_keyword_arguments=gradient_kwargs,
+            derivative_order=max_diff,
         )
         config = device.setup_execution_config(config)
 
@@ -220,6 +221,7 @@ def execute(
         config,
         interface=interface,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+        derivative_order=max_diff,
     )
 
     # pylint: disable=protected-access
@@ -233,5 +235,5 @@ def execute(
     if transform_program.is_informative:
         return post_processing(tapes)
 
-    results = run(tapes, device, config, inner_transform, max_diff, cache)
+    results = run(tapes, device, config, inner_transform, cache)
     return post_processing(results)
