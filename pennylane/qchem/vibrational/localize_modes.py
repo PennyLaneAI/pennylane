@@ -184,9 +184,9 @@ def _localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
 
     Args:
        freqs (list[float]): normal mode frequencies in ``cm^-1``
-       displ_vecs (TensorLike[float]): displacement vectors for normal modes
-       freq_separation (list[float]): List of frequency separation thresholds in ``cm^-1``.
-                                  Default is ``[2600]``.
+       vecs (TensorLike[float]): displacement vectors for normal modes
+       bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
+           Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
 
     Returns:
        (tuple): A tuple containing the following:
