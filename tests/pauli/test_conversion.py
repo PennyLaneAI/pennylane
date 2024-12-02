@@ -447,13 +447,6 @@ class TestPhasedDecomposition:
             assert qml.math.allclose(grad_torch, grad_tflow)
             assert qml.math.allclose(grad_numpy, qml.math.conjugate(grad_torch))
 
-class HadamardNoPauliRep(qml.Hadamard):
-    """A version of qml.Hadamard without Pauli representation."""
-
-    @property
-    def pauli_rep(self):
-        """Representation as Pauli sentence."""
-        return None
 
 class TestPauliSentence:
     """Test the pauli_sentence function."""
@@ -557,9 +550,9 @@ class TestPauliSentence:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         error_ps = (
-            HadamardNoPauliRep(wires=0),
+            qml.Hadamard(wires=0),
             qml.Hamiltonian([1, 2], [qml.Projector([0], wires=0), qml.PauliZ(wires=1)]),
-            qml.PauliRot(1.23, "Y", wires="a") + qml.PauliZ(wires=0),
+            qml.RX(1.23, wires="a") + qml.PauliZ(wires=0),
         )
 
     @pytest.mark.parametrize("op", error_ps)

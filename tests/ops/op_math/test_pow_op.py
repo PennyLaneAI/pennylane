@@ -432,8 +432,7 @@ class TestProperties:
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self, power_method):
         """Test that None is produced if the base op does not have a pauli rep"""
-        base = qml.PauliRot(1.23, "Y", wires=0)
-        assert base.pauli_rep is None
+        base = qml.RX(1.23, wires=0)
         op = power_method(base, z=2)
         assert op.pauli_rep is None
 

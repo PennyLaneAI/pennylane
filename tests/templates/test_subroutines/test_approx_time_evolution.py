@@ -217,10 +217,18 @@ class TestInputs:
         ):
             circuit()
 
-    def test_non_pauli_error(self):
+    @pytest.mark.parametrize(
+        ("hamiltonian"),
+        [
+            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hadamard(0)]),
+            qml.Hamiltonian(
+                [1, 1],
+                [qml.PauliX(0) @ qml.Hermitian(np.array([[1, 1], [1, 1]]), 1), qml.PauliX(0)],
+            ),
+        ],
+    )
+    def test_non_pauli_error(self, hamiltonian):
         """Tests if the correct errors are thrown when the user attempts to input a matrix with non-Pauli terms"""
-        ops = [qml.PauliX(0) @ qml.Hermitian(np.ones((2, 2)), 1), qml.PauliX(0)],
-        hamiltonian = qml.Hamiltonian([1, 1], ops)
 
         n_wires = 2
         dev = qml.device("default.qubit", wires=n_wires)
