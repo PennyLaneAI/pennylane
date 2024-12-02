@@ -34,11 +34,11 @@ class VibrationalPES:
 
     Args:
        freqs (list[float]): normal-mode frequencies
-       grid (list[float]): 1-D array containing the sample points on the Gauss-Hermite quadrature grid.
-       gauss_weights (list[float]): 1-D array containing the weights on the Gauss-Hermite quadrature grid.
-       uloc (tensorlike[float]): Localization matrix indicating the relationship between original and localized modes.
-       pes_arr (list[tensorlike[float]]): Tuple containing one-mode, two-mode and three-mode PES.
-       dipole_arr (list[tensorlike[float]]): Tuple containing one-mode, two-mode and three-mode dipole.
+       grid (list[float]): 1-D array containing the sample points on the Gauss-Hermite quadrature grid
+       gauss_weights (list[float]): 1-D array containing the weights on the Gauss-Hermite quadrature grid
+       uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
+       pes_arr (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode PES
+       dipole_arr (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode dipole
        localized (bool): Whether the localization of modes was used to generate PES and dipole. Default is True.
        dipole_level (int): Defines the level upto which dipole matrix elements are to be calculated. Input values can be
                      1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole respectively. Default
