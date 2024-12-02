@@ -273,3 +273,10 @@ class TestBroadcasting:
         assert np.allclose(res[1:], self.get_expectation_values(x))
         # The mapping should be consistent with the wire ordering in get_quantum_script
         assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
+
+
+def test_finite_shot_not_implemented():
+    op = qml.RX(np.pi, [0])
+    qs = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))], shots=1000)
+    with pytest.raises(NotImplementedError):
+        simulate(qs)

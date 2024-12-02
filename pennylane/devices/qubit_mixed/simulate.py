@@ -129,6 +129,8 @@ def measure_final_state(  # pylint: disable=too-many-arguments
         return tuple(
             measure(mp, state, is_state_batched, readout_errors) for mp in circuit.measurements
         )
+    # !TODO: add finite-shot branch afterwards. After implementation of finite-shot scenario, del this line.
+    raise NotImplementedError
 
 
 def simulate(  # pylint: disable=too-many-arguments
