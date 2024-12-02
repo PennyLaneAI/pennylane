@@ -18,22 +18,6 @@ import pennylane.labs.resource_estimation as re
 # pylint: disable=use-implicit-booleaness-not-comparison,no-self-use
 
 
-# TODO: implement in resource_symbolic_ops branch
-class TestSingleExcitation:
-    """Tests for the ResourceSingleExcitation class."""
-
-    def test_resources(self):
-        """Test that the resources are correct."""
-
-    def test_resource_params(self):
-        """Test that the resource params are correct."""
-
-    def test_resource_rep(self):
-        """Test that the compressed representation is correct."""
-
-    def test_resources_from_rep(self):
-        """Test that the resources can be obtained from the compressed representation."""
-
 
 class TestSingleExcitationMinus:
     """Tests for the ResourceSingleExcitationMinus class."""
@@ -147,38 +131,6 @@ class TestDoubleExcitation:
         assert op_resource_type.resources(**op_resource_params) == expected
 
 
-# TODO: add tests in resource_symbolic_ops branch
-class TestDoubleExcitationMinus:
-    """Tests for the ResourceDoubleExcitationMinus class."""
-
-    def test_resources(self):
-        """Test that the resources are correct."""
-
-    def test_resource_params(self):
-        """Test that the resource params are correct."""
-
-    def test_resource_rep(self):
-        """Test that the compressed representation is correct."""
-
-    def test_resources_from_rep(self):
-        """Test that the resources can be obtained from the compressed representation."""
-
-
-# TODO: add tests in resource_symbolic_ops branch
-class TestDoubleExcitationPlus:
-    """Tests for the ResourceDoubleExcitationPlus class."""
-
-    def test_resources(self):
-        """Test that the resources are correct."""
-
-    def test_resource_params(self):
-        """Test that the resource params are correct."""
-
-    def test_resource_rep(self):
-        """Test that the compressed representation is correct."""
-
-    def test_resources_from_rep(self):
-        """Test that the resources can be obtained from the compressed representation."""
 
 
 class TestOribatlRotation:
