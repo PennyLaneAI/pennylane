@@ -70,8 +70,7 @@ class MPSPrep(Operation):
         1. **First tensor**:
 
            - The first tensor :math:`A^{(1)}` has **rank 2** (i.e., it's a matrix).
-           - Its dimensions are :math:`d_{1,0}` and :math:`d_{1,1}`.
-           - These correspond to the physical dimension of the site and an auxiliary bond dimension connecting it to the next tensor.
+           - Its dimensions are :math:`d_{1,0}` and :math:`d_{1,1}` and correspond to the physical dimension of the site and an auxiliary bond dimension connecting it to the next tensor.
 
         2. **Last tensor**:
 
@@ -82,7 +81,7 @@ class MPSPrep(Operation):
 
            - All tensors in the middle (i.e., :math:`A^{(j)}` for :math:`2 \leq j \leq n-1`) have **rank 3** (three-dimensional tensors).
            - Their dimensions are :math:`d_{j,0}, d_{j,1},` and :math:`d_{j,2}`, where:
-             
+
              - :math:`d_{j,0}`: Bond dimension connecting to the previous tensor.
              - :math:`d_{j,1}`: Physical dimension for the site.
              - :math:`d_{j,2}`: Bond dimension connecting to the next tensor.
@@ -118,10 +117,6 @@ class MPSPrep(Operation):
             ]
 
         The dimensions of ``mps`` are: :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]`, that satisfy the criteria described above.
-
-
-
-
     """
 
     def __init__(self, mps, wires, id=None):
