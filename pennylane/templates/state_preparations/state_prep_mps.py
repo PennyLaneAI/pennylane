@@ -76,19 +76,19 @@ class MPSPrep(Operation):
         with shapes :math:`d_0, ..., d_n`, respectively. The first and last tensors have rank ``2``
         while the intermediate tensors have rank ``3``.
 
-        The first tensor must have the shape :math:`d_0 = (d_{00}, d_{01})` where :math:`d_{00}`
-        and :math:`d_{01}`  correspond to the physical dimension of the site and an auxiliary bond
+        The first tensor must have the shape :math:`d_0 = (d_{0,0}, d_{0,1})` where :math:`d_{0,0}`
+        and :math:`d_{0,1}`  correspond to the physical dimension of the site and an auxiliary bond
         dimension connecting it to the next tensor, respectively.
 
-        The last tensor must have the shape :math:`d_n = (d_{n0}, d_{n1})` where :math:`d_{n0}`
-        and :math:`d_{n1}` represent the auxiliary dimension from the previous site and the physical
+        The last tensor must have the shape :math:`d_n = (d_{n,0}, d_{n,1})` where :math:`d_{n,0}`
+        and :math:`d_{n,1}` represent the auxiliary dimension from the previous site and the physical
         dimension of the site, respectively.
 
-        The intermediate tensors must have the shape :math:`d_{j,0}`, :math:`d_{j,1},` and :math:`d_{j,2}`, where:
+        The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
 
-            - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor.
-            - :math:`d_{j,1}` is the physical dimension for the site.
-            - :math:`d_{j,2}` is the bond dimension connecting to the next tensor.
+        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor.
+        - :math:`d_{j,1}` is the physical dimension for the site.
+        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor.
 
         Importantly, the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
 
