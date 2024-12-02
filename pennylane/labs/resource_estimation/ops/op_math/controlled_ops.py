@@ -556,13 +556,13 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
         gate_types = {}
 
+        h = re.ResourceHadamard.resource_rep()
         rz = re.ResourceRZ.resource_rep()
-        ry = re.ResourceRY.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
 
         gate_types[cnot] = 2
         gate_types[rz] = 2
-        gate_types[ry] = 2
+        gate_types[h] = 2
 
         return gate_types
 
@@ -657,10 +657,10 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
         gate_types = {}
 
         cnot = re.ResourceCNOT.resource_rep()
-        phase = re.ResourcePhaseShift.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
 
         gate_types[cnot] = 2
-        gate_types[phase] = 2
+        gate_types[rz] = 2
 
         return gate_types
 
