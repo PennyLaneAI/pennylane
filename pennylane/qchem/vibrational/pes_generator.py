@@ -51,7 +51,7 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
     Args:
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``.
+       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (tensorlike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
        method (str): Electronic structure method that can be either restricted and unrestricted
