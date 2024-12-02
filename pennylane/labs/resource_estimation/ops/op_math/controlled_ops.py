@@ -376,7 +376,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
         The resources are based from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
-        .. math:: \hat{RX} &= \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
+        .. math:: \hat{RX} = \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
         we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard` gates.
         The expression for controlled-RZ gates is used as defined in the reference above.
@@ -485,13 +485,13 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
         .. math::
 
             \begin{align}
-                \hat{RZ}(- \theta) = \hat{X} \cdot \hat{RZ}(\theta) \cdot \hat{X}, \\
-                \hat{RY}(- \theta) = \hat{X} \cdot \hat{RY}(\theta) \cdot \hat{X}.
+                \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}, \\
+                \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
             \end{align}
 
         This identity is applied along with some clever choices for the angle values to combine rotation;
         the final circuit takes the form:
-        
+
         .. code-block:: bash
 
             ctrl: ─────╭●─────────╭●─────────┤
