@@ -50,11 +50,21 @@ Operators
 .. autosummary::
     :toctree: api
 
+    ~ResourceCCZ
+    ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
+    ~ResourceCRot
+    ~ResourceCRX
+    ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCSWAP
+    ~ResourceCY
+    ~ResourceCZ
     ~ResourceGlobalPhase
     ~ResourceHadamard
     ~ResourceIdentity
+    ~ResourceMultiControlledX
     ~ResourcePhaseShift
     ~ResourceRot
     ~ResourceRX
@@ -63,6 +73,7 @@ Operators
     ~ResourceS
     ~ResourceSWAP
     ~ResourceT
+    ~ResourceToffoli
     ~ResourceX
     ~ResourceY
     ~ResourceZ
@@ -106,11 +117,21 @@ from .resource_container import (
 )
 
 from .ops import (
+    ResourceCCZ,
+    ResourceCH,
     ResourceCNOT,
     ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
+    ResourceCY,
+    ResourceCZ,
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+    ResourceMultiControlledX,
     ResourcePhaseShift,
     ResourceRot,
     ResourceRX,
@@ -119,6 +140,7 @@ from .ops import (
     ResourceS,
     ResourceSWAP,
     ResourceT,
+    ResourceToffoli,
     ResourceX,
     ResourceY,
     ResourceZ,
