@@ -10,6 +10,7 @@ A `Tracer` represents a boxed-up value, and a `Trace` handles boxing up values i
 handles applying/transforming primitives.
 
 ```python
+import functools
 import jax
 import pennylane as qml
 
@@ -270,18 +271,7 @@ To create new transforms for PLxPR, or to register already-existing transforms f
 transforming PLxPR, use the `custom_plxpr_transform` decorator of `TransformDispatcher`:
 
 ```python
-@functools.partial(qml.transforms.core.transform, plxpr_transform=_rx_to_ry_plxpr)
-def convert_rx_to_ry(tape):
-    new_ops = [
-        qml.RY(op.data[0], op.wires) if isinstance(op, qml.RX) else op for op in tape.operations
-    ]
-    new_tape = qml.tape.QuantumScript(
-        new_ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
-    )
-    return [new_tape], lambda results: results[0]
-
-
-def _rx_to_ry_plxpr(self, primitive, tracers, params, targs, tkwargs, state):
+def _rx_to_ry_plxpr(primitive, tracers, params, targs, tkwargs, state=None):
     from pennylane.capture import TransformTracer
 
     # Step 1: Transform primitive
@@ -293,6 +283,17 @@ def _rx_to_ry_plxpr(self, primitive, tracers, params, targs, tkwargs, state):
     ]
     # Step 3: Return the result of the transformation
     return primitive.bind(*tracers, **params)
+
+
+@functools.partial(qml.transforms.core.transform, plxpr_transform=_rx_to_ry_plxpr)
+def convert_rx_to_ry(tape):
+    new_ops = [
+        qml.RY(op.data[0], op.wires) if isinstance(op, qml.RX) else op for op in tape.operations
+    ]
+    new_tape = qml.tape.QuantumScript(
+        new_ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
+    return [new_tape], lambda results: results[0]
 ```
 
 Here, we transform an `RX` primitive into an `RY` primitive. Note step 2, which increments the `idx`
