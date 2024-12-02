@@ -373,17 +373,14 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
     r"""Resource class for CRX
 
     Resources:
-
         The resources are based from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_ in combination with the following identity:
+        unitary <https://arxiv.org/pdf/2110.10292>`_. In combination with the following identity:
 
-        .. math::
+        .. math:: \hat{RX} &= \hat{H} \cdot \hat{RZ}  \cdot \hat{H},
 
-            \hat{RX} &= \hat{H} \cdot \hat{RZ}  \cdot \hat{H}.
+        we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated by :code:`Hadamard` gates.
+        The expression for controlled-RZ gates is used as defined in the reference above.
 
-        Using the identity above, we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated
-        by :code:`Hadamard` gates. The expression for controlled-RZ gates is used as defined in the
-        reference above.
     """
 
     @staticmethod
