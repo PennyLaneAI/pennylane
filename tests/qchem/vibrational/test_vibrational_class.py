@@ -23,9 +23,6 @@ import pennylane as qml
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import localize_modes, vibrational_class
 
-# Factor to change units of frequency (Hartree to cm^-1)
-AU_TO_CM = 219475
-
 # pylint: disable=too-many-arguments, protected-access
 
 
@@ -158,7 +155,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
             [2600],
             {
                 "vecs": [[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]],
-                "freqs": [0.01885394],
+                "freqs": [4137.96875377],
                 "uloc": [[1.0]],
             },
         ),
@@ -203,7 +200,11 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
                         [-1.26315618e-17, 2.29071026e-02, -1.97023364e-02],
                     ],
                 ],
-                "freqs": [0.00589689, 0.01232428, 0.01232428],
+                "freqs": [
+                    1294.21950382,
+                    2704.87090197,
+                    2704.87092841,
+                ],  # [0.00589689, 0.01232428, 0.01232428],
                 "uloc": [
                     [1.0, 0.0, 0.0],
                     [0.0, 0.70710715, -0.70710641],
@@ -252,7 +253,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
                         [-1.26315618e-17, 2.29071026e-02, -1.97023364e-02],
                     ],
                 ],
-                "freqs": [0.00589689, 0.01232428, 0.01232428],
+                "freqs": [1294.21950382, 2704.87090197, 2704.87092841],
                 "uloc": [
                     [1.0, 0.0, 0.0],
                     [0.0, 0.70710715, -0.70710641],
@@ -269,7 +270,6 @@ def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
     freqs_loc, displ_vecs_loc, uloc = localize_modes._localize_normal_modes(
         freqs, displ_vecs, freq_separation=loc_freqs
     )
-    freqs_loc = freqs_loc / AU_TO_CM
     nmodes = len(freqs)
     for i in range(nmodes):
         res_in_expvecs = any(

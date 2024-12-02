@@ -20,9 +20,6 @@ import scipy
 
 import pennylane as qml
 
-# Factor to change units of frequency (Hartree to cm^-1)
-AU_TO_CM = 219475
-
 # pylint: disable=dangerous-default-value, too-many-statements
 
 
