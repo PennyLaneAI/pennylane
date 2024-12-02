@@ -550,5 +550,7 @@ def taylor_hamiltonian(pes_object, deg=4, min_deg=3):
         BoseSentence: taylor hamiltonian for given PES and degree
     """
     coeffs_arr = taylor_coeffs(pes_object, deg, min_deg)
-    ham = taylor_bosonic(coeffs_arr, pes_object.freqs, is_loc=pes_object.localized, Uloc=pes_object.uloc)
+    ham = taylor_bosonic(
+        coeffs_arr, pes_object.freqs, is_loc=pes_object.localized, Uloc=pes_object.uloc
+    )
     return ham
