@@ -416,7 +416,11 @@ class TestMitiqIntegration:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        res_mitigated = mitigated_circuit(w1, w2)
+        with pytest.warns(
+            DeprecationWarning,
+            match="The property ``qiskit.circuit.instruction.Instruction.condition``",
+        ):
+            res_mitigated = mitigated_circuit(w1, w2)
         res_ideal = ideal_circuit(w1, w2)
 
         assert res_mitigated.shape == res_ideal.shape
