@@ -71,10 +71,7 @@ class CompressedResourceOp:
         return (self.op_type == other.op_type) and (self.params == other.params)
 
     def __repr__(self) -> str:
-        op_type_str = self._name + "("
-        params_str = ", ".join([f"{key}={self.params[key]}" for key in self.params]) + ")"
-
-        return op_type_str + params_str
+        return self._name
 
 
 @dataclass
