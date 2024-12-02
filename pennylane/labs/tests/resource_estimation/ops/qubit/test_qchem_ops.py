@@ -63,7 +63,6 @@ class TestSingleExcitation:
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
 
-
 class TestSingleExcitationMinus:
     """Tests for the ResourceSingleExcitationMinus class."""
 
