@@ -15,6 +15,7 @@
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
 import string
+from contextlib import nullcontext
 
 import numpy as np
 
@@ -395,7 +396,12 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
     #   2. Add an instance of your class to `_INSTANCES_TO_FAIL` in ./conftest.py, along with the
     #       exception type raised by the assertion and a comment explaining the assumption your
     #       operator makes.
-    assert_valid(op)
+    with (
+        nullcontext()
+        if op.num_params == 0 or isinstance(op, qml.Hermitian)
+        else pytest.warns(UserWarning, match="Attempted to differentiate a function with no ")
+    ):
+        assert_valid(op)
 
 
 @pytest.mark.jax

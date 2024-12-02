@@ -642,12 +642,16 @@ class TestSnapshotUnsupportedQNode:
             return qml.expval(qml.PauliX(1))
 
         # TODO: fallback to simple `np.allclose` tests once `setRandomSeed` is exposed from the lightning C++ code
-        counts, expvals = tuple(zip(*(qml.snapshots(circuit)().values() for _ in range(50))))
+        with pytest.warns(UserWarning, match="Snapshots are not supported"):
+            counts, expvals = tuple(zip(*(qml.snapshots(circuit)().values() for _ in range(50))))
         assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
         # Make sure shots are overriden correctly
-        counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
+        with pytest.warns(UserWarning, match="Snapshots are not supported"):
+            counts, _ = tuple(
+                zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50)))
+            )
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
