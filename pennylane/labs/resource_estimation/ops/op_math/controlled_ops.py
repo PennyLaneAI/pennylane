@@ -340,7 +340,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
             gate_types[toffoli] = 1
             return gate_types
 
-        gate_types[cnot] = 36 * num_ctrl_wires - 111  # Barenco 1995
+        gate_types[cnot] = 36 * num_ctrl_wires - 111
         return gate_types
 
     def resource_params(self) -> dict:
