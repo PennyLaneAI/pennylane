@@ -29,4 +29,4 @@ at your own discretion.
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
-from .sampling import sample_state, measure_with_samples, sample_probs
+from .sampling import sample_state, measure_with_samples
