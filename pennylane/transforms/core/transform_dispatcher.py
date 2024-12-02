@@ -36,7 +36,7 @@ def _default_plxpr_transform(transform_name):  # pylint: disable=missing-functio
     return wrapper
 
 
-class TransformDispatcher:  # pylint: disable=too-many-instance-attributes, too-many-positional-arguments
+class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
     :class:`pennylane.devices.Device`.
@@ -485,7 +485,6 @@ class TransformContainer:  # pylint: disable=too-many-instance-attributes, too-m
             and self.transform == other.transform
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
-            # and self.plxpr_transform == other.plxpr_transform
             and self.is_informative == other.is_informative
             and self.final_transform == other.final_transform
         )
