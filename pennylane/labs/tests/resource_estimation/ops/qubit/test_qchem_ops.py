@@ -133,39 +133,6 @@ class TestDoubleExcitation:
 
 
 
-class TestOribatlRotation:
-    """Tests for the ResourceOrbitalRotation class."""
-
-    def test_resources(self):
-        """Test that the resources are correct."""
-        expected = {
-            re.ResourceFermionicSWAP.resource_rep(): 2,
-            re.ResourceSingleExcitation.resource_rep(): 2,
-        }
-        assert re.ResourceOrbitalRotation.resources() == expected
-
-    def test_resource_params(self):
-        """Test that the resource params are correct."""
-        op = re.ResourceOrbitalRotation(0.5, wires=[0, 1, 3, 4])
-        assert op.resource_params() == {}
-
-    def test_resource_rep(self):
-        """Test that the compressed representation is correct."""
-        expected = re.CompressedResourceOp(re.ResourceOrbitalRotation, {})
-        assert re.ResourceOrbitalRotation.resource_rep() == expected
-
-    def test_resources_from_rep(self):
-        """Test that the resources can be obtained from the compressed representation."""
-        op = re.ResourceOrbitalRotation(0.5, wires=[0, 1, 3, 4])
-        expected = {
-            re.ResourceFermionicSWAP.resource_rep(): 2,
-            re.ResourceSingleExcitation.resource_rep(): 2,
-        }
-        op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resources(**op_resource_params) == expected
-
 
 class TestFermionicSWAP:
     """Tests for the ResourceFermionicSWAP class."""

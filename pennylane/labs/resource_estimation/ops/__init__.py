@@ -27,7 +27,6 @@ from .qubit import (
     ResourceIsingYY,
     ResourceIsingZZ,
     ResourceMultiRZ,
-    ResourceOrbitalRotation,
     ResourcePauliRot,
     ResourcePhaseShift,
     ResourcePSWAP,

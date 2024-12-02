@@ -74,7 +74,6 @@ Operators
     ~ResourceIsingZZ
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
-    ~ResourceOrbitalRotation
     ~ResourceMultiControlledX
     ~ResourcePauliRot
     ~ResourcePhaseShift
@@ -157,7 +156,6 @@ from .ops import (
     ResourceIsingZZ,
     ResourceMultiControlledX,
     ResourceMultiRZ,
-    ResourceOrbitalRotation,
     ResourcePauliRot,
     ResourcePow,
     ResourcePSWAP,
