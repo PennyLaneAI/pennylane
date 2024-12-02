@@ -409,7 +409,7 @@ def is_abstract(tensor, like=None):
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        from pennylane.capture import TransformTracer
+        # from pennylane.capture import TransformTracer
 
         if isinstance(
             tensor,
@@ -424,7 +424,8 @@ def is_abstract(tensor, like=None):
             # Otherwise, it will be abstract.
             return not isinstance(tensor.aval, jax.core.ConcreteArray)
 
-        return isinstance(tensor, (DynamicJaxprTracer, TransformTracer))
+        # return isinstance(tensor, (DynamicJaxprTracer, TransformTracer))
+        return isinstance(tensor, jax.core.Tracer)
 
     if interface == "tensorflow":
         import tensorflow as tf
