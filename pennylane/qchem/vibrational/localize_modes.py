@@ -32,6 +32,8 @@ def _pm_cost(q):
     Args:
        q: matrix of displacement vectors
 
+    Returns:
+       Pipek-Mezek cost function
     """
 
     nnuc, _, nmodes = q.shape
@@ -94,6 +96,8 @@ def _params_cost(params, qmat, nmodes):
        params: initial parameters
        qmat: matrix of displacement vectors
        nmodes: number of normal modes
+    Returns:
+       Pipek-Mezek cost function
 
     """
     uparams = _params_to_unitary(params, nmodes)
@@ -197,7 +201,7 @@ def _localize_modes(freqs, displ_vecs, order=True):
     return loc_freqs, qloc, uloc
 
 
-def localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
+def _localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
     """
     Localizes normal modes by separating frequencies into specified ranges and applying mode localization.
     The procedure for localization is described in `J. Chem. Phys. 141, 104105 (2014)

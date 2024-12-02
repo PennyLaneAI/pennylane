@@ -21,7 +21,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.qchem import vibrational
+from pennylane.qchem.vibrational import localize_modes, vibrational_class
 
+# Factor to change units of frequency (Hartree to cm^-1)
 AU_TO_CM = 219475
 
 # pylint: disable=too-many-arguments, protected-access
@@ -139,7 +141,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = vibrational.optimize_geometry(mol)
-    _, displ_vecs = vibrational.harmonic_analysis(mol_eq[1])
+    _, displ_vecs = vibrational_class._harmonic_analysis(mol_eq[1])
     assert np.allclose(displ_vecs, expected_vecs) or np.allclose(
         displ_vecs, -1 * np.array(expected_vecs)
     )
@@ -264,7 +266,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
 def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
     r"""Test that mode localization returns correct results."""
 
-    freqs, displ_vecs, uloc = vibrational.localize_normal_modes(
+    freqs, displ_vecs, uloc = localize_modes._localize_normal_modes(
         freqs, displ_vecs, freq_separation=loc_freqs
     )
     freqs = freqs / AU_TO_CM
@@ -318,7 +320,7 @@ def test_hess_methoderror():
     with pytest.raises(
         ValueError, match="Specified electronic structure method, ccsd is not available."
     ):
-        vibrational.harmonic_analysis(mol_scf, method="ccsd")
+        vibrational_class._harmonic_analysis(mol_scf, method="ccsd")
 
 
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
@@ -330,6 +332,6 @@ def test_error_mode_localization():
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
-    freqs, displ_vecs = vibrational.harmonic_analysis(mol_scf)
+    freqs, displ_vecs = vibrational_class._harmonic_analysis(mol_scf)
     with pytest.raises(ValueError, match="The `freq_separation` list cannot be empty."):
-        vibrational.localize_normal_modes(freqs, displ_vecs, freq_separation=[])
+        localize_modes._localize_normal_modes(freqs, displ_vecs, freq_separation=[])

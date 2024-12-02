@@ -26,7 +26,7 @@ from ..openfermion_pyscf import _import_pyscf
 BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
 
 
-def harmonic_analysis(scf_result, method="rhf"):
+def _harmonic_analysis(scf_result, method="rhf"):
     r"""Performs harmonic analysis by evaluating the Hessian using PySCF routines.
 
     Args:
@@ -36,7 +36,7 @@ def harmonic_analysis(scf_result, method="rhf"):
             Default is restricted Hartree-Fock ``'rhf'``.
 
     Returns:
-       a tuple of frequencies of normal modes and their corresponding displacement vectors
+       a tuple of normal modes frequencies and their corresponding displacement vectors
     """
     pyscf = _import_pyscf()
     from pyscf.hessian import thermo
