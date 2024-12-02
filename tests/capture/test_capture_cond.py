@@ -15,7 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name, too-many-arguments
+# pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
 # pylint: disable=no-self-use
 
 import numpy as np
@@ -24,20 +24,12 @@ import pytest
 import pennylane as qml
 from pennylane.ops.op_math.condition import CondCallable, ConditionalTransformError
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
 from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """Enable and disable the PennyLane JAX capture context manager."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 @pytest.fixture

@@ -294,7 +294,7 @@ from .mutual_info import MutualInfoMP, mutual_info
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import ShotCopies, Shots
+from .shots import ShotCopies, Shots, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy

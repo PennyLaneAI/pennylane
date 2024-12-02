@@ -13,6 +13,8 @@
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
 
+import warnings
+
 # pylint: disable=too-many-arguments,too-few-public-methods,protected-access
 from functools import partial
 
@@ -23,6 +25,13 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def get_device(device_name, wires, seed):
@@ -879,7 +888,9 @@ class TestShotsIntegration:
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(DefaultQubit(), interface=interface)
+        dev = DefaultQubit()
+
+        @qnode(dev, interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -889,19 +900,11 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn == qml.gradients.param_shift
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert spy.call_args[1]["diff_method"] is qml.gradients.param_shift
 
         cost_fn(a, b)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
-        ):
-            assert cost_fn.gradient_fn == "backprop"
         # if we set the shots to None, backprop can now be used
-        assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert spy.call_args[1]["diff_method"] == "backprop"
 
     @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
     def test_shot_vectors_single_measurements(self, interface, shots, seed):

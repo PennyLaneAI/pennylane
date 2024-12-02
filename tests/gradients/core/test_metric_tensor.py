@@ -17,7 +17,7 @@ Unit tests for the metric tensor transform.
 import importlib
 
 # pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
-# pylint: disable=not-callable,too-many-statements
+# pylint: disable=not-callable,too-many-statements, too-many-positional-arguments
 import pytest
 from scipy.linalg import block_diag
 
@@ -1360,10 +1360,13 @@ class TestDifferentiability:
         def cost_full(*weights):
             return qml.metric_tensor(qnode, approx=None)(*weights)
 
-        _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
-        assert qml.math.allclose(_cost_full(*weights), cost_full(*weights), atol=tol, rtol=0)
-        jac = jax.jacobian(cost_full)(*weights)
-        expected_full = qml.jacobian(_cost_full)(*weights)
+        weights_jax = tuple(jax.numpy.array(w) for w in weights)
+        _cost_full_autograd = autodiff_metric_tensor(ansatz, num_wires=3)
+        v1 = _cost_full_autograd(*weights)
+        v2 = cost_full(*weights_jax)
+        assert qml.math.allclose(v1, v2, atol=tol, rtol=0)
+        jac = jax.jacobian(cost_full)(*weights_jax)
+        expected_full = qml.jacobian(_cost_full_autograd)(*weights)
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -1506,7 +1509,7 @@ def test_error_generator_not_registered(allow_nonunitary):
             qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
 
-def test_no_error_missing_aux_wire_not_used(recwarn):
+def test_no_error_missing_aux_wire_not_used():
     """Tests that a no error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing but it is not used, either
     because ``approx`` is used or because there only is a diagonal contribution."""
@@ -1540,9 +1543,6 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
-
-    if qml.operation.active_new_opmath():
-        assert len(recwarn) == 0
 
 
 def test_raises_circuit_that_uses_missing_wire():

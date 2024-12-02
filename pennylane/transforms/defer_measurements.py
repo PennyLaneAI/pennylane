@@ -125,7 +125,7 @@ def defer_measurements(
 
     .. note::
 
-        Devices that inherit from :class:`~pennylane.QubitDevice` **must** be initialized
+        Devices that inherit from :class:`~pennylane.devices.QubitDevice` **must** be initialized
         with an additional wire for each mid-circuit measurement after which the measured
         wire is reused or reset for ``defer_measurements`` to transform the quantum tape
         correctly.

@@ -68,7 +68,6 @@ def _get_grad_prim():
     def _(*args, argnum, jaxpr, n_consts, method, h):
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
-
         consts = args[:n_consts]
         args = args[n_consts:]
 

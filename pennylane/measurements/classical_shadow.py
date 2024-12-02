@@ -274,7 +274,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         Args:
             tape (QuantumTape): the quantum tape to be processed
-            device (pennylane.Device): the device used to process the quantum tape
+            device (pennylane.devices.LegacyDevice): the device used to process the quantum tape
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents

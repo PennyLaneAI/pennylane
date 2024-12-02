@@ -182,8 +182,8 @@ class NullQubit(Device):
             circuit(params)
 
     >>> tracker.history["resources"][0]
-    wires: 100
-    gates: 10000
+    num_wires: 100
+    num_gates: 10000
     depth: 502
     shots: Shots(total=None)
     gate_types:

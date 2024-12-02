@@ -14,6 +14,8 @@
 """
 Unit tests for the :mod:`pennylane.circuit_graph.to_openqasm()` method.
 """
+import warnings
+
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 from textwrap import dedent
 
@@ -22,6 +24,13 @@ import pytest
 
 import pennylane as qml
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestToQasmUnitTests:

@@ -27,7 +27,6 @@ from scipy import sparse
 import pennylane as qml
 from pennylane.operation import Observable, Operation
 from pennylane.typing import TensorLike
-from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
@@ -126,7 +125,7 @@ class Hadamard(Observable, Operation):
         >>> print(qml.Hadamard.compute_eigvals())
         [ 1 -1]
         """
-        return pauli_eigs(1)
+        return qml.pauli.pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
@@ -315,7 +314,7 @@ class PauliX(Observable, Operation):
         >>> print(qml.X.compute_eigvals())
         [ 1 -1]
         """
-        return pauli_eigs(1)
+        return qml.pauli.pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
@@ -506,7 +505,7 @@ class PauliY(Observable, Operation):
         >>> print(qml.Y.compute_eigvals())
         [ 1 -1]
         """
-        return pauli_eigs(1)
+        return qml.pauli.pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
@@ -695,7 +694,7 @@ class PauliZ(Observable, Operation):
         >>> print(qml.Z.compute_eigvals())
         [ 1 -1]
         """
-        return pauli_eigs(1)
+        return qml.pauli.pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=unused-argument

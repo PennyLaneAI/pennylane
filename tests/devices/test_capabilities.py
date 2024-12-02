@@ -18,12 +18,10 @@ This module contains unit tests for device capabilities and the TOML module
 # pylint: disable=protected-access,trailing-whitespace
 
 import re
-from os import path
-from tempfile import TemporaryDirectory
-from textwrap import dedent
 
 import pytest
 
+import pennylane as qml
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
@@ -33,24 +31,11 @@ from pennylane.devices.capabilities import (
     _get_measurement_processes,
     _get_observables,
     _get_operations,
-    _get_options,
     _get_toml_section,
     load_toml_file,
     parse_toml_document,
     update_device_capabilities,
 )
-
-
-@pytest.fixture(scope="function")
-def create_temporary_toml_file(request) -> str:
-    """Create a temporary TOML file with the given content."""
-    content = request.param
-    with TemporaryDirectory() as temp_dir:
-        toml_file = path.join(temp_dir, "test.toml")
-        with open(toml_file, "w", encoding="utf-8") as f:
-            f.write(dedent(content))
-        request.node.toml_file = toml_file
-        yield
 
 
 @pytest.mark.unit
@@ -84,11 +69,6 @@ class TestTOML:
 
             qjit_compatible = false
             supported_mcm_methods = ["one-shot", "device"]
-
-            [options]
-            
-            option_key = "option_field"
-            
             """
         ],
         indirect=True,
@@ -118,9 +98,6 @@ class TestTOML:
         compilation = document.get("compilation")
         assert compilation.get("qjit_compatible") is False
         assert compilation.get("supported_mcm_methods") == ["one-shot", "device"]
-
-        options = document.get("options")
-        assert options.get("option_key") == "option_field"
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -234,28 +211,6 @@ class TestTOML:
         assert compilation_flags.get("qjit_compatible") is True
         assert compilation_flags.get("supported_mcm_methods") == ["one-shot"]
         assert compilation_flags.get("runtime_code_generation") is False
-
-    @pytest.mark.usefixtures("create_temporary_toml_file")
-    @pytest.mark.parametrize(
-        "create_temporary_toml_file",
-        [
-            """
-            [options]
-            
-            option_key = "option_value"
-            option_boolean = true
-            """
-        ],
-        indirect=True,
-    )
-    def test_get_options(self, request):
-        """Tests parsing options."""
-
-        document = load_toml_file(request.node.toml_file)
-        options = _get_options(document)
-        assert len(options) == 2
-        assert options.get("option_key") == "option_value"
-        assert options.get("option_boolean") is True
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -510,7 +465,7 @@ def test_operator_properties():
         controllable=True,
         invertible=True,
         differentiable=False,
-        conditions=[ExecutionCondition.ANALYTIC_MODE_ONLY],
+        conditions=[],
     )
     intersection = prop1 & prop2
     assert intersection.controllable is True
@@ -524,7 +479,7 @@ schema = 3
 
 [operators.gates]
 
-RY = { properties = ["controllable", "invertible", "differentiable"] }
+RY = { properties = ["controllable", "differentiable"] }
 RZ = { properties = ["controllable", "invertible", "differentiable"] }
 CNOT = { properties = ["invertible"] }
 
@@ -562,9 +517,6 @@ initial_state_prep = true
 non_commuting_observables = true
 supported_mcm_methods = ["one-shot"]
 
-[options]
-
-option_key = "option_field"
 """
 
 
@@ -580,7 +532,7 @@ class TestDeviceCapabilities:
         device_capabilities = parse_toml_document(document)
         assert isinstance(device_capabilities, DeviceCapabilities)
         assert device_capabilities.operations == {
-            "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+            "RY": OperatorProperties(differentiable=True, controllable=True),
             "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
             "CNOT": OperatorProperties(invertible=True),
         }
@@ -601,7 +553,6 @@ class TestDeviceCapabilities:
         assert device_capabilities.overlapping_observables is True
         assert device_capabilities.non_commuting_observables is False
         assert device_capabilities.initial_state_prep is True
-        assert device_capabilities.options == {"option_key": "option_field"}
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
@@ -671,7 +622,7 @@ class TestDeviceCapabilities:
         assert isinstance(capabilities, DeviceCapabilities)
         assert capabilities == DeviceCapabilities(
             operations={
-                "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+                "RY": OperatorProperties(differentiable=True, controllable=True),
                 "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
                 "CNOT": OperatorProperties(invertible=True),
             },
@@ -696,7 +647,6 @@ class TestDeviceCapabilities:
             non_commuting_observables=True,
             initial_state_prep=True,
             supported_mcm_methods=["one-shot"],
-            options={"option_key": "option_field"},
         )
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
@@ -708,7 +658,7 @@ class TestDeviceCapabilities:
         assert isinstance(capabilities, DeviceCapabilities)
         assert capabilities == DeviceCapabilities(
             operations={
-                "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+                "RY": OperatorProperties(differentiable=True, controllable=True),
                 "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
                 "CNOT": OperatorProperties(invertible=True),
             },
@@ -729,5 +679,42 @@ class TestDeviceCapabilities:
             non_commuting_observables=False,
             initial_state_prep=True,
             supported_mcm_methods=[],
-            options={"option_key": "option_field"},
         )
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_supports_operators(self, request):
+        """Tests that the supports_operators method returns the correct result."""
+
+        capabilities = DeviceCapabilities.from_toml_file(request.node.toml_file)
+
+        for op in [
+            qml.RY(0.5, wires=0),
+            qml.ops.Controlled(qml.RY(0.5, wires=0), control_wires=[1]),
+            qml.RZ(0.5, wires=0),
+            qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1]),
+            qml.adjoint(qml.RZ(0.5, wires=0)),
+            qml.ops.Adjoint(qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1])),
+            qml.ops.Controlled(qml.ops.Adjoint(qml.RZ(0.5, wires=0)), control_wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.adjoint(qml.CNOT),
+        ]:
+            assert capabilities.supports_operation(op.name) is True
+
+        for op in [
+            qml.X(0),
+            qml.adjoint(qml.RY(0.5, wires=0)),
+            qml.adjoint(qml.ops.Controlled(qml.RY(0.5, wires=0), control_wires=[1])),
+            qml.ops.Controlled(qml.ops.Adjoint(qml.RY(0.5, wires=0)), control_wires=[1]),
+            qml.ops.Controlled(qml.CNOT(wires=[0, 1]), control_wires=[2]),
+        ]:
+            assert capabilities.supports_operation(op.name) is False
+
+        for obs in [qml.X(0), qml.Y(0), qml.Z(0)]:
+            assert capabilities.supports_observable(obs.name) is True
+
+        for obs in [
+            qml.H(0),
+            qml.Hamiltonian([0.5], [qml.PauliZ(0)]),
+        ]:
+            assert capabilities.supports_observable(obs.name) is False

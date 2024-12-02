@@ -559,8 +559,6 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     >>> x = [[1/2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1/2]]
     >>> purity(x, [0, 1])
     0.5
-
-    .. seealso:: :func:`pennylane.qinfo.transforms.purity`
     """
     # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
@@ -629,7 +627,8 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     >>> vn_entropy(x, indices=[0], base=2)
     1.0
 
-    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.vn_entropy`
+    .. seealso:: :func:`pennylane.vn_entropy`
+
     """
     density_matrix = reduce_dm(state, indices, check_state, c_dtype)
     entropy = _compute_vn_entropy(density_matrix, base)
@@ -726,7 +725,8 @@ def mutual_info(
     >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
     0.4682351577408206
 
-    .. seealso:: :func:`~.math.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.mutual_info`
+    .. seealso:: :func:`~.math.vn_entropy` and :func:`pennylane.mutual_info`
+
     """
 
     # the subsystems cannot overlap
@@ -1078,8 +1078,6 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
 
     >>> qml.math.relative_entropy(rho, sigma, base=2)
     0.1187091
-
-    .. seealso:: :func:`pennylane.qinfo.transforms.relative_entropy`
     """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)
@@ -1379,8 +1377,6 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     >>> rho = np.ones((2, 2)) / 2
     >>> qml.math.trace_distance(rho, batch0)
     array([0.5       , 0.        , 0.70710678])
-
-    .. seealso:: :func:`pennylane.qinfo.transforms.trace_distance`
     """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)

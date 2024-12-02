@@ -381,7 +381,7 @@ class ParametrizedEvolution(Operation):
         id=None,
         **odeint_kwargs,
     ):
-        if not all(op.has_matrix or isinstance(op, qml.ops.Hamiltonian) for op in H.ops):
+        if not all(op.has_matrix for op in H.ops):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
             )

@@ -1306,16 +1306,6 @@ class TestMidMeasurements:
         The above combinations should work for finite shots, shot vectors and post-selecting of either the 0 or 1 branch.
         """
 
-        if (
-            isinstance(meas_obj, (qml.X, qml.Z, qml.Y))
-            and measure_f in (qml.var,)
-            and not qml.operation.active_new_opmath()
-        ):
-            pytest.xfail(
-                "The tree-traversal method does not work with legacy opmath with "
-                "`qml.var` of pauli observables in the circuit."
-            )
-
         if measure_f in (qml.expval, qml.var) and (
             isinstance(meas_obj, list) or meas_obj == "mcm_list"
         ):
