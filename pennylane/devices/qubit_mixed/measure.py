@@ -85,6 +85,7 @@ def calculate_reduced_density_matrix(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
+        _readout_errors (List[Callable]): List of channels to apply to each wire being measured
 
     Returns:
         TensorLike: state or reduced density matrix.
