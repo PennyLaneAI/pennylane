@@ -77,6 +77,7 @@ def calculate_reduced_density_matrix(
     measurementprocess: StateMeasurement,
     state: TensorLike,
     is_state_batched: bool = False,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Get the state or reduced density matrix.
 
