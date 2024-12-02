@@ -52,7 +52,7 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (tensorlike[float]): list of displacement vectors for each normal mode
+       vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
        method (str): Electronic structure method that can be either restricted and unrestricted
                 Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
@@ -127,7 +127,7 @@ def _local_pes_onemode(
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of normal mode frequencies in ``cm^-1``
-       vectors (tensorlike[float]): list of displacement vectors for each normal mode
+       vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
        method (str): Electronic structure method that can be either restricted and unrestricted
                 Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
@@ -245,10 +245,10 @@ def _pes_twomode(
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (tensorlike[float]): list of displacement vectors for each normal mode
+       vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
-       pes_onebody (tensorlike[float]): one-mode PES
-       dipole_onebody (tensorlike[float]): one-mode dipole
+       pes_onebody (TensorLike[float]): one-mode PES
+       dipole_onebody (TensorLike[float]): one-mode dipole
        method (str): Electronic structure method that can be either restricted and unrestricted
                 Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
@@ -331,10 +331,10 @@ def _local_pes_twomode(
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (tensorlike[float]): list of displacement vectors for each normal mode
+       vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
-       pes_onebody (tensorlike[float]): one-mode PES
-       dipole_onebody (tensorlike[float]): one-mode dipole
+       pes_onebody (TensorLike[float]): one-mode PES
+       dipole_onebody (TensorLike[float]): one-mode dipole
        method (str): Electronic structure method that can be either restricted and unrestricted
                 Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
@@ -491,12 +491,12 @@ def _local_pes_threemode(
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (tensorlike[float]): list of displacement vectors for each normal mode
+       vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
-       pes_onebody (tensorlike[float]): one-mode PES
-       pes_twobody (tensorlike[float]): two-mode PES
-       dipole_onebody (tensorlike[float]): one-mode dipole
-       dipole_twobody (tensorlike[float]): one-mode dipole
+       pes_onebody (TensorLike[float]): one-mode PES
+       pes_twobody (TensorLike[float]): two-mode PES
+       dipole_onebody (TensorLike[float]): one-mode dipole
+       dipole_twobody (TensorLike[float]): one-mode dipole
        method (str): Electronic structure method that can be either restricted and unrestricted Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
@@ -685,12 +685,12 @@ def _pes_threemode(
        molecule (~qchem.molecule.Molecule): Molecule object
        scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (tensorlike[float]): list of displacement vectors for each normal mode
+       vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
-       pes_onebody (tensorlike[float]): one-mode PES
-       pes_twobody (tensorlike[float]): two-mode PES
-       dipole_onebody (tensorlike[float]): one-mode dipole
-       dipole_twobody (tensorlike[float]): one-mode dipole
+       pes_onebody (TensorLike[float]): one-mode PES
+       pes_twobody (TensorLike[float]): two-mode PES
+       dipole_onebody (TensorLike[float]): one-mode dipole
+       dipole_twobody (TensorLike[float]): one-mode dipole
        method (str): Electronic structure method that can be either restricted and unrestricted Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
        dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
 
