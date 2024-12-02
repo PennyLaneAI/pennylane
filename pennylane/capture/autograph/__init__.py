@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,16 @@
 # limitations under the License.
 
 """
-Version number (major.minor.patch[-label])
+Public/internal API for the AutoGraph module.
 """
 
-__version__ = "0.40.0-dev26"
+from .transformer import (
+    autograph_source,
+    run_autograph,
+)
+
+
+__all__ = (
+    "autograph_source",
+    "run_autograph",
+)
