@@ -83,12 +83,6 @@ from .tapering import (
     taper_operation,
 )
 from .vibrational import (
-    get_dipole,
-    harmonic_analysis,
     optimize_geometry,
-    pes_onemode,
-    pes_threemode,
-    pes_twomode,
     vibrational_pes,
-    VibrationalPES,
 )

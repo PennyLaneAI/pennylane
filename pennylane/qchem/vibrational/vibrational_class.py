@@ -27,7 +27,6 @@ from ..openfermion_pyscf import _import_pyscf
 
 BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
 
-
 @dataclass
 class VibrationalPES:
     r"""Data class to save potential energy surface information computed along vibrational normal modes.
@@ -71,16 +70,16 @@ class VibrationalPES:
         self.dipole_level = dipole_level
 
 
-def harmonic_analysis(scf_result, method="rhf"):
+def _harmonic_analysis(scf_result, method="rhf"):
     r"""Performs harmonic analysis by evaluating the Hessian using PySCF routines.
 
     Args:
-       scf_result: pyscf object from electronic structure calculations
-       method: Electronic structure method to define the level of theory
-            for harmonic analysis. Default is restricted Hartree-Fock ``'rhf'``.
+       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+       method (str): Electronic structure method that can be either restricted and unrestricted
+                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-       a tuple of frequencies of normal modes and their corresponding displacement vectors
+       a tuple of normal modes frequencies and their corresponding displacement vectors
     """
     pyscf = _import_pyscf()
     from pyscf.hessian import thermo
@@ -99,12 +98,12 @@ def _single_point(molecule, method="rhf"):
     r"""Runs electronic structure calculation.
 
     Args:
-      molecule: Molecule object.
-      method: Electronic structure method to define the level of theory.
-              Default is restricted Hartree-Fock 'rhf'.
+      molecule (~qchem.molecule.Molecule): Molecule object.
+      method (str): Electronic structure method that can be either restricted and unrestricted
+               Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-      pyscf object from electronic structure calculation
+      pyscf.scf object from electronic structure calculation
     """
     pyscf = _import_pyscf()
 
@@ -143,12 +142,12 @@ def optimize_geometry(molecule, method="rhf"):
     r"""Obtains equilibrium geometry for the molecule.
 
     Args:
-      molecule: Molecule object.
-      method: Electronic structure method to define the level of theory.
-              Default is restricted Hartree-Fock ``'rhf'``.
+      molecule (~qchem.molecule.Molecule): Molecule object
+      method (str): Electronic structure method that can be either restricted and unrestricted
+               Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-      molecule object with optimized geometry
+      Molecule object with optimized geometry
 
     """
     pyscf = _import_pyscf()
@@ -243,7 +242,7 @@ def _get_uhf_dipole(scf_result):
     return dipole
 
 
-def get_dipole(scf_result, method):
+def _get_dipole(scf_result, method):
     r"""Evaluate the dipole moment for a Hartree-Fock state.
 
     Args:

@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qchem import vibrational
+from pennylane.qchem.vibrational import pes_generator, vibrational_class
 
 h5py = pytest.importorskip("h5py")
 
@@ -40,7 +40,7 @@ def test_import_mpi4py(monkeypatch):
         m.setitem(sys.modules, "mpi4py", None)
 
         with pytest.raises(ImportError, match="This feature requires mpi4py"):
-            vibrational.pes_generator._import_mpi4py()
+            pes_generator._import_mpi4py()
 
 
 @pytest.mark.parametrize(
@@ -193,14 +193,14 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
+    mol_eq = vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
-    freqs_au = harmonic_res["freq_wavenumber"] / AU_TO_CM
+    freqs = harmonic_res["freq_wavenumber"]
     displ_vecs = harmonic_res["norm_mode"]
-    pes_onebody, dipole_onebody = vibrational.pes_onemode(
-        mol, mol_eq, freqs_au, displ_vecs, gauss_grid, method="RHF", do_dipole=do_dipole
+    pes_onebody, dipole_onebody = pes_generator.pes_onemode(
+        mol, mol_eq, freqs, displ_vecs, gauss_grid, method="RHF", dipole=do_dipole
     )
 
     assert np.allclose(pes_onebody, exp_pes_onemode, atol=1e-6)
@@ -254,26 +254,26 @@ def test_twomode_pes(sym, geom, harmonic_res, ref_file):
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
+    mol_eq = vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
-    freqs_au = harmonic_res["freq_wavenumber"] / AU_TO_CM
-    displ_vecs = harmonic_res["norm_mode"]
-    pes_onebody, dipole_onebody = vibrational.pes_onemode(
-        mol, mol_eq, freqs_au, displ_vecs, gauss_grid, method="RHF", do_dipole=True
+    freqs = harmonic_res["freq_wavenumber"]
+    vectors = harmonic_res["norm_mode"]
+    pes_onebody, dipole_onebody = pes_generator.pes_onemode(
+        mol, mol_eq, freqs, vectors, gauss_grid, method="RHF", dipole=True
     )
 
-    pes_twobody, dipole_twobody = vibrational.pes_twomode(
+    pes_twobody, dipole_twobody = pes_generator.pes_twomode(
         mol,
         mol_eq,
-        freqs_au,
-        displ_vecs,
+        freqs,
+        vectors,
         gauss_grid,
         pes_onebody,
         dipole_onebody,
         method="rhf",
-        do_dipole=True,
+        dipole=True,
     )
 
     pes_file = os.path.join(ref_dir, ref_file)
@@ -329,12 +329,12 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = qml.qchem.vibrational.vibrational_class._single_point(mol)
+    mol_eq = vibrational_class._single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
-    freqs_au = harmonic_res["freq_wavenumber"] / AU_TO_CM
-    displ_vecs = harmonic_res["norm_mode"]
+    freqs = harmonic_res["freq_wavenumber"]
+    vectors = harmonic_res["norm_mode"]
 
     pes_file = os.path.join(ref_dir, ref_file)
     f = h5py.File(pes_file, "r+")
@@ -345,18 +345,18 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
     exp_pes_threemode = np.array(f["V3_PES"][()])
     exp_dip_threemode = np.array(f["D3_DMS"][()])
 
-    pes_threebody, dipole_threebody = vibrational.pes_threemode(
+    pes_threebody, dipole_threebody = pes_generator.pes_threemode(
         mol,
         mol_eq,
-        freqs_au,
-        displ_vecs,
+        freqs,
+        vectors,
         gauss_grid,
         pes_onebody,
         pes_twobody,
         dipole_onebody,
         dipole_twobody,
         method="rhf",
-        do_dipole=True,
+        dipole=True,
     )
 
     assert np.allclose(pes_threebody, exp_pes_threemode, atol=1e-6)
