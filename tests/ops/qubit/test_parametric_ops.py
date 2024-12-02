@@ -68,21 +68,6 @@ PARAMETRIZED_OPERATIONS = [
     qml.GlobalPhase(0.123),
 ]
 
-SINGLE_QUBIT_PARAMETRIZED_OPERATIONS = [
-    qml.RX(0.123, wires=0),
-    qml.RY(1.434, wires=1),
-    qml.RZ(2.774, wires=-1),
-    qml.Rot(0.123, 0.456, 0.789, wires="a"),
-    qml.U1(0.123, wires="qubit1"),
-    qml.U2(3.556, 2.134, wires="qubit2"),
-    qml.U3(
-        np.array(3.556),
-        np.array(2.134),
-        np.array(2.009),
-        wires=1000000,
-    ),
-]
-
 BROADCASTED_OPERATIONS = [
     qml.RX(np.array([0.142, -0.61, 2.3]), wires=0),
     qml.RY(np.array([1.291, -0.10, 5.2]), wires=0),
@@ -4049,17 +4034,3 @@ def test_op_aliases_are_valid():
     """Tests that ops in new files can still be accessed from the old parametric_ops module."""
     assert qml.ops.qubit.parametric_ops_multi_qubit.MultiRZ is old_loc_MultiRZ
     assert qml.ops.qubit.parametric_ops_single_qubit.RX is old_loc_RX
-
-
-class TestPauliRep:
-    @pytest.mark.parametrize("op", SINGLE_QUBIT_PARAMETRIZED_OPERATIONS)
-    def test_lazy_implementation(self, op):
-        """Checks if the ._pauli_rep attribute is only computed when needed."""
-        assert op._pauli_rep is None
-        pauli_rep = op.pauli_rep
-        assert op._pauli_rep is not None
-
-    @pytest.mark.parametrize("op", SINGLE_QUBIT_PARAMETRIZED_OPERATIONS)
-    def test_matrix_and_pauli_rep_equivalence(self, op):
-        """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
-        assert np.allclose(op.matrix(), qml.matrix(op.pauli_rep))

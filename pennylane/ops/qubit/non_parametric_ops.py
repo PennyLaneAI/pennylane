@@ -76,17 +76,6 @@ class Hadamard(Observable, Operation):
     def name(self) -> str:
         return "Hadamard"
 
-    @property
-    def pauli_rep(self):
-        if self._pauli_rep is None:
-            self._pauli_rep = qml.pauli.PauliSentence(
-                {
-                    qml.pauli.PauliWord({self.wires[0]: "X"}): INV_SQRT2,
-                    qml.pauli.PauliWord({self.wires[0]: "Z"}): INV_SQRT2,
-                }
-            )
-        return self._pauli_rep
-
     @staticmethod
     @lru_cache()
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
