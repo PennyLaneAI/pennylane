@@ -851,7 +851,7 @@ def transform_angles(angles, routine1, routine2):
 
 def poly_to_angles(poly, routine, angle_solver="root-finding"):
     r"""
-    Converts a given polynomial into angles for to be used with specific quantum signal processing (QSP)
+    Given a polynomial, computes angles to be used with specific quantum signal processing (QSP)
     or quantum singular value transformation (QSVT) routines.
 
     Args:
