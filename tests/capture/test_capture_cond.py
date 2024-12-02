@@ -737,7 +737,7 @@ class TestCondCircuits:
 
         assert np.allclose(res, expected, atol=atol, rtol=0), f"Expected {expected}, but got {res}"
 
-    @pytest.mark.xfail(strict=False)
+    @pytest.mark.xfail(strict=False)  # single-branch-statistics only sometimes gives good results
     @pytest.mark.parametrize("upper_bound, arg", [(3, [0.1, 0.3, 0.5]), (2, [2, 7, 12])])
     def test_nested_cond_for_while_loop(self, upper_bound, arg):
         """Test that a nested control flows are correctly captured into a jaxpr."""

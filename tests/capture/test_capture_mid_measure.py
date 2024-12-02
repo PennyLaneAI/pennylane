@@ -312,9 +312,9 @@ class TestMidMeasureExecute:
     """System-level tests for executing circuits with mid-circuit measurements with program
     capture enabled."""
 
-    @pytest.mark.skip("flaky failures due to single branch statistics")
+    @pytest.mark.xfail(strict=False)  # single branch statistics sometimes gives good results
     @pytest.mark.parametrize("reset", [True, False])
-    @pytest.mark.parametrize("postselect", [pytest.param(None, marks=pytest.mark.xfail), 0, 1])
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     def test_simple_circuit_execution(self, phi, reset, postselect, get_device, shots, mp_fn, seed):
         """Test that circuits with mid-circuit measurements can be executed in a QNode."""
@@ -357,7 +357,7 @@ class TestMidMeasureExecute:
 
         assert compare_with_capture_disabled(f, phi, phi + 1.5)
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail  # single branch statistics gives bad results
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     def test_circuit_with_boolean_arithmetic_execution(self, phi, get_device, shots, mp_fn, seed):
         """Test that circuits that apply boolean logic to mid-circuit measurement values
@@ -400,7 +400,7 @@ class TestMidMeasureExecute:
 
         _ = f(phi, phi + 1.5)
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail  # single branch statistics gives bad results
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.sqrt, jnp.log, jnp.exp])
     def mid_measure_processed_with_jax_numpy_execution(

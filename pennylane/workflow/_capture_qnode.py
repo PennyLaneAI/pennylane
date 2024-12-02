@@ -90,7 +90,7 @@ multiple circuits.
 (Array([1, 0, 1, 0, 0], dtype=int64), Array([0, 0, 1, 0, 0], dtype=int64))
 
 *Figuring out what types of data can be sent to the device.* Is the device always
-responsible for converting jax arrays to numpy arrays? Is the device responsible for having a 
+responsible for converting jax arrays to numpy arrays? Is the device responsible for having a
 pure-callback boundary if the execution is not jittable? We do have an opportunity here
 to have gpu-end-to-end simulation on lightning gpu and lightning kokkos.
 
@@ -190,9 +190,7 @@ def _get_qnode_prim():
 
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
-    def qnode_impl(
-        *args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None
-    ):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
         if shots != device.shots:
             raise NotImplementedError(
                 "override shots are not yet supported with the program capture execution."

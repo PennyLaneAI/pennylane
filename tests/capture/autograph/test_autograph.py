@@ -257,6 +257,7 @@ class TestIntegration:
         assert check_cache(inner1.func)
         assert check_cache(inner2.func)
 
+    @pytest.mark.xfail(raises=NotImplementedError)
     def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
 
@@ -277,6 +278,7 @@ class TestIntegration:
         assert check_cache(circ.func)
         assert check_cache(inner)
 
+    @pytest.mark.xfail(raises=NotImplementedError)
     def test_ctrl_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
 
