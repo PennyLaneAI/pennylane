@@ -69,7 +69,7 @@ def _params_cost(params, qmat, nmodes):
 
     Args:
        params (list[float]): initial parameters
-       qmat (tensorlike[float]): matrix of displacement vectors
+       qmat (TensorLike[float]): matrix of displacement vectors
        nmodes (int): number of normal modes
     Returns:
        Pipek-Mezek cost function
