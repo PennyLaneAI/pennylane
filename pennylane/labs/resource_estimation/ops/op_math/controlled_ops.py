@@ -360,7 +360,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         h = re.ResourceHadamard.resource_rep()
         s = re.ResourceS.resource_rep()
         cz = re.ResourceCZ.resource_rep()
-        t_dag = re.ResourceAdjoint(re.ResourceT, {})
+        t_dag = re.ResourceAdjoint.resource_rep(re.ResourceT, {})
 
         gate_types[cnot] = 9
         gate_types[h] = 3
