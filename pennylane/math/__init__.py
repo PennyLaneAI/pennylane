@@ -96,7 +96,6 @@ from .utils import (
     requires_grad,
 )
 
-
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose

@@ -50,7 +50,7 @@ class GQSP(Operation):
 
     .. note::
 
-        :func:`~.math.poly_to_angles` can be used to calculate the angles given a polynomial ``poly`` with ``routine="GQSP"``.
+        :func:`~.poly_to_angles` can be used to calculate the angles given a polynomial ``poly`` with ``routine="GQSP"``.
 
     Example:
 
