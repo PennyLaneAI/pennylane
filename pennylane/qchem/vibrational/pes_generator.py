@@ -49,8 +49,8 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
     r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
     Args:
-       molecule (~qchem.molecule.Molecule): Molecule object
-       scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
@@ -124,8 +124,8 @@ def _local_pes_onemode(
 
     Args:
        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
-       molecule (~qchem.molecule.Molecule): Molecule object
-       scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of normal mode frequencies in ``cm^-1``
        vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
@@ -242,8 +242,8 @@ def _pes_twomode(
     displacement vectors.
 
     Args:
-       molecule (~qchem.molecule.Molecule): Molecule object
-       scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
@@ -328,8 +328,8 @@ def _local_pes_twomode(
 
     Args:
        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes.
-       molecule (~qchem.molecule.Molecule): Molecule object
-       scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
@@ -488,8 +488,8 @@ def _local_pes_threemode(
 
     Args:
        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes.
-       molecule (~qchem.molecule.Molecule): Molecule object
-       scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
@@ -682,8 +682,8 @@ def _pes_threemode(
     displacement vectors.
 
     Args:
-       molecule (~qchem.molecule.Molecule): Molecule object
-       scf_result (~pyscf.scf object): pyscf object from electronic structure calculations
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
        vectors (TensorLike[float]): list of displacement vectors for each normal mode
        grid (list[float]): sample points for Gauss-Hermite quadrature
