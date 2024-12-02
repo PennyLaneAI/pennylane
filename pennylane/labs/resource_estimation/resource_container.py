@@ -14,7 +14,7 @@
 r"""Base classes for resource estimation."""
 import copy
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from pennylane.labs.resource_estimation import ResourceOperator
 
@@ -106,9 +106,16 @@ class Resources:
         {'Hadamard': 1, 'CNOT': 1}
     """
 
-    num_wires: int = 0
-    num_gates: int = 0
-    gate_types: defaultdict = field(default_factory=lambda: defaultdict(int))
+    def __init__(self, num_wires: int = 0, num_gates: int = 0, gate_types: dict = None):
+        gate_types = gate_types or {}
+
+        self.num_wires = num_wires
+        self.num_gates = num_gates
+        self.gate_types = (
+            gate_types
+            if (isinstance(gate_types, defaultdict) and isinstance(gate_types.default_factory, int))
+            else defaultdict(int, gate_types)
+        )
 
     def __add__(self, other: "Resources") -> "Resources":
         """Add two resources objects in series"""
@@ -236,6 +243,79 @@ def mul_in_parallel(first: Resources, scalar: int, in_place=False) -> Resources:
         return first
 
     return Resources(new_wires, new_gates, new_gate_types)
+
+
+def substitute(
+    initial_resources: Resources, gate_name: str, replacement_resources: Resources, in_place=False
+) -> Resources:
+    """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
+
+    Args:
+        initial_resources (Resources): the resources to be modified
+        gate_name (str): the name of the operation to be replaced
+        replacement (Resources): the resources to be substituted instead of the gate
+        in_place (bool): determines if the initial resources are modified in place or if a new copy is created
+
+    Returns:
+        Resources: the updated :class:`~.Resources` after substitution
+
+    .. details::
+
+        **Example**
+
+        In this example we replace the resources for the :code:`RX` gate. First we build the :class:`~.Resources`:
+
+        .. code-block:: python3
+
+            from pennylane.labs.resource_estimation import Resources
+
+            replace_gate_name = "RX"
+
+            initial_resources = Resources(
+                num_wires = 2,
+                num_gates = 3,
+                gate_types = {"RX": 2, "CNOT": 1},
+            )
+
+            replacement_rx_resources = Resources(
+                num_wires = 1,
+                num_gates = 7,
+                gate_types = {"Hadamard": 3, "S": 4},
+            )
+
+        Executing the substitution produces:
+
+        >>> from pennylane.labs.resource_estimation import substitute
+        >>> res = substitute(
+        ...     initial_resources, replace_gate_name, replacement_rx_resources,
+        ... )
+        >>> print(res)
+        wires: 2
+        gates: 15
+        gate_types:
+        {'CNOT': 1, 'Hadamard': 6, 'S': 8}
+    """
+
+    count = initial_resources.gate_types.get(gate_name, 0)
+
+    if count > 0:
+        new_gates = initial_resources.num_gates - count + (count * replacement_resources.num_gates)
+
+        replacement_gate_types = _scale_dict(
+            replacement_resources.gate_types, count, in_place=in_place
+        )
+        new_gate_types = _combine_dict(
+            initial_resources.gate_types, replacement_gate_types, in_place=in_place
+        )
+        new_gate_types.pop(gate_name)
+
+        if in_place:
+            initial_resources.num_gates = new_gates
+            return initial_resources
+
+        return Resources(initial_resources.num_wires, new_gates, new_gate_types)
+
+    return initial_resources
 
 
 def _combine_dict(dict1: defaultdict, dict2: defaultdict, in_place=False):
