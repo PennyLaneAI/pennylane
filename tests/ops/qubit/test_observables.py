@@ -704,7 +704,8 @@ class TestProjector:
         out01 = circuit(state01)
         assert qml.math.allclose(out01, 1)
         state10 = jax.numpy.array([True, False])
-        out10 = circuit(state10)
+        with pytest.warns(FutureWarning, match="scatter inputs have incompatible types"):
+            out10 = circuit(state10)
         assert qml.math.allclose(out10, 0)
 
         with pytest.raises(ValueError, match=r"Basis state must consist of integers or booleans."):

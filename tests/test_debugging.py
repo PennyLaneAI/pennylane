@@ -678,7 +678,10 @@ class TestSnapshotUnsupportedQNode:
                 qml.Snapshot()
                 return qml.expval(qml.PauliX(0))
 
-            qml.snapshots(circuit)()
+            with pytest.warns(
+                UserWarning, match="Snapshots are not supported for the given device"
+            ):
+                qml.snapshots(circuit)()
 
     def test_state_wire_order_preservation(self):
         """Test that the snapshots wire order reflects the wire order on the device."""
