@@ -30,8 +30,8 @@ class ResourceCH(qml.CH, re.ResourceOperator):
         .. math::
 
             \begin{align}
-                \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \dot \hat{Z}  \dot \hat{R}_{y}(\frac{-\pi}{4}) \\
-                \hat{Z} &= \hat{H} \dot \hat{X}  \dot \hat{H}
+                \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \cdot \hat{Z}  \cdot \hat{R}_{y}(\frac{-\pi}{4}), \\
+                \hat{Z} &= \hat{H} \cdot \hat{X}  \cdot \hat{H}.
             \end{align}
 
         We can control on the Pauli-X gate to obtain our controlled Hadamard gate.
@@ -66,7 +66,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Y} = \hat{S} \dot \hat{X} \dot \hat{S}^{\dagger}
+        .. math:: \hat{Y} = \hat{S} \cdot \hat{X} \cdot \hat{S}^{\dagger}.
 
         We can control on the Pauli-X gate to obtain our controlled-Y gate.
 
@@ -98,7 +98,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}
+        .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
         We can control on the Pauli-X gate to obtain our controlled-Z gate.
 
@@ -169,7 +169,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}
+        .. math:: \hat{Z} = \hat{H} \cdot \hat{X} \cdot \hat{H}.
 
         We replace the Pauli-X gate with a Toffoli gate to obtain our control-control-Z gate.
     """
@@ -374,17 +374,16 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
 
     Resources:
 
-        The resources are derived from the following identities:
+        The resources are based from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        unitary <https://arxiv.org/pdf/2110.10292>`_ in combination with the following identity:
 
         .. math::
 
-            \begin{align}
-                \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X} \\
-                \hat{X} &= \hat{H} \dot \hat{Z}  \dot \hat{H}
-            \end{align}
+            \hat{RX} &= \hat{H} \cdot \hat{RZ}  \cdot \hat{H}.
 
-        The expression for controlled-RZ gates is used as defined in (figure 1b.) the paper
-        `T-count and T-depth of any multi-qubit unitary <https://arxiv.org/pdf/2110.10292>`_.
+        Using the identity above, we can express the :code:`CRX` gate as a :code:`CRZ` gate conjugated
+        by :code:`Hadamard` gates. The expression for controlled-RZ gates is used as defined in the
+        reference above.
     """
 
     @staticmethod
@@ -413,10 +412,14 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
     r"""Resource class for CRY
 
     Resources:
-        The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        The resources are based from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
 
-        .. math:: \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}
+        .. math:: \hat{RY}(\theta) = \hat{X} \cdot \hat{RY}(- \theta) \cdot \hat{X}.
+
+        By replacing the :code:`X` gates with :code:`CNOT` gates, we obtain a controlled-version of this
+        identity. Thus we are able to constructively or destructively interfere the gates based on the value
+        of the control qubit.
 
     """
 
@@ -445,9 +448,13 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
 
     Resources:
         The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
-        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived from the following identity:
+        unitary <https://arxiv.org/pdf/2110.10292>`_. They are derived from the following identity:
 
-        .. math:: \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}
+        .. math:: \hat{RZ}(\theta) = \hat{X} \cdot \hat{RZ}(- \theta) \cdot \hat{X}.
+
+        By replacing the :code:`X` gates with :code:`CNOT` gates, we obtain a controlled-version of this
+        identity. Thus we are able to constructively or destructively interfere the gates based on the value
+        of the control qubit.
 
     """
 
@@ -481,8 +488,8 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
         .. math::
 
             \begin{align}
-                \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}, \\
-                \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}.
+                \hat{RZ}(- \theta) = \hat{X} \cdot \hat{RZ}(\theta) \cdot \hat{X}, \\
+                \hat{RY}(- \theta) = \hat{X} \cdot \hat{RY}(\theta) \cdot \hat{X}.
             \end{align}
 
         This identity is applied along with some clever choices for the angle values to combine rotation;
