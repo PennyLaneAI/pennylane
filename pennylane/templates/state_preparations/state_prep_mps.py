@@ -72,16 +72,16 @@ class MPSPrep(Operation):
     .. details::
         :title: Usage Details
 
-        The input matrix product state must be a list of :math:`n` tensors :math:`[A^{(1)}, ..., A^{(n)}]`
-        with shapes :math:`d_0, ..., d_n`, respectively. The first and last tensors have rank ``2``
+        The input matrix product state must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`
+        with shapes :math:`d_0, ..., d_{n-1}`, respectively. The first and last tensors have rank ``2``
         while the intermediate tensors have rank ``3``.
 
         The first tensor must have the shape :math:`d_0 = (d_{0,0}, d_{0,1})` where :math:`d_{0,0}`
         and :math:`d_{0,1}`  correspond to the physical dimension of the site and an auxiliary bond
         dimension connecting it to the next tensor, respectively.
 
-        The last tensor must have the shape :math:`d_n = (d_{n,0}, d_{n,1})` where :math:`d_{n,0}`
-        and :math:`d_{n,1}` represent the auxiliary dimension from the previous site and the physical
+        The last tensor must have the shape :math:`d_{n-1} = (d_{n-1,0}, d_{n-1,1})` where :math:`d_{n-1,0}`
+        and :math:`d_{n-1,1}` represent the auxiliary dimension from the previous site and the physical
         dimension of the site, respectively.
 
         The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
