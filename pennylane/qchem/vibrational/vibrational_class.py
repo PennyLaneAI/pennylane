@@ -35,7 +35,10 @@ def _harmonic_analysis(scf_result, method="rhf"):
                 Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-       a tuple of normal modes frequencies and their corresponding displacement vectors
+       (tuple): A tuple containing the following:
+        - (list[float]): normal mode frequencies in ``cm^-1``
+        - (TensorLike[float]): corresponding displacement vectors for each normal mode
+
     """
     pyscf = _import_pyscf()
     from pyscf.hessian import thermo
@@ -54,12 +57,13 @@ def _single_point(molecule, method="rhf"):
     r"""Runs electronic structure calculation.
 
     Args:
-      molecule (~qchem.molecule.Molecule): Molecule object.
-      method (str): Electronic structure method that can be either restricted and unrestricted
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object.
+       method (str): Electronic structure method that can be either restricted and unrestricted
                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-      pyscf.scf object from electronic structure calculation
+       pyscf.scf object from electronic structure calculation
+
     """
     pyscf = _import_pyscf()
 
@@ -98,12 +102,14 @@ def optimize_geometry(molecule, method="rhf"):
     r"""Obtains equilibrium geometry for the molecule.
 
     Args:
-      molecule (~qchem.molecule.Molecule): Molecule object
-      method (str): Electronic structure method that can be either restricted and unrestricted
+       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+       method (str): Electronic structure method that can be either restricted and unrestricted
                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-      Molecule object with optimized geometry
+       (tuple): A tuple containing the following:
+        - :func:`~pennylane.qchem.molecule.Molecule` object with optimized geometry
+        - pyscf.scf object
 
     """
     pyscf = _import_pyscf()

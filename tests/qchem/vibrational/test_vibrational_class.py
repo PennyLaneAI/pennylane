@@ -26,7 +26,7 @@ from pennylane.qchem.vibrational import localize_modes, vibrational_class
 # pylint: disable=too-many-arguments, protected-access
 
 
-def test_import_pyscf(monkeypatch):
+def test_import_geometric(monkeypatch):
     """Test if an ImportError is raised by _import_geometric function."""
     # pylint: disable=protected-access
 
