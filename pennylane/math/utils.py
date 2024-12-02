@@ -267,13 +267,12 @@ def _get_interface_of_single_tensor(tensor):
     >>> get_interface(x)
     'autograd'
     """
-    namespace = tensor.__class__.__module__.split(".")[0]
+    modules = tensor.__class__.__module__.split(".")
+    namespace = modules[0]
+    submodule = modules[1] if len(modules) > 1 else None
 
     if namespace == "pennylane":
-        # pylint: disable=import-outside-toplevel
-        from pennylane.capture import enabled
-
-        return "jax" if enabled() else "autograd"
+        return "jax" if submodule == "capture" else "autograd"
 
     if namespace == "autograd":
         return "autograd"
