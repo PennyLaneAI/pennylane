@@ -26,36 +26,13 @@ AU_TO_CM = 219475
 # pylint: disable=dangerous-default-value, too-many-statements
 
 
-def _pm_cost(q):
-    r"""Pipek-Mezey cost function whose minimization yields localized displacements.
-
-    Args:
-       q: matrix of displacement vectors
-
-    Returns:
-       Pipek-Mezek cost function
-    """
-
-    nnuc, _, nmodes = q.shape
-
-    xi_pm = 0.0
-
-    for p in range(nmodes):
-        for i in range(nnuc):
-            q2 = 0.0
-            for alpha in range(3):
-                q2 += q[i, alpha, p] ** 2
-            xi_pm += q2**2
-
-    return -xi_pm
-
-
 def _mat_transform(u, qmat):
-    r"""Returns the rotated displacement vectors matrix for a given rotation unitary u and displacement vectors matrix qmat.
+    r"""Returns the rotated displacement vectors matrix for a given rotation unitary u
+    and displacement vectors matrix qmat.
 
     Args:
-       u: unitary rotation matrix
-       qmat: matrix of displacement vectors
+       u (tensorlike[float]): unitary rotation matrix
+       qmat (tensorlike[float]): matrix of displacement vectors
 
     Returns:
        rotated matrix of displacement vectors
@@ -67,11 +44,12 @@ def _mat_transform(u, qmat):
 
 
 def _params_to_unitary(params, nmodes):
-    r"""Transforms a one-dimensional vector of parameters specifying a unitary rotation into its associated matrix u.
+    r"""Transforms a one-dimensional vector of parameters specifying a unitary rotation
+    into its associated matrix u.
 
     Args:
-       params: parameters for unitary rotation
-       nmodes: number of normal modes
+       params (list[float]): parameters for unitary rotation
+       nmodes (int): number of normal modes
 
     Returns:
        unitary rotation matrix
@@ -90,27 +68,28 @@ def _params_to_unitary(params, nmodes):
 
 
 def _params_cost(params, qmat, nmodes):
-    r"""Returns the cost function to be minimized for localized displacements.
+    r"""Returns the Pipek-Mezey cost function to be minimized for localized displacements.
 
     Args:
-       params: initial parameters
-       qmat: matrix of displacement vectors
-       nmodes: number of normal modes
+       params (list[float]): initial parameters
+       qmat (tensorlike[float]): matrix of displacement vectors
+       nmodes (int): number of normal modes
     Returns:
        Pipek-Mezek cost function
 
     """
     uparams = _params_to_unitary(params, nmodes)
     qrot = _mat_transform(uparams, qmat)
+    xi_pm = np.sum(np.sum(qrot**2, axis=1) ** 2)
 
-    return _pm_cost(qrot)
+    return -xi_pm
 
 
 def _normalize_q(qmat):
     r"""Returns the normalized displacement vectors.
 
     Args:
-       qmat: matrix of displacement vectors
+       qmat (tensorlike[float]): matrix of displacement vectors
 
     Returns:
        normalized matrix of displacement vectors
@@ -128,18 +107,20 @@ def _normalize_q(qmat):
 
 
 def _localization_unitary(qmat):
-    r"""Calculates the unitary matrix to localize the displacement vectors and displacement vectors.
+    r"""Calculates the unitary matrix to localize the displacement vectors and
+    displacement vectors.
 
     Args:
-       qmat: matrix of displacement vectors associated with normal-modes
+       qmat (tensorlike[float]): matrix of displacement vectors associated with normal-modes
 
     Returns:
-       a tuple of unitary matrix to localize the displacement vectors and localized displacement vectors
+       a tuple of unitary matrix to localize the displacement vectors and localized
+       displacement vectors
 
     """
 
     nmodes = qmat.shape[2]
-    num_params = int(nmodes * (nmodes - 1) / 2)
+    num_params = nmodes * (nmodes - 1) // 2
 
     rng = qml.math.random.default_rng(1000)
     params = 2 * np.pi * rng.random(num_params)
@@ -153,7 +134,7 @@ def _localization_unitary(qmat):
         warnings.warn(
             "Mode localization finished unsuccessfully, returning normal modes..."
         )  # pragma: no cover
-        return _params_to_unitary(0 * params, nmodes), qmat  # pragma: no cover
+        return _params_to_unitary(np.zeros_like(params), nmodes), qmat  # pragma: no cover
 
     params_opt = optimization_res.x
     uloc = _params_to_unitary(params_opt, nmodes)
@@ -163,58 +144,50 @@ def _localization_unitary(qmat):
     return uloc, qloc
 
 
-def _localize_modes(freqs, displ_vecs, order=True):
+def _localize_modes(freqs, displ_vecs):
     r"""Performs the mode localization for a given set of frequencies and displacement vectors.
 
     Args:
-       freqs: normal mode frequencies
-       displ_vecs: displacement vectors along the normal modes
+       freqs (list[float]): normal mode frequencies
+       displ_vecs (list[float]): displacement vectors along the normal modes
 
     Returns:
        a tuple of localized frequencies, displacement vectors, and localization matrix
 
     """
     nmodes = len(freqs)
-    hess_normal = np.zeros((nmodes, nmodes))
-    for m in range(nmodes):
-        hess_normal[m, m] = freqs[m] ** 2
+    hess_normal = np.diag(np.square(freqs))
 
-    natoms, _ = np.shape(displ_vecs[0])
-
-    qmat = np.zeros((natoms, 3, nmodes))
-    for m in range(nmodes):
-        dvec = displ_vecs[m]
-        for i in range(natoms):
-            for alpha in range(3):
-                qmat[i, alpha, m] = dvec[i, alpha]
+    qmat = np.array([displ_vecs[m] for m in range(nmodes)]).transpose(1, 2, 0)
 
     uloc, qloc = _localization_unitary(qmat)
     hess_loc = uloc.transpose() @ hess_normal @ uloc
     loc_freqs = np.sqrt(np.array([hess_loc[m, m] for m in range(nmodes)]))
 
-    if order:
-        loc_perm = np.argsort(loc_freqs)
-        loc_freqs = loc_freqs[loc_perm]
-        qloc = qloc[:, :, loc_perm]
-        uloc = uloc[:, loc_perm]
+    loc_perm = np.argsort(loc_freqs)
+    loc_freqs = loc_freqs[loc_perm]
+    qloc = qloc[:, :, loc_perm]
+    uloc = uloc[:, loc_perm]
 
     return loc_freqs, qloc, uloc
 
 
 def _localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
     """
-    Localizes normal modes by separating frequencies into specified ranges and applying mode localization.
-    The procedure for localization is described in `J. Chem. Phys. 141, 104105 (2014)
-    <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
+    Localizes normal modes by separating frequencies into specified ranges and applying
+    mode localization. The procedure for localization is described in `J. Chem. Phys. 141, 104105 (2014)
+    <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/
+    Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
 
     Args:
-        freqs: normal mode frequencies in ``cm^-1``
-        displ_vecs: displacement vectors for normal modes
-        freq_separation (list): list of frequency separation thresholds in ``cm^-1``. Default is ``[2600]``.
+        freqs (list[float]): normal mode frequencies in ``cm^-1``
+        displ_vecs (tensorlike[float]): displacement vectors for normal modes
+        freq_separation (list[float]): list of frequency separation thresholds in ``cm^-1``.
+                                  Default is ``[2600]``.
 
     Returns:
-        A tuple of frequencies, normalized displacement vectors and localization matrices describing the relationship between
-        original and localized modes.
+        A tuple of frequencies, normalized displacement vectors and localization matrices
+        describing the relationship between original and localized modes.
 
     """
     if not freq_separation:

@@ -266,16 +266,16 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
 def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
     r"""Test that mode localization returns correct results."""
 
-    freqs, displ_vecs, uloc = localize_modes._localize_normal_modes(
+    freqs_loc, displ_vecs_loc, uloc = localize_modes._localize_normal_modes(
         freqs, displ_vecs, freq_separation=loc_freqs
     )
-    freqs = freqs / AU_TO_CM
+    freqs_loc = freqs_loc / AU_TO_CM
     nmodes = len(freqs)
     for i in range(nmodes):
         res_in_expvecs = any(
             (
-                np.allclose(displ_vecs[i], vec, atol=1e-6)
-                or np.allclose(displ_vecs[i], -1.0 * np.array(vec), atol=1e-6)
+                np.allclose(displ_vecs_loc[i], vec, atol=1e-6)
+                or np.allclose(displ_vecs_loc[i], -1.0 * np.array(vec), atol=1e-6)
             )
             for vec in exp_results["vecs"]
         )
@@ -284,7 +284,7 @@ def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
                 np.allclose(exp_results["vecs"][i], vec, atol=1e-6)
                 or np.allclose(exp_results["vecs"][i], -1.0 * np.array(vec), atol=1e-6)
             )
-            for vec in displ_vecs
+            for vec in displ_vecs_loc
         )
 
         res_in_expuloc = any(
@@ -304,7 +304,7 @@ def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
         assert res_in_expvecs and exp_in_resvecs
         assert res_in_expuloc and exp_in_resuloc
 
-    assert np.allclose(freqs, exp_results["freqs"])
+    assert np.allclose(freqs_loc, exp_results["freqs"])
 
 
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
