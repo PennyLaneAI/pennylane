@@ -185,7 +185,7 @@ class TestSampleState:
             def process_counts(self, counts):
                 return counts
 
-            def process_samples(self, samples):
+            def process_samples(self, samples, wire_orders=None):
                 return samples
 
         # Prepare a simple state
