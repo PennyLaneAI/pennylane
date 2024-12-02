@@ -181,7 +181,6 @@ class TestDoubleExcitationPlus:
         """Test that the resources can be obtained from the compressed representation."""
 
 
-
 class TestFermionicSWAP:
     """Tests for the ResourceFermionicSWAP class."""
 

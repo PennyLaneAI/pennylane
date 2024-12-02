@@ -100,6 +100,9 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 
             &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
             &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
+
+        For the source of this decomposition, see page 17 of
+        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
     """
 
     @staticmethod
@@ -122,9 +125,6 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs):
         return re.CompressedResourceOp(cls, {})
-
-
-
 
 
 class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
