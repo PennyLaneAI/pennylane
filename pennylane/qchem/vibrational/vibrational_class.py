@@ -198,7 +198,7 @@ def _get_uhf_dipole(scf_result):
     return dipole
 
 
-def get_dipole(scf_result, method):
+def _get_dipole(scf_result, method):
     r"""Evaluate the dipole moment for a Hartree-Fock state.
 
     Args:

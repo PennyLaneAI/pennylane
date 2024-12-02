@@ -348,6 +348,12 @@ def test_error_mode_localization():
             [-3.78176692e-16, -3.50274735e-17, -9.05219767e-01],
         ),
         (
+            ["C", "O", "O"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, -1.0]]),
+            "RHF",
+            [1.10150593e-15, -1.68930482e-16, -1.60982339e-15],
+        ),
+        (
             ["H", "H", "S"],
             np.array(
                 [
@@ -367,5 +373,5 @@ def test_get_dipole(sym, geom, method, expected_dipole):
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol, method=method)
-    dipole = vibrational.get_dipole(mol_scf, method=method)
+    dipole = vibrational_class._get_dipole(mol_scf, method=method)
     assert np.allclose(dipole, expected_dipole)
