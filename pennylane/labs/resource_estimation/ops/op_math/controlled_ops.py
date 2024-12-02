@@ -24,7 +24,8 @@ class ResourceCH(qml.CH, re.ResourceOperator):
     r"""Resource class for CH gate.
 
     Resources:
-        The resources are derived from the following identities:
+        The resources are derived from the following identities (as presented in this
+        `blog post <https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control>`_):
 
         .. math::
 
@@ -37,9 +38,6 @@ class ResourceCH(qml.CH, re.ResourceOperator):
         We can control on the Pauli-X gate to obtain our controlled Hadamard gate.
 
     """
-
-    # TODO: Reference this:
-    # https://quantumcomputing.stackexchange.com/questions/15734/how-to-construct-a-controlled-hadamard-gate-using-single-qubit-gates-and-control
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
@@ -368,7 +366,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
         gate_types[h] = 3
         gate_types[s] = 1
         gate_types[cz] = 1
-        gate_types[t] = 4
+        gate_types[t] = 2 + 2 * (7)  # T^dagg = 7*T in cost
 
         return gate_types
 
@@ -432,24 +430,59 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
 
     Resources:
         The resources are obtained from (table 3.) the paper `Polylogarithmic-depth controlled-NOT gates
-        without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. The resources are
-        estimated using the following formulas.
+        without ancilla qubits <https://www.nature.com/articles/s41467-024-50065-x>`_. Specifically, the
+        resources are given by the following rules:
 
-        If the number of control qubits is 0
+        * If there is only one control qubit, treat the resources as a :code:`CNOT` gate.
+
+        * If there are two control qubits, treat the resources as a :code:`Toffoli` gate.
+
+        * If there are three control qubits, the resources are two :code:`CNOT` gates and
+          one :code:`Toffoli` gate.
+
+        * If there are more than three control qubits (:math:`n`), the resources are given by
+          :math:`36n - 111` :code:`CNOT` gates.
 
     """
 
+    # TODO: There is a more efficient resource decomposition, need to update this based on the paper.
+
     @staticmethod
     def _resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        **kwargs,  # pylint: disable=unused-argument
     ) -> Dict[re.CompressedResourceOp, int]:
-        raise re.ResourcesNotDefined
+        gate_types = {}
+        cnot = re.ResourceCNOT.resource_rep()
+        toffoli = re.ResourceToffoli.resource_rep()
+
+        if num_ctrl_values:
+            x = re.ResourceX.resource_rep()
+            gate_types[x] = num_ctrl_values * 2
+
+        if num_ctrl_wires == 1:
+            gate_types[cnot] = 1
+            return gate_types
+
+        if num_ctrl_wires == 2:
+            gate_types[toffoli] = 1
+            return gate_types
+
+        if num_ctrl_wires == 3:
+            gate_types[cnot] = 2
+            gate_types[toffoli] = 1
+            return gate_types
+
+        gate_types[cnot] = 36 * num_ctrl_wires - 111  # Barenco 1995
+        return gate_types
 
     def resource_params(self) -> dict:
         num_control = len(self.hyperparameters["control_wires"])
         num_work_wires = len(self.hyperparameters["work_wires"])
 
-        num_control_values = len([val for val in self.hyperparameters["control_values"] if val])
+        num_control_values = len([val for val in self.hyperparameters["control_values"] if not val])
 
         return {
             "num_ctrl_wires": num_control,
@@ -661,7 +694,23 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
     r"""Resource class for CRot
 
     Resources:
-        TODO: Add a source for resources!
+        The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
+        unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identities:
+
+        .. math::
+
+            \begin{align}
+                \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}, \\
+                \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}.
+            \end{align}
+
+        This identity is applied along with some clever choices for the angle values to combine rotation;
+        the final circuit takes the form:
+        
+        .. code-block:: bash
+
+            ctrl: ─────╭●─────────╭●─────────┤
+            trgt: ──RZ─╰X──RZ──RY─╰X──RY──RZ─┤
 
     """
 
@@ -671,7 +720,7 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 
         cnot = re.ResourceCNOT.resource_rep()
         rz = re.ResourceRZ.resource_rep()
-        ry = re.ResourceRZ.resource_rep()
+        ry = re.ResourceRY.resource_rep()
 
         gate_types[cnot] = 2
         gate_types[rz] = 3
@@ -704,20 +753,12 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
     r"""Resource class for the ControlledPhaseShift gate.
 
-        Resources:
-            The resources come from the following identity expressing Controlled Phase Shift
-            as a product of Phase Shifts and CNOTs.
+    Resources:
+        The resources are derived using the fact that a :code:`PhaseShift` gate is identical to
+        the :code:`RZ` gate up to some global phase. Furthermore, a controlled global phase simplifies
+        to a :code:`PhaseShift` gate. This gives rise to the following identity:
 
-
-        .. math::
-
-            CR_\phi(\phi) = \begin{bmatrix}
-                    1 & 0 & 0 & 0 \\
-                    0 & 1 & 0 & 0 \\
-                    0 & 0 & 1 & 0 \\
-                    0 & 0 & 0 & e^{i\phi}
-                \end{bmatrix} =
-            (R_\phi(\phi/2) \otimes I) \cdot CNOT \cdot (I \otimes R_\phi(-\phi/2)) \cdot CNOT \cdot (I \otimes R_\phi(\phi/2))
+        .. math:: CR_\phi(\phi) = (R_\phi(\phi/2) \otimes I) \cdot CNOT \cdot (I \otimes R_\phi(-\phi/2)) \cdot CNOT \cdot (I \otimes R_\phi(\phi/2))
 
     """
 
@@ -750,7 +791,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourcePhaseShift, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourcePhaseShift, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
             ): 1
         }
 
