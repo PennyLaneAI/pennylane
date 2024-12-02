@@ -63,7 +63,7 @@ six==1.16.0
 sos==4.5.6
 ssh-import-id==5.11
 systemd-python==234
-tomli==2.1.0
+tomli==2.2.1
 Twisted==22.1.0
 ubuntu-pro-client==8001
 ufw==0.36.1
