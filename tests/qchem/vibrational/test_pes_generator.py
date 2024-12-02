@@ -326,7 +326,7 @@ def test_twomode_pes(sym, geom, harmonic_res, ref_file):
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
 def test_threemode_pes(sym, geom, harmonic_res, ref_file):
-    r"""Test that the correct onemode PES is obtained."""
+    r"""Test that the correct threemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_eq = vibrational_class._single_point(mol)
