@@ -311,7 +311,6 @@ def _merge_param_gates(operations, merge_ops=None):
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    max_expansion=None,
     method="sk",
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -328,13 +327,9 @@ def clifford_t_decomposition(
     :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
 
-    .. warning::
-        The ``max_expansion`` argument is deprecated and will be removed in version 0.40.
-
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
-        max_expansion (int): The depth to be used for tape expansion before manual decomposition to Clifford+T basis is applied.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
@@ -373,29 +368,14 @@ def clifford_t_decomposition(
     >>> qml.math.allclose(result, approx, atol=1e-4)
     True
     """
-    if max_expansion is not None:
-        warnings.warn(
-            "The max_expansion argument is deprecated and will be removed in version v0.40. ",
-            qml.PennyLaneDeprecationWarning,
-        )
-    else:
-        max_expansion = 6
 
     with QueuingManager.stop_recording():
-        # Build the basis set and the pipeline for intial compilation pass
-        basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
+        # Build the basis set and the pipeline for initial compilation pass
+        basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES + _SKIP_OP_TYPES]
         pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
         # Compile the tape according to depth provided by the user and expand it
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r"The expand_depth argument is deprecated",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            [compiled_tape], _ = qml.compile(
-                tape, pipelines, basis_set=basis_set, expand_depth=max_expansion
-            )
+        [compiled_tape], _ = qml.compile(tape, pipelines, basis_set=basis_set)
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
@@ -431,44 +411,11 @@ def clifford_t_decomposition(
                     d_ops = _two_qubit_decompose(op)
                     decomp_ops.extend(d_ops)
 
-                # For special multi-qubit gates and ones constructed from matrix
+                # If we don't know how to decompose the operation
                 else:
-                    try:
-                        # Attempt decomposing the operation
-                        md_ops = op.decomposition()
-                        idx = 0  # might not be fast but at least is not recursive
-                        while idx < len(md_ops):
-                            md_op = md_ops[idx]
-                            if md_op.name not in basis_set or not check_clifford_t(md_op):
-                                # For the gates acting on one qubit
-                                if len(md_op.wires) == 1:
-                                    if md_op.name in basis_set:  # For known recipe
-                                        d_ops = _rot_decompose(md_op)
-                                    else:  # Resort to decomposing manually
-                                        d_ops, g_op = _one_qubit_decompose(md_op)
-                                        gphase_ops.append(g_op)
-
-                                # For the gates acting on two qubits
-                                elif len(md_op.wires) == 2:
-                                    # Resort to decomposing manually
-                                    d_ops = _two_qubit_decompose(md_op)
-
-                                # Final resort (should not enter in an ideal situtation)
-                                else:
-                                    d_ops = md_op.decomposition()
-
-                                # Expand the list and iterate over
-                                del md_ops[idx]
-                                md_ops[idx:idx] = d_ops
-                            idx += 1
-
-                        decomp_ops.extend(md_ops)
-
-                    # If we don't know how to decompose the operation
-                    except Exception as exc:
-                        raise ValueError(
-                            f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
-                        ) from exc
+                    raise ValueError(
+                        f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
+                    )
 
         # Merge RZ rotations together
         merged_ops, number_ops = _merge_param_gates(decomp_ops, merge_ops=["RZ"])

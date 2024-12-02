@@ -22,7 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as pnp
-from pennylane.operation import Tensor
 from pennylane.pauli import are_identical_pauli_words, are_pauli_words_qwc
 from pennylane.pauli.grouping.group_observables import (
     PauliGroupingStrategy,
@@ -459,34 +458,6 @@ class TestGroupObservables:
         _, grouped_coeffs = group_observables(obs, coeffs)
         assert isinstance(grouped_coeffs[0], list)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_return_new_opmath_legacy_opmath(self):
-        """Test that using new opmath causes grouped observables to have Prods instead of
-        Tensors"""
-        old_observables = [
-            Tensor(PauliX(0), PauliZ(1)),
-            Tensor(PauliY(2), PauliZ(1)),
-            Tensor(PauliZ(1), PauliZ(2)),
-        ]
-
-        old_groups = group_observables(old_observables)
-
-        assert all(isinstance(o, Tensor) for g in old_groups for o in g)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_return_deactive_opmath_prod(self):
-        """Test that using new opmath causes grouped observables to have Prods instead of
-        Tensors"""
-        observables = [
-            qml.prod(PauliX(0), PauliZ(1)),
-            qml.prod(PauliY(2), PauliZ(1)),
-            qml.prod(PauliZ(1), PauliZ(2)),
-        ]
-
-        old_groups = group_observables(observables)
-
-        assert all(isinstance(o, qml.ops.Prod) for g in old_groups for o in g)
-
     def test_observables_on_no_wires(self):
         """Test that observables on no wires are stuck in the first group."""
 
@@ -511,7 +482,6 @@ class TestGroupObservables:
         assert groups == [observables]
         assert coeffs == [[1, 2]]
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_observables_on_no_wires_coeffs(self):
         """Test that observables on no wires are stuck in the first group and
         coefficients are tracked when provided."""

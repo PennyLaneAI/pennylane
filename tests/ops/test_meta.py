@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the Snapshot operation."""
+import warnings
+
 import numpy as np
 
 # pylint: disable=protected-access
@@ -19,6 +21,13 @@ import pytest
 
 import pennylane as qml
 from pennylane import Snapshot
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestBarrier:

@@ -267,12 +267,12 @@ def device(name, *args, **kwargs):
         if custom_decomps is not None:
             if isinstance(dev, qml.devices.LegacyDevice):
                 custom_decomp_expand_fn = qml.transforms.create_decomp_expand_fn(
-                    custom_decomps, dev, decomp_depth=10
+                    custom_decomps, dev
                 )
                 dev.custom_expand(custom_decomp_expand_fn)
             else:
                 custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev, decomp_depth=10
+                    custom_decomps, dev
                 )
                 dev.preprocess = custom_decomp_preprocess
 

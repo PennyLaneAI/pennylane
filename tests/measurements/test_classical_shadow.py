@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows measurement processes"""
 
 import copy
+import warnings
 
 import autograd.numpy
 import pytest
@@ -22,6 +23,14 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 # pylint: disable=dangerous-default-value, too-many-arguments
 
@@ -604,11 +613,7 @@ class TestExpvalForward:
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)
 
-        legacy_msg = "Observable must be a linear combination of Pauli observables"
-        new_opmath_msg = "Observable must have a valid pauli representation."
-        msg = new_opmath_msg if qml.operation.active_new_opmath() else legacy_msg
-
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation."):
             circuit(qml.Hadamard(0) @ qml.Hadamard(2))
 
 

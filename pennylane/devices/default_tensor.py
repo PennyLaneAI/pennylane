@@ -41,7 +41,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operation, Tensor
+from pennylane.operation import Observable, Operation
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
@@ -125,7 +125,6 @@ _observables = frozenset(
         "Identity",
         "Projector",
         "SparseHamiltonian",
-        "Hamiltonian",
         "LinearCombination",
         "Sum",
         "SProd",
@@ -1026,12 +1025,6 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
 def expval_core(obs: Observable, device) -> float:
     """Dispatcher for expval."""
     return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
-
-
-@expval_core.register
-def expval_core_tensor(obs: Tensor, device) -> float:
-    """Computes the expval of a Tensor."""
-    return expval_core(Prod(*obs._args), device)
 
 
 @expval_core.register

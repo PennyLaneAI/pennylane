@@ -14,6 +14,8 @@
 """
 Test base AlgorithmicError class and its associated methods.
 """
+import warnings
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods, unused-argument
@@ -27,6 +29,13 @@ from pennylane.resource.error import (
     SpectralNormError,
     _compute_algo_error,
 )
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class SimpleError(AlgorithmicError):

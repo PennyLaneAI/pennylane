@@ -14,6 +14,8 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
+import warnings
+
 # pylint:disable=protected-access, unused-argument
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -25,6 +27,14 @@ from pennylane import math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 

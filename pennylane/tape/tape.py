@@ -78,9 +78,10 @@ def _validate_computational_basis_sampling(tape):
         with (
             QueuingManager.stop_recording()
         ):  # stop recording operations - the constructed operator is just aux
-            prod_op = qml.ops.Prod if qml.operation.active_new_opmath() else qml.operation.Tensor
             pauliz_for_cb_obs = (
-                qml.Z(all_wires) if len(all_wires) == 1 else prod_op(*[qml.Z(w) for w in all_wires])
+                qml.Z(all_wires)
+                if len(all_wires) == 1
+                else qml.ops.Prod(*[qml.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:

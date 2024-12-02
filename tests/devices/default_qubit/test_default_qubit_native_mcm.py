@@ -136,12 +136,6 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
     and a conditional gate. Multiple measurements of the mid-circuit measurement value are
     performed. This function also tests `reset` parametrizing over the parameter."""
 
-    if mcm_method == "tree-traversal" and not qml.operation.active_new_opmath():
-        pytest.xfail(
-            "The tree-traversal method does not work with legacy opmath with "
-            "`qml.var` of pauli observables in the circuit."
-        )
-
     if mcm_method == "one-shot" and shots is None:
         pytest.skip("`mcm_method='one-shot'` is incompatible with analytic mode (`shots=None`)")
 

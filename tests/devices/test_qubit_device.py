@@ -166,12 +166,6 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
     return None
 
 
-def test_deprecated_access():
-    """Test that accessing via top-level is deprecated."""
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
-        qml.QubitDevice  # pylint: disable=pointless-statement
-
-
 def test_notimplemented_circuit_hash(mock_qubit_device):
     """Test that the circuit hash property is not implemented"""
     dev = mock_qubit_device()

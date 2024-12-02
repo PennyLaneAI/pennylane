@@ -287,8 +287,8 @@ class SparseHamiltonian(Observable):
 
     Sparse Hamiltonians can be constructed directly with a SciPy-compatible sparse matrix.
 
-    Alternatively, you can construct your Hamiltonian as usual using :class:`~.Hamiltonian`, and then use
-    :meth:`~.Hamiltonian.sparse_matrix` to construct the sparse matrix that serves as the input
+    Alternatively, you can construct your Hamiltonian as usual using :class:`~.LinearCombination`, and then use
+    :meth:`~.LinearCombination.sparse_matrix` to construct the sparse matrix that serves as the input
     to ``SparseHamiltonian``:
 
     >>> wires = range(20)

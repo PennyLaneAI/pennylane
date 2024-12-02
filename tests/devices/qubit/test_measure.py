@@ -97,30 +97,6 @@ class TestMeasurementDispatch:
         state = qml.numpy.zeros(2)
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_with_multi_wire_obs(self):
-        """Check that a Hamiltonian with a multi-wire observable uses the sum of terms method."""
-
-        S = qml.Hamiltonian(
-            [0.5, 0.5],
-            [
-                qml.X(0),
-                qml.Hermitian(
-                    np.array(
-                        [
-                            [0.5, 1.0j, 0.0, -3j],
-                            [-1.0j, -1.1, 0.0, -0.1],
-                            [0.0, 0.0, -0.9, 12.0],
-                            [3j, -0.1, 12.0, 0.0],
-                        ]
-                    ),
-                    wires=[0, 1],
-                ),
-            ],
-        )
-        state = np.zeros(2)
-        assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
-
     def test_no_sparse_matrix(self):
         """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
@@ -230,7 +206,6 @@ class TestMeasurements:
         t1, t2 = 0.5, 1.0
         assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
 
@@ -441,8 +416,8 @@ class TestSumOfTermsDifferentiability:
             H = qml.Hamiltonian(
                 coeffs,
                 [
-                    qml.operation.Tensor(*(qml.PauliZ(i) for i in range(n_wires))),
-                    qml.operation.Tensor(*(qml.PauliY(i) for i in range(n_wires))),
+                    qml.prod(*(qml.PauliZ(i) for i in range(n_wires))),
+                    qml.prod(*(qml.PauliY(i) for i in range(n_wires))),
                 ],
             )
         else:

@@ -2007,7 +2007,8 @@ class TestParameterShiftRule:
 
 
 # TODO: allow broadcast=True
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+
+
 @pytest.mark.parametrize("broadcast", [False])
 class TestHamiltonianExpvalGradients:
     """Test that tapes ending with expval(H) can be

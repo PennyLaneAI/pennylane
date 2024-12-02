@@ -14,6 +14,8 @@
 """
 Unit tests for the adjoint_metric_tensor function.
 """
+import warnings
+
 import numpy as onp
 
 # pylint: disable=protected-access
@@ -21,6 +23,14 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
