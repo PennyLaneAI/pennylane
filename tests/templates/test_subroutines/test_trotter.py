@@ -361,10 +361,7 @@ class TestInitialization:
                 qml.TrotterProduct(hamiltonian, time=1.23)
 
         else:
-            try:
-                qml.TrotterProduct(hamiltonian, time=1.23)
-            except TypeError:
-                assert False  # test should fail if an error was raised when we expect it not to
+            qml.TrotterProduct(hamiltonian, time=1.23)
 
     @pytest.mark.parametrize(
         "hamiltonian",
