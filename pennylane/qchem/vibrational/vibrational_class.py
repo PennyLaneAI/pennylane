@@ -25,7 +25,7 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
-BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
+BOHR_TO_ANG = 0.5291772106  # Factor to convert bohr to angstrom
 
 
 @dataclass
@@ -49,7 +49,7 @@ class VibrationalPES:
     def __init__(
         self,
         freqs,
-        gauss_grid,
+        grid,
         gauss_weights,
         uloc,
         pes_arr,
@@ -58,7 +58,7 @@ class VibrationalPES:
         dipole_level=2,
     ):
         self.freqs = freqs
-        self.gauss_grid = gauss_grid
+        self.grid = grid
         self.gauss_weights = gauss_weights
         self.uloc = uloc
         self.pes_onemode = pes_arr[0]

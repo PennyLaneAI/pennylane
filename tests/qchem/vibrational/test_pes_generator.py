@@ -425,17 +425,12 @@ def test_vibrational_pes(sym, geom, dipole_level, result_file):
         assert np.allclose(vib_obj.dipole_onemode[i], exp_dip_onemode[i], atol=1e-5) or np.allclose(
             vib_obj.dipole_onemode[i], exp_dip_onemode[i][::-1, :], atol=1e-5
         )
-
-    for i in range(nmodes):
         for j in range(nmodes):
             assert np.allclose(vib_obj.pes_twomode[i, j], exp_pes_twomode[i, j], atol=1e-5)
             if dipole_level > 1:
                 assert np.allclose(vib_obj.dipole_twomode[i, j], exp_dip_twomode[i, j], atol=1e-5)
             else:
                 assert vib_obj.dipole_twomode is None
-
-    for i in range(nmodes):
-        for j in range(nmodes):
             for k in range(nmodes):
                 assert np.allclose(
                     vib_obj.pes_threemode[i, j, k], exp_pes_threemode[i, j, k], atol=1e-5

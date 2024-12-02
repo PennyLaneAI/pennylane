@@ -771,6 +771,17 @@ def vibrational_pes(
     Returns:
        VibrationalPES object.
 
+    **Example**
+
+    >>> symbols  = ['H', 'F']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> pes_obj = vibrational_pes(mol)
+    >>> pes_obj.pes_onemode
+    array([[ 6.26177771e-02,  3.62085556e-02,  1.72120120e-02,
+         4.71674655e-03, -2.84217094e-14,  6.06717218e-03,
+         2.87234966e-02,  8.03213574e-02,  1.95651039e-01]])
+
     """
     if dipole_level > 3 or dipole_level < 1:
         raise ValueError(
