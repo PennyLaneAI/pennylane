@@ -50,3 +50,4 @@ from .qnode import QNode, qnode
 from .resolution import _resolve_execution_config, _resolve_mcm_config, _resolve_diff_method
 from ._cache_transform import _cache_transform
 from ._setup_transform_program import _setup_transform_program
+from .run import run
