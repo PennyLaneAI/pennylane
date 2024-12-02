@@ -81,11 +81,10 @@ from pennylane import numpy as np
 def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
     r"""Test that factorize function returns the correct values."""
     factors, eigvals, eigvecs = qml.qchem.factorize(two_tensor, tol_f, tol_s)
-
     eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
 
     assert np.allclose(factors, factors_ref)
-    assert np.allclose(eigvals, eigvals_ref)
+    assert np.allclose(eigvals, np.einsum("ti,tj->tij", eigvals_ref, eigvals_ref))
     assert np.allclose(eigvecs, eigvecs_ref)
 
 
@@ -119,6 +118,84 @@ def test_factorize_reproduce(two_tensor):
 
     assert qml.math.allclose(np.tensordot(factors1, factors1, axes=([0], [0])), two_tensor)
     assert qml.math.allclose(np.tensordot(factors2, factors2, axes=([0], [0])), two_tensor)
+
+
+@pytest.mark.external
+@pytest.mark.parametrize(
+    "two_tensor",
+    [
+        # two-electron tensor computed as
+        # symbols  = ['H', 'H']
+        # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
+        # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        # core, one, two = qml.qchem.electron_integrals(mol)()
+        # two = np.swapaxes(two, 1, 3) # convert to chemist notation
+        np.array(
+            [
+                [
+                    [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
+                    [[-2.85965696e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                ],
+                [
+                    [[-2.85854673e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                    [[6.63711349e-01, -2.63677968e-13], [-2.63788991e-13, 6.97651447e-01]],
+                ],
+            ]
+        ),
+    ],
+)
+@pytest.mark.parametrize("cholesky", [False, True])
+@pytest.mark.parametrize("regularization", [None, "L1", "L2"])
+def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
+    r"""Test that factors returned by the factorize function reproduce the two-electron tensor."""
+    optax = pytest.importorskip("optax")
+
+    factors, cores, leaves = qml.qchem.factorize(
+        two_tensor,
+        cholesky=cholesky,
+        compressed=True,
+        regularization=regularization,
+        optimizer=optax.adam(learning_rate=0.001),
+    )
+
+    assert qml.math.allclose(np.einsum("tpqi,trsi->pqrs", factors, factors), two_tensor, atol=1e-3)
+    assert qml.math.allclose(
+        qml.math.einsum("tpk,tqk,tkl,trl,tsl->pqrs", leaves, leaves, cores, leaves, leaves),
+        two_tensor,
+        atol=1e-3,
+    )
+
+
+@pytest.mark.external
+@pytest.mark.parametrize(
+    "two_tensor",
+    [
+        # two-electron tensor computed as
+        # symbols  = ['H', 'H']
+        # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
+        # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        # core, one, two = qml.qchem.electron_integrals(mol)()
+        # two = np.swapaxes(two, 1, 3) # convert to chemist notation
+        np.array(
+            [
+                [
+                    [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
+                    [[-2.85965696e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                ],
+                [
+                    [[-2.85854673e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                    [[6.63711349e-01, -2.63677968e-13], [-2.63788991e-13, 6.97651447e-01]],
+                ],
+            ]
+        ),
+    ],
+)
+def test_regularization_error(two_tensor):
+    r"""Test that the factorize function raises an error when incorrect regularization is provided."""
+    _ = pytest.importorskip("optax")
+
+    with pytest.raises(ValueError, match="Supported regularization types include"):
+        qml.qchem.factorize(two_tensor, compressed=True, regularization=True)
 
 
 @pytest.mark.parametrize(
