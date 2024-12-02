@@ -17,14 +17,13 @@ This module contains a developer focused execution function for internal executi
 
 from dataclasses import replace
 from functools import partial
-from typing import Callable, Union
-
-from cachetools import Cache
+from typing import Callable
 
 import pennylane as qml
 from pennylane.math import Interface, jpc_interfaces
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import ResultBatch
+from pennylane.workflow import _cache_transform
 
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
@@ -118,13 +117,12 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
     return inner_execute
 
 
-# pylint: disable=too-many-arguments, too-many-branches
+# pylint: disable=too-many-branches
 def run(
     tapes: "qml.tape.QuantumScriptBatch",
     device: "qml.devices.Device",
     resolved_execution_config: "qml.devices.ExecutionConfig",
     inner_transform_program: TransformProgram,
-    cache: Union[None, bool, dict, Cache] = True,
 ) -> ResultBatch:
     """
     Execute a batch of quantum scripts on a device with optional gradient computation.
@@ -136,13 +134,12 @@ def run(
             execution and differentiation settings.
         inner_transform_program (TransformProgram): The transformation program to apply
             to the quantum scripts before execution.
-        cache (Union[None, bool, dict, Cache]): Cache for intermediate results during
-            execution. Defaults to True.
 
     Returns:
         ResultBatch: results of the execution
     """
     inner_execute = _make_inner_execute(device, inner_transform_program, resolved_execution_config)
+    cache = _cache_transform in inner_transform_program
 
     # moved to its own explicit step so that it will be easier to remove
     def inner_execute_with_empty_jac(tapes, **_):

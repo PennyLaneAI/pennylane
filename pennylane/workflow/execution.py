@@ -235,5 +235,5 @@ def execute(
     if transform_program.is_informative:
         return post_processing(tapes)
 
-    results = run(tapes, device, config, inner_transform, cache)
+    results = run(tapes, device, config, inner_transform)
     return post_processing(results)
