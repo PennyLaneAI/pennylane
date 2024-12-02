@@ -92,7 +92,8 @@ class MPSPrep(Operation):
 
                 d_{j-1,2} = d_{j,0}.
 
-        In addition, all dimensions must be powers of two.
+        Additionally, the physical dimension of the site should always be fixed at :math:`2`,
+        while the other dimensions must be powers of two.
         The following input is valid:
 
         .. code-block::
