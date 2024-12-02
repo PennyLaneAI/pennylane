@@ -67,10 +67,10 @@ class TestCompressedResourceOp:
     )
 
     compressed_op_reprs = (
-        "DummyX(num_wires=1)",
-        "DummyQFT(num_wires=5)",
-        "DummyQSVT(num_wires=3, num_angles=5)",
-        "DummyTrotterProduct(Hamiltonian=X(0) + -1 * Y(1) + 0.5 * (Z(0) @ Z(1)), num_steps=5, order=2)",
+        "DummyX",
+        "DummyQFT",
+        "DummyQSVT",
+        "DummyTrotterProduct",
     )
 
     @pytest.mark.parametrize("name, op_type, parameters", compressed_ops_and_params_lst)
