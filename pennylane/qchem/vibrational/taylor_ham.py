@@ -277,8 +277,8 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
     return fs, predicted_3D
 
 
-def taylor_integrals(pes, deg=4, min_deg=3):
-    r"""Computes the Taylor form integrals for Hamiltonian construction
+def taylor_coeffs(pes, deg=4, min_deg=3):
+    r"""Computes the Taylor form fitted coefficients for Hamiltonian construction
 
     Args:
         pes (VibrationalPES): the PES object
@@ -308,8 +308,8 @@ def taylor_integrals(pes, deg=4, min_deg=3):
     return coeff_arr
 
 
-def taylor_integrals_dipole(pes, deg=4, min_deg=1):
-    r"""Calculates Taylor form integrals for dipole construction
+def taylor_dipole_coeffs(pes, deg=4, min_deg=1):
+    r"""Calculates Taylor form fitted coefficients for dipole construction
 
     Args:
         pes (VibrationalPES): the PES object
@@ -392,10 +392,10 @@ def _position_to_boson(index, op):
 
 
 def taylor_anharmonic(taylor_coeffs, start_deg=2):
-    """Build anharmonic term of taylor form bosonic observable from provided integrals
+    """Build anharmonic term of taylor form bosonic observable from provided coefficients
 
     Args:
-        taylor_coeffs (list(float)): the coeffs of the taylor integrals
+        taylor_coeffs (list(float)): the coeffs of the taylor expansion
         start_deg (int): the starting degree
 
     Returns:
@@ -459,10 +459,10 @@ def taylor_anharmonic(taylor_coeffs, start_deg=2):
 
 
 def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
-    """Build kinetic term of taylor form bosonic observable from provided integrals
+    """Build kinetic term of taylor form bosonic observable from provided coefficients
 
     Args:
-        taylor_coeffs (list(float)): the coeffs of the taylor integrals
+        taylor_coeffs (list(float)): the coeffs of the taylor expansion
         freqs (list(float)): the frequencies
         is_loc (bool): whether or not if localized
         Uloc (list(float)): localization matrix indicating the relationship between original and
@@ -492,10 +492,10 @@ def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
 
 
 def taylor_harmonic(taylor_coeffs, freqs):
-    """Build harmonic term of taylor form bosonic observable from provided integrals
+    """Build harmonic term of taylor form bosonic observable from provided coefficients
 
     Args:
-        taylor_coeffs (list(float)): the coeffs of the taylor integrals
+        taylor_coeffs (list(float)): the coeffs of the taylor expansion
         freqs (list(float)): the harmonic frequencies
 
     Returns:
@@ -514,10 +514,10 @@ def taylor_harmonic(taylor_coeffs, freqs):
 
 
 def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
-    """Build taylor form bosonic observable from provided integrals
+    """Build taylor form bosonic observable from provided coefficients
 
     Args:
-        taylor_coeffs (list(float)): the coeffs of the taylor integrals
+        taylor_coeffs (list(float)): the coeffs of the taylor expansion
         freqs (list(float)): the harmonic frequencies
         is_loc (bool): whether or not if localized
         Uloc (list(float)): localization matrix indicating the relationship between original and
@@ -549,6 +549,6 @@ def taylor_hamiltonian(pes_object, deg=4, min_deg=3):
     Returns:
         BoseSentence: taylor hamiltonian for given PES and degree
     """
-    coeffs_arr = taylor_integrals(pes_object, deg, min_deg)
+    coeffs_arr = taylor_coeffs(pes_object, deg, min_deg)
     ham = taylor_bosonic(coeffs_arr, pes_object.freqs, is_loc=pes_object.localized, Uloc=pes_object.uloc)
     return ham

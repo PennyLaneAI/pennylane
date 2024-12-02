@@ -6,9 +6,9 @@ from .taylor_ham import (
     taylor_anharmonic,
     taylor_hamiltonian,
     taylor_bosonic,
-    taylor_integrals,
+    taylor_coeffs,
     taylor_harmonic,
-    taylor_integrals_dipole,
+    taylor_dipole_coeffs,
     taylor_kinetic,
 )
 from .localize_modes import localize_normal_modes
