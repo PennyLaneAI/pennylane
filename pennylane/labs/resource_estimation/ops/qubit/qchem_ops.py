@@ -16,34 +16,6 @@ import pennylane.labs.resource_estimation as re
 # pylint: disable=arguments-differ
 
 
-class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
-    r"""Resource class for the SingleExcitation gate.
-
-    Resources:
-        The resources are obtained by decomposing the following matrix into fundamental gates.
-
-        .. math:: U(\phi) = \begin{bmatrix}
-                    1 & 0 & 0 & 0 \\
-                    0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
-                    0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
-                    0 & 0 & 0 & 1
-                \end{bmatrix}.
-
-    """
-
-    @staticmethod
-    def _resource_decomp(*args, **kwargs):
-        """TODO: implement in resource_symbolic_ops branch"""
-        raise re.ResourcesNotDefined
-
-    def resource_params(self):
-        return {}
-
-    @classmethod
-    def resource_rep(cls, **kwargs):
-        return re.CompressedResourceOp(cls, {})
-
-
 class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperator):
     r"""Resource class for the SingleExcitationMinus gate.
 
@@ -151,57 +123,6 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
     def resource_rep(cls, **kwargs):
         return re.CompressedResourceOp(cls, {})
 
-
-class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperator):
-    r"""Resource class for the DoubleExcitationMinus gate.
-
-
-    Resources:
-        The resources are obtained by decomposing the following mapping into fundamental gates.
-
-        .. math::
-
-            &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
-            &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
-            &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
-    """
-
-    @staticmethod
-    def _resource_decomp(*args, **kwargs):
-        """TODO: implement in resource_symbolic_op branch"""
-
-    def resource_params(self):
-        return {}
-
-    @classmethod
-    def resource_rep(cls, **kwargs):
-        return re.CompressedResourceOp(cls, {})
-
-
-class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator):
-    r"""Resource class for the DoubleExcitationPlus gate.
-
-    Resources:
-        The resources are obtained by decomposing the following mapping into fundamental gates.
-
-        .. math::
-
-            &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
-            &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
-            &|x\rangle \rightarrow e^{i\phi/2} |x\rangle,
-    """
-
-    @staticmethod
-    def _resource_decomp(*args, **kwargs):
-        """TODO: implement in resource_symbolic_op branch"""
-        raise re.ResourcesNotDefined
-
-    def resource_params(self):
-        return {}
-
-    @classmethod
-    def resource_rep(cls, **kwargs):
-        return re.CompressedResourceOp(cls, {})
 
 
 class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):

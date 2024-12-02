@@ -62,8 +62,6 @@ Operators
     ~ResourceCY
     ~ResourceCZ
     ~ResourceDoubleExcitation
-    ~ResourceDoubleExcitationMinus
-    ~ResourceDoubleExcitationPlus
     ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
@@ -75,6 +73,7 @@ Operators
     ~ResourceMultiRZ
     ~ResourceOrbitalRotation
     ~ResourceMultiControlledX
+    ~ResourcePauliRot
     ~ResourcePhaseShift
     ~ResourcePSWAP
     ~ResourceRot
@@ -82,7 +81,6 @@ Operators
     ~ResourceRY
     ~ResourceRZ
     ~ResourceS
-    ~ResourceSingleExcitation
     ~ResourceSingleExcitationMinus
     ~ResourceSingleExcitationPlus
     ~ResourceSWAP
@@ -143,8 +141,6 @@ from .ops import (
     ResourceCY,
     ResourceCZ,
     ResourceDoubleExcitation,
-    ResourceDoubleExcitationMinus,
-    ResourceDoubleExcitationPlus,
     ResourceFermionicSWAP,
     ResourceGlobalPhase,
     ResourceHadamard,
@@ -164,7 +160,6 @@ from .ops import (
     ResourceRY,
     ResourceRZ,
     ResourceS,
-    ResourceSingleExcitation,
     ResourceSingleExcitationMinus,
     ResourceSingleExcitationPlus,
     ResourceSWAP,
