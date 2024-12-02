@@ -377,7 +377,7 @@ def sample_state(
     return sample_probs(probs, shots, num_wires, is_state_batched, rng)
 
 
-def sample_probs(probs, shots, num_wires, is_state_batched, rng):
+def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     """
     Sample from a probability distribution for a qubit system.
 
@@ -395,34 +395,17 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng):
         is_state_batched (bool): Whether the input probabilities are batched.
         rng (Optional[Generator]): Random number generator to use. If None, a new
             generator will be created.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
 
     Returns:
         ndarray: An array of samples. For non-batched input, the shape is
         (shots, num_wires). For batched input, the shape is
         (batch_size, shots, num_wires).
-
-    Example:
-        >>> probs = np.array([0.2, 0.8])  # For a single-wire qubit system
-        >>> shots = 1000
-        >>> num_wires = 1
-        >>> is_state_batched = False
-        >>> rng = np.random.default_rng(42)
-        >>> samples = sample_probs(probs, shots, num_wires, is_state_batched, rng)
-        >>> samples.shape
-        (1000, 1)
     """
-    rng = np.random.default_rng(rng)
-    basis_states = np.arange(2**num_wires)
-    if is_state_batched:
-        # rng.choice doesn't support broadcasting
-        samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
-    else:
-        samples = rng.choice(basis_states, shots, p=probs)
-
-    res = np.zeros(samples.shape + (num_wires,), dtype=np.int64)
-    for i in range(num_wires):
-        res[..., -(i + 1)] = (samples // (2**i)) % 2
-    return res
+    return qml.devices.qubit.sampling.sample_probs(
+        probs, shots, num_wires, is_state_batched, rng, prng_key=prng_key
+    )
 
 
 def measure_with_samples(
