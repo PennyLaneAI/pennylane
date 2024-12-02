@@ -70,7 +70,7 @@ class ResourceCH(qml.CH, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceHadamard, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourceHadamard, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -122,7 +122,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceY, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourceY, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -170,12 +170,12 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
             return {re.ResourceCCZ.resource_rep(): 1}
 
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceZ, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourceZ, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -232,7 +232,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceSWAP, {}, num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                re.ResourceSWAP, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -281,7 +281,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceControlled.resource_rep(
-                re.ResourceZ, {}, num_ctrl_wires + 2, num_ctrl_values + 2, num_work_wires
+                re.ResourceZ, {}, num_ctrl_wires + 2, num_ctrl_values, num_work_wires
             ): 1
         }
 
@@ -317,12 +317,12 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
     def controlled_resource_decomp(
         cls, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 1:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
             return {re.ResourceToffoli.resource_rep(): 1}
 
         return {
             re.ResourceMultiControlledX.resource_rep(
-                num_ctrl_wires + 1, num_ctrl_values + 1, num_work_wires
+                num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
 
