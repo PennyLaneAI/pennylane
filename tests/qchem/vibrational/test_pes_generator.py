@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import pes_generator, vibrational_class
 
 h5py = pytest.importorskip("h5py")
@@ -400,7 +401,7 @@ def test_vibrational_pes(sym, geom, dipole_level, result_file):
     r"""Test that vibrational_pes returns correct object."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
 
-    vib_obj = vibrational.vibrational_pes(mol, dipole_level=dipole_level, do_cubic=True)
+    vib_obj = vibrational.vibrational_pes(mol, dipole_level=dipole_level, cubic=True)
 
     pes_file = os.path.join(ref_dir, result_file)
     f = h5py.File(pes_file, "r+")

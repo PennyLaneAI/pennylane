@@ -27,19 +27,20 @@ from ..openfermion_pyscf import _import_pyscf
 
 BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
 
+
 @dataclass
 class VibrationalPES:
     r"""Data class to save potential energy surface information computed along vibrational normal modes.
 
     Args:
-       freqs: normal-mode frequencies
-       gauss_grid: 1-D array containing the sample points on the Gauss-Hermite quadrature grid.
-       gauss_weights: 1-D array containing the weights on the Gauss-Hermite quadrature grid.
-       uloc: Localization matrix indicating the relationship between original and localized modes.
-       pes_arr: Tuple containing one-mode, two-mode and three-mode PES.
-       dipole_arr: Tuple containing one-mode, two-mode and three-mode dipole.
-       localized: Whether the localization of modes was used to generate PES and dipole. Defauls is True.
-       dipole_level: Defines the level upto which dipole matrix elements are to be calculated. Input values can be
+       freqs (list[float]): normal-mode frequencies
+       grid (list[float]): 1-D array containing the sample points on the Gauss-Hermite quadrature grid.
+       gauss_weights (list[float]): 1-D array containing the weights on the Gauss-Hermite quadrature grid.
+       uloc (tensorlike[float]): Localization matrix indicating the relationship between original and localized modes.
+       pes_arr (list[tensorlike[float]]): Tuple containing one-mode, two-mode and three-mode PES.
+       dipole_arr (list[tensorlike[float]]): Tuple containing one-mode, two-mode and three-mode dipole.
+       localized (bool): Whether the localization of modes was used to generate PES and dipole. Default is True.
+       dipole_level (int): Defines the level upto which dipole matrix elements are to be calculated. Input values can be
                      1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole respectively. Default
                      value is 2.
 
