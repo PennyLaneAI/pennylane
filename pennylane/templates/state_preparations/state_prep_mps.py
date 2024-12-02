@@ -28,7 +28,7 @@ class MPSPrep(Operation):
 
 
     Args:
-        mps (List[arrays]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS
+        mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS
             site matrices. More information on dimensions below in Usage Deatils
 
         wires (Sequence[int]): wires that the template acts on
