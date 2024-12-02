@@ -20,7 +20,7 @@ from pennylane.wires import Wires
 
 
 class MPSPrep(Operation):
-    r"""Prepares an initial state using a matrix product state (MPS) representation.
+    r"""Prepares an initial state from a matrix product state (MPS) representation.
 
     .. note::
 
@@ -29,7 +29,7 @@ class MPSPrep(Operation):
 
     Args:
         mps (List[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a product of MPS
-            site matrices. More information on dimensions below in Usage Deatils
+            site matrices. See Usage Deatils for more information on dimensions.
 
         wires (Sequence[int]): wires that the template acts on
 
@@ -65,36 +65,28 @@ class MPSPrep(Operation):
     .. details::
         :title: Usage Details
 
-        The matrix product state, is a list of :math:`n` tensors of the following form:
+    The input matrix product state must be a list of :math:`n` tensors :math:`[A^{(1)}, ..., A^{(n)}]`
+    with shapes :math:`d_0, ..., d_n`, respectively. The first and last tensors have rank ``2`` 
+    while the intermediate tensors have rank ``3``. 
 
-        1. **First tensor**:
+    The first tensor must have the shape :math:`d_0 = (d_{00}, d_{01})` where :math:`d_{00}` 
+    and :math:`d_{01}`  correspond to the physical dimension of the site and an auxiliary bond
+    dimension connecting it to the next tensor, respectively. 
 
-           - The first tensor :math:`A^{(1)}` has **rank 2** (i.e., it's a matrix).
-           - Its dimensions are :math:`d_{1,0}` and :math:`d_{1,1}` and correspond to the physical dimension of the site and an auxiliary bond dimension connecting it to the next tensor.
+    The last tensor must have the shape :math:`d_0 = (d_{n0}, d_{n1})` where :math:`d_{n0}` 
+    and :math:`d_{n1}` represent the auxiliary dimension from the previous site and the physical
+    dimension of the site, respectively.
 
-        2. **Last tensor**:
-
-           - The last tensor :math:`A^{(n)}` also has **rank 2** (another matrix).
-           - Its dimensions are :math:`d_{n-1,0}` and :math:`d_{n-1,1}`, representing the auxiliary dimension from the previous site and the physical dimension of the site.
-
-        3. **Intermediate tensors**:
-
-           - All tensors in the middle (i.e., :math:`A^{(j)}` for :math:`2 \leq j \leq n-1`) have **rank 3** (three-dimensional tensors).
-           - Their dimensions are :math:`d_{j,0}, d_{j,1},` and :math:`d_{j,2}`, where:
-
-             - :math:`d_{j,0}`: Bond dimension connecting to the previous tensor.
-             - :math:`d_{j,1}`: Physical dimension for the site.
-             - :math:`d_{j,2}`: Bond dimension connecting to the next tensor.
-
-           - Importantly, the bond dimensions match between adjacent tensors:
-
-             .. math::
-
-                d_{j-1,2} = d_{j,0}.
+    The intermediate tensors must have the shape :math:`(d_{j,0}, d_{j,1},` and :math:`d_{j,2}`, where:
+        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor.
+        - :math:`d_{j,1}` is the physical dimension for the site.
+        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor.       
+    Importantly, the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
 
         Additionally, the physical dimension of the site should always be fixed at :math:`2`,
         while the other dimensions must be powers of two.
-        The following input is valid:
+
+        The following input is a valid ``mps`` containing four tensors with dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]`, that satisfy the criteria described above.
 
         .. code-block::
 
@@ -117,7 +109,6 @@ class MPSPrep(Operation):
                 np.array([[-1.0, -0.0], [-0.0, -1.0]]),
             ]
 
-        The dimensions of ``mps`` are: :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]`, that satisfy the criteria described above.
     """
 
     def __init__(self, mps, wires, id=None):
