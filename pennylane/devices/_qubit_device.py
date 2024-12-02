@@ -1630,7 +1630,7 @@ class QubitDevice(Device):
             * Cannot differentiate with respect to state-prep operations.
 
             * Does not work for parametrized observables like
-              :class:`~.Hamiltonian` or :class:`~.Hermitian`.
+              :class:`~.ops.LinearCombination` or :class:`~.Hermitian`.
 
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of

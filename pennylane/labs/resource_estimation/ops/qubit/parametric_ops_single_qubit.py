@@ -33,6 +33,66 @@ def _rotation_resources(epsilon=10e-3):
     return gate_types
 
 
+class ResourcePhaseShift(qml.PhaseShift, re.ResourceOperator):
+    r"""
+    Resource class for the PhaseShift gate.
+
+    The resources are defined from the following identity:
+
+    .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                1 & 0 \\
+                0 & e^{i\phi}
+            \end{bmatrix}.
+    """
+
+    @staticmethod
+    def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+        gate_types = {}
+        rz = re.ResourceRZ.resource_rep()
+        global_phase = re.ResourceGlobalPhase.resource_rep()
+        gate_types[rz] = 1
+        gate_types[global_phase] = 1
+
+        return gate_types
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceRX(qml.RX, re.ResourceOperator):
+    """Resource class for the RX gate."""
+
+    @staticmethod
+    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=config["error_rx"])
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceRY(qml.RY, re.ResourceOperator):
+    """Resource class for the RY gate."""
+
+    @staticmethod
+    def _resource_decomp(config) -> Dict[re.CompressedResourceOp, int]:
+        return _rotation_resources(epsilon=config["error_ry"])
+
+    def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
 class ResourceRZ(qml.RZ, re.ResourceOperator):
     r"""Resource class for the RZ gate.
 
@@ -46,6 +106,26 @@ class ResourceRZ(qml.RZ, re.ResourceOperator):
         return _rotation_resources(epsilon=config["error_rz"])
 
     def resource_params(self) -> dict:
+        return {}
+
+    @classmethod
+    def resource_rep(cls) -> re.CompressedResourceOp:
+        return re.CompressedResourceOp(cls, {})
+
+
+class ResourceRot(qml.Rot, re.ResourceOperator):
+    """Resource class for the Rot gate."""
+
+    @staticmethod
+    def _resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+        rx = ResourceRX.resource_rep()
+        ry = ResourceRY.resource_rep()
+        rz = ResourceRZ.resource_rep()
+
+        gate_types = {rx: 1, ry: 1, rz: 1}
+        return gate_types
+
+    def resource_params(self):
         return {}
 
     @classmethod

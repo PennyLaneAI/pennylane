@@ -53,7 +53,7 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_devices"]["jax"] == "default.mixed"
+        assert dev.target_device.capabilities()["passthru_devices"]["jax"] == "default.mixed"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct

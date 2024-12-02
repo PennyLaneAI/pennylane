@@ -3,26 +3,73 @@
 # Release 0.40.0-dev (development release)
 
 <h3>New features since last release</h3>
-  
-* A `DeviceCapabilities` data class is defined to contain all capabilities of the device's execution interface (i.e. its implementation of `Device.execute`). A TOML file can be used to define the capabilities of a device, and it can be loaded into a `DeviceCapabilities` object.
-  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
-  ```pycon
-  >>> from pennylane.devices.capabilities import load_toml_file, parse_toml_document, DeviceCapabilities
-  >>> document = load_toml_file("my_device.toml")
-  >>> capabilities = parse_toml_document(document)
-  >>> isinstance(capabilities, DeviceCapabilities)
-  True
-  ```
+* Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
+  class. Device developers are encouraged to override these two methods separately instead of the 
+  `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these 
+  two methods or `preprocess`, but not both. In the long term, we will slowly phase out the use of 
+  `preprocess` in favour of these two methods for better separation of concerns.
+  [(#6617)](https://github.com/PennyLaneAI/pennylane/pull/6617)
+
+* Developers of plugin devices now have the option of providing a TOML-formatted configuration file
+  to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
+
+  * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
+    data class, as well as functions that load and parse the TOML-formatted configuration files.
+    [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
+
+    ```pycon
+      >>> from pennylane.devices.capabilities import DeviceCapabilities
+      >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
+      >>> isinstance(capabilities, DeviceCapabilities)
+      True
+    ```
+
+  * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
+    that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
+    file if it exists. Otherwise, it is set to `None`.
+    [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
+
+    ```python
+    from pennylane.devices import Device
+    
+    class MyDevice(Device):
+    
+        config_filepath = "path/to/config.toml"
+    
+        ...
+    ```
+    ```pycon
+    >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
+    True
+    ```
+
+<h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
 
+* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
+  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
+
+* Added a dense implementation of computing the structure constants in a new function
+  `structure_constants_dense` in `pennylane.labs.dla`.
+  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+
+* Added utility functions for handling dense matrices in the Lie theory context.
+  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
+
+* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
+added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
+
 <h4>New API for Qubit Mixed</h4>
 
 * Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
-
 
   * Two density matrix contraction methods using `einsum` and `tensordot`
 
@@ -30,17 +77,58 @@
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
+  
+* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
+  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
+
+* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
+  [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
+
+* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
+  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
+
+* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
+  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
+
+* Support is added for `if`/`else` statements and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`.
+  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
+
+* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
+  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+
+* The `qml.qchem.factorize` function now supports new methods for double factorization:
+  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
+  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
+
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
 
 <h3>Improvements 🛠</h3>
+
+* Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
+  arguments and `interface="auto"`.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
 
 * Added support for the `wire_options` dictionary to customize wire line formatting in `qml.draw_mpl` circuit
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
+* `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
+  [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
+
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
+* Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
+  [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
+
 <h4>Capturing and representing hybrid programs</h4>
+
+* PennyLane transforms can now be captured as primitives with experimental program capture enabled.
+  [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
@@ -50,10 +138,39 @@
   pennylane variant jaxpr.
   [(#6141)](https://github.com/PennyLaneAI/pennylane/pull/6141)
 
+* A `DefaultQubitInterpreter` class has been added to provide plxpr execution using python based tools,
+  and the `DefaultQubit.eval_jaxpr` method is now implemented.
+  [(#6594)](https://github.com/PennyLaneAI/pennylane/pull/6594)
+  [(#6328)](https://github.com/PennyLaneAI/pennylane/pull/6328)
+
 * An optional method `eval_jaxpr` is added to the device API for native execution of plxpr programs.
-[(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
+  [(#6580)](https://github.com/PennyLaneAI/pennylane/pull/6580)
+
+* `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
+  [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
 <h4>Other Improvements</h4>
+
+* Added PyTree support for measurements in a circuit. 
+  [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
+
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+      qml.Hadamard(0)
+      qml.CNOT([0,1])
+      return {"Probabilities": qml.probs(), "State": qml.state()}
+  ```
+  ```pycon
+  >>> circuit() 
+  {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])} 
+  ```
+
+* `_cache_transform` transform has been moved to its own file located
+  at `qml.workflow._cache_transform.py`.
+  [(#6624)](https://github.com/PennyLaneAI/pennylane/pull/6624)
 
 * `qml.BasisRotation` template is now JIT compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
@@ -65,15 +182,31 @@
 * Expand `ExecutionConfig.gradient_method` to store `TransformDispatcher` type.
   [(#6455)](https://github.com/PennyLaneAI/pennylane/pull/6455)
 
+* Fix the string representation of `Resources` instances to match the attribute names.
+  [(#6581)](https://github.com/PennyLaneAI/pennylane/pull/6581)
+
 <h3>Labs 🧪</h3>
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
 
+* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or 
+  resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
+  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
+
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
 
 <h3>Breaking changes 💔</h3>
+
+* `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
+  Autograd framework. As the function uses automatic differentiation for validation, parameters
+  from an autodiff framework have to be used.
+  [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
+
+* `qml.math.jax_argnums_to_tape_trainable` is moved and made private to avoid a qnode dependency
+  in the math module.
+  [(#6609)](https://github.com/PennyLaneAI/pennylane/pull/6609)
 
 * Gradient transforms are now applied after the user's transform program.
   [(#6590)](https://github.com/PennyLaneAI/pennylane/pull/6590)
@@ -84,6 +217,7 @@
   check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
   [(#6602)](https://github.com/PennyLaneAI/pennylane/pull/6602)
+  [(#6589)](https://github.com/PennyLaneAI/pennylane/pull/6589)
 
 * The developer-facing `qml.utils` module has been removed. Specifically, the
 following 4 sets of functions have been either moved or removed[(#6588)](https://github.com/PennyLaneAI/pennylane/pull/6588):
@@ -132,7 +266,6 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
   
-
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
   [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
@@ -143,6 +276,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * The `tape` and `qtape` properties of `QNode` have been deprecated. 
   Instead, use the `qml.workflow.construct_tape` function.
   [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
+  [(#6650)](https://github.com/PennyLaneAI/pennylane/pull/6650)
 
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
@@ -165,13 +299,29 @@ same information.
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
+
+* Updated the documentation of `TrotterProduct` to include the impact of the operands in the
+  Hamiltonian on the strucutre of the created circuit. Included an illustrative example on this.
+  [(#6629)](https://github.com/PennyLaneAI/pennylane/pull/6629)
+
 * Add reporting of test warnings as failures.
   [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
-* Add a warning message to Gradients and training documentation about ComplexWarnings
+* Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply the complex conjugate
+  of the unitaries instead of the adjoint, providing the correct result.
+  [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
+
+* `QNode` return behaviour is now consistent for lists and tuples.
+  [(#6568)](https://github.com/PennyLaneAI/pennylane/pull/6568)
+
+* `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily 
+  in the list of supported interfaces, such as the `Graph` class defined in `networkx`.
+  [(#6600)](https://github.com/PennyLaneAI/pennylane/pull/6600)
 
 * `qml.math.get_deep_interface` now works properly for autograd arrays.
   [(#6557)](https://github.com/PennyLaneAI/pennylane/pull/6557)
@@ -184,9 +334,12 @@ same information.
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Shiwen An,
+Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
+Diksha Dhawan,
 Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
@@ -195,3 +348,4 @@ William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
 Jay Soni,
+David Wierichs,
