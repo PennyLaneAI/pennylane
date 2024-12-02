@@ -20,9 +20,6 @@ import scipy
 
 import pennylane as qml
 
-# Factor to change units of frequency (Hartree to cm^-1)
-AU_TO_CM = 219475
-
 # pylint: disable=dangerous-default-value, too-many-statements
 
 
@@ -31,11 +28,11 @@ def _mat_transform(u, qmat):
     and displacement vectors matrix qmat.
 
     Args:
-       u (tensorlike[float]): unitary rotation matrix
-       qmat (tensorlike[float]): matrix of displacement vectors
+       u (TensorLike[float]): unitary rotation matrix
+       qmat (TensorLike[float]): matrix of displacement vectors
 
     Returns:
-       rotated matrix of displacement vectors
+       (TensorLike[float]): rotated matrix of displacement vectors
 
     """
     qloc = np.einsum("qp,iaq->iap", u, qmat)
@@ -52,7 +49,7 @@ def _params_to_unitary(params, nmodes):
        nmodes (int): number of normal modes
 
     Returns:
-       unitary rotation matrix
+       (TensorLike[float]): unitary rotation matrix
 
     """
     ugen = np.zeros((nmodes, nmodes))
@@ -72,10 +69,10 @@ def _params_cost(params, qmat, nmodes):
 
     Args:
        params (list[float]): initial parameters
-       qmat (tensorlike[float]): matrix of displacement vectors
+       qmat (TensorLike[float]): matrix of displacement vectors
        nmodes (int): number of normal modes
     Returns:
-       Pipek-Mezek cost function
+       (float): Pipek-Mezek cost function
 
     """
     uparams = _params_to_unitary(params, nmodes)
@@ -89,10 +86,10 @@ def _normalize_q(qmat):
     r"""Returns the normalized displacement vectors.
 
     Args:
-       qmat (tensorlike[float]): matrix of displacement vectors
+       qmat (TensorLike[float]): matrix of displacement vectors
 
     Returns:
-       normalized matrix of displacement vectors
+       (TensorLike[float]): normalized matrix of displacement vectors
 
     """
 
@@ -111,11 +108,12 @@ def _localization_unitary(qmat):
     displacement vectors.
 
     Args:
-       qmat (tensorlike[float]): matrix of displacement vectors associated with normal-modes
+       qmat (TensorLike[float]): matrix of displacement vectors associated with normal-modes
 
     Returns:
-       a tuple of unitary matrix to localize the displacement vectors and localized
-       displacement vectors
+       (tuple): A tuple containing the following:
+        - (TensorLike[float]) : unitary matrix to localize the displacement vectors
+        - (TensorLike[float]) : localized displacement vectors
 
     """
 
@@ -152,7 +150,10 @@ def _localize_modes(freqs, displ_vecs):
        displ_vecs (list[float]): displacement vectors along the normal modes
 
     Returns:
-       a tuple of localized frequencies, displacement vectors, and localization matrix
+       (tuple): A tuple containing the following:
+        - (list[float]) : localized frequencies
+        - (TensorLike[float]) : localized displacement vectors
+        - (TensorLike[float]) : localization matrix
 
     """
     nmodes = len(freqs)
@@ -180,14 +181,17 @@ def _localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
     Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
 
     Args:
-        freqs (list[float]): normal mode frequencies in ``cm^-1``
-        displ_vecs (tensorlike[float]): displacement vectors for normal modes
-        freq_separation (list[float]): list of frequency separation thresholds in ``cm^-1``.
+       freqs (list[float]): normal mode frequencies in ``cm^-1``
+       displ_vecs (TensorLike[float]): displacement vectors for normal modes
+       freq_separation (list[float]): List of frequency separation thresholds in ``cm^-1``.
                                   Default is ``[2600]``.
 
     Returns:
-        A tuple of frequencies, normalized displacement vectors and localization matrices
-        describing the relationship between original and localized modes.
+       (tuple): A tuple containing the following:
+        - (list[float]) : localized frequencies
+        - (TensorLike[float]) : localized displacement vectors
+        - (TensorLike[float]) : localization matrix describing the relationship between
+                    original and localized modes.
 
     """
     if not freq_separation:
