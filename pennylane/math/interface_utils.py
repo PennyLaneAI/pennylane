@@ -21,15 +21,6 @@ import autoray as ar
 
 import pennylane as qml
 
-jpc_interfaces = {
-    "autograd",
-    "numpy",
-    "torch",
-    "jax",
-    "jax-jit",
-    "tf",
-}
-
 SupportedInterfaceUserInput = Literal[
     None,
     "auto",

@@ -96,7 +96,6 @@ from .utils import (
 from .interface_utils import (
     _get_canonical_interface_name,
     SupportedInterfaceUserInput,
-    jpc_interfaces,
     SUPPORTED_INTERFACE_NAMES,
     INTERFACE_MAP,
     get_deep_interface,
