@@ -16,7 +16,6 @@
 import warnings
 from typing import Literal, get_args
 
-# pylint: disable=wrong-import-order
 import autoray as ar
 
 SupportedInterfaceUserInput = Literal[
