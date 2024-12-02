@@ -30,10 +30,9 @@ class ResourceCH(qml.CH, re.ResourceOperator):
         .. math::
 
             \begin{align}
-                \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \dot \hat{Z}  \dot \hat{R}_{y}(\frac{-\pi}{4}), \\
+                \hat{H} &= \hat{R}_{y}(\frac{\pi}{4}) \dot \hat{Z}  \dot \hat{R}_{y}(\frac{-\pi}{4}) \\
                 \hat{Z} &= \hat{H} \dot \hat{X}  \dot \hat{H}
             \end{align}
-
 
         We can control on the Pauli-X gate to obtain our controlled Hadamard gate.
 
@@ -67,7 +66,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Y} = \hat{S} \dot \hat{X} \dot \hat{S}^{\dagger}.
+        .. math:: \hat{Y} = \hat{S} \dot \hat{X} \dot \hat{S}^{\dagger}
 
         We can control on the Pauli-X gate to obtain our controlled-Y gate.
 
@@ -99,7 +98,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}.
+        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}
 
         We can control on the Pauli-X gate to obtain our controlled-Z gate.
 
@@ -170,7 +169,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
     Resources:
         The resources are derived from the following identity:
 
-        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}.
+        .. math:: \hat{Z} = \hat{H} \dot \hat{X} \dot \hat{H}
 
         We replace the Pauli-X gate with a Toffoli gate to obtain our control-control-Z gate.
     """
@@ -380,7 +379,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
         .. math::
 
             \begin{align}
-                \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}, \\
+                \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X} \\
                 \hat{X} &= \hat{H} \dot \hat{Z}  \dot \hat{H}
             \end{align}
 
@@ -417,7 +416,7 @@ class ResourceCRY(qml.CRY, re.ResourceOperator):
         The resources are derived from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived with the following identity:
 
-        .. math:: \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}.
+        .. math:: \hat{RY}(- \theta) = \hat{X} \dot \hat{RY}(\theta) \dot \hat{X}
 
     """
 
@@ -448,7 +447,7 @@ class ResourceCRZ(qml.CRZ, re.ResourceOperator):
         The resources are obtained from (in figure 1b.) the paper `T-count and T-depth of any multi-qubit
         unitary <https://arxiv.org/pdf/2110.10292>`_. The resources are derived from the following identity:
 
-        .. math:: \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}.
+        .. math:: \hat{RZ}(- \theta) = \hat{X} \dot \hat{RZ}(\theta) \dot \hat{X}
 
     """
 
