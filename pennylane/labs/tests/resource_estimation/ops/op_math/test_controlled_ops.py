@@ -56,8 +56,9 @@ class TestResourceCY:
         """Test that the resources method produces the expected resources."""
 
         expected_resources = {
-            re.ResourceS.resource_rep(): 4,
+            re.ResourceS.resource_rep(): 1,
             re.ResourceCNOT.resource_rep(): 1,
+            re.ResourceAdjoint.resource_rep(re.ResourceS, {}): 1,
         }
         assert self.op.resources(**self.op.resource_params()) == expected_resources
 
