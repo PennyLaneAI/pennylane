@@ -216,7 +216,11 @@ def execute(
         )
         config = device.setup_execution_config(config)
 
-    config = replace(config, interface=interface)
+    config = replace(
+        config,
+        interface=interface,
+        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+    )
 
     # pylint: disable=protected-access
     if transform_program is None or inner_transform is None:
