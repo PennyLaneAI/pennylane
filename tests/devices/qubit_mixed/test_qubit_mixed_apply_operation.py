@@ -47,28 +47,6 @@ ml_frameworks_list = [
 ]
 
 
-def get_random_mixed_state(num_qubits):
-    """
-    Generates a random mixed state for testing purposes.
-
-    Args:
-        num_qubits (int): The number of qubits in the mixed state.
-
-    Returns:
-        np.ndarray: A tensor representing the random mixed state.
-    """
-    dim = 2**num_qubits
-
-    rng = np.random.default_rng(seed=4774)
-    basis = unitary_group(dim=dim, seed=584545).rvs()
-    schmidt_weights = rng.dirichlet(np.ones(dim), size=1).astype(complex)[0]
-    mixed_state = np.zeros((dim, dim)).astype(complex)
-    for i in range(dim):
-        mixed_state += schmidt_weights[i] * np.outer(np.conj(basis[i]), basis[i])
-
-    return mixed_state.reshape([2] * (2 * num_qubits))
-
-
 def basis_state(index, nr_wires):
     """Generate the density matrix of the computational basis state
     indicated by ``index``."""
