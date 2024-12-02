@@ -68,17 +68,21 @@ class MPSPrep(Operation):
         The matrix product state, is a list of :math:`n` tensors of the following form:
 
         1. **First tensor**:
+
            - The first tensor :math:`A^{(1)}` has **rank 2** (i.e., it's a matrix).
            - Its dimensions are :math:`d_{1,0}` and :math:`d_{1,1}`.
            - These correspond to the physical dimension of the site and an auxiliary bond dimension connecting it to the next tensor.
 
         2. **Last tensor**:
+
            - The last tensor :math:`A^{(n)}` also has **rank 2** (another matrix).
            - Its dimensions are :math:`d_{n-1,0}` and :math:`d_{n-1,1}`, representing the auxiliary dimension from the previous site and the physical dimension of the site.
 
         3. **Intermediate tensors**:
-           - All tensors in the middle (i.e., :math:`A^{(j)}` for :math:`2 \\leq j \\leq n-1`) have **rank 3** (three-dimensional tensors).
+
+           - All tensors in the middle (i.e., :math:`A^{(j)}` for :math:`2 \leq j \leq n-1`) have **rank 3** (three-dimensional tensors).
            - Their dimensions are :math:`d_{j,0}, d_{j,1},` and :math:`d_{j,2}`, where:
+             
              - :math:`d_{j,0}`: Bond dimension connecting to the previous tensor.
              - :math:`d_{j,1}`: Physical dimension for the site.
              - :math:`d_{j,2}`: Bond dimension connecting to the next tensor.
