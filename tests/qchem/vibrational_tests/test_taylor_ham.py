@@ -18,7 +18,6 @@ import pennylane as qml
 
 from pennylane.bose import (
     BoseWord,
-    BoseSentence,
 )
 from pennylane.qchem.vibrational.taylor_ham import (
     taylor_anharmonic,
@@ -780,14 +779,9 @@ def test_taylor_bosonic():
 
 
 def test_taylor_hamiltonian():
-    sym = ["H", "H", "S"]
-    geom = np.array([[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]])
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    test_pes_object = vibrational.vibrational_pes(
-        mol, dipole_level=2, do_cubic=False, localize=True
-    )
+    pes_object_2D = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=False, localize=True)
 
-    taylor_ham = taylor_hamiltonian(test_pes_object, 4, 2)
+    taylor_ham = taylor_hamiltonian(pes_object_2D, 4, 2)
     taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, Uloc=Uloc)
 
     assert len(taylor_ham) == len(taylor_bos)
