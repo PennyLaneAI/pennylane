@@ -336,8 +336,7 @@ def _scale_dict(dict1: defaultdict, scalar: int, in_place=False):
     return combined_dict
 
 
-def _make_hashable(d: dict) -> tuple:
+def _make_hashable(d) -> tuple:
     if isinstance(d, dict):
         return tuple((name, _make_hashable(value)) for name, value in d.items())
-
     return d

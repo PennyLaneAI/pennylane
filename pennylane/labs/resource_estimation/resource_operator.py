@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Callable, Dict
 if TYPE_CHECKING:
     from pennylane.labs.resource_estimation import CompressedResourceOp
 
+# pylint: disable=unused-argument
 
 class ResourceOperator(ABC):
     r"""Abstract class that defines the methods a PennyLane Operator
@@ -125,6 +126,10 @@ class ResourceOperator(ABC):
     def tracking_name(cls, *args, **kwargs) -> str:
         """Returns a name used to track the operator during resource estimation."""
         return cls.__name__.replace("Resource", "")
+
+    def tracking_name_from_op(self) -> str:
+        """Returns the tracking name built with the operator's parameters."""
+        return self.__class__.tracking_name(**self.resource_params())
 
 
 class ResourcesNotDefined(Exception):

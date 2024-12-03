@@ -82,4 +82,4 @@ class TestQFT:
     @pytest.mark.parametrize("num_wires", range(10))
     def test_tracking_name(self, num_wires):
         """Test that the tracking name is correct."""
-        assert re.ResourceQFT.tracking_name(num_wires + 1) == f"QFT({num_wires+1})"
+        assert re.ResourceQFT.tracking_name(num_wires + 1) == "QFT"
