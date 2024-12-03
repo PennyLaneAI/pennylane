@@ -221,7 +221,7 @@ class TestQSVT:
         ("input_matrix", "poly", "wires"),
         [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0, 0.2], [0, 1])],
     )
-    def test_QSVT_torch(self, input_matrix, poly, wires):
+    def test_ltorch(self, input_matrix, poly, wires):
         """Test that the qsvt function matrix is correct for torch."""
         import torch
 
@@ -641,6 +641,7 @@ def test_global_phase_not_alway_applied():
         assert not isinstance(op, qml.GlobalPhase)
 
 
+
 class Testqsvt:
     """Test the qml.qsvt function."""
 
@@ -854,6 +855,7 @@ class Testqsvt:
         jitted_circuit = jax.jit(circuit)
         jitted_output = jitted_circuit(jnp.array(A))
         assert jnp.allclose(not_jitted_output, jitted_output)
+
 
 
 class TestRootFindingSolver:
