@@ -84,19 +84,17 @@ def _get_ml_boundary_execute(
 
 
 def _make_inner_execute(device, inner_transform, execution_config=None) -> Callable:
-    """Construct the function that will execute the tapes inside the ml framework registration
-    for the 1st order derivatives.
+    """Construct the function responsible for executing quantum tapes within a ML framework boundary
+    for first-order derivatives.
 
-    Steps in between the ml framework execution and the device are:
-    - device expansion (old device) or device preprocessing (new device)
-    - conversion to numpy
-    - caching
+    The process involves performing device-specific preprocessing on the tapes (for new devices) or
+    device expansion (for legacy devices).
 
-    For higher order derivatives, the "inner execute" will be another ml framework execute.
+    For higher-order derivatives, this function will delegate to another ML framework execution.
     """
 
     def inner_execute(tapes: "qml.tape.QuantumScriptBatch", **_) -> ResultBatch:
-        """Execution that occurs within a machine learning framework boundary.
+        """Execution that occurs within a ML framework boundary.
 
         Closure Variables:
             expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
@@ -122,8 +120,7 @@ def run(
     resolved_execution_config: "qml.devices.ExecutionConfig",
     inner_transform_program: TransformProgram,
 ) -> ResultBatch:
-    """
-    Execute a batch of quantum scripts on a device with optional gradient computation.
+    """Execute a batch of quantum scripts on a device with optional gradient computation.
 
     Args:
         tapes (qml.tape.QuantumScriptBatch): batch of quantum scripts
