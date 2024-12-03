@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Code relevant for sampling a qubit mixed state.
+Submodule for sampling a qubit mixed state.
 """
 # pylint: disable=too-many-positional-arguments, too-many-arguments
 import functools
@@ -75,14 +75,6 @@ def _process_samples(
     return mp.eigvals()[indices]
 
 
-def _process_counts_samples(processed_sample, mp_has_obs):
-    """Processes a set of samples and counts the results."""
-    observables, counts = math.unique(processed_sample, return_counts=True, axis=0)
-    if not mp_has_obs:
-        observables = ["".join(observable.astype("str")) for observable in observables]
-    return dict(zip(observables, counts))
-
-
 def _process_expval_samples(processed_sample):
     """Processes a set of samples and returns the expectation value of an observable."""
     eigvals, counts = math.unique(processed_sample, return_counts=True)
@@ -113,7 +105,7 @@ def _measure_with_samples_diagonalizing_gates(
 
     Args:
         mp (~.measurements.SampleMeasurement): The sample measurement to perform
-        state (np.ndarray[complex]): The state vector to sample from
+        state (TensorLike): The state vector to sample from
         shots (~.measurements.Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
@@ -133,12 +125,12 @@ def _measure_with_samples_diagonalizing_gates(
     total_indices = _get_num_wires(state, is_state_batched)
     wires = qml.wires.Wires(range(total_indices))
 
-    def _process_single_shot(samples):
+    def _process_single_shot_copy(samples):
         samples_processed = _process_samples(mp, samples, wires)
         if isinstance(mp, SampleMP):
             return math.squeeze(samples_processed)
         if isinstance(mp, CountsMP):
-            process_func = functools.partial(_process_counts_samples, mp_has_obs=mp.obs is not None)
+            process_func = functools.partial(mp.process_samples, wire_order=wires)
         elif isinstance(mp, ExpectationMP):
             process_func = _process_expval_samples
         elif isinstance(mp, VarianceMP):
@@ -169,7 +161,7 @@ def _measure_with_samples_diagonalizing_gates(
                 prng_key=prng_key,
                 readout_errors=readout_errors,
             )
-            processed_samples.append(_process_single_shot(samples))
+            processed_samples.append(_process_single_shot_copy(samples))
 
         return tuple(processed_samples)
 
@@ -183,7 +175,7 @@ def _measure_with_samples_diagonalizing_gates(
         readout_errors=readout_errors,
     )
 
-    return _process_single_shot(samples)
+    return _process_single_shot_copy(samples)
 
 
 def _measure_sum_with_samples(

@@ -112,6 +112,28 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
   [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
 
+* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`
+  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
+  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
+
+* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
+  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+
+* The `qml.qchem.factorize` function now supports new methods for double factorization:
+  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
+  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
+
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
+
+* Added submodule for calculating vibrational Hamiltonians
+  * Implemented helper functions for geometry optimization, harmonic analysis,
+    and normal-mode localization.
+    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+
 <h3>Improvements 🛠</h3>
 
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
@@ -202,6 +224,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+
+* Added native `ResourceOperator` subclasses for each of the controlled operators.
+  [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
 
 <h3>Breaking changes 💔</h3>
 

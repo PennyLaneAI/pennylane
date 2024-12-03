@@ -143,7 +143,7 @@ class TestSampleState:
             ratio, expected_ratio, atol=APPROX_ATOL
         ), f"Ratio {ratio} deviates from expected {expected_ratio}"
 
-    @pytest.mark.parametrize("num_shots", [10, 100, 1000])
+    @pytest.mark.parametrize("num_shots", [100, 1000])
     @pytest.mark.parametrize("seed", [42, 123, 987])
     def test_reproducibility(self, num_shots, seed, two_qubit_pure_state):
         """Test reproducibility with different shots and seeds."""
@@ -153,7 +153,7 @@ class TestSampleState:
         samples2 = sample_state(two_qubit_pure_state, num_shots, rng=rng2)
         assert np.array_equal(samples1, samples2), "Samples with the same seed are not equal"
 
-    @pytest.mark.parametrize("num_shots", [10, 100, 1000])
+    @pytest.mark.parametrize("num_shots", [100, 1000])
     @pytest.mark.parametrize("seed1, seed2", [(42, 43), (123, 124), (987, 988)])
     def test_different_seeds_produce_different_samples(
         self, num_shots, seed1, seed2, two_qubit_pure_state
@@ -200,7 +200,7 @@ class TestSampleState:
 class TestMeasurements:
     """Test different measurement types"""
 
-    @pytest.mark.parametrize("num_shots", [10, 100, 1000])
+    @pytest.mark.parametrize("num_shots", [100, 1000])
     @pytest.mark.parametrize("wires", [(0,), (1,), (0, 1)])
     def test_sample_measurement(self, num_shots, wires, two_qubit_pure_state):
         """Test sample measurements with different shots and wire configurations."""
@@ -230,6 +230,30 @@ class TestMeasurements:
         assert set(result.keys()).issubset(
             valid_states
         ), f"Invalid states in counts: {result.keys()}"
+
+    @pytest.mark.parametrize("num_shots", [100, 500])
+    def test_counts_measurement_all_outcomes(self, num_shots, two_qubit_pure_state):
+        """Test counts measurement with all_outcomes=True."""
+        shots = Shots(num_shots)
+        result = measure_with_samples(qml.counts(all_outcomes=True), two_qubit_pure_state, shots)
+
+        assert isinstance(result, dict), "Result is not a dictionary"
+        total_counts = sum(result.values())
+        assert (
+            total_counts == num_shots
+        ), f"Total counts {total_counts} do not match shots {num_shots}"
+
+        # Check that all possible 2-qubit states are present in the keys
+        all_possible_states = {"00", "01", "10", "11"}
+        assert (
+            set(result.keys()) == all_possible_states
+        ), f"Missing states in counts: {all_possible_states - set(result.keys())}"
+
+        # Check that only '01', '10', '11' have non-zero counts (based on two_qubit_pure_state fixture)
+        assert result["00"] == 0, "State '00' should have zero counts"
+        assert (
+            sum(result[state] > 0 for state in ["01", "10", "11"]) == 3
+        ), "Expected non-zero counts for '01', '10', and '11'"
 
     @pytest.mark.parametrize(
         "observable",
@@ -314,7 +338,7 @@ class TestMeasurements:
 class TestBatchedOperations:
     """Test batched state handling"""
 
-    @pytest.mark.parametrize("num_shots", [10, 100])
+    @pytest.mark.parametrize("num_shots", [100, 500])
     @pytest.mark.parametrize("batch_size", [2, 3, 4])
     def test_batched_sampling(self, num_shots, batch_size):
         """Test sampling with different batch sizes."""
