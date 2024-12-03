@@ -266,39 +266,3 @@ def _resolve_execution_config(
     execution_config = device.setup_execution_config(execution_config)
 
     return execution_config
-
-
-def _resolve_interface(interface, tapes):
-    """Helper function to resolve the interface name based on a list of tapes
-
-    Args:
-        interface (str): Original interface to use as reference.
-        tapes (list[.QuantumScript]): Quantum tapes
-
-    Returns:
-        str: Interface name"""
-
-    interface = _get_canonical_interface_name(interface)
-
-    if interface == "auto":
-        params = []
-        for tape in tapes:
-            params.extend(tape.get_parameters(trainable_only=False))
-        interface = get_interface(*params)
-        if interface != "numpy":
-            interface = INTERFACE_MAP.get(interface, None)
-    if interface == "tf" and _use_tensorflow_autograph():
-        interface = "tf-autograph"
-    if interface == "jax":
-        # pylint: disable=unused-import
-        try:  # pragma: no cover
-            import jax
-        except ImportError as e:  # pragma: no cover
-            raise qml.QuantumFunctionError(  # pragma: no cover
-                "jax not found. Please install the latest "  # pragma: no cover
-                "version of jax to enable the 'jax' interface."  # pragma: no cover
-            ) from e  # pragma: no cover
-
-        interface = _get_jax_interface_name(tapes)
-
-    return interface
