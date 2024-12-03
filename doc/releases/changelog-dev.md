@@ -94,6 +94,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 featuring a `simulate` function for simulating mixed states in analytic mode.
   [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
 
+* Added finite-shot simulation support for mixed-state devices.
+  [(#6658)](https://github.com/PennyLaneAI/pennylane/pull/6658)
+
 * Support is added for `if`/`else` statements and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`.
   [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
