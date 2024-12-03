@@ -61,11 +61,13 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         can be applied.
 
     .. note::
-        This transform will diagonalize what it can, i.e., `qml.X`, `qml.Y`, `qml.Z`, `qml.Hadamard`,
-        `qml.Identity`, or a linear combination of them. Any other observable will be skipped and
-        left undiagonalized. In the context of preprocessing a quantum circuit for execution on a
-        device, observable validation should be performed after this transform to ensure that all
-        undiagonalized observables are supported by the device.
+        This transform will diagonalize what it can, i.e., ``qml.X``, ``qml.Y``, ``qml.Z``,
+        ``qml.Hadamard``, ``qml.Identity``, or a linear combination of them. Any unrecognized
+        observable will not raise an error, deferring to the device's validation for supported
+        measurements later on. Lastly, if ``diagonalize_measurements`` produces additional gates
+        that the device does not support, the :func:`~pennylane.devices.preprocess.decompose``
+        transform should be applied to ensure that the additional gates are decomposed to those
+        that the device supports.
 
     **Examples:**
 
