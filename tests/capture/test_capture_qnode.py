@@ -65,7 +65,7 @@ def test_error_if_shot_vector():
         circuit()
 
     jax.make_jaxpr(partial(circuit, shots=50))()  # should run fine
-    with pytest.raises(NotImplementedError, match="override shots are not yet supported"):
+    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
         res = circuit(shots=50)
         assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
@@ -179,7 +179,7 @@ def test_overriding_shots(x64_mode):
         (50,), jax.numpy.int64 if x64_mode else jax.numpy.int32
     )
 
-    with pytest.raises(NotImplementedError, match="override shots are not yet supported"):
+    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
@@ -538,7 +538,7 @@ class TestQNodeVmapIntegration:
         x = jax.numpy.array([1.0, 2.0, 3.0])
 
         jaxpr = jax.make_jaxpr(jax.vmap(partial(circuit, shots=50), in_axes=0))(x)
-        with pytest.raises(NotImplementedError, match="override shots are not yet supported"):
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
             res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns) == 1
@@ -554,7 +554,7 @@ class TestQNodeVmapIntegration:
 
         assert eqn0.outvars[0].aval.shape == (3, 50)
 
-        with pytest.raises(NotImplementedError, match="override shots are not yet supported"):
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
             res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
             assert qml.math.allclose(res, jax.numpy.zeros((3, 50)))
 
