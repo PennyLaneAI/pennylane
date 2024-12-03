@@ -61,7 +61,7 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
     Returns:
         tuple: A tuple containing the following:
          - TensorLike[float]: one-mode potential energy surface
-         - TensorLike[float] or None: one-mode dipole, returns ``None``
+         - TensorLike[float] or None: one-mode dipole or ``None``
            if dipole is set to ``False``
 
     """
