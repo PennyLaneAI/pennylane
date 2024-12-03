@@ -28,11 +28,11 @@ def _mat_transform(u, qmat):
     and displacement vectors matrix qmat.
 
     Args:
-       u (TensorLike[float]): unitary rotation matrix
-       qmat (TensorLike[float]): matrix of displacement vectors
+        u (TensorLike[float]): unitary rotation matrix
+        qmat (TensorLike[float]): matrix of displacement vectors
 
     Returns:
-       (TensorLike[float]): rotated matrix of displacement vectors
+        TensorLike[float]: rotated matrix of displacement vectors
 
     """
     qloc = np.einsum("qp,iaq->iap", u, qmat)
@@ -45,11 +45,11 @@ def _params_to_unitary(params, nmodes):
     into its associated matrix u.
 
     Args:
-       params (list[float]): parameters for unitary rotation
-       nmodes (int): number of normal modes
+        params (list[float]): parameters for unitary rotation
+        nmodes (int): number of normal modes
 
     Returns:
-       (TensorLike[float]): unitary rotation matrix
+        TensorLike[float]: unitary rotation matrix
 
     """
     ugen = np.zeros((nmodes, nmodes))
@@ -68,11 +68,11 @@ def _params_cost(params, qmat, nmodes):
     r"""Returns the Pipek-Mezey cost function to be minimized for localized displacements.
 
     Args:
-       params (list[float]): initial parameters
-       qmat (TensorLike[float]): matrix of displacement vectors
-       nmodes (int): number of normal modes
+        params (list[float]): initial parameters
+        qmat (TensorLike[float]): matrix of displacement vectors
+        nmodes (int): number of normal modes
     Returns:
-       (float): Pipek-Mezek cost function
+        float: Pipek-Mezek cost function
 
     """
     uparams = _params_to_unitary(params, nmodes)
@@ -86,10 +86,10 @@ def _normalize_q(qmat):
     r"""Returns the normalized displacement vectors.
 
     Args:
-       qmat (TensorLike[float]): matrix of displacement vectors
+        qmat (TensorLike[float]): matrix of displacement vectors
 
     Returns:
-       (TensorLike[float]): normalized matrix of displacement vectors
+        TensorLike[float]: normalized matrix of displacement vectors
 
     """
 
@@ -108,12 +108,12 @@ def _localization_unitary(qmat):
     displacement vectors.
 
     Args:
-       qmat (TensorLike[float]): matrix of displacement vectors associated with normal-modes
+        qmat (TensorLike[float]): matrix of displacement vectors associated with normal-modes
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]) : unitary matrix to localize the displacement vectors
-        - (TensorLike[float]) : localized displacement vectors
+        tuple: A tuple containing the following:
+        - TensorLike[float] : unitary matrix to localize the displacement vectors
+        - TensorLike[float] : localized displacement vectors
 
     """
 
@@ -146,14 +146,14 @@ def _localize_modes(freqs, vecs):
     r"""Performs the mode localization for a given set of frequencies and displacement vectors.
 
     Args:
-       freqs (list[float]): normal mode frequencies
-       vecs (list[float]): displacement vectors along the normal modes
+        freqs (list[float]): normal mode frequencies
+        vecs (list[float]): displacement vectors along the normal modes
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (list[float]) : localized frequencies
-        - (TensorLike[float]) : localized displacement vectors
-        - (TensorLike[float]) : localization matrix
+        tuple: A tuple containing the following:
+        - list[float] : localized frequencies
+        - TensorLike[float] : localized displacement vectors
+        - TensorLike[float] : localization matrix
 
     """
     nmodes = len(freqs)
@@ -183,16 +183,16 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
 
     Args:
-       freqs (list[float]): normal mode frequencies in ``cm^-1``
-       vecs (TensorLike[float]): displacement vectors for normal modes
-       bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
+        freqs (list[float]): normal mode frequencies in ``cm^-1``
+        vecs (TensorLike[float]): displacement vectors for normal modes
+        bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
            Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (list[float]) : localized frequencies
-        - (TensorLike[float]) : localized displacement vectors
-        - (TensorLike[float]) : localization matrix describing the relationship between
+        tuple: A tuple containing the following:
+        - list[float] : localized frequencies
+        - TensorLike[float] : localized displacement vectors
+        - TensorLike[float] : localization matrix describing the relationship between
                original and localized modes.
 
     """
