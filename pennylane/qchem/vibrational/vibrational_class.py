@@ -210,7 +210,7 @@ def _get_dipole(scf_result, method):
     Args:
         scf_result (pyscf.scf object): pyscf object from electronic structure calculations
         method (str): Electronic structure method that can be either restricted and unrestricted
-                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
         TensorLike[float]: dipole moment

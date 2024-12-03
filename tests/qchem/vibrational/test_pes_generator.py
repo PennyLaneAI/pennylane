@@ -210,8 +210,20 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
         assert dipole_onebody is None
 
 
+pes_file = os.path.join(ref_dir, "H2S.hdf5")
+f = h5py.File(pes_file, "r+")
+exp_pes_onebody = np.array(f["V1_PES"][()])
+exp_dip_onebody = np.array(f["D1_DMS"][()])
+exp_pes_twobody = np.array(f["V2_PES"][()])
+exp_dip_twobody = np.array(f["D2_DMS"][()])
+exp_pes_threebody = np.array(f["V3_PES"][()])
+exp_dip_threebody = np.array(f["D3_DMS"][()])
+pes_data = [exp_pes_onebody, exp_pes_twobody, exp_pes_threebody]
+dip_data = [exp_dip_onebody, exp_dip_twobody, exp_dip_threebody]
+
+
 @pytest.mark.parametrize(
-    ("sym", "geom", "harmonic_res", "ref_file"),
+    ("sym", "geom", "freqs", "vectors", "expected_pes", "expected_dipole"),
     # Expected results were obtained using vibrant code
     [
         (
@@ -223,34 +235,33 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
                     [0.0, 0.0, -0.06401159],
                 ]
             ),
-            {
-                "freq_wavenumber": np.array([1294.2195371, 2691.27147945, 2718.4023196]),
-                "norm_mode": np.array(
+            np.array([1294.2195371, 2691.27147945, 2718.4023196]),
+            np.array(
+                [
                     [
-                        [
-                            [5.04812379e-17, -4.56823333e-01, 5.19946505e-01],
-                            [1.86137417e-16, 4.56823334e-01, 5.19946504e-01],
-                            [1.35223505e-17, -1.52311695e-11, -3.26953260e-02],
-                        ],
-                        [
-                            [-9.48723219e-18, -5.36044948e-01, -4.43104062e-01],
-                            [1.58760881e-16, 5.36044952e-01, -4.43104065e-01],
-                            [5.31102418e-17, -1.25299135e-10, 2.78633123e-02],
-                        ],
-                        [
-                            [6.52265536e-17, -5.15178992e-01, -4.62528763e-01],
-                            [3.12480546e-16, -5.15178988e-01, 4.62528760e-01],
-                            [1.63797627e-17, 3.23955347e-02, 9.23972875e-11],
-                        ],
-                    ]
-                ),
-            },
-            "H2S.hdf5",
+                        [5.04812379e-17, -4.56823333e-01, 5.19946505e-01],
+                        [1.86137417e-16, 4.56823334e-01, 5.19946504e-01],
+                        [1.35223505e-17, -1.52311695e-11, -3.26953260e-02],
+                    ],
+                    [
+                        [-9.48723219e-18, -5.36044948e-01, -4.43104062e-01],
+                        [1.58760881e-16, 5.36044952e-01, -4.43104065e-01],
+                        [5.31102418e-17, -1.25299135e-10, 2.78633123e-02],
+                    ],
+                    [
+                        [6.52265536e-17, -5.15178992e-01, -4.62528763e-01],
+                        [3.12480546e-16, -5.15178988e-01, 4.62528760e-01],
+                        [1.63797627e-17, 3.23955347e-02, 9.23972875e-11],
+                    ],
+                ]
+            ),
+            pes_data,
+            dip_data,
         )
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
-def test_twomode_pes(sym, geom, harmonic_res, ref_file):
+def test_twomode_pes(sym, geom, freqs, vectors, expected_pes, expected_dipole):
     r"""Test that the correct twomode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
@@ -258,35 +269,24 @@ def test_twomode_pes(sym, geom, harmonic_res, ref_file):
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
-    freqs = harmonic_res["freq_wavenumber"]
-    vectors = harmonic_res["norm_mode"]
-    pes_onebody, dipole_onebody = pes_generator._pes_onemode(
-        mol, mol_eq, freqs, vectors, gauss_grid, method="RHF", dipole=True
-    )
-
     pes_twobody, dipole_twobody = pes_generator._pes_twomode(
         mol,
         mol_eq,
         freqs,
         vectors,
         gauss_grid,
-        pes_onebody,
-        dipole_onebody,
+        expected_pes[0],
+        expected_dipole[0],
         method="rhf",
         dipole=True,
     )
 
-    pes_file = os.path.join(ref_dir, ref_file)
-    f = h5py.File(pes_file, "r+")
-    exp_pes_twomode = np.array(f["V2_PES"][()])
-    exp_dip_twomode = np.array(f["D2_DMS"][()])
-
-    assert np.allclose(pes_twobody, exp_pes_twomode, atol=1e-6)
-    assert np.allclose(dipole_twobody, exp_dip_twomode, atol=1e-6)
+    assert np.allclose(pes_twobody, expected_pes[1], atol=1e-6)
+    assert np.allclose(dipole_twobody, expected_dipole[1], atol=1e-6)
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "harmonic_res", "ref_file"),
+    ("sym", "geom", "freqs", "vectors", "expected_pes", "expected_dipole"),
     # Expected results were obtained using vibrant code
     [
         (
@@ -298,34 +298,33 @@ def test_twomode_pes(sym, geom, harmonic_res, ref_file):
                     [0.0, 0.0, -0.06401159],
                 ]
             ),
-            {
-                "freq_wavenumber": np.array([1294.2195371, 2691.27147945, 2718.4023196]),
-                "norm_mode": np.array(
+            np.array([1294.2195371, 2691.27147945, 2718.4023196]),
+            np.array(
+                [
                     [
-                        [
-                            [5.04812379e-17, -4.56823333e-01, 5.19946505e-01],
-                            [1.86137417e-16, 4.56823334e-01, 5.19946504e-01],
-                            [1.35223505e-17, -1.52311695e-11, -3.26953260e-02],
-                        ],
-                        [
-                            [-9.48723219e-18, -5.36044948e-01, -4.43104062e-01],
-                            [1.58760881e-16, 5.36044952e-01, -4.43104065e-01],
-                            [5.31102418e-17, -1.25299135e-10, 2.78633123e-02],
-                        ],
-                        [
-                            [6.52265536e-17, -5.15178992e-01, -4.62528763e-01],
-                            [3.12480546e-16, -5.15178988e-01, 4.62528760e-01],
-                            [1.63797627e-17, 3.23955347e-02, 9.23972875e-11],
-                        ],
-                    ]
-                ),
-            },
-            "H2S.hdf5",
+                        [5.04812379e-17, -4.56823333e-01, 5.19946505e-01],
+                        [1.86137417e-16, 4.56823334e-01, 5.19946504e-01],
+                        [1.35223505e-17, -1.52311695e-11, -3.26953260e-02],
+                    ],
+                    [
+                        [-9.48723219e-18, -5.36044948e-01, -4.43104062e-01],
+                        [1.58760881e-16, 5.36044952e-01, -4.43104065e-01],
+                        [5.31102418e-17, -1.25299135e-10, 2.78633123e-02],
+                    ],
+                    [
+                        [6.52265536e-17, -5.15178992e-01, -4.62528763e-01],
+                        [3.12480546e-16, -5.15178988e-01, 4.62528760e-01],
+                        [1.63797627e-17, 3.23955347e-02, 9.23972875e-11],
+                    ],
+                ]
+            ),
+            pes_data,
+            dip_data,
         )
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
-def test_threemode_pes(sym, geom, harmonic_res, ref_file):
+def test_threemode_pes(sym, geom, freqs, vectors, expected_pes, expected_dipole):
     r"""Test that the correct threemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
@@ -333,31 +332,19 @@ def test_threemode_pes(sym, geom, harmonic_res, ref_file):
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
-    freqs = harmonic_res["freq_wavenumber"]
-    vectors = harmonic_res["norm_mode"]
-
-    pes_file = os.path.join(ref_dir, ref_file)
-    f = h5py.File(pes_file, "r+")
-    pes_onebody = np.array(f["V1_PES"][()])
-    dipole_onebody = np.array(f["D1_DMS"][()])
-    pes_twobody = np.array(f["V2_PES"][()])
-    dipole_twobody = np.array(f["D2_DMS"][()])
-    exp_pes_threemode = np.array(f["V3_PES"][()])
-    exp_dip_threemode = np.array(f["D3_DMS"][()])
-
     pes_threebody, dipole_threebody = pes_generator._pes_threemode(
         mol,
         mol_eq,
         freqs,
         vectors,
         gauss_grid,
-        pes_onebody,
-        pes_twobody,
-        dipole_onebody,
-        dipole_twobody,
+        expected_pes[0],
+        expected_pes[1],
+        expected_dipole[0],
+        expected_dipole[1],
         method="rhf",
         dipole=True,
     )
 
-    assert np.allclose(pes_threebody, exp_pes_threemode, atol=1e-6)
-    assert np.allclose(dipole_threebody, exp_dip_threemode, atol=1e-6)
+    assert np.allclose(pes_threebody, expected_pes[2], atol=1e-6)
+    assert np.allclose(dipole_threebody, expected_dipole[2], atol=1e-6)
