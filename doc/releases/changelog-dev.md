@@ -66,6 +66,7 @@
 added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
+* Added `from_string()` function to convert strings to BoseWords.
 
 <h4>New API for Qubit Mixed</h4>
 
