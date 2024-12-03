@@ -74,7 +74,7 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
 
     nmodes, quad_order = np.shape(anh_pes)
     grid, _ = np.polynomial.hermite.hermgauss(quad_order)
-    fs = np.zeros((nmodes, deg - min_deg + 1))
+    coeffs = np.zeros((nmodes, deg - min_deg + 1))
 
     predicted_1D = np.zeros_like(anh_pes)
 
@@ -83,10 +83,10 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
         poly1D_features = poly1D.fit_transform(grid.reshape(-1, 1))
         poly1D_reg_model = LinearRegression()
         poly1D_reg_model.fit(poly1D_features, anh_pes[i1, :])
-        fs[i1, :] = poly1D_reg_model.coef_
+        coeffs[i1, :] = poly1D_reg_model.coef_
         predicted_1D[i1, :] = poly1D_reg_model.predict(poly1D_features)
 
-    return fs, predicted_1D
+    return coeffs, predicted_1D
 
 
 def _twobody_degs(deg, min_deg=3):
@@ -136,8 +136,8 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
         )
 
     fit_degs = _twobody_degs(deg, min_deg)
-    num_fs = len(fit_degs)
-    fs = np.zeros((nmodes, nmodes, num_fs))
+    num_coeffs = len(fit_degs)
+    coeffs = np.zeros((nmodes, nmodes, num_coeffs))
 
     predicted_2D = np.zeros_like(pes_twomode)
 
@@ -149,7 +149,7 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
     idx2 = idx_2D[1, ::].flatten()
     num_2D = len(q1)
 
-    features = np.zeros((num_2D, num_fs))
+    features = np.zeros((num_2D, num_coeffs))
     for deg_idx, (q1deg, q2deg) in enumerate(fit_degs):
           features[:, deg_idx] = (q1 ** q1deg) * (q2 ** q2deg)
 
@@ -162,12 +162,12 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
                 Y.append(pes_twomode[i1, i2, idx_q1, idx_q2])
             poly2D_reg_model = LinearRegression()
             poly2D_reg_model.fit(features, Y)
-            fs[i1, i2, :] = poly2D_reg_model.coef_
+            coeffs[i1, i2, :] = poly2D_reg_model.coef_
             predicted = poly2D_reg_model.predict(features)
             for idx in range(num_2D):
                 predicted_2D[i1, i2, idx1[idx], idx2[idx]] = predicted[idx]
 
-    return fs, predicted_2D
+    return coeffs, predicted_2D
 
 
 def _generate_bin_occupations(max_occ, nbins):
@@ -232,8 +232,8 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
 
     predicted_3D = np.zeros_like(pes_threemode)
     fit_degs = _threebody_degs(deg)
-    num_fs = len(fit_degs)
-    fs = np.zeros((nmodes, nmodes, nmodes, num_fs))
+    num_coeffs = len(fit_degs)
+    coeffs = np.zeros((nmodes, nmodes, nmodes, num_coeffs))
 
     grid_3D = np.array(np.meshgrid(gauss_grid, gauss_grid, gauss_grid))
     q1 = grid_3D[0, ::].flatten()
@@ -245,7 +245,7 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
     idx3 = idx_3D[2, ::].flatten()
     num_3D = len(q1)
 
-    features = np.zeros((num_3D, num_fs))
+    features = np.zeros((num_3D, num_coeffs))
     for deg_idx, Qs in enumerate(fit_degs):
         q1deg, q2deg, q3deg = Qs
         features[:, deg_idx] = q1 ** (q1deg) * q2 ** (q2deg) * q3 ** (q3deg)
@@ -262,7 +262,7 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
 
                 poly3D_reg_model = LinearRegression()
                 poly3D_reg_model.fit(features, Y)
-                fs[i1, i2, i3, :] = poly3D_reg_model.coef_
+                coeffs[i1, i2, i3, :] = poly3D_reg_model.coef_
                 predicted = poly3D_reg_model.predict(features)
                 for idx in range(num_3D):
                     idx_q1 = idx1[idx]
@@ -270,7 +270,7 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
                     idx_q3 = idx3[idx]
                     predicted_3D[i1, i2, i3, idx_q1, idx_q2, idx_q3] = predicted[idx]
 
-    return fs, predicted_3D
+    return coeffs, predicted_3D
 
 
 def taylor_coeffs(pes, deg=4, min_deg=3):
