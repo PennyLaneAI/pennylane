@@ -803,7 +803,7 @@ def vibrational_pes(
     """
     if dipole_level > 3 or dipole_level < 1:
         raise ValueError(
-            "The method only supports calculation of one-mode, two-mode and three-mode dipoles. Please provide a value"
+            "Currently, one-mode, two-mode and three-mode dipole calculations are supported. Please provide a value"
             "between 1 and 3."
         )
     if quad_order < 1:
