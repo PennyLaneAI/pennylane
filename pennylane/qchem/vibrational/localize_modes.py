@@ -193,7 +193,7 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
          - list[float] : localized frequencies
          - TensorLike[float] : localized displacement vectors
          - TensorLike[float] : localization matrix describing the relationship between
-         original and localized modes.
+           original and localized modes.
 
     """
     if not bins:
