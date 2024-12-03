@@ -182,10 +182,10 @@ class TestSampleState:
         class CustomSampleMeasurement(SampleMeasurement):
             """A custom measurement process for testing."""
 
-            def process_counts(self, counts):
+            def process_counts(self, counts, wire_order=None):
                 return counts
 
-            def process_samples(self, samples, wire_orders=None):
+            def process_samples(self, samples, wire_order=None, shot_range=None, bin_size=None):
                 return samples
 
         # Prepare a simple state
@@ -271,7 +271,7 @@ class TestMeasurements:
         shots = Shots(10000)
         result = measure_with_samples(measurement(observable), two_qubit_pure_state, shots)
         assert isinstance(result, (float, np.floating)), "Result is not a floating point number"
-        if measurement == qml.expval:
+        if measurement is qml.expval:
             assert -1 <= result <= 1, f"Expectation value {result} out of bounds"
         else:
             assert 0 <= result <= 1, f"Variance {result} out of bounds"
