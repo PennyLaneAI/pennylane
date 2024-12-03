@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Callable, Dict
 if TYPE_CHECKING:
     from pennylane.labs.resource_estimation import CompressedResourceOp
 
+# pylint: disable=unused-argument
 
 class ResourceOperator(ABC):
     r"""Abstract class that defines the methods a PennyLane Operator
