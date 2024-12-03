@@ -270,10 +270,7 @@ def _get_interface_of_single_tensor(tensor):
     namespace = tensor.__class__.__module__.split(".")[0]
 
     if namespace == "pennylane":
-        # pylint: disable=import-outside-toplevel
-        from pennylane.capture import enabled
-
-        return "jax" if enabled() else "autograd"
+        return "jax" if "Tracer" in tensor.__class__.__name__ else "autograd"
 
     if namespace == "autograd":
         return "autograd"
@@ -408,9 +405,9 @@ def is_abstract(tensor, like=None):
 
     if interface == "jax":
         import jax
-        from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        from pennylane.capture import TransformTracer
+        # from jax.interpreters.partial_eval import DynamicJaxprTracer
+        # from pennylane.capture import TransformTracer
 
         if isinstance(
             tensor,
@@ -425,7 +422,8 @@ def is_abstract(tensor, like=None):
             # Otherwise, it will be abstract.
             return not isinstance(tensor.aval, jax.core.ConcreteArray)
 
-        return isinstance(tensor, (DynamicJaxprTracer, TransformTracer))
+        # return isinstance(tensor, (DynamicJaxprTracer, TransformTracer))
+        return isinstance(tensor, jax.core.Tracer)
 
     if interface == "tensorflow":
         import tensorflow as tf

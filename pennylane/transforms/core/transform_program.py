@@ -349,12 +349,12 @@ class TransformProgram:
         self.push_back(
             TransformContainer(
                 transform.transform,
-                targs,
-                tkwargs,
-                transform.classical_cotransform,
-                transform.plxpr_transform,
-                transform.is_informative,
-                transform.final_transform,
+                args=targs,
+                kwargs=tkwargs,
+                classical_cotransform=transform.classical_cotransform,
+                plxpr_transform=transform.plxpr_transform,
+                is_informative=transform.is_informative,
+                final_transform=transform.final_transform,
             )
         )
 
@@ -377,12 +377,12 @@ class TransformProgram:
         self.insert_front(
             TransformContainer(
                 transform.transform,
-                targs,
-                tkwargs,
-                transform.classical_cotransform,
-                transform.plxpr_transform,
-                transform.is_informative,
-                transform.final_transform,
+                args=targs,
+                kwargs=tkwargs,
+                classical_cotransform=transform.classical_cotransform,
+                plxpr_transform=transform.plxpr_transform,
+                is_informative=transform.is_informative,
+                final_transform=transform.final_transform,
             )
         )
 
@@ -530,7 +530,7 @@ class TransformProgram:
         processing_fns_stack = []
 
         for i, transform_container in enumerate(self):
-            transform, targs, tkwargs, cotransform, _, _ = transform_container
+            transform, targs, tkwargs, cotransform, _, _, _ = transform_container
 
             execution_tapes = []
             fns = []

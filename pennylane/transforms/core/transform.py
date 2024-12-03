@@ -60,7 +60,7 @@ def transform(
             of the transform program. ``is_informative`` supersedes ``final_transform``.
         use_argnum_in_expand=False (bool): Whether or not to use ``argnum`` of the tape to determine trainable parameters
             during the expansion transform process.
-        plxpr_transform=None (Optional[Callable]): Function for processing primitives when transforming PLxPR.
+        plxpr_transform=None (Optional[Callable]): Function for processing primitives when transforming PLxPR. **Experimental**
 
     Returns:
 
