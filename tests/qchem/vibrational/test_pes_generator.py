@@ -384,7 +384,7 @@ def test_dipole_order_error():
 
     with pytest.raises(
         ValueError,
-        match="The method only supports calculation of one-mode, two-mode and three-mode dipoles.",
+        match="Currently, one-mode, two-mode and three-mode dipole calculations are supported.",
     ):
         vibrational.vibrational_pes(mol, dipole_level=4)
 

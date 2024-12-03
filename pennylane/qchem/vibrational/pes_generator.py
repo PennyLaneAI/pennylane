@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
 
-from .localize_modes import _localize_normal_modes
+from .localize_modes import localize_normal_modes
 from .vibrational_class import (
     VibrationalPES,
     _get_dipole,
@@ -779,12 +779,12 @@ def vibrational_pes(
        method (str): Electronic structure method that can be either restricted and unrestricted
            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
        localize (bool): flag to perform normal mode localization. Default is ``False``.
-       freqs (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
+       bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
            Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
-       cubic (bool)): Whether to include three-mode couplings. Default is ``False``.
-       dipole_level (int): Defines the level up to which dipole matrix elements are to be calculated. Input values can be
-                     ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-                     value is ``1``.
+       cubic (bool)): Flag to include three-mode couplings. Default is ``False``.
+       dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
+           ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
+           value is ``1``.
 
     Returns:
        VibrationalPES object.
@@ -818,17 +818,15 @@ def vibrational_pes(
 
     freqs = None
     uloc = None
-    displ_vecs = None
+    vectors = None
     if rank == 0:
-        freqs, displ_vecs = _harmonic_analysis(scf_result, method)
+        freqs, vectors = _harmonic_analysis(scf_result, method)
         if localize:
-            freqs, displ_vecs, uloc = _localize_normal_modes(
-                freqs, displ_vecs, freq_separation=loc_freqs
-            )
+            freqs, vectors, uloc = localize_normal_modes(freqs, vectors, bins=bins)
 
     # Broadcast data to all threads
     freqs = comm.bcast(freqs, root=0)
-    displ_vecs = np.array(comm.bcast(displ_vecs, root=0))
+    vectors = np.array(comm.bcast(vectors, root=0))
     uloc = np.array(comm.bcast(uloc, root=0))
 
     comm.Barrier()
@@ -837,7 +835,7 @@ def vibrational_pes(
 
     dipole = True
     pes_onebody, dipole_onebody = _pes_onemode(
-        molecule, scf_result, freqs, displ_vecs, grid, method=method, dipole=dipole
+        molecule, scf_result, freqs, vectors, grid, method=method, dipole=dipole
     )
     comm.Barrier()
 
@@ -849,7 +847,7 @@ def vibrational_pes(
         molecule,
         scf_result,
         freqs,
-        displ_vecs,
+        vectors,
         grid,
         pes_onebody,
         dipole_onebody,
@@ -858,8 +856,8 @@ def vibrational_pes(
     )
     comm.Barrier()
 
-    pes_arr = [pes_onebody, pes_twobody]
-    dipole_arr = [dipole_onebody, dipole_twobody]
+    pes_data = [pes_onebody, pes_twobody]
+    dipole_data = [dipole_onebody, dipole_twobody]
 
     if cubic:
         if dipole_level < 3:
@@ -869,7 +867,7 @@ def vibrational_pes(
             molecule,
             scf_result,
             freqs,
-            displ_vecs,
+            vectors,
             grid,
             pes_onebody,
             pes_twobody,
@@ -879,9 +877,9 @@ def vibrational_pes(
             dipole=dipole,
         )
         comm.Barrier()
-        pes_arr = [pes_onebody, pes_twobody, pes_threebody]
-        dipole_arr = [dipole_onebody, dipole_twobody, dipole_threebody]
+        pes_data = [pes_onebody, pes_twobody, pes_threebody]
+        dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
 
     return VibrationalPES(
-        freqs, grid, gauss_weights, uloc, pes_arr, dipole_arr, localize, dipole_level
+        freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
     )
