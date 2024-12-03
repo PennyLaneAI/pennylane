@@ -1068,7 +1068,7 @@ class DefaultMixedNewAPI(Device):
         if self.readout_err is not None:
             transform_program.add_transform(warn_readout_error_state)
 
-        # Add the valicate section
+        # Add the validate section
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(validate_measurements, name=self.name)
         transform_program.add_transform(
