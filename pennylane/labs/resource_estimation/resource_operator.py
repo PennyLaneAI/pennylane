@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 # pylint: disable=unused-argument
 
+
 class ResourceOperator(ABC):
     r"""Abstract class that defines the methods a PennyLane Operator
     must implement in order to be used for resource estimation.
