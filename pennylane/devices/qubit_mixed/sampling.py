@@ -125,7 +125,7 @@ def _measure_with_samples_diagonalizing_gates(
     total_indices = _get_num_wires(state, is_state_batched)
     wires = qml.wires.Wires(range(total_indices))
 
-    def _process_single_shot(samples):
+    def _process_single_shot_copy(samples):
         samples_processed = _process_samples(mp, samples, wires)
         if isinstance(mp, SampleMP):
             return math.squeeze(samples_processed)
@@ -161,7 +161,7 @@ def _measure_with_samples_diagonalizing_gates(
                 prng_key=prng_key,
                 readout_errors=readout_errors,
             )
-            processed_samples.append(_process_single_shot(samples))
+            processed_samples.append(_process_single_shot_copy(samples))
 
         return tuple(processed_samples)
 
@@ -175,7 +175,7 @@ def _measure_with_samples_diagonalizing_gates(
         readout_errors=readout_errors,
     )
 
-    return _process_single_shot(samples)
+    return _process_single_shot_copy(samples)
 
 
 def _measure_sum_with_samples(
