@@ -644,7 +644,6 @@ def apply_snapshot(
         state (array): current quantum state
         is_state_batched (bool): whether the state is batched
         debugger: the debugger instance for storing snapshots
-
     Returns:
         array: The unchanged quantum state
     """
