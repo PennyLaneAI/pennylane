@@ -28,14 +28,21 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
                     0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
                     0 & 0 & 0 & e^{-i\phi/2}
                 \end{bmatrix}.
+
+        The circuit implementing this transformation is given by
+
+        .. code-block:: bash
+
+            0: ──X─╭Rϕ(-0.05)──X─╭●─────────╭●─╭RY(0.10)─╭●─┤
+            1: ──X─╰●──────────X─╰Rϕ(-0.05)─╰X─╰●────────╰X─┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
-        x = re.ResourceX.resource_rep(**kwargs)
-        ctrl_phase_shift = re.ResourceControlledPhaseShift.resource_rep(**kwargs)
-        cnot = re.ResourceCNOT.resource_rep(**kwargs)
-        cry = re.ResourceCRY.resource_rep(**kwargs)
+    def _resource_decomp(**kwargs):
+        x = re.ResourceX.resource_rep()
+        ctrl_phase_shift = re.ResourceControlledPhaseShift.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
+        cry = re.ResourceCRY.resource_rep()
 
         gate_types = {}
         gate_types[x] = 4
@@ -49,7 +56,7 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -65,14 +72,21 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
                     0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
                     0 & 0 & 0 & e^{i\phi/2}
                 \end{bmatrix}.
+
+        The circuit implmementing this transformation is given by
+
+        .. code-block:: bash
+
+            0: ──X─╭Rϕ(0.05)──X─╭●────────╭●─╭RY(0.10)─╭●─┤
+            1: ──X─╰●─────────X─╰Rϕ(0.05)─╰X─╰●────────╰X─┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
-        x = re.ResourceX.resource_rep(**kwargs)
-        ctrl_phase_shift = re.ResourceControlledPhaseShift.resource_rep(**kwargs)
-        cnot = re.ResourceCNOT.resource_rep(**kwargs)
-        cry = re.ResourceCRY.resource_rep(**kwargs)
+    def _resource_decomp(**kwargs):
+        x = re.ResourceX.resource_rep()
+        ctrl_phase_shift = re.ResourceControlledPhaseShift.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
+        cry = re.ResourceCRY.resource_rep()
 
         gate_types = {}
         gate_types[x] = 4
@@ -86,7 +100,7 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -100,14 +114,25 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 
             &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
             &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
+
+        For the source of this decomposition, see page 17 of
+        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
+
+        The circuit implementing this transformation is given by
+
+        .. code-block:: bash
+
+            0: ────╭●──H─╭●──RY(-0.01)─╭●──RY(-0.01)─────────────────╭X──RY(0.01)────────╭●──RY(0.01)──╭●─╭X──H──╭●────┤
+            1: ────│─────╰X──RY(0.01)──│─────────────╭X──RY(0.01)─╭X─│───RY(-0.01)─╭X────│───RY(-0.01)─╰X─│──────│─────┤
+            2: ─╭●─╰X─╭●───────────────│─────────────│────────────╰●─╰●────────────│─────│────────────────╰●─────╰X─╭●─┤
+            3: ─╰X──H─╰X───────────────╰X──H─────────╰●────────────────────────────╰●──H─╰X──H──────────────────────╰X─┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
-        """See https://arxiv.org/abs/2104.05695"""
-        h = re.ResourceHadamard.resource_rep(**kwargs)
-        ry = re.ResourceRY.resource_rep(**kwargs)
-        cnot = re.ResourceCNOT.resource_rep(**kwargs)
+    def _resource_decomp(**kwargs):
+        h = re.ResourceHadamard.resource_rep()
+        ry = re.ResourceRY.resource_rep()
+        cnot = re.ResourceCNOT.resource_rep()
 
         gate_types = {}
         gate_types[h] = 6
@@ -120,11 +145,8 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
-
-
-
 
 
 class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
@@ -139,14 +161,21 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
                     0 & -ie^{i \phi/2} \sin(\phi/2) & e^{i \phi/2} \cos(\phi/2) & 0 \\
                     0 & 0 & 0 & e^{i \phi}
                 \end{bmatrix}.
+
+        The circuit implementing this transformation is given by
+
+        .. code-block:: bash
+
+            0: ──H─╭MultiRZ(0.05)──H──RX(1.57)─╭MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╭Exp(0.00+0.05j I)─┤
+            1: ──H─╰MultiRZ(0.05)──H──RX(1.57)─╰MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╰Exp(0.00+0.05j I)─┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
-        h = re.ResourceHadamard.resource_rep(**kwargs)
-        multi_rz = re.ResourceMultiRZ.resource_rep(num_wires=2, **kwargs)
-        rx = re.ResourceRX.resource_rep(**kwargs)
-        rz = re.ResourceRZ.resource_rep(**kwargs)
+    def _resource_decomp(**kwargs):
+        h = re.ResourceHadamard.resource_rep()
+        multi_rz = re.ResourceMultiRZ.resource_rep(num_wires=2)
+        rx = re.ResourceRX.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
         phase = re.ResourceGlobalPhase.resource_rep()
 
         gate_types = {}
@@ -162,5 +191,5 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})

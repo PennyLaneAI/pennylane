@@ -133,7 +133,6 @@ class TestDoubleExcitation:
 
 
 
-
 class TestFermionicSWAP:
     """Tests for the ResourceFermionicSWAP class."""
 
