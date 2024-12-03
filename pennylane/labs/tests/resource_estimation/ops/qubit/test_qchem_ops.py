@@ -18,7 +18,6 @@ import pennylane.labs.resource_estimation as re
 # pylint: disable=use-implicit-booleaness-not-comparison,no-self-use
 
 
-
 class TestSingleExcitationMinus:
     """Tests for the ResourceSingleExcitationMinus class."""
 
@@ -129,8 +128,6 @@ class TestDoubleExcitation:
         op_resource_type = op_compressed_rep.op_type
         op_resource_params = op_compressed_rep.params
         assert op_resource_type.resources(**op_resource_params) == expected
-
-
 
 
 class TestFermionicSWAP:
