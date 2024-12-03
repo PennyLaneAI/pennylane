@@ -113,7 +113,7 @@ def _measure_with_samples_diagonalizing_gates(
 
     Args:
         mp (~.measurements.SampleMeasurement): The sample measurement to perform
-        state (np.ndarray[complex]): The state vector to sample from
+        state (TensorLike): The state vector to sample from
         shots (~.measurements.Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
