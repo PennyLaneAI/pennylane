@@ -18,7 +18,7 @@ import pytest
 
 @pytest.fixture(scope="session", name="sklearn_support")
 def fixture_sklearn_support():
-    """Fixture to determine whether pyscf is installed."""
+    """Fixture to determine whether sklearn is installed."""
     # pylint: disable=unused-import, import-outside-toplevel
     try:
         import sklearn
