@@ -376,7 +376,8 @@ def taylor_dipole_coeffs(pes, deg=4, min_deg=1):
 
 
 def _position_to_boson(index, op):
-    """Convert position operator `p` or `q` into respective bosonic operator
+    """Convert position operator `p` or `q` into respective bosonic operator. The conversion is
+    described in `Eq. 6 and 7 <https://arxiv.org/pdf/1703.09313>`_.
 
     Args:
         index (int): the index of the operator
@@ -392,7 +393,8 @@ def _position_to_boson(index, op):
 
 
 def taylor_anharmonic(taylor_coeffs, start_deg=2):
-    """Build anharmonic term of taylor form bosonic observable from provided coefficients
+    """Build anharmonic term of taylor form bosonic observable from provided coefficients described
+    in `Eq. 10 <https://arxiv.org/pdf/1703.09313>`_.
 
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor expansion
@@ -492,7 +494,8 @@ def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
 
 
 def taylor_harmonic(taylor_coeffs, freqs):
-    """Build harmonic term of taylor form bosonic observable from provided coefficients
+    """Build harmonic term of taylor form bosonic observable from provided coefficients, see first
+    term of `Eq. 4 and Eq. 7 <https://arxiv.org/pdf/1703.09313>`_.
 
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor expansion
@@ -514,8 +517,9 @@ def taylor_harmonic(taylor_coeffs, freqs):
 
 
 def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
-    """Build taylor form bosonic observable from provided coefficients
-
+    """Build taylor form bosonic observable from provided coefficients, following `Eq. 4 and Eq. 7
+    <https://arxiv.org/pdf/1703.09313>`_.
+    
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor expansion
         freqs (list(float)): the harmonic frequencies
