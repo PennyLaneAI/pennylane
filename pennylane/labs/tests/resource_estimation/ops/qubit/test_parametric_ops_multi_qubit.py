@@ -90,7 +90,7 @@ class TestPauliRot:
         else:
             expected = {
                 re.ResourceHadamard.resource_rep(): expected_h_count,
-                re.ResourceS.resource_rep(): 4*expected_s_count,
+                re.ResourceS.resource_rep(): 4 * expected_s_count,
                 re.ResourceRZ.resource_rep(): 1,
                 re.ResourceCNOT.resource_rep(): 2 * (active_wires - 1),
             }
