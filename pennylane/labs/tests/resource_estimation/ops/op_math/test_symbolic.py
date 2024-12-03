@@ -38,10 +38,10 @@ class TestResourceAdjoint:
     @pytest.mark.parametrize(
         "op, expected",
         [
-            (re.ResourceAdjoint(re.ResourceQFT([0, 1])), "Adjoint(QFT(2))"),
+            (re.ResourceAdjoint(re.ResourceQFT([0, 1])), "Adjoint(QFT)"),
             (
                 re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1]))),
-                "Adjoint(Adjoint(QFT(2)))",
+                "Adjoint(Adjoint(QFT))",
             ),
         ],
     )
@@ -71,19 +71,19 @@ class TestResourceControlled:
     @pytest.mark.parametrize(
         "op, expected",
         [
-            (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), "C(QFT(2),1,0,0)"),
+            (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), "C(QFT,1,0,0)"),
             (
                 re.ResourceControlled(
                     re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]),
                     control_wires=[3],
                 ),
-                "C(C(QFT(2),1,0,0),1,0,0)",
+                "C(C(QFT,1,0,0),1,0,0)",
             ),
             (
                 re.ResourceControlled(
                     re.ResourceQFT([0, 1]), control_wires=[2, 3], control_values=[0, 1]
                 ),
-                "C(QFT(2),2,1,0)",
+                "C(QFT,2,1,0)",
             ),
             (
                 re.ResourceControlled(
@@ -92,7 +92,7 @@ class TestResourceControlled:
                     control_values=[0, 1],
                     work_wires=[4],
                 ),
-                "C(QFT(2),2,1,1)",
+                "C(QFT,2,1,1)",
             ),
         ],
     )
@@ -120,9 +120,9 @@ class TestResourcePow:
     @pytest.mark.parametrize(
         "op, expected",
         [
-            (re.ResourcePow(re.ResourceQFT([0, 1]), 2), "(QFT(2))**2"),
-            (re.ResourcePow(re.ResourceAdjoint(re.ResourceQFT([0, 1])), 2), "(Adjoint(QFT(2)))**2"),
-            (re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 3), "((QFT(2))**2)**3"),
+            (re.ResourcePow(re.ResourceQFT([0, 1]), 2), "Pow(QFT, 2)"),
+            (re.ResourcePow(re.ResourceAdjoint(re.ResourceQFT([0, 1])), 2), "Pow(Adjoint(QFT), 2)"),
+            (re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 3), "Pow(Pow(QFT, 2), 3)"),
         ],
     )
     def test_tracking_name(self, op, expected):
