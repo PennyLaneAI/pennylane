@@ -34,8 +34,8 @@ def _remove_harmonic(freqs, pes_onemode):
     """Removes the harmonic part from the PES
 
     Args:
-        freqs (list(float)): the harmonic frequencies
-        pes_onemode (list(list(float))): one body terms of the PES object
+        freqs (list(float)): normal mode frequencies
+        pes_onemode (TensorLike[float]): one mode PES
 
     Returns:
         harmonic part of the PES
@@ -73,7 +73,7 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
         )
 
     nmodes, quad_order = np.shape(anh_pes)
-    gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
+    grid, _ = np.polynomial.hermite.hermgauss(quad_order)
     fs = np.zeros((nmodes, deg - min_deg + 1))
 
     predicted_1D = np.zeros_like(anh_pes)
@@ -118,7 +118,7 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
     r"""Fits the two-body PES to get two-body coefficients.
 
     Args:
-        two-body PES (list(list(float))): two-body PES object
+        two-body PES (TensorLike[float]): two-body PES object
         deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
@@ -150,9 +150,8 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
     num_2D = len(q1)
 
     features = np.zeros((num_2D, num_fs))
-    for deg_idx, Qs in enumerate(fit_degs):
-        q1deg, q2deg = Qs
-        features[:, deg_idx] = q1 ** (q1deg) * q2 ** (q2deg)
+    for deg_idx, (q1deg, q2deg) in enumerate(fit_degs):
+          features[:, deg_idx] = (q1 ** q1deg) * (q2 ** q2deg)
 
     for i1 in range(nmodes):
         for i2 in range(i1):
@@ -166,15 +165,12 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
             fs[i1, i2, :] = poly2D_reg_model.coef_
             predicted = poly2D_reg_model.predict(features)
             for idx in range(num_2D):
-                idx_q1 = idx1[idx]
-                idx_q2 = idx2[idx]
-                predicted_2D[i1, i2, idx_q1, idx_q2] = predicted[idx]
+                predicted_2D[i1, i2, idx1[idx], idx2[idx]] = predicted[idx]
 
     return fs, predicted_2D
 
 
 def _generate_bin_occupations(max_occ, nbins):
-    # Generate all combinations placing max_occ balls in nbins
     combinations = list(itertools.product(range(max_occ + 1), repeat=nbins))
 
     # Filter valid combinations
@@ -217,7 +213,7 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
     r"""Fits the three-body PES to get three-body coefficients.
 
     Args:
-        three-body PES (list(list(float))): three-body PES object
+        three-body PES (TensorLike[float]): three-mode PES
         deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
@@ -309,7 +305,7 @@ def taylor_coeffs(pes, deg=4, min_deg=3):
 
 
 def taylor_dipole_coeffs(pes, deg=4, min_deg=1):
-    r"""Calculates Taylor form fitted coefficients for dipole construction
+    r"""Calculates Taylor form fitted coefficients for dipole construction.
 
     Args:
         pes (VibrationalPES): the PES object
@@ -381,7 +377,7 @@ def _position_to_boson(index, op):
 
     Args:
         index (int): the index of the operator
-        op (str): the position operator, either `"p"` or `"q"`
+        op (str): the position operator, either ``"p"`` or ``"q"``
 
     Returns:
         BoseSentence: bosonic form of the position operator given
