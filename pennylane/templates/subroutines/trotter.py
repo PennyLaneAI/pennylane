@@ -613,6 +613,9 @@ class TrotterizedQfunc(Operation):
         if qfunc is None:
             raise ValueError("The qfunc must be provided to be trotterized.")
 
+        if order <= 0 or order != 1 and order % 2 != 0:
+            raise ValueError(f"The order must be 1 or a positive even integer, got {order}.")
+
         try:
             wires = non_trainable_kwargs.pop("wires")
         except KeyError:
@@ -809,8 +812,16 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
 
     @wraps(qfunc)
     def wrapper(time, *args, **kwargs):
+
+        special_keys = ["n", "order", "qfunc", "reverse"]
+        if any(key in kwargs for key in special_keys):
+            raise ValueError(
+                f"Cannot use any of the specailized names:\n {special_keys}\nas keyword"
+                f"arguments to the qfunc: {kwargs}"
+            )
+
         return TrotterizedQfunc(
-            time, *other_args, qfunc=qfunc, n=n, order=order, reverse=reverse, name=name, **kwargs
+            time, *args, qfunc=qfunc, n=n, order=order, reverse=reverse, name=name, **kwargs
         )
 
     return wrapper
