@@ -426,13 +426,13 @@ def test_insert_dev(dev_name):
     in_tape = QuantumScript.from_queue(q_in_tape)
     dev = qml.device(dev_name, wires=2)
 
-    program, _ = dev.preprocess()
+    program = dev.preprocess_transforms()
     res_without_noise = qml.execute(
         [in_tape], dev, qml.gradients.param_shift, transform_program=program
     )
 
     new_dev = insert(dev, qml.PhaseShift, 0.4)
-    new_program, _ = new_dev.preprocess()
+    new_program = new_dev.preprocess_transforms()
     tapes, _ = new_program([in_tape])
     tape = tapes[0]
     res_with_noise = qml.execute(

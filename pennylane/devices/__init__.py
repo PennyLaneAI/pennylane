@@ -24,7 +24,6 @@ to verify and test quantum gradient computations.
 .. autosummary::
     :toctree: api
 
-
     default_qubit
     default_gaussian
     default_mixed
@@ -144,6 +143,7 @@ Qutrit Mixed-State Simulation Tools
 """
 
 
+from .capabilities import DeviceCapabilities
 from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device

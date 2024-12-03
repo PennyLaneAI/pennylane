@@ -174,7 +174,7 @@ def resources_from_operation(
 def resources_from_qfunc(
     obj: Callable, gate_set: Set = DefaultGateSet, config: Dict = resource_config
 ) -> Callable:
-    """Get resources from a quantum function which queues operations!"""
+    """Get resources from a quantum function which queues operations"""
 
     @wraps(obj)
     def wrapper(*args, **kwargs):
@@ -294,7 +294,11 @@ def _op_to_resource_op(op: Operation) -> ResourceOperator:
 
 def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str, int]:
     """Map resources with gate_types made from CompressedResourceOps
+<<<<<<< HEAD
     into one which tracks just strings of operations!
+=======
+    into one which tracks just strings of operations.
+>>>>>>> e33901fd824724bd5192b36010069599b9895cd8
 
     Args:
         gate_counts (Dict[CompressedResourceOp, int]): gate counts in terms of compressed resource ops
