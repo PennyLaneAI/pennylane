@@ -640,11 +640,10 @@ def apply_snapshot(
     """Take a snapshot of the mixed state
 
     Args:
-        op (qml.Snapshot): The snapshot operation
-        state (array): The current quantum state
-        is_state_batched (bool): Whether the state is batched
-        debugger: The debugger instance for storing snapshots
-        **execution_kwargs: Additional execution arguments
+        op (qml.Snapshot): the snapshot operation
+        state (array): current quantum state
+        is_state_batched (bool): whether the state is batched
+        debugger: the debugger instance for storing snapshots
 
     Returns:
         array: The unchanged quantum state
