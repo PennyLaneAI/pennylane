@@ -741,7 +741,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         raise AssertionError("The polynomial must have at least degree 1.")
 
     for x in [-1, 0, 1]:
-        if qml.math.abs(qml.math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
+        if qml.math.abs(qml.math.sum([coeff * x**i for i, coeff in enumerate(poly)])) > 1:
             # Check that |P(x)| ≤ 1. Only points -1, 0, 1 will be checked.
             raise AssertionError("The polynomial must satisfy that |P(x)| ≤ 1 for all x in [-1, 1]")
 

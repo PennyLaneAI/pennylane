@@ -32,6 +32,13 @@ from pennylane.drawer import MPLDrawer
 from pennylane.math import allclose
 
 
+@pytest.fixture(autouse=True)
+def suppress_mpl_many_figures_warning():
+    warnings.filterwarnings(
+        "ignore", "More than 20 figures have been opened", category=RuntimeWarning
+    )
+
+
 class TestInitialization:
     """Tests drawer creation"""
 

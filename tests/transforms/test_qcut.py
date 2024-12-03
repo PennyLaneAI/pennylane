@@ -22,6 +22,7 @@ import itertools
 import string
 import sys
 import warnings
+from contextlib import nullcontext
 from functools import partial, reduce
 from itertools import product
 from os import environ
@@ -2790,9 +2791,12 @@ class TestCutCircuitMCTransform:
         shots = 100
         dev = dev_fn(wires=2, shots=shots)
 
-        with pytest.raises(
-            ValueError,
-            match="Detected 'shots' as an argument of the quantum function to transform. ",
+        with (
+            pytest.raises(
+                ValueError,
+                match="Detected 'shots' as an argument of the quantum function to transform. ",
+            ),
+            pytest.warns(UserWarning, match="Detected 'shots' as an argument"),
         ):
 
             @qml.cut_circuit_mc
@@ -4098,9 +4102,10 @@ class TestCutCircuitTransform:
         # Note that the jit.trace ends up calling qcut_processing_fn multiple times, so below we
         # delay introducing the spy until afterwards and then ensure that qcut_processing_fn is
         # not called again.
-        cut_circuit_trace = torch.jit.trace(
-            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), x
-        )
+        with pytest.warns(torch.jit._trace.TracerWarning):
+            cut_circuit_trace = torch.jit.trace(
+                qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), x
+            )
 
         # Run once with original value
         spy = mocker.spy(qcut.processing, "qcut_processing_fn")
@@ -5278,9 +5283,16 @@ class TestAutoCutCircuit:
         grad_expected = qml.grad(circuit)(params)
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        res = cut_circuit(params)
+        ctx = (
+            pytest.warns(UserWarning, match="The number of partition attempts seems high")
+            if max_depth == 1
+            else nullcontext()
+        )
+        with ctx:
+            res = cut_circuit(params)
         spy.assert_called_once()
-        grad = qml.grad(cut_circuit)(params)
+        with ctx:
+            grad = qml.grad(cut_circuit)(params)
 
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
@@ -5321,7 +5333,8 @@ class TestAutoCutCircuit:
         res_expected = circuit()
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        res = cut_circuit()
+        with pytest.warns(UserWarning, match="The number of partition attempts seems high"):
+            res = cut_circuit()
         spy.assert_called_once()
 
         atol = 1e-2 if shots else 1e-8
@@ -5453,11 +5466,16 @@ class TestAutoCutCircuit:
         tape0 = qml.tape.QuantumScript.from_queue(q0)
         tape = tape0.expand()
         graph = qcut.tape_to_graph(tape)
-        cut_graph = qcut.find_and_place_cuts(
-            graph=graph,
-            cut_strategy=cut_strategy,
-            replace_wire_cuts=True,
-        )
+        with (
+            pytest.warns(UserWarning, match="The number of partition attempts seems high")
+            if measure_all_wires
+            else nullcontext()
+        ):
+            cut_graph = qcut.find_and_place_cuts(
+                graph=graph,
+                cut_strategy=cut_strategy,
+                replace_wire_cuts=True,
+            )
         frags, _ = qcut.fragment_graph(cut_graph)
         assert len(frags) == 7
 
@@ -5589,7 +5607,8 @@ class TestCutCircuitWithHamiltonians:
         res_expected = circuit()
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        res = cut_circuit()
+        with pytest.warns(UserWarning, match="The number of partition attempts seems high"):
+            res = cut_circuit()
         assert spy.call_count == len(hamiltonian.ops)
         assert np.isclose(res, res_expected, atol=1e-8)
         assert cut_circuit.tape.measurements[0].obs.grouping_indices == hamiltonian.grouping_indices

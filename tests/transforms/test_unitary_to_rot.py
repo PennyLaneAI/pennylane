@@ -526,7 +526,8 @@ def test_unitary_to_rot_multiple_two_qubit(num_reps):
     transformed_qnode = qml.QNode(unitary_to_rot(my_circuit), dev)
 
     original_matrix = qml.matrix(original_qnode)()
-    transformed_matrix = qml.matrix(transformed_qnode)()
+    with pytest.warns(RuntimeWarning, match="The two-qubit decomposition may not be diff"):
+        transformed_matrix = qml.matrix(transformed_qnode)()
 
     assert check_matrix_equivalence(original_matrix, transformed_matrix, atol=1e-7)
 

@@ -15,6 +15,7 @@
 # pylint: disable=protected-access, use-implicit-booleaness-not-comparison
 import functools
 import pickle
+from contextlib import nullcontext
 
 import numpy as np
 import pytest
@@ -356,9 +357,16 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         observable = qml.Identity(0)
         for i in range(test_num_wires):
             observable = observable @ qml.X(i)
-        benchmark(
-            qml.Hermitian.compute_decomposition, qml.matrix(observable), list(range(test_num_wires))
-        )
+        with (
+            pytest.warns(UserWarning, match="Decomposition may be inefficient")
+            if test_num_wires > 7
+            else nullcontext()
+        ):
+            benchmark(
+                qml.Hermitian.compute_decomposition,
+                qml.matrix(observable),
+                list(range(test_num_wires)),
+            )
 
     @pytest.mark.parametrize("observable", DECOMPOSITION_TEST_DATA_MULTI_WIRES)
     def test_hermitian_decomposition(self, observable):
@@ -696,7 +704,8 @@ class TestProjector:
         out01 = circuit(state01)
         assert qml.math.allclose(out01, 1)
         state10 = jax.numpy.array([True, False])
-        out10 = circuit(state10)
+        with pytest.warns(FutureWarning, match="scatter inputs have incompatible types"):
+            out10 = circuit(state10)
         assert qml.math.allclose(out10, 0)
 
         with pytest.raises(ValueError, match=r"Basis state must consist of integers or booleans."):

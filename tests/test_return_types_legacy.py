@@ -14,6 +14,8 @@
 """
 Unit tests for the new return types.
 """
+from contextlib import nullcontext
+
 import numpy as np
 import pytest
 
@@ -133,7 +135,12 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
+        with (
+            pytest.warns(UserWarning, match="Requested mutual information with finite shots")
+            if shots
+            else nullcontext()
+        ):
+            res = qml.execute(tapes=[qnode.tape], device=dev, diff_method=None, interface=interface)
 
         assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
