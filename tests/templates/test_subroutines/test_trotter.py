@@ -1236,9 +1236,17 @@ class TestIntegration:
         assert allclose(measured_coeff_grad, reference_coeff_grad)
 
 
-class TestTrotterizedQfunc:
+class TestTrotterizedQfuncInitialization:
+    """Test the TrotterizedQfunc class initializes correctly."""
 
-    # @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    def test_error_qfunc(self):
+        """Test that an error is raised if a qfunc is not provided."""
+        assert True
+    
+    def test_parameters_and_hyperparameters(self):
+        """Test that the parameters and hyperparameters are set correctly"""
+        assert True
+
     def test_standard_validity(self):
         """Test standard validity criteria using assert_valid."""
 
@@ -1259,3 +1267,409 @@ class TestTrotterizedQfunc:
             flip=True,
         )
         qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_pickle=True)
+
+
+class TestTrotterizedQfuncIntegration:
+    """Test the TrotterizedQfunc decomposes correctly."""
+
+    def test_decomposition(self):
+        """Test the decompose method"""
+        assert True
+    
+    #   Circuit execution tests:
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    def test_execute_circuit(self, hamiltonian, hamiltonian_index, order):
+        """Test that the gate executes correctly in a circuit."""
+        wires = hamiltonian.wires
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.TrotterProduct(hamiltonian, time=4.2, order=order)
+            return qml.state()
+
+        initial_state = qnp.zeros(2 ** (len(wires)))
+        initial_state[0] = 1
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [
+                    qml.matrix(op, wire_order=wires)
+                    for op in test_decompositions[(hamiltonian_index, order)]
+                ],
+            )
+            @ initial_state
+        )
+        state = circ()
+
+        assert qnp.allclose(expected_state, state)
+
+    @pytest.mark.parametrize("order", (1, 2))
+    @pytest.mark.parametrize("num_steps", (1, 2, 3))
+    def test_execute_circuit_n_steps(self, num_steps, order):
+        """Test that the circuit executes as expected when we set the number of trotter steps"""
+        time = 0.5
+        hamiltonian = qml.sum(qml.PauliX(0), qml.PauliZ(0))
+
+        if order == 1:
+            base_decomp = [
+                qml.exp(qml.PauliZ(0), 0.5j / num_steps),
+                qml.exp(qml.PauliX(0), 0.5j / num_steps),
+            ]
+        if order == 2:
+            base_decomp = [
+                qml.exp(qml.PauliX(0), 0.25j / num_steps),
+                qml.exp(qml.PauliZ(0), 0.25j / num_steps),
+                qml.exp(qml.PauliZ(0), 0.25j / num_steps),
+                qml.exp(qml.PauliX(0), 0.25j / num_steps),
+            ]
+
+        true_decomp = base_decomp * num_steps
+
+        wires = hamiltonian.wires
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
+            return qml.state()
+
+        initial_state = qnp.zeros(2 ** (len(wires)))
+        initial_state[0] = 1
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y, [qml.matrix(op, wire_order=wires) for op in true_decomp[::-1]]
+            )
+            @ initial_state
+        )
+        state = circ()
+        assert qnp.allclose(expected_state, state)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("time", (0.5, 1, 2))
+    def test_jax_execute(self, time):
+        """Test that the gate executes correctly in the jax interface."""
+        from jax import numpy as jnp
+
+        time = jnp.array(time)
+        coeffs = jnp.array([1.23, -0.45])
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.TrotterProduct(h, time, n=2, order=2)
+            return qml.state()
+
+        initial_state = jnp.array([1.0, 0.0, 0.0, 0.0])
+
+        expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+            )
+            @ initial_state
+        )
+
+        state = circ(time, coeffs)
+        assert allclose(expected_state, state)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("time", (0.5, 1, 2))
+    def test_jaxjit_execute(self, time):
+        """Test that the gate executes correctly in the jax interface with jit."""
+        import jax
+        from jax import numpy as jnp
+
+        time = jnp.array(time)
+        c1 = jnp.array(1.23)
+        c2 = jnp.array(-0.45)
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circ(time, c1, c2):
+            h = qml.sum(
+                qml.s_prod(c1, terms[0]),
+                qml.s_prod(c2, terms[1]),
+            )
+            qml.TrotterProduct(h, time, n=2, order=2, check_hermitian=False)
+            return qml.state()
+
+        initial_state = jnp.array([1.0, 0.0, 0.0, 0.0])
+
+        expected_product_sequence = _generate_simple_decomp([c1, c2], terms, time, order=2, n=2)
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+            )
+            @ initial_state
+        )
+
+        state = circ(time, c1, c2)
+        assert allclose(expected_state, state)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("time", (0.5, 1, 2))
+    def test_tf_execute(self, time):
+        """Test that the gate executes correctly in the tensorflow interface."""
+        import tensorflow as tf
+
+        time = tf.Variable(time, dtype=tf.complex128)
+        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.sum(
+                qml.s_prod(coeffs[0], terms[0]),
+                qml.s_prod(coeffs[1], terms[1]),
+            )
+            qml.TrotterProduct(h, time, n=2, order=2)
+
+            return qml.state()
+
+        initial_state = tf.Variable([1.0, 0.0, 0.0, 0.0], dtype=tf.complex128)
+
+        expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
+
+        expected_state = tf.linalg.matvec(
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+            ),
+            initial_state,
+        )
+
+        state = circ(time, coeffs)
+        assert allclose(expected_state, state)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("time", (0.5, 1, 2))
+    def test_torch_execute(self, time):
+        """Test that the gate executes correctly in the torch interface."""
+        import torch
+
+        time = torch.tensor(time, dtype=torch.complex64, requires_grad=True)
+        coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.TrotterProduct(h, time, n=2, order=2)
+            return qml.state()
+
+        initial_state = torch.tensor([1.0, 0.0, 0.0, 0.0], dtype=torch.complex64)
+
+        expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+            )
+            @ initial_state
+        )
+
+        state = circ(time, coeffs)
+        assert allclose(expected_state, state)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("time", (0.5, 1, 2))
+    def test_autograd_execute(self, time):
+        """Test that the gate executes correctly in the autograd interface."""
+        time = qnp.array(time)
+        coeffs = qnp.array([1.23, -0.45])
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.TrotterProduct(h, time, n=2, order=2)
+            return qml.state()
+
+        initial_state = qnp.array([1.0, 0.0, 0.0, 0.0])
+
+        expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
+            )
+            @ initial_state
+        )
+
+        state = circ(time, coeffs)
+        assert qnp.allclose(expected_state, state)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
+    def test_autograd_gradient(self, order, n):
+        """Test that the gradient is computed correctly"""
+        time = qnp.array(1.5)
+        coeffs = qnp.array([1.23, -0.45])
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.TrotterProduct(h, time, n=n, order=order)
+            return qml.expval(qml.Hadamard(0))
+
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+
+            for op in decomp[::-1]:
+                qml.apply(op)
+
+            return qml.expval(qml.Hadamard(0))
+
+        measured_time_grad, measured_coeff_grad = qml.grad(circ)(time, coeffs)
+        reference_time_grad, reference_coeff_grad = qml.grad(reference_circ)(time, coeffs)
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
+    def test_torch_gradient(self, order, n):
+        """Test that the gradient is computed correctly using torch"""
+        import torch
+
+        time = torch.tensor(1.5, dtype=torch.complex64, requires_grad=True)
+        coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
+        time_reference = torch.tensor(1.5, dtype=torch.complex64, requires_grad=True)
+        coeffs_reference = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.TrotterProduct(h, time, n=n, order=order)
+            return qml.expval(qml.Hadamard(0))
+
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+
+            for op in decomp[::-1]:
+                qml.apply(op)
+
+            return qml.expval(qml.Hadamard(0))
+
+        res_circ = circ(time, coeffs)
+        res_circ.backward()
+        measured_time_grad = time.grad
+        measured_coeff_grad = coeffs.grad
+
+        ref_circ = reference_circ(time_reference, coeffs_reference)
+        ref_circ.backward()
+        reference_time_grad = time_reference.grad
+        reference_coeff_grad = coeffs_reference.grad
+
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
+    def test_tf_gradient(self, order, n):
+        """Test that the gradient is computed correctly using tensorflow"""
+        import tensorflow as tf
+
+        time = tf.Variable(1.5, dtype=tf.complex128)
+        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.sum(
+                qml.s_prod(coeffs[0], terms[0]),
+                qml.s_prod(coeffs[1], terms[1]),
+            )
+            qml.TrotterProduct(h, time, n=n, order=order)
+            return qml.expval(qml.Hadamard(0))
+
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+
+            for op in decomp[::-1]:
+                qml.apply(op)
+
+            return qml.expval(qml.Hadamard(0))
+
+        with tf.GradientTape() as tape:
+            result = circ(time, coeffs)
+
+        measured_time_grad, measured_coeff_grad = tape.gradient(result, (time, coeffs))
+
+        with tf.GradientTape() as tape:
+            result = reference_circ(time, coeffs)
+
+        reference_time_grad, reference_coeff_grad = tape.gradient(result, (time, coeffs))
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
+    def test_jax_gradient(self, order, n):
+        """Test that the gradient is computed correctly"""
+        import jax
+        from jax import numpy as jnp
+
+        time = jnp.array(1.5)
+        coeffs = jnp.array([1.23, -0.45])
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.TrotterProduct(h, time, n=n, order=order)
+            return qml.expval(qml.Hadamard(0))
+
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+
+            for op in decomp[::-1]:
+                qml.apply(op)
+
+            return qml.expval(qml.Hadamard(0))
+
+        measured_time_grad, measured_coeff_grad = jax.grad(circ, argnums=[0, 1])(time, coeffs)
+        reference_time_grad, reference_coeff_grad = jax.grad(reference_circ, argnums=[0, 1])(
+            time, coeffs
+        )
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)

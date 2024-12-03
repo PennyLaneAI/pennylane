@@ -26,8 +26,6 @@ from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
-from ...operation import FlatPytree
-
 
 def _scalar(order):
     """Compute the scalar used in the recursive expression.
@@ -648,7 +646,7 @@ class TrotterizedQfunc(Operation):
         decomp = (
             _recursive_qfunc(
                 time / n, order, qfunc, self.wires, reverse, *qfunc_args, **qfunc_kwargs
-            )
+            )[::-1]
             * n
         )
 
