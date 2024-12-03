@@ -194,6 +194,7 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
     def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
+
 class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperator):
     r"""Resource class for the DoubleExcitationMinus gate.
 
@@ -266,6 +267,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
     def resource_rep(cls, **kwargs):
         return re.CompressedResourceOp(cls, {})
 
+
 class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
     r"""Resource class for the OrbitalRotation gate.
 
@@ -295,7 +297,7 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
     def resource_rep(cls, **kwargs):
         return re.CompressedResourceOp(cls, {})
 
-      
+
 class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
     r"""Resource class for the FermionicSWAP gate.
 

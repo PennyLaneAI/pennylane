@@ -17,7 +17,7 @@ from typing import Dict
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
-# pylint: disable=arguments-differ,too-many-ancestors
+# pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments
 
 
 class ResourceCH(qml.CH, re.ResourceOperator):
