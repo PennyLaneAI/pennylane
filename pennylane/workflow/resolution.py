@@ -20,7 +20,7 @@ from typing import Literal, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
-from pennylane.math import INTERFACE_MAP, _get_canonical_interface_name, get_interface
+from pennylane.math import INTERFACE_MAP, get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
 
@@ -96,7 +96,7 @@ def _resolve_interface(interface, tapes):
     Returns:
         str: Interface name"""
 
-    interface = _get_canonical_interface_name(interface)
+    interface = get_canonical_interface_name(interface)
 
     if interface == "auto":
         params = []

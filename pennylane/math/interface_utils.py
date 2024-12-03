@@ -197,8 +197,8 @@ def get_deep_interface(value):
     return _get_interface_of_single_tensor(itr)
 
 
-def _get_canonical_interface_name(interface):
-    """Helper function to get the canonical interface.
+def get_canonical_interface_name(interface):
+    """Helper function to get the canonical interface name.
 
     Args:
         interface (str): original interface to use as reference
