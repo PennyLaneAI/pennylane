@@ -27,10 +27,6 @@ except ImportError:  # pragma: no cover
     has_jax = False
 
 
-class CaptureError(Exception):
-    """Errors related to PennyLane's Capture submodule."""
-
-
 def make_plxpr(
     func: Callable, static_argnums: Union[int, Sequence[int]] = (), autograph=True, **kwargs
 ):
