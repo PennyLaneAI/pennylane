@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Code relevant for performing measurements on a qutrit mixed state.
+Code relevant for performing measurements on a qubit mixed state.
 """
 
 from collections.abc import Callable
@@ -73,11 +73,12 @@ def calculate_expval(
     return math.dot(probs, eigvals)
 
 
+# pylint: disable=unused-argument
 def calculate_reduced_density_matrix(
     measurementprocess: StateMeasurement,
     state: TensorLike,
     is_state_batched: bool = False,
-    _readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Get the state or reduced density matrix.
 
@@ -85,7 +86,7 @@ def calculate_reduced_density_matrix(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
-        _readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors. These are not applied on this type of measurement.
 
     Returns:
@@ -286,4 +287,6 @@ def measure(
         Tensorlike: the result of the measurement process being applied to the state.
     """
     measurement_function = get_measurement_function(measurementprocess)
-    return measurement_function(measurementprocess, state, is_state_batched, readout_errors)
+    return measurement_function(
+        measurementprocess, state, is_state_batched=is_state_batched, readout_errors=readout_errors
+    )
