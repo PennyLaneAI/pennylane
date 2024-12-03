@@ -257,11 +257,11 @@ def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
     pes_file = os.path.join(ref_dir, ref_file)
-    f = h5py.File(pes_file, "r+")
-    exp_pes_onebody = np.array(f["V1_PES"][()])
-    exp_dip_onebody = np.array(f["D1_DMS"][()])
-    exp_pes_twobody = np.array(f["V2_PES"][()])
-    exp_dip_twobody = np.array(f["D2_DMS"][()])
+    with h5py.File(pes_file, "r+") as f:
+        exp_pes_onebody = np.array(f["V1_PES"][()])
+        exp_dip_onebody = np.array(f["D1_DMS"][()])
+        exp_pes_twobody = np.array(f["V2_PES"][()])
+        exp_dip_twobody = np.array(f["D2_DMS"][()])
 
     pes_twobody, dipole_twobody = pes_generator._pes_twomode(
         mol,
@@ -326,13 +326,13 @@ def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
     pes_file = os.path.join(ref_dir, ref_file)
-    f = h5py.File(pes_file, "r+")
-    exp_pes_onebody = np.array(f["V1_PES"][()])
-    exp_dip_onebody = np.array(f["D1_DMS"][()])
-    exp_pes_twobody = np.array(f["V2_PES"][()])
-    exp_dip_twobody = np.array(f["D2_DMS"][()])
-    exp_pes_threebody = np.array(f["V3_PES"][()])
-    exp_dip_threebody = np.array(f["D3_DMS"][()])
+    with h5py.File(pes_file, "r+") as f:
+        exp_pes_onebody = np.array(f["V1_PES"][()])
+        exp_dip_onebody = np.array(f["D1_DMS"][()])
+        exp_pes_twobody = np.array(f["V2_PES"][()])
+        exp_dip_twobody = np.array(f["D2_DMS"][()])
+        exp_pes_threebody = np.array(f["V3_PES"][()])
+        exp_dip_threebody = np.array(f["D3_DMS"][()])
 
     pes_threebody, dipole_threebody = pes_generator._pes_threemode(
         mol,
