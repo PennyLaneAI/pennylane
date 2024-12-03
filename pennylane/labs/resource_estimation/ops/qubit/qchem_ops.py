@@ -33,8 +33,8 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
 
         .. code-block:: bash
 
-            0: ──X─╭Rϕ(-0.05)──X─╭●─────────╭●─╭RY(0.10)─╭●─┤  
-            1: ──X─╰●──────────X─╰Rϕ(-0.05)─╰X─╰●────────╰X─┤  
+            0: ──X─╭Rϕ(-0.05)──X─╭●─────────╭●─╭RY(0.10)─╭●─┤
+            1: ──X─╰●──────────X─╰Rϕ(-0.05)─╰X─╰●────────╰X─┤
     """
 
     @staticmethod
@@ -77,8 +77,8 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
 
         .. clode-block:: bash
 
-            0: ──X─╭Rϕ(0.05)──X─╭●────────╭●─╭RY(0.10)─╭●─┤  
-            1: ──X─╰●─────────X─╰Rϕ(0.05)─╰X─╰●────────╰X─┤ 
+            0: ──X─╭Rϕ(0.05)──X─╭●────────╭●─╭RY(0.10)─╭●─┤
+            1: ──X─╰●─────────X─╰Rϕ(0.05)─╰X─╰●────────╰X─┤
     """
 
     @staticmethod
@@ -124,7 +124,7 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 
             0: ────╭●──H─╭●──RY(-0.01)─╭●──RY(-0.01)─────────────────╭X──RY(0.01)────────╭●──RY(0.01)──╭●─╭X──H──╭●────┤
             1: ────│─────╰X──RY(0.01)──│─────────────╭X──RY(0.01)─╭X─│───RY(-0.01)─╭X────│───RY(-0.01)─╰X─│──────│─────┤
-            2: ─╭●─╰X─╭●───────────────│─────────────│────────────╰●─╰●────────────│─────│────────────────╰●─────╰X─╭●─┤  
+            2: ─╭●─╰X─╭●───────────────│─────────────│────────────╰●─╰●────────────│─────│────────────────╰●─────╰X─╭●─┤
             3: ─╰X──H─╰X───────────────╰X──H─────────╰●────────────────────────────╰●──H─╰X──H──────────────────────╰X─┤
     """
 
@@ -166,8 +166,8 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
 
         .. clode-block:: bash
 
-            0: ──H─╭MultiRZ(0.05)──H──RX(1.57)─╭MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╭Exp(0.00+0.05j I)─┤  
-            1: ──H─╰MultiRZ(0.05)──H──RX(1.57)─╰MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╰Exp(0.00+0.05j I)─┤  
+            0: ──H─╭MultiRZ(0.05)──H──RX(1.57)─╭MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╭Exp(0.00+0.05j I)─┤
+            1: ──H─╰MultiRZ(0.05)──H──RX(1.57)─╰MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╰Exp(0.00+0.05j I)─┤
     """
 
     @staticmethod

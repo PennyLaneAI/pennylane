@@ -113,8 +113,8 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
         .. code-block:: bash
 
-            0: ─╭●──RX(0.10)─╭●─┤  
-            1: ─╰X───────────╰X─┤ 
+            0: ─╭●──RX(0.10)─╭●─┤
+            1: ─╰X───────────╰X─┤
     """
 
     @staticmethod
@@ -154,8 +154,8 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
         .. code-block: bash
 
-            0: ─╭●──RY(0.10)─╭●─┤  
-            1: ─╰Y───────────╰Y─┤  
+            0: ─╭●──RY(0.10)─╭●─┤
+            1: ─╰Y───────────╰Y─┤
     """
 
     @staticmethod
@@ -195,8 +195,8 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
 
         .. code-block:: bash
 
-            0: ──H─╭●──RY(0.05)──╭●──H─┤  
-            1: ────╰Y──RX(-0.05)─╰Y────┤ 
+            0: ──H─╭●──RY(0.05)──╭●──H─┤
+            1: ────╰Y──RX(-0.05)─╰Y────┤
     """
 
     @staticmethod
@@ -240,8 +240,8 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
 
         .. code-block:: bash
 
-            0: ─╭●───────────╭●─┤  
-            1: ─╰X──RZ(0.10)─╰X─┤ 
+            0: ─╭●───────────╭●─┤
+            1: ─╰X──RZ(0.10)─╰X─┤
     """
 
     @staticmethod
@@ -278,8 +278,8 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
 
         .. code-block:: bash
 
-            0: ─╭SWAP─╭●───────────╭●─┤  
-            1: ─╰SWAP─╰X──Rϕ(0.10)─╰X─┤ 
+            0: ─╭SWAP─╭●───────────╭●─┤
+            1: ─╰SWAP─╰X──Rϕ(0.10)─╰X─┤
     """
 
     @staticmethod
