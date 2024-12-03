@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qubit mixed state device."""
-# pylint: skip-file
-# black: skip-file
 import pennylane as qml
 from pennylane.typing import Result
 
@@ -93,7 +91,8 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     return state, is_state_batched
 
 
-def measure_final_state(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments, unused-argument
+def measure_final_state(
     circuit, state, is_state_batched, rng=None, prng_key=None, readout_errors=None
 ) -> Result:
     """
@@ -133,7 +132,8 @@ def measure_final_state(  # pylint: disable=too-many-arguments
     raise NotImplementedError
 
 
-def simulate(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+def simulate(
     circuit: qml.tape.QuantumScript,
     rng=None,
     prng_key=None,
