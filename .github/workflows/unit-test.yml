@@ -83,6 +83,9 @@ on:
         type: string
         default: ''
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   test:
     name: ${{ inputs.job_name }}
