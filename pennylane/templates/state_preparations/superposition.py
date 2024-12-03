@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ def _get_permutation(binary_lists):
     to unused binary lists. Keys that match their values are removed in the output.
 
     Args:
-        binary_lists (list of list): A list of binary lists with fixed length.
+        binary_lists (List[List]): A list of binary lists with fixed length.
 
     Returns:
         dict: A dictionary mapping original binary lists to the smallest binary lists,
@@ -62,7 +62,21 @@ def _get_permutation(binary_lists):
     return filtered_dict
 
 
-def permutation_operator(basis1, basis2, wires, work_wire):
+def _permutation_operator(basis1, basis2, wires, work_wire):
+    """
+    Function that takes two basis states, ``basis1`` and ``basis2``, and creates an operator that
+    maps :math:`|\text{basis1}\rangle` to :math:`|\text{basis2}\rangle`. To achieve this, it utilizes
+    an auxiliary qubit.
+
+    Args:
+        basis1 (List): The first basis state, represented as a list of binary digits.
+        basis2 (List): The second basis state, represented as a list of binary digits.
+        wires (Sequence[int]): The list of wires that the operator acts on
+        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation
+
+    Returns:
+        list: A list of operators that map :math:`|\text{basis1}\rangle` to :math:`|\text{basis2}\rangle`.
+    """
 
     ops = []
     ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2))
@@ -128,7 +142,7 @@ class Superposition(Operation):
         )
         perms = _get_permutation(basis)
         for basis1, basis2 in perms.items():
-            op_list += permutation_operator(basis1, basis2, target_wires, work_wire)
+            op_list += _permutation_operator(basis1, basis2, target_wires, work_wire)
 
         return op_list
 
