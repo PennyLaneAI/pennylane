@@ -631,3 +631,46 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
     return math.einsum(einsum_indices, eigvals, state, eigvals.conj())
+
+
+@apply_operation.register
+def apply_snapshot(
+    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
+    """Take a snapshot of the mixed state
+
+    Args:
+        op (qml.Snapshot): The snapshot operation
+        state (array): The current quantum state
+        is_state_batched (bool): Whether the state is batched
+        debugger: The debugger instance for storing snapshots
+        **execution_kwargs: Additional execution arguments
+
+    Returns:
+        array: The unchanged quantum state
+    """
+    if debugger and debugger.active:
+        measurement = op.hyperparameters.get("measurement")
+        shots = execution_kwargs.get("tape_shots")
+
+        # Handle different measurement types
+        if isinstance(measurement, qml.measurements.StateMP) or not shots:
+            snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
+        else:
+            # For other measurements, use the measurement process
+            snapshot = qml.devices.qubit_mixed.measure_with_samples(
+                measurement,
+                state,
+                shots,
+                is_state_batched,
+                execution_kwargs.get("rng"),
+                execution_kwargs.get("prng_key"),
+            )
+
+        # Store snapshot with optional tag
+        if op.tag:
+            debugger.snapshots[op.tag] = snapshot
+        else:
+            debugger.snapshots[len(debugger.snapshots)] = snapshot
+
+    return state
