@@ -20,43 +20,19 @@ import scipy
 
 import pennylane as qml
 
-# Factor to change units of Frequency
-AU_TO_CM = 219475
-
 # pylint: disable=dangerous-default-value, too-many-statements
 
 
-def _pm_cost(q):
-    r"""Pipek-Mezey cost function whose minimization yields localized displacements.
-
-    Args:
-       q: matrix of displacement vectors
-
-    """
-
-    nnuc, _, nmodes = q.shape
-
-    xi_pm = 0.0
-
-    for p in range(nmodes):
-        for i in range(nnuc):
-            q2 = 0.0
-            for alpha in range(3):
-                q2 += q[i, alpha, p] ** 2
-            xi_pm += q2**2
-
-    return -xi_pm
-
-
 def _mat_transform(u, qmat):
-    r"""Returns the rotated displacement vectors matrix for a given rotation unitary u and displacement vectors matrix qmat.
+    r"""Returns the rotated displacement vectors matrix for a given rotation unitary u
+    and displacement vectors matrix qmat.
 
     Args:
-       u: unitary rotation matrix
-       qmat: matrix of displacement vectors
+        u (TensorLike[float]): unitary rotation matrix
+        qmat (TensorLike[float]): matrix of displacement vectors
 
     Returns:
-       rotated matrix of displacement vectors
+        TensorLike[float]: rotated matrix of displacement vectors
 
     """
     qloc = np.einsum("qp,iaq->iap", u, qmat)
@@ -65,14 +41,15 @@ def _mat_transform(u, qmat):
 
 
 def _params_to_unitary(params, nmodes):
-    r"""Transforms a one-dimensional vector of parameters specifying a unitary rotation into its associated matrix u.
+    r"""Transforms a one-dimensional vector of parameters specifying a unitary rotation
+    into its associated matrix u.
 
     Args:
-       params: parameters for unitary rotation
-       nmodes: number of normal modes
+        params (list[float]): parameters for unitary rotation
+        nmodes (int): number of normal modes
 
     Returns:
-       unitary rotation matrix
+        TensorLike[float]: unitary rotation matrix
 
     """
     ugen = np.zeros((nmodes, nmodes))
@@ -88,28 +65,31 @@ def _params_to_unitary(params, nmodes):
 
 
 def _params_cost(params, qmat, nmodes):
-    r"""Returns the cost function to be minimized for localized displacements.
+    r"""Returns the Pipek-Mezey cost function to be minimized for localized displacements.
 
     Args:
-       params: initial parameters
-       qmat: matrix of displacement vectors
-       nmodes: number of normal modes
+        params (list[float]): initial parameters
+        qmat (TensorLike[float]): matrix of displacement vectors
+        nmodes (int): number of normal modes
+    Returns:
+        float: Pipek-Mezek cost function
 
     """
     uparams = _params_to_unitary(params, nmodes)
     qrot = _mat_transform(uparams, qmat)
+    xi_pm = np.sum(np.sum(qrot**2, axis=1) ** 2)
 
-    return _pm_cost(qrot)
+    return -xi_pm
 
 
 def _normalize_q(qmat):
     r"""Returns the normalized displacement vectors.
 
     Args:
-       qmat: matrix of displacement vectors
+        qmat (TensorLike[float]): matrix of displacement vectors
 
     Returns:
-       normalized matrix of displacement vectors
+        TensorLike[float]: normalized matrix of displacement vectors
 
     """
 
@@ -124,18 +104,21 @@ def _normalize_q(qmat):
 
 
 def _localization_unitary(qmat):
-    r"""Calculates the unitary matrix to localize the displacement vectors and displacement vectors.
+    r"""Calculates the unitary matrix to localize the displacement vectors and
+    displacement vectors.
 
     Args:
-       qmat: matrix of displacement vectors associated with normal-modes
+        qmat (TensorLike[float]): matrix of displacement vectors associated with normal-modes
 
     Returns:
-       a tuple of unitary matrix to localize the displacement vectors and localized displacement vectors
+        tuple: A tuple containing the following:
+         - TensorLike[float] : unitary matrix to localize the displacement vectors
+         - TensorLike[float] : localized displacement vectors
 
     """
 
     nmodes = qmat.shape[2]
-    num_params = int(nmodes * (nmodes - 1) / 2)
+    num_params = nmodes * (nmodes - 1) // 2
 
     rng = qml.math.random.default_rng(1000)
     params = 2 * np.pi * rng.random(num_params)
@@ -149,7 +132,7 @@ def _localization_unitary(qmat):
         warnings.warn(
             "Mode localization finished unsuccessfully, returning normal modes..."
         )  # pragma: no cover
-        return _params_to_unitary(0 * params, nmodes), qmat  # pragma: no cover
+        return _params_to_unitary(np.zeros_like(params), nmodes), qmat  # pragma: no cover
 
     params_opt = optimization_res.x
     uloc = _params_to_unitary(params_opt, nmodes)
@@ -159,83 +142,81 @@ def _localization_unitary(qmat):
     return uloc, qloc
 
 
-def _localize_modes(freqs, displ_vecs, order=True):
+def _localize_modes(freqs, vecs):
     r"""Performs the mode localization for a given set of frequencies and displacement vectors.
 
     Args:
-       freqs: normal mode frequencies
-       displ_vecs: displacement vectors along the normal modes
+        freqs (list[float]): normal mode frequencies
+        vecs (list[float]): displacement vectors along the normal modes
 
     Returns:
-       a tuple of localized frequencies, displacement vectors, and localization matrix
+        tuple: A tuple containing the following:
+         - list[float] : localized frequencies
+         - TensorLike[float] : localized displacement vectors
+         - TensorLike[float] : localization matrix
 
     """
     nmodes = len(freqs)
-    hess_normal = np.zeros((nmodes, nmodes))
-    for m in range(nmodes):
-        hess_normal[m, m] = freqs[m] ** 2
+    hess_normal = np.diag(np.square(freqs))
 
-    natoms, _ = np.shape(displ_vecs[0])
-
-    qmat = np.zeros((natoms, 3, nmodes))
-    for m in range(nmodes):
-        dvec = displ_vecs[m]
-        for i in range(natoms):
-            for alpha in range(3):
-                qmat[i, alpha, m] = dvec[i, alpha]
+    qmat = np.array([vecs[m] for m in range(nmodes)]).transpose(1, 2, 0)
 
     uloc, qloc = _localization_unitary(qmat)
     hess_loc = uloc.transpose() @ hess_normal @ uloc
     loc_freqs = np.sqrt(np.array([hess_loc[m, m] for m in range(nmodes)]))
 
-    if order:
-        loc_perm = np.argsort(loc_freqs)
-        loc_freqs = loc_freqs[loc_perm]
-        qloc = qloc[:, :, loc_perm]
-        uloc = uloc[:, loc_perm]
+    loc_perm = np.argsort(loc_freqs)
+    loc_freqs = loc_freqs[loc_perm]
+    qloc = qloc[:, :, loc_perm]
+    uloc = uloc[:, loc_perm]
 
     return loc_freqs, qloc, uloc
 
 
-def localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
+def localize_normal_modes(freqs, vecs, bins=[2600]):
     """
-    Localizes normal modes by separating frequencies into specified ranges and applying mode localization.
-    The procedure for localization is described in `JCP 141, 104105 (2014)
-    <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
+    Localizes vibrational normal modes.
+
+    The normal modes are localized by separating frequencies into specified ranges following the
+    procedure described in `J. Chem. Phys. 141, 104105 (2014)
+    <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/
+    Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
 
     Args:
-        freqs: normal mode frequencies in cm^-1
-        displ_vecs: displacement vectors for normal modes
-        freq_separation (list): list of frequency separation thresholds in cm^-1. Defaults to [2600].
+        freqs (list[float]): normal mode frequencies in ``cm^-1``
+        vecs (TensorLike[float]): displacement vectors for normal modes
+        bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
+            Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
 
     Returns:
-        A tuple of frequencies, normalized displacement vectors and localization matrix indicating the relationship between
-        original and localized modes.:
+        tuple: A tuple containing the following:
+         - list[float] : localized frequencies
+         - TensorLike[float] : localized displacement vectors
+         - TensorLike[float] : localization matrix describing the relationship between
+           original and localized modes.
 
     """
-    if not freq_separation:
-        raise ValueError("The `freq_separation` list cannot be empty.")
+    if not bins:
+        raise ValueError("The `bins` list cannot be empty.")
 
     nmodes = len(freqs)
 
-    num_seps = len(freq_separation)
-    natoms = displ_vecs.shape[1]
+    num_seps = len(bins)
+    natoms = vecs.shape[1]
 
-    modes_arr = [min_modes := np.nonzero(freqs <= freq_separation[0])[0]]
+    modes_arr = [min_modes := np.nonzero(freqs <= bins[0])[0]]
     freqs_arr = [freqs[min_modes]]
-    displ_arr = [displ_vecs[min_modes]]
+    displ_arr = [vecs[min_modes]]
 
     for sep_idx in range(num_seps - 1):
-        mid_modes = np.nonzero(
-            (freq_separation[sep_idx] <= freqs) & (freq_separation[sep_idx + 1] >= freqs)
-        )[0]
+        mid_modes = np.nonzero((bins[sep_idx] <= freqs) & (bins[sep_idx + 1] >= freqs))[0]
         modes_arr.append(mid_modes)
         freqs_arr.append(freqs[mid_modes])
-        displ_arr.append(displ_vecs[mid_modes])
+        displ_arr.append(vecs[mid_modes])
 
-    modes_arr.append(max_modes := np.nonzero(freqs >= freq_separation[-1])[0])
+    modes_arr.append(max_modes := np.nonzero(freqs >= bins[-1])[0])
     freqs_arr.append(freqs[max_modes])
-    displ_arr.append(displ_vecs[max_modes])
+    displ_arr.append(vecs[max_modes])
 
     loc_freqs_arr, qlocs_arr, ulocs_arr = [], [], []
     for idx in range(num_seps + 1):
@@ -258,10 +239,10 @@ def localize_normal_modes(freqs, displ_vecs, freq_separation=[2600]):
         uloc[np.ix_(indices, indices)] = ulocs_arr[idx]
 
     loc_freqs = np.concatenate(loc_freqs_arr)
-    loc_displ_vecs = [
+    loc_vecs = [
         qlocs_arr[idx][:, :, m]
         for idx in range(num_seps + 1)
         for m in range(len(loc_freqs_arr[idx]))
     ]
 
-    return loc_freqs, loc_displ_vecs, uloc
+    return loc_freqs, loc_vecs, uloc

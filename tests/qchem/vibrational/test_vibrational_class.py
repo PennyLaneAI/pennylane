@@ -21,13 +21,12 @@ import pytest
 
 import pennylane as qml
 from pennylane.qchem import vibrational
-
-AU_TO_CM = 219475
+from pennylane.qchem.vibrational import vibrational_class
 
 # pylint: disable=too-many-arguments, protected-access
 
 
-def test_import_pyscf(monkeypatch):
+def test_import_geometric(monkeypatch):
     """Test if an ImportError is raised by _import_geometric function."""
     # pylint: disable=protected-access
 
@@ -139,14 +138,14 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = vibrational.optimize_geometry(mol)
-    _, displ_vecs = vibrational.harmonic_analysis(mol_eq[1])
+    _, displ_vecs = vibrational_class._harmonic_analysis(mol_eq[1])
     assert np.allclose(displ_vecs, expected_vecs) or np.allclose(
         displ_vecs, -1 * np.array(expected_vecs)
     )
 
 
 @pytest.mark.parametrize(
-    ("freqs", "displ_vecs", "loc_freqs", "exp_results"),
+    ("freqs", "vecs", "bins", "exp_results"),
     # Expected results were obtained using vibrant code
     [
         (
@@ -156,7 +155,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
             [2600],
             {
                 "vecs": [[[0.0, 0.0, 0.9706078], [0.0, 0.0, -0.05149763]]],
-                "freqs": [0.01885394],
+                "freqs": [4137.96875377],
                 "uloc": [[1.0]],
             },
         ),
@@ -201,7 +200,11 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
                         [-1.26315618e-17, 2.29071026e-02, -1.97023364e-02],
                     ],
                 ],
-                "freqs": [0.00589689, 0.01232428, 0.01232428],
+                "freqs": [
+                    1294.21950382,
+                    2704.87090197,
+                    2704.87092841,
+                ],  # [0.00589689, 0.01232428, 0.01232428],
                 "uloc": [
                     [1.0, 0.0, 0.0],
                     [0.0, 0.70710715, -0.70710641],
@@ -250,7 +253,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
                         [-1.26315618e-17, 2.29071026e-02, -1.97023364e-02],
                     ],
                 ],
-                "freqs": [0.00589689, 0.01232428, 0.01232428],
+                "freqs": [1294.21950382, 2704.87090197, 2704.87092841],
                 "uloc": [
                     [1.0, 0.0, 0.0],
                     [0.0, 0.70710715, -0.70710641],
@@ -261,19 +264,16 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
-def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
+def test_mode_localization(freqs, vecs, bins, exp_results):
     r"""Test that mode localization returns correct results."""
 
-    freqs, displ_vecs, uloc = vibrational.localize_normal_modes(
-        freqs, displ_vecs, freq_separation=loc_freqs
-    )
-    freqs = freqs / AU_TO_CM
+    freqs_loc, vecs_loc, uloc = vibrational.localize_normal_modes(freqs, vecs, bins=bins)
     nmodes = len(freqs)
     for i in range(nmodes):
         res_in_expvecs = any(
             (
-                np.allclose(displ_vecs[i], vec, atol=1e-6)
-                or np.allclose(displ_vecs[i], -1.0 * np.array(vec), atol=1e-6)
+                np.allclose(vecs_loc[i], vec, atol=1e-6)
+                or np.allclose(vecs_loc[i], -1.0 * np.array(vec), atol=1e-6)
             )
             for vec in exp_results["vecs"]
         )
@@ -282,7 +282,7 @@ def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
                 np.allclose(exp_results["vecs"][i], vec, atol=1e-6)
                 or np.allclose(exp_results["vecs"][i], -1.0 * np.array(vec), atol=1e-6)
             )
-            for vec in displ_vecs
+            for vec in vecs_loc
         )
 
         res_in_expuloc = any(
@@ -302,7 +302,7 @@ def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
         assert res_in_expvecs and exp_in_resvecs
         assert res_in_expuloc and exp_in_resuloc
 
-    assert np.allclose(freqs, exp_results["freqs"])
+    assert np.allclose(freqs_loc, exp_results["freqs"])
 
 
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
@@ -318,7 +318,7 @@ def test_hess_methoderror():
     with pytest.raises(
         ValueError, match="Specified electronic structure method, ccsd is not available."
     ):
-        vibrational.harmonic_analysis(mol_scf, method="ccsd")
+        vibrational_class._harmonic_analysis(mol_scf, method="ccsd")
 
 
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
@@ -329,20 +329,29 @@ def test_error_mode_localization():
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
-    freqs, displ_vecs = vibrational.harmonic_analysis(mol_scf)
-    with pytest.raises(ValueError, match="The `freq_separation` list cannot be empty."):
-        vibrational.localize_normal_modes(freqs, displ_vecs, freq_separation=[])
-
+    freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)
+    with pytest.raises(ValueError, match="The `bins` list cannot be empty."):
+        vibrational.localize_normal_modes(freqs, vecs, bins=[])
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "method", "expected_dipole"),
+    ("sym", "geom", "method", "mult", "charge", "expected_dipole"),
     # Expected dipole was obtained using vibrant code
     [
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.03967368], [0.0, 0.0, 0.96032632]]),
             "RHF",
+            1,
+            0,
             [-3.78176692e-16, -3.50274735e-17, -9.05219767e-01],
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            "RHF",
+            3,
+            1,
+            [1.10150593e-15, -1.68930482e-16, -1.60982339e-15],
         ),
         (
             ["H", "H", "S"],
@@ -354,15 +363,18 @@ def test_error_mode_localization():
                 ]
             ),
             "UHF",
+            1,
+            0,
             [1.95258747e-16, 5.62355462e-15, -7.34149703e-01],
         ),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
-def test_get_dipole(sym, geom, method, expected_dipole):
+def test_get_dipole(sym, geom, mult, charge, method, expected_dipole):
     r"""Test that the get_dipole function produces correct results."""
-
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qml.qchem.Molecule(
+        sym, geom, mult=mult, charge=charge, basis_name="6-31g", unit="Angstrom", load_data=True
+    )
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol, method=method)
-    dipole = vibrational.get_dipole(mol_scf, method=method)
+    dipole = vibrational_class._get_dipole(mol_scf, method=method)
     assert np.allclose(dipole, expected_dipole)

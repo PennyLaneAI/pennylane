@@ -25,62 +25,65 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
-BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
+BOHR_TO_ANG = 0.5291772106  # Factor to convert bohr to angstrom
 
 
 @dataclass
 class VibrationalPES:
-    r"""Data class to save the PES information to an object.
+    r"""Data class to save potential energy surface information computed along vibrational normal modes.
 
     Args:
-       freqs: normal-mode frequencies
-       gauss_grid: 1-D array containing the sample points on the Gauss-Hermite quadrature grid.
-       gauss_weights: 1-D array containing the weights on the Gauss-Hermite quadrature grid.
-       uloc: Localization matrix indicating the relationship between original and localized modes.
-       pes_arr: Tuple containing one-mode, two-mode and three-mode PES.
-       dipole_arr: Tuple containing one-mode, two-mode and three-mode dipole.
-       localized: Whether the localization of modes was used to generate PES and dipole. Defauls is True.
-       dipole_level: Defines the level upto which dipole matrix elements are to be calculated. Input values can be
-                     1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole respectively. Default
-                     value is 2.
+        freqs (list[float]): normal-mode frequencies
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        gauss_weights (list[float]): the weights on the Gauss-Hermite quadrature grid
+        uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
+        pes_data (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode PES
+        dipole_data (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode dipole
+        localized (bool): Flag that localization of modes was used to generate PES and dipole. Default is ``True``.
+        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
+            1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
+            value is 2.
 
     """
 
     def __init__(
         self,
         freqs,
-        gauss_grid,
+        grid,
         gauss_weights,
         uloc,
-        pes_arr,
-        dipole_arr,
+        pes_data,
+        dipole_data,
         localized=True,
         dipole_level=2,
     ):
         self.freqs = freqs
-        self.gauss_grid = gauss_grid
+        self.grid = grid
         self.gauss_weights = gauss_weights
         self.uloc = uloc
-        self.pes_onemode = pes_arr[0]
-        self.pes_twomode = pes_arr[1]
-        self.pes_threemode = pes_arr[2] if len(pes_arr) > 2 else None
-        self.dipole_onemode = dipole_arr[0]
-        self.dipole_twomode = dipole_arr[1] if dipole_level >= 2 else None
-        self.dipole_threemode = dipole_arr[2] if dipole_level >= 3 else None
+        self.pes_onemode = pes_data[0]
+        self.pes_twomode = pes_data[1]
+        self.pes_threemode = pes_data[2] if len(pes_data) > 2 else None
+        self.dipole_onemode = dipole_data[0]
+        self.dipole_twomode = dipole_data[1] if dipole_level >= 2 else None
+        self.dipole_threemode = dipole_data[2] if dipole_level >= 3 else None
         self.localized = localized
         self.dipole_level = dipole_level
 
 
-def harmonic_analysis(scf_result, method="rhf"):
+def _harmonic_analysis(scf_result, method="rhf"):
     r"""Performs harmonic analysis by evaluating the Hessian using PySCF routines.
 
     Args:
-       scf_result: pyscf object from electronic structure calculations
-       method: Electronic structure method to define the level of theory
-            for harmonic analysis. Default is restricted Hartree-Fock ``'rhf'``.
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-       a tuple of frequencies of normal modes and their corresponding displacement vectors
+        tuple: A tuple containing the following:
+         - list[float]: normal mode frequencies in ``cm^-1``
+         - TensorLike[float]: corresponding displacement vectors for each normal mode
+
     """
     pyscf = _import_pyscf()
     from pyscf.hessian import thermo
@@ -99,12 +102,13 @@ def _single_point(molecule, method="rhf"):
     r"""Runs electronic structure calculation.
 
     Args:
-      molecule: Molecule object.
-      method: Electronic structure method to define the level of theory.
-              Default is restricted Hartree-Fock 'rhf'.
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object.
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-      pyscf object from electronic structure calculation
+        pyscf.scf object from electronic structure calculation
+
     """
     pyscf = _import_pyscf()
 
@@ -140,15 +144,17 @@ def _import_geometric():
 
 
 def optimize_geometry(molecule, method="rhf"):
-    r"""Obtains equilibrium geometry for the molecule.
+    r"""Computes the equilibrium geometry of a molecule.
 
     Args:
-      molecule: Molecule object.
-      method: Electronic structure method to define the level of theory.
-              Default is restricted Hartree-Fock ``'rhf'``.
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-      molecule object with optimized geometry
+        tuple: A tuple containing the following:
+         - :func:`~pennylane.qchem.molecule.Molecule` object with optimized geometry
+         - pyscf.scf object
 
     """
     pyscf = _import_pyscf()
@@ -174,14 +180,14 @@ def optimize_geometry(molecule, method="rhf"):
 
 def _get_rhf_dipole(scf_result):
     """
-    Given an restricted Hartree-Fock object, evaluate the dipole moment
+    Given a restricted Hartree-Fock object, evaluate the dipole moment
     in the restricted Hartree-Fock state.
 
     Args:
-       scf_result: pyscf object from electronic structure calculations
+        scf_result(pyscf.scf object): pyscf object from electronic structure calculations
 
     Returns:
-       dipole moment
+        TensorLike[float]: dipole moment
     """
 
     charges = scf_result.mol.atom_charges()
@@ -214,10 +220,10 @@ def _get_uhf_dipole(scf_result):
     in the unrestricted Hartree-Fock state.
 
     Args:
-       scf_result: pyscf object from electronic structure calculations
+        scf_result(pyscf.scf object): pyscf object from electronic structure calculations
 
     Returns:
-       dipole moment
+        TensorLike[float]: dipole moment
 
     """
 
@@ -243,16 +249,16 @@ def _get_uhf_dipole(scf_result):
     return dipole
 
 
-def get_dipole(scf_result, method):
+def _get_dipole(scf_result, method):
     r"""Evaluate the dipole moment for a Hartree-Fock state.
 
     Args:
-       scf_result: pyscf object from electronic structure calculations
-       method: Electronic structure method to define the level of theory
-            for dipole moment calculation. Input values can be ``'rhf'`` or ``'uhf'``.
-            Default is restricted Hartree-Fock ``'rhf'``.
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+
     Returns:
-       dipole moment
+        TensorLike[float]: dipole moment
 
     """
     method = method.strip().lower()
@@ -260,3 +266,4 @@ def get_dipole(scf_result, method):
         return _get_rhf_dipole(scf_result)
 
     return _get_uhf_dipole(scf_result)
+
