@@ -127,18 +127,18 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> pip install $line"
+                echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                pip install $line
+                uv pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
       - name: Install PennyLane
         shell: bash
         run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
+          uv python setup.py bdist_wheel
+          uv pip install dist/PennyLane*.whl
 
       - name: Install additional PIP packages (Post PennyLane Install)
         shell: bash
@@ -149,10 +149,10 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> pip install $line"
+                echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                pip install $line
+                uv pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
