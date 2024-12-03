@@ -112,8 +112,8 @@ def _localization_unitary(qmat):
 
     Returns:
         tuple: A tuple containing the following:
-        - TensorLike[float] : unitary matrix to localize the displacement vectors
-        - TensorLike[float] : localized displacement vectors
+         - TensorLike[float] : unitary matrix to localize the displacement vectors
+         - TensorLike[float] : localized displacement vectors
 
     """
 
@@ -151,9 +151,9 @@ def _localize_modes(freqs, vecs):
 
     Returns:
         tuple: A tuple containing the following:
-        - list[float] : localized frequencies
-        - TensorLike[float] : localized displacement vectors
-        - TensorLike[float] : localization matrix
+         - list[float] : localized frequencies
+         - TensorLike[float] : localized displacement vectors
+         - TensorLike[float] : localization matrix
 
     """
     nmodes = len(freqs)
@@ -190,10 +190,10 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
 
     Returns:
         tuple: A tuple containing the following:
-        - list[float] : localized frequencies
-        - TensorLike[float] : localized displacement vectors
-        - TensorLike[float] : localization matrix describing the relationship between
-               original and localized modes.
+         - list[float] : localized frequencies
+         - TensorLike[float] : localized displacement vectors
+         - TensorLike[float] : localization matrix describing the relationship between
+           original and localized modes.
 
     """
     if not bins:

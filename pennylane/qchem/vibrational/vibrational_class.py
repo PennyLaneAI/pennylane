@@ -36,8 +36,8 @@ def _harmonic_analysis(scf_result, method="rhf"):
 
     Returns:
         tuple: A tuple containing the following:
-        - list[float]: normal mode frequencies in ``cm^-1``
-        - TensorLike[float]: corresponding displacement vectors for each normal mode
+         - list[float]: normal mode frequencies in ``cm^-1``
+         - TensorLike[float]: corresponding displacement vectors for each normal mode
 
     """
     pyscf = _import_pyscf()
@@ -108,8 +108,8 @@ def optimize_geometry(molecule, method="rhf"):
 
     Returns:
         tuple: A tuple containing the following:
-        - :func:`~pennylane.qchem.molecule.Molecule` object with optimized geometry
-        - pyscf.scf object
+         - :func:`~pennylane.qchem.molecule.Molecule` object with optimized geometry
+         - pyscf.scf object
 
     """
     pyscf = _import_pyscf()
@@ -139,10 +139,10 @@ def _get_rhf_dipole(scf_result):
     in the restricted Hartree-Fock state.
 
     Args:
-       scf_result(pyscf.scf object): pyscf object from electronic structure calculations
+        scf_result(pyscf.scf object): pyscf object from electronic structure calculations
 
     Returns:
-       (TensorLike[float]): dipole moment
+        TensorLike[float]: dipole moment
     """
 
     charges = scf_result.mol.atom_charges()
@@ -175,10 +175,10 @@ def _get_uhf_dipole(scf_result):
     in the unrestricted Hartree-Fock state.
 
     Args:
-       scf_result(pyscf.scf object): pyscf object from electronic structure calculations
+        scf_result(pyscf.scf object): pyscf object from electronic structure calculations
 
     Returns:
-       (TensorLike[float]): dipole moment
+        TensorLike[float]: dipole moment
 
     """
 
@@ -208,12 +208,12 @@ def _get_dipole(scf_result, method):
     r"""Evaluate the dipole moment for a Hartree-Fock state.
 
     Args:
-       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-       method (str): Electronic structure method that can be either restricted and unrestricted
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        method (str): Electronic structure method that can be either restricted and unrestricted
                 Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-       (TensorLike[float]): dipole moment
+        TensorLike[float]: dipole moment
 
     """
     method = method.strip().lower()

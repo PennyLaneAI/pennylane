@@ -49,20 +49,20 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
     r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
     Args:
-       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (TensorLike[float]): list of displacement vectors for each normal mode
-       grid (list[float]): sample points for Gauss-Hermite quadrature
-       method (str): Electronic structure method that can be either restricted and unrestricted
-                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-       dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
+        vectors (TensorLike[float]): list of displacement vectors for each normal mode
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): one-mode potential energy surface
-        - (TensorLike[float] or None): one-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
 
@@ -123,21 +123,21 @@ def _local_pes_onemode(
     displacement vectors for each thread.
 
     Args:
-       comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
-       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of normal mode frequencies in ``cm^-1``
-       vectors (TensorLike[float]): list of displacement vectors for each normal mode
-       grid (list[float]): sample points for Gauss-Hermite quadrature
-       method (str): Electronic structure method that can be either restricted and unrestricted
-                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-       dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
+        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        freqs (list[float]): list of normal mode frequencies in ``cm^-1``
+        vectors (TensorLike[float]): list of displacement vectors for each normal mode
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): one-mode potential energy surface
-        - (TensorLike[float] or None): one-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
 
@@ -159,9 +159,9 @@ def _local_pes_onemode(
             continue  # pragma: no cover
 
         for job_idx, job in enumerate(jobs_on_rank):
-            pt = grid[job]
+            gridpoint = grid[job]
             scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * C_LIGHT))
-            positions = np.array(init_geom + scaling * pt * vec)
+            positions = np.array(init_geom + scaling * gridpoint * vec)
 
             displ_mol = qml.qchem.Molecule(
                 molecule.symbols,
@@ -189,16 +189,16 @@ def _load_pes_onemode(num_proc, nmodes, quad_order, dipole=False):
     Loader to combine pes_onebody and dipole_onebody from multiple processors.
 
     Args:
-       num_proc (int): number of processors
-       nmodes (int): number of normal modes
-       quad_order (int): order for Gauss-Hermite quadratures
-       dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
+        num_proc (int): number of processors
+        nmodes (int): number of normal modes
+        quad_order (int): order for Gauss-Hermite quadratures
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): one-mode potential energy surface
-        - (TensorLike[float] or None): one-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
     pes_onebody = np.zeros((nmodes, quad_order), dtype=float)
@@ -242,22 +242,22 @@ def _pes_twomode(
     displacement vectors.
 
     Args:
-       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (TensorLike[float]): list of displacement vectors for each normal mode
-       grid (list[float]): sample points for Gauss-Hermite quadrature
-       pes_onebody (TensorLike[float]): one-mode PES
-       dipole_onebody (TensorLike[float]): one-mode dipole
-       method (str): Electronic structure method that can be either restricted and unrestricted
-                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-       dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
+        vectors (TensorLike[float]): list of displacement vectors for each normal mode
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        pes_onebody (TensorLike[float]): one-mode PES
+        dipole_onebody (TensorLike[float]): one-mode dipole
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): two-mode potential energy surface
-        - (TensorLike[float] or None): two-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: two-mode potential energy surface
+         - TensorLike[float] or None: two-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
 
@@ -327,23 +327,23 @@ def _local_pes_twomode(
     displacement vectors for each thread.
 
     Args:
-       comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes.
-       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (TensorLike[float]): list of displacement vectors for each normal mode
-       grid (list[float]): sample points for Gauss-Hermite quadrature
-       pes_onebody (TensorLike[float]): one-mode PES
-       dipole_onebody (TensorLike[float]): one-mode dipole
-       method (str): Electronic structure method that can be either restricted and unrestricted
-                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-       dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
+        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
+        vectors (TensorLike[float]): list of displacement vectors for each normal mode
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        pes_onebody (TensorLike[float]): one-mode PES
+        dipole_onebody (TensorLike[float]): one-mode dipole
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): two-mode potential energy surface
-        - (TensorLike[float] or None): two-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: two-mode potential energy surface
+         - TensorLike[float] or None: two-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
 
@@ -355,7 +355,8 @@ def _local_pes_twomode(
     all_mode_combos = [(mode_a, mode_b) for mode_a in range(nmodes) for mode_b in range(mode_a)]
 
     all_jobs = [
-        [i, pt1, j, pt2] for (i, pt1), (j, pt2) in itertools.product(enumerate(grid), repeat=2)
+        [i, gridpoint_1, j, gridpoint_2]
+        for (i, gridpoint_1), (j, gridpoint_2) in itertools.product(enumerate(grid), repeat=2)
     ]
     jobs_on_rank = np.array_split(all_jobs, size)[rank]
     local_pes_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank)))
@@ -375,10 +376,12 @@ def _local_pes_twomode(
         vec_b = vectors[mode_b]
 
         scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * C_LIGHT))
-        for job_idx, [i, pt1, j, pt2] in enumerate(jobs_on_rank):
+        for job_idx, [i, gridpoint_1, j, gridpoint_2] in enumerate(jobs_on_rank):
 
             i, j = int(i), int(j)
-            positions = np.array(init_geom + scaling_a * pt1 * vec_a + scaling_b * pt2 * vec_b)
+            positions = np.array(
+                init_geom + scaling_a * gridpoint_1 * vec_a + scaling_b * gridpoint_2 * vec_b
+            )
             displ_mol = qml.qchem.Molecule(
                 molecule.symbols,
                 positions,
@@ -414,16 +417,16 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, dipole=False):
     Loader to combine pes_twobody and dipole_twobody from multiple processors.
 
     Args:
-       num_proc (int): number of processors
-       nmodes (int): number of normal modes
-       quad_order (int): order for Gauss-Hermite quadratures
-       dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
+        num_proc (int): number of processors
+        nmodes (int): number of normal modes
+        quad_order (int): order for Gauss-Hermite quadratures
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): two-mode potential energy surface
-        - (TensorLike[float] or None): two-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: two-mode potential energy surface
+         - TensorLike[float] or None: two-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
 
@@ -487,24 +490,25 @@ def _local_pes_threemode(
     displacement vectors for each thread.
 
     Args:
-       comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes.
-       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (TensorLike[float]): list of displacement vectors for each normal mode
-       grid (list[float]): sample points for Gauss-Hermite quadrature
-       pes_onebody (TensorLike[float]): one-mode PES
-       pes_twobody (TensorLike[float]): two-mode PES
-       dipole_onebody (TensorLike[float]): one-mode dipole
-       dipole_twobody (TensorLike[float]): one-mode dipole
-       method (str): Electronic structure method that can be either restricted and unrestricted Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-       dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
+        comm (mpi4py.MPI.Comm): the MPI communicator to be used for communication between processes
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
+        vectors (TensorLike[float]): list of displacement vectors for each normal mode
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        pes_onebody (TensorLike[float]): one-mode PES
+        pes_twobody (TensorLike[float]): two-mode PES
+        dipole_onebody (TensorLike[float]): one-mode dipole
+        dipole_twobody (TensorLike[float]): one-mode dipole
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): three-mode potential energy surface
-        - (TensorLike[float] or None): three-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: three-mode potential energy surface
+         - TensorLike[float] or None: three-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
 
@@ -522,8 +526,10 @@ def _local_pes_threemode(
     ]
 
     all_jobs = [
-        [i, pt1, j, pt2, k, pt3]
-        for (i, pt1), (j, pt2), (k, pt3) in itertools.product(enumerate(grid), repeat=3)
+        [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3]
+        for (i, gridpoint_1), (j, gridpoint_2), (k, gridpoint_3) in itertools.product(
+            enumerate(grid), repeat=3
+        )
     ]
 
     jobs_on_rank = np.array_split(all_jobs, size)[rank]
@@ -554,14 +560,14 @@ def _local_pes_threemode(
         vec_c = vectors[mode_c]
         scaling_c = np.sqrt(HBAR / (2 * np.pi * freqs[mode_c] * 100 * C_LIGHT))
 
-        for job_idx, [i, pt1, j, pt2, k, pt3] in enumerate(jobs_on_rank):
+        for job_idx, [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3] in enumerate(jobs_on_rank):
 
             i, j, k = int(i), int(j), int(k)
             positions = np.array(
                 init_geom
-                + scaling_a * pt1 * vec_a
-                + scaling_b * pt2 * vec_b
-                + scaling_c * pt3 * vec_c
+                + scaling_a * gridpoint_1 * vec_a
+                + scaling_b * gridpoint_2 * vec_b
+                + scaling_c * gridpoint_3 * vec_c
             )
 
             displ_mol = qml.qchem.Molecule(
@@ -610,16 +616,16 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, dipole):
     Loader to combine pes_threebody and dipole_threebody from multiple processors.
 
     Args:
-       num_proc: number of processors
-       nmodes: number of normal modes
-       quad_order: order for Gauss-Hermite quadratures
-       dipole: Whether to calculate the dipole elements. Default is ``False``.
+        num_proc: number of processors
+        nmodes: number of normal modes
+        quad_order: order for Gauss-Hermite quadratures
+        dipole: Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): three-mode potential energy surface
-        - (TensorLike[float] or None): three-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: three-mode potential energy surface
+         - TensorLike[float] or None: three-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
     final_shape = (nmodes, nmodes, nmodes, quad_order, quad_order, quad_order)
@@ -682,23 +688,24 @@ def _pes_threemode(
     displacement vectors.
 
     Args:
-       molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
-       scf_result (pyscf.scf object): pyscf object from electronic structure calculations
-       freqs (list[float]): list of vibrational frequencies in ``cm^-1``
-       vectors (TensorLike[float]): list of displacement vectors for each normal mode
-       grid (list[float]): sample points for Gauss-Hermite quadrature
-       pes_onebody (TensorLike[float]): one-mode PES
-       pes_twobody (TensorLike[float]): two-mode PES
-       dipole_onebody (TensorLike[float]): one-mode dipole
-       dipole_twobody (TensorLike[float]): one-mode dipole
-       method (str): Electronic structure method that can be either restricted and unrestricted Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-       dipole (bool): Whether to calculate the dipole elements. Default is ``False``.
+        molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object
+        scf_result (pyscf.scf object): pyscf object from electronic structure calculations
+        freqs (list[float]): list of vibrational frequencies in ``cm^-1``
+        vectors (TensorLike[float]): list of displacement vectors for each normal mode
+        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
+        pes_onebody (TensorLike[float]): one-mode PES
+        pes_twobody (TensorLike[float]): two-mode PES
+        dipole_onebody (TensorLike[float]): one-mode dipole
+        dipole_twobody (TensorLike[float]): one-mode dipole
+        method (str): Electronic structure method that can be either restricted and unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+        dipole (bool): Flag to calculate the dipole elements. Default is ``False``.
 
     Returns:
-       (tuple): A tuple containing the following:
-        - (TensorLike[float]): three-mode potential energy surface
-        - (TensorLike[float] or None): three-mode dipole, returns ``None``
-                if dipole is set to ``False``
+        tuple: A tuple containing the following:
+         - TensorLike[float]: three-mode potential energy surface
+         - TensorLike[float] or None: three-mode dipole, returns ``None``
+           if dipole is set to ``False``
 
     """
 
