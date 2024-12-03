@@ -777,7 +777,7 @@ def vibrational_pes(
        molecule (~qchem.molecule.Molecule): Molecule object
        quad_order (int): Order for Gauss-Hermite quadratures. Default value is ``9``.
        method (str): Electronic structure method that can be either restricted and unrestricted
-                Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+           Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
        localize (bool): Whether to perform normal mode localization. Default is ``False``.
        freqs (list[float]): Array of frequencies in ``cm^-1`` where separation happens for mode localization.
        cubic (bool)): Whether to include three-mode couplings. Default is ``False``.
