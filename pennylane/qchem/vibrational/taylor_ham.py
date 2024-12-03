@@ -253,12 +253,7 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
     for i1 in range(nmodes):
         for i2 in range(i1):
             for i3 in range(i2):
-                Y = []
-                for idx in range(num_3D):
-                    idx_q1 = idx1[idx]
-                    idx_q2 = idx2[idx]
-                    idx_q3 = idx3[idx]
-                    Y.append(pes_threemode[i1, i2, i3, idx_q1, idx_q2, idx_q3])
+                Y = pes_threemode[i1, i2, i3, idx1, idx2, idx3]
 
                 poly3D_reg_model = LinearRegression()
                 poly3D_reg_model.fit(features, Y)
