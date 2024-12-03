@@ -22,9 +22,11 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Resources:
-        The resources come from Section VIII of "The Bravyi-Kitaev transformation for quantum computation
-        of electronic structure" (https://arxiv.org/pdf/1208.5986). See Figure 3 of that section for
-        an illustration.
+        The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for 
+        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
+
+        Specifically, the resources are given by one :code:`RZ` gate and a cascade of :math:`2 * (n - 1)`
+        :code:`CNOT` gates where :math:`n` is the number of qubits the gate acts on.
     """
 
     @staticmethod
@@ -50,9 +52,22 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
     Resources:
-        The resources come from Section VIII of "The Bravyi-Kitaev transformation for quantum computation
-        of electronic structure" (https://arxiv.org/pdf/1208.5986). See Figure 4 of that section for
-        an illustration.
+        The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation for 
+        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper, in 
+        combination with the following identity:
+
+        .. math::
+
+            \begin{align}
+                \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
+                \hat{Y} &= \hat{S} \cdot \hat{H} \cdot \hat{Z} \cdot \hat{H} \cdot \hat{S}^{\dagger}.
+            \end{align}
+
+        Specifically, the resources are given by one :code:`RZ` gate and a cascade of :math:`2 * (n - 1)`
+        :code:`CNOT` gates where :math:`n` is the number of qubits the gate acts on. Additionally, for 
+        each :code:`X` gate in the Pauli word we conjugate by a :code:`Hadamard` gate, and for each
+        :code:`Y` gate in the Pauli word we conjugate by :code:`Hadamard` and :code:`S` gates.
+
     """
 
     @staticmethod
@@ -64,22 +79,23 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
         active_wires = len(pauli_word.replace("I", ""))
 
         h = re.ResourceHadamard.resource_rep()
-        rx = re.ResourceRX.resource_rep()
+        s = re.ResourceS.resource_rep()    # TODO: add Adjoint(S) in the symbolic PRs
         rz = re.ResourceRZ.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
 
         h_count = 0
-        rx_count = 0
+        s_count = 0
 
         for gate in pauli_word:
             if gate == "X":
                 h_count += 2
             if gate == "Y":
-                rx_count += 2
+                h_count += 2
+                s_count += 1
 
         gate_types = {}
         gate_types[h] = h_count
-        gate_types[rx] = rx_count
+        gate_types[s] = s_count + (3 * s_count)  # S^dagg = 3*S in cost
         gate_types[rz] = 1
         gate_types[cnot] = 2 * (active_wires - 1)
 
@@ -109,7 +125,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
                 -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
             \end{bmatrix}.
 
-        The circuit implementing this transformation is given by
+        The circuit implementing this transformation is given by:
 
         .. code-block:: bash
 
@@ -150,7 +166,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
                 i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
             \end{bmatrix}.
 
-        The circuit implementing this transoformation is given by
+        The circuit implementing this transoformation is given by:
 
         .. code-block:: bash
 
@@ -191,7 +207,7 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
                 0 & 0 & 0 & 1
             \end{bmatrix}.
 
-        The circuit implementing this gate is given by
+        The circuit implementing this gate is given by:
 
         .. code-block:: bash
 
@@ -236,7 +252,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
                 0 & 0 & 0 & e^{-i \phi / 2}
             \end{bmatrix}.
 
-        The circuit implmenting this transformation is given by
+        The circuit implmenting this transformation is given by:
 
         .. code-block:: bash
 
@@ -274,7 +290,7 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
                 0 & 0 & 0 & 1
             \end{bmatrix}.
 
-        The circuit implementing this transformation is given by
+        The circuit implementing this transformation is given by:
 
         .. code-block:: bash
 
