@@ -75,7 +75,7 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
 
         The circuit implmementing this transformation is given by
 
-        .. clode-block:: bash
+        .. code-block:: bash
 
             0: ──X─╭Rϕ(0.05)──X─╭●────────╭●─╭RY(0.10)─╭●─┤
             1: ──X─╰●─────────X─╰Rϕ(0.05)─╰X─╰●────────╰X─┤
@@ -164,7 +164,7 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
 
         The circuit implementing this transformation is given by
 
-        .. clode-block:: bash
+        .. code-block:: bash
 
             0: ──H─╭MultiRZ(0.05)──H──RX(1.57)─╭MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╭Exp(0.00+0.05j I)─┤
             1: ──H─╰MultiRZ(0.05)──H──RX(1.57)─╰MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╰Exp(0.00+0.05j I)─┤

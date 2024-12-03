@@ -152,7 +152,7 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
 
         The circuit implementing this transoformation is given by
 
-        .. code-block: bash
+        .. code-block:: bash
 
             0: ─╭●──RY(0.10)─╭●─┤
             1: ─╰Y───────────╰Y─┤
