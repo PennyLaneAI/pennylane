@@ -50,6 +50,10 @@
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
 
+* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
+  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
+
 * Added a dense implementation of computing the structure constants in a new function
   `structure_constants_dense` in `pennylane.labs.dla`.
   [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
@@ -81,10 +85,18 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
 
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
-  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
+  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
 
 * Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
-  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6507)
+  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
+
+* Added submodule `devices.qubit_mixed.simulate` as a necessary step for the new API,
+featuring a `simulate` function for simulating mixed states in analytic mode.
+  [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
+
+* Support is added for `if`/`else` statements and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`.
+  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
 
 * Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
   [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
@@ -121,6 +133,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* PennyLane transforms can now be captured as primitives with experimental program capture enabled.
+  [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
@@ -181,6 +196,10 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
+
+* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or 
+  resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
+  [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
@@ -288,6 +307,10 @@ same information.
 
 <h3>Documentation 📝</h3>
 
+* Updated the documentation of `TrotterProduct` to include the impact of the operands in the
+  Hamiltonian on the strucutre of the created circuit. Included an illustrative example on this.
+  [(#6629)](https://github.com/PennyLaneAI/pennylane/pull/6629)
+
 * Add reporting of test warnings as failures.
   [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
 
@@ -318,6 +341,7 @@ same information.
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Shiwen An,
 Utkarsh Azad,
 Astral Cai,
