@@ -62,13 +62,13 @@ def _operator_decomposition_gen(
 
 
 def _decompose_plxpr_transform(
-    self, primitive, tracers, params, targs, tkwargs, state=None
+    primitive, tracers, params, targs, tkwargs, state=None
 ):  # pylint: disable=unused-argument, too-many-arguments, too-many-positional-arguments
     """Implementation for ``decompose`` with program capture"""
     # pylint: disable=import-outside-toplevel
     from pennylane.capture import TransformTracer
 
-    gate_set = tkwargs.pop("gate_set", set(qml.ops.__all__))
+    gate_set = tkwargs.get("gate_set", set(qml.ops.__all__))
 
     if isinstance(gate_set, (str, type)):
         gate_set = set([gate_set])
@@ -90,7 +90,9 @@ def _decompose_plxpr_transform(
         op = primitive.impl(*tracers_in, **params)
 
     if not isinstance(op, qml.operation.Operator) or gate_set(op) or not op.has_decomposition:
-        if not op.has_decomposition:
+        if not isinstance(op, qml.operation.Operator) or gate_set(op):
+            pass
+        elif not op.has_decomposition:
             warnings.warn(
                 f"Operator {op.name} does not define a decomposition and was not "
                 f"found in the target gate set. To remove this warning, add the operator name "
@@ -102,7 +104,7 @@ def _decompose_plxpr_transform(
             TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
             for t in tracers
         ]
-        primitive.bind(*tracers, **params)
+        return primitive.bind(*tracers, **params)
 
     return op.decomposition()
 
