@@ -113,7 +113,7 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
 
         .. code-block:: bash
 
-            0: ─╭●──RX(0.10)─╭●─┤
+            0: ─╭●─────RX────╭●─┤
             1: ─╰X───────────╰X─┤
     """
 
@@ -150,11 +150,11 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
                 i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
             \end{bmatrix}.
 
-        The circuit implementing this transoformation is given by
+        The circuit implementing this transformation is given by
 
         .. code-block:: bash
 
-            0: ─╭●──RY(0.10)─╭●─┤
+            0: ─╭●─────RY────╭●─┤
             1: ─╰Y───────────╰Y─┤
     """
 
@@ -191,12 +191,12 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
                 0 & 0 & 0 & 1
             \end{bmatrix}.
 
-        The circuit implementing this gate is given by
+        The circuit implementing this transformation is given by
 
         .. code-block:: bash
 
-            0: ──H─╭●──RY(0.05)──╭●──H─┤
-            1: ────╰Y──RX(-0.05)─╰Y────┤
+            0: ──H─╭●─────RY────╭●──H─┤
+            1: ────╰Y─────RX────╰Y────┤
     """
 
     @staticmethod
@@ -241,7 +241,7 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
         .. code-block:: bash
 
             0: ─╭●───────────╭●─┤
-            1: ─╰X──RZ(0.10)─╰X─┤
+            1: ─╰X─────RZ────╰X─┤
     """
 
     @staticmethod
@@ -279,7 +279,7 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
         .. code-block:: bash
 
             0: ─╭SWAP─╭●───────────╭●─┤
-            1: ─╰SWAP─╰X──Rϕ(0.10)─╰X─┤
+            1: ─╰SWAP─╰X─────Rϕ────╰X─┤
     """
 
     @staticmethod
