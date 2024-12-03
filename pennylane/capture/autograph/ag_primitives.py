@@ -480,7 +480,7 @@ class PRange:
 
     def __getitem__(
         self, __key: Union[SupportsIndex, slice]
-    ) -> Union[int, range]:  # pragma: nocover
+    ) -> Union[int, range]:  # pragma: no cover
         return self.py_range.__getitem__(__key)
 
     def __reversed__(self) -> Iterator[int]:  # pragma: no cover
