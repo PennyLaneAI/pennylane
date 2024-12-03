@@ -35,7 +35,7 @@ class VibrationalPES:
     Args:
        freqs (list[float]): normal-mode frequencies
        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
-       gauss_weights (list[float]): 1-D array containing the weights on the Gauss-Hermite quadrature grid
+       gauss_weights (list[float]): the weights on the Gauss-Hermite quadrature grid
        uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
        pes_arr (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode PES
        dipole_arr (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode dipole
