@@ -446,36 +446,36 @@ class PRange:
     # pylint: disable=missing-function-docstring
 
     @property
-    def start(self) -> int:  # pragma: nocover
+    def start(self) -> int:  # pragma: no cover
         return self.py_range.start
 
     @property
-    def stop(self) -> int:  # pragma: nocover
+    def stop(self) -> int:  # pragma: no cover
         return self.py_range.stop
 
     @property
-    def step(self) -> int:  # pragma: nocover
+    def step(self) -> int:  # pragma: no cover
         return self.py_range.step
 
-    def count(self, __value: int) -> int:  # pragma: nocover
+    def count(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.count(__value)
 
-    def index(self, __value: int) -> int:  # pragma: nocover
+    def index(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.index(__value)
 
-    def __len__(self) -> int:  # pragma: nocover
+    def __len__(self) -> int:  # pragma: no cover
         return self.py_range.__len__()
 
-    def __eq__(self, __value: object) -> bool:  # pragma: nocover
+    def __eq__(self, __value: object) -> bool:  # pragma: no cover
         return self.py_range.__eq__(__value)
 
-    def __hash__(self) -> int:  # pragma: nocover
+    def __hash__(self) -> int:  # pragma: no cover
         return self.py_range.__hash__()
 
-    def __contains__(self, __key: object) -> bool:  # pragma: nocover
+    def __contains__(self, __key: object) -> bool:  # pragma: no cover
         return self.py_range.__contains__(__key)
 
-    def __iter__(self) -> Iterator[int]:  # pragma: nocover
+    def __iter__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__iter__()
 
     def __getitem__(
@@ -483,7 +483,7 @@ class PRange:
     ) -> Union[int, range]:  # pragma: nocover
         return self.py_range.__getitem__(__key)
 
-    def __reversed__(self) -> Iterator[int]:  # pragma: nocover
+    def __reversed__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__reversed__()
 
 
