@@ -122,9 +122,13 @@ class ResourceOperator(ABC):
         raise ResourcesNotDefined
 
     @classmethod
-    def tracking_name(cls, *args, **kwargs) -> str:
+    def tracking_name(cls, *args) -> str:
         """Returns a name used to track the operator during resource estimation."""
         return cls.__name__.replace("Resource", "")
+
+    def tracking_name_from_op(self) -> str:
+        """Returns the tracking name built with the operator's parameters."""
+        return self.__class__.tracking_name(**self.resource_params())
 
 
 class ResourcesNotDefined(Exception):
