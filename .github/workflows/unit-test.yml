@@ -116,8 +116,7 @@ jobs:
       
       - name: Install PennyLane dependencies
         run: |
-          uv pip install -r requirements-ci.txt --upgrade
-          uv pip install -r requirements-dev.txt --upgrade
+          uv pip install -r requirements-ci.txt -r requirements-dev.txt --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
@@ -128,10 +127,10 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> uv pip install $line"
+                echo "Now installing -> pip install $line"
                 echo ''
                 
-                uv pip install $line
+                pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
@@ -150,10 +149,10 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> uv pip install $line"
+                echo "Now installing -> pip install $line"
                 echo ''
                 
-                uv pip install $line
+                pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
