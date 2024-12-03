@@ -571,7 +571,7 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
-def compute_gqsp_angles(poly_coeffs):
+def _compute_gqsp_angles(poly_coeffs):
     r"""
     Computes the Generalized Quantum Signal Processing (GQSP) angles given the coefficients of a polynomial P.
 
@@ -827,5 +827,5 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
 
     if routine == "GQSP":
-        return compute_gqsp_angles(poly)
+        return _compute_gqsp_angles(poly)
     raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
