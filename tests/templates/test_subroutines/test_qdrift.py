@@ -101,9 +101,7 @@ class TestInitialization:
     def test_error_type(self, hamiltonian, raise_error):
         """Test an error is raised of an incorrect type is passed"""
         if raise_error:
-            with pytest.raises(
-                TypeError, match="The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
-            ):
+            with pytest.raises(TypeError, match="The given operator must be a PennyLane ~.Sum"):
                 qml.QDrift(hamiltonian, time=1.23)
         else:
             try:
@@ -615,6 +613,6 @@ def test_error_func(h, time, n, expected_error):
 
 def test_error_func_type_error():
     """Test that an error is raised if the wrong type is passed for hamiltonian"""
-    msg = "The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
+    msg = "The given operator must be a PennyLane ~.Sum"
     with pytest.raises(TypeError, match=msg):
         qml.QDrift.error(qml.PauliX(0), time=1.23, n=10)

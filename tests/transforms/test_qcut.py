@@ -15,7 +15,7 @@
 Unit tests for the `pennylane.qcut` package.
 """
 # pylint: disable=protected-access,too-few-public-methods,too-many-arguments
-# pylint: disable=too-many-public-methods,comparison-with-callable
+# pylint: disable=too-many-public-methods,comparison-with-callable,unused-argument
 # pylint: disable=no-value-for-parameter,no-member,not-callable, use-implicit-booleaness-not-comparison
 import copy
 import itertools
@@ -1900,8 +1900,14 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
         fixed_choice = np.array([[4, 0, 1]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
-            m.setattr(onp.random, "choice", lambda a, size, replace: fixed_choice)
+            m.setattr(onp.random, "default_rng", lambda *_: _MockRNG())
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 tapes, communication_graph, 3
             )
@@ -1965,11 +1971,17 @@ class TestExpandFragmentTapesMC:
         communication_graph = MultiDiGraph(frag_edge_data)
 
         fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
+
+        class _MockRNG:
+
+            def choice(self, *args, **kwargs):
+                return fixed_choice
+
         with monkeypatch.context() as m:
             m.setattr(
                 onp.random,
-                "choice",
-                lambda a, size, replace: fixed_choice,
+                "default_rng",
+                lambda *_: _MockRNG(),
             )
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
                 frags, communication_graph, 2
@@ -2539,7 +2551,7 @@ class TestCutCircuitMCTransform:
 
         dev = dev_fn(wires=2, shots=20000, seed=seed)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn, seed=seed)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
