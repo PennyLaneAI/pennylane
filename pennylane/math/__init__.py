@@ -97,7 +97,6 @@ from .interface_utils import (
     get_canonical_interface_name,
     SupportedInterfaceUserInput,
     SUPPORTED_INTERFACE_NAMES,
-    INTERFACE_MAP,
     get_deep_interface,
     get_interface,
 )

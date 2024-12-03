@@ -27,7 +27,11 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
-from pennylane.math import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
+from pennylane.math import (
+    SUPPORTED_INTERFACE_NAMES,
+    SupportedInterfaceUserInput,
+    get_canonical_interface_name,
+)
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
@@ -576,7 +580,9 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = "numpy" if diff_method is None else INTERFACE_MAP[interface]
+        self._interface = (
+            "numpy" if diff_method is None else get_canonical_interface_name(interface)
+        )
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -637,13 +643,7 @@ class QNode:
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
-        if value not in SUPPORTED_INTERFACE_NAMES:
-
-            raise qml.QuantumFunctionError(
-                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-            )
-
-        self._interface = INTERFACE_MAP[value]
+        self._interface = get_canonical_interface_name(value)
 
     @property
     def transform_program(self) -> TransformProgram:
@@ -959,7 +959,7 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             if interface != "numpy":
-                interface = INTERFACE_MAP.get(interface, None)
+                interface = get_canonical_interface_name(interface)
             self._interface = interface
 
         try:

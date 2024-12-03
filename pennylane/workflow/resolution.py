@@ -20,7 +20,7 @@ from typing import Literal, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
-from pennylane.math import INTERFACE_MAP, get_canonical_interface_name, get_interface
+from pennylane.math import get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
 
@@ -104,7 +104,7 @@ def _resolve_interface(interface, tapes):
             params.extend(tape.get_parameters(trainable_only=False))
         interface = get_interface(*params)
         if interface != "numpy":
-            interface = INTERFACE_MAP.get(interface, None)
+            interface = get_canonical_interface_name(interface)
     if interface == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
     if interface == "jax":
