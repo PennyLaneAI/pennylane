@@ -29,7 +29,7 @@ class GQSP(Operation):
     Implements the generalized quantum signal processing `(GQSP) <https://arxiv.org/abs/2308.01501>`__ circuit.
 
     This algorithm takes as input a unitary matrix in the form of an operator and encodes, with the help of an auxiliary
-    qubit, a polynomial transformation of the unitary.
+    qubit, a polynomial transformation of the unitary as shown below:
 
     .. math::
          U
