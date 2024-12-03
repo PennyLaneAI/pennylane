@@ -153,8 +153,8 @@ def qsvt_legacy(A, angles, wires, convention=None):
 # pylint: disable=too-many-branches
 def qsvt(A, poly, encoding_wires, block_encoding=None):
     r"""
-    Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``, using a polynomial
-    defined by ``poly`` and a block encoding specified by ``block_encoding``.
+    Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
+    using a polynomial defined by ``poly`` and a block encoding specified by ``block_encoding``.
 
     .. math::
 
@@ -174,29 +174,32 @@ def qsvt(A, poly, encoding_wires, block_encoding=None):
 
     .. note::
 
-        The function ``poly_to_angles``, used within ``qsvt``, is not JIT-compatible, which prevents ``poly`` from being
-        traceable in ``qsvt``. However, ``A`` is traceable and can be optimized by JIT within this function.
+        The function ``poly_to_angles``, used within ``qsvt``, is not JIT-compatible, which
+        prevents ``poly`` from being traceable in ``qsvt``. However, ``A`` is traceable
+        and can be optimized by JIT within this function.
 
     Args:
 
         A (Union[tensor_like, Operator]): The matrix on which the QSVT will be applied.
             This can be an array or an object that has a Pauli representation.
 
-        poly (tensor_like): Polynomial coefficients defining the transformation, represented in increasing order of degree.
-            This means the first coefficient corresponds to the constant term, the second to the linear term, and so on.
+        poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
 
         encoding_wires (Sequence[int]): The qubit wires used for the block encoding. See Usage Details below for
             more information on ``encoding_wires`` depending on the block encoding used.
 
         block_encoding (str): Specifies the type of block encoding to use. Options include:
 
-            - ``"prepselprep"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.PrepSelPrep`. Default encoding for Hamiltonians.
+            - ``"prepselprep"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.PrepSelPrep`.
+                Default encoding for Hamiltonians.
             - ``"qubitization"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.Qubitization`.
-            - ``"embedding"``: Embeds the matrix ``A`` using :class:`~pennylane.BlockEncode`. Template not hardware compatible.
             - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Default encoding for matrices.
+            - ``"embedding"``: Embeds the matrix ``A`` using :class:`~pennylane.BlockEncode`.
+                Template not hardware compatible.
 
     Returns:
-        (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the specified encoding and projector phases.
+        (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
+        specified encoding and projector phases.
 
     Example:
 
@@ -230,7 +233,7 @@ def qsvt(A, poly, encoding_wires, block_encoding=None):
     .. details::
         :title: Usage Details
 
-        If the function input ``A`` is a Hamiltonian, the valid ``block_encoding`` values are
+        If the input ``A`` is a Hamiltonian, the valid ``block_encoding`` values are
         ``"prepselprep"`` and ``"qubitization"``. In this case, ``encoding_wires`` refers to the
         ``control`` parameter in the templates :class:`~pennylane.PrepSelPrep` and :class:`~pennylane.Qubitization`,
         respectively. These wires represent the auxiliary qubits necessary for the block encoding of
@@ -265,8 +268,8 @@ def qsvt(A, poly, encoding_wires, block_encoding=None):
 
         Alternatively, if the input ``A`` is a matrix, the valid values for ``block_encoding`` are
         ``"embedding"`` and ``"fable"``. In this case, the ``encoding_wires`` parameter corresponds to
-        the ``wires`` attribute in the templates :class:`~pennylane.BlockEncode` and :class:`~pennylane.FABLE`, respectively.
-        Note that for QSVT to work, the input matrix must be Hermitian.
+        the ``wires`` attribute in the templates :class:`~pennylane.BlockEncode` and :class:`~pennylane.FABLE`,
+        respectively. Note that for QSVT to work, the input matrix must be Hermitian.
 
         .. code-block:: python
 
