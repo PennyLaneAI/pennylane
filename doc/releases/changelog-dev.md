@@ -107,6 +107,11 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
   [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
 
+* Added submodule for calculating vibrational Hamiltonians
+  * Implemented helper functions for geometry optimization, harmonic analysis,
+    and normal-mode localization.
+    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+
 <h3>Improvements 🛠</h3>
 
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
