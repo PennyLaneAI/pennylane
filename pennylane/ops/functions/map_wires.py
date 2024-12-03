@@ -143,15 +143,51 @@ def _map_wires_plxpr_transform(
     from pennylane.capture import TransformTracer
 
     print(
-        f"_map_wires_plxpr_transform called with \nprimitive: {primitive}, \ntracers: {tracers}, \nparams: {params}, \ntargs: {targs}, \ntkwargs: {tkwargs}"
+        f"_map_wires_plxpr_transform called with \nprimitive: {primitive}, \ntracers: {tracers}, \nparams: {params}, \ntargs: {targs}, \ntkwargs: {tkwargs}, \nstate: {state}\n"
     )
 
     with qml.QueuingManager.stop_recording():
         tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
         op = primitive.impl(*tracers_in, **params)
-        print(f"op: {op}")
+
+    for t in tracers:
+        if isinstance(t, TransformTracer):
+            print(f"TransformTracer: {t}")
+            print(f"t._trace: {t._trace}")
+            print(f"t.val: {t.val}")
+            print(f"t.idx: {t.idx}")
+
+    # With measurements I get:
+    # AttributeError: 'AbstractOperator' object has no attribute '_iter'
+    if not isinstance(op, qml.operation.Operator):
+        tracers = [
+            TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
+            for t in tracers
+        ]
+        return primitive.bind(*tracers, **params)
+
+    # wire_map = tkwargs.pop("wire_map", None)
+    wire_map = tkwargs.get("wire_map", None)
+    mapped_op = op.map_wires(wire_map=wire_map) if wire_map is not None else op
+    print(f"mapped_op: {mapped_op}\n")
+
+    tracers = [
+        (
+            TransformTracer(
+                t._trace, wire_map.get(t.val, t.val) if wire_map is not None else t.val, t.idx + 1
+            )
+            if isinstance(t, TransformTracer)
+            else t
+        )
+        for t in tracers
+    ]
+
+    return primitive.bind(*tracers, **params)
+
+    # If we return operators without binding them, we get an UnexpectedTracerError
 
     raise NotImplementedError("This function is not implemented yet.")
+
 
 @partial(transform, plxpr_transform=_map_wires_plxpr_transform)
 def _map_wires_transform(
