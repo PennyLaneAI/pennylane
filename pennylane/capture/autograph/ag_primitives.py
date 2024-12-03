@@ -32,8 +32,7 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
-
-except ImportError:
+except ImportError:  # pragma: no cover
     has_jax = False
 
 
@@ -49,7 +48,7 @@ class AutoGraphError(Exception):
     """Errors related to PennyLane's AutoGraph submodule."""
 
 
-def assert_results(results, var_names):
+def _assert_results(results, var_names):
     """Assert that none of the results are undefined, i.e. have no value."""
 
     assert len(results) == len(var_names)
@@ -83,22 +82,22 @@ def if_stmt(
         set_state(init_state)
         true_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     @functional_cond.otherwise
     def functional_cond():
         set_state(init_state)
         false_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     results = functional_cond()
     set_state(results)
 
 
-def assert_iteration_inputs(inputs, symbol_names):
-    """All loop carried values, variables that are updated each iteration or accessed after the
-    loop terminates, need to be initialized prior to entering the loop.
+def _assert_iteration_inputs(inputs, symbol_names):
+    """Assert that all loop carried values, variables that are updated each iteration or accessed after the
+    loop terminates, are initialized prior to entering the loop.
 
     The reason is two-fold:
       - the type information from those variables is required for tracing
@@ -106,9 +105,13 @@ def assert_iteration_inputs(inputs, symbol_names):
         of execution paths
 
     Additionally, these types need to be valid JAX types.
+
+    Args:
+        inputs (Tuple): The loop carried values
+        symbol_names (Tuple[str]): The names of the loop carried values.
     """
 
-    if not has_jax:
+    if not has_jax:  # pragma: no cover
         raise ImportError("autograph capture requires JAX to be installed.")
 
     for i, inp in enumerate(inputs):
@@ -135,10 +138,10 @@ def assert_iteration_inputs(inputs, symbol_names):
             ) from e
 
 
-def assert_iteration_results(inputs, outputs, symbol_names):
-    """The results of a for loop should have the identical type as the inputs, since they are
-    "passed" as inputs to the next iteration. A mismatch here may indicate that a loop carried
-    variable was initialized with wrong type.
+def _assert_iteration_results(inputs, outputs, symbol_names):
+    """The results of a for loop should have the identical type as the inputs since they are
+    "passed" as inputs to the next iteration. A mismatch here may indicate that a loop-carried
+    variable was initialized with the wrong type.
     """
 
     for i, (inp, out) in enumerate(zip(inputs, outputs)):
@@ -168,7 +171,7 @@ def _call_pennylane_for(
     # Ensure iteration arguments are properly initialized. We cannot process uninitialized
     # loop carried values as we need their type information for tracing.
     init_iter_args = get_state()
-    assert_iteration_inputs(init_iter_args, symbol_names)
+    _assert_iteration_inputs(init_iter_args, symbol_names)
 
     @qml.for_loop(start, stop, step)
     def functional_for(i, *iter_args):
@@ -192,7 +195,7 @@ def _call_pennylane_for(
         return get_state()
 
     final_iter_args = functional_for(*init_iter_args)
-    assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
+    _assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
     return final_iter_args
 
 
@@ -238,14 +241,14 @@ def for_stmt(
         enum_start = iteration_target.start_idx
         try:
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught
+        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
             exception_raised = e
     else:
         start, stop, step = 0, len(iteration_target), 1
         enum_start = None
         try:
             iteration_array = jnp.asarray(iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught
+        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
             exception_raised = e
 
     if exception_raised:
@@ -290,7 +293,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
     """Dispatch to a PennyLane implementation of while loops."""
 
     init_iter_args = get_state()
-    assert_iteration_inputs(init_iter_args, symbol_names)
+    _assert_iteration_inputs(init_iter_args, symbol_names)
 
     def test(state):
         old = get_state()
@@ -443,48 +446,48 @@ class PRange:
     # pylint: disable=missing-function-docstring
 
     @property
-    def start(self) -> int:  # pragma: nocover
+    def start(self) -> int:  # pragma: no cover
         return self.py_range.start
 
     @property
-    def stop(self) -> int:  # pragma: nocover
+    def stop(self) -> int:  # pragma: no cover
         return self.py_range.stop
 
     @property
-    def step(self) -> int:  # pragma: nocover
+    def step(self) -> int:  # pragma: no cover
         return self.py_range.step
 
-    def count(self, __value: int) -> int:  # pragma: nocover
+    def count(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.count(__value)
 
-    def index(self, __value: int) -> int:  # pragma: nocover
+    def index(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.index(__value)
 
-    def __len__(self) -> int:  # pragma: nocover
+    def __len__(self) -> int:  # pragma: no cover
         return self.py_range.__len__()
 
-    def __eq__(self, __value: object) -> bool:  # pragma: nocover
+    def __eq__(self, __value: object) -> bool:  # pragma: no cover
         return self.py_range.__eq__(__value)
 
-    def __hash__(self) -> int:  # pragma: nocover
+    def __hash__(self) -> int:  # pragma: no cover
         return self.py_range.__hash__()
 
-    def __contains__(self, __key: object) -> bool:  # pragma: nocover
+    def __contains__(self, __key: object) -> bool:  # pragma: no cover
         return self.py_range.__contains__(__key)
 
-    def __iter__(self) -> Iterator[int]:  # pragma: nocover
+    def __iter__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__iter__()
 
     def __getitem__(
         self, __key: Union[SupportsIndex, slice]
-    ) -> Union[int, range]:  # pragma: nocover
+    ) -> Union[int, range]:  # pragma: no cover
         return self.py_range.__getitem__(__key)
 
-    def __reversed__(self) -> Iterator[int]:  # pragma: nocover
+    def __reversed__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, super-init-not-called
 class PEnumerate(enumerate):
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.

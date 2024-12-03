@@ -596,8 +596,8 @@ class TestHadamardGrad:
         assert len(res_hadamard) == exp_shape[0]
 
         # Also check on the tape level
-        circuit(x)
-        tapes, fn = qml.gradients.hadamard_grad(circuit.tape)
+        tape = qml.workflow.construct_tape(circuit)(x)
+        tapes, fn = qml.gradients.hadamard_grad(tape)
         res_hadamard_tape = qml.math.moveaxis(qml.math.stack(fn(dev.execute(tapes))), -2, -1)
 
         for res in [res_hadamard, res_hadamard_tape]:

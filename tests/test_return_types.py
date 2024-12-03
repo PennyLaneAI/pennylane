@@ -44,7 +44,7 @@ class TestSingleReturnExecute:
 
         if dev.shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         res = qml.execute(
             tapes=[qnode.tape],
             device=dev,
@@ -1228,7 +1228,7 @@ class TestDeviceNewUnits:
         with pytest.raises(
             qml.DeviceError, match="not accepted for analytic simulation on default.qubit"
         ):
-            program, _ = dev.preprocess()
+            program = dev.preprocess_transforms()
             qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
 
     def test_state_return_with_other_types(self):
@@ -1258,7 +1258,7 @@ class TestDeviceNewUnits:
             qml.vn_entropy(wires=["a"])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         res = qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
         assert res == (0,)
 
@@ -1272,6 +1272,6 @@ class TestDeviceNewUnits:
             qml.mutual_info(wires0=["a"], wires1=["b"])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         res = qml.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
         assert res == (0,)
