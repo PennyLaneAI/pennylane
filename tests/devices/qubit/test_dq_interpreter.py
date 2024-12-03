@@ -170,7 +170,7 @@ def test_operator_arithmetic():
 
 
 def test_parameter_broadcasting():
-    """Test that dq can execute a circuit with parameter broadcasting."""
+    """Test that DefaultQubit can execute a circuit with parameter broadcasting."""
 
     @DefaultQubitInterpreter(num_wires=3)
     def f(x):
