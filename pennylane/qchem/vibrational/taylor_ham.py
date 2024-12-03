@@ -479,7 +479,7 @@ def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
             localized modes
 
     Returns:
-        BoseSentence: anharmonic term of the taylor hamiltonian for given coeffs
+        BoseSentence: kinetic term of the taylor hamiltonian for given coeffs
     """
     taylor_1D = taylor_coeffs[0]
     num_modes, _ = np.shape(taylor_1D)
