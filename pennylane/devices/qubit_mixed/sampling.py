@@ -75,14 +75,6 @@ def _process_samples(
     return mp.eigvals()[indices]
 
 
-def _process_counts_samples(processed_sample, mp_has_obs):
-    """Processes a set of samples and counts the results."""
-    observables, counts = math.unique(processed_sample, return_counts=True, axis=0)
-    if not mp_has_obs:
-        observables = ["".join(observable.astype("str")) for observable in observables]
-    return dict(zip(observables, counts))
-
-
 def _process_expval_samples(processed_sample):
     """Processes a set of samples and returns the expectation value of an observable."""
     eigvals, counts = math.unique(processed_sample, return_counts=True)
@@ -138,7 +130,7 @@ def _measure_with_samples_diagonalizing_gates(
         if isinstance(mp, SampleMP):
             return math.squeeze(samples_processed)
         if isinstance(mp, CountsMP):
-            process_func = functools.partial(_process_counts_samples, mp_has_obs=mp.obs is not None)
+            process_func = functools.partial(mp.process_samples, wire_order=wires)
         elif isinstance(mp, ExpectationMP):
             process_func = _process_expval_samples
         elif isinstance(mp, VarianceMP):

@@ -231,6 +231,30 @@ class TestMeasurements:
             valid_states
         ), f"Invalid states in counts: {result.keys()}"
 
+    @pytest.mark.parametrize("num_shots", [10, 100])
+    def test_counts_measurement_all_outcomes(self, num_shots, two_qubit_pure_state):
+        """Test counts measurement with all_outcomes=True."""
+        shots = Shots(num_shots)
+        result = measure_with_samples(qml.counts(all_outcomes=True), two_qubit_pure_state, shots)
+
+        assert isinstance(result, dict), "Result is not a dictionary"
+        total_counts = sum(result.values())
+        assert (
+            total_counts == num_shots
+        ), f"Total counts {total_counts} do not match shots {num_shots}"
+
+        # Check that all possible 2-qubit states are present in the keys
+        all_possible_states = {"00", "01", "10", "11"}
+        assert (
+            set(result.keys()) == all_possible_states
+        ), f"Missing states in counts: {all_possible_states - set(result.keys())}"
+
+        # Check that only '01', '10', '11' have non-zero counts (based on two_qubit_pure_state fixture)
+        assert result["00"] == 0, "State '00' should have zero counts"
+        assert (
+            sum(result[state] > 0 for state in ["01", "10", "11"]) == 3
+        ), "Expected non-zero counts for '01', '10', and '11'"
+
     @pytest.mark.parametrize(
         "observable",
         [
