@@ -23,7 +23,8 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable
 
-BOHR_TO_ANG = 0.5291772106  # Factor to convert Bohr to Angstrom
+
+BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
 
 
 def _harmonic_analysis(scf_result, method="rhf"):
@@ -221,3 +222,4 @@ def _get_dipole(scf_result, method):
         return _get_rhf_dipole(scf_result)
 
     return _get_uhf_dipole(scf_result)
+
