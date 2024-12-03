@@ -76,12 +76,12 @@ class TestPauliRot:
         expected = re.CompressedResourceOp(re.ResourcePauliRot, {"pauli_word": pauli_word})
         assert re.ResourcePauliRot.resource_rep(pauli_word) == expected
 
-    expected_h_count = (0, 2, 6, 4, 0)
-    expected_rx_count = (0, 2, 0, 2, 0)
-    params = zip(pauli_words, expected_h_count, expected_rx_count)
+    expected_h_count = (0, 4, 6, 6, 0)
+    expected_s_count = (0, 1, 0, 1, 0)
+    params = zip(pauli_words, expected_h_count, expected_s_count)
 
-    @pytest.mark.parametrize("pauli_word, expected_h_count, expected_rx_count", params)
-    def test_resources(self, pauli_word, expected_h_count, expected_rx_count):
+    @pytest.mark.parametrize("pauli_word, expected_h_count, expected_s_count", params)
+    def test_resources(self, pauli_word, expected_h_count, expected_s_count):
         """Test that the resources are correct."""
         active_wires = len(pauli_word.replace("I", ""))
 
@@ -90,7 +90,7 @@ class TestPauliRot:
         else:
             expected = {
                 re.ResourceHadamard.resource_rep(): expected_h_count,
-                re.ResourceRX.resource_rep(): expected_rx_count,
+                re.ResourceS.resource_rep(): 4 * expected_s_count,
                 re.ResourceRZ.resource_rep(): 1,
                 re.ResourceCNOT.resource_rep(): 2 * (active_wires - 1),
             }
