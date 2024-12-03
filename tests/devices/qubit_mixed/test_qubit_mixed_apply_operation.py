@@ -775,3 +775,66 @@ class TestSnapshot:
                 qml.expval(qml.PauliZ(0)), initial_state, is_state_batched=True
             )
             assert math.allclose(debugger.snapshots[tag], expected_values)
+
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    @pytest.mark.xfail(reason="Not implemented")
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.sample(wires=[0]),
+            qml.counts(wires=[0, 1]),
+        ],
+    )
+    def test_snapshot_with_shots_and_measurement(
+        self, measurement, ml_framework, state, shape, request
+    ):
+        """Test snapshots with shots for various measurement types."""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        shots = qml.measurements.Shots(1000)
+        debugger = Debugger()
+        tag = "measurement_snapshot"
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=measurement),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=len(shape) != 2,
+            tape_shots=shots,
+        )
+
+        # Check state is unchanged
+        assert math.allclose(new_state, initial_state)
+
+        # Check snapshot was stored
+        assert tag in debugger.snapshots
+        snapshot_result = debugger.snapshots[tag]
+
+        # Verify snapshot result based on measurement type
+        if isinstance(measurement, qml.measurements.SampleMP):
+            assert snapshot_result.shape == (1000, len(measurement.wires))
+            assert set(np.unique(snapshot_result)) <= {0, 1}
+        elif isinstance(measurement, qml.measurements.CountsMP):
+            assert isinstance(snapshot_result, dict)
+            assert all(isinstance(k, str) for k in snapshot_result.keys())
+            assert all(isinstance(v, int) for v in snapshot_result.values())
+            assert sum(snapshot_result.values()) == 1000
+
+    @pytest.mark.xfail(reason="Not implemented")
+    def test_snapshot_sample_no_shots(self, ml_framework, state, shape, request):
+        """Test that snapshots with sample-based measurements raise an error when no shots are provided."""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        debugger = Debugger()
+        measurement = qml.sample(wires=[0])
+        tag = "sample_no_shots"
+
+        with pytest.raises(ValueError, match="Shots must be specified"):
+            apply_operation(
+                qml.Snapshot(tag, measurement=measurement),
+                initial_state,
+                debugger=debugger,
+                is_state_batched=len(shape) != 2,
+            )
