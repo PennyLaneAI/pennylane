@@ -959,7 +959,10 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             if interface != "numpy":
-                interface = get_canonical_interface_name(interface)
+                try:
+                    interface = get_canonical_interface_name(interface)
+                except ValueError:
+                    interface = "numpy"
             self._interface = interface
 
         try:
