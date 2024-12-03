@@ -61,7 +61,7 @@ def _remove_harmonic(freqs, pes_onemode):
         harmonic_pes[ii, :] = ho_const * (gauss_grid**2)
         anh_pes[ii, :] = pes_onemode[ii, :] - harmonic_pes[ii, :]
 
-    return nmodes, quad_order, anh_pes, harmonic_pes
+    return anh_pes, harmonic_pes
 
 
 def _fit_onebody(anh_pes, deg, min_deg=3):
@@ -297,7 +297,7 @@ def taylor_coeffs(pes, deg=4, min_deg=3):
         coeff_arr (list(list(floats))): the coeffs of the one-body, two-body, three-body terms
     """
 
-    _, _, anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
+    anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, deg, min_deg=min_deg)
     predicted_1D += harmonic_pes
     coeff_arr = [coeff_1D]
