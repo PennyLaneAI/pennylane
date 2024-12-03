@@ -36,8 +36,8 @@ def _harmonic_analysis(scf_result, method="rhf"):
 
     Returns:
         tuple: A tuple containing the following:
-        - list[float]: normal mode frequencies in ``cm^-1``
-        - TensorLike[float]: corresponding displacement vectors for each normal mode
+         - list[float]: normal mode frequencies in ``cm^-1``
+         - TensorLike[float]: corresponding displacement vectors for each normal mode
 
     """
     pyscf = _import_pyscf()
@@ -108,8 +108,8 @@ def optimize_geometry(molecule, method="rhf"):
 
     Returns:
         tuple: A tuple containing the following:
-        - :func:`~pennylane.qchem.molecule.Molecule` object with optimized geometry
-        - pyscf.scf object
+         - :func:`~pennylane.qchem.molecule.Molecule` object with optimized geometry
+         - pyscf.scf object
 
     """
     pyscf = _import_pyscf()
