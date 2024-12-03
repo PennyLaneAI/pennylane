@@ -80,7 +80,7 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
 
     for i1 in range(nmodes):
         poly1D = PolynomialFeatures(degree=(min_deg, deg), include_bias=False)
-        poly1D_features = poly1D.fit_transform(gauss_grid.reshape(-1, 1))
+        poly1D_features = poly1D.fit_transform(grid.reshape(-1, 1))
         poly1D_reg_model = LinearRegression()
         poly1D_reg_model.fit(poly1D_features, anh_pes[i1, :])
         fs[i1, :] = poly1D_reg_model.coef_
@@ -118,7 +118,7 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
     r"""Fits the two-body PES to get two-body coefficients.
 
     Args:
-        two-body PES (TensorLike[float]): two-body PES object
+        two-body PES (TensorLike[float]): two-mode PES
         deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
@@ -515,7 +515,7 @@ def taylor_harmonic(taylor_coeffs, freqs):
 def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
     """Build taylor form bosonic observable from provided coefficients, following `Eq. 4 and Eq. 7
     <https://arxiv.org/pdf/1703.09313>`_.
-    
+
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor expansion
         freqs (list(float)): the harmonic frequencies
