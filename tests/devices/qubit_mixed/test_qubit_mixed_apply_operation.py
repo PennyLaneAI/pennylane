@@ -700,7 +700,7 @@ class TestSnapshot:
 
     @pytest.mark.usefixtures("two_qubit_state")
     def test_no_debugger(self, ml_framework, state, shape, request):
-        """Test nothing happens when there is no debugger"""
+        """Test that nothing happens when there is no debugger"""
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
 
