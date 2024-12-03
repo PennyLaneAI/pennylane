@@ -30,6 +30,7 @@ from pennylane.operation import Observable, Operator
 from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
+from pennylane.templates.state_preparations import Superposition
 from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
@@ -772,4 +773,21 @@ def _equal_prep_sel_prep(
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
     if not qml.equal(op1.lcu, op2.lcu):
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
+    return True
+
+
+@_equal_dispatch.register
+def _equal_superposition(
+    op1: Superposition, op2: Superposition, **kwargs
+):  # pylint: disable=unused-argument
+    """Determine whether two PrepSelPrep are equal"""
+    if op1.wires != op2.wires:
+        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
+    if op1.work_wire != op2.work_wire:
+        return f"op1 and op2 have different work wires. Got {op1.work_wire} and {op2.work_wire}."
+    if not qml.math.allclose(op1.coeffs, op2.coeffs):
+        return f"op1 and op2 have different coeffs. Got {op1.coeffs} and {op2.coeffs}"
+
+    if not qml.math.allclose(qml.math.array(op1.basis), qml.math.array(op2.basis)):
+        return f"op1 and op2 have different basis. Got {op1.basis} and {op2.basis}"
     return True
