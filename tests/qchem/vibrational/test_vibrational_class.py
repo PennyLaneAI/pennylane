@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.qchem import vibrational
-from pennylane.qchem.vibrational import localize_modes, vibrational_class
+from pennylane.qchem.vibrational import vibrational_class
 
 # pylint: disable=too-many-arguments, protected-access
 
@@ -145,7 +145,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
 
 
 @pytest.mark.parametrize(
-    ("freqs", "displ_vecs", "loc_freqs", "exp_results"),
+    ("freqs", "vecs", "bins", "exp_results"),
     # Expected results were obtained using vibrant code
     [
         (
@@ -264,18 +264,16 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
-def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
+def test_mode_localization(freqs, vecs, bins, exp_results):
     r"""Test that mode localization returns correct results."""
 
-    freqs_loc, displ_vecs_loc, uloc = localize_modes._localize_normal_modes(
-        freqs, displ_vecs, freq_separation=loc_freqs
-    )
+    freqs_loc, vecs_loc, uloc = vibrational.localize_normal_modes(freqs, vecs, bins=bins)
     nmodes = len(freqs)
     for i in range(nmodes):
         res_in_expvecs = any(
             (
-                np.allclose(displ_vecs_loc[i], vec, atol=1e-6)
-                or np.allclose(displ_vecs_loc[i], -1.0 * np.array(vec), atol=1e-6)
+                np.allclose(vecs_loc[i], vec, atol=1e-6)
+                or np.allclose(vecs_loc[i], -1.0 * np.array(vec), atol=1e-6)
             )
             for vec in exp_results["vecs"]
         )
@@ -284,7 +282,7 @@ def test_mode_localization(freqs, displ_vecs, loc_freqs, exp_results):
                 np.allclose(exp_results["vecs"][i], vec, atol=1e-6)
                 or np.allclose(exp_results["vecs"][i], -1.0 * np.array(vec), atol=1e-6)
             )
-            for vec in displ_vecs_loc
+            for vec in vecs_loc
         )
 
         res_in_expuloc = any(
@@ -331,10 +329,9 @@ def test_error_mode_localization():
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
-
-    freqs, displ_vecs = vibrational_class._harmonic_analysis(mol_scf)
-    with pytest.raises(ValueError, match="The `freq_separation` list cannot be empty."):
-        localize_modes._localize_normal_modes(freqs, displ_vecs, freq_separation=[])
+    freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)
+    with pytest.raises(ValueError, match="The `bins` list cannot be empty."):
+        vibrational.localize_normal_modes(freqs, vecs, bins=[])
 
 
 @pytest.mark.parametrize(
