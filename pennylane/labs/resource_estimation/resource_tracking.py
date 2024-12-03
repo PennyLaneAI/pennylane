@@ -18,7 +18,7 @@ from functools import singledispatch, wraps
 from typing import Dict, Iterable, List, Set, Union
 
 import pennylane as qml
-from pennylane.operation import Operation, DecompositionUndefinedError
+from pennylane.operation import DecompositionUndefinedError, Operation
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -294,17 +294,17 @@ def _op_to_resource_op(op: Operation) -> ResourceOperator:
 
 def _clean_gate_counts(gate_counts: Dict[CompressedResourceOp, int]) -> Dict[str, int]:
     """Map resources with gate_types made from CompressedResourceOps
-<<<<<<< HEAD
-    into one which tracks just strings of operations!
-=======
-    into one which tracks just strings of operations.
->>>>>>> e33901fd824724bd5192b36010069599b9895cd8
+    <<<<<<< HEAD
+        into one which tracks just strings of operations!
+    =======
+        into one which tracks just strings of operations.
+    >>>>>>> e33901fd824724bd5192b36010069599b9895cd8
 
-    Args:
-        gate_counts (Dict[CompressedResourceOp, int]): gate counts in terms of compressed resource ops
+        Args:
+            gate_counts (Dict[CompressedResourceOp, int]): gate counts in terms of compressed resource ops
 
-    Returns:
-        Dict[str, int]: gate counts in terms of names of operations
+        Returns:
+            Dict[str, int]: gate counts in terms of names of operations
     """
     clean_gate_counts = defaultdict(int)
 
