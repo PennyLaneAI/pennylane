@@ -53,17 +53,7 @@ INTERFACE_TO_LIKE = {
     "jax": "jax",
     "torch": "torch",
     "tensorflow": "tensorflow",
-    # map non-standard interfaces to those known by autoray
-    "auto": None,
-    "scipy": "numpy",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "pytorch": "torch",
-    "tf": "tensorflow",
-    "tensorflow-autograph": "tensorflow",
-    "tf-autograph": "tensorflow",
-    # map interface enum
+    # map canonical interfaces
     Interface.AUTOGRAD: "autograd",
     Interface.NUMPY: "numpy",
     Interface.TORCH: "torch",
