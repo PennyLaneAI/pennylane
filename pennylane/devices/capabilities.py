@@ -22,6 +22,7 @@ from itertools import repeat
 from typing import Callable, Optional
 
 import pennylane as qml
+from pennylane.operation import Operator
 
 if sys.version_info >= (3, 11):
     import tomllib as toml  # pragma: no cover
@@ -175,12 +176,14 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         update_device_capabilities(capabilities, document, runtime_interface)
         return capabilities
 
-    def supports_operation(self, operation_name: str) -> bool:
+    def supports_operation(self, operation: str | Operator) -> bool:
         """Checks if the given operation is supported by name."""
+        operation_name = operation if isinstance(operation, str) else operation.name
         return bool(_get_supported_base_op(operation_name, self.operations))
 
-    def supports_observable(self, observable_name: str) -> bool:
+    def supports_observable(self, observable: str | Operator) -> bool:
         """Checks if the given observable is supported by name."""
+        observable_name = observable if isinstance(observable, str) else observable.name
         return bool(_get_supported_base_op(observable_name, self.observables))
 
 

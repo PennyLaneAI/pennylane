@@ -103,7 +103,7 @@ def null_postprocessing(results):
 
 @transform
 def defer_measurements(
-    tape: QuantumScript, reduce_postselected: bool = True, **kwargs
+    tape: QuantumScript, reduce_postselected: bool = True, allow_postselect: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
@@ -158,11 +158,9 @@ def defer_measurements(
         tape (QNode or QuantumTape or Callable): a quantum circuit.
         reduce_postselected (bool): Whether to use postselection information to reduce the number
             of operations and control wires in the output tape. Active by default.
-
-    Keyword Args:
         allow_postselect (bool): Whether postselection is allowed. In order to perform postselection
             with ``defer_measurements``, the device must support the :class:`~.Projector` operation.
-            Defaults to ``False``.
+            Defaults to ``True``.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
@@ -288,8 +286,6 @@ def defer_measurements(
         is_postselecting,
     ) = _collect_mid_measure_info(tape)
 
-    allow_postselect = kwargs.get("allow_postselect", True)
-
     if is_postselecting and not allow_postselect:
         raise ValueError(
             "Postselection is not allowed on the device with deferred measurements. The device "
@@ -388,13 +384,6 @@ def defer_measurements(
 @defer_measurements.custom_qnode_transform
 def _defer_measurements_qnode(self, qnode, targs, tkwargs):
     """Custom qnode transform for ``defer_measurements``."""
-    if tkwargs.get("device", None):
-        raise ValueError(
-            "Cannot provide a 'device' value directly to the defer_measurements decorator "
-            "when transforming a QNode."
-        )
-
-    tkwargs.setdefault("device", qnode.device)
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 

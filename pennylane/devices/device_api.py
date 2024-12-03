@@ -516,8 +516,8 @@ class Device(abc.ABC):
 
         program.add_transform(
             decompose,
-            stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
-            stopping_condition_shots=lambda o: capabilities_shots.supports_operation(o.name),
+            stopping_condition=capabilities_analytic.supports_operation,
+            stopping_condition_shots=capabilities_shots.supports_operation,
             name=self.name,
         )
 
