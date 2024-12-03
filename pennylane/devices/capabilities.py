@@ -15,19 +15,15 @@
 Defines the DeviceCapabilities class, and tools to load it from a TOML file.
 """
 import re
-import sys
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
 from typing import Callable, Optional, Union
 
+import toml
+
 import pennylane as qml
 from pennylane.operation import Operator
-
-if sys.version_info >= (3, 11):
-    import tomllib as toml  # pragma: no cover
-else:
-    import tomli as toml
 
 ALL_SUPPORTED_SCHEMAS = [3]
 
@@ -38,8 +34,7 @@ class InvalidCapabilitiesError(Exception):
 
 def load_toml_file(file_path: str) -> dict:
     """Loads a TOML file and returns the parsed dict."""
-    with open(file_path, "rb") as f:
-        return toml.load(f)
+    return toml.load(file_path)
 
 
 class ExecutionCondition(Enum):
