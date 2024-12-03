@@ -198,7 +198,7 @@ class TestValidation:
 
         expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+        with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
 
     def test_invalid_device(self):
