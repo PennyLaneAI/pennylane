@@ -137,7 +137,7 @@ jobs:
       - name: Install PennyLane
         shell: bash
         run: |
-          uv python setup.py bdist_wheel
+          uv build --wheel  
           uv pip install dist/PennyLane*.whl
 
       - name: Install additional PIP packages (Post PennyLane Install)
