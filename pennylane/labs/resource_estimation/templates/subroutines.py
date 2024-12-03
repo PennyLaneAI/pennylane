@@ -57,6 +57,3 @@ class ResourceQFT(qml.QFT, ResourceOperator):
         params = {"num_wires": num_wires}
         return CompressedResourceOp(cls, params)
 
-    @staticmethod
-    def tracking_name(num_wires) -> str:
-        return f"QFT({num_wires})"

@@ -153,12 +153,7 @@ class ResourcePow(PowOperation, re.ResourceOperator):
         except re.ResourcesNotDefined:
             pass
 
-        try:
-            return _scale_dict(base_class.resources(**base_params, **kwargs), z)
-        except re.ResourcesNotDefined:
-            pass
-
-        return {base_class.resource_rep(): z}
+        return {base_class.resource_rep(**base_params, **kwargs): z}
 
     def resource_params(self) -> dict:
         return {
