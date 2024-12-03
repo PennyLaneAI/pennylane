@@ -16,7 +16,7 @@
 """
 
 from dataclasses import replace
-from typing import Literal, get_args
+from typing import Literal, Union, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -86,15 +86,16 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface, tapes):
-    """Helper function to resolve the interface name based on a list of tapes
+def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+    """Helper function to resolve an interface based on a set of tapes.
 
     Args:
-        interface (str): Original interface to use as reference.
+        interface (str, Interface): Original interface to use as reference.
         tapes (list[.QuantumScript]): Quantum tapes
 
     Returns:
-        str: Interface name"""
+        Interface: resolved interface
+    """
 
     interface = _get_canonical_interface_name(interface)
 
