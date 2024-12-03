@@ -767,7 +767,7 @@ def vibrational_pes(
     quad_order=9,
     method="rhf",
     localize=True,
-    loc_freqs=[2600],
+    bins=[2600],
     cubic=False,
     dipole_level=1,
 ):
