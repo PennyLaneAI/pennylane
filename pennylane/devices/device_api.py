@@ -349,7 +349,7 @@ class Device(abc.ABC):
         return transform_program, execution_config
 
     def setup_execution_config(
-        self, config: Optional[ExecutionConfig] = None, tape: Optional[QuantumScript] = None
+        self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
     ) -> ExecutionConfig:
         """Sets up an ``ExecutionConfig`` that configures the execution behaviour.
 
@@ -364,7 +364,7 @@ class Device(abc.ABC):
         Args:
             config (ExecutionConfig): The initial ExecutionConfig object that describes the
                 parameters needed to configure the execution behaviour.
-            tape (QuantumScript): The quantum circuit to customize the execution config for.
+            circuit (QuantumScript): The quantum circuit to customize the execution config for.
 
         Returns:
             ExecutionConfig: The updated ExecutionConfig object
@@ -382,7 +382,7 @@ class Device(abc.ABC):
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
 
-        shots_present = tape and bool(tape.shots)
+        shots_present = circuit and bool(circuit.shots)
         validate_mcm_method(self.capabilities, config.mcm_config.mcm_method, shots_present)
         if config.mcm_config.mcm_method is None and self.capabilities is not None:
             # This is a sensible default strategy for resolving the MCM method based on declared
@@ -534,8 +534,8 @@ class Device(abc.ABC):
             # `diagonalize_measurements` may add additional gates that are not supported.
             program.add_transform(
                 decompose,
-                stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
-                stopping_condition_shots=lambda o: capabilities_shots.supports_operation(o.name),
+                stopping_condition=capabilities_analytic.supports_operation,
+                stopping_condition_shots=capabilities_shots.supports_operation,
                 name=self.name,
             )
 
@@ -990,7 +990,7 @@ def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -
     """Simple strategy to find the best match for the default mcm method."""
 
     supports_one_shot = "one-shot" in capabilities.supported_mcm_methods
-    has_device_support = capabilities and "device" in capabilities.supported_mcm_methods
+    has_device_support = "device" in capabilities.supported_mcm_methods
 
     # In finite shots mode, the one-shot method is the default even if there is device support.
     # This is to ensure consistency with old behaviour. Although I'm not too sure about this.
