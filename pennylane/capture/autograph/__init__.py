@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,20 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """
-Submodule for performing qubit mixed-state simulations of quantum circuits.
-
-This submodule is internal and subject to change without a deprecation cycle. Use
-at your own discretion.
-
-.. currentmodule:: pennylane.devices.qubit_mixed
-.. autosummary::
-    :toctree: api
-
-    apply_operation
-    create_initial_state
-    measure
+Public/internal API for the AutoGraph module.
 """
-from .apply_operation import apply_operation
-from .initialize_state import create_initial_state
-from .measure import measure
+
+from .transformer import (
+    autograph_source,
+    run_autograph,
+)
+
+
+__all__ = (
+    "autograph_source",
+    "run_autograph",
+)

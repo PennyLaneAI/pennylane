@@ -26,12 +26,13 @@ from warnings import warn
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.math import Interface, _resolve_interface, jpc_interfaces
+from pennylane.math import Interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
 from ._setup_transform_program import _setup_transform_program
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
+from .resolution import _resolve_interface
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -318,9 +319,9 @@ def execute(
     def inner_execute_with_empty_jac(tapes, **_):
         return inner_execute(tapes), []
 
-    if interface in jpc_interfaces:
-        execute_fn = inner_execute
-    else:
+    execute_fn = inner_execute
+
+    if interface == "tf-autograph":
         execute_fn = inner_execute_with_empty_jac
 
     #### Executing the configured setup #####
@@ -338,13 +339,13 @@ def execute(
         results = inner_execute(tapes)
         return post_processing(results)
 
-    if config.use_device_jacobian_product and interface in jpc_interfaces:
+    if config.use_device_jacobian_product and interface != "tf-autograph":
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
         jpc = DeviceDerivatives(device, config)
 
-        if interface in jpc_interfaces:
+        if interface != "tf-autograph":
             execute_fn = (
                 jpc.execute_and_cache_jacobian if config.grad_on_execution else inner_execute
             )
@@ -398,7 +399,7 @@ def execute(
         # within execute_and_gradients, so providing a diff_method
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
-    elif interface in jpc_interfaces:
+    elif interface != "tf-autograph":
         # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
         cache_full_jacobian = (interface == Interface.AUTOGRAD) and not cache
 
@@ -442,7 +443,7 @@ def execute(
         differentiable=max_diff > 1,
     )
 
-    if interface in jpc_interfaces:
+    if interface != "tf-autograph":
         results = ml_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
