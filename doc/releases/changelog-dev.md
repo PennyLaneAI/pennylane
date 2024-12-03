@@ -206,6 +206,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added native `ResourceOperator` subclasses for each of the controlled operators.
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
 
+* Added native `ResourceOperator` subclasses for each of the multi qubit operators.
+  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
