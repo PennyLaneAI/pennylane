@@ -104,7 +104,10 @@ def _resolve_interface(interface, tapes):
             params.extend(tape.get_parameters(trainable_only=False))
         interface = get_interface(*params)
         if interface != "numpy":
-            interface = get_canonical_interface_name(interface)
+            try:
+                interface = get_canonical_interface_name(interface)
+            except ValueError:
+                interface = None
     if interface == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
     if interface == "jax":

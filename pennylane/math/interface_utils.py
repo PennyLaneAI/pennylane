@@ -211,7 +211,7 @@ def get_canonical_interface_name(interface):
     """
 
     try:
-        return INTERFACE_MAP.get(interface, None)
+        return INTERFACE_MAP[interface]
     except KeyError as exc:
         raise ValueError(
             f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
