@@ -779,7 +779,8 @@ def vibrational_pes(
        method (str): Electronic structure method that can be either restricted and unrestricted
            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
        localize (bool): Whether to perform normal mode localization. Default is ``False``.
-       freqs (list[float]): Array of frequencies in ``cm^-1`` where separation happens for mode localization.
+       freqs (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
+           Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
        cubic (bool)): Whether to include three-mode couplings. Default is ``False``.
        dipole_level (int): Defines the level up to which dipole matrix elements are to be calculated. Input values can be
                      ``1``, ``2``, or ``3`` for up to one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
