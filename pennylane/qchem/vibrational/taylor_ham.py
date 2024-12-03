@@ -151,7 +151,7 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
 
     features = np.zeros((num_2D, num_coeffs))
     for deg_idx, (q1deg, q2deg) in enumerate(fit_degs):
-          features[:, deg_idx] = (q1 ** q1deg) * (q2 ** q2deg)
+        features[:, deg_idx] = (q1**q1deg) * (q2**q2deg)
 
     for i1 in range(nmodes):
         for i2 in range(i1):
