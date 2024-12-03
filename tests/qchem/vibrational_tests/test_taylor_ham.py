@@ -372,7 +372,7 @@ reference_taylor_bosonic_coeffs = np.array(
     ]
 )
 
-# Pre-sorted, with operators rearranged with indices in descending order
+# Pre-sorted, with operators rearranged with indices in ascending order
 reference_taylor_bosonic_ops = [
     {(0, 1): "+", (1, 1): "+", (2, 1): "-"},
     {(0, 1): "+", (1, 1): "-", (2, 1): "-"},
@@ -562,14 +562,14 @@ def test_taylor_kinetic():
     pass
 
 
-# bug in normal_order means some terms are not sorted in ascending index order
-# once fixed test should pass
 def test_taylor_bosonic():
     taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, Uloc=Uloc)
-    taylor_bos.simplify()
-    print(reference_taylor_bosonic_ops)
-    # assert reference_taylor_bosonic_ops == sorted_ops_arr
-    # assert np.allclose(sorted_coeffs_arr, reference_taylor_bosonic_coeffs, atol=1e-3)
+    sorted_arr = sorted(taylor_bos.items(), key=lambda x: x[1].real)
+    sorted_ops_arr, sorted_coeffs_arr = zip(*sorted_arr)
+
+    assert np.allclose(sorted_coeffs_arr, reference_taylor_bosonic_coeffs, atol=1e-3)
+    assert len(sorted_ops_arr) == len(reference_taylor_bosonic_ops)
+    assert list(sorted_ops_arr) == reference_taylor_bosonic_ops
 
 
 def test_taylor_hamiltonian():
