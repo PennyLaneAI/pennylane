@@ -778,7 +778,7 @@ def vibrational_pes(
        quad_order (int): Order for Gauss-Hermite quadratures. Default value is ``9``.
        method (str): Electronic structure method that can be either restricted and unrestricted
            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
-       localize (bool): Whether to perform normal mode localization. Default is ``False``.
+       localize (bool): flag to perform normal mode localization. Default is ``False``.
        freqs (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
            Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
        cubic (bool)): Whether to include three-mode couplings. Default is ``False``.
