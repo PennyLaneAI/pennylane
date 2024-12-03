@@ -22,7 +22,7 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Resources:
-        The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for 
+        The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
         quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
 
         Specifically, the resources are given by one :code:`RZ` gate and a cascade of :math:`2 * (n - 1)`
@@ -79,7 +79,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
         active_wires = len(pauli_word.replace("I", ""))
 
         h = re.ResourceHadamard.resource_rep()
-        s = re.ResourceS.resource_rep()    # TODO: add Adjoint(S) in the symbolic PRs
+        s = re.ResourceS.resource_rep()  # TODO: add Adjoint(S) in the symbolic PRs
         rz = re.ResourceRZ.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
 
