@@ -230,9 +230,7 @@ class TestGetResources:
             },
         )
 
-        expected_clean_counts = defaultdict(
-            int, {"CNOT": 1, "Hadamard": 3, "QFT": 5}
-        )
+        expected_clean_counts = defaultdict(int, {"CNOT": 1, "Hadamard": 3, "QFT": 5})
 
         assert _clean_gate_counts(gate_counts) == expected_clean_counts
 
