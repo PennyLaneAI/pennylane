@@ -22,6 +22,9 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+  # Scheduled trigger on Wednesdays at 3:00am UTC
+  schedule:
+    - cron: "0 3 * * 3"
 
 permissions: write-all
 
@@ -63,9 +66,7 @@ jobs:
         path: doc.txt
 
   upload-stable-deps:
-    # A) PR is not in draft mode
-    # B) PR is from the same repo as the workflow (i.e., not a fork)
-    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'schedule'
     needs:
       - determine_runner
       - sphinx
