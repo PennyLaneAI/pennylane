@@ -266,3 +266,4 @@ def _get_dipole(scf_result, method):
         return _get_rhf_dipole(scf_result)
 
     return _get_uhf_dipole(scf_result)
+
