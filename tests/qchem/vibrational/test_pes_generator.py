@@ -211,20 +211,8 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
         assert dipole_onebody is None
 
 
-pes_file = os.path.join(ref_dir, "H2S.hdf5")
-f = h5py.File(pes_file, "r+")
-exp_pes_onebody = np.array(f["V1_PES"][()])
-exp_dip_onebody = np.array(f["D1_DMS"][()])
-exp_pes_twobody = np.array(f["V2_PES"][()])
-exp_dip_twobody = np.array(f["D2_DMS"][()])
-exp_pes_threebody = np.array(f["V3_PES"][()])
-exp_dip_threebody = np.array(f["D3_DMS"][()])
-pes_data = [exp_pes_onebody, exp_pes_twobody, exp_pes_threebody]
-dip_data = [exp_dip_onebody, exp_dip_twobody, exp_dip_threebody]
-
-
 @pytest.mark.parametrize(
-    ("sym", "geom", "freqs", "vectors", "expected_pes", "expected_dipole"),
+    ("sym", "geom", "freqs", "vectors", "ref_file"),
     # Expected results were obtained using vibrant code
     [
         (
@@ -256,13 +244,12 @@ dip_data = [exp_dip_onebody, exp_dip_twobody, exp_dip_threebody]
                     ],
                 ]
             ),
-            pes_data,
-            dip_data,
+            "H2S.hdf5",
         )
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
-def test_twomode_pes(sym, geom, freqs, vectors, expected_pes, expected_dipole):
+def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct twomode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
@@ -270,24 +257,31 @@ def test_twomode_pes(sym, geom, freqs, vectors, expected_pes, expected_dipole):
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
+    pes_file = os.path.join(ref_dir, ref_file)
+    f = h5py.File(pes_file, "r+")
+    exp_pes_onebody = np.array(f["V1_PES"][()])
+    exp_dip_onebody = np.array(f["D1_DMS"][()])
+    exp_pes_twobody = np.array(f["V2_PES"][()])
+    exp_dip_twobody = np.array(f["D2_DMS"][()])
+
     pes_twobody, dipole_twobody = pes_generator._pes_twomode(
         mol,
         mol_eq,
         freqs,
         vectors,
         gauss_grid,
-        expected_pes[0],
-        expected_dipole[0],
+        exp_pes_onebody,
+        exp_dip_onebody,
         method="rhf",
         dipole=True,
     )
 
-    assert np.allclose(pes_twobody, expected_pes[1], atol=1e-6)
-    assert np.allclose(dipole_twobody, expected_dipole[1], atol=1e-6)
+    assert np.allclose(pes_twobody, exp_pes_twobody, atol=1e-6)
+    assert np.allclose(dipole_twobody, exp_dip_twobody, atol=1e-6)
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "freqs", "vectors", "expected_pes", "expected_dipole"),
+    ("sym", "geom", "freqs", "vectors", "ref_file"),
     # Expected results were obtained using vibrant code
     [
         (
@@ -319,13 +313,12 @@ def test_twomode_pes(sym, geom, freqs, vectors, expected_pes, expected_dipole):
                     ],
                 ]
             ),
-            pes_data,
-            dip_data,
+            "H2S.hdf5",
         )
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_mpi4py_support")
-def test_threemode_pes(sym, geom, freqs, vectors, expected_pes, expected_dipole):
+def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct threemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
@@ -333,22 +326,31 @@ def test_threemode_pes(sym, geom, freqs, vectors, expected_pes, expected_dipole)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
+    pes_file = os.path.join(ref_dir, ref_file)
+    f = h5py.File(pes_file, "r+")
+    exp_pes_onebody = np.array(f["V1_PES"][()])
+    exp_dip_onebody = np.array(f["D1_DMS"][()])
+    exp_pes_twobody = np.array(f["V2_PES"][()])
+    exp_dip_twobody = np.array(f["D2_DMS"][()])
+    exp_pes_threebody = np.array(f["V3_PES"][()])
+    exp_dip_threebody = np.array(f["D3_DMS"][()])
+
     pes_threebody, dipole_threebody = pes_generator._pes_threemode(
         mol,
         mol_eq,
         freqs,
         vectors,
         gauss_grid,
-        expected_pes[0],
-        expected_pes[1],
-        expected_dipole[0],
-        expected_dipole[1],
+        exp_pes_onebody,
+        exp_pes_twobody,
+        exp_dip_onebody,
+        exp_dip_twobody,
         method="rhf",
         dipole=True,
     )
 
-    assert np.allclose(pes_threebody, expected_pes[2], atol=1e-6)
-    assert np.allclose(dipole_threebody, expected_dipole[2], atol=1e-6)
+    assert np.allclose(pes_threebody, exp_pes_threebody, atol=1e-6)
+    assert np.allclose(dipole_threebody, exp_dip_threebody, atol=1e-6)
 
 
 def test_quad_order_error():
