@@ -15,10 +15,20 @@
 import itertools
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
 
 from pennylane.bose import BoseSentence, BoseWord
+
+
+def _import_sklearn():
+    """Import mpi4py."""
+    try:
+        import sklearn
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires sklearn. It can be installed with: pip install scikit-learn."
+        ) from Error
+
+    return sklearn
 
 
 def _obtain_r2(ytrue, yfit):
@@ -67,6 +77,11 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
             - the one-body coefficients
             - the predicted one-body PES using fitted coefficients
     """
+    _import_sklearn()
+
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import PolynomialFeatures
+
     if deg < min_deg:
         raise Exception(
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
@@ -127,6 +142,9 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
             - the two-body coefficients
             - the predicted two-body PES using fitted coefficients
     """
+    _import_sklearn()
+    from sklearn.linear_model import LinearRegression
+
     nmodes, _, quad_order, _ = np.shape(pes_twomode)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
@@ -222,6 +240,9 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
             - the three-body coefficients
             - the predicted three-body PES using fitted coefficients
     """
+    _import_sklearn()
+    from sklearn.linear_model import LinearRegression
+
     nmodes, _, _, quad_order, _, _ = np.shape(pes_threemode)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
