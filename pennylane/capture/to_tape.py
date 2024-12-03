@@ -122,8 +122,8 @@ def _(self, *invals, jaxpr, lazy, n_consts):
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
 def _(self, *invals, n_control, jaxpr, n_consts, **params):
-    """Handle a control transform primitive by collecting the operations in the jaxpr, and their applying their controlled
-    versions.
+    """Handle a control transform primitive by collecting the operations in the jaxpr,
+    and then applying their controlled versions.
     """
     consts = invals[:n_consts]
     args = invals[n_consts:-n_control]
@@ -167,8 +167,7 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
             self.state["ops"].extend(qml.ops.Conditional(pred, op) for op in child.state["ops"])
         elif pred:
             return copy(self).eval(jaxpr, consts, *args)
-
-        return ()
+    return ()
 
 
 @CollectOpsandMeas.register_primitive(measure_prim)

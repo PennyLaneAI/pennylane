@@ -17,7 +17,7 @@ This submodule defines a strategy structure for defining custom plxpr interprete
 # pylint: disable=no-self-use
 from copy import copy
 from functools import partial, wraps
-from typing import Callable
+from typing import Callable, Sequence
 
 import jax
 
@@ -287,7 +287,7 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(measurement)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+    def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
         """Evaluate a jaxpr.
 
         Args:
@@ -478,11 +478,13 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     return jacobian_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
 
 
-def flatten_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
+def flatten_while_loop(
+    self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice
+):
     """Handle the while loop by a flattened python strategy."""
-    consts_body = invals[:n_consts_body]
-    consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
-    init_state = invals[n_consts_body + n_consts_cond :]
+    consts_body = invals[body_slice]
+    consts_cond = invals[cond_slice]
+    init_state = invals[args_slice]
 
     fn_res = init_state
     while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
