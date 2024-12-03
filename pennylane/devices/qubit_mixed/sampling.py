@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Code relevant for sampling a qubit mixed state.
+Submodule for sampling a qubit mixed state.
 """
 # pylint: disable=too-many-positional-arguments, too-many-arguments
 import functools
