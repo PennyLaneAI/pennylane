@@ -40,17 +40,17 @@ def _obtain_r2(ytrue, yfit):
     return 1 - ssres / sstot
 
 
-def _remove_harmonic(freqs, pes_onemode):
+def _remove_harmonic(freqs, onemode_pes):
     """Removes the harmonic part from the PES
 
     Args:
         freqs (list(float)): normal mode frequencies
-        pes_onemode (TensorLike[float]): one mode PES
+        onemode_pes (TensorLike[float]): one mode PES
 
     Returns:
-        harmonic part of the PES
+        tuple containing the anharmonic and harmonic part of the PES
     """
-    nmodes, quad_order = np.shape(pes_onemode)
+    nmodes, quad_order = np.shape(onemode_pes)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     harmonic_pes = np.zeros((nmodes, quad_order))
@@ -59,16 +59,16 @@ def _remove_harmonic(freqs, pes_onemode):
     for ii in range(nmodes):
         ho_const = freqs[ii] / 2
         harmonic_pes[ii, :] = ho_const * (gauss_grid**2)
-        anh_pes[ii, :] = pes_onemode[ii, :] - harmonic_pes[ii, :]
+        anh_pes[ii, :] = onemode_pes[ii, :] - harmonic_pes[ii, :]
 
     return anh_pes, harmonic_pes
 
 
-def _fit_onebody(anh_pes, deg, min_deg=3):
-    r"""Fits the one-body PES to get one-body coefficients.
+def _fit_onebody(onemode_op, deg, min_deg=3):
+    r"""Fits the one-mode operator to get one-body coefficients.
 
     Args:
-        anh_pes (list(list(float))): anharmonic part of the PES object
+        onemode_op (list(list(float))): one-mode operator
         deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
@@ -87,17 +87,17 @@ def _fit_onebody(anh_pes, deg, min_deg=3):
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
         )
 
-    nmodes, quad_order = np.shape(anh_pes)
+    nmodes, quad_order = np.shape(onemode_op)
     grid, _ = np.polynomial.hermite.hermgauss(quad_order)
     coeffs = np.zeros((nmodes, deg - min_deg + 1))
 
-    predicted_1D = np.zeros_like(anh_pes)
+    predicted_1D = np.zeros_like(onemode_op)
 
     for i1 in range(nmodes):
         poly1D = PolynomialFeatures(degree=(min_deg, deg), include_bias=False)
         poly1D_features = poly1D.fit_transform(grid.reshape(-1, 1))
         poly1D_reg_model = LinearRegression()
-        poly1D_reg_model.fit(poly1D_features, anh_pes[i1, :])
+        poly1D_reg_model.fit(poly1D_features, onemode_op[i1, :])
         coeffs[i1, :] = poly1D_reg_model.coef_
         predicted_1D[i1, :] = poly1D_reg_model.predict(poly1D_features)
 
@@ -129,11 +129,11 @@ def _twobody_degs(deg, min_deg=3):
     return fit_degs
 
 
-def _fit_twobody(pes_twomode, deg, min_deg=3):
-    r"""Fits the two-body PES to get two-body coefficients.
+def _fit_twobody(twomode_op, deg, min_deg=3):
+    r"""Fits the two-mode operator to get two-body coefficients.
 
     Args:
-        two-body PES (TensorLike[float]): two-mode PES
+        twomode_op (TensorLike[float]): two-mode operator
         deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
@@ -145,7 +145,7 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
     _import_sklearn()
     from sklearn.linear_model import LinearRegression
 
-    nmodes, _, quad_order, _ = np.shape(pes_twomode)
+    nmodes, _, quad_order, _ = np.shape(twomode_op)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     if deg < min_deg:
@@ -157,7 +157,7 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
     num_coeffs = len(fit_degs)
     coeffs = np.zeros((nmodes, nmodes, num_coeffs))
 
-    predicted_2D = np.zeros_like(pes_twomode)
+    predicted_2D = np.zeros_like(twomode_op)
 
     grid_2D = np.array(np.meshgrid(gauss_grid, gauss_grid))
     q1 = grid_2D[0, ::].flatten()
@@ -173,7 +173,7 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
 
     for i1 in range(nmodes):
         for i2 in range(i1):
-            Y = pes_twomode[i1, i2, idx1, idx2]
+            Y = twomode_op[i1, i2, idx1, idx2]
             poly2D_reg_model = LinearRegression()
             poly2D_reg_model.fit(features, Y)
             coeffs[i1, i2, :] = poly2D_reg_model.coef_
@@ -223,11 +223,11 @@ def _threebody_degs(deg, min_deg=3):
     return fit_degs
 
 
-def _fit_threebody(pes_threemode, deg, min_deg=3):
-    r"""Fits the three-body PES to get three-body coefficients.
+def _fit_threebody(threemode_op, deg, min_deg=3):
+    r"""Fits the three-mode operator to get three-body coefficients.
 
     Args:
-        three-body PES (TensorLike[float]): three-mode PES
+        threemode_op (TensorLike[float]): threemode operator
         deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
@@ -239,7 +239,7 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
     _import_sklearn()
     from sklearn.linear_model import LinearRegression
 
-    nmodes, _, _, quad_order, _, _ = np.shape(pes_threemode)
+    nmodes, _, _, quad_order, _, _ = np.shape(threemode_op)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     if deg < min_deg:
@@ -247,7 +247,7 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
         )
 
-    predicted_3D = np.zeros_like(pes_threemode)
+    predicted_3D = np.zeros_like(threemode_op)
     fit_degs = _threebody_degs(deg)
     num_coeffs = len(fit_degs)
     coeffs = np.zeros((nmodes, nmodes, nmodes, num_coeffs))
@@ -270,7 +270,7 @@ def _fit_threebody(pes_threemode, deg, min_deg=3):
     for i1 in range(nmodes):
         for i2 in range(i1):
             for i3 in range(i2):
-                Y = pes_threemode[i1, i2, i3, idx1, idx2, idx3]
+                Y = threemode_op[i1, i2, i3, idx1, idx2, idx3]
 
                 poly3D_reg_model = LinearRegression()
                 poly3D_reg_model.fit(features, Y)
