@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the taylor hamiltonian construction functions."""
-
 import numpy as np
+import pytest
 import pennylane as qml
 
 from pennylane.bose import (
@@ -40,8 +40,14 @@ from pennylane.qchem import vibrational
 sym = ["H", "H", "S"]
 geom = np.array([[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]])
 
-mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-test_pes_object = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=True, localize=True)
+try:
+    import geometric
+    import pyscf
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    test_pes_object = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=True, localize=True)
+except ModuleNotFoundError:
+    pass
+
 
 # Reference copied from vibrant HDF5 files
 taylor_1D = np.array(
@@ -777,7 +783,7 @@ def test_taylor_bosonic():
     assert len(sorted_ops_arr) == len(reference_taylor_bosonic_ops)
     assert list(sorted_ops_arr) == reference_taylor_bosonic_ops
 
-
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
 def test_taylor_hamiltonian():
     pes_object_2D = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=False, localize=True)
 
@@ -790,19 +796,19 @@ def test_taylor_hamiltonian():
         for key, value in taylor_ham.items()
     )
 
-
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
 def test_fit_onebody():
     _, _, anh_pes, _ = _remove_harmonic(test_pes_object.freqs, test_pes_object.pes_onemode)
     coeff_1D, _ = _fit_onebody(anh_pes, 4, 2)
 
     assert np.allclose(abs(coeff_1D), abs(taylor_1D), atol=1e-10)
 
-
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
 def test_fit_twobody():
     coeff_2D, _ = _fit_twobody(test_pes_object.pes_twomode, 4, 2)
     assert np.allclose(abs(coeff_2D), abs(taylor_2D), atol=1e-10)
 
-
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
 def test_fit_threebody():
     coeff_3D, _ = _fit_threebody(test_pes_object.pes_threemode, 4, 2)
     assert np.allclose(abs(coeff_3D), abs(taylor_3D), atol=1e-10)

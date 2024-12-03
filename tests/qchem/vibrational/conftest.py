@@ -16,7 +16,7 @@ Pytest configuration file for PennyLane quantum chemistry open fermion test suit
 """
 import pytest
 
-@pytest.fixture(scope="session", name="pyscf_support")
+@pytest.fixture(scope="session", name="sklearn_support")
 def fixture_sklearn_support():
     """Fixture to determine whether pyscf is installed."""
     # pylint: disable=unused-import, import-outside-toplevel
@@ -70,11 +70,13 @@ def skip_if_no_geometric_support(geometric_support):
     if not geometric_support:
         pytest.skip("Skipped, geometric support")
 
+
 @pytest.fixture()
-def skip_if_no_sklearn_support(geometric_support):
+def skip_if_no_sklearn_support(sklearn_support):
     """Fixture to skip a test if sklearn is not installed."""
     if not sklearn_support:
         pytest.skip("Skipped, sklearn support")
+
 
 @pytest.fixture(scope="session", name="mpi4py_support")
 def fixture_mpi4py_support():
