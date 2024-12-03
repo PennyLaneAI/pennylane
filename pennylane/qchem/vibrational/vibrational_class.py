@@ -41,7 +41,7 @@ class VibrationalPES:
        dipole_arr (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode dipole
        localized (bool): Whether the localization of modes was used to generate PES and dipole. Default is ``True``.
        dipole_level (int): the level up to which dipole matrix elements are to be calculated. Input values can be
-                     1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole respectively. Default
+                     1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
                      value is 2.
 
     """
