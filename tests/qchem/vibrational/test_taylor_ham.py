@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the taylor hamiltonian construction functions."""
+import sys
+
 import numpy as np
 import pytest
 import pennylane as qml
@@ -551,6 +553,15 @@ reference_taylor_bosonic_ops = [
 for i, ele in enumerate(reference_taylor_bosonic_ops):
     reference_taylor_bosonic_ops[i] = BoseWord(ele)
 
+def test_import_sklearn(monkeypatch):
+    """Test if an ImportError is raised by _import_mpi4py function."""
+    # pylint: disable=protected-access
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "sklearn", None)
+
+        with pytest.raises(ImportError, match="This feature requires sklearn"):
+            vibrational.taylor_ham._import_sklearn()
 
 def test_taylor_anharmonic():
     expected_anh_ham = [
@@ -725,7 +736,7 @@ def test_taylor_anharmonic():
 
     assert expected_anh_ham == list(anh_ham.items())
 
-
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
 def test_taylor_harmonic():
     expected_taylor_harm = [
         (BoseWord({(0, 0): "+", (1, 0): "+"}), 0.0014742224999999996),
@@ -741,7 +752,6 @@ def test_taylor_harmonic():
     ]
     taylor_harm = taylor_harmonic([taylor_1D, taylor_2D], freqs)
     assert expected_taylor_harm == list(taylor_harm.items())
-
 
 def test_taylor_kinetic():
     expected_taylor_kin = [
@@ -783,7 +793,7 @@ def test_taylor_bosonic():
     assert len(sorted_ops_arr) == len(reference_taylor_bosonic_ops)
     assert list(sorted_ops_arr) == reference_taylor_bosonic_ops
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
 def test_taylor_hamiltonian():
     pes_object_2D = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=False, localize=True)
 
@@ -825,13 +835,13 @@ def test_threemode_degs():
     fit_degs = _threebody_degs(4, 2)
     assert fit_degs == expected_degs
 
-
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
 def test_taylor_coeffs():
     taylor_coeffs_1D, taylor_coeffs_2D, _ = taylor_coeffs(test_pes_object, 4, 2)
     assert np.allclose(taylor_coeffs_1D, taylor_1D, atol=1e-2)
     assert np.allclose(taylor_coeffs_2D, taylor_2D, atol=1e-2)
 
-
+@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
 def test_taylor_coeffs_dipole():
     expected_coeffs_x_arr = [
         np.array(
