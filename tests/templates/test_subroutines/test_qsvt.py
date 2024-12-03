@@ -641,7 +641,6 @@ def test_global_phase_not_alway_applied():
         assert not isinstance(op, qml.GlobalPhase)
 
 
-
 class Testqsvt:
     """Test the qml.qsvt function."""
 
@@ -855,7 +854,6 @@ class Testqsvt:
         jitted_circuit = jax.jit(circuit)
         jitted_output = jitted_circuit(jnp.array(A))
         assert jnp.allclose(not_jitted_output, jitted_output)
-
 
 
 class TestRootFindingSolver:

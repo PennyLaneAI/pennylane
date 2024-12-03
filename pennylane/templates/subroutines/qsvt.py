@@ -750,7 +750,6 @@ def _compute_qsp_angle(poly_coeffs):
     num_terms = polynomial_matrix.shape[1]
     rotation_angles = np.zeros(num_terms)
 
-
     # Adaptation of Algorithm 1 of [arXiv:2308.01501]
     with qml.QueuingManager.stop_recording():
         for idx in range(num_terms - 1, -1, -1):
@@ -917,7 +916,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
 
             output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
             expected = sum(coef * (x**i) for i, coef in enumerate(poly))
-            
+
             print("output qsvt: ", output.real)
             print("P(x) =       ", expected)
 
