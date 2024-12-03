@@ -768,7 +768,6 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
         name (str): an optional name for the instance
-        **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
     
     Returns:
         Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of 
@@ -811,9 +810,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
     """
 
     @wraps(qfunc)
-    def wrapper(*args, **kwargs):
-        time = args[0]
-        other_args = args[1:]
+    def wrapper(time, *args, **kwargs):
         return TrotterizedQfunc(
             time, *other_args, qfunc=qfunc, n=n, order=order, reverse=reverse, name=name, **kwargs
         )
@@ -833,13 +830,11 @@ def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kw
         list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        with qml.tape.QuantumTape() as tape:
-            qfunc(time, *qfunc_args, wires=wires, **qfunc_kwargs)
+        tape = qml.tape.make_qscript(qfunc)(time, *qfunc_args, wires=wires, **qfunc_kwargs)
         return tape.operations[::-1] if reverse else tape.operations
 
     if order == 2:
-        with qml.tape.QuantumTape() as tape:
-            qfunc(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
+        tape = qml.tape.make_qscript(qfunc)(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
         return (
             tape.operations[::-1] + tape.operations
             if reverse
