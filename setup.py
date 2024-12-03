@@ -26,6 +26,7 @@ requirements = [
     "networkx",
     "rustworkx>=0.14.0",
     "autograd",
+    "toml",
     "tomli",
     "appdirs",
     "autoray>=0.6.11",
