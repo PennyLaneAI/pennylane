@@ -52,8 +52,8 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
     Resources:
-        The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation for 
-        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper, in 
+        The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation for
+        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper, in
         combination with the following identity:
 
         .. math::
@@ -64,7 +64,7 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
             \end{align}
 
         Specifically, the resources are given by one :code:`RZ` gate and a cascade of :math:`2 * (n - 1)`
-        :code:`CNOT` gates where :math:`n` is the number of qubits the gate acts on. Additionally, for 
+        :code:`CNOT` gates where :math:`n` is the number of qubits the gate acts on. Additionally, for
         each :code:`X` gate in the Pauli word we conjugate by a :code:`Hadamard` gate, and for each
         :code:`Y` gate in the Pauli word we conjugate by :code:`Hadamard` and :code:`S` gates.
 
