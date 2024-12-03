@@ -253,6 +253,16 @@ class TestResourcePow:
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
 
+    @pytest.mark.parametrize("op", pow_ops)
+    def test_tracking(self, op):
+        """Test that adjoints can be tracked."""
+        tracking_name = op.tracking_name_from_op()
+
+        expected = re.Resources(gate_types={tracking_name: 1})
+        gate_set = {tracking_name}
+
+        assert re.get_resources(op, gate_set=gate_set) == expected
+
     @pytest.mark.parametrize(
         "nested_op, expected_op",
         [
