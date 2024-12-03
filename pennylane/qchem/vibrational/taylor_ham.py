@@ -173,11 +173,7 @@ def _fit_twobody(pes_twomode, deg, min_deg=3):
 
     for i1 in range(nmodes):
         for i2 in range(i1):
-            Y = []
-            for idx in range(num_2D):
-                idx_q1 = idx1[idx]
-                idx_q2 = idx2[idx]
-                Y.append(pes_twomode[i1, i2, idx_q1, idx_q2])
+            Y = pes_twomode[i1, i2, idx1, idx2]
             poly2D_reg_model = LinearRegression()
             poly2D_reg_model.fit(features, Y)
             coeffs[i1, i2, :] = poly2D_reg_model.coef_
