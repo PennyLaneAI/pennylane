@@ -264,12 +264,20 @@ class TransformInterpreter(PlxprInterpreter):
 
         """
         invals = [self.read(invar) for invar in eqn.invars]
+        for inval in invals:
+            if isinstance(inval, qml.operation.Operator):
+                self._env.pop(id(inval))
 
-        # We only wrap inputs in tracers if interpreting PennyLane primitive,
-        # and, thus, only transform those primitives.
+        traced_invals = [self.read_with_trace(inval) for inval in invals]
         if isinstance(eqn.outvars[0], jax.core.DropVar):
-            invals = [self.read_with_trace(inval) for inval in invals]
-        return eqn.primitive.bind(*invals, **eqn.params)
+            return eqn.primitive.bind(*traced_invals, **eqn.params)
+
+        with qml.QueuingManager.stop_recording():
+            op = eqn.primitive.impl(*invals, **eqn.params)
+
+        # TODO: Add comment about why this was added
+        self._env[id(op)] = (traced_invals, eqn.params)
+        return op
 
     def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
@@ -281,8 +289,18 @@ class TransformInterpreter(PlxprInterpreter):
 
         """
         invals = [self.read(invar) for invar in eqn.invars]
-        invals = [self.read_with_trace(inval) for inval in invals]
-        return eqn.primitive.bind(*invals, **eqn.params)
+        traced_invals = []
+        for inval in invals:
+            # TODO: Add info about why this was added
+            if isinstance(inval, qml.operation.Operator):
+                # pylint: disable=protected-access
+                op_tracers, op_params = self._env[id(inval)]
+                new_inval = inval._primitive.bind(*op_tracers, **op_params)
+                traced_invals.append(self.read_with_trace(new_inval))
+                continue
+            traced_invals.append(self.read_with_trace(inval))
+
+        return eqn.primitive.bind(*traced_invals, **eqn.params)
 
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
         """Evaluate a jaxpr.
