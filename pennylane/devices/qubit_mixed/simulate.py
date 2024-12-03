@@ -21,7 +21,6 @@ from .measure import measure
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
-    None: None,
     "numpy": "numpy",
     "autograd": "autograd",
     "jax": "jax",
@@ -62,7 +61,9 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+    state = create_initial_state(
+        sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface] if interface else None
+    )
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
