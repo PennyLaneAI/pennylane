@@ -149,14 +149,14 @@ are automatically *excluded* from the AutoGraph conversion.
             y = x ** 3
         return y
 
-    @qjit(autograph=True)
     def g(x, n):
         for i in range(n):
             x = x + f(x)
         return x
 
->>> g(0.4, 6)
-Array(22.14135448, dtype=float64)
+>>> plxpr = make_plxpr(g)(0.0, 1)  # initialize with arguments of correct type and shape
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.4, 6)
+[Array(22.14135448, dtype=float64)]
 
 
 If statements
@@ -183,30 +183,13 @@ from each branch:
 
 This will generate the following error:
 
->>> qjit(autograph=True)(f)
-TypeError: Conditional requires a consistent array shape per result across all branches!
-Got () for result #1 but expected (2,).
+>>> make_plxpr(f)(0)
+ValueError: Mismatch in output abstract values in false branch #0 at position 1:
+ShapedArray(int64[], weak_type=True) vs ShapedArray(int64[2])
 
 Another example is the use of different *structure* across branches. The structure of a function
 output is defined by things like the number of results, the containers used like lists or
-dictionaries, or more generally any (compile-time) PyTree metadata. For PennyLane, this means
-returning different observables for example is not supported, as the observable class is
-compile-time information:
-
-.. code-block:: python
-
-    @qml.qnode(qml.device("lightning.qubit", wires=1))
-    def f(switch: bool):
-
-        if switch:
-            return qml.expval(qml.PauliY(0))
-
-        return qml.expval(qml.PauliZ(0))
-
->>> qjit(autograph=True)(f)
-TypeError: Conditional requires a consistent return structure across all branches!
-Got PyTreeDef((*, CustomNode(ExpectationMP[(('wires', None),)], [CustomNode(PauliZ[(<Wires = [0]>, ())], []), None])))
-and PyTreeDef((*, CustomNode(ExpectationMP[(('wires', None),)], [CustomNode(PauliY[(<Wires = [0]>, ())], []), None]))).
+dictionaries, or more generally any (compile-time) PyTree metadata.
 
 Different branches must assign the same type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -219,45 +202,34 @@ may be different, since data type promotion is applied across branches.
 In particular, this requires that if an external variable is assigned an array in one
 branch, other branches must also assign arrays of the same shape:
 
->>> @qjit(autograph=True)
-... def f(x):
+>>> def f(x):
 ...     if x > 1:
 ...         y = jnp.array([0.1, 0.2])
 ...     else:
 ...         y = jnp.array([0.4, 0.5, -0.1])
 ...     return jnp.sum(y)
->>> f(0.5)
-AssertionError: Expected matching shapes
->>> @qjit(autograph=True)
-... def f(x):
+>>> make_plxpr(f)(0.5)
+ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(float64[3]) vs ShapedArray(float64[2])s
+>>> def f(x):
 ...     if x > 1:
 ...         y = jnp.array([0.1, 0.2, 0.3])
 ...     else:
 ...         y = jnp.array([0.4, 0.5, -0.1])
 ...     return jnp.sum(y)
->>> f(0.5)
-Array(0.8, dtype=float64)
+>>> plxpr = make_plxpr(f)(0.5)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
+[Array(0.8, dtype=float64)]
 
 More generally, this also applies to common container classes such as
 ``dict``, ``list``, and ``tuple``. If one branch assigns an external variable,
 then all other branches must also assign the external variable with the same
 type, nested structure, number of elements, element types, and array shapes.
 
->>> @qjit(autograph=True)
-... def f(x):
-...     if x > 1:
-...         y = {"a": jnp.array([0.1, 0.2, 0.3]), "b": 6}
-...     else:
-...         y = {"a": jnp.array([0.5, 0., -0.2]), "b": -1}
-...     return y
->>> f(1.5)
-{'a': Array([0.1, 0.2, 0.3], dtype=float64), 'b': Array(6, dtype=int64)}
-
 Automatic data type promotion in branches
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Different branches of an if statement may assign external variables with different data types (dtypes) ---
-Catalyst will automatically perform data type promotion (such as converting integers to floats):
+PennyLane will automatically perform data type promotion (such as converting integers to floats):
 
 >>> @qjit(autograph=True)
 ... def f(x):
