@@ -222,16 +222,14 @@ class TestBroadcasting:
         return np.stack(states)
 
     @staticmethod
-    def get_quantum_script(x, shots=None, extra_wire=False):
+    def get_quantum_script(x, wire=0, shots=None, extra_wire=False):
         """Gets quantum script of a circuit that includes parameter broadcasted operations and measurements."""
-        # Use consistent wire ordering for the mapping test
-        wire_list = [0, 1, 2] if extra_wire else [0, 1]
 
-        ops = [qml.RX(x, wires=wire_list[0])]
-        measurements = [qml.expval(qml.PauliY(wire_list[0])), qml.expval(qml.PauliZ(wire_list[0]))]
+        ops = [qml.RX(x, wires=wire)]
+        measurements = [qml.expval(qml.PauliY(wire)), qml.expval(qml.PauliZ(wire))]
         if extra_wire:
             # Add measurement on the last wire for the extra wire case
-            measurements.insert(0, qml.expval(qml.PauliY(wire_list[-1])))
+            measurements.insert(0, qml.expval(qml.PauliY(wire + 2)))
 
         return qml.tape.QuantumScript(ops, measurements, shots=shots)
 
@@ -264,6 +262,9 @@ class TestBroadcasting:
         qs = self.get_quantum_script(x, extra_wire=True)
         res = simulate(qs)
 
+        # Supoosed to be: three values, one for each measurement, see
+        # `get_quantum_script`. Each value is a vector of length 4, same as the
+        # length of x.
         assert isinstance(res, tuple)
         assert len(res) == 3
         assert np.allclose(res[0], np.zeros_like(x))
