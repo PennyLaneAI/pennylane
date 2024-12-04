@@ -25,51 +25,6 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
-BOHR_TO_ANG = 0.5291772106  # Factor to convert bohr to angstrom
-
-
-@dataclass
-class VibrationalPES:
-    r"""Data class to save potential energy surface information computed along vibrational normal modes.
-
-    Args:
-        freqs (list[float]): normal-mode frequencies
-        grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
-        gauss_weights (list[float]): the weights on the Gauss-Hermite quadrature grid
-        uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
-        pes_data (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode PES
-        dipole_data (list[TensorLike[float]]): tuple containing one-mode, two-mode and three-mode dipole
-        localized (bool): Flag that localization of modes was used to generate PES and dipole. Default is ``True``.
-        dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
-            1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-            value is 2.
-
-    """
-
-    def __init__(
-        self,
-        freqs,
-        grid,
-        gauss_weights,
-        uloc,
-        pes_data,
-        dipole_data,
-        localized=True,
-        dipole_level=2,
-    ):
-        self.freqs = freqs
-        self.grid = grid
-        self.gauss_weights = gauss_weights
-        self.uloc = uloc
-        self.pes_onemode = pes_data[0]
-        self.pes_twomode = pes_data[1]
-        self.pes_threemode = pes_data[2] if len(pes_data) > 2 else None
-        self.dipole_onemode = dipole_data[0]
-        self.dipole_twomode = dipole_data[1] if dipole_level >= 2 else None
-        self.dipole_threemode = dipole_data[2] if dipole_level >= 3 else None
-        self.localized = localized
-        self.dipole_level = dipole_level
-
 
 @dataclass
 class VibrationalPES:
