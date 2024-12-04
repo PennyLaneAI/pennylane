@@ -56,16 +56,15 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
-        This transform will raise an error if it encounters non-commuting terms. To avoid non-commuting terms in
-        circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>` transform
-        can be applied.
+        An error will be raised if non-commuting terms are encountered. To avoid non-commuting
+        terms in circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>`
+        transform can be applied.
 
-    .. note::
         This transform will diagonalize what it can, i.e., ``qml.X``, ``qml.Y``, ``qml.Z``,
         ``qml.Hadamard``, ``qml.Identity``, or a linear combination of them. Any unrecognized
         observable will not raise an error, deferring to the device's validation for supported
         measurements later on. Lastly, if ``diagonalize_measurements`` produces additional gates
-        that the device does not support, the :func:`~pennylane.devices.preprocess.decompose``
+        that the device does not support, the :func:`~pennylane.devices.preprocess.decompose`
         transform should be applied to ensure that the additional gates are decomposed to those
         that the device supports.
 
@@ -108,8 +107,21 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     .. details::
         :title: Usage Details
 
-        The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes X, Y, Z,
-        and Hadamard.
+        The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes
+        X, Y, Z, and Hadamard. Any other observable will be unaffected:
+
+        .. code-block:: python3
+
+            measurements = [
+                qml.expval(qml.X(0) + qml.Hermitian([[1, 0], [0, 1]], wires=[1]))
+            ]
+            tape = qml.tape.QuantumScript(measurements=measurements)
+            tapes, processsing_fn = diagnalize_measurements(tape)
+
+        >>> tapes[0].operations
+        [H(0)]
+        >>> tapes[0].measurements
+        [expval(Z(0) + Hermitian(array([[1, 0], [0, 1]]), wires=[1]))]
 
         The transform can also diagonalize only a subset of these operators. By default, the only
         supported base observable is Z. What if a backend device can handle
