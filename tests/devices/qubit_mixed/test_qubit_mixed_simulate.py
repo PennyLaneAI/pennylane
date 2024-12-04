@@ -92,9 +92,9 @@ class TestBasicCircuit:
 
         # For density matrix simulation of RX(phi), the expectations are:
         expected_measurements = (
-            0,  # <X> appears to be 0 in density matrix formalism
-            -np.sin(phi),  # <Y> has negative sign
-            np.cos(phi),  # <Z> is correct
+            0,
+            -np.sin(phi),
+            np.cos(phi),
         )
 
         assert isinstance(result, tuple)
@@ -105,7 +105,6 @@ class TestBasicCircuit:
         state, is_state_batched = get_final_state(qs)
         result = measure_final_state(qs, state, is_state_batched)
 
-        # For RX rotation in density matrix form - note flipped signs
         expected_state = np.array(
             [
                 [np.cos(phi / 2) ** 2, 0.5j * np.sin(phi)],
@@ -127,11 +126,11 @@ class TestBasicCircuit:
             return qml.numpy.array(simulate(qs))
 
         result = f(phi)
-        expected = (0, -np.sin(phi), np.cos(phi))  # Note negative sin
+        expected = (0, -np.sin(phi), np.cos(phi))
         assert qml.math.allclose(result, expected)
 
         g = qml.jacobian(f)(phi)
-        expected = (0, -np.cos(phi), -np.sin(phi))  # Note negative derivatives
+        expected = (0, -np.cos(phi), -np.sin(phi))
         assert qml.math.allclose(g, expected)
 
     @pytest.mark.jax
@@ -150,11 +149,11 @@ class TestBasicCircuit:
             f = jax.jit(f)
 
         result = f(phi)
-        expected = (0, -np.sin(phi), np.cos(phi))  # Adjusted expectations
+        expected = (0, -np.sin(phi), np.cos(phi))
         assert qml.math.allclose(result, expected)
 
         g = jax.jacobian(f)(phi)
-        expected = (0, -np.cos(phi), -np.sin(phi))  # Adjusted gradients
+        expected = (0, -np.cos(phi), -np.sin(phi))
         assert qml.math.allclose(g, expected)
 
     @pytest.mark.torch
@@ -188,7 +187,7 @@ class TestBasicCircuit:
         phi = tf.Variable(4.873)
 
         with tf.GradientTape(persistent=True) as grad_tape:
-            qs = self.get_quantum_script(phi, subspace)  # Fixed: using phi instead of x
+            qs = self.get_quantum_script(phi, subspace)
             result = simulate(qs)
 
         expected = (0, -np.sin(float(phi)), np.cos(float(phi)))
