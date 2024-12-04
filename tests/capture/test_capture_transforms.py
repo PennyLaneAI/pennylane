@@ -267,6 +267,12 @@ class TestTransformTracer:
         tracer = TransformTracer(trace, 0, 0)
         assert qml.math.is_abstract(tracer)
 
+    def test_transform_tracer_interface(self):
+        """Test that a TransformTracer belongs to the "jax" interface."""
+        _, _, trace = init_test_variables()
+        tracer = trace.pure(0)
+        assert qml.math.get_interface(tracer) == "jax"
+
     @pytest.mark.parametrize(
         "val, expected_aval",
         [
@@ -512,7 +518,7 @@ class TestTransformInterpreter:
 
         interpreter = TransformInterpreter(program)
         assert interpreter._trace is None
-        assert interpreter._state == {}
+        assert interpreter._state == [{}] * (len(program) + 1)
         assert interpreter._transform_program == program
 
     def test_cleanup(self):
@@ -525,7 +531,7 @@ class TestTransformInterpreter:
 
         interpreter.cleanup()
         assert interpreter._trace is None
-        assert interpreter._state == {}
+        assert interpreter._state == [{}] * (len(program) + 1)
 
     def test_read_with_trace_already_boxed(self):
         """Test that values that are already boxed into tracers are not changed."""

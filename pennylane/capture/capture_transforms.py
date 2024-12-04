@@ -47,7 +47,7 @@ class TransformTrace(Trace):
     ):
         super().__init__(main, sublevel)
         self._transform_program = transform_program
-        self._state = state or {}
+        self._state = state or [{} for _ in range(len(self._transform_program) + 1)]
 
     def pure(self, val: Any):
         """Create a new ``TransformTracer``."""
@@ -78,15 +78,19 @@ class TransformTrace(Trace):
         )
 
         if idx >= len(self._transform_program) or not is_qml_primitive:
-            # Either all transforms have been applied or the primitive is not an operator or measurement
+            # Either all transforms have been applied or the primitive is not an
+            # operator or measurement
             tracers = [t.val if isinstance(t, TransformTracer) else t for t in tracers]
             return primitive.bind(*tracers, **params)
 
         transform: "qml.transforms.core.TransformContainer" = self._transform_program[idx]
+        # State includes local state that is specific to the transform, as well as
+        # global state provided by the interpreter
+        transform_state = (self._state[idx], self._state[-1])
         bind_fn = transform.plxpr_transform
         targs, tkwargs = transform.args, transform.kwargs
 
-        return bind_fn(primitive, tracers, params, targs, tkwargs, state=self.state)
+        return bind_fn(primitive, tracers, params, targs, tkwargs, state=transform_state)
 
 
 class TransformTracer(Tracer):
@@ -231,8 +235,10 @@ class TransformInterpreter(PlxprInterpreter):
 
     def __init__(self, transform_program: "qml.transforms.core.TransformProgram"):
         self._trace = None
-        self._state = {}
         self._transform_program = transform_program
+        # One "local" state dict for each transform, and an additional dict for a "global" state
+        # that transforms can use if needed
+        self._state = [{} for _ in range(len(self._transform_program) + 1)]
 
         super().__init__()
 
@@ -244,7 +250,8 @@ class TransformInterpreter(PlxprInterpreter):
         a Catalyst variant jaxpr.
         """
         self._trace = None
-        self._state = {}
+        # _state has separate dictionaries to store global states for each transform
+        self._state = [{} for _ in range(len(self._transform_program) + 1)]
 
     def read_with_trace(self, var):
         """Extract the value corresponding to a variable and box it in a ``TransformTracer``
@@ -264,10 +271,6 @@ class TransformInterpreter(PlxprInterpreter):
 
         """
         invals = [self.read(invar) for invar in eqn.invars]
-        for inval in invals:
-            if isinstance(inval, qml.operation.Operator):
-                self._env.pop(id(inval))
-
         traced_invals = [self.read_with_trace(inval) for inval in invals]
         if isinstance(eqn.outvars[0], jax.core.DropVar):
             return eqn.primitive.bind(*traced_invals, **eqn.params)
@@ -275,7 +278,9 @@ class TransformInterpreter(PlxprInterpreter):
         with qml.QueuingManager.stop_recording():
             op = eqn.primitive.impl(*invals, **eqn.params)
 
-        # TODO: Add comment about why this was added
+        # This is used for binding operators that are consumed by measurements. By saving the
+        # operator to the environment, we can use it when interpreting measurement primitives
+        # to transform observables differently than gates.
         self._env[id(op)] = (traced_invals, eqn.params)
         return op
 
@@ -291,11 +296,17 @@ class TransformInterpreter(PlxprInterpreter):
         invals = [self.read(invar) for invar in eqn.invars]
         traced_invals = []
         for inval in invals:
-            # TODO: Add info about why this was added
+            # The following branch is added because we want observables to get transformed.
+            # However, due to the logic used in `interpret_operator_eqn`, we only transform
+            # operators that do not get consumed by other primitives. So, we do the transforming
+            # (binding) here instead. The global state is updated with the "op_is_observable" key
+            # because transforms may want special handling for observables of measurements.
             if isinstance(inval, qml.operation.Operator):
                 # pylint: disable=protected-access
                 op_tracers, op_params = self._env[id(inval)]
+                self._state[-1]["op_is_observable"] = True
                 new_inval = inval._primitive.bind(*op_tracers, **op_params)
+                self._state[-1].pop("op_is_observable")
                 traced_invals.append(self.read_with_trace(new_inval))
                 continue
             traced_invals.append(self.read_with_trace(inval))
