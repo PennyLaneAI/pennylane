@@ -9,7 +9,7 @@ pytest-forked>=1.4.0
 pytest-benchmark
 pytest-split
 black>=21
-tomli~=2.0.0 # Drop once minimum Python version is 3.11
+tomlkit~=0.13
 isort==5.13.2
 pylint==2.7.4
 rich>=13.7.1
