@@ -90,7 +90,12 @@ class TestBasicCircuit:
         qs = self.get_quantum_script(phi, wires)
         result = simulate(qs)
 
-        # For density matrix simulation of RX(phi), the expectations are:
+        # After applying RX(phi) to |0⟩, the state becomes:
+        # |ψ⟩ = cos(phi/2)|0⟩ - i sin(phi/2)|1⟩
+        # The expectation values are calculated as:
+        # ⟨X⟩ = ⟨ψ|X|ψ⟩ = 0
+        # ⟨Y⟩ = ⟨ψ|Y|ψ⟩ = -sin(phi)
+        # ⟨Z⟩ = ⟨ψ|Z|ψ⟩ = cos(phi)
         expected_measurements = (
             0,
             -np.sin(phi),
