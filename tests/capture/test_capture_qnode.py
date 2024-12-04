@@ -913,7 +913,7 @@ class TestQNodeVmapIntegration:
             assert len(eqn.outvars) == 1
             assert eqn.outvars[0].aval.shape == (3,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["arr"], y, 1)
         expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
         assert jax.numpy.allclose(result[0], expected)
         assert jax.numpy.allclose(result[1], expected)

@@ -206,7 +206,7 @@ def _get_qnode_prim():
         if batch_dims is None:
             return device.eval_jaxpr(qfunc_jaxpr, consts, *non_const_args)
         return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims[n_consts:])(
-            *jax.tree_util.tree_leaves(non_const_args)
+            *non_const_args
         )
 
     # pylint: disable=unused-argument
