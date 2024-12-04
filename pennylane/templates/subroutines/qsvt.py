@@ -20,6 +20,8 @@ import copy
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
+import warnings
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BlockEncode, PCPhase
@@ -120,6 +122,13 @@ def qsvt_legacy(A, angles, wires, convention=None):
     0: ─╭∏_ϕ(0.30)─╭BlockEncode(M0)─╭∏_ϕ(0.20)─╭BlockEncode(M0)†─╭∏_ϕ(0.10)─┤
     1: ─╰∏_ϕ(0.30)─╰BlockEncode(M0)─╰∏_ϕ(0.20)─╰BlockEncode(M0)†─╰∏_ϕ(0.10)─┤
     """
+
+    warnings.warn(
+        "`qml.qsvt_legacy` is deprecated and will be removed in version 0.41. "
+        "Instead, please use `qml.qsvt` functionality.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
         A = qml.math.reshape(A, [1, 1])
 
@@ -151,7 +160,7 @@ def qsvt_legacy(A, angles, wires, convention=None):
 
 
 # pylint: disable=too-many-branches
-def qsvt(A, poly, encoding_wires, block_encoding=None):
+def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
     r"""
     Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
     using a polynomial defined by ``poly`` and a block encoding specified by ``block_encoding``.
@@ -295,6 +304,13 @@ def qsvt(A, poly, encoding_wires, block_encoding=None):
              [-0.0056  0.     -0.0788  0.0164]
              [-0.0054 -0.      0.0164 -0.0842]]
     """
+
+    if encoding_wires is None or block_encoding is None or "wires" in kwargs.keys():
+        warnings.warn(
+            "You could be using the old `qsvt` functionality (now `qml.qsvt_legacy`). Make sure you pass a "
+            "polynomial instead of angles. Set a value for `block_encoding` if you want to silent this warning.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
     angles = qml.poly_to_angles(poly, "QSVT")
     projectors = []

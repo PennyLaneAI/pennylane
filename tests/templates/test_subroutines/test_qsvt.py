@@ -402,6 +402,11 @@ class TestQSVT:
 class Testqsvt_legacy:
     """Test the qml.qsvt_legacy function."""
 
+    def test_qsvt_legacy_deprecated(self):
+        """Test that my_feature is deprecated."""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
+            _ = qml.qsvt_legacy(0.3, [0.1, 0.2], [0])
+
     @pytest.mark.parametrize(
         ("A", "phis", "wires", "true_mat"),
         [
@@ -439,8 +444,9 @@ class Testqsvt_legacy:
         observable_mat = np.kron(qml.matrix(qml.PauliZ(0)), np.eye(2))
         true_expval = (np.conj(true_mat).T @ observable_mat @ true_mat)[0, 0]
 
-        assert np.isclose(circuit(), true_expval)
-        assert np.allclose(qml.matrix(circuit)(), true_mat)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
+            assert np.isclose(circuit(), true_expval)
+            assert np.allclose(qml.matrix(circuit)(), true_mat)
 
     @pytest.mark.parametrize(
         ("A", "phis", "wires", "result"),
@@ -474,7 +480,8 @@ class Testqsvt_legacy:
             qml.qsvt_legacy(A, phis, wires, convention="Wx")
             return qml.expval(qml.PauliZ(wires=0))
 
-        assert np.isclose(np.real(qml.matrix(circuit)())[0][0], result, rtol=1e-3)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
+            assert np.isclose(np.real(qml.matrix(circuit)())[0][0], result, rtol=1e-3)
 
     @pytest.mark.parametrize(
         ("A", "phis", "wires", "result"),
@@ -501,11 +508,13 @@ class Testqsvt_legacy:
     )
     def test_matrix_wx(self, A, phis, wires, result):
         """Assert that the matrix method produces the expected result using both call signatures."""
-        m1 = qml.matrix(qml.qsvt_legacy(A, phis, wires, convention="Wx"))
-        m2 = qml.matrix(qml.qsvt_legacy, wire_order=wires)(A, phis, wires, convention="Wx")
 
-        assert np.isclose(np.real(m1[0, 0]), result, rtol=1e-3)
-        assert np.allclose(m1, m2)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
+            m1 = qml.matrix(qml.qsvt_legacy(A, phis, wires, convention="Wx"))
+            m2 = qml.matrix(qml.qsvt_legacy, wire_order=wires)(A, phis, wires, convention="Wx")
+
+            assert np.isclose(np.real(m1[0, 0]), result, rtol=1e-3)
+            assert np.allclose(m1, m2)
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -516,15 +525,16 @@ class Testqsvt_legacy:
         """Test that the qsvt_legacy function matrix is correct for torch."""
         import torch
 
-        default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
+            default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
 
-        input_matrix = torch.tensor(input_matrix, dtype=float)
-        angles = torch.tensor(angles, dtype=float)
+            input_matrix = torch.tensor(input_matrix, dtype=float)
+            angles = torch.tensor(angles, dtype=float)
 
-        op = qml.qsvt_legacy(input_matrix, angles, wires)
+            op = qml.qsvt_legacy(input_matrix, angles, wires)
 
-        assert np.allclose(qml.matrix(op), default_matrix)
-        assert qml.math.get_interface(qml.matrix(op)) == "torch"
+            assert np.allclose(qml.matrix(op), default_matrix)
+            assert qml.math.get_interface(qml.matrix(op)) == "torch"
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -535,15 +545,17 @@ class Testqsvt_legacy:
         """Test that the qsvt_legacy function matrix is correct for jax."""
         import jax.numpy as jnp
 
-        default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
 
-        input_matrix = jnp.array(input_matrix)
-        angles = jnp.array(angles)
+            default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
 
-        op = qml.qsvt_legacy(input_matrix, angles, wires)
+            input_matrix = jnp.array(input_matrix)
+            angles = jnp.array(angles)
 
-        assert np.allclose(qml.matrix(op), default_matrix)
-        assert qml.math.get_interface(qml.matrix(op)) == "jax"
+            op = qml.qsvt_legacy(input_matrix, angles, wires)
+
+            assert np.allclose(qml.matrix(op), default_matrix)
+            assert qml.math.get_interface(qml.matrix(op)) == "jax"
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
@@ -554,15 +566,17 @@ class Testqsvt_legacy:
         """Test that the qsvt_legacy function matrix is correct for tensorflow."""
         import tensorflow as tf
 
-        default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
 
-        input_matrix = tf.Variable(input_matrix)
-        angles = tf.Variable(angles)
+            default_matrix = qml.matrix(qml.qsvt_legacy(input_matrix, angles, wires))
 
-        op = qml.qsvt_legacy(input_matrix, angles, wires)
+            input_matrix = tf.Variable(input_matrix)
+            angles = tf.Variable(angles)
 
-        assert np.allclose(qml.matrix(op), default_matrix)
-        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
+            op = qml.qsvt_legacy(input_matrix, angles, wires)
+
+            assert np.allclose(qml.matrix(op), default_matrix)
+            assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
 
     def test_qsvt_grad(self):
         """Test that qml.grad results are the same as finite difference results"""
@@ -576,32 +590,34 @@ class Testqsvt_legacy:
             )
             return qml.expval(qml.PauliZ(wires=0))
 
-        A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
-        phis = np.array([0.1, 0.2, 0.3], dtype=complex, requires_grad=True)
-        y = circuit(A, phis)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
 
-        mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
+            A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
+            phis = np.array([0.1, 0.2, 0.3], dtype=complex, requires_grad=True)
+            y = circuit(A, phis)
 
-        diff = 1e-8
+            mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
 
-        manual_mat_results = [
-            (circuit(A + np.array([[diff, 0], [0, 0]]), phis) - y) / diff,
-            (circuit(A + np.array([[0, diff], [0, 0]]), phis) - y) / diff,
-            (circuit(A + np.array([[0, 0], [diff, 0]]), phis) - y) / diff,
-            (circuit(A + np.array([[0, 0], [0, diff]]), phis) - y) / diff,
-        ]
+            diff = 1e-8
 
-        for idx, result in enumerate(manual_mat_results):
-            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-6)
+            manual_mat_results = [
+                (circuit(A + np.array([[diff, 0], [0, 0]]), phis) - y) / diff,
+                (circuit(A + np.array([[0, diff], [0, 0]]), phis) - y) / diff,
+                (circuit(A + np.array([[0, 0], [diff, 0]]), phis) - y) / diff,
+                (circuit(A + np.array([[0, 0], [0, diff]]), phis) - y) / diff,
+            ]
 
-        manual_phi_results = [
-            (circuit(A, phis + np.array([diff, 0, 0])) - y) / diff,
-            (circuit(A, phis + np.array([0, diff, 0])) - y) / diff,
-            (circuit(A, phis + np.array([0, 0, diff])) - y) / diff,
-        ]
+            for idx, result in enumerate(manual_mat_results):
+                assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-6)
 
-        for idx, result in enumerate(manual_phi_results):
-            assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
+            manual_phi_results = [
+                (circuit(A, phis + np.array([diff, 0, 0])) - y) / diff,
+                (circuit(A, phis + np.array([0, diff, 0])) - y) / diff,
+                (circuit(A, phis + np.array([0, 0, diff])) - y) / diff,
+            ]
+
+            for idx, result in enumerate(manual_phi_results):
+                assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
 
 
 phase_angle_data = (
@@ -634,15 +650,24 @@ def test_private_qsp_to_qsvt_jax(initial_angles, expected_angles):
 def test_global_phase_not_alway_applied():
     """Test that the global phase is not applied if it is 0"""
 
-    decomposition = qml.qsvt_legacy(
-        [1], [0, 1, 2, 3, 4], wires=[0], convention="Wx"
-    ).decomposition()
-    for op in decomposition:
-        assert not isinstance(op, qml.GlobalPhase)
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="`qml.qsvt_legacy` is deprecated"):
+
+        decomposition = qml.qsvt_legacy(
+            [1], [0, 1, 2, 3, 4], wires=[0], convention="Wx"
+        ).decomposition()
+        for op in decomposition:
+            assert not isinstance(op, qml.GlobalPhase)
 
 
 class Testqsvt:
     """Test the qml.qsvt function."""
+
+    def test_qsvt_warning(self):
+        """Test that qsvt through warning."""
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="You could be using the old `qsvt`"
+        ):
+            qml.qsvt([[0.1, 0.2], [0.2, -0.1]], [0.1, 0, 0.1], [0, 1, 2])
 
     @pytest.mark.parametrize(
         ("A", "poly", "block_encoding", "encoding_wires"),

@@ -149,7 +149,8 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
-* The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`.
+* The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`
+  and it will be deprecated in release v0.40.
   [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
 
 <h4>Other Improvements</h4>
