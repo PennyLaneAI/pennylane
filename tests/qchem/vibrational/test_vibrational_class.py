@@ -99,12 +99,12 @@ def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            np.array([[0.0, 0.0, 0.07497201], [0.0, 0.0, 1.81475336]]),
+            np.array([[0.0, 0.0, 0.03967348], [0.0, 0.0, 0.96032612]]),
         ),
         (
             ["C", "O"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            np.array([[0.0, 0.0, -0.12346543], [0.0, 0.0, 2.0131908]]),
+            np.array([[0.0, 0.0, -0.06533509], [0.0, 0.0, 1.06533469]]),
         ),
     ],
 )
@@ -113,8 +113,8 @@ def test_optimize_geometry(sym, geom, expected_geom):
     r"""Test that correct optimized geometry is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
-    mol_eq = vibrational.optimize_geometry(mol)
-    assert np.allclose(mol_eq.coordinates, expected_geom)
+    coordinates = vibrational.optimize_geometry(mol)
+    assert np.allclose(coordinates, expected_geom)
 
 
 @pytest.mark.parametrize(
@@ -137,7 +137,15 @@ def test_optimize_geometry(sym, geom, expected_geom):
 def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
-    mol_eq = vibrational.optimize_geometry(mol)
+    geom_eq = vibrational.optimize_geometry(mol)
+    mol_eq = qml.qchem.Molecule(
+        mol.symbols,
+        geom_eq,
+        unit=mol.unit,
+        basis_name=mol.basis_name,
+        load_data=mol.load_data,
+    )
+
     scf_result = vibrational_class._single_point(mol_eq)
 
     _, displ_vecs = vibrational_class._harmonic_analysis(scf_result)

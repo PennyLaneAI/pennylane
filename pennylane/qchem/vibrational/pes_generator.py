@@ -822,8 +822,19 @@ def vibrational_pes(
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-    molecule = optimize_geometry(molecule, method)
-    scf_result = _single_point(molecule, method)
+    geom_eq = optimize_geometry(molecule, method)
+
+    mol_eq = qml.qchem.Molecule(
+        molecule.symbols,
+        geom_eq,
+        unit=molecule.unit,
+        basis_name=molecule.basis_name,
+        charge=molecule.charge,
+        mult=molecule.mult,
+        load_data=molecule.load_data,
+    )
+
+    scf_result = _single_point(mol_eq, method)
 
     freqs = None
     uloc = None
@@ -844,7 +855,7 @@ def vibrational_pes(
 
     dipole = True
     pes_onebody, dipole_onebody = _pes_onemode(
-        molecule, scf_result, freqs, vectors, grid, method=method, dipole=dipole
+        mol_eq, scf_result, freqs, vectors, grid, method=method, dipole=dipole
     )
     comm.Barrier()
 
@@ -853,7 +864,7 @@ def vibrational_pes(
         dipole = False
 
     pes_twobody, dipole_twobody = _pes_twomode(
-        molecule,
+        mol_eq,
         scf_result,
         freqs,
         vectors,
@@ -873,7 +884,7 @@ def vibrational_pes(
             dipole = False
 
         pes_threebody, dipole_threebody = _pes_threemode(
-            molecule,
+            mol_eq,
             scf_result,
             freqs,
             vectors,
