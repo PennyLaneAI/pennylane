@@ -14,7 +14,6 @@
 r"""
 Contains the Superposition template.
 """
-import numpy as np
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -186,7 +185,9 @@ class Superposition(Operation):
     grad_method = None
     ndim_params = (1,)
 
-    def __init__(self, coeffs, basis, wires, work_wire, id=None):
+    def __init__(
+        self, coeffs, basis, wires, work_wire, id=None
+    ):  # pylint: disable=too-many-arguments
 
         self.hyperparameters["basis"] = tuple(tuple(b) for b in basis)
         self.hyperparameters["target_wires"] = qml.wires.Wires(wires)
@@ -246,7 +247,7 @@ class Superposition(Operation):
 
         """
 
-        dic_state = {b: c for b, c in zip(basis, coefs)}
+        dic_state = dict(zip(basis, coefs))
         perms = _get_permutation(basis)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
