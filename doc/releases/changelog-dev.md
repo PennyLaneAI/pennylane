@@ -121,6 +121,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   * Implemented helper functions for geometry optimization, harmonic analysis,
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
   * Implemented helper functions for calculating one-mode PES, two-mode PES, and
     three-mode PES.
     [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
@@ -155,6 +156,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
   [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
+  [(#6668)](https://github.com/PennyLaneAI/pennylane/pull/6668)
 
 * `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
   pennylane variant jaxpr.
