@@ -43,7 +43,7 @@ def test_mcm_config_default_values():
 
 def test_invalid_interface():
     """Tests that unknown frameworks raise a ValueError."""
-    with pytest.raises(ValueError, match="interface must be in"):
+    with pytest.raises(ValueError, match="Interface must be in"):
         _ = ExecutionConfig(interface="nonsense")
 
 

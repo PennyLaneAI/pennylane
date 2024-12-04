@@ -24,8 +24,9 @@ from numpy import float64  # pylint:disable=wrong-import-order
 import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
+from .interface_utils import get_interface
 from .matrix_manipulation import _permute_dense_matrix
-from .multi_dispatch import diag, dot, einsum, get_interface, scatter_element_add
+from .multi_dispatch import diag, dot, einsum, scatter_element_add
 from .utils import allclose, cast, cast_like, convert_like, is_abstract
 
 ABC_ARRAY = np.array(list(ABC))
