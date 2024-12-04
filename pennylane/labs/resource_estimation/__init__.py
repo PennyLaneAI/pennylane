@@ -74,7 +74,6 @@ Operators
     ~ResourceIsingZZ
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
-    ~ResourceMultiControlledX
     ~ResourcePauliRot
     ~ResourcePhaseShift
     ~ResourcePow
