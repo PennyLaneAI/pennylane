@@ -18,7 +18,7 @@ import pytest
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
-pytestmark = [pytest.mark.jax, pytest.mark.usefixture("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
 def test_requires_wires():

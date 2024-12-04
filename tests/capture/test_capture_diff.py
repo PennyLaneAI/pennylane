@@ -471,7 +471,6 @@ class TestJacobian:
         manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
         assert _jac_allclose(manual_eval_2, expected_2, 1, atol=atol)
 
-
     @pytest.mark.parametrize(
         "diff_method", ("backprop", pytest.param("parameter-shift", marks=pytest.mark.xfail))
     )
