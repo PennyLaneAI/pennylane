@@ -175,6 +175,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 <h4>Other Improvements</h4>
 
+* Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
+  [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
+
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
