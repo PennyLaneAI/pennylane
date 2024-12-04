@@ -116,6 +116,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   * Implemented helper functions for geometry optimization, harmonic analysis,
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
   * Implemented helper functions for calculating one-mode PES, two-mode PES, and
     three-mode PES.
     [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
@@ -169,8 +170,11 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 <h4>Other Improvements</h4>
 
-* Standardized supported interfaces to an internal Enum object. 
+* Standardize supported interfaces to an internal Enum object. 
   [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
+
+* Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
+  [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
 
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
