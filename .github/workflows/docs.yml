@@ -39,7 +39,7 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     steps:
     - uses: actions/checkout@v4
-    - uses: andrijapau/sphinx-action@update-python-version
+    - uses: PennyLaneAI/sphinx-action@master
       with:
         docs-folder: "doc/"
         pre-build-command: >
