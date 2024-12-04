@@ -43,6 +43,11 @@
     >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
     True
     ```
+    
+  * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms` 
+    are added to the device API for devices that provides a TOML configuration file and thus have 
+    a `capabilities` property.
+    [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
@@ -60,6 +65,11 @@
 
 * Added utility functions for handling dense matrices in the Lie theory context.
   [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
+
+* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
+added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
 
 <h4>New API for Qubit Mixed</h4>
@@ -80,20 +90,18 @@
   [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
 
 * Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
-  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6507)
+  [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
 
-* Support is added for `if`/`else` statements and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`.
+* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
+  [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
+
+* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`
   [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
+  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
-
-* Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
-  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
-
-* Added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
-  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
 * The `qml.qchem.factorize` function now supports new methods for double factorization:
   Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
@@ -103,6 +111,18 @@
 * Added `qml.qchem.symmetry_shift` function to perform the
   [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
   [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
+
+* Added submodule for calculating vibrational Hamiltonians
+  * Implemented helper functions for geometry optimization, harmonic analysis,
+    and normal-mode localization.
+    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
+  * Implemented helper functions for calculating one-mode PES, two-mode PES, and
+    three-mode PES.
+    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+  * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
+    for storing the data.
+    [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
 
 <h3>Improvements 🛠</h3>
 
@@ -128,9 +148,13 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* PennyLane transforms can now be captured as primitives with experimental program capture enabled.
+  [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
+
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
   [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
+  [(#6668)](https://github.com/PennyLaneAI/pennylane/pull/6668)
 
 * `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
   pennylane variant jaxpr.
@@ -148,6 +172,9 @@
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
 <h4>Other Improvements</h4>
+
+* Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
+  [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
 
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
@@ -194,6 +221,12 @@
 
 * Added `ResourceOperator` classes for QFT and all operators in QFT's decomposition.
   [(#6447)](https://github.com/PennyLaneAI/pennylane/pull/6447)
+
+* Added native `ResourceOperator` subclasses for each of the controlled operators.
+  [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
+
+* Added native `ResourceOperator` subclasses for each of the multi qubit operators.
+  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
 
 <h3>Breaking changes 💔</h3>
 

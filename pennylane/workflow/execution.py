@@ -20,7 +20,7 @@ import inspect
 import logging
 from collections.abc import Callable
 from functools import partial
-from typing import Literal, Optional, Union, get_args
+from typing import Optional, Union
 from warnings import warn
 
 from cachetools import Cache
@@ -31,76 +31,10 @@ from pennylane.typing import ResultBatch
 
 from ._setup_transform_program import _setup_transform_program
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
+from .resolution import _resolve_interface
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-
-jpc_interfaces = {
-    "autograd",
-    "numpy",
-    "torch",
-    "jax",
-    "jax-jit",
-    "tf",
-}
-
-SupportedInterfaceUserInput = Literal[
-    None,
-    "auto",
-    "autograd",
-    "numpy",
-    "scipy",
-    "jax",
-    "jax-jit",
-    "jax-python",
-    "JAX",
-    "torch",
-    "pytorch",
-    "tf",
-    "tensorflow",
-    "tensorflow-autograph",
-    "tf-autograph",
-]
-
-_mapping_output = (
-    "numpy",
-    "auto",
-    "autograd",
-    "autograd",
-    "numpy",
-    "jax",
-    "jax-jit",
-    "jax",
-    "jax",
-    "torch",
-    "torch",
-    "tf",
-    "tf",
-    "tf-autograph",
-    "tf-autograph",
-)
-
-INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
-"""dict[str, str]: maps an allowed interface specification to its canonical name."""
-
-SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
-"""list[str]: allowed interface strings"""
-
-
-# pylint: disable=import-outside-toplevel
-def _use_tensorflow_autograph():
-    """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
-    try:  # pragma: no cover
-        import tensorflow as tf
-    except ImportError as e:  # pragma: no cover
-        raise qml.QuantumFunctionError(  # pragma: no cover
-            "tensorflow not found. Please install the latest "  # pragma: no cover
-            "version of tensorflow supported by Pennylane "  # pragma: no cover
-            "to enable the 'tensorflow' interface."  # pragma: no cover
-        ) from e  # pragma: no cover
-
-    return not tf.executing_eagerly()
 
 
 # pylint: disable=import-outside-toplevel
@@ -190,46 +124,6 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
         return transform_post_processing(results)
 
     return inner_execute
-
-
-def _get_interface_name(tapes, interface):
-    """Helper function to get the interface name of a list of tapes
-
-    Args:
-        tapes (list[.QuantumScript]): Quantum tapes
-        interface (Optional[str]): Original interface to use as reference.
-
-    Returns:
-        str: Interface name"""
-
-    if interface not in SUPPORTED_INTERFACE_NAMES:
-        raise qml.QuantumFunctionError(
-            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-        )
-
-    interface = INTERFACE_MAP[interface]
-
-    if interface == "auto":
-        params = []
-        for tape in tapes:
-            params.extend(tape.get_parameters(trainable_only=False))
-        interface = qml.math.get_interface(*params)
-        if interface != "numpy":
-            interface = INTERFACE_MAP.get(interface, None)
-    if interface == "tf" and _use_tensorflow_autograph():
-        interface = "tf-autograph"
-    if interface == "jax":
-        try:  # pragma: no cover
-            from .interfaces.jax import get_jax_interface_name
-        except ImportError as e:  # pragma: no cover
-            raise qml.QuantumFunctionError(  # pragma: no cover
-                "jax not found. Please install the latest "  # pragma: no cover
-                "version of jax to enable the 'jax' interface."  # pragma: no cover
-            ) from e  # pragma: no cover
-
-        interface = get_jax_interface_name(tapes)
-
-    return interface
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches, too-many-statements
@@ -386,7 +280,7 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
-    interface = _get_interface_name(tapes, interface)
+    interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {"jax", "jax-jit"}:
         grad_on_execution = grad_on_execution if isinstance(diff_method, Callable) else False
@@ -425,9 +319,9 @@ def execute(
     def inner_execute_with_empty_jac(tapes, **_):
         return inner_execute(tapes), []
 
-    if interface in jpc_interfaces:
-        execute_fn = inner_execute
-    else:
+    execute_fn = inner_execute
+
+    if interface == "tf-autograph":
         execute_fn = inner_execute_with_empty_jac
 
     #### Executing the configured setup #####
@@ -445,13 +339,13 @@ def execute(
         results = inner_execute(tapes)
         return post_processing(results)
 
-    if config.use_device_jacobian_product and interface in jpc_interfaces:
+    if config.use_device_jacobian_product and interface != "tf-autograph":
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
         jpc = DeviceDerivatives(device, config)
 
-        if interface in jpc_interfaces:
+        if interface != "tf-autograph":
             execute_fn = (
                 jpc.execute_and_cache_jacobian if config.grad_on_execution else inner_execute
             )
@@ -505,7 +399,7 @@ def execute(
         # within execute_and_gradients, so providing a diff_method
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
-    elif interface in jpc_interfaces:
+    elif interface != "tf-autograph":
         # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
         cache_full_jacobian = (interface == "autograd") and not cache
 
@@ -549,7 +443,7 @@ def execute(
         differentiable=max_diff > 1,
     )
 
-    if interface in jpc_interfaces:
+    if interface != "tf-autograph":
         results = ml_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg

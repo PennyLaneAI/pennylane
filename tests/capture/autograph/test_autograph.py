@@ -108,6 +108,7 @@ class TestPennyLaneTransformer:
 
         assert ag_fn_dict["if_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
         assert ag_fn_dict["while_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
+        assert ag_fn_dict["for_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
         assert (
             ag_fn_dict["converted_call"].__module__ == "pennylane.capture.autograph.ag_primitives"
         )
@@ -328,7 +329,6 @@ class TestIntegration:
         assert check_cache(fn)
         assert check_cache(inner)
 
-    @pytest.mark.xfail(reason="decorated transforms are not applied yet with capture enabled")
     def test_tape_transform(self):
         """Test if tape transform is applied when autograph is on."""
 
