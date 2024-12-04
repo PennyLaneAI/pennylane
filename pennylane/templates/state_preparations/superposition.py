@@ -98,8 +98,8 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
     ops = []
     ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis1))
 
-    for i in range(len(basis1)):
-        if basis1[i] != basis2[i]:
+    for i, b in enumerate(basis1):
+        if b != basis2[i]:
             ops.append(qml.CNOT(wires=work_wire + wires[i]))
 
     ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2))
