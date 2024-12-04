@@ -126,6 +126,7 @@ def make_plxpr(
 
         >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
         [Array(4, dtype=int64, weak_type=True)]
+
         >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
         [Array(8, dtype=int64, weak_type=True)]
     """
