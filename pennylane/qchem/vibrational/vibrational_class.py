@@ -150,7 +150,7 @@ def optimize_geometry(molecule, method="rhf"):
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-        array[array[float]]: atomic coordinates at equilibrium
+        array[array[float]]: optimized atomic positions in Cartesian coordinates
 
     """
     pyscf = _import_pyscf()
