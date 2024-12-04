@@ -116,6 +116,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   * Implemented helper functions for geometry optimization, harmonic analysis,
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
   * Implemented helper functions for calculating one-mode PES, two-mode PES, and
     three-mode PES.
     [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
