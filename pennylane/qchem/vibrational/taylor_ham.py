@@ -392,7 +392,7 @@ def _position_to_boson(index, op):
     return bdag - bop if op == "p" else bdag + bop
 
 
-def taylor_anharmonic(taylor_coeffs, start_deg=2):
+def _taylor_anharmonic(taylor_coeffs, start_deg=2):
     """Build anharmonic term of taylor form bosonic observable from provided coefficients described
     in `Eq. 10 <https://arxiv.org/pdf/1703.09313>`_.
 
@@ -460,7 +460,7 @@ def taylor_anharmonic(taylor_coeffs, start_deg=2):
     return BoseSentence(ordered_dict).normal_order()
 
 
-def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, uloc=None):
+def _taylor_kinetic(taylor_coeffs, freqs, is_loc=True, uloc=None):
     """Build kinetic term of taylor form bosonic observable from provided coefficients
 
     Args:
@@ -494,7 +494,7 @@ def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, uloc=None):
     return kin_ham.normal_order()
 
 
-def taylor_harmonic(taylor_coeffs, freqs):
+def _taylor_harmonic(taylor_coeffs, freqs):
     """Build harmonic term of taylor form bosonic observable from provided coefficients, see first
     term of `Eq. 4 and Eq. 7 <https://arxiv.org/pdf/1703.09313>`_.
 
