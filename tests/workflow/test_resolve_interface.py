@@ -17,6 +17,7 @@
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.tape import QuantumScript
 from pennylane.workflow import _resolve_interface
 
@@ -45,6 +46,34 @@ def test_auto_with_tf():
     assert resolved_interface == "tf"
 
 
+@pytest.mark.autograd
+def test_auto_with_autograd():
+    """Test that 'auto' interface resolves to 'autograd' correctly."""
+
+    x = pnp.array([0.5], requires_grad=True)
+    tapes = [
+        QuantumScript([qml.RX(x, wires=0)], [qml.expval(qml.PauliZ(0))]),
+    ]
+    resolved_interface = _resolve_interface("auto", tapes)
+    assert resolved_interface == "autograd"
+
+
+@pytest.mark.jax
+def test_auto_with_jax():
+    """Test that 'auto' interface resolves to 'jax' correctly.."""
+    try:
+        # pylint: disable=import-outside-toplevel
+        import jax.numpy as jnp
+    except ImportError:
+        pytest.skip("JAX not installed.")
+
+    tapes = [
+        QuantumScript([qml.RX(jnp.array(0.5), wires=0)], [qml.expval(qml.PauliZ(0))]),
+    ]
+    resolved_interface = _resolve_interface("auto", tapes)
+    assert resolved_interface == "jax"
+
+
 def test_auto_with_unsupported_interface():
     """Test that 'auto' interface resolves to None correctly."""
     # pylint: disable=import-outside-toplevel
@@ -64,22 +93,6 @@ def test_auto_with_unsupported_interface():
     tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
 
     assert _resolve_interface("auto", [tape]) is None
-
-
-@pytest.mark.jax
-def test_auto_with_jax():
-    """Test that 'auto' interface resolves to 'jax' correctly.."""
-    try:
-        # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp
-    except ImportError:
-        pytest.skip("JAX not installed.")
-
-    tapes = [
-        QuantumScript([qml.RX(jnp.array(0.5), wires=0)], [qml.expval(qml.PauliZ(0))]),
-    ]
-    resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == "jax"
 
 
 @pytest.mark.tf
