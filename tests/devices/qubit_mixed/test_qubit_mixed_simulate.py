@@ -68,26 +68,26 @@ class TestStatePrepBase:
         assert qml.math.allclose(probs, expected)
 
 
-@pytest.mark.parametrize("subspace", [(0, 1), (0, 2), (2, 1)])
+@pytest.mark.parametrize("wires", [(0, 1), (0, 2), (2, 1)])
 class TestBasicCircuit:
     """Tests a basic circuit with one RX gate and a few simple expectation values."""
 
     @staticmethod
-    def get_quantum_script(phi, subspace):
+    def get_quantum_script(phi, wires):
         """Get the quantum script where RX is applied then observables are measured"""
-        ops = [qml.RX(phi, wires=subspace[0])]
+        ops = [qml.RX(phi, wires=wires)]
         obs = [
-            qml.expval(qml.PauliX(subspace[0])),
-            qml.expval(qml.PauliY(subspace[0])),
-            qml.expval(qml.PauliZ(subspace[0])),
+            qml.expval(qml.PauliX(wires)),
+            qml.expval(qml.PauliY(wires)),
+            qml.expval(qml.PauliZ(wires)),
         ]
         return qml.tape.QuantumScript(ops, obs)
 
-    def test_basic_circuit_numpy(self, subspace):
+    def test_basic_circuit_numpy(self, wires):
         """Test execution with a basic circuit."""
         phi = np.array(0.397)
 
-        qs = self.get_quantum_script(phi, subspace)
+        qs = self.get_quantum_script(phi, wires)
         result = simulate(qs)
 
         # For density matrix simulation of RX(phi), the expectations are:
@@ -117,12 +117,12 @@ class TestBasicCircuit:
         assert np.allclose(result, expected_measurements)
 
     @pytest.mark.autograd
-    def test_autograd_results_and_backprop(self, subspace):
+    def test_autograd_results_and_backprop(self, wires):
         """Tests execution and gradients with autograd"""
         phi = qml.numpy.array(-0.52)
 
         def f(x):
-            qs = self.get_quantum_script(x, subspace)
+            qs = self.get_quantum_script(x, wires)
             return qml.numpy.array(simulate(qs))
 
         result = f(phi)
@@ -135,14 +135,14 @@ class TestBasicCircuit:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_jax_results_and_backprop(self, use_jit, subspace):
+    def test_jax_results_and_backprop(self, use_jit, wires):
         """Tests execution and gradients with jax."""
         import jax
 
         phi = jax.numpy.array(0.678)
 
         def f(x):
-            qs = self.get_quantum_script(x, subspace)
+            qs = self.get_quantum_script(x, wires)
             return simulate(qs)
 
         if use_jit:
@@ -157,14 +157,14 @@ class TestBasicCircuit:
         assert qml.math.allclose(g, expected)
 
     @pytest.mark.torch
-    def test_torch_results_and_backprop(self, subspace):
+    def test_torch_results_and_backprop(self, wires):
         """Tests execution and gradients with torch."""
         import torch
 
         phi = torch.tensor(-0.526, requires_grad=True)
 
         def f(x):
-            qs = self.get_quantum_script(x, subspace)
+            qs = self.get_quantum_script(x, wires)
             return simulate(qs)
 
         result = f(phi)
@@ -180,14 +180,14 @@ class TestBasicCircuit:
         assert math.allclose(jacobian.detach().numpy(), expected)
 
     @pytest.mark.tf
-    def test_tf_results_and_backprop(self, subspace):
+    def test_tf_results_and_backprop(self, wires):
         """Tests execution and gradients with tensorflow."""
         import tensorflow as tf
 
         phi = tf.Variable(4.873)
 
         with tf.GradientTape(persistent=True) as grad_tape:
-            qs = self.get_quantum_script(phi, subspace)
+            qs = self.get_quantum_script(phi, wires)
             result = simulate(qs)
 
         expected = (0, -np.sin(float(phi)), np.cos(float(phi)))
@@ -217,11 +217,6 @@ class TestBroadcasting:
         return np.stack(states)
 
     @staticmethod
-    def get_expectation_values(x):
-        """Gets the expected final expvals of the circuit described in `get_ops_and_measurements`."""
-        return [-np.sin(x), np.cos(x)]
-
-    @staticmethod
     def get_quantum_script(x, shots=None, extra_wire=False):
         """Gets quantum script of a circuit that includes parameter broadcasted operations and measurements."""
         # Use consistent wire ordering for the mapping test
@@ -243,7 +238,7 @@ class TestBroadcasting:
         qs = self.get_quantum_script(x)
         res = simulate(qs)
 
-        expected = self.get_expectation_values(x)
+        expected = [-np.sin(x), np.cos(x)]
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res, expected)
@@ -267,7 +262,7 @@ class TestBroadcasting:
         assert isinstance(res, tuple)
         assert len(res) == 3
         assert np.allclose(res[0], np.zeros_like(x))
-        assert np.allclose(res[1:], self.get_expectation_values(x))
+        assert np.allclose(res[1:], [-np.sin(x), np.cos(x)])
         # The mapping should be consistent with the wire ordering in get_quantum_script
         assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
 
