@@ -31,8 +31,8 @@ free, but no other gradients methods have support yet.
 
 **MCM methods other than single branch statistics**. Mid circuit measurements
 are only handled via a "single branch statistics" algorithm, which will lead to unexpected
-results. Even on analytic devices, once branch will be randomly chosen on each execution.
-Returning measurments based on mid circuit measurements, ``qml.sample(m0)``,
+results. Even on analytic devices, one branch will be randomly chosen on each execution.
+Returning measurements based on mid circuit measurements, ``qml.sample(m0)``,
 is also not yet supported on default qubit or lightning.
 
 >>> @qml.qnode(qml.device('default.qubit', wires=1))
@@ -63,7 +63,7 @@ MatrixUndefinedError:
 **Transforms are still under development**. No transforms will currently be applied as part of the workflow.
 
 **Breaking ``vmap``/parameter broadcasting into a non-broadcasted state**. The current workflow assumes
-that the device execution can natively handled broadcasted parameters. ``vmap`` and parameter broadcasting
+that the device execution can natively handle broadcasted parameters. ``vmap`` and parameter broadcasting
 will not work with devices other than default qubit.
 
 >>> @qml.qnode(qml.device('lightning.qubit', wires=1))
