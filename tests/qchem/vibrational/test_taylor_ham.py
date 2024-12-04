@@ -46,7 +46,7 @@ try:
     import pyscf
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    test_pes_object = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=True, localize=True)
+    test_pes_object = vibrational.vibrational_pes(mol, dipole_level=2, cubic=True, localize=True)
 except ModuleNotFoundError:
     pass
 
@@ -807,7 +807,7 @@ def test_taylor_bosonic():
     "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
 )
 def test_taylor_hamiltonian():
-    pes_object_2D = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=False, localize=True)
+    pes_object_2D = vibrational.vibrational_pes(mol, dipole_level=2, cubic=False, localize=True)
 
     taylor_ham = taylor_hamiltonian(pes_object_2D, 4, 2)
     taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, Uloc=Uloc)
