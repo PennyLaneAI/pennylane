@@ -1052,7 +1052,7 @@ class DefaultMixedNewAPI(Device):
         transform_program = TransformProgram()
 
         # Defer first since it addes wires to the device
-        transform_program.add_transform(qml.defer_measurements, device=self)
+        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,

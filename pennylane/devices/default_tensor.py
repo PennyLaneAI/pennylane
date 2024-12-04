@@ -623,7 +623,7 @@ class DefaultTensor(Device):
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
         program.add_transform(validate_device_wires, self._wires, name=self.name)
-        program.add_transform(qml.defer_measurements, device=self)
+        program.add_transform(qml.defer_measurements, allow_postselect=False)
         program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
