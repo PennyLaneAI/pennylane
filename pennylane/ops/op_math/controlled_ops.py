@@ -1381,7 +1381,6 @@ class CRX(ControlledOp):
 
         """
         pi_half = qml.math.ones_like(phi) * (np.pi / 2)
-
         return [
             qml.RZ(pi_half, wires=wires[1]),
             qml.RY(phi / 2, wires=wires[1]),

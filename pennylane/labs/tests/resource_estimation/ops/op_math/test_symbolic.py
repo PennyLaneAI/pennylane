@@ -25,30 +25,39 @@ import pennylane.labs.resource_estimation as re
 class TestResourceAdjoint:
     """Tests for ResourceAdjoint"""
 
-    def test_resource_params(self):
+    adjoint_ops = [
+        re.ResourceAdjoint(re.ResourceQFT([0, 1])),
+        re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1]))),
+        re.ResourceAdjoint(re.ResourcePow(re.ResourceX(0), 5)),
+    ]
+
+    expected_params = [
+        {"base_class": re.ResourceQFT, "base_params": {"num_wires": 2}},
+        {
+            "base_class": re.ResourceAdjoint,
+            "base_params": {"base_class": re.ResourceQFT, "base_params": {"num_wires": 2}},
+        },
+        {
+            "base_class": re.ResourcePow,
+            "base_params": {"base_class": re.ResourceX, "base_params": {}, "z": 5},
+        },
+    ]
+
+    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_params))
+    def test_resource_params(self, op, expected):
         """Test that the resources are correct"""
+        assert op.resource_params() == expected
 
-        base = re.ResourceQFT(wires=[0, 1, 2])
-        op = re.ResourceAdjoint(base=base)
-        assert op.resource_params() == {
-            "base_class": re.ResourceQFT,
-            "base_params": base.resource_params(),
-        }
+    expected_names = [
+        "Adjoint(QFT)",
+        "Adjoint(Adjoint(QFT))",
+        "Adjoint(Pow(X, 5))",
+    ]
 
-    @pytest.mark.parametrize(
-        "op, expected",
-        [
-            (re.ResourceAdjoint(re.ResourceQFT([0, 1])), "Adjoint(QFT(2))"),
-            (
-                re.ResourceAdjoint(re.ResourceAdjoint(re.ResourceQFT([0, 1]))),
-                "Adjoint(Adjoint(QFT(2)))",
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_names))
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
-        rep = op.resource_rep_from_op()
-        name = rep.op_type.tracking_name(**rep.params)
+        name = op.tracking_name_from_op()
         assert name == expected
 
     @pytest.mark.parametrize(
@@ -88,55 +97,87 @@ class TestResourceAdjoint:
         """Test the resources of nested Adjoints."""
         assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
+    @pytest.mark.parametrize("op", adjoint_ops)
+    def test_tracking(self, op):
+        """Test that adjoints can be tracked."""
+        tracking_name = op.tracking_name_from_op()
+
+        expected = re.Resources(gate_types={tracking_name: 1})
+        gate_set = {tracking_name}
+
+        assert re.get_resources(op, gate_set=gate_set) == expected
+
 
 class TestResourceControlled:
     """Tests for ResourceControlled"""
 
-    def test_resource_params(self):
-        """Test that the resources are correct"""
+    controlled_ops = [
+        re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]),
+        re.ResourceControlled(
+            re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), control_wires=[3]
+        ),
+        re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2, 3], control_values=[0, 1]),
+        re.ResourceControlled(
+            re.ResourceAdjoint(re.ResourceQFT([0, 1])),
+            control_wires=[2, 3],
+            control_values=[0, 1],
+            work_wires=[4],
+        ),
+    ]
 
-        base = re.ResourceQFT(wires=[0, 1, 2])
-        op = re.ResourceControlled(base=base, control_wires=[3])
-        assert op.resource_params() == {
+    expected_params = [
+        {
             "base_class": re.ResourceQFT,
-            "base_params": base.resource_params(),
+            "base_params": {"num_wires": 2},
             "num_ctrl_wires": 1,
             "num_ctrl_values": 0,
             "num_work_wires": 0,
-        }
+        },
+        {
+            "base_class": re.ResourceControlled,
+            "base_params": {
+                "base_class": re.ResourceQFT,
+                "base_params": {"num_wires": 2},
+                "num_ctrl_wires": 1,
+                "num_ctrl_values": 0,
+                "num_work_wires": 0,
+            },
+            "num_ctrl_wires": 1,
+            "num_ctrl_values": 0,
+            "num_work_wires": 0,
+        },
+        {
+            "base_class": re.ResourceQFT,
+            "base_params": {"num_wires": 2},
+            "num_ctrl_wires": 2,
+            "num_ctrl_values": 1,
+            "num_work_wires": 0,
+        },
+        {
+            "base_class": re.ResourceAdjoint,
+            "base_params": {"base_class": re.ResourceQFT, "base_params": {"num_wires": 2}},
+            "num_ctrl_wires": 2,
+            "num_ctrl_values": 1,
+            "num_work_wires": 1,
+        },
+    ]
 
-    @pytest.mark.parametrize(
-        "op, expected",
-        [
-            (re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]), "C(QFT(2),1,0,0)"),
-            (
-                re.ResourceControlled(
-                    re.ResourceControlled(re.ResourceQFT([0, 1]), control_wires=[2]),
-                    control_wires=[3],
-                ),
-                "C(C(QFT(2),1,0,0),1,0,0)",
-            ),
-            (
-                re.ResourceControlled(
-                    re.ResourceQFT([0, 1]), control_wires=[2, 3], control_values=[0, 1]
-                ),
-                "C(QFT(2),2,1,0)",
-            ),
-            (
-                re.ResourceControlled(
-                    re.ResourceQFT([0, 1]),
-                    control_wires=[2, 3],
-                    control_values=[0, 1],
-                    work_wires=[4],
-                ),
-                "C(QFT(2),2,1,1)",
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_params))
+    def test_resource_params(self, op, expected):
+        """Test that the resources are correct"""
+        assert op.resource_params() == expected
+
+    expected_names = [
+        "C(QFT,1,0,0)",
+        "C(C(QFT,1,0,0),1,0,0)",
+        "C(QFT,2,1,0)",
+        "C(Adjoint(QFT),2,1,1)",
+    ]
+
+    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_names))
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
-        rep = op.resource_rep_from_op()
-        name = rep.op_type.tracking_name(**rep.params)
+        name = op.tracking_name_from_op()
         assert name == expected
 
     @pytest.mark.parametrize(
@@ -160,34 +201,67 @@ class TestResourceControlled:
         """Test the resources for nested Controlled operators."""
         assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
+    @pytest.mark.parametrize("op", controlled_ops)
+    def test_tracking(self, op):
+        """Test that adjoints can be tracked."""
+        tracking_name = op.tracking_name_from_op()
+
+        expected = re.Resources(gate_types={tracking_name: 1})
+        gate_set = {tracking_name}
+
+        assert re.get_resources(op, gate_set=gate_set) == expected
+
 
 class TestResourcePow:
     """Tests for ResourcePow"""
 
-    def test_resource_params(self):
+    pow_ops = [
+        re.ResourcePow(re.ResourceQFT([0, 1]), 2),
+        re.ResourcePow(re.ResourceAdjoint(re.ResourceQFT([0, 1])), 2),
+        re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 3),
+    ]
+
+    expected_params = [
+        {"base_class": re.ResourceQFT, "base_params": {"num_wires": 2}, "z": 2},
+        {
+            "base_class": re.ResourceAdjoint,
+            "base_params": {"base_class": re.ResourceQFT, "base_params": {"num_wires": 2}},
+            "z": 2,
+        },
+        {
+            "base_class": re.ResourcePow,
+            "base_params": {"base_class": re.ResourceQFT, "base_params": {"num_wires": 2}, "z": 2},
+            "z": 3,
+        },
+    ]
+
+    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_params))
+    def test_resource_params(self, op, expected):
         """Test that the resources are correct"""
+        assert op.resource_params() == expected
 
-        base = re.ResourceQFT(wires=[0, 1, 2])
-        op = re.ResourcePow(base=base, z=5)
-        assert op.resource_params() == {
-            "base_class": re.ResourceQFT,
-            "z": 5,
-            "base_params": base.resource_params(),
-        }
+    expected_names = [
+        "Pow(QFT, 2)",
+        "Pow(Adjoint(QFT), 2)",
+        "Pow(Pow(QFT, 2), 3)",
+    ]
 
-    @pytest.mark.parametrize(
-        "op, expected",
-        [
-            (re.ResourcePow(re.ResourceQFT([0, 1]), 2), "(QFT(2))**2"),
-            (re.ResourcePow(re.ResourceAdjoint(re.ResourceQFT([0, 1])), 2), "(Adjoint(QFT(2)))**2"),
-            (re.ResourcePow(re.ResourcePow(re.ResourceQFT([0, 1]), 2), 3), "((QFT(2))**2)**3"),
-        ],
-    )
+    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_names))
     def test_tracking_name(self, op, expected):
         """Test that the tracking name is correct"""
         rep = op.resource_rep_from_op()
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
+
+    @pytest.mark.parametrize("op", pow_ops)
+    def test_tracking(self, op):
+        """Test that adjoints can be tracked."""
+        tracking_name = op.tracking_name_from_op()
+
+        expected = re.Resources(gate_types={tracking_name: 1})
+        gate_set = {tracking_name}
+
+        assert re.get_resources(op, gate_set=gate_set) == expected
 
     @pytest.mark.parametrize(
         "nested_op, expected_op",

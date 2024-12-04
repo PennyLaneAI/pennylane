@@ -42,7 +42,7 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
             return {re.ResourceCH.resource_rep(): 1}
 
         raise re.ResourcesNotDefined
@@ -137,7 +137,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
     def controlled_resource_decomp(
         num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0:
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
             return {re.ResourceCSWAP.resource_rep(): 1}
 
         raise re.ResourcesNotDefined
@@ -198,15 +198,17 @@ class ResourceX(qml.X, re.ResourceOperator):
         return {cls.resource_rep(): 1}
 
     @staticmethod
-    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs):
-        if num_ctrl_wires == 1 and num_ctrl_values == 0:
+    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
             return {re.ResourceCNOT.resource_rep(): 1}
-        if num_ctrl_wires == 2 and num_ctrl_values == 0:
+        if num_ctrl_wires == 2 and num_ctrl_values == 0 and num_work_wires == 0:
             return {re.ResourceToffoli.resource_rep(): 1}
 
-        return {re.ResourceMultiControlledX.resource_rep(
-            num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
-            ): 1}
+        return {
+            re.ResourceMultiControlledX.resource_rep(
+                num_ctrl_wires, num_ctrl_values, num_work_wires
+            ): 1
+        }
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -218,8 +220,8 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        s = re.ResourceS.resource_rep(**kwargs)
-        h = re.ResourceHadamard.resource_rep(**kwargs)
+        s = re.ResourceS.resource_rep()
+        h = re.ResourceHadamard.resource_rep()
 
         gate_types = {}
         gate_types[s] = 6
@@ -240,10 +242,10 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0:
-            return re.ResourceCY.resources(**kwargs)
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
+            return {re.ResourceCY.resource_rep(): 1}
 
         raise re.ResourcesNotDefined
 
@@ -277,13 +279,13 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1 and num_ctrl_values == 0:
-            return re.ResourceCZ.resources(**kwargs)
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
+            return {re.ResourceCZ.resource_rep(): 1}
 
-        if num_ctrl_wires == 2 and num_ctrl_wires == 0:
-            return re.ResourceCCZ.resources(**kwargs)
+        if num_ctrl_wires == 2 and num_ctrl_wires == 0 and num_work_wires == 0:
+            return {re.ResourceCCZ.resource_rep(): 1}
 
         raise re.ResourcesNotDefined
 

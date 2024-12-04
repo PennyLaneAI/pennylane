@@ -91,7 +91,8 @@ class TestPauliRot:
             expected = {
                 re.ResourceHadamard.resource_rep(): expected_h_count,
                 re.ResourceRX.resource_rep(): expected_rx_count,
-                re.ResourceMultiRZ.resource_rep(active_wires): 1,
+                re.ResourceRZ.resource_rep(): 1,
+                re.ResourceCNOT.resource_rep(): 2 * (active_wires - 1),
             }
 
         assert re.ResourcePauliRot.resources(pauli_word) == expected

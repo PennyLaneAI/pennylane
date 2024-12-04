@@ -32,6 +32,18 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~ResourceOperator
 
+Resource Object Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~add_in_series
+    ~add_in_parallel
+    ~mul_in_series
+    ~mul_in_parallel
+    ~substitute
+
 Operators
 ~~~~~~~~~
 
@@ -64,6 +76,7 @@ Operators
     ~ResourceIsingZZ
     ~ResourceMultiControlledX
     ~ResourceMultiRZ
+    ~ResourceMultiControlledX
     ~ResourceOrbitalRotation
     ~ResourcePauliRot
     ~ResourcePhaseShift
@@ -110,8 +123,17 @@ Exceptions
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
-from .resource_container import CompressedResourceOp, Resources
 from .resource_tracking import DefaultGateSet, get_resources, resource_config
+
+from .resource_container import (
+    CompressedResourceOp,
+    Resources,
+    add_in_series,
+    add_in_parallel,
+    mul_in_series,
+    mul_in_parallel,
+    substitute,
+)
 
 from .ops import (
     ResourceAdjoint,
