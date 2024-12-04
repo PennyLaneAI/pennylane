@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import X, Y, Z
-from pennylane.labs.dla import cartan_decomposition, concurrence_involution, even_odd_involution
+from pennylane.labs.dla import cartan_decomp, concurrence_involution, even_odd_involution
 
 
 def check_commutation(ops1, ops2, vspace):
@@ -40,14 +40,14 @@ Heisenberg3 = qml.lie_closure(
 class TestCartanDecomposition:
     @pytest.mark.parametrize("involution", [even_odd_involution, concurrence_involution])
     @pytest.mark.parametrize("g", [Ising2, Ising3, Heisenberg3])
-    def test_cartan_decomposition(self, g, involution):
+    def test_cartan_decomp(self, g, involution):
         """Test basic properties and Cartan decomposition definitions"""
 
         g = [op.pauli_rep for op in g]
-        k, m = cartan_decomposition(g, involution)
+        k, m = cartan_decomp(g, involution)
 
-        assert all(involution(op) == 1 for op in k)
-        assert all(involution(op) == 0 for op in m)
+        assert all(involution(op) is True for op in k)
+        assert all(involution(op) is False for op in m)
 
         k_space = qml.pauli.PauliVSpace(k)
         m_space = qml.pauli.PauliVSpace(m)
@@ -59,25 +59,32 @@ class TestCartanDecomposition:
 
     @pytest.mark.parametrize("involution", [even_odd_involution, concurrence_involution])
     @pytest.mark.parametrize("g", [Ising2, Ising3, Heisenberg3])
-    def test_cartan_decomposition_dense(self, g, involution):
+    def test_cartan_decomp_dense(self, g, involution):
         """Test basic properties and Cartan decomposition definitions using dense representations"""
 
-        g = [op.pauli_rep for op in g]
-        k, m = cartan_decomposition(g, involution)
+        g = [qml.matrix(op, wire_order=range(3)) for op in g]
+        k, m = cartan_decomp(g, involution)
 
-        assert all(involution(op) == 1 for op in k)
-        assert all(involution(op) == 0 for op in m)
+        assert all(involution(op) is True for op in k)
+        assert all(involution(op) is False for op in m)
 
-        k_space = qml.pauli.PauliVSpace(k)
-        m_space = qml.pauli.PauliVSpace(m)
+        # check currently only works with pauli sentences
+        k_space = qml.pauli.PauliVSpace([qml.pauli_decompose(op).pauli_rep for op in k])
+        m_space = qml.pauli.PauliVSpace([qml.pauli_decompose(op).pauli_rep for op in m])
 
         # Commutation relations for Cartan pair
-        assert check_commutation(k, k, k_space)
-        assert check_commutation(k, m, m_space)
-        assert check_commutation(m, m, k_space)
+        assert check_commutation(k_space.basis, k_space.basis, k_space)
+        assert check_commutation(k_space.basis, m_space.basis, m_space)
+        assert check_commutation(m_space.basis, m_space.basis, k_space)
 
 
-involution_ops = [X(0) @ X(1), X(0) @ X(1) + Y(0) @ Y(1)]
+involution_ops = [
+    X(0) @ X(1),
+    X(0) @ X(1) + Y(0) @ Y(1),
+    X(1) + Z(0),
+    Y(0) - Y(0) @ Y(1) @ Y(2),
+    Y(0) @ X(1),
+]
 
 
 class TestInvolutions:
@@ -90,8 +97,9 @@ class TestInvolutions:
         res_ps = concurrence_involution(op.pauli_rep)
         res_m = concurrence_involution(op.matrix())
 
-        assert res_op == res_ps
-        assert res_op == res_m
+        assert isinstance(res_op, bool)
+        assert res_op is res_ps
+        assert res_op is res_m
 
     @pytest.mark.parametrize("op", involution_ops)
     def test_even_odd_involution_inputs(self, op):
@@ -100,5 +108,6 @@ class TestInvolutions:
         res_ps = even_odd_involution(op.pauli_rep)
         res_m = even_odd_involution(op.matrix())
 
-        assert res_op == res_ps
-        assert res_op == res_m
+        assert isinstance(res_op, bool)
+        assert res_op is res_ps
+        assert res_op is res_m

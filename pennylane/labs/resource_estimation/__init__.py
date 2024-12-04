@@ -32,25 +32,59 @@ Resource Estimation Base Classes:
     ~CompressedResourceOp
     ~ResourceOperator
 
+Resource Object Functions:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~add_in_series
+    ~add_in_parallel
+    ~mul_in_series
+    ~mul_in_parallel
+    ~substitute
+
 Operators
 ~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
+    ~ResourceCCZ
+    ~ResourceCH
     ~ResourceCNOT
     ~ResourceControlledPhaseShift
+    ~ResourceCRot
+    ~ResourceCRX
+    ~ResourceCRY
+    ~ResourceCRZ
+    ~ResourceCSWAP
+    ~ResourceCY
+    ~ResourceCZ
+    ~ResourceDoubleExcitation
+    ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
     ~ResourceIdentity
+    ~ResourceIsingXX
+    ~ResourceIsingXY
+    ~ResourceIsingYY
+    ~ResourceIsingZZ
+    ~ResourceMultiRZ
+    ~ResourceMultiControlledX
+    ~ResourcePauliRot
     ~ResourcePhaseShift
+    ~ResourcePSWAP
     ~ResourceRot
     ~ResourceRX
     ~ResourceRY
     ~ResourceRZ
     ~ResourceS
+    ~ResourceSingleExcitationMinus
+    ~ResourceSingleExcitationPlus
     ~ResourceSWAP
     ~ResourceT
+    ~ResourceToffoli
     ~ResourceX
     ~ResourceY
     ~ResourceZ
@@ -63,6 +97,14 @@ Templates
 
     ~ResourceQFT
 
+Tracking Resources
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~get_resources
+
 Exceptions
 ~~~~~~~~~~
 
@@ -73,22 +115,54 @@ Exceptions
 """
 
 from .resource_operator import ResourceOperator, ResourcesNotDefined
-from .resource_container import CompressedResourceOp, Resources
+from .resource_tracking import DefaultGateSet, get_resources, resource_config
+
+from .resource_container import (
+    CompressedResourceOp,
+    Resources,
+    add_in_series,
+    add_in_parallel,
+    mul_in_series,
+    mul_in_parallel,
+    substitute,
+)
 
 from .ops import (
+    ResourceCCZ,
+    ResourceCH,
     ResourceCNOT,
     ResourceControlledPhaseShift,
+    ResourceCRot,
+    ResourceCRX,
+    ResourceCRY,
+    ResourceCRZ,
+    ResourceCSWAP,
+    ResourceCY,
+    ResourceCZ,
+    ResourceDoubleExcitation,
+    ResourceFermionicSWAP,
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
+    ResourceMultiControlledX,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourcePSWAP,
     ResourcePhaseShift,
     ResourceRot,
     ResourceRX,
     ResourceRY,
     ResourceRZ,
     ResourceS,
+    ResourceSingleExcitationMinus,
+    ResourceSingleExcitationPlus,
     ResourceSWAP,
     ResourceT,
+    ResourceToffoli,
     ResourceX,
     ResourceY,
     ResourceZ,

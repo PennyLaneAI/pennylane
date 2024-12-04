@@ -72,7 +72,7 @@ def cartan_subalgebra(
     r"""
     Compute Cartan subalgebra (CSA) m in g, the odd parity subspace. I.e. the maximal Abelian subalgebra in m.
 
-    .. seealso:: :func:`~cartan_decomposition`, :func:`~structure_constants`
+    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`
 
     Args:
         g (List[Union[PauliSentence, np.ndarray]]): Lie algebra :math:`\mathfrak{g}`, which is assumed to be ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
@@ -99,11 +99,11 @@ def cartan_subalgebra(
     A quick example computing a Cartan subalgebra of :math:`\mathfrak{su}(4)` using the Cartan involution :func:`~even_odd_involution`.
 
     >>> import pennylane as qml
-    >>> from pennylane.labs.dla import cartan_decomposition, cartan_subalgebra, even_odd_involution
+    >>> from pennylane.labs.dla import cartan_decomp, cartan_subalgebra, even_odd_involution
     >>> g = list(qml.pauli.pauli_group(2)) # u(4)
     >>> g = g[1:] # remove identity -> su(4)
     >>> g = [op.pauli_rep for op in g] # optional; turn to PauliSentence for convenience
-    >>> k, m = cartan_decomposition(g, even_odd_involution)
+    >>> k, m = cartan_decomp(g, even_odd_involution)
     >>> g = k + m # re-order g to separate k and m
     >>> adj = qml.structure_constants(g)
     >>> newg, k, mtilde, h, new_adj = cartan_subalgebra(g, k, m, adj)
@@ -144,10 +144,10 @@ def cartan_subalgebra(
         the Cartan subalgebra is having the Lie algebra :math:`\mathfrak{g}`, a Cartan decomposition
         :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` and its adjoint representation.
 
-        We start by computing these ingredients using :func:`~cartan_decomposition` and :func:`~structure_constants`.
+        We start by computing these ingredients using :func:`~cartan_decomp` and :func:`~structure_constants`.
         As an example, we take the Lie algebra of the Heisenberg model with generators :math:`\{X_i X_j, Y_i Y_j, Z_i, Z_j\}`.
 
-        >>> from pennylane.labs.dla import lie_closure_dense, cartan_decomposition
+        >>> from pennylane.labs.dla import lie_closure_dense, cartan_decomp
         >>> n = 3
         >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
         >>> gens += [Y(i) @ Y(i+1) for i in range(n-1)]
@@ -160,7 +160,7 @@ def cartan_subalgebra(
         which we can check using the helper function :math:`~check_cartan_decomp`.
 
         >>> from pennylane.labs.dla import even_odd_involution, check_cartan_decomp
-        >>> k, m = cartan_decomposition(g, even_odd_involution)
+        >>> k, m = cartan_decomp(g, even_odd_involution)
         >>> assert check_cartan_decomp(k, m) # check commutation relations to be valid Cartan decomposition
 
         Our life is easier when we use a canonical ordering of the operators. This is why we re-define ``g`` with the new ordering in terms of operators in :math:`\mathfrak{k}` first, and then

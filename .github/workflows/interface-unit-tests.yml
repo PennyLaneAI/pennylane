@@ -465,7 +465,7 @@ jobs:
       pytest_markers: external
       pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
-        pyzx matplotlib stim quimb==1.8.4 mitiq ply
+        pyzx matplotlib stim quimb==1.8.4 mitiq ply optax
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
@@ -548,13 +548,13 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
       python_version: ${{ matrix.python-version }}
-      
+      additional_os_packages: openmpi-bin openmpi-doc libopenmpi-dev      
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
       pytest_additional_args: -W ${{ inputs.python_warning_level }} ${{ inputs.python_warning_level != 'default' && '--continue-on-collection-errors' || '' }}
       additional_pip_packages: |
-        openfermionpyscf basis-set-exchange
+        openfermionpyscf basis-set-exchange geometric mpi4py
         ${{ inputs.additional_python_packages }}
 
   gradients-tests:

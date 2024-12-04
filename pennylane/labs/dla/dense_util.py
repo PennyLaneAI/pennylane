@@ -235,22 +235,68 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
 
 
 def check_commutation(ops1, ops2, vspace):
-    """Helper function to check things like [k, m] subspace m; expensive"""
-    assert_vals = []
+    r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+
+    .. warning:: This function is expensive to compute
+
+    Args:
+        ops1 (Iterable[PauliSentence]): First set of operators
+        ops2 (Iterable[PauliSentence]): Second set of operators
+        vspace (:class:`~PauliVSpace`): The vector space in form of a :class:`~PauliVSpace` that the operators should map to
+
+    Returns:
+        bool: Whether or not :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+
+    **Example**
+
+    >>> from pennylane.labs.dla import check_commutation
+    >>> ops1 = [qml.X(0).pauli_rep]
+    >>> ops2 = [qml.Y(0).pauli_rep]
+    >>> vspace1 = qml.pauli.PauliVSpace([qml.X(0).pauli_rep, qml.Y(0).pauli_rep], dtype=complex)
+
+    Because :math:`[X_0, Y_0] = 2i Z_0`, the commutators do not map to the selected vector space.
+
+    >>> check_commutation(ops1, ops2, vspace1)
+    False
+
+    Instead, we need the full :math:`\mathfrak{su}(2)` space.
+
+    >>> vspace2 = qml.pauli.PauliVSpace([qml.X(0).pauli_rep, qml.Y(0).pauli_rep, qml.Z(0).pauli_rep], dtype=complex)
+    >>> check_commutation(ops1, ops2, vspace2)
+    True
+    """
     for o1 in ops1:
         for o2 in ops2:
             com = o1.commutator(o2)
             com.simplify()
             if len(com) != 0:
-                assert_vals.append(not vspace.is_independent(com))
-            else:
-                assert_vals.append(True)
+                if vspace.is_independent(com):
+                    return False
 
-    return all(assert_vals)
+    return True
 
 
 def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
-    """Helper function to check if all operators in a set of operators commute"""
+    r"""Helper function to check if all operators in a set of operators commute
+
+    .. warning:: This function is expensive to compute
+
+    Args:
+        ops (List[Union[PauliSentence, np.ndarray, Operator]]): List of operators to check for mutual commutation
+
+    Returns:
+        bool: Whether or not all operators commute with each other
+
+    **Example**
+
+    >>> from pennylane.labs.dla import check_all_commuting
+    >>> from pennylane import X
+    >>> ops = [X(i) for i in range(10)]
+    >>> check_all_commuting(ops)
+    True
+
+    Operators on different wires (trivially) commute with each other.
+    """
     if all(isinstance(op, PauliSentence) for op in ops):
         for oi, oj in combinations(ops, 2):
             com = oj.commutator(oi)
@@ -280,11 +326,67 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
 
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
-    """Helper function to check the validity of a Cartan decomposition by checking its commutation relations"""
+    r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+
+    Check whether of not the following properties are fulfilled.
+
+    .. math::
+
+            [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} & \text{ (subalgebra)}\\
+            [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} & \text{ (reductive property)}\\
+            [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k} & \text{ (symmetric property)}
+
+    .. warning:: This function is expensive to compute
+
+    Args:
+        k (List[PauliSentence]): List of operators of the vertical subspace
+        m (List[PauliSentence]): List of operators of the horizontal subspace
+        verbose: Whether failures to meet one of the criteria should be printed
+
+    Returns:
+        bool: Whether or not all properties are fulfilled
+
+    .. seealso:: :func:`~cartan_decomp`
+
+    **Example**
+
+    We first construct a Lie algebra.
+
+    >>> from pennylane import X, Z
+    >>> from pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
+    >>> generators = [X(0) @ X(1), Z(0), Z(1)]
+    >>> g = qml.lie_closure(generators)
+    >>> g
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
+
+    We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
+
+    >>> k, m = cartan_decomp(g, concurrence_involution)
+    >>> k, m
+    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
+     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
+
+    We can check the validity of the decomposition using ``check_cartan_decomp``.
+
+    >>> from pennylane.labs.dla import check_cartan_decomp
+    >>> check_cartan_decomp(k, m)
+    True
+
+    """
     if any(isinstance(op, np.ndarray) for op in k):
         k = [qml.pauli_decompose(op).pauli_rep for op in k]
     if any(isinstance(op, np.ndarray) for op in m):
         m = [qml.pauli_decompose(op).pauli_rep for op in m]
+
+    if any(isinstance(op, Operator) for op in k):
+        k = [op.pauli_rep for op in k]
+    if any(isinstance(op, Operator) for op in m):
+        m = [op.pauli_rep for op in m]
 
     k_space = qml.pauli.PauliVSpace(k, dtype=complex)
     m_space = qml.pauli.PauliVSpace(m, dtype=complex)
@@ -410,7 +512,7 @@ def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, O
 
 
 def check_orthonormal(g: Iterable[Union[PauliSentence, Operator]], inner_product: callable) -> bool:
-    """
+    r"""
     Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``.
 
     Args:

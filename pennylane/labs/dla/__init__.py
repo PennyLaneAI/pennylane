@@ -22,8 +22,8 @@ Experimental Lie theory features
 
     ~lie_closure_dense
     ~structure_constants_dense
-    ~cartan_decomposition
-    ~recursive_cartan_decomposition
+    ~cartan_decomp
+    ~recursive_cartan_decomp
     ~variational_kak
 
 
@@ -38,6 +38,9 @@ Utility functions
     ~adjvec_to_op
     ~change_basis_ad_rep
     ~check_orthonormal
+    ~check_commutation
+    ~check_all_commuting
+    ~check_cartan_decomp
     ~op_to_adjvec
     ~orthonormalize
     ~pauli_coefficients
@@ -80,12 +83,11 @@ Involutions
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
 from .cartan import (
-    cartan_decomposition,
+    cartan_decomp,
     even_odd_involution,
     concurrence_involution,
-    recursive_cartan_decomposition,
+    recursive_cartan_decomp,
 )
-
 from .dense_util import (
     adjvec_to_op,
     apply_basis_change,
