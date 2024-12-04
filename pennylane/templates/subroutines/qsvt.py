@@ -16,11 +16,10 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
+import warnings
 
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
-
-import warnings
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
