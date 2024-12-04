@@ -333,3 +333,50 @@ def test_error_mode_localization():
     freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)
     with pytest.raises(ValueError, match="The `bins` list cannot be empty."):
         vibrational.localize_normal_modes(freqs, vecs, bins=[])
+
+
+@pytest.mark.parametrize(
+    ("sym", "geom", "method", "mult", "charge", "expected_dipole"),
+    # Expected dipole was obtained using vibrant code
+    [
+        (
+            ["H", "F"],
+            np.array([[0.0, 0.0, 0.03967368], [0.0, 0.0, 0.96032632]]),
+            "RHF",
+            1,
+            0,
+            [-3.78176692e-16, -3.50274735e-17, -9.05219767e-01],
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            "RHF",
+            3,
+            1,
+            [1.10150593e-15, -1.68930482e-16, -1.60982339e-15],
+        ),
+        (
+            ["H", "H", "S"],
+            np.array(
+                [
+                    [0.0, -1.00688408, -0.9679942],
+                    [0.0, 1.00688408, -0.9679942],
+                    [0.0, 0.0, -0.0640116],
+                ]
+            ),
+            "UHF",
+            1,
+            0,
+            [1.95258747e-16, 5.62355462e-15, -7.34149703e-01],
+        ),
+    ],
+)
+@pytest.mark.usefixtures("skip_if_no_pyscf_support")
+def test_get_dipole(sym, geom, mult, charge, method, expected_dipole):
+    r"""Test that the get_dipole function produces correct results."""
+    mol = qml.qchem.Molecule(
+        sym, geom, mult=mult, charge=charge, basis_name="6-31g", unit="Angstrom", load_data=True
+    )
+    mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol, method=method)
+    dipole = vibrational_class._get_dipole(mol_scf, method=method)
+    assert np.allclose(dipole, expected_dipole)
