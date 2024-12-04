@@ -77,6 +77,11 @@ on:
         required: false
         type: string
         default: ''
+      additional_os_packages:
+        description: Additional packages to install. Values will be passed to apt-get install {value}
+        required: false
+        type: string
+        default: ''	
 
 jobs:
   test:
@@ -95,6 +100,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '${{ inputs.python_version }}'
+
+      - name: Install additional os packages
+        if: inputs.additional_os_packages != ''
+        env:
+          ADDITIONAL_OS_PACKAGES: ${{ inputs.additional_os_packages }}
+        run: |
+          while IFS= read -r line; do
+            if [ ! -z "$line" ]; then
+                echo ''
+                echo "Now installing -> sudo apt-get install -y $line"
+                echo ''
+                
+                sudo apt-get install -y $line
+            fi
+          done <<< "$ADDITIONAL_OS_PACKAGES"
 
       - name: Upgrade PIP and install wheel
         run: pip install --upgrade pip && pip install wheel --upgrade

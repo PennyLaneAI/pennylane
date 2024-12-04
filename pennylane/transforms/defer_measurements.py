@@ -381,12 +381,6 @@ def defer_measurements(
     return [new_tape], null_postprocessing
 
 
-@defer_measurements.custom_qnode_transform
-def _defer_measurements_qnode(self, qnode, targs, tkwargs):
-    """Custom qnode transform for ``defer_measurements``."""
-    return self.default_qnode_transform(qnode, targs, tkwargs)
-
-
 def _add_control_gate(op, control_wires, reduce_postselected):
     """Helper function to add control gates"""
     if reduce_postselected:
