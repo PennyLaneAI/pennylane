@@ -86,9 +86,6 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
-* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
-  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
-
 * Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
   [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
 
