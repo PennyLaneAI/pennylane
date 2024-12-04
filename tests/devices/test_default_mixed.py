@@ -1366,3 +1366,14 @@ class TestDefaultMixedNewAPIInit:
         dev = DefaultMixedNewAPI(wires=[0, 1])
         with pytest.raises(NotImplementedError):
             dev.execute(qml.tape.QuantumScript())
+
+    def test_execute_no_diff_method(self):
+        """Test that the execute method is defined"""
+        dev = DefaultMixedNewAPI(wires=[0, 1])
+        execution_config = qml.devices.execution_config.ExecutionConfig(
+            gradient_method="finite-diff"
+        )  # in-valid one for this device
+        processed_config = dev._setup_execution_config(execution_config)
+        assert (
+            processed_config.interface is None
+        ), "The interface should be set to None for an invalid gradient method"
