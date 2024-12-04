@@ -822,7 +822,8 @@ def vibrational_pes(
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-    molecule, scf_result = optimize_geometry(molecule, method)
+    molecule = optimize_geometry(molecule, method)
+    scf_result = _single_point(molecule, method)
 
     freqs = None
     uloc = None

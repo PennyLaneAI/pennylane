@@ -174,8 +174,7 @@ def optimize_geometry(molecule, method="rhf"):
         load_data=molecule.load_data,
     )
 
-    scf_result = _single_point(mol_eq, method)
-    return mol_eq, scf_result
+    return mol_eq
 
 
 def _get_rhf_dipole(scf_result):

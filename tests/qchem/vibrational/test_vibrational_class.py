@@ -114,7 +114,7 @@ def test_optimize_geometry(sym, geom, expected_geom):
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = vibrational.optimize_geometry(mol)
-    assert np.allclose(mol_eq[0].coordinates, expected_geom)
+    assert np.allclose(mol_eq.coordinates, expected_geom)
 
 
 @pytest.mark.parametrize(
@@ -138,7 +138,9 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = vibrational.optimize_geometry(mol)
-    _, displ_vecs = vibrational_class._harmonic_analysis(mol_eq[1])
+    scf_result = vibrational_class._single_point(mol_eq)
+
+    _, displ_vecs = vibrational_class._harmonic_analysis(scf_result)
     assert np.allclose(displ_vecs, expected_vecs) or np.allclose(
         displ_vecs, -1 * np.array(expected_vecs)
     )
