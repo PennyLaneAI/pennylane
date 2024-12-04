@@ -788,7 +788,7 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources(**kwargs)
+        return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
@@ -801,5 +801,5 @@ class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator
         }
 
     @classmethod
-    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources(**kwargs)
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
