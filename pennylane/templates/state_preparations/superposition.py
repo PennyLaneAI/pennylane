@@ -111,7 +111,7 @@ class Superposition(Operation):
     r"""
     Prepare a superposition of computational basis states.
 
-    Given a list of :math:`m` coefficients :math:`c_i` and a list of basic states :math:`|b_i\rangle`,
+    Given a list of :math:`m` coefficients :math:`c_i` and basic states :math:`|b_i\rangle`,
     this operator prepares the state:
 
     .. math::
