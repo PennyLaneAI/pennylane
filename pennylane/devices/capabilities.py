@@ -20,7 +20,7 @@ from enum import Enum
 from itertools import repeat
 from typing import Callable, Optional, Union
 
-import toml
+import tomlkit as toml
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -34,7 +34,8 @@ class InvalidCapabilitiesError(Exception):
 
 def load_toml_file(file_path: str) -> dict:
     """Loads a TOML file and returns the parsed dict."""
-    return toml.load(file_path)
+    with open(file_path, "rb") as file:
+        return toml.load(file)
 
 
 class ExecutionCondition(Enum):
