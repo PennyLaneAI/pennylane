@@ -170,8 +170,6 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
-* 
-
 <h4>Other Improvements</h4>
 
 * Added PyTree support for measurements in a circuit. 
