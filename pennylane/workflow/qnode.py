@@ -552,7 +552,7 @@ class QNode:
             )
 
         if interface not in SUPPORTED_INTERFACE_NAMES:
-            raise qml.QuantumFunctionError(
+            raise ValueError(
                 f"Unknown interface {interface}. Interface must be "
                 f"one of {SUPPORTED_INTERFACE_NAMES}."
             )
