@@ -32,18 +32,22 @@ from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, Transf
 def _get_ml_boundary_execute(
     interface: Interface, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
-    """Imports and returns the function that binds derivatives of the required ml framework.
+    """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
     Args:
-        interface (Interface): The designated ml framework.
+        interface (Interface): the machine learning framework to interface with
+        grad_on_execution (bool): Whether device derivatives are computed during execution. Relevant for
+            interfaces such as `TF_AUTOGRAPH`.
+        device_vjp (bool): Indicates if device-level vector-Jacobian products (VJPs) should be used for
+            JAX or JAX_JIT interfaces. Defaults to ``False``.
+        differentiable (bool): Specifies if the operation should be differentiable within the framework.
+            Relevant for TensorFlow and similar interfaces. Defaults to ``False``.
 
-        grad_on_execution (bool): whether or not the device derivatives are taken upon execution
     Returns:
-        Callable
+        Callable: Execution function for the specified machine learning framework.
 
     Raises:
-        pennylane.QuantumFunctionError if the required package is not installed.
-
+        pennylane.QuantumFunctionError: If the required package for the specified interface is not installed.
     """
     try:
         if interface == Interface.AUTOGRAD:
