@@ -48,6 +48,7 @@ class TestCollectOpsandMeas:
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
 
     def test_for_loop(self):
+        """Test collecting the operations in a for loop."""
 
         def f(n):
             @qml.for_loop(n)
@@ -66,6 +67,7 @@ class TestCollectOpsandMeas:
         assert len(obj.state["measurements"]) == 0
 
     def test_while_loop(self):
+        """Test collecting the operations in a while loop."""
 
         def g(x):
             @qml.while_loop(lambda x, i: i < 3)
@@ -87,6 +89,7 @@ class TestCollectOpsandMeas:
         qml.assert_equal(obj.state["ops"][2], qml.RX(4 * x, 2))
 
     def test_cond_bool(self):
+        """Test applying a conditional of a classical vlaue."""
 
         def f(x, value):
             qml.cond(value, qml.RX, false_fn=qml.RY)(x, 0)
@@ -141,8 +144,23 @@ class TestCollectOpsandMeas:
 
         qml.assert_equal(obj.state["ops"][1], qml.ops.Conditional(mv, qml.RX(x, 2)))
 
+    def test_elif_mcm(self):
+        """Test that an elif mcm can be caputured."""
+
+        def f(x):
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+
+            qml.cond(m0, qml.RX, elifs=(m1, qml.RY), false_fn=qml.RZ)(x, 0)
+
+        x = jax.numpy.array(0.5)
+
+        obj = CollectOpsandMeas()
+        obj(f)(x)
+
     @pytest.mark.parametrize("lazy", (True, False))
     def test_adjoint_transform(self, lazy):
+        """Test capture the adjoint of a qfunc."""
 
         def qfunc(x):
             qml.RX(x, 0)
@@ -162,6 +180,7 @@ class TestCollectOpsandMeas:
         qml.assert_equal(obj.state["ops"][2], qml.adjoint(qml.RX(x, 0), lazy=lazy))
 
     def test_control_transform(self):
+        """Test collecting the control of a qfunc."""
 
         def qfunc(x, wire):
             qml.RX(x, wire)
@@ -179,3 +198,20 @@ class TestCollectOpsandMeas:
         qml.assert_equal(obj.state["ops"][0], expected0)
         expected1 = qml.ctrl(qml.X(0), [1, 2], control_values=[False, False])
         qml.assert_equal(obj.state["ops"][1], expected1)
+
+    def test_hybrid_cond_error(self):
+        """Test an error is raised if a conditional contains both mcms and classical values."""
+
+        def true_fn(x):
+            qml.RX(x, 0)
+
+        def elif_fn(x):
+            qml.IsingXX(x, 0)
+
+        def f(x, value):
+            m0 = qml.measure(0)
+            qml.cond(m0, true_fn, elifs=(value, elif_fn))(x)
+
+        obj = CollectOpsandMeas()
+        with pytest.raises(ValueError, match="cannot use qml.cond with a combination"):
+            obj(f)(0.5, False)
