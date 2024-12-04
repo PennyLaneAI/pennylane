@@ -185,7 +185,7 @@ class Superposition(Operation):
 
     def __init__(
         self, coeffs, basis, wires, work_wire, id=None
-    ):  # pylint: disable=too-many-positional-arguments
+    ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
         self.hyperparameters["basis"] = tuple(tuple(b) for b in basis)
         self.hyperparameters["target_wires"] = qml.wires.Wires(wires)
@@ -269,7 +269,6 @@ class Superposition(Operation):
 
         for basis2, basis1 in perms.items():
             if not qml.math.allclose(basis1, basis2):
-                print(basis1, basis2)
                 op_list += _permutation_operator(basis1, basis2, wires, work_wire)
 
         return op_list
