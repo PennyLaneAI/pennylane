@@ -93,27 +93,30 @@ def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "expected_geom"),
+    ("sym", "geom", "unit", "expected_geom"),
     # Expected geometry was obtained using pyscf
     [
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            "Angstrom",
             np.array([[0.0, 0.0, 0.03967348], [0.0, 0.0, 0.96032612]]),
         ),
         (
             ["C", "O"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            np.array([[0.0, 0.0, -0.06533509], [0.0, 0.0, 1.06533469]]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.88972613]]),
+            "Bohr",
+            np.array([[0.0, 0.0, -0.12346543], [0.0, 0.0, 2.0131908]]),
         ),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
-def test_optimize_geometry(sym, geom, expected_geom):
+def test_optimize_geometry(sym, geom, unit, expected_geom):
     r"""Test that correct optimized geometry is obtained."""
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit=unit)
     coordinates = vibrational.optimize_geometry(mol)
+    print(coordinates, geom)
     assert np.allclose(coordinates, expected_geom)
 
 
