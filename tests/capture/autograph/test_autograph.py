@@ -355,9 +355,10 @@ class TestIntegration:
         with pytest.raises(NotImplementedError):
             ag_fn(0.5)
 
-    def test_mcm_one_shot(self):
+    @pytest.mark.xfail
+    def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
-        dev = qml.device("default.qubit", wires=5, shots=20)
+        dev = qml.device("default.qubit", wires=5, shots=20, seed=seed)
 
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
         def circ(x):

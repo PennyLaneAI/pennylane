@@ -382,9 +382,9 @@ class TestQNodeVmapIntegration:
     @pytest.mark.parametrize(
         "input, expected_shape",
         [
-            (jax.numpy.array([0.1]), (1,)),
-            (jax.numpy.array([0.1, 0.2]), (2,)),
-            (jax.numpy.array([0.1, 0.2, 0.3]), (3,)),
+            (jax.numpy.array([0.1], dtype=jax.numpy.float32), (1,)),
+            (jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float32), (2,)),
+            (jax.numpy.array([0.1, 0.2, 0.3], dtype=jax.numpy.float32), (3,)),
         ],
     )
     def test_qnode_vmap(self, input, expected_shape):
@@ -863,6 +863,8 @@ class TestQNodeVmapIntegration:
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
         expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
+        # note! Any failures here my be a result of a side effect from a different test
+        # fails when testing tests/capture, passes with tests/capture/test_capture_qnode
         assert jax.numpy.allclose(result[0], expected)
         assert jax.numpy.allclose(result[1], expected)
         assert jax.numpy.allclose(result[2], expected)
