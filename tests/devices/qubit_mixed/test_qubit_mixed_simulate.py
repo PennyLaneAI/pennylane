@@ -225,9 +225,7 @@ class TestBroadcasting:
     def get_quantum_script(x, shots=None, extra_wire=False):
         """Gets quantum script of a circuit that includes parameter broadcasted operations and measurements."""
         # Use consistent wire ordering for the mapping test
-        wire_list = [0, 1]
-        if extra_wire:
-            wire_list.append(2)
+        wire_list = [0, 1, 2] if extra_wire else [0, 1]
 
         ops = [qml.RX(x, wires=wire_list[0])]
         measurements = [qml.expval(qml.PauliY(wire_list[0])), qml.expval(qml.PauliZ(wire_list[0]))]
