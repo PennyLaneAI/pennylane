@@ -68,7 +68,7 @@ class TestStatePrepBase:
         assert qml.math.allclose(probs, expected)
 
 
-@pytest.mark.parametrize("wires", [(0, 1), (0, 2), (2, 1)])
+@pytest.mark.parametrize("wires", [0, 1, 2])
 class TestBasicCircuit:
     """Tests a basic circuit with one RX gate and a few simple expectation values."""
 
