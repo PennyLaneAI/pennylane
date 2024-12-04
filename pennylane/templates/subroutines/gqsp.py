@@ -28,7 +28,7 @@ class GQSP(Operation):
     r"""
     Implements the generalized quantum signal processing (GQSP) circuit.
 
-    This operation encodes a polynomial transformation of an input unitary operator following the algorithm 
+    This operation encodes a polynomial transformation of an input unitary operator following the algorithm
     described in `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`__ as:
 
     .. math::
@@ -119,7 +119,8 @@ class GQSP(Operation):
 
     @staticmethod
     def compute_decomposition(*parameters, **hyperparameters):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
+        r"""
+        Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
