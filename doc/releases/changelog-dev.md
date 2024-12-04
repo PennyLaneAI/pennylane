@@ -43,6 +43,11 @@
     >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
     True
     ```
+    
+  * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms` 
+    are added to the device API for devices that provides a TOML configuration file and thus have 
+    a `capabilities` property.
+    [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
@@ -65,6 +70,36 @@
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
 added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+
+* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
+  Autograph conversion is now used by default in `make_plxpr`, but can be skipped with the keyword arg `autograph=False`.
+  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
+  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
+* [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+
+* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
+  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
+
+* The `qml.qchem.factorize` function now supports new methods for double factorization:
+  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
+  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
+  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
+
+* Added `qml.qchem.symmetry_shift` function to perform the
+  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
+  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
+
+* Added submodule for calculating vibrational Hamiltonians
+  * Implemented helper functions for geometry optimization, harmonic analysis,
+    and normal-mode localization.
+    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+  * Implemented helper functions for calculating one-mode PES, two-mode PES, and
+    three-mode PES.
+    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+  * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
+    for storing the data.
+    [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
 
 
 <h4>New API for Qubit Mixed</h4>
@@ -89,28 +124,6 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 * Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
   [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
-
-* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`
-  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
-  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
-  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
-
-* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
-  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
-
-* The `qml.qchem.factorize` function now supports new methods for double factorization:
-  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
-  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
-  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
-
-* Added `qml.qchem.symmetry_shift` function to perform the
-  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
-  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
-
-* Added submodule for calculating vibrational Hamiltonians
-  * Implemented helper functions for geometry optimization, harmonic analysis,
-    and normal-mode localization.
-    [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
 
 <h3>Improvements 🛠</h3>
 
@@ -139,6 +152,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
   [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
+  [(#6668)](https://github.com/PennyLaneAI/pennylane/pull/6668)
 
 * `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
   pennylane variant jaxpr.
@@ -205,6 +219,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 * Added native `ResourceOperator` subclasses for each of the controlled operators.
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
+
+* Added native `ResourceOperator` subclasses for each of the multi qubit operators.
+  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
 
 <h3>Breaking changes 💔</h3>
 
@@ -294,8 +311,8 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
 * The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. 
-Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
-same information.
+  Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
+  same information.
   [(#6577)](https://github.com/PennyLaneAI/pennylane/pull/6577)
 
 * The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
@@ -349,6 +366,7 @@ Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
+Lillian Frederiksen,
 Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
