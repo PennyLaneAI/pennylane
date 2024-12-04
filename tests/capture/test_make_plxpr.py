@@ -175,7 +175,7 @@ class TestAutoGraphIntegration:
         plxpr1 = qml.capture.make_plxpr(func)(0)
         plxpr2 = qml.capture.make_plxpr(qnode)(0)
 
-        # the plxpr includes a representation of a `cond` function
+        # the plxpr includes a representation of a `while_loop` function
         assert "while_loop[" in str(plxpr1)
         assert "while_loop[" in str(plxpr2)
 
@@ -186,7 +186,7 @@ class TestAutoGraphIntegration:
         assert np.allclose(eval(5), [0])
 
     def test_for_loop(self):
-        """Test that a foor loop is converted to a jaxpr with a ``while_loop`` function, and
+        """Test that a for loop is converted to a jaxpr with a ``for_loop`` function, and
         that in the case of a QNode, the resulting plxpr can be evaluated as expected"""
 
         def func(angles):
@@ -201,7 +201,7 @@ class TestAutoGraphIntegration:
         plxpr1 = qml.capture.make_plxpr(func)(jnp.array([0.0, 0.0]))
         plxpr2 = qml.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
 
-        # the plxpr includes a representation of a `cond` function
+        # the plxpr includes a representation of a `for_loop` function
         assert "for_loop[" in str(plxpr1)
         assert "for_loop[" in str(plxpr2)
 
