@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ from pennylane.wires import Wires
 
 class GQSP(Operation):
     r"""
-    Implements the generalized quantum signal processing `(GQSP) <https://arxiv.org/abs/2308.01501>`__ circuit.
+    Implements the generalized quantum signal processing (GQSP) circuit.
 
-    This algorithm takes as input a unitary matrix in the form of an operator and encodes, with the help of an auxiliary
-    qubit, a polynomial transformation of the unitary as shown below:
+    This operation encodes a polynomial transformation of an input unitary operator following the algorithm 
+    described in `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`__ as:
 
     .. math::
          U
@@ -39,18 +39,16 @@ class GQSP(Operation):
          * & * \\
          \end{pmatrix}
 
-
+    The implementation requires one auxiliary qubit.
     Args:
 
-        unitary (Operator): The unitary operator to be applied in the generalized quantum signal processing (GQSP) circuit.
-        angles (tensor[float]): An array of angles with shape `(3, d+1)`, where `d` is the degree of the desired polynomial.
-            These angles define the coefficients for the polynomial transformation applied to the unitary matrix.
-        control (Union[Wires, int, str]): The control qubit used to encode the polynomial transformation on the unitary
-            operator.
+        unitary (Operator): the operator to be encoded by the GQSP circuit
+        angles (tensor[float]): array of angles defining the polynomial transformation. The shape of the array must be `(3, d+1)`, where `d` is the degree of the polynomial.
+        control (Union[Wires, int, str]): control qubit used to encode the polynomial transformation
 
     .. note::
 
-        :func:`~.poly_to_angles` can be used to calculate the angles given a polynomial ``poly`` with ``routine="GQSP"``.
+       The  :func:`~.poly_to_angles` function can be used to calculate the angles for a given polynomial.
 
     Example:
 
@@ -59,7 +57,7 @@ class GQSP(Operation):
         # P(x) = -0.1 + 0.2j x + 0.3 x^2
         poly = [0.1, 0.2j, 0.3]
 
-        angles = qml.math.poly_to_angles(poly, "GQSP")
+        angles = qml.poly_to_angles(poly, "GQSP")
 
         @qml.prod # transforms the qfunc into an Operator
         def unitary(wires):

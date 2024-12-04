@@ -603,7 +603,7 @@ def _compute_gqsp_angles(poly_coeffs):
 
         return matrix
 
-    # Algorithm 1 in [arXiv:2308.01501]
+    # From Algorithm 1 in [arXiv:2308.01501]
     input_data = qml.math.array([poly_coeffs, complementary])
     num_elements = input_data.shape[1]
 
