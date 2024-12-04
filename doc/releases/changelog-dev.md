@@ -95,6 +95,10 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
   [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
 
+* Added submodule `devices.qubit_mixed.simulate` as a necessary step for the new API,
+featuring a `simulate` function for simulating mixed states in analytic mode.
+  [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
+
 * Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
   [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
 
