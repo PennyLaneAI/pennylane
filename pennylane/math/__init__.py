@@ -94,10 +94,9 @@ from .utils import (
     is_abstract,
 )
 from .interface_utils import (
-    _get_canonical_interface_name,
+    get_canonical_interface_name,
     SupportedInterfaceUserInput,
     SUPPORTED_INTERFACE_NAMES,
-    INTERFACE_MAP,
     get_deep_interface,
     get_interface,
     Interface,
@@ -166,6 +165,7 @@ __all__ = [
     "frobenius_inner_product",
     "get_dtype_name",
     "get_interface",
+    "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
     "in_backprop",

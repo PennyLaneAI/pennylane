@@ -27,7 +27,7 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
-from pennylane.math import Interface, SupportedInterfaceUserInput, _get_canonical_interface_name
+from pennylane.math import Interface, SupportedInterfaceUserInput, get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
@@ -512,7 +512,7 @@ class QNode:
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
-        interface: SupportedInterfaceUserInput = "auto",
+        interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         *,
         grad_on_execution: Literal[True, False, "best"] = "best",
@@ -567,7 +567,7 @@ class QNode:
         self.func = func
         self.device = device
         self._interface = (
-            Interface.NUMPY if diff_method is None else _get_canonical_interface_name(interface)
+            Interface.NUMPY if diff_method is None else get_canonical_interface_name(interface)
         )
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
@@ -629,7 +629,7 @@ class QNode:
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
-        self._interface = _get_canonical_interface_name(value)
+        self._interface = get_canonical_interface_name(value)
 
     @property
     def transform_program(self) -> TransformProgram:
@@ -938,23 +938,24 @@ class QNode:
         self.construct(args, kwargs)
 
         old_interface = self.interface
-        if old_interface == "auto":
+        if old_interface == Interface.AUTO:
             interface = (
                 Interface.JAX
                 if qml.capture.enabled()
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
-            try:
-                interface = _get_canonical_interface_name(interface)
-            except ValueError:
-                interface = Interface.AUTO
+            if interface != Interface.NUMPY:
+                try:
+                    interface = get_canonical_interface_name(interface)
+                except ValueError:
+                    interface = Interface.NUMPY
             self._interface = interface
 
         try:
             res = self._execution_component(args, kwargs)
         finally:
-            if old_interface == "auto":
-                self._interface = Interface.AUTO
+            if old_interface == Interface.AUTO:
+                self._interface = old_interface
 
         return res
 
