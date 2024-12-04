@@ -30,7 +30,6 @@ from pennylane.operation import Observable, Operator
 from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
-from pennylane.templates.state_preparations import Superposition
 from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
