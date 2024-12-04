@@ -42,7 +42,7 @@ def execute(
     tapes: QuantumScriptBatch,
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
-    interface: Optional[str] = Interface.AUTO,
+    interface: Optional[Union[str, Interface]] = Interface.AUTO,
     transform_program=None,
     inner_transform=None,
     config=None,
@@ -55,8 +55,7 @@ def execute(
     mcm_config=None,
     gradient_fn="unset",
 ) -> ResultBatch:
-    """New function to execute a batch of tapes on a device in an autodifferentiable-compatible
-    manner.
+    """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
@@ -66,13 +65,13 @@ def execute(
         diff_method (None, str, TransformDispatcher): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
-        interface (str, Interface): The interface that will be used for classical autodifferentiation.
+        interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
         inner_transform (.TransformProgram): A transform program to be applied to the tapes in
             inner execution, inside the ml interface.
-        config (qml.devices.ExecutionConfig): A datastructure describing the parameters
+        config (qml.devices.ExecutionConfig): A data structure describing the parameters
             needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. Only applies
