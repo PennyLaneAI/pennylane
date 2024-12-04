@@ -200,6 +200,10 @@ class Superposition(Operation):
     def num_params(self):
         return 1
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     def _flatten(self):
         metadata = tuple(
             (key, value) for key, value in self.hyperparameters.items() if key != "target_wires"

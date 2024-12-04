@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the ArbitraryStatePreparation template.
+Unit tests for the Superposition template.
 """
-from unicodedata import decomposition
 
 import numpy as np
 
@@ -160,7 +159,7 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jax(self, probs, basis):
-        """Test that MottonenStatePreparation can be correctly used with the JAX interface."""
+        """Test that Superposition can be correctly used with the JAX interface."""
         from jax import numpy as jnp
 
         probs = jnp.array(probs)
@@ -181,7 +180,7 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jax_jit(self, probs, basis):
-        """Test that MottonenStatePreparation can be correctly used with the JAX-JIT interface."""
+        """Test that Superposition can be correctly used with the JAX-JIT interface."""
         import jax
         from jax import numpy as jnp
 
@@ -204,7 +203,7 @@ class TestInterfaces:
 
     @pytest.mark.tf
     def test_tensorflow(self, probs, basis):
-        """Test that MottonenStatePreparation can be correctly used with the TensorFlow interface."""
+        """Test that Superposition can be correctly used with the TensorFlow interface."""
         import tensorflow as tf
 
         probs = tf.Variable(probs)
@@ -224,7 +223,7 @@ class TestInterfaces:
 
     @pytest.mark.torch
     def test_torch(self, probs, basis):
-        """Test that MottonenStatePreparation can be correctly used with the Torch interface."""
+        """Test that Superposition can be correctly used with the Torch interface."""
         import torch
 
         probs = torch.tensor(probs, dtype=torch.float64)
