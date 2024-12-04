@@ -43,6 +43,11 @@
     >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
     True
     ```
+    
+  * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms` 
+    are added to the device API for devices that provides a TOML configuration file and thus have 
+    a `capabilities` property.
+    [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
@@ -115,6 +120,13 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   * Implemented helper functions for geometry optimization, harmonic analysis,
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
+  * Implemented helper functions for calculating one-mode PES, two-mode PES, and
+    three-mode PES.
+    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+  * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
+    for storing the data.
+    [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
 
 <h3>Improvements 🛠</h3>
 
@@ -143,6 +155,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
   [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
+  [(#6668)](https://github.com/PennyLaneAI/pennylane/pull/6668)
 
 * `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
   pennylane variant jaxpr.
@@ -160,6 +173,9 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
 <h4>Other Improvements</h4>
+
+* Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
+  [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
 
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
