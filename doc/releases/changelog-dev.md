@@ -125,7 +125,6 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
   [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
 
-
 <h3>Improvements 🛠</h3>
 
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
@@ -312,8 +311,8 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
 * The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. 
-Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
-same information.
+  Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
+  same information.
   [(#6577)](https://github.com/PennyLaneAI/pennylane/pull/6577)
 
 * The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
