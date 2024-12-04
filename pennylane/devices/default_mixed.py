@@ -182,8 +182,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
 def warn_readout_error_state(
     tape: qml.tape.QuantumTape,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
-    """If a measurement in the QNode is an analytic state or density_matrix, and a readout error
-    parameter is defined, warn that readout error will not be applied.
+    """If a measurement in the QNode is an analytic state or density_matrix, warn that readout error will not be applied.
 
     Args:
         tape (QuantumTape, .QNode, Callable): a quantum circuit.
