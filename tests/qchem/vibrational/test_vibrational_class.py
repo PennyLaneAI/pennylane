@@ -333,6 +333,7 @@ def test_error_mode_localization():
     with pytest.raises(ValueError, match="The `bins` list cannot be empty."):
         vibrational.localize_normal_modes(freqs, vecs, bins=[])
 
+
 @pytest.mark.parametrize(
     ("sym", "geom", "method", "mult", "charge", "expected_dipole"),
     # Expected dipole was obtained using vibrant code
