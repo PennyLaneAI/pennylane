@@ -35,12 +35,12 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
             return {re.ResourceCH.resource_rep(): 1}
@@ -73,6 +73,13 @@ class ResourceS(qml.S, re.ResourceOperator):
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 3}
+
+    @staticmethod
+    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
+            return {re.ResourceControlledPhaseShift.resource_rep(): 1}
+
+        raise re.ResourcesNotDefined
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
@@ -130,12 +137,12 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires, num_ctrl_values, num_work_wires, **kwargs
+        num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
         if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
             return {re.ResourceCSWAP.resource_rep(): 1}
@@ -143,7 +150,7 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
         raise re.ResourcesNotDefined
 
     @classmethod
-    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): z % 2}
 
 
@@ -162,12 +169,19 @@ class ResourceT(qml.T, re.ResourceOperator):
         return re.CompressedResourceOp(cls, {})
 
     @classmethod
-    def adjoint_resource_decomp(cls, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
         """Resources obtained from the identity T^8 = I."""
         return {cls.resource_rep(): 7}
 
+    @staticmethod
+    def controlled_resource_decomp(num_ctrl_wires, num_ctrl_values, num_work_wires):
+        if num_ctrl_wires == 1 and num_ctrl_values == 0 and num_work_wires == 0:
+            return {re.ResourceControlledPhaseShift.resource_rep(): 1}
+
+        raise re.ResourcesNotDefined
+
     @classmethod
-    def pow_resource_decomp(cls, z, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
         """Resources obtained from the identity T^8 = I."""
         return {cls.resource_rep(): z % 8}
 
