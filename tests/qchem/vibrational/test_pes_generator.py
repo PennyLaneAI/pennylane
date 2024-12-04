@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import pes_generator, vibrational_class
 
 h5py = pytest.importorskip("h5py")
@@ -350,3 +351,81 @@ def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
 
     assert np.allclose(pes_threebody, exp_pes_threebody, atol=1e-6)
     assert np.allclose(dipole_threebody, exp_dip_threebody, atol=1e-6)
+
+
+def test_quad_order_error():
+    r"""Test that an error is raised if invalid value of quad_order is provided."""
+
+    sym = ["H", "F"]
+    geom = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+
+    with pytest.raises(ValueError, match="Number of sample points cannot be less than 1."):
+        vibrational.vibrational_pes(mol, quad_order=-1)
+
+
+def test_dipole_order_error():
+    r"""Test that an error is raised if invalid value of dipole_level is provided."""
+
+    sym = ["H", "F"]
+    geom = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+
+    with pytest.raises(
+        ValueError,
+        match="Currently, one-mode, two-mode and three-mode dipole calculations are supported.",
+    ):
+        vibrational.vibrational_pes(mol, dipole_level=4)
+
+
+@pytest.mark.parametrize(
+    ("sym", "geom", "dipole_level", "result_file"),
+    # Expected results were obtained using vibrant code
+    [
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5"),
+        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 1, "HF.hdf5"),
+    ],
+)
+def test_vibrational_pes(sym, geom, dipole_level, result_file):
+    r"""Test that vibrational_pes returns correct object."""
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+
+    vib_obj = vibrational.vibrational_pes(mol, dipole_level=dipole_level, cubic=True)
+
+    pes_file = os.path.join(ref_dir, result_file)
+    with h5py.File(pes_file, "r") as f:
+        exp_pes_onemode = np.array(f["V1_PES"][()])
+        exp_dip_onemode = np.array(f["D1_DMS"][()])
+        exp_pes_twomode = np.array(f["V2_PES"][()])
+        exp_dip_twomode = np.array(f["D2_DMS"][()])
+        exp_pes_threemode = np.array(f["V3_PES"][()])
+        exp_dip_threemode = np.array(f["D3_DMS"][()])
+        nmodes_expected = len(f["freqs"][()])
+
+    nmodes = len(vib_obj.freqs)
+
+    assert nmodes == nmodes_expected
+
+    for i in range(nmodes):
+        assert np.allclose(vib_obj.pes_onemode[i], exp_pes_onemode[i], atol=1e-5) or np.allclose(
+            vib_obj.pes_onemode[i], exp_pes_onemode[i][::-1], atol=1e-5
+        )
+        assert np.allclose(vib_obj.dipole_onemode[i], exp_dip_onemode[i], atol=1e-5) or np.allclose(
+            vib_obj.dipole_onemode[i], exp_dip_onemode[i][::-1, :], atol=1e-5
+        )
+        for j in range(nmodes):
+            assert np.allclose(vib_obj.pes_twomode[i, j], exp_pes_twomode[i, j], atol=1e-5)
+            if dipole_level > 1:
+                assert np.allclose(vib_obj.dipole_twomode[i, j], exp_dip_twomode[i, j], atol=1e-5)
+            else:
+                assert vib_obj.dipole_twomode is None
+            for k in range(nmodes):
+                assert np.allclose(
+                    vib_obj.pes_threemode[i, j, k], exp_pes_threemode[i, j, k], atol=1e-5
+                )
+                if dipole_level > 2:
+                    assert np.allclose(
+                        vib_obj.dipole_threemode[i, j, k], exp_dip_threemode[i, j, k], atol=1e-5
+                    )
+                else:
+                    assert vib_obj.dipole_threemode is None
