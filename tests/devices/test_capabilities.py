@@ -33,6 +33,7 @@ from pennylane.devices.capabilities import (
     _get_operations,
     _get_toml_section,
     load_toml_file,
+    observable_stopping_condition_factory,
     parse_toml_document,
     update_device_capabilities,
 )
@@ -718,3 +719,24 @@ class TestDeviceCapabilities:
             qml.Hamiltonian([0.5], [qml.PauliZ(0)]),
         ]:
             assert capabilities.supports_observable(obs.name) is False
+
+
+def test_observable_stopping_condition_factory():
+    """Tests the observable stopping condition factory."""
+
+    capabilities = DeviceCapabilities()
+    capabilities.observables = {
+        "PauliX": OperatorProperties(),
+        "PauliZ": OperatorProperties(),
+        "SProd": OperatorProperties(),
+        "Prod": OperatorProperties(),
+        "Sum": OperatorProperties(),
+        "LinearCombination": OperatorProperties(),
+    }
+
+    stopping_condition = observable_stopping_condition_factory(capabilities)
+    assert stopping_condition(qml.X(0)) is True
+    assert stopping_condition(qml.Y(0)) is False
+    assert stopping_condition(0.5 * qml.X(0)) is True
+    assert stopping_condition(0.5 * qml.Z(0) + 0.1 * qml.X(0) @ qml.Z(1)) is True
+    assert stopping_condition(qml.Hamiltonian([0.1, 0.2], [qml.Z(0), qml.X(0) @ qml.Y(1)])) is False

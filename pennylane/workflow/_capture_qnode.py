@@ -112,7 +112,7 @@ def _get_qnode_prim():
 
             # pylint: disable=protected-access
             return jax.vmap(partial(qnode._impl_call, shots=shots), batch_dims[n_consts:])(
-                *jax.tree_util.tree_leaves(non_const_args)
+                *non_const_args
             )
 
         # pylint: disable=protected-access
