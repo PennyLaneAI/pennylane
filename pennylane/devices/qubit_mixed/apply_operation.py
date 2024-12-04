@@ -648,8 +648,10 @@ def apply_snapshot(
         array: The unchanged quantum state
     """
     if debugger and debugger.active:
-        measurement = op.hyperparameters.get("measurement")
-        shots = execution_kwargs.get("tape_shots")
+        measurement = op.hyperparameters.get(
+            "measurement"
+        )  # default: None, meaning no measurement, simply copy the state
+        shots = execution_kwargs.get("tape_shots")  # default: None, analytic
 
         if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
