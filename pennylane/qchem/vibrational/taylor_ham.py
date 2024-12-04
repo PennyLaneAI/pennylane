@@ -21,6 +21,7 @@ from pennylane.bose import BoseSentence, BoseWord
 
 # pylint: disable=import-outside-toplevel
 
+
 def _import_sklearn():
     """Import mpi4py."""
     try:
