@@ -34,6 +34,7 @@ from .vibrational_class import (
 # pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
 # pylint: disable= import-outside-toplevel, too-many-positional-arguments, dangerous-default-value
 
+
 # constants
 HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
 C_LIGHT = 3 * 10**8  # m/s

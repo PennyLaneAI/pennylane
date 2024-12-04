@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import pes_generator, vibrational_class
 
