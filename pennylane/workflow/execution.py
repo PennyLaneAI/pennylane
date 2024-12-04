@@ -20,87 +20,21 @@ import inspect
 import logging
 from collections.abc import Callable
 from functools import partial
-from typing import Literal, Optional, Union, get_args
+from typing import Optional, Union
 from warnings import warn
 
-from cachetools import Cache, LRUCache
+from cachetools import Cache
 
 import pennylane as qml
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
-from ._cache_transform import _cache_transform
+from ._setup_transform_program import _setup_transform_program
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
+from .resolution import _resolve_interface
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-
-jpc_interfaces = {
-    "autograd",
-    "numpy",
-    "torch",
-    "jax",
-    "jax-jit",
-    "tf",
-}
-
-SupportedInterfaceUserInput = Literal[
-    None,
-    "auto",
-    "autograd",
-    "numpy",
-    "scipy",
-    "jax",
-    "jax-jit",
-    "jax-python",
-    "JAX",
-    "torch",
-    "pytorch",
-    "tf",
-    "tensorflow",
-    "tensorflow-autograph",
-    "tf-autograph",
-]
-
-_mapping_output = (
-    "numpy",
-    "auto",
-    "autograd",
-    "autograd",
-    "numpy",
-    "jax",
-    "jax-jit",
-    "jax",
-    "jax",
-    "torch",
-    "torch",
-    "tf",
-    "tf",
-    "tf-autograph",
-    "tf-autograph",
-)
-
-INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
-"""dict[str, str]: maps an allowed interface specification to its canonical name."""
-
-SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
-"""list[str]: allowed interface strings"""
-
-
-# pylint: disable=import-outside-toplevel
-def _use_tensorflow_autograph():
-    """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
-    try:  # pragma: no cover
-        import tensorflow as tf
-    except ImportError as e:  # pragma: no cover
-        raise qml.QuantumFunctionError(  # pragma: no cover
-            "tensorflow not found. Please install the latest "  # pragma: no cover
-            "version of tensorflow supported by Pennylane "  # pragma: no cover
-            "to enable the 'tensorflow' interface."  # pragma: no cover
-        ) from e  # pragma: no cover
-
-    return not tf.executing_eagerly()
 
 
 # pylint: disable=import-outside-toplevel
@@ -158,9 +92,7 @@ def _get_ml_boundary_execute(
     return ml_boundary
 
 
-def _make_inner_execute(
-    device, cache, inner_transform, execution_config=None, numpy_only=True
-) -> Callable:
+def _make_inner_execute(device, inner_transform, execution_config=None) -> Callable:
     """Construct the function that will execute the tapes inside the ml framework registration
     for the 1st order derivatives.
 
@@ -182,15 +114,7 @@ def _make_inner_execute(
             cache (None | MutableMapping): The cache to use. If ``None``, caching will not occur.
         """
 
-        transform_program = qml.transforms.core.TransformProgram(inner_transform)
-
-        if numpy_only:
-            transform_program.add_transform(qml.transforms.convert_to_numpy_parameters)
-
-        if cache is not None:
-            transform_program.add_transform(_cache_transform, cache=cache)
-
-        transformed_tapes, transform_post_processing = transform_program(tapes)
+        transformed_tapes, transform_post_processing = inner_transform(tapes)
 
         if transformed_tapes:
             results = device.execute(transformed_tapes, execution_config=execution_config)
@@ -202,46 +126,6 @@ def _make_inner_execute(
     return inner_execute
 
 
-def _get_interface_name(tapes, interface):
-    """Helper function to get the interface name of a list of tapes
-
-    Args:
-        tapes (list[.QuantumScript]): Quantum tapes
-        interface (Optional[str]): Original interface to use as reference.
-
-    Returns:
-        str: Interface name"""
-
-    if interface not in SUPPORTED_INTERFACE_NAMES:
-        raise qml.QuantumFunctionError(
-            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-        )
-
-    interface = INTERFACE_MAP[interface]
-
-    if interface == "auto":
-        params = []
-        for tape in tapes:
-            params.extend(tape.get_parameters(trainable_only=False))
-        interface = qml.math.get_interface(*params)
-        if interface != "numpy":
-            interface = INTERFACE_MAP.get(interface, None)
-    if interface == "tf" and _use_tensorflow_autograph():
-        interface = "tf-autograph"
-    if interface == "jax":
-        try:  # pragma: no cover
-            from .interfaces.jax import get_jax_interface_name
-        except ImportError as e:  # pragma: no cover
-            raise qml.QuantumFunctionError(  # pragma: no cover
-                "jax not found. Please install the latest "  # pragma: no cover
-                "version of jax to enable the 'jax' interface."  # pragma: no cover
-            ) from e  # pragma: no cover
-
-        interface = get_jax_interface_name(tapes)
-
-    return interface
-
-
 # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches, too-many-statements
 # pylint: disable=too-many-locals
 def execute(
@@ -249,6 +133,7 @@ def execute(
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
     interface: Optional[str] = "auto",
+    *,
     transform_program=None,
     inner_transform=None,
     config=None,
@@ -395,7 +280,7 @@ def execute(
 
     ### Specifying and preprocessing variables ####
 
-    interface = _get_interface_name(tapes, interface)
+    interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {"jax", "jax-jit"}:
         grad_on_execution = grad_on_execution if isinstance(diff_method, Callable) else False
@@ -411,50 +296,32 @@ def execute(
 
     gradient_kwargs = gradient_kwargs or {}
     mcm_config = mcm_config or {}
-    config = config or _get_execution_config(
-        diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
-    )
+    if not config:
+        config = qml.devices.ExecutionConfig(
+            interface=interface,
+            gradient_method=diff_method,
+            grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+            use_device_jacobian_product=device_vjp,
+            mcm_config=mcm_config,
+            gradient_keyword_arguments=gradient_kwargs,
+        )
+        config = device.setup_execution_config(config)
 
-    is_gradient_transform = isinstance(diff_method, qml.transforms.core.TransformDispatcher)
-    transform_program, inner_transform = _make_transform_programs(
-        device, config, inner_transform, transform_program, is_gradient_transform
-    )
+    # pylint: disable=protected-access
+    if transform_program is None or inner_transform is None:
+        transform_program, inner_transform = _setup_transform_program(
+            transform_program, device, config, cache, cachesize
+        )
 
-    # If caching is desired but an explicit cache is not provided, use an ``LRUCache``.
-    if cache is True:
-        cache = LRUCache(maxsize=cachesize)
-        setattr(cache, "_persistent_cache", False)
-
-    # Ensure that ``cache`` is not a Boolean to simplify downstream code.
-    elif cache is False:
-        cache = None
-
-    # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = interface == "numpy" or config.gradient_method in {
-        None,
-        "backprop",
-    }
-    device_supports_interface_data = no_interface_boundary_required and (
-        interface == "numpy"
-        or config.gradient_method == "backprop"
-        or getattr(device, "short_name", "") == "default.mixed"
-    )
-
-    inner_execute = _make_inner_execute(
-        device,
-        cache,
-        inner_transform,
-        config,
-        numpy_only=not device_supports_interface_data,
-    )
+    inner_execute = _make_inner_execute(device, inner_transform, config)
 
     # moved to its own explicit step so that it will be easier to remove
     def inner_execute_with_empty_jac(tapes, **_):
         return inner_execute(tapes), []
 
-    if interface in jpc_interfaces:
-        execute_fn = inner_execute
-    else:
+    execute_fn = inner_execute
+
+    if interface == "tf-autograph":
         execute_fn = inner_execute_with_empty_jac
 
     #### Executing the configured setup #####
@@ -464,17 +331,21 @@ def execute(
         return post_processing(tapes)
 
     # Exiting early if we do not need to deal with an interface boundary
+    no_interface_boundary_required = interface == "numpy" or config.gradient_method in {
+        None,
+        "backprop",
+    }
     if no_interface_boundary_required:
         results = inner_execute(tapes)
         return post_processing(results)
 
-    if config.use_device_jacobian_product and interface in jpc_interfaces:
+    if config.use_device_jacobian_product and interface != "tf-autograph":
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
         jpc = DeviceDerivatives(device, config)
 
-        if interface in jpc_interfaces:
+        if interface != "tf-autograph":
             execute_fn = (
                 jpc.execute_and_cache_jacobian if config.grad_on_execution else inner_execute
             )
@@ -528,7 +399,7 @@ def execute(
         # within execute_and_gradients, so providing a diff_method
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
-    elif interface in jpc_interfaces:
+    elif interface != "tf-autograph":
         # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
         cache_full_jacobian = (interface == "autograd") and not cache
 
@@ -572,7 +443,7 @@ def execute(
         differentiable=max_diff > 1,
     )
 
-    if interface in jpc_interfaces:
+    if interface != "tf-autograph":
         results = ml_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
@@ -580,40 +451,3 @@ def execute(
         )
 
     return post_processing(results)
-
-
-def _make_transform_programs(
-    device, config, inner_transform, transform_program, is_gradient_transform
-):
-    """helper function to make the transform programs."""
-
-    # If diff_method is a gradient transform, device preprocessing should happen in
-    # inner execute (inside the ml boundary).
-    if is_gradient_transform:
-        if inner_transform is None:
-            inner_transform = device.preprocess(config)[0]
-        if transform_program is None:
-            transform_program = qml.transforms.core.TransformProgram()
-    else:
-        if inner_transform is None:
-            inner_transform = qml.transforms.core.TransformProgram()
-        if transform_program is None:
-            transform_program = device.preprocess(config)[0]
-
-    return transform_program, inner_transform
-
-
-def _get_execution_config(
-    diff_method, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
-):
-    """Helper function to get the execution config."""
-    config = qml.devices.ExecutionConfig(
-        interface=interface,
-        gradient_method=diff_method,
-        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
-        use_device_jacobian_product=device_vjp,
-        mcm_config=mcm_config,
-        gradient_keyword_arguments=gradient_kwargs,
-    )
-
-    return device.preprocess(config)[1]
