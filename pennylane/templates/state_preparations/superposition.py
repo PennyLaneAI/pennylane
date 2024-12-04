@@ -20,44 +20,65 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
 
-def _get_permutation(binary_lists):
+def _get_permutation(basis_list):
+    r"""
+    Given a list of :math:`m` basis states, this function generates a dictionary assigning to each of them
+    the :math:`m`-th basis states in the computational base.
+
+    ** Example **
+
+    .. code-block:: pycon
+
+        >>> basis_list = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
+        >>> _get_permutation(basis_list)
+        {
+        [1, 1, 0, 0]: [0, 0, 0, 0],
+        [1, 0, 1, 0]: [0, 0, 0, 1],
+        [0, 1, 0, 1]: [0, 0, 1, 0],
+        [1, 0, 0, 1]: [0, 0, 1, 1]
+        }
+
+    ** Details **
+
+    If a state within ``basis_list`` is one of the first :math:`m` basis states, this value
+    will be removed from the dictionary.
+
+    .. code-block:: pycon
+
+        >>>> basis_list = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
+        >>> _get_permutation(basis_list)
+        {
+        [1, 1, 0, 0]: [0, 0, 0, 0],
+        [0, 1, 0, 1]: [0, 0, 1, 0],
+        [1, 0, 0, 1]: [0, 0, 1, 1]
+        }
+
+    Note that `[0, 0, 0, 1]` has been deleted in the previous example.
+
     """
-    Generate a dictionary mapping each binary list to the smallest possible binary list,
-    ensuring keys that can map to themselves are prioritized. Remaining keys are matched
-    to unused binary lists. Keys that match their values are removed in the output.
 
-    Args:
-        binary_lists (List[List]): A list of binary lists with fixed length.
+    length = len(basis_list[0])  # All binary lists have the same length
+    smallest_basis_lists = [list(map(int, f"{i:0{length}b}")) for i in range(len(basis_list))]
 
-    Returns:
-        dict: A dictionary mapping original binary lists to the smallest binary lists,
-              excluding self-mapped keys.
-    """
-    # Step 1: Generate all smallest possible binary lists
-    length = len(binary_lists[0])  # All binary lists have the same length
-    smallest_binary_lists = [list(map(int, f"{i:0{length}b}")) for i in range(len(binary_lists))]
-
-    # Step 2: Initialize the mapping dictionary and a set for used values
     binary_dict = {}
     used_smallest = set()
 
-    # Step 3: Assign keys that can map to themselves
-    for original in binary_lists:
-        if original in smallest_binary_lists and tuple(original) not in used_smallest:
+    # Assign keys that can map to themselves
+    for original in basis_list:
+        if original in smallest_basis_lists and tuple(original) not in used_smallest:
             binary_dict[tuple(original)] = original
             used_smallest.add(tuple(original))
 
-    # Step 4: Assign remaining keys to unused binary lists
-    remaining_keys = [key for key in binary_lists if tuple(key) not in binary_dict]
+    # Assign remaining keys to unused binary lists
+    remaining_keys = [key for key in basis_list if tuple(key) not in binary_dict]
     remaining_values = [
-        value for value in smallest_binary_lists if tuple(value) not in used_smallest
+        value for value in smallest_basis_lists if tuple(value) not in used_smallest
     ]
 
     for key, value in zip(remaining_keys, remaining_values):
         binary_dict[tuple(key)] = value
         used_smallest.add(tuple(value))
 
-    # Step 5: Filter out self-mapped keys
     filtered_dict = {key: value for key, value in binary_dict.items() if list(key) != value}
     return filtered_dict
 
@@ -69,8 +90,8 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
     an auxiliary qubit.
 
     Args:
-        basis1 (List): The first basis state, represented as a list of binary digits.
-        basis2 (List): The second basis state, represented as a list of binary digits.
+        basis1 (List): The initial basis state, represented as a list of binary digits.
+        basis2 (List): The target basis state, represented as a list of binary digits.
         wires (Sequence[int]): The list of wires that the operator acts on
         work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation
 
@@ -79,13 +100,13 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
     """
 
     ops = []
-    ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2))
+    ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis1))
 
     for i in range(len(basis1)):
         if basis1[i] != basis2[i]:
             ops.append(qml.CNOT(wires=work_wire + wires[i]))
 
-    ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis1))
+    ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2))
 
     return ops
 
@@ -141,7 +162,7 @@ class Superposition(Operation):
             )
         )
         perms = _get_permutation(basis)
-        for basis1, basis2 in perms.items():
+        for basis2, basis1 in perms.items():
             op_list += _permutation_operator(basis1, basis2, target_wires, work_wire)
 
         return op_list
