@@ -207,57 +207,130 @@ class QSVT(Operation):
     Raises:
         ValueError: if the input block encoding is not an operator
 
-    **Example**
+    **Example 1:**
 
-    To implement QSVT in a circuit, we can use the following method:
+    This example shows how to use the :class:`~.QSVT` template with :class:`~.PrepSelPrep`.
+    This block encoding is used when it is known the pauli representation of the Hamiltonian.
+    It is chosen the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` and the
+    hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`.
 
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> A = np.array([[0.1]])
-    >>> block_encode = qml.BlockEncode(A, wires=[0, 1])
-    >>> shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
-    >>> @qml.qnode(dev)
-    >>> def example_circuit():
-    ...    qml.QSVT(block_encode, shifts)
-    ...    return qml.expval(qml.Z(0))
+    .. code-block::
 
-    The resulting circuit implements QSVT.
+        poly = np.array([0,-1, 0, 0.5, 0 , 0.5])
+        coeffs = np.array([0.1, -0.7, -0.2])
+        obs = [qml.X(3), qml.X(3) @ qml.Z(4), qml.Z(3) @ qml.Y(4)]
+        H = qml.dot(coeffs, obs)
 
-    >>> print(qml.draw(example_circuit)())
-    0: ─╭QSVT─┤  <Z>
-    1: ─╰QSVT─┤
 
-    To see the implementation details, we can expand the circuit:
+        control_wires = [1, 2]
+        block_encode = qml.PrepSelPrep(H, control=control_wires)
+        angles = qml.poly_to_angles(poly, "QSVT")
+        projectors = [
+            qml.PCPhase(angles[i], dim=2 ** len(H.wires), wires=control_wires + H.wires)
+            for i in range(len(angles))
+        ]
 
-    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encode, shifts)])
-    >>> print(q_script.expand().draw(decimals=2))
-    0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(1.10)─╭BlockEncode(M0)†─╭∏_ϕ(2.10)─┤
-    1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(1.10)─╰BlockEncode(M0)†─╰∏_ϕ(2.10)─┤
+        dev = qml.device("default.qubit")
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.ctrl(qml.QSVT, control=0, control_values=[1])(block_encode, projectors)
+            qml.ctrl(qml.adjoint(qml.QSVT), control=0, control_values=[0])(block_encode, projectors)
+            qml.Hadamard(0)
+            return qml.state()
 
-    When working with this class directly, we can make use of any PennyLane operation
-    to represent our block-encoding and our phase-shifts.
+        matrix = qml.matrix(circuit, wire_order=[0] + control_wires + H.wires)()
 
-    >>> dev = qml.device("default.qubit", wires=[0])
-    >>> block_encoding = qml.Hadamard(wires=0)  # note H is a block encoding of 1/sqrt(2)
-    >>> phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]  # -2*theta to match convention
-    >>>
-    >>> @qml.qnode(dev)
-    >>> def example_circuit():
-    ...     qml.QSVT(block_encoding, phase_shifts)
-    ...     return qml.expval(qml.Z(0))
-    >>>
-    >>> example_circuit()
-    tensor(0.54030231, requires_grad=True)
+    .. code-block:: pycon
 
-    Once again, we can visualize the circuit as follows:
+        >>>print(np.round(matrix[: 2 ** len(H.wires), : 2 ** len(H.wires)], 4))
+        [[-0.    +0.j      0.    +0.0968j  0.3502-0.j     -0.    -0.j    ]
+         [ 0.    -0.0968j -0.    -0.j     -0.    -0.j     -0.2534+0.j    ]
+         [ 0.3502+0.j     -0.    +0.j      0.    +0.j     -0.    -0.0968j]
+         [-0.    +0.j     -0.2534-0.j     -0.    +0.0968j -0.    +0.j    ]]
 
-    >>> print(qml.draw(example_circuit)())
-    0: ──QSVT─┤  <Z>
+    More examples can be found below in Usage Details.
 
-    To see the implementation details, we can expand the circuit:
+    .. details::
+        :title: Usage Details
 
-    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
-    >>> print(q_script.expand().draw(decimals=2))
-    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+        **Example 1:**
+
+        This example shows how to use the :class:`~.QSVT` template with :class:`~.FABLE`.
+        This matrix block-encoding is slower for simulation but is hardware compatible.
+        It is chosen the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` and an
+        arbitrary hermitian matrix.
+
+        .. code-block::
+
+            poly = [0, -1, 0, 0.5, 0, 0.5]
+            angles = qml.poly_to_angles(poly, "QSVT")
+
+            input_matrix = np.array([[0.2, 0.1], [0.1, -0.1]])
+
+            wires = [1,2,3]
+            block_encode = qml.FABLE(len(input_matrix) * input_matrix, wires= wires)
+            projectors = [
+                qml.PCPhase(angles[i], dim= len(input_matrix), wires=wires)
+                for i in range(len(angles))
+            ]
+
+            dev = qml.device("default.qubit")
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(0)
+                qml.ctrl(qml.QSVT, control=0, control_values=[1])(block_encode, projectors)
+                qml.ctrl(qml.adjoint(qml.QSVT), control=0, control_values=[0])(block_encode, projectors)
+                qml.Hadamard(0)
+                return qml.state()
+
+            matrix = qml.matrix(circuit, wire_order=[0] + control_wires + H.wires)()
+
+        .. code-block:: pycon
+
+            >>>print(np.round(matrix[: len(input_matrix), : len(input_matrix)], 4))
+            [[-0.1942+0.j -0.0979+0.j]
+             [-0.0979-0.j  0.0995-0.j]]
+
+        **Example 2:**
+
+        This example shows how to use the :class:`~.QSVT` template with :class:`~.BlockEncode`.
+        This matrix block-encoding is faster for simulation but is not hardware compatible.
+        It is chosen the polynomial :math:`p(x) = -x - 0.5x^3 + 0.5x^5` and an
+        arbitrary hermitian matrix.
+
+        .. code-block::
+
+            poly = [0, -1, 0, 0.5, 0, 0.5]
+            angles = qml.poly_to_angles(poly, "QSVT")
+
+            input_matrix = np.array([[0.2, 0.1], [0.1, -0.1]])
+
+            wires = [1,2]
+            block_encode = qml.BlockEncode(input_matrix, wires= wires)
+
+            projectors = [
+                qml.PCPhase(angles[i], dim= len(input_matrix), wires=wires)
+                for i in range(len(angles))
+            ]
+
+            dev = qml.device("default.qubit")
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(0)
+                qml.ctrl(qml.QSVT, control=0, control_values=[1])(block_encode, projectors)
+                qml.ctrl(qml.adjoint(qml.QSVT), control=0, control_values=[0])(block_encode, projectors)
+                qml.Hadamard(0)
+                return qml.state()
+
+            matrix = qml.matrix(circuit, wire_order=[0] + control_wires + H.wires)()
+
+        .. code-block:: pycon
+
+            >>>print(np.round(matrix[: len(input_matrix), : len(input_matrix)], 4))
+            [[-0.1942+0.j -0.0979+0.j]
+             [-0.0979-0.j  0.0995-0.j]]
+
     """
 
     num_wires = AnyWires
