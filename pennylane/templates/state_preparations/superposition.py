@@ -80,7 +80,7 @@ def _get_permutation(basis_list):
 
 
 def _permutation_operator(basis1, basis2, wires, work_wire):
-    """
+    r"""
     Function that takes two basis states, ``basis1`` and ``basis2``, and creates an operator that
     maps :math:`|\text{basis1}\rangle` to :math:`|\text{basis2}\rangle`. To achieve this, it uses
     an auxiliary qubit.
@@ -177,8 +177,6 @@ class Superposition(Operation):
         .. math::
 
             |\phi\rangle = \sum_i^m c_i |b_i\rangle.
-
-
     """
 
     num_wires = AnyWires
@@ -187,7 +185,7 @@ class Superposition(Operation):
 
     def __init__(
         self, coeffs, basis, wires, work_wire, id=None
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-positional-arguments
 
         self.hyperparameters["basis"] = tuple(tuple(b) for b in basis)
         self.hyperparameters["target_wires"] = qml.wires.Wires(wires)
@@ -239,11 +237,13 @@ class Superposition(Operation):
 
         **Example**
 
-        >>> qml.Superposition(np.sqrt([1/2, 1/2]), [[1, 1], [0, 0]], [0, 1], 2).decomposition()
-        [StatePrep(array([0.70710678, 0.70710678]), wires=[1]),
-        MultiControlledX(wires=[0, 1, 2], control_values=[False, True]),
-        CNOT(wires=[2, 0]),
-        Toffoli(wires=[0, 1, 2])]
+        .. code-block:: pycon
+
+            >>> qml.Superposition(np.sqrt([1/2, 1/2]), [[1, 1], [0, 0]], [0, 1], 2).decomposition()
+            [StatePrep(array([0.70710678, 0.70710678]), wires=[1]),
+            MultiControlledX(wires=[0, 1, 2], control_values=[False, True]),
+            CNOT(wires=[2, 0]),
+            Toffoli(wires=[0, 1, 2])]
 
         """
 
