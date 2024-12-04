@@ -940,15 +940,14 @@ class QNode:
         old_interface = self.interface
         if old_interface == "auto":
             interface = (
-                "jax"
+                Interface.JAX
                 if qml.capture.enabled()
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
-            if interface != "numpy":
-                try:
-                    interface = get_canonical_interface_name(interface)
-                except ValueError:
-                    interface = Interface.NUMPY
+            try:
+                interface = get_canonical_interface_name(interface)
+            except ValueError:
+                interface = Interface.NUMPY
             self._interface = interface
 
         try:
