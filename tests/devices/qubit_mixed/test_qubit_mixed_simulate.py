@@ -75,11 +75,11 @@ class TestBasicCircuit:
     @staticmethod
     def get_quantum_script(phi, wires):
         """Get the quantum script where RX is applied then observables are measured"""
-        ops = [qml.RX(phi, wires=wires[0])]
+        ops = [qml.RX(phi, wires=wires)]
         obs = [
-            qml.expval(qml.PauliX(wires[0])),
-            qml.expval(qml.PauliY(wires[0])),
-            qml.expval(qml.PauliZ(wires[0])),
+            qml.expval(qml.PauliX(wires)),
+            qml.expval(qml.PauliY(wires)),
+            qml.expval(qml.PauliZ(wires)),
         ]
         return qml.tape.QuantumScript(ops, obs)
 
