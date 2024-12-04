@@ -87,7 +87,26 @@ def make_plxpr(
     .. details ::
         :title: Usage Details
 
-        Test
+        The ``autograph`` argument is ``True`` by default, converting Pythonic control flow to PennyLane
+        supported control flow. This requires the diastatic-malt package, a standalone fork of the AutoGraph
+        module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
+        ).
+
+        On its own, capture of standard Python control flow is not supported:
+
+        .. code-block:: python
+
+            def fn(x):
+                if x > 5:
+                    return x+1
+                return x+2
+
+        For this function, capture doesn't work without autograph:
+
+        >>> plxpr_fn = qml.capture.make_plxpr(fn, autograph=False)
+        >>> plxpr = plxpr_fn(3)
+        TracerBoolConversionError: Attempted boolean conversion of traced array with shape bool[].
+
     """
     if not has_jax:  # pragma: no cover
         raise ImportError(
