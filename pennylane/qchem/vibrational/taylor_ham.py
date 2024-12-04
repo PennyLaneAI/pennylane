@@ -536,9 +536,9 @@ def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, uloc=None):
     else:
         start_deg = 3
 
-    harm_pot = taylor_harmonic(taylor_coeffs, freqs)
-    ham = taylor_anharmonic(taylor_coeffs, start_deg) + harm_pot
-    kin_ham = taylor_kinetic(taylor_coeffs, freqs, is_loc, uloc)
+    harm_pot = _taylor_harmonic(taylor_coeffs, freqs)
+    ham = _taylor_anharmonic(taylor_coeffs, start_deg) + harm_pot
+    kin_ham = _taylor_kinetic(taylor_coeffs, freqs, is_loc, uloc)
     ham += kin_ham
     return ham.normal_order()
 
