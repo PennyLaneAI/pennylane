@@ -235,7 +235,7 @@ class LegacyDeviceFacade(Device):
                 mcm_config=execution_config.mcm_config,
             )
         else:
-            program.add_transform(qml.defer_measurements, device=self)
+            program.add_transform(qml.defer_measurements, allow_postselect=False)
 
         return program, execution_config
 
