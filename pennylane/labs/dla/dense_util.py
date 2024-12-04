@@ -346,7 +346,7 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
     Returns:
         bool: Whether or not all properties are fulfilled
 
-    .. see-also:: :func:`~cartan_decomp`
+    .. seealso:: :func:`~cartan_decomp`
 
     **Example**
 
