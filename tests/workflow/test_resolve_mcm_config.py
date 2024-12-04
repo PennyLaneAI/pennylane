@@ -26,10 +26,12 @@ def test_no_finite_shots():
     mcm_config = MCMConfig(mcm_method="one-shot")
 
     with pytest.raises(ValueError, match="Cannot use the 'one-shot' method"):
-        _resolve_mcm_config(mcm_config, interface=None, finite_shots=False)
+        _resolve_mcm_config(mcm_config, interface=Interface.AUTO, finite_shots=False)
 
     mcm_config = MCMConfig(mcm_method=None, postselect_mode="hw-like")
-    resolved_mcm_config = _resolve_mcm_config(mcm_config, interface=None, finite_shots=False)
+    resolved_mcm_config = _resolve_mcm_config(
+        mcm_config, interface=Interface.AUTO, finite_shots=False
+    )
     assert resolved_mcm_config.postselect_mode is None
 
 
@@ -40,7 +42,7 @@ def test_single_branch_statistics():
     with pytest.raises(
         ValueError, match="Cannot use mcm_method='single-branch-statistics' without qml.qjit."
     ):
-        _resolve_mcm_config(mcm_config, interface=None, finite_shots=True)
+        _resolve_mcm_config(mcm_config, interface=Interface.AUTO, finite_shots=True)
 
 
 def test_resolve_mcm_config_jax_jit_deferred():
