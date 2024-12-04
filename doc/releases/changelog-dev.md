@@ -123,10 +123,6 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
 
-  * Implemented helper functions for calculating one-mode PES, two-mode PES, and
-    three-mode PES.
-    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
-
 <h3>Improvements 🛠</h3>
 
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
