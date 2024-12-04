@@ -5,9 +5,9 @@
 <h3>New features since last release</h3>
 
 * Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
-  class. Device developers are encouraged to override these two methods separately instead of the 
-  `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these 
-  two methods or `preprocess`, but not both. In the long term, we will slowly phase out the use of 
+  class. Device developers are encouraged to override these two methods separately instead of the
+  `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these
+  two methods or `preprocess`, but not both. In the long term, we will slowly phase out the use of
   `preprocess` in favour of these two methods for better separation of concerns.
   [(#6617)](https://github.com/PennyLaneAI/pennylane/pull/6617)
 
@@ -32,20 +32,20 @@
 
     ```python
     from pennylane.devices import Device
-    
+
     class MyDevice(Device):
-    
+
         config_filepath = "path/to/config.toml"
-    
+
         ...
     ```
     ```pycon
     >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
     True
     ```
-    
-  * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms` 
-    are added to the device API for devices that provides a TOML configuration file and thus have 
+
+  * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms`
+    are added to the device API for devices that provides a TOML configuration file and thus have
     a `capabilities` property.
     [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
 
@@ -150,7 +150,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * PennyLane transforms can now be captured as primitives with experimental program capture enabled.
   [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
 
-* `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
+* `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits.
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
   [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
   [(#6668)](https://github.com/PennyLaneAI/pennylane/pull/6668)
@@ -172,6 +172,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 <h4>Other Improvements</h4>
 
+* Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
+  [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
+
 * Added PyTree support for measurements in a circuit. 
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
 
@@ -185,8 +188,8 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
       return {"Probabilities": qml.probs(), "State": qml.state()}
   ```
   ```pycon
-  >>> circuit() 
-  {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])} 
+  >>> circuit()
+  {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])}
   ```
 
 * `_cache_transform` transform has been moved to its own file located
@@ -211,7 +214,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
   [(#6428)](https://github.com/PennyLaneAI/pennylane/pull/6428)
 
-* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or 
+* Added `get_resources()` functionality which allows users to extract resources from a quantum function, tape or
   resource operation. Additionally added some standard gatesets `DefaultGateSet` to track resources with respect to.
   [(#6500)](https://github.com/PennyLaneAI/pennylane/pull/6500)
 
@@ -240,7 +243,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 * Legacy operator arithmetic has been removed. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
-  Note that `qml.Hamiltonian` will continue to dispatch to `qml.ops.LinearCombination`. For more information, 
+  Note that `qml.Hamiltonian` will continue to dispatch to `qml.ops.LinearCombination`. For more information,
   check out the [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6548)](https://github.com/PennyLaneAI/pennylane/pull/6548)
   [(#6602)](https://github.com/PennyLaneAI/pennylane/pull/6602)
@@ -256,7 +259,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
   * `qml.utils.pauli_eigs` has been moved to `qml.pauli.utils`.
 
   * `qml.utils.expand_vector` has been moved to `qml.math.expand_vector`.
-  
+
 * The `qml.qinfo` module has been removed. Please see the respective functions in the `qml.math` and `qml.measurements`
   modules instead.
   [(#6584)](https://github.com/PennyLaneAI/pennylane/pull/6584)
@@ -279,7 +282,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * `QNode.gradient_fn` has been removed. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
   process the diff method.
   [(#6535)](https://github.com/PennyLaneAI/pennylane/pull/6535)
- 
+
 * The `qml.QubitStateVector` template has been removed. Instead, use `qml.StatePrep`.
   [(#6525)](https://github.com/PennyLaneAI/pennylane/pull/6525)
 
@@ -287,12 +290,11 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
   [(#6527)](https://github.com/PennyLaneAI/pennylane/pull/6527)
 
 * The `max_expansion` argument for `qml.transforms.clifford_t_decomposition` has been removed.
-  [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
   [(#6571)](https://github.com/PennyLaneAI/pennylane/pull/6571)
 
 * The `expand_depth` argument for `qml.compile` has been removed.
   [(#6531)](https://github.com/PennyLaneAI/pennylane/pull/6531)
-  
+
 * The `qml.shadows.shadow_expval` transform has been removed. Instead, please use the
   `qml.shadow_expval` measurement process.
   [(#6530)](https://github.com/PennyLaneAI/pennylane/pull/6530)
@@ -300,7 +302,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 
 <h3>Deprecations 👋</h3>
 
-* The `tape` and `qtape` properties of `QNode` have been deprecated. 
+* The `tape` and `qtape` properties of `QNode` have been deprecated.
   Instead, use the `qml.workflow.construct_tape` function.
   [(#6583)](https://github.com/PennyLaneAI/pennylane/pull/6583)
   [(#6650)](https://github.com/PennyLaneAI/pennylane/pull/6650)
@@ -311,12 +313,12 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * The `decomp_depth` argument in `qml.transforms.set_decomposition` is deprecated and will be removed in v0.41.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
-* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated. 
-  Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the 
-  same information.
+* The `output_dim` property of `qml.tape.QuantumScript` has been deprecated.
+Instead, use method `shape` of `QuantumScript` or `MeasurementProcess` to get the
+same information.
   [(#6577)](https://github.com/PennyLaneAI/pennylane/pull/6577)
 
-* The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated. 
+* The `QNode.get_best_method` and `QNode.best_method_str` methods have been deprecated.
   Instead, use the `qml.workflow.get_best_diff_method` function.
   [(#6418)](https://github.com/PennyLaneAI/pennylane/pull/6418)
 
@@ -346,7 +348,7 @@ following 4 sets of functions have been either moved or removed[(#6588)](https:/
 * `QNode` return behaviour is now consistent for lists and tuples.
   [(#6568)](https://github.com/PennyLaneAI/pennylane/pull/6568)
 
-* `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily 
+* `qml.QNode` now accepts arguments with types defined in libraries that are not necessarily
   in the list of supported interfaces, such as the `Graph` class defined in `networkx`.
   [(#6600)](https://github.com/PennyLaneAI/pennylane/pull/6600)
 
