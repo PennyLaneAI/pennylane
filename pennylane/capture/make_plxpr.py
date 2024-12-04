@@ -107,6 +107,27 @@ def make_plxpr(
         >>> plxpr = plxpr_fn(3)
         TracerBoolConversionError: Attempted boolean conversion of traced array with shape bool[].
 
+        With AutoGraph, the control flow is automatically converted to the native PennyLane control
+        flow implementation, and succeeds:
+
+        >>> plxpr_fn = qml.capture.make_plxpr(fn)
+        >>> plxpr = plxpr_fn(3)
+        >>> plxpr
+        { lambda ; a:i64[]. let
+            b:bool[] = gt a 5
+            _:bool[] c:i64[] = cond[
+              args_slice=slice(4, None, None)
+              consts_slices=[slice(2, 3, None), slice(3, 4, None)]
+              jaxpr_branches=[{ lambda a:i64[]; . let  in (True, a) }, { lambda a:i64[]; . let b:i64[] = add a 2 in (True, b) }]
+            ] b True a a
+          in (c,) }
+
+        We can evaulate this to get the results:
+
+        >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
+        [Array(4, dtype=int64, weak_type=True)]
+        >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
+        [Array(8, dtype=int64, weak_type=True)]
     """
     if not has_jax:  # pragma: no cover
         raise ImportError(
