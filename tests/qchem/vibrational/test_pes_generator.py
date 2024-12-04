@@ -393,15 +393,14 @@ def test_vibrational_pes(sym, geom, dipole_level, result_file):
     vib_obj = vibrational.vibrational_pes(mol, dipole_level=dipole_level, cubic=True)
 
     pes_file = os.path.join(ref_dir, result_file)
-    f = h5py.File(pes_file, "r+")
-    exp_pes_onemode = np.array(f["V1_PES"][()])
-    exp_dip_onemode = np.array(f["D1_DMS"][()])
-    exp_pes_twomode = np.array(f["V2_PES"][()])
-    exp_dip_twomode = np.array(f["D2_DMS"][()])
-    exp_pes_threemode = np.array(f["V3_PES"][()])
-    exp_dip_threemode = np.array(f["D3_DMS"][()])
-
-    nmodes_expected = len(f["freqs"][()])
+    with h5py.File(pes_file, "r") as f:
+        exp_pes_onemode = np.array(f["V1_PES"][()])
+        exp_dip_onemode = np.array(f["D1_DMS"][()])
+        exp_pes_twomode = np.array(f["V2_PES"][()])
+        exp_dip_twomode = np.array(f["D2_DMS"][()])
+        exp_pes_threemode = np.array(f["V3_PES"][()])
+        exp_dip_threemode = np.array(f["D3_DMS"][()])
+        nmodes_expected = len(f["freqs"][()])
 
     nmodes = len(vib_obj.freqs)
 

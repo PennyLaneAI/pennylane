@@ -23,9 +23,13 @@ import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
 
 from .localize_modes import localize_normal_modes
-from .vibrational_class import (VibrationalPES, _get_dipole,
-                                _harmonic_analysis, _single_point,
-                                optimize_geometry)
+from .vibrational_class import (
+    VibrationalPES,
+    _get_dipole,
+    _harmonic_analysis,
+    _single_point,
+    optimize_geometry,
+)
 
 # pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
 # pylint: disable= import-outside-toplevel, too-many-positional-arguments, dangerous-default-value
