@@ -217,11 +217,6 @@ class TestBroadcasting:
         return np.stack(states)
 
     @staticmethod
-    def get_expectation_values(x):
-        """Gets the expected final expvals of the circuit described in `get_ops_and_measurements`."""
-        return [-np.sin(x), np.cos(x)]
-
-    @staticmethod
     def get_quantum_script(x, shots=None, extra_wire=False):
         """Gets quantum script of a circuit that includes parameter broadcasted operations and measurements."""
         # Use consistent wire ordering for the mapping test
@@ -245,7 +240,7 @@ class TestBroadcasting:
         qs = self.get_quantum_script(x)
         res = simulate(qs)
 
-        expected = self.get_expectation_values(x)
+        expected = [-np.sin(x), np.cos(x)]
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert np.allclose(res, expected)
@@ -269,7 +264,7 @@ class TestBroadcasting:
         assert isinstance(res, tuple)
         assert len(res) == 3
         assert np.allclose(res[0], np.zeros_like(x))
-        assert np.allclose(res[1:], self.get_expectation_values(x))
+        assert np.allclose(res[1:], [-np.sin(x), np.cos(x)])
         # The mapping should be consistent with the wire ordering in get_quantum_script
         assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
 
