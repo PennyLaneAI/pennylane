@@ -25,6 +25,8 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
+BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
+
 
 @dataclass
 class VibrationalPES:
