@@ -148,7 +148,7 @@ def simulate(
 
         Args:
             circuit (QuantumScript): The single circuit to simulate
-            rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]): A
                 seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
                 If no value is provided, a default RNG will be used.
             prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
