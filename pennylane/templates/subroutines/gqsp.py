@@ -40,6 +40,7 @@ class GQSP(Operation):
          \end{pmatrix}
 
     The implementation requires one auxiliary qubit.
+
     Args:
 
         unitary (Operator): the operator to be encoded by the GQSP circuit
