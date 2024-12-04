@@ -54,6 +54,15 @@ class TestSuperposition:
                 ],
             ),
             (
+                [0.1, 0.05, 0.25, 0.6],
+                [
+                    [0, 0, 0, 0],
+                    [0, 1, 1, 1],
+                    [0, 0, 0, 1],
+                    [1, 1, 1, 1],
+                ],
+            ),
+            (
                 [0.1, 0.2, 0.3, 0.2, 0.2],
                 [
                     [0, 1, 1, 1, 0],
@@ -90,9 +99,7 @@ class TestSuperposition:
         ).decomposition()
 
         expected = [
-            qml.StatePrep(
-                np.array([0.70710678, 0.70710678]), normalize=True, pad_with=0, wires=[1]
-            ),
+            qml.StatePrep(np.array([0.70710678, 0.70710678]), pad_with=0, wires=[1]),
             qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1]),
             qml.CNOT(wires=[2, 0]),
             qml.Toffoli(wires=[0, 1, 2]),
@@ -115,39 +122,38 @@ class TestSuperposition:
 
         @qml.qnode(dev)
         def circuit(state_vector):
-            qml.Superposition(state_vector, basis = [[1], [0]], wires=range(1), work_wire=1)
+            qml.Superposition(state_vector, basis=[[1], [0]], wires=range(1), work_wire=1)
             return qml.expval(qml.PauliZ(0))
 
         qml.grad(circuit)(state_vector)
 
 
-
 @pytest.mark.parametrize(
-        "probs, basis",
-        [
-            (
-                [0.1, 0.2, 0.3, 0.2, 0.2],
-                [
-                    [0, 0, 0, 0, 0],
-                    [0, 1, 0, 1, 1],
-                    [0, 0, 0, 0, 1],
-                    [0, 0, 0, 1, 0],
-                    [1, 1, 0, 1, 1],
-                ],
-            ),
-            (
-                [0.1, 0.2, 0.3, 0.2, 0.2],
-                [
-                    [0, 1, 1, 1, 0],
-                    [1, 1, 0, 1, 1],
-                    [0, 0, 0, 0, 1],
-                    [0, 0, 0, 1, 0],
-                    [1, 0, 0, 1, 1],
-                ],
-            ),
-            ([0.1, 0.9], [[0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 1, 1, 1, 1]]),
-        ],
-    )
+    "probs, basis",
+    [
+        (
+            [0.1, 0.2, 0.3, 0.2, 0.2],
+            [
+                [0, 0, 0, 0, 0],
+                [0, 1, 0, 1, 1],
+                [0, 0, 0, 0, 1],
+                [0, 0, 0, 1, 0],
+                [1, 1, 0, 1, 1],
+            ],
+        ),
+        (
+            [0.1, 0.2, 0.3, 0.2, 0.2],
+            [
+                [0, 1, 1, 1, 0],
+                [1, 1, 0, 1, 1],
+                [0, 0, 0, 0, 1],
+                [0, 0, 0, 1, 0],
+                [1, 0, 0, 1, 1],
+            ],
+        ),
+        ([0.1, 0.9], [[0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 1, 1, 1, 1]]),
+    ],
+)
 class TestInterfaces:
     """Test that the Superposition template ensures the compatibility with
     interfaces"""
@@ -160,6 +166,7 @@ class TestInterfaces:
         probs = jnp.array(probs)
 
         dev = qml.device("default.qubit")
+
         @qml.qnode(dev)
         def circuit():
             qml.Superposition(
@@ -195,8 +202,6 @@ class TestInterfaces:
             dec = int("".join(map(str, base)), 2)
             assert jnp.isclose(output[dec], probs[i])
 
-
-
     @pytest.mark.tf
     def test_tensorflow(self, probs, basis):
         """Test that MottonenStatePreparation can be correctly used with the TensorFlow interface."""
@@ -221,6 +226,7 @@ class TestInterfaces:
     def test_torch(self, probs, basis):
         """Test that MottonenStatePreparation can be correctly used with the Torch interface."""
         import torch
+
         probs = torch.tensor(probs, dtype=torch.float64)
 
         dev = qml.device("default.qubit")
@@ -236,6 +242,3 @@ class TestInterfaces:
         for i, base in enumerate(basis):
             dec = int("".join(map(str, base)), 2)
             assert qml.math.isclose(output[dec], probs[i])
-
-
-

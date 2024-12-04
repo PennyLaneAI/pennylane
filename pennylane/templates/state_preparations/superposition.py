@@ -23,7 +23,8 @@ from pennylane.operation import AnyWires, Operation
 def _get_permutation(basis_list):
     r"""
     Given a list of :math:`m` basis states, this function generates a dictionary assigning to each of them
-    the :math:`m`-th basis states in the computational base.
+    the :math:`m`-th basis states in the computational base. Also, if a state within ``basis_list`` is one
+    of the first :math:`m` basis states, this state will be assigned to itself.
 
     ** Example **
 
@@ -38,10 +39,6 @@ def _get_permutation(basis_list):
         [1, 0, 0, 1]: [0, 0, 1, 1]
         }
 
-    ** Details **
-
-    If a state within ``basis_list`` is one of the first :math:`m` basis states, this value
-    will be removed from the dictionary.
 
     .. code-block:: pycon
 
@@ -50,22 +47,23 @@ def _get_permutation(basis_list):
         {
         [1, 1, 0, 0]: [0, 0, 0, 0],
         [0, 1, 0, 1]: [0, 0, 1, 0],
+        [0, 0, 0, 1]: [0, 0, 0, 1],
         [1, 0, 0, 1]: [0, 0, 1, 1]
         }
 
-    Note that `[0, 0, 0, 1]` has been deleted in the previous example.
-
     """
 
-    length = len(basis_list[0])  # All binary lists have the same length
-    smallest_basis_lists = [list(map(int, f"{i:0{length}b}")) for i in range(len(basis_list))]
+    length = len(basis_list[0])
+    smallest_basis_lists = [tuple(map(int, f"{i:0{length}b}")) for i in range(len(basis_list))]
 
     binary_dict = {}
     used_smallest = set()
 
     # Assign keys that can map to themselves
     for original in basis_list:
+
         if original in smallest_basis_lists and tuple(original) not in used_smallest:
+
             binary_dict[tuple(original)] = original
             used_smallest.add(tuple(original))
 
@@ -79,14 +77,13 @@ def _get_permutation(basis_list):
         binary_dict[tuple(key)] = value
         used_smallest.add(tuple(value))
 
-    filtered_dict = {key: value for key, value in binary_dict.items() if list(key) != value}
-    return filtered_dict
+    return binary_dict
 
 
 def _permutation_operator(basis1, basis2, wires, work_wire):
     """
     Function that takes two basis states, ``basis1`` and ``basis2``, and creates an operator that
-    maps :math:`|\text{basis1}\rangle` to :math:`|\text{basis2}\rangle`. To achieve this, it utilizes
+    maps :math:`|\text{basis1}\rangle` to :math:`|\text{basis2}\rangle`. To achieve this, it uses
     an auxiliary qubit.
 
     Args:
@@ -112,7 +109,78 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
 
 
 class Superposition(Operation):
-    r""" """
+    r"""
+    Prepare a superposition of computational basis states.
+
+    Given a list of :math:`m` coefficients :math:`c_i` and a list of basic states :math:`|b_i\rangle`,
+    this operator prepares the state:
+
+    .. math::
+
+        |\phi\rangle = \sum_i^m c_i |b_i\rangle
+
+    The decomposition has a complexity that grows linearly with the number of terms,
+    unlike other methods such as :class:`~.MottonenStatePreparation`, that grows exponentially
+    with the number of qubits. More information on the decomposition can be
+    found below in Implementation Details.
+
+    Args:
+        coeffs (List[float]): List of coefficients :math:`c_i`
+        basis (List[List[int]]): List of basis states :math:`|b_i\rangle`
+        wires (Sequence[int]): List of wires that the operator acts on
+        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation
+
+    **Example**
+
+    .. code-block::
+
+        coeffs = np.sqrt([1/3, 1/3, 1/3])
+        basis = [[1, 1, 1], [0, 1, 0], [0, 0, 0]]
+        wires = [0, 1, 2]
+        work_wire = 3
+
+        dev = qml.device('default.qubit')
+
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Superposition(coeffs, basis, wires, work_wire)
+            return qml.probs(wires)
+
+    .. code-block:: pycon
+
+        >>> print(circuit())
+        [0.33333333 0.         0.33333333 0.         0.         0.
+        0.         0.33333333]
+
+
+    .. details::
+        :title: Implementation Details
+
+        The construction of this template is divided into two blocks.
+        The first block takes the list of coefficients :math:`c_i` and prepares the state:
+
+        .. math::
+
+            |\phi\rangle = \sum_i^m c_i |i\rangle,
+
+        where :math:`|i\rangle` are the computational basis states. This is done using the
+        :class:`~.StatePrep` template.
+
+        The second block is responsible for the permutation of the basis states to the target basis states.
+
+        .. math::
+
+            |i\rangle \rightarrow |b_i\rangle.
+
+        Appliying these two blocks together results in the desired superposition:
+
+        .. math::
+
+            |\phi\rangle = \sum_i^m c_i |b_i\rangle.
+
+
+    """
 
     num_wires = AnyWires
     grad_method = None
@@ -144,39 +212,76 @@ class Superposition(Operation):
         return cls(*data, wires=metadata[0], **hyperparams_dict)
 
     def decomposition(self):  # pylint: disable=arguments-differ
-        return self.compute_decomposition(*self.parameters, **self.hyperparameters)
+        return self.compute_decomposition(
+            *self.parameters,
+            basis=self.hyperparameters["basis"],
+            wires=self.hyperparameters["target_wires"],
+            work_wire=self.hyperparameters["work_wire"],
+        )
 
     @staticmethod
-    def compute_decomposition(
-        coefs, basis, target_wires, work_wire
-    ):  # pylint: disable=arguments-differ
-        r""" """
+    def compute_decomposition(coefs, basis, wires, work_wire):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
+
+        Args:
+            coefs (List[float]): List of coefficients :math:`c_i`
+            basis (List[List[int]]): List of basis states :math:`|b_i\rangle`
+            wires (Sequence[int]): List of wires that the operator acts on
+            work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation
+
+        Returns:
+            list[.Operator]: Decomposition of the operator
+
+        **Example**
+
+        >>> qml.Superposition(np.sqrt([1/2, 1/2]), [[1, 1], [0, 0]], [0, 1], 2).decomposition()
+        [StatePrep(array([0.70710678, 0.70710678]), wires=[1]),
+        MultiControlledX(wires=[0, 1, 2], control_values=[False, True]),
+        CNOT(wires=[2, 0]),
+        Toffoli(wires=[0, 1, 2])]
+
+        """
+
+        dic_state = {b: c for b, c in zip(basis, coefs)}
+        perms = _get_permutation(basis)
+        new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
+
+        sorted_coefficients = [
+            value
+            for key, value in sorted(
+                new_dic_state.items(), key=lambda item: int("".join(map(str, item[0])), 2)
+            )
+        ]
 
         op_list = []
         op_list.append(
             qml.StatePrep(
-                coefs,
-                wires=target_wires[-int(np.ceil(np.log2(len(coefs)))) :],
+                qml.math.stack(sorted_coefficients),
+                wires=wires[-int(qml.math.ceil(qml.math.log2(len(coefs)))) :],
                 pad_with=0,
-                normalize=True,
             )
         )
-        perms = _get_permutation(basis)
+
         for basis2, basis1 in perms.items():
-            op_list += _permutation_operator(basis1, basis2, target_wires, work_wire)
+            if not qml.math.allclose(basis1, basis2):
+                print(basis1, basis2)
+                op_list += _permutation_operator(basis1, basis2, wires, work_wire)
 
         return op_list
 
     @property
     def basis(self):
+        r"""List of basis states :math:`|b_i\rangle`."""
         return self.hyperparameters["basis"]
 
     @property
     def work_wire(self):
+        r"""The auxiliary wire used for the permutation."""
         return self.hyperparameters["work_wire"]
 
     @property
     def coeffs(self):
+        r"""List of coefficients :math:`c_i`."""
         return self.parameters[0]
 
     def map_wires(self, wire_map: dict):
