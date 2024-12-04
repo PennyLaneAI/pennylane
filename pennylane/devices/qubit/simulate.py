@@ -24,7 +24,6 @@ from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.logging import debug_logger
-from pennylane.math import Interface
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -44,25 +43,6 @@ from .sampling import jax_random_split, measure_with_samples
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-INTERFACE_TO_LIKE = {
-    # map interfaces known by autoray to themselves
-    None: None,
-    "numpy": "numpy",
-    "autograd": "autograd",
-    "jax": "jax",
-    "torch": "torch",
-    "tensorflow": "tensorflow",
-    # map canonical interfaces
-    Interface.AUTOGRAD: "autograd",
-    Interface.NUMPY: "numpy",
-    Interface.TORCH: "torch",
-    Interface.JAX: "jax",
-    Interface.JAX_JIT: "jax",
-    Interface.TF: "tensorflow",
-    Interface.TF_AUTOGRAPH: "tensorflow",
-    Interface.AUTO: None,
-}
 
 
 class TreeTraversalStack:
@@ -196,7 +176,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface)
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -683,11 +663,7 @@ def prepend_state_prep(circuit, state, interface, wires):
     of the original circuit (which included all wires)."""
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
-    state = (
-        create_initial_state(wires, None, like=INTERFACE_TO_LIKE[interface])
-        if state is None
-        else state
-    )
+    state = create_initial_state(wires, None, like=interface) if state is None else state
     return qml.tape.QuantumScript(
         [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
         + circuit.operations,

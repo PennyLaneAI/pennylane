@@ -42,7 +42,7 @@ logger.addHandler(logging.NullHandler())
 SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 
-def _convert_to_interface(result, interface):
+def _convert_to_interface(result, interface: Interface):
     """
     Recursively convert a result to the given interface.
     """
@@ -56,18 +56,7 @@ def _convert_to_interface(result, interface):
     if isinstance(result, dict):
         return {k: _convert_to_interface(v, interface) for k, v in result.items()}
 
-    interface_conversion_map = {
-        Interface.AUTOGRAD: "autograd",
-        Interface.JAX: "jax",
-        Interface.JAX_JIT: "jax",
-        Interface.TORCH: "torch",
-        Interface.TF: "tensorflow",
-        Interface.TF_AUTOGRAPH: "tensorflow",
-    }
-
-    interface_name = interface_conversion_map.get(interface, None)
-
-    return qml.math.asarray(result, like=interface_name)
+    return qml.math.asarray(result, like=interface.value)
 
 
 def _make_execution_config(

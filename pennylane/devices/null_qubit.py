@@ -29,7 +29,6 @@ import numpy as np
 from pennylane import math
 from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
-from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -121,7 +120,7 @@ def _(
 
 
 def _interface(config: ExecutionConfig) -> str:
-    return INTERFACE_TO_LIKE[config.interface] if config.gradient_method == "backprop" else "numpy"
+    return config.interface if config.gradient_method == "backprop" else "numpy"
 
 
 @simulator_tracking
