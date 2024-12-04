@@ -67,10 +67,7 @@ def _get_ml_boundary_execute(
             from .interfaces.torch import execute as ml_boundary
 
         elif interface == Interface.JAX_JIT:
-            if device_vjp:
-                from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
-            else:
-                from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
+            from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
 
         else:  # interface is jax
             if device_vjp:
