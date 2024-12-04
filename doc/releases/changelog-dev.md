@@ -49,34 +49,18 @@
     a `capabilities` property.
     [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
 
-<h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
-
-* Added a dense implementation of computing the Lie closure in a new function
-  `lie_closure_dense` in `pennylane.labs.dla`.
-  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
-
-* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
-  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
-  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
-
-* Added a dense implementation of computing the structure constants in a new function
-  `structure_constants_dense` in `pennylane.labs.dla`.
-  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
-
-* Added utility functions for handling dense matrices in the Lie theory context.
-  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
 
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping
-  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
+[(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
 added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
-  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+[(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
 * Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
   Autograph conversion is now used by default in `make_plxpr`, but can be skipped with the keyword arg `autograph=False`.
   [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
-* [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+  [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
@@ -100,6 +84,23 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
+
+<h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
+
+* Added a dense implementation of computing the Lie closure in a new function
+  `lie_closure_dense` in `pennylane.labs.dla`.
+  [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+
+* New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
+  to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
+  [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
+
+* Added a dense implementation of computing the structure constants in a new function
+  `structure_constants_dense` in `pennylane.labs.dla`.
+  [(#6376)](https://github.com/PennyLaneAI/pennylane/pull/6376)
+
+* Added utility functions for handling dense matrices in the Lie theory context.
+  [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
 
 
 <h4>New API for Qubit Mixed</h4>
