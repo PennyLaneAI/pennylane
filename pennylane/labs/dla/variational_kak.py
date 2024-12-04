@@ -213,6 +213,8 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     if theta0 is None:
         theta0 = jax.random.normal(jax.random.PRNGKey(0), (dim_k,))
 
+    opt_kwargs["verbose"] = verbose
+
     thetas, energy, _ = run_opt(
         partial(value_and_grad, vec_H=vec_H, adj=adj_cropped), theta0, **opt_kwargs
     )
@@ -306,7 +308,7 @@ def run_opt(
     lr=0.1,
     b1=0.99,
     b2=0.999,
-    verbose=True,
+    verbose=False,
     interrupt_tol=None,
 ):
     """Boilerplate jax optimization"""
