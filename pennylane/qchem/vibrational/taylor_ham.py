@@ -277,10 +277,7 @@ def _fit_threebody(threemode_op, deg, min_deg=3):
                 coeffs[i1, i2, i3, :] = poly3D_reg_model.coef_
                 predicted = poly3D_reg_model.predict(features)
                 for idx in range(num_3D):
-                    idx_q1 = idx1[idx]
-                    idx_q2 = idx2[idx]
-                    idx_q3 = idx3[idx]
-                    predicted_3D[i1, i2, i3, idx_q1, idx_q2, idx_q3] = predicted[idx]
+                    predicted_3D[i1, i2, i3, idx1[idx], idx2[idx], idx3[idx]] = predicted[idx]
 
     return coeffs, predicted_3D
 
