@@ -455,12 +455,12 @@ def taylor_anharmonic(taylor_coeffs, start_deg=2):
                     for deg_idx, Qs in enumerate(degs_3d):
                         q1deg, q2deg, q3deg = Qs[:3]
                         coeff = taylor_3D[m1, m2, m3, deg_idx]
-                        bosonized_qm1_pow = bosonized_qm1**q1deg
-                        bosonized_qm2_pow = bosonized_qm2**q2deg
-                        bosonized_qm3_pow = bosonized_qm3**q3deg
-                        ordered_dict += (
-                            coeff * bosonized_qm1_pow * bosonized_qm2_pow * bosonized_qm3_pow
-                        ).normal_order()
+bosonized_terms = (
+                        coeff *
+                        (bosonized_qm1**q1deg) *
+                        (bosonized_qm2**q2deg) *
+                        (bosonized_qm3**q3deg)
+                    ).normal_order()
 
     return BoseSentence(ordered_dict).normal_order()
 
@@ -472,7 +472,7 @@ def taylor_kinetic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
         taylor_coeffs (list(float)): the coeffs of the taylor expansion
         freqs (list(float)): the frequencies
         is_loc (bool): whether or not if localized
-        Uloc (list(float)): localization matrix indicating the relationship between original and
+        uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
     Returns:
@@ -504,7 +504,7 @@ def taylor_harmonic(taylor_coeffs, freqs):
 
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor expansion
-        freqs (list(float)): the harmonic frequencies
+        freqs (list(float)): vibrational frequencies
 
     Returns:
         BoseSentence: harmonic term of the taylor hamiltonian for given coeffs
@@ -528,7 +528,7 @@ def taylor_bosonic(taylor_coeffs, freqs, is_loc=True, Uloc=None):
     Args:
         taylor_coeffs (list(float)): the coeffs of the taylor expansion
         freqs (list(float)): the harmonic frequencies
-        is_loc (bool): whether or not if localized
+        is_loc (bool): flag that the vibrational modes are localized
         Uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
