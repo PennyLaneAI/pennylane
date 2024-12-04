@@ -52,6 +52,9 @@ except ModuleNotFoundError:
 
 
 # Reference copied from vibrant HDF5 files
+# mol = H2S
+# coords =[[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]]
+# localize = True
 taylor_1D = np.array(
     [
         [1.01030577e-05, -4.47405417e-05, -1.10879929e-05],
