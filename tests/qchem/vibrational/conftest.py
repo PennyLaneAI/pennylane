@@ -16,6 +16,7 @@ Pytest configuration file for PennyLane quantum chemistry open fermion test suit
 """
 import pytest
 
+
 @pytest.fixture(scope="session", name="sklearn_support")
 def fixture_sklearn_support():
     """Fixture to determine whether sklearn is installed."""
@@ -28,6 +29,7 @@ def fixture_sklearn_support():
         sklearn_support = False
 
     return sklearn_support
+
 
 @pytest.fixture(scope="session", name="pyscf_support")
 def fixture_pyscf_support():

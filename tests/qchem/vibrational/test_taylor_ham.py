@@ -16,28 +16,27 @@ import sys
 
 import numpy as np
 import pytest
-import pennylane as qml
 
-from pennylane.bose import (
-    BoseWord,
-)
+import pennylane as qml
+from pennylane.bose import BoseWord
+from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational.taylor_ham import (
-    taylor_anharmonic,
+    _fit_onebody,
+    _fit_threebody,
+    _fit_twobody,
+    _remove_harmonic,
+    _taylor_anharmonic,
+    _taylor_harmonic,
+    _taylor_kinetic,
+    _threebody_degs,
+    _twobody_degs,
     taylor_bosonic,
-    taylor_hamiltonian,
-    taylor_harmonic,
-    taylor_kinetic,
     taylor_coeffs,
     taylor_dipole_coeffs,
-    _fit_onebody,
-    _fit_twobody,
-    _fit_threebody,
-    _twobody_degs,
-    _threebody_degs,
-    _remove_harmonic,
+    taylor_hamiltonian,
 )
 
-from pennylane.qchem import vibrational
+# pylint: disable=unused-import, import-outside-toplevel
 
 sym = ["H", "H", "S"]
 geom = np.array([[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]])
@@ -45,6 +44,7 @@ geom = np.array([[0.0, -1.0, -1.0], [0.0, 1.0, -1.0], [0.0, 0.0, 0.0]])
 try:
     import geometric
     import pyscf
+
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     test_pes_object = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=True, localize=True)
 except ModuleNotFoundError:
@@ -556,6 +556,7 @@ reference_taylor_bosonic_ops = [
 for i, ele in enumerate(reference_taylor_bosonic_ops):
     reference_taylor_bosonic_ops[i] = BoseWord(ele)
 
+
 def test_import_sklearn(monkeypatch):
     """Test if an ImportError is raised by _import_mpi4py function."""
     # pylint: disable=protected-access
@@ -565,6 +566,7 @@ def test_import_sklearn(monkeypatch):
 
         with pytest.raises(ImportError, match="This feature requires sklearn"):
             vibrational.taylor_ham._import_sklearn()
+
 
 def test_taylor_anharmonic():
     expected_anh_ham = [
@@ -735,11 +737,14 @@ def test_taylor_anharmonic():
         (BoseWord({(0, 1): "+", (1, 1): "-", (2, 1): "-", (3, 2): "-"}), -1.4138961599999995e-06),
         (BoseWord({(0, 1): "-", (1, 1): "-", (2, 1): "-", (3, 2): "-"}), -4.7129871999999985e-07),
     ]
-    anh_ham = taylor_anharmonic([taylor_1D, taylor_2D])
+    anh_ham = _taylor_anharmonic([taylor_1D, taylor_2D])
 
     assert expected_anh_ham == list(anh_ham.items())
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
+
+@pytest.mark.usefixtures(
+    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
+)
 def test_taylor_harmonic():
     expected_taylor_harm = [
         (BoseWord({(0, 0): "+", (1, 0): "+"}), 0.0014742224999999996),
@@ -753,8 +758,9 @@ def test_taylor_harmonic():
         (BoseWord({(0, 2): "+", (1, 2): "-"}), 0.006162139999999998),
         (BoseWord({(0, 2): "-", (1, 2): "-"}), 0.003081069999999999),
     ]
-    taylor_harm = taylor_harmonic([taylor_1D, taylor_2D], freqs)
+    taylor_harm = _taylor_harmonic([taylor_1D, taylor_2D], freqs)
     assert expected_taylor_harm == list(taylor_harm.items())
+
 
 def test_taylor_kinetic():
     expected_taylor_kin = [
@@ -781,7 +787,7 @@ def test_taylor_kinetic():
         (BoseWord({(0, 2): "+", (1, 2): "-"}), (0.0061621399793208905 + 0j)),
         (BoseWord({(0, 2): "-", (1, 2): "-"}), (-0.0030810699896604453 + 0j)),
     ]
-    taylor_kin = taylor_kinetic([taylor_1D, taylor_2D], freqs, Uloc=Uloc)
+    taylor_kin = _taylor_kinetic([taylor_1D, taylor_2D], freqs, Uloc=Uloc)
     assert expected_taylor_kin == list(taylor_kin.items())
 
 
@@ -796,7 +802,10 @@ def test_taylor_bosonic():
     assert len(sorted_ops_arr) == len(reference_taylor_bosonic_ops)
     assert list(sorted_ops_arr) == reference_taylor_bosonic_ops
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
+
+@pytest.mark.usefixtures(
+    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
+)
 def test_taylor_hamiltonian():
     pes_object_2D = vibrational.vibrational_pes(mol, dipole_level=2, do_cubic=False, localize=True)
 
@@ -809,19 +818,28 @@ def test_taylor_hamiltonian():
         for key, value in taylor_ham.items()
     )
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
+
+@pytest.mark.usefixtures(
+    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
+)
 def test_fit_onebody():
     _, _, anh_pes, _ = _remove_harmonic(test_pes_object.freqs, test_pes_object.pes_onemode)
     coeff_1D, _ = _fit_onebody(anh_pes, 4, 2)
 
     assert np.allclose(abs(coeff_1D), abs(taylor_1D), atol=1e-10)
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
+
+@pytest.mark.usefixtures(
+    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
+)
 def test_fit_twobody():
     coeff_2D, _ = _fit_twobody(test_pes_object.pes_twomode, 4, 2)
     assert np.allclose(abs(coeff_2D), abs(taylor_2D), atol=1e-10)
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
+
+@pytest.mark.usefixtures(
+    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
+)
 def test_fit_threebody():
     coeff_3D, _ = _fit_threebody(test_pes_object.pes_threemode, 4, 2)
     assert np.allclose(abs(coeff_3D), abs(taylor_3D), atol=1e-10)
@@ -838,13 +856,19 @@ def test_threemode_degs():
     fit_degs = _threebody_degs(4, 2)
     assert fit_degs == expected_degs
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
+
+@pytest.mark.usefixtures(
+    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
+)
 def test_taylor_coeffs():
     taylor_coeffs_1D, taylor_coeffs_2D, _ = taylor_coeffs(test_pes_object, 4, 2)
     assert np.allclose(taylor_coeffs_1D, taylor_1D, atol=1e-2)
     assert np.allclose(taylor_coeffs_2D, taylor_2D, atol=1e-2)
 
-@pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support")
+
+@pytest.mark.usefixtures(
+    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
+)
 def test_taylor_coeffs_dipole():
     expected_coeffs_x_arr = [
         np.array(
