@@ -938,13 +938,13 @@ class QNode:
         self.construct(args, kwargs)
 
         old_interface = self.interface
-        if old_interface == Interface.AUTO:
+        if old_interface == "auto":
             interface = (
-                Interface.JAX
+                "jax"
                 if qml.capture.enabled()
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
-            if interface != Interface.NUMPY:
+            if interface != "numpy":
                 try:
                     interface = get_canonical_interface_name(interface)
                 except ValueError:
@@ -954,8 +954,8 @@ class QNode:
         try:
             res = self._execution_component(args, kwargs)
         finally:
-            if old_interface == Interface.AUTO:
-                self._interface = old_interface
+            if old_interface == "auto":
+                self._interface = Interface.AUTO
 
         return res
 
