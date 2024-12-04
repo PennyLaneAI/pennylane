@@ -44,6 +44,11 @@
     True
     ```
 
+  * New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
+    The functionality `qml.poly_to_angles` has been also extended to support GQSP.
+    [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
+
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function

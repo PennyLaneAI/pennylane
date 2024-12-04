@@ -571,6 +571,27 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
+def _gqsp_u3_gate(theta, phi, lambd):
+    r"""
+    Computes the U3 gate matrix for Generalized Quantum Signal Processing (GQSP) as described
+    in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_]
+    """
+
+    exp_phi = qml.math.exp(1j * phi)
+    exp_lambda = qml.math.exp(1j * lambd)
+    exp_lambda_phi = qml.math.exp(1j * (lambd + phi))
+
+    matrix = np.array(
+        [
+            [exp_lambda_phi * qml.math.cos(theta), exp_phi * qml.math.sin(theta)],
+            [exp_lambda * qml.math.sin(theta), -qml.math.cos(theta)],
+        ],
+        dtype=complex,
+    )
+
+    return matrix
+
+
 def _compute_gqsp_angles(poly_coeffs):
     r"""
     Computes the Generalized Quantum Signal Processing (GQSP) angles given the coefficients of a polynomial P.
@@ -586,22 +607,6 @@ def _compute_gqsp_angles(poly_coeffs):
     """
 
     complementary = _complementary_poly(poly_coeffs)
-
-    def gqsp_u3_gate(theta, phi, lambd):
-        # Matrix definition of U3 gate chosen in the GQSP paper
-        exp_phi = qml.math.exp(1j * phi)
-        exp_lambda = qml.math.exp(1j * lambd)
-        exp_lambda_phi = qml.math.exp(1j * (lambd + phi))
-
-        matrix = np.array(
-            [
-                [exp_lambda_phi * qml.math.cos(theta), exp_phi * qml.math.sin(theta)],
-                [exp_lambda * qml.math.sin(theta), -qml.math.cos(theta)],
-            ],
-            dtype=complex,
-        )
-
-        return matrix
 
     # Algorithm 1 in [arXiv:2308.01501]
     input_data = qml.math.array([poly_coeffs, complementary])
@@ -623,7 +628,7 @@ def _compute_gqsp_angles(poly_coeffs):
             angles_lambda[0] = qml.math.angle(component_b)
         else:
             updated_matrix = (
-                gqsp_u3_gate(angles_theta[idx], angles_phi[idx], 0).conj().T @ input_data
+                _gqsp_u3_gate(angles_theta[idx], angles_phi[idx], 0).conj().T @ input_data
             )
             input_data = qml.math.array([updated_matrix[0][1 : idx + 1], updated_matrix[1][0:idx]])
 
