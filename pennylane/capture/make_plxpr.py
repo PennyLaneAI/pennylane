@@ -83,6 +83,11 @@ def make_plxpr(
             shots=Shots(total=None)
         ] a
       in (b,) }
+
+    .. details ::
+        :title: Usage Details
+
+        Test
     """
     if not has_jax:  # pragma: no cover
         raise ImportError(
