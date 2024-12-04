@@ -43,6 +43,11 @@
     >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
     True
     ```
+    
+  * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms` 
+    are added to the device API for devices that provides a TOML configuration file and thus have 
+    a `capabilities` property.
+    [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
@@ -89,8 +94,12 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   * Implemented helper functions for geometry optimization, harmonic analysis,
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
-
-* Support is added for using Autograph in `make_plxpr`, allowing capture f 
+  * Implemented helper functions for calculating one-mode PES, two-mode PES, and
+    three-mode PES.
+    [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+  * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
+    for storing the data.
+    [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
 
 
 <h4>New API for Qubit Mixed</h4>
@@ -144,6 +153,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * `jax.vmap` can be captured with `qml.capture.make_plxpr` and is compatible with quantum circuits. 
   [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
   [(#6422)](https://github.com/PennyLaneAI/pennylane/pull/6422)
+  [(#6668)](https://github.com/PennyLaneAI/pennylane/pull/6668)
 
 * `qml.capture.PlxprInterpreter` base class has been added for easy transformation and execution of
   pennylane variant jaxpr.
@@ -212,6 +222,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 * Added native `ResourceOperator` subclasses for each of the controlled operators.
   [(#6579)](https://github.com/PennyLaneAI/pennylane/pull/6579)
+
+* Added native `ResourceOperator` subclasses for each of the multi qubit operators.
+  [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
 
 <h3>Breaking changes 💔</h3>
 

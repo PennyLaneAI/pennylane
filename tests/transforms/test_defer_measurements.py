@@ -98,6 +98,14 @@ def test_broadcasted_postselection_with_sample_error():
         _ = circuit()
 
 
+def test_allow_postselect():
+    """Tests that allow_postselect=False forbids postselection on mid-circuit measurements."""
+
+    circuit = qml.tape.QuantumScript([MidMeasureMP(wires=0, postselect=0)], [qml.expval(qml.Z(0))])
+    with pytest.raises(ValueError, match="Postselection is not allowed"):
+        _, __ = qml.defer_measurements(circuit, allow_postselect=False)
+
+
 def test_postselection_error_with_wrong_device():
     """Test that an error is raised when postselection is used with a device
     other than `default.qubit`."""
@@ -190,22 +198,6 @@ def test_multi_mcm_stats_same_wire(mp, compose_mv):
 
 class TestQNode:
     """Test that the transform integrates well with QNodes."""
-
-    def test_custom_qnode_transform_error(self):
-        """Test that an error is raised if a user tries to give a device argument to the
-        transform when transformingn a qnode."""
-
-        dev = qml.device("default.qubit")
-
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def circ():
-            qml.PauliX(0)
-            qml.measure(0)
-            return qml.probs()
-
-        with pytest.raises(ValueError, match="Cannot provide a 'device'"):
-            _ = qml.defer_measurements(circ, device=dev)
 
     def test_only_mcm(self):
         """Test that a quantum function that only contains one mid-circuit
@@ -650,9 +642,9 @@ class TestQNode:
         assert isinstance(measurement, qml.measurements.MeasurementProcess)
 
         tensor = measurement.obs
-        assert len(tensor.obs) == 3
+        assert len(tensor.operands) == 3
 
-        for idx, ob in enumerate(tensor.obs):
+        for idx, ob in enumerate(tensor.operands):
             assert isinstance(ob, qml.PauliZ)
             assert ob.wires == qml.wires.Wires(tp_wires[idx])
 
