@@ -651,6 +651,7 @@ def apply_snapshot(
         measurement = op.hyperparameters.get("measurement")
         shots = execution_kwargs.get("tape_shots")
 
+        if isinstance(measurement, qml.measurements.StateMP) or not shots:
             snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
         else:
             snapshot = qml.devices.qubit_mixed.measure_with_samples(
@@ -660,7 +661,7 @@ def apply_snapshot(
                 is_state_batched,
                 execution_kwargs.get("rng"),
                 execution_kwargs.get("prng_key"),
-            )
+            )[0]
 
         # Store snapshot with optional tag
         if op.tag:
