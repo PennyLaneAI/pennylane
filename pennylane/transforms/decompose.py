@@ -89,8 +89,12 @@ def _decompose_plxpr_transform(
         tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
         op = primitive.impl(*tracers_in, **params)
 
-    if not isinstance(op, qml.operation.Operator) or gate_set(op) or not op.has_decomposition:
-        if not isinstance(op, qml.operation.Operator) or gate_set(op):
+    if (
+        isinstance(op, qml.measurements.MeasurementProcess)
+        or gate_set(op)
+        or not op.has_decomposition
+    ):
+        if isinstance(op, qml.measurements.MeasurementProcess) or gate_set(op):
             pass
         elif not op.has_decomposition:
             warnings.warn(
