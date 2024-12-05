@@ -58,6 +58,7 @@ class MPIPoolExec(ExtExecABC):
         self._exec_backend = executor
         self._size = MPI.COMM_WORLD.Get_size()
 
+
     def __call__(self, fn: Callable, data: Sequence):
         kwargs = {"use_pkl5": True}
         with self._exec_backend(**kwargs) as executor:
@@ -71,13 +72,15 @@ class MPIPoolExec(ExtExecABC):
 
 class MPICommExec(ExtExecABC):
     """
-    MPICommExecutor abstraction class functor.
+    MPICommExecutor abstraction class functor. To be used in dynamic process spawning required by MPIPoolExec is unsupported by the MPI implementation.
     """
     def __init__(self):
         from mpi4py import MPI  # Required to call MPI_Init
         from mpi4py.futures import MPICommExecutor as executor
         self._exec_backend = executor
         self._comm = MPI.COMM_WORLD
+        self._size = MPI.COMM_WORLD.Get_size()
+
 
     def __call__(self, fn: Callable, data: Sequence):
         kwargs = {"use_pkl5": True}
@@ -88,13 +91,17 @@ class MPICommExec(ExtExecABC):
                 raise RuntimeError(f"Failed to start executor {self._exec_backend}")
         return output_f
 
+    @property
+    def size(self):
+        return self._size
+
 class DaskExec(ExtExecABC):
     """
     Dask distributed abstraction class functor.
     """
     from dask.distributed.deploy import Cluster
 
-    @singledispatch
+    @singledispatchmethod
     def __init__(self, client_provider = None, max_workers = 4):
         from dask.distributed import Client, LocalCluster
         cluster = LocalCluster(n_workers=max_workers, processes=True)
@@ -130,4 +137,7 @@ class ProcPoolExec(IntExecABC):
 
 
 class RayExec(ExtExecABC):
+    """
+    Ray abstraction class functor.
+    """
     pass
