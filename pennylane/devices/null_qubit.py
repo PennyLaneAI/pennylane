@@ -120,7 +120,7 @@ def _(
 
 
 def _interface(config: ExecutionConfig):
-    return config.interface.value if config.gradient_method == "backprop" else "numpy"
+    return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
 
 
 @simulator_tracking
