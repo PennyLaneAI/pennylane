@@ -36,7 +36,7 @@ def qsvt_legacy(A, angles, wires, convention=None):
     .. warning::
 
         The ``qsvt_legacy`` function has been deprecated.
-        Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
+        Instead, use :func:`~pennylane.qsvt`. The new functionality takes an input polynomial instead of angles.
 
     .. note ::
 
@@ -323,7 +323,9 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
     if hasattr(A, "pauli_rep"):
 
         if block_encoding not in ["prepselprep", "qubitization", None]:
-            raise ValueError("block_encoding should take the value 'prepselprep' or 'qubitization'")
+            raise ValueError(
+                "block_encoding should take the value 'prepselprep' or 'qubitization'. If you intend to use block encoding for a matrix, please provide the matrix of the hamiltonian as input. For more details, see the 'qml.matrix' function."
+            )
 
         if any(wire in qml.wires.Wires(encoding_wires) for wire in A.wires):
             raise ValueError(
@@ -344,7 +346,9 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
     else:
 
         if block_encoding not in ["embedding", "fable", None]:
-            raise ValueError("block_encoding should take the value 'embedding' or 'fable'")
+            raise ValueError(
+                "block_encoding should take the value 'embedding' or 'fable'. If you intend to use block encoding for a linear combination of Paulis, please provide the Pauli decomposition of the matrix as input. For more details, see the 'qml.pauli_decompose' function."
+            )
 
         A = qml.math.array(A)
 
