@@ -320,7 +320,7 @@ class LegacyDeviceFacade(Device):
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
         if interface != "numpy":
-            interface = get_canonical_interface_name(interface)
+            interface = get_canonical_interface_name(interface).value
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
             return False
