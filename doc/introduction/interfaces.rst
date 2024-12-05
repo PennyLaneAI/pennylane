@@ -32,7 +32,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 
 .. note::
     If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
-    See ``qml.workflow.SUPPORTED_INTERFACES`` for a list of all accepted interface strings.
+    See ``qml.math.SUPPORTED_INTERFACE_NAMES`` for a list of all accepted interface strings.
 
 .. warning::
 

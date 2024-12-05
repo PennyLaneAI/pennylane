@@ -461,7 +461,7 @@ class TestHigherOrderPrimitiveRegistrations:
         dev = qml.device("default.qubit", wires=1)
 
         @AddNoise()
-        @qml.qnode(dev, diff_method="adjoint", grad_on_execution=False)
+        @qml.qnode(dev, diff_method="backprop", grad_on_execution=False)
         def f():
             qml.I(0)
             qml.I(0)
@@ -477,7 +477,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert inner_jaxpr.eqns[1].primitive == qml.RX._primitive
         assert inner_jaxpr.eqns[3].primitive == qml.RX._primitive
 
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "adjoint"
+        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "backprop"
         assert jaxpr.eqns[0].params["qnode_kwargs"]["grad_on_execution"] is False
         assert jaxpr.eqns[0].params["device"] == dev
 

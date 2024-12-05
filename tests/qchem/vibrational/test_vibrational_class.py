@@ -93,28 +93,31 @@ def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
 
 
 @pytest.mark.parametrize(
-    ("sym", "geom", "expected_geom"),
+    ("sym", "geom", "unit", "expected_geom"),
     # Expected geometry was obtained using pyscf
     [
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            np.array([[0.0, 0.0, 0.07497201], [0.0, 0.0, 1.81475336]]),
+            "Angstrom",
+            np.array([[0.0, 0.0, 0.03967348], [0.0, 0.0, 0.96032612]]),
         ),
         (
             ["C", "O"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.88972613]]),
+            "Bohr",
             np.array([[0.0, 0.0, -0.12346543], [0.0, 0.0, 2.0131908]]),
         ),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
-def test_optimize_geometry(sym, geom, expected_geom):
+def test_optimize_geometry(sym, geom, unit, expected_geom):
     r"""Test that correct optimized geometry is obtained."""
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
-    mol_eq = vibrational.optimize_geometry(mol)
-    assert np.allclose(mol_eq[0].coordinates, expected_geom)
+    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit=unit)
+    coordinates = vibrational.optimize_geometry(mol)
+    print(coordinates, geom)
+    assert np.allclose(coordinates, expected_geom)
 
 
 @pytest.mark.parametrize(
@@ -137,8 +140,18 @@ def test_optimize_geometry(sym, geom, expected_geom):
 def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
-    mol_eq = vibrational.optimize_geometry(mol)
-    _, displ_vecs = vibrational_class._harmonic_analysis(mol_eq[1])
+    geom_eq = vibrational.optimize_geometry(mol)
+    mol_eq = qml.qchem.Molecule(
+        mol.symbols,
+        geom_eq,
+        unit=mol.unit,
+        basis_name=mol.basis_name,
+        load_data=mol.load_data,
+    )
+
+    scf_result = vibrational_class._single_point(mol_eq)
+
+    _, displ_vecs = vibrational_class._harmonic_analysis(scf_result)
     assert np.allclose(displ_vecs, expected_vecs) or np.allclose(
         displ_vecs, -1 * np.array(expected_vecs)
     )

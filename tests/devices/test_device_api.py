@@ -471,8 +471,10 @@ class TestPreprocessTransforms:
         with pytest.raises(qml.DeviceError, match=r"Measurement var\(Z\(0\)\) not accepted"):
             _, __ = program((invalid_tape,))
 
-        invalid_tape = QuantumScript([], [qml.expval(qml.PauliX(0))], shots=shots)
-        with pytest.raises(qml.DeviceError, match=r"Observable X\(0\) not supported"):
+        invalid_tape = QuantumScript(
+            [], [qml.expval(qml.Hermitian([[1.0, 0], [0, 1.0]], 0))], shots=shots
+        )
+        with pytest.raises(qml.DeviceError, match=r"Observable Hermitian"):
             _, __ = program((invalid_tape,))
 
         shots_only_meas_tape = QuantumScript([], [qml.counts()], shots=shots)
@@ -554,6 +556,58 @@ class TestPreprocessTransforms:
         else:
             assert qml.transforms.split_to_single_terms not in program
             assert qml.transforms.split_to_single_terms not in program
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    @pytest.mark.parametrize("non_commuting_obs", [True, False])
+    @pytest.mark.parametrize("all_obs_support", [True, False])
+    def test_diagonalize_measurements(self, request, non_commuting_obs, all_obs_support):
+        """Tests that the diagonalize_measurements transform is applied correctly."""
+
+        class CustomDevice(Device):
+
+            config_filepath = request.node.toml_file
+
+            def __init__(self):
+                super().__init__()
+                self.capabilities.non_commuting_observables = non_commuting_obs
+                if all_obs_support:
+                    self.capabilities.observables.update(
+                        {
+                            "PauliX": OperatorProperties(),
+                            "PauliY": OperatorProperties(),
+                            "PauliZ": OperatorProperties(),
+                            "Hadamard": OperatorProperties(),
+                        }
+                    )
+                else:
+                    self.capabilities.observables.update(
+                        {
+                            "PauliZ": OperatorProperties(),
+                            "PauliX": OperatorProperties(),
+                            "PauliY": OperatorProperties(),
+                            "Hermitian": OperatorProperties(),
+                        }
+                    )
+
+            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+                return (0,)
+
+        dev = CustomDevice()
+        program = dev.preprocess_transforms()
+        if non_commuting_obs is True:
+            assert qml.transforms.diagonalize_measurements not in program
+        elif all_obs_support is True:
+            assert qml.transforms.diagonalize_measurements not in program
+        else:
+            assert qml.transforms.diagonalize_measurements in program
+            for transform_container in program:
+                if transform_container._transform is qml.transforms.diagonalize_measurements:
+                    assert transform_container._kwargs["supported_base_obs"] == {
+                        "PauliZ",
+                        "PauliX",
+                        "PauliY",
+                    }
 
 
 class TestMinimalDevice:

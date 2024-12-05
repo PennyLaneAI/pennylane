@@ -181,7 +181,7 @@ class TestValidation:
         test_interface = "something"
         expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+        with pytest.raises(ValueError, match=expected_error):
             QNode(dummyfunc, dev, interface="something")
 
     def test_changing_invalid_interface(self):
@@ -198,7 +198,7 @@ class TestValidation:
 
         expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+        with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
 
     def test_invalid_device(self):
