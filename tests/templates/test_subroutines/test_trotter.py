@@ -14,10 +14,10 @@
 """
 Tests for the TrotterProduct template and helper functions.
 """
-# pylint: disable=private-access, protected-access
+# pylint: disable=private-access, protected-access, too-many-arguments
 import copy
 from collections import defaultdict
-from functools import reduce
+from functools import partial, reduce
 
 import pytest
 
@@ -578,38 +578,6 @@ class TestPrivateFunctions:
         assert tape.operations == []  # No queuing!
         for op1, op2 in zip(decomp, expected_expansion):
             qml.assert_equal(op1, op2)
-
-    @pytest.mark.parametrize("reverse", (False, True))
-    @pytest.mark.parametrize("order, expected_decomp", zip((1, 2, 4), expected_expansions))
-    def test_recursive_qfunc(self, order, reverse, expected_decomp):
-        time = 1.23
-        wires = [0, 1]
-
-        def first_order_exp(time, arg1, wires, kwarg1=False):
-            if arg1:
-                qml.exp(qml.PauliX(wires[0]), time * 1j)
-
-            if kwarg1:
-                qml.exp(qml.PauliY(wires[0]), time * 1j),
-
-            qml.exp(qml.PauliZ(wires[1]), time * 1j),
-            return
-
-        qfunc_args = (True,)
-        qfunc_kwargs = {"kwarg1": True}
-        with qml.tape.QuantumTape() as tape:
-            decomp = _recursive_qfunc(
-                time, order, first_order_exp, wires, reverse, *qfunc_args, **qfunc_kwargs
-            )
-
-        assert tape.operations == []  # No queuing!
-
-        for index in range(len(decomp)):
-            expected_index = index
-            if reverse:
-                expected_index = (2 - (index % 3)) + 3 * (index // 3)
-
-            qml.assert_equal(decomp[index], expected_decomp[expected_index])
 
 
 class TestError:
@@ -1343,7 +1311,7 @@ class TestTrotterizedQfuncInitialization:
     def test_standard_validity(self):
         """Test standard validity criteria using assert_valid."""
 
-        def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
+        def first_order_expansion(time, theta, phi, wires=(0, 1, 2), flip=False):
             "This is the first order expansion (U_1)."
             qml.RX(time * theta, wires[0])
             qml.RY(time * phi, wires[1])
@@ -1940,7 +1908,7 @@ class TestTrotterizedQfuncIntegration:
         from jax import numpy as jnp
 
         time = jnp.array(0.1)
-        wires = ["aux1", "aux2", 0, 1, "target"]
+        wires = ("aux1", "aux2", 0, 1, "target")
         arg1 = jnp.array(2.34)
         arg2 = jnp.array(-6.78)
         args = (arg1, arg2)
@@ -1966,7 +1934,7 @@ class TestTrotterizedQfuncIntegration:
         )
         expected_decomp = expected_decomp * n
 
-        @jax.jit
+        @partial(jax.jit, static_argnames=["wires", "kwarg1", "kwarg2"])
         @qml.qnode(qml.device("default.qubit", wires=wires), interface="jax")
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
@@ -2008,7 +1976,6 @@ class TestTrotterizedQfuncIntegration:
         wires = ["aux1", "aux2", 0, 1, "target"]
         arg1 = qnp.array(2.34)
         arg2 = qnp.array(-6.78)
-        args = (arg1, arg2)
         kwargs = {"kwarg1": True, "kwarg2": 3}
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
