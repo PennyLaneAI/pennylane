@@ -3,6 +3,7 @@
 # pylint: skip-file
 
 import numpy as np
+
 from pennylane.qchem import vibrational
 
 # fmt: off
