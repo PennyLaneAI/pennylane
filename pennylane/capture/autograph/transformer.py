@@ -1,4 +1,3 @@
-
 # Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -191,7 +190,6 @@ def autograph_source(fn):
                 nonlocal y
                 y = 1
             y = ag__.Undefined('y')
-            
             ag__.if_stmt(ag__.ld(x) < 5, if_body, else_body, get_state, set_state, ('y',), 1)
             try:
                 do_return = True
@@ -199,6 +197,7 @@ def autograph_source(fn):
             except:
                 do_return = False
                 raise
+            return fscope.ret(retval_, do_return)
     """
 
     # Handle directly converted objects.

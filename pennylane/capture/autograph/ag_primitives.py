@@ -18,7 +18,6 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
-import warnings
 from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
 
 from malt.core import config as ag_config
@@ -26,7 +25,6 @@ from malt.impl import api as ag_api
 from malt.impl.api import converted_call as ag_converted_call
 from malt.operators import py_builtins as ag_py_builtins
 from malt.operators.variables import Undefined
-from malt.pyct.origin_info import LineLocation
 
 import pennylane as qml
 
@@ -311,6 +309,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
         return get_state()
 
     final_iter_args = functional_while(init_iter_args)
+
     return final_iter_args
 
 
@@ -332,6 +331,7 @@ module_allowlist = (
     ag_config.DoNotConvert("jax"),
     *ag_config.CONVERSION_RULES,
 )
+
 
 class Patcher:
     """Patcher, a class to replace object attributes.
