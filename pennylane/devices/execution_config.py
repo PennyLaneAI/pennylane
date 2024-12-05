@@ -17,8 +17,8 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
+from pennylane.math import SUPPORTED_INTERFACE_NAMES
 from pennylane.transforms.core import TransformDispatcher
-from pennylane.workflow import SUPPORTED_INTERFACE_NAMES
 
 
 @dataclass
@@ -104,7 +104,7 @@ class ExecutionConfig:
         """
         if self.interface not in SUPPORTED_INTERFACE_NAMES:
             raise ValueError(
-                f"Unknown interface. interface must be in {SUPPORTED_INTERFACE_NAMES}, got {self.interface} instead."
+                f"Unknown interface. Interface must be in {SUPPORTED_INTERFACE_NAMES}, got {self.interface} instead."
             )
 
         if self.grad_on_execution not in {True, False, None}:
