@@ -364,7 +364,9 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
         else:
 
             # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
-            max_dimension = max(np.shape(A))
+
+            max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
+
             fable_norm = int(np.ceil(np.log2(max_dimension)))
             encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
 
