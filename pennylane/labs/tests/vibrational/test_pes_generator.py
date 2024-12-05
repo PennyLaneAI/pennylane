@@ -21,8 +21,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qchem import vibrational
-from pennylane.qchem.vibrational import pes_generator, vibrational_class
+from pennylane.labs import vibrational
+from pennylane.labs.vibrational import pes_generator
+from pennylane.qchem.vibrational.vibrational_class import _single_point
 
 h5py = pytest.importorskip("h5py")
 
@@ -194,7 +195,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
     r"""Test that the correct onemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational_class._single_point(mol)
+    mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
@@ -253,7 +254,7 @@ def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct twomode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational_class._single_point(mol)
+    mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 
@@ -322,7 +323,7 @@ def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct threemode PES is obtained."""
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_eq = vibrational_class._single_point(mol)
+    mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
 

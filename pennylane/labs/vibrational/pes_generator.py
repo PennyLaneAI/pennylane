@@ -15,31 +15,27 @@
 per normal modes on a grid."""
 
 import itertools
-import subprocess
+from pathlib import Path
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
-
-from .localize_modes import localize_normal_modes
-from .vibrational_class import (
-    VibrationalPES,
+from pennylane.qchem import VibrationalPES, localize_normal_modes, optimize_geometry
+from pennylane.qchem.vibrational.vibrational_class import (
     _get_dipole,
     _harmonic_analysis,
     _single_point,
-    optimize_geometry,
 )
 
-# pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member
+# pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member, too-many-branches
 # pylint: disable= import-outside-toplevel, too-many-positional-arguments, dangerous-default-value
-
 
 # constants
 HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
 C_LIGHT = 3 * 10**8  # m/s
 BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
-
+AU_TO_CM = 219475 # factor to convert Hartree to cm^-1
 
 def _import_mpi4py():
     """Import mpi4py."""
@@ -105,14 +101,9 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
         pes_onebody, dipole_onebody = _load_pes_onemode(
             comm.Get_size(), len(freqs), len(grid), dipole=dipole
         )
-        subprocess.run(
-            ["rm", "v1data*"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            shell=True,
-            check=False,
-        )
+        current_directory = Path.cwd()
+        for file_path in current_directory.glob("v1data*"):
+            file_path.unlink(missing_ok=False)
 
     comm.Barrier()
     pes_onebody = comm.bcast(pes_onebody, root=0)
@@ -301,14 +292,9 @@ def _pes_twomode(
         pes_twobody, dipole_twobody = _load_pes_twomode(
             comm.Get_size(), len(freqs), len(grid), dipole=dipole
         )
-        subprocess.run(
-            ["rm", "v2data*"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            shell=True,
-            check=False,
-        )
+        current_directory = Path.cwd()
+        for file_path in current_directory.glob("v2data*"):
+            file_path.unlink(missing_ok=False)
 
     comm.Barrier()
     pes_twobody = comm.bcast(pes_twobody, root=0)
@@ -752,14 +738,9 @@ def _pes_threemode(
         pes_threebody, dipole_threebody = _load_pes_threemode(
             comm.Get_size(), len(freqs), len(grid), dipole
         )
-        subprocess.run(
-            ["rm", "v3data*"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            shell=True,
-            check=False,
-        )
+        current_directory = Path.cwd()
+        for file_path in current_directory.glob("v3data*"):
+            file_path.unlink(missing_ok=False)
 
     comm.Barrier()
     pes_threebody = comm.bcast(pes_threebody, root=0)
@@ -900,6 +881,7 @@ def vibrational_pes(
         pes_data = [pes_onebody, pes_twobody, pes_threebody]
         dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
 
+    freqs = freqs/AU_TO_CM
     return VibrationalPES(
         freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
     )
