@@ -147,10 +147,11 @@ def Kpq(p, q, wire=None):
 
 
 def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
-    r"""Canonical form of the involution for the Cartan decomposition of type AI,
-    which is given by :math:`\theta: x \mapsto x^\ast`. Note that we work with Hermitian
-    operators internally, so that the input will be multiplied by :math:`i` before
-    evaluating the involution.
+    r"""Canonical Cartan decomposition of type AI, given by :math:`\theta: x \mapsto x^\ast`.
+
+    .. note:: Note that we work with Hermitian
+        operators internally, so that the input will be multiplied by :math:`i` before
+        evaluating the involution.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
@@ -204,10 +205,11 @@ def _AI_op(op: Operator) -> bool:
 
 
 def AII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
-    r"""Canonical form of the involution for the Cartan decomposition of type AII,
-    which is given by :math:`\theta: x \mapsto Y_0 x^\ast Y_0`. Note that we work with Hermitian
-    operators internally, so that the input will be multiplied by :math:`i` before
-    evaluating the involution.
+    r"""Canonical Cartan decomposition of type AII, given by :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
+
+    .. note:: Note that we work with Hermitian
+        operators internally, so that the input will be multiplied by :math:`i` before
+        evaluating the involution.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
@@ -272,18 +274,18 @@ def AIII(
     q: int = None,
     wire: Optional[int] = None,
 ) -> bool:
-    r"""Canonical form of the involution for the Cartan decomposition of type AIII,
-    which is given by
+    r"""Canonical Cartan decomposition of type AIII, given by :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
+
+    The matrix :math:`I_{p,q}` is given by
 
     .. math::
-
-        \theta: x \mapsto I_{p,q} x I_{p,q}, \quad
         I_{p,q}=\text{diag}(\underset{p \text{times}}{\underbrace{1, \dots 1}},
         \underset{p \text{times}}{\underbrace{-1, \dots -1}}).
 
     For :math:`p=q=2^N` for some integer :math:`N`, we have :math:`I_{p,q}=Z_0`.
-    Note that we work with Hermitian operators internally, so that the input will be
-    multiplied by :math:`i` before evaluating the involution.
+
+    .. note:: Note that we work with Hermitian operators internally, so that the input will be
+        multiplied by :math:`i` before evaluating the involution.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
@@ -356,18 +358,19 @@ def BDI(
     q: int = None,
     wire: Optional[int] = None,
 ) -> bool:
-    r"""Canonical form of the involution for the Cartan decomposition of type BDI,
-    which is given by
+    r"""Canonical Cartan decomposition of type BDI, given by :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
+
+    The matrix :math:`I_{p,q}` is given by
 
     .. math::
-
-        \theta: x \mapsto I_{p,q} x I_{p,q}, \quad
         I_{p,q}=\text{diag}(\underset{p \text{times}}{\underbrace{1, \dots 1}},
         \underset{p \text{times}}{\underbrace{-1, \dots -1}}).
 
     For :math:`p=q=2^N` for some integer :math:`N`, we have :math:`I_{p,q}=Z_0`.
-    Note that we work with Hermitian operators internally, so that the input will be
-    multiplied by :math:`i` before evaluating the involution.
+
+    .. note:: Note that we work with Hermitian operators internally, so that the input will be
+        multiplied by :math:`i` before evaluating the involution.
+
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
@@ -385,10 +388,11 @@ def BDI(
 
 
 def CI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
-    r"""Canonical form of the involution for the Cartan decomposition of type CI,
-    which is given by :math:`\theta: x \mapsto x^\ast`. Note that we work with Hermitian
-    operators internally, so that the input will be multiplied by :math:`i` before
-    evaluating the involution.
+    r"""Canonical Cartan decomposition of type CI, given by :math:`\theta: x \mapsto x^\ast`.
+
+    .. note:: Note that we work with Hermitian
+        operators internally, so that the input will be multiplied by :math:`i` before
+        evaluating the involution.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
@@ -407,12 +411,12 @@ def CII(
     q: int = None,
     wire: Optional[int] = None,
 ) -> bool:
-    r"""Canonical form of the involution for the Cartan decomposition of type CII,
-    which is given by
+    r"""Canonical Cartan decomposition of type CII, given by \theta: x \mapsto K_{p,q} x K_{p,q}.
+
+    The matrix :math:`K_{p,q}` is given by
 
     .. math::
 
-        \theta: x \mapsto K_{p,q} x K_{p,q}, \quad
         K_{p,q}=\text{diag}(
         \underset{p \text{times}}{\underbrace{1, \dots 1}},
         \underset{p \text{times}}{\underbrace{-1, \dots -1}},
@@ -421,8 +425,9 @@ def CII(
         ).
 
     For :math:`p=q=2^N` for some integer :math:`N`, we have :math:`K_{p,q}=Z_1`.
-    Note that we work with Hermitian operators internally, so that the input will be
-    multiplied by :math:`i` before evaluating the involution.
+
+    .. note:: Note that we work with Hermitian operators internally, so that the input will be
+        multiplied by :math:`i` before evaluating the involution.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
@@ -490,10 +495,11 @@ def _CII_op(op: Operator, p: int = None, q: int = None, wire: Optional[int] = No
 
 
 def DIII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
-    r"""Canonical form of the involution for the Cartan decomposition of type DIII,
-    which is given by :math:`\theta: x \mapsto Y_0 x Y_0`. Note that we work with Hermitian
-    operators internally, so that the input will be multiplied by :math:`i` before
-    evaluating the involution.
+    r"""Canonical Cartan decomposition of type DIII, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
+
+    .. note:: Note that we work with Hermitian
+        operators internally, so that the input will be multiplied by :math:`i` before
+        evaluating the involution.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
@@ -550,10 +556,11 @@ def _DIII_op(op: Operator, wire: Optional[int] = None) -> bool:
 
 
 def ClassB(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
-    r"""Canonical form of the involution for the Cartan decomposition of class B,
-    which is given by :math:`\theta: x \mapsto Y_0 x Y_0`. Note that we work with Hermitian
-    operators internally, so that the input will be multiplied by :math:`i` before
-    evaluating the involution.
+    r"""Canonical Cartan decomposition of class B, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
+
+    .. note:: Note that we work with Hermitian
+        operators internally, so that the input will be multiplied by :math:`i` before
+        evaluating the involution.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
