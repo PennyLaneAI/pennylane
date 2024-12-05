@@ -1,4 +1,5 @@
 """File that contains PES object generated via pes_generator functions in labs."""
+# pylint: skip-file
 
 import numpy as np
 from pennylane.qchem import vibrational

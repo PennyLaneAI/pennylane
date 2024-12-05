@@ -17,7 +17,6 @@ import sys
 import numpy as np
 import pytest
 
-import pennylane as qml
 from pennylane.bose import BoseWord
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational.taylor_ham import (
