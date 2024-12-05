@@ -558,7 +558,7 @@ for i, ele in enumerate(reference_taylor_bosonic_ops):
 
 
 def test_import_sklearn(monkeypatch):
-    """Test if an ImportError is raised by _import_mpi4py function."""
+    """Test if an ImportError is raised by _import_sklearn function."""
     # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
