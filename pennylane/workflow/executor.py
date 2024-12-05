@@ -56,12 +56,18 @@ class MPIPoolExec(ExtExecABC):
         from mpi4py import MPI  # Required to call MPI_Init
         from mpi4py.futures import MPIPoolExecutor as executor
         self._exec_backend = executor
+        self._size = MPI.COMM_WORLD.Get_size()
 
     def __call__(self, fn: Callable, data: Sequence):
         kwargs = {"use_pkl5": True}
         with self._exec_backend(**kwargs) as executor:
             output_f = executor.map(fn, data)
         return output_f
+
+    @property
+    def size(self):
+        return self._size
+
 
 class MPICommExec(ExtExecABC):
     """
@@ -108,9 +114,6 @@ class DaskExec(ExtExecABC):
         return [o.result() for o in output_f]
 
 
-class RayExec(ExtExecABC):
-    pass
-
 class ProcPoolExec(IntExecABC):
     """
     concurrent.futures.ProcessPoolExecutor abstraction class functor.
@@ -124,3 +127,7 @@ class ProcPoolExec(IntExecABC):
         with self._exec_backend(max_workers=self._max_workers) as executor:
             output_f = executor.map(fn, data)
         return output_f
+
+
+class RayExec(ExtExecABC):
+    pass
