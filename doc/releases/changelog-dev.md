@@ -387,6 +387,8 @@ same information.
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
 
+* Fixed a shape error in the .matrix() conversion of products of ops with a pauli_rep, occuring when the parameters are tensor-like.
+  [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
 
 <h3>Contributors ✍️</h3>
 
