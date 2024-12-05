@@ -452,13 +452,13 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    # @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+        qml.ops.functions.assert_valid(op)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))

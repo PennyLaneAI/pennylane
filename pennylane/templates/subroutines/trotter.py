@@ -584,11 +584,9 @@ class TrotterizedQfunc(Operation):
             
         >>> time = 0.1
         >>> angles = (0.12, -3.45)
-        >>> 
         >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
         a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
         b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
-        >>>
         >>>
         >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=3))
         a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
@@ -725,7 +723,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
     r"""Generates higher order Suzuki-Trotter product formulas from a set of
     operations defined in a function.
 
-    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of a
     Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
     the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
@@ -748,19 +746,19 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Suppose we have direct access to the operators which represent the exponentiated terms of 
-    a hamiltonian:
+    a Hamiltonian:
 
-    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} | for j \in [1, N] \}.
+    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} for j \in [1, N] \}.
     
     Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
-    first order expansion :math:`S_{1}(t)`; this function expands it to any higher order Suzuki-Trotter product.
+    first order expansion :math:`S_{1}(t)`, this function expands it to any higher order Suzuki-Trotter product.
 
     .. warning::
 
-        :code:`trotterize()` requires the :code:`qfunc` argument is a function with a very specific call 
-        signature. The first argument should be a time parameter which will be modified according to the 
+        :code:`trotterize()` requires the :code:`qfunc` argument to be a function with a specific call 
+        signature. The first argument of the :code:`qfunc` function should be a time parameter which will be modified according to the 
         Suzuki-Trotter product formula. The wires required by the circuit should be either the last 
-        explicit argument or the first keyword argument. 
+        positional argument or the first keyword argument: 
         :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
     
     Args:
@@ -804,7 +802,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
         b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
         >>>
         >>>
-        >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=3))
+        >>> print(qml.draw(my_circuit, level=3)(time, theta, phi, num_trotter_steps=3))
         a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
         b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
 
