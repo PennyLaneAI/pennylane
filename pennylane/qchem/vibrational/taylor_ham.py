@@ -56,7 +56,6 @@ def _remove_harmonic(freqs, onemode_pes):
     grid, _ = np.polynomial.hermite.hermgauss(quad_order)
     harmonic_pes = np.zeros((nmodes, quad_order))
     anh_pes = np.zeros((nmodes, quad_order))
-    freqs = freqs/219475 # Unit conversion
 
     for ii in range(nmodes):
         ho_const = freqs[ii] / 2
