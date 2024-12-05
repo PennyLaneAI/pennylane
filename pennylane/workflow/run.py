@@ -30,16 +30,12 @@ from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, Transf
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    interface: Interface, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
+    resolved_execution_config: "qml.devices.ExecutionConfig", differentiable=False
 ) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
     Args:
-        interface (Interface): the machine learning framework to interface with
-        grad_on_execution (bool): Whether device derivatives are computed during execution. Relevant for
-            interfaces such as `TF_AUTOGRAPH`.
-        device_vjp (bool): Indicates if device-level vector-Jacobian products (VJPs) should be used for
-            JAX or JAX_JIT interfaces. Defaults to ``False``.
+        resolved_execution_config (ExecutionConfig): resolved execution configuration set-up for execution
         differentiable (bool): Specifies if the operation should be differentiable within the framework.
             Relevant for TensorFlow and similar interfaces. Defaults to ``False``.
 
@@ -49,6 +45,9 @@ def _get_ml_boundary_execute(
     Raises:
         pennylane.QuantumFunctionError: If the required package for the specified interface is not installed.
     """
+    interface = resolved_execution_config.interface
+    grad_on_execution = resolved_execution_config.grad_on_execution
+    device_vjp = resolved_execution_config.use_device_jacobian_product
     try:
         if interface == Interface.AUTOGRAD:
             from .interfaces.autograd import autograd_execute as ml_boundary
@@ -247,8 +246,7 @@ def run(
         for i in range(1, resolved_execution_config.derivative_order):
             differentiable = i > 1
             ml_boundary_execute = _get_ml_boundary_execute(
-                resolved_execution_config.interface,
-                resolved_execution_config.grad_on_execution,
+                resolved_execution_config,
                 differentiable=differentiable,
             )
             execute_fn = partial(
@@ -278,9 +276,7 @@ def run(
             tape.trainable_params = qml.math.get_trainable_indices(params)
 
     ml_execute = _get_ml_boundary_execute(
-        resolved_execution_config.interface,
-        resolved_execution_config.grad_on_execution,
-        resolved_execution_config.use_device_jacobian_product,
+        resolved_execution_config,
         differentiable=resolved_execution_config.derivative_order > 1,
     )
 
