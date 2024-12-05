@@ -670,23 +670,6 @@ class TrotterizedQfunc(Operation):
 
         The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
         method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
-
-        **Example:**
-
-        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> qml.Rot._unflatten(*op._flatten())
-        Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
-        >>> qml.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.2, XY, wires=[0, 1])
-
-        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
-        ``_flatten`` methods.
-
-        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> op._flatten()
-        ((U2(3.4, 4.5, wires=['a']),),
-        (Wires(['b', 'c']), (True, True), Wires([])))
         """
         hashable_hyperparameters = tuple(self.hyperparameters.items()) + (("wires", self.wires),)
         return self.data, hashable_hyperparameters
@@ -701,20 +684,6 @@ class TrotterizedQfunc(Operation):
 
         The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
         operation with ``Operator._unflatten``.
-
-        **Example:**
-
-        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten()
-        ((1.2, 2.3, 3.4), (Wires([0]), ()))
-        >>> qml.Rot._unflatten(*op._flatten())
-        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
-        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> type(op)._unflatten(*op._flatten())
-        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
-
         """
         return cls(*data, **dict(metadata))
 

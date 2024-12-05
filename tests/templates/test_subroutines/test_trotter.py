@@ -1315,6 +1315,31 @@ class TestTrotterizedQfuncInitialization:
         assert op.parameters == list((time,) + qfunc_args)
         assert op.hyperparameters == expected_hyperparams
 
+    @pytest.mark.parametrize("wires", wire_data)
+    @pytest.mark.parametrize("n, time, order, reverse", hyperparams_data)
+    @pytest.mark.parametrize("qfunc_args, qfunc_kwargs", args_kwargs_data)
+    def test_trotterize_parameters_and_hyperparameters(
+        self, time, qfunc_args, wires, n, order, reverse, qfunc_kwargs
+    ):
+        """Test that the parameters and hyperparameters are set correctly"""
+        op = qml.trotterize(self.my_qfunc, n=n, order=order, reverse=reverse)(
+            time,
+            *qfunc_args,
+            wires=wires,
+            **qfunc_kwargs,
+        )
+
+        expected_hyperparams = copy.deepcopy(qfunc_kwargs)
+        expected_hyperparams["n"] = n
+        expected_hyperparams["order"] = order
+        expected_hyperparams["reverse"] = reverse
+        expected_hyperparams["qfunc"] = self.my_qfunc
+
+        assert op.wires == qml.wires.Wires(wires)
+        assert op.data == (time,) + qfunc_args
+        assert op.parameters == list((time,) + qfunc_args)
+        assert op.hyperparameters == expected_hyperparams
+
     def test_standard_validity(self):
         """Test standard validity criteria using assert_valid."""
 
@@ -1618,8 +1643,26 @@ class TestTrotterizedQfuncIntegration:
             flip=True,
         )
 
-        expected_decomp = expected_decomp
         assert op.decomposition() == expected_decomp
+
+    @pytest.mark.parametrize("reverse, order, expected_decomp", expected_decomps_order_reverse)
+    def test_private_recursive_qfunc(self, reverse, order, expected_decomp):
+        """Test the private _recursive_qfunc function works as expected."""
+
+        def first_order_expansion(time, theta, wires, flip=False):
+            "This is the first order expansion (U_1)."
+            qml.RX(time * theta, wires[0])
+            qml.RY(time * theta, wires[0])
+            if flip:
+                qml.CNOT(wires)
+
+        theta = 1.23
+        wires = ["a", "b"]
+
+        decomp = _recursive_qfunc(
+            0.1, order, first_order_expansion, wires, reverse, theta, flip=True
+        )
+        assert decomp == expected_decomp
 
     expected_decomps_n = (
         (
