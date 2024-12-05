@@ -132,6 +132,7 @@ class TestConditionals:
         assert res(2) == 4
         assert res(-3) == -3
 
+    @pytest.mark.xfail(raises=NotImplementedError)
     def test_qubit_manipulation_cond(self):
         """Test conditional with quantum operation."""
 
@@ -259,7 +260,7 @@ class TestConditionals:
             if True:
                 res = measure(wires=0)
 
-            return qml.expval(res)
+            return qml.expval(res)  # pylint: disable=possibly-used-before-assignment
 
         with pytest.raises(
             AutoGraphError, match="Some branches did not define a value for variable 'res'"

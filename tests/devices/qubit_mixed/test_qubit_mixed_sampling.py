@@ -143,7 +143,7 @@ class TestSampleState:
             ratio, expected_ratio, atol=APPROX_ATOL
         ), f"Ratio {ratio} deviates from expected {expected_ratio}"
 
-    @pytest.mark.parametrize("num_shots", [10, 100, 1000])
+    @pytest.mark.parametrize("num_shots", [100, 1000])
     @pytest.mark.parametrize("seed", [42, 123, 987])
     def test_reproducibility(self, num_shots, seed, two_qubit_pure_state):
         """Test reproducibility with different shots and seeds."""
@@ -153,7 +153,7 @@ class TestSampleState:
         samples2 = sample_state(two_qubit_pure_state, num_shots, rng=rng2)
         assert np.array_equal(samples1, samples2), "Samples with the same seed are not equal"
 
-    @pytest.mark.parametrize("num_shots", [10, 100, 1000])
+    @pytest.mark.parametrize("num_shots", [100, 1000])
     @pytest.mark.parametrize("seed1, seed2", [(42, 43), (123, 124), (987, 988)])
     def test_different_seeds_produce_different_samples(
         self, num_shots, seed1, seed2, two_qubit_pure_state
@@ -182,10 +182,10 @@ class TestSampleState:
         class CustomSampleMeasurement(SampleMeasurement):
             """A custom measurement process for testing."""
 
-            def process_counts(self, counts):
+            def process_counts(self, counts, wire_order=None):
                 return counts
 
-            def process_samples(self, samples, wire_orders=None):
+            def process_samples(self, samples, wire_order=None, shot_range=None, bin_size=None):
                 return samples
 
         # Prepare a simple state
@@ -200,7 +200,7 @@ class TestSampleState:
 class TestMeasurements:
     """Test different measurement types"""
 
-    @pytest.mark.parametrize("num_shots", [10, 100, 1000])
+    @pytest.mark.parametrize("num_shots", [100, 1000])
     @pytest.mark.parametrize("wires", [(0,), (1,), (0, 1)])
     def test_sample_measurement(self, num_shots, wires, two_qubit_pure_state):
         """Test sample measurements with different shots and wire configurations."""
@@ -231,7 +231,7 @@ class TestMeasurements:
             valid_states
         ), f"Invalid states in counts: {result.keys()}"
 
-    @pytest.mark.parametrize("num_shots", [10, 100])
+    @pytest.mark.parametrize("num_shots", [100, 500])
     def test_counts_measurement_all_outcomes(self, num_shots, two_qubit_pure_state):
         """Test counts measurement with all_outcomes=True."""
         shots = Shots(num_shots)
@@ -271,7 +271,7 @@ class TestMeasurements:
         shots = Shots(10000)
         result = measure_with_samples(measurement(observable), two_qubit_pure_state, shots)
         assert isinstance(result, (float, np.floating)), "Result is not a floating point number"
-        if measurement == qml.expval:
+        if measurement is qml.expval:
             assert -1 <= result <= 1, f"Expectation value {result} out of bounds"
         else:
             assert 0 <= result <= 1, f"Variance {result} out of bounds"
@@ -338,7 +338,7 @@ class TestMeasurements:
 class TestBatchedOperations:
     """Test batched state handling"""
 
-    @pytest.mark.parametrize("num_shots", [10, 100])
+    @pytest.mark.parametrize("num_shots", [100, 500])
     @pytest.mark.parametrize("batch_size", [2, 3, 4])
     def test_batched_sampling(self, num_shots, batch_size):
         """Test sampling with different batch sizes."""

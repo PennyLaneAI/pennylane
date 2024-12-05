@@ -27,13 +27,17 @@ from cachetools import Cache
 import pennylane as qml
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
+from pennylane.math import (
+    SUPPORTED_INTERFACE_NAMES,
+    SupportedInterfaceUserInput,
+    get_canonical_interface_name,
+)
 from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
 from ._setup_transform_program import _setup_transform_program
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
 from .resolution import SupportedDiffMethods, _resolve_execution_config
 
 logger = logging.getLogger(__name__)
@@ -206,7 +210,7 @@ class QNode:
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
-            ``qml.workflow.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
+            ``qml.math.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
@@ -548,7 +552,7 @@ class QNode:
             )
 
         if interface not in SUPPORTED_INTERFACE_NAMES:
-            raise qml.QuantumFunctionError(
+            raise ValueError(
                 f"Unknown interface {interface}. Interface must be "
                 f"one of {SUPPORTED_INTERFACE_NAMES}."
             )
@@ -576,7 +580,9 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = "numpy" if diff_method is None else INTERFACE_MAP[interface]
+        self._interface = (
+            "numpy" if diff_method is None else get_canonical_interface_name(interface)
+        )
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -637,13 +643,7 @@ class QNode:
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
-        if value not in SUPPORTED_INTERFACE_NAMES:
-
-            raise qml.QuantumFunctionError(
-                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
-            )
-
-        self._interface = INTERFACE_MAP[value]
+        self._interface = get_canonical_interface_name(value)
 
     @property
     def transform_program(self) -> TransformProgram:
@@ -959,7 +959,10 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             if interface != "numpy":
-                interface = INTERFACE_MAP.get(interface, None)
+                try:
+                    interface = get_canonical_interface_name(interface)
+                except ValueError:
+                    interface = "numpy"
             self._interface = interface
 
         try:
