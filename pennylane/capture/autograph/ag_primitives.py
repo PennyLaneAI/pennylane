@@ -18,6 +18,8 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
+import operator
+import warnings
 from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
 
 from malt.core import config as ag_config
@@ -25,13 +27,18 @@ from malt.impl import api as ag_api
 from malt.impl.api import converted_call as ag_converted_call
 from malt.operators import py_builtins as ag_py_builtins
 from malt.operators.variables import Undefined
+from malt.pyct.origin_info import LineLocation
 
 import pennylane as qml
+from pennylane.queuing import AnnotatedQueue
 
 has_jax = True
 try:
     import jax
     import jax.numpy as jnp
+    from jax.core import ShapedArray
+    from jax.interpreters.partial_eval import DynamicJaxprTracer
+
 except ImportError:  # pragma: no cover
     has_jax = False
 
@@ -41,7 +48,11 @@ __all__ = [
     "for_stmt",
     "while_stmt",
     "converted_call",
-]
+    "and_",
+    "or_",
+    "not_",
+    "set_item",
+    "update_item_with_op",
 
 
 class AutoGraphError(Exception):
@@ -316,9 +327,83 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
 def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
     """An implementation of the AutoGraph 'while ..' statement. The interface is defined by
     AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
-
     results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
+
+
+def _logical_op(*args, jax_fn, python_fn):
+    values = [f() for f in args]
+
+    def _is_array_tracer(x: Any) -> bool:
+        return isinstance(x, DynamicJaxprTracer) and isinstance(x.aval, ShapedArray)
+
+    if all(_is_array_tracer(val) for val in values):
+        result = jax_fn(*values)
+    else:
+        result = python_fn(*values)
+
+    return result
+
+
+def and_(a, b):
+    """An implementation of the AutoGraph '.. and ..' statement."""
+    return _logical_op(a, b, jax_fn=jnp.logical_and, python_fn=lambda a, b: a and b)
+
+
+def or_(a, b):
+    """An implementation of the AutoGraph '.. or ..' statement."""
+    return _logical_op(a, b, jax_fn=jnp.logical_or, python_fn=lambda a, b: a or b)
+
+
+def not_(arg):
+    """An implementation of the AutoGraph '.. not ..' statement."""
+    return _logical_op(lambda: arg, jax_fn=jnp.logical_not, python_fn=lambda x: not x)
+
+
+def get_source_code_info(tb_frame):
+    """Attempt to obtain original source code information for an exception raised within AutoGraph
+    transformed code.
+
+    Uses introspection on the call stack to extract the source map record from within AutoGraph
+    statements. However, it is not guaranteed to find the source map and may return nothing.
+    """
+    import inspect  # pylint: disable=import-outside-toplevel
+
+    ag_source_map = None
+
+    # Traverse frames in reverse to find caller with `ag_source_map` property:
+    # - function: directly on the callable object
+    # - qnode method: on the self object
+    # - qjit method: on the self.user_function object
+    try:
+        for frame in inspect.stack():
+            if frame.function == "converted_call" and "converted_f" in frame.frame.f_locals:
+                obj = frame.frame.f_locals["converted_f"]
+                ag_source_map = obj.ag_source_map
+                break
+            if "self" in frame.frame.f_locals:
+                obj = frame.frame.f_locals["self"]
+                if isinstance(obj, qml.QNode):
+                    ag_source_map = obj.ag_source_map
+                    break
+    except:  # nosec B110 # pylint: disable=bare-except # pragma: nocover
+        pass
+
+    loc = LineLocation(tb_frame.filename, tb_frame.lineno)
+    if ag_source_map is not None and loc in ag_source_map:
+        function_name = ag_source_map[loc].function_name
+        filename = ag_source_map[loc].loc.filename
+        lineno = ag_source_map[loc].loc.lineno
+        source_code = ag_source_map[loc].source_code_line.strip()
+    else:
+        function_name = tb_frame.name
+        filename = tb_frame.filename
+        lineno = tb_frame.lineno
+        source_code = tb_frame.line
+
+    info = f'  File "{filename}", line {lineno}, in {function_name}\n' f"    {source_code}\n"
+
+    return info
 
 
 # Prevent autograph from converting PennyLane and Catalyst library code, this can lead to many
@@ -417,6 +502,75 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             return new_qnode()
 
         return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
+
+
+
+def set_item(target, i, x):
+    """An implementation of the AutoGraph 'set_item' function. The interface is defined by
+    AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives.
+    The idea is to accept a simple assigment syntax for Jax arrays, to subsequently transform
+    it under the hood into the set of 'at' and 'set' calls that Autograph supports. E.g.:
+        target[i] = x -> target = target.at[i].set(x)
+
+    .. note::
+        For this feature to work, 'converter.Feature.LISTS' had to be added to the
+        TOP_LEVEL_OPTIONS and NESTED_LEVEL_OPTIONS conversion options of our own PennyLane
+        Autograph transformer. If you create a new transformer and want to support this feature,
+        make sure you enable such option there as well.
+    """
+
+    # Apply the 'at...set' transformation only to Jax arrays.
+    # Otherwise, fallback to Python's default syntax.
+    if isinstance(target, DynamicJaxprTracer):
+        if isinstance(i, slice):
+            target = target.at[i.start : i.stop : i.step].set(x)
+        else:
+            target = target.at[i].set(x)
+    else:
+        target[i] = x
+
+    return target
+
+
+def update_item_with_op(target, index, x, op):
+    """An implementation of the 'update_item_with_op' function from operator_update. The interface
+    is defined in operator_update.SingleIndexArrayOperatorUpdateTransformer, here we provide an
+    implementation in terms of PennyLane primitives. The idea is to accept an operator assignment
+    syntax for Jax arrays, to subsequently transform it under the hood into the set of 'at' and
+    operator calls that Autograph supports. E.g.:
+        target[i] **= x -> target = target.at[i].power(x)
+
+    .. note::
+        For this feature to work, 'converter.Feature.LISTS' had to be added to the
+        TOP_LEVEL_OPTIONS and NESTED_LEVEL_OPTIONS conversion options of our own PennyLane
+        Autograph transformer. If you create a new transformer and want to support this feature,
+        make sure you enable such option there as well.
+    """
+    # Mapping of the gast attributes to the corresponding JAX operation
+    gast_op_map = {"mult": "multiply", "div": "divide", "add": "add", "sub": "add", "pow": "power"}
+    # Mapping of the gast attributes to the corresponding in-place operation
+    inplace_operation_map = {
+        "mult": "mul",
+        "div": "truediv",
+        "add": "add",
+        "sub": "add",
+        "pow": "pow",
+    }
+    ## For sub, we need to use add and negate the value of x
+    if op == "sub":
+        x = -x
+
+    # Apply the 'at...op' transformation only to Jax arrays.
+    # Otherwise, fallback to Python's default syntax.
+    if isinstance(target, DynamicJaxprTracer):
+        if isinstance(index, slice):
+            target = getattr(target.at[index.start : index.stop : index.step], gast_op_map[op])(x)
+        else:
+            target = getattr(target.at[index], gast_op_map[op])(x)
+    else:
+        # Use Python's in-place operator
+        target[index] = getattr(operator, f"__i{inplace_operation_map[op]}__")(target[index], x)
+    return target
 
 
 class PRange:
