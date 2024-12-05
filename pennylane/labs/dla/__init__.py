@@ -53,6 +53,17 @@ Utility functions
     ~check_orthonormal
     ~trace_inner_product
 
+Involutions
+~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~even_odd_involution
+    ~concurrence_involution
+
 
 Involutions
 ~~~~~~~~~~~
