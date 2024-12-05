@@ -198,6 +198,9 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 
 <h4>Other Improvements</h4>
 
+* Standardize supported interfaces to an internal Enum object. 
+  [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
+
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
   [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
 
