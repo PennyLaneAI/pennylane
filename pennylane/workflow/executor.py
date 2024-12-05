@@ -18,32 +18,43 @@ Contains concurrent executor abstractions for task-based workloads.
 import abc
 from collections.abc import Callable, Sequence
 from functools import singledispatchmethod
+import os
+import sys
 from types import NoneType
+
 
 class RemoteExecABC(abc.ABC):
     """
     Abstract base class for defining a task-based parallel executor backend for running python functions
     """
-    def __init__(self, *args, **kwargs):
-        ...
+
+    def __init__(self, *args, **kwargs): ...
     @abc.abstractmethod
     def __call__(self, fn: Callable, data: Sequence):
         """
-            fn:     the callable function to run on the executor backend
-            data:   is a sequence where each work-item is a packaged chunk for execution
+        fn:     the callable function to run on the executor backend
+        data:   is a sequence where each work-item is a packaged chunk for execution
         """
         ...
+
+    @property
+    def size(self):
+        return self._size
+
 
 class IntExecABC(RemoteExecABC, abc.ABC):
     """
     Executor class for native Python library concurrency support
     """
+
     pass
+
 
 class ExtExecABC(RemoteExecABC, abc.ABC):
     """
     Executor class for external package provided concurrency support
     """
+
     pass
 
 
@@ -55,9 +66,9 @@ class MPIPoolExec(ExtExecABC):
     def __init__(self):
         from mpi4py import MPI  # Required to call MPI_Init
         from mpi4py.futures import MPIPoolExecutor as executor
+
         self._exec_backend = executor
         self._size = MPI.COMM_WORLD.Get_size()
-
 
     def __call__(self, fn: Callable, data: Sequence):
         kwargs = {"use_pkl5": True}
@@ -74,13 +85,14 @@ class MPICommExec(ExtExecABC):
     """
     MPICommExecutor abstraction class functor. To be used in dynamic process spawning required by MPIPoolExec is unsupported by the MPI implementation.
     """
+
     def __init__(self):
         from mpi4py import MPI  # Required to call MPI_Init
         from mpi4py.futures import MPICommExecutor as executor
+
         self._exec_backend = executor
         self._comm = MPI.COMM_WORLD
         self._size = MPI.COMM_WORLD.Get_size()
-
 
     def __call__(self, fn: Callable, data: Sequence):
         kwargs = {"use_pkl5": True}
@@ -95,49 +107,72 @@ class MPICommExec(ExtExecABC):
     def size(self):
         return self._size
 
+
 class DaskExec(ExtExecABC):
     """
     Dask distributed abstraction class functor.
     """
+
     from dask.distributed.deploy import Cluster
 
     @singledispatchmethod
-    def __init__(self, client_provider = None, max_workers = 4):
+    def __init__(self, client_provider=None, max_workers=4):
         from dask.distributed import Client, LocalCluster
+
         cluster = LocalCluster(n_workers=max_workers, processes=True)
         self._exec_backend = Client(cluster)
+        self._size = max_workers
 
     @__init__.register
     def _url_scheduler(self, client_provider: str):
         from dask.distributed import Client
+
         self._exec_backend = Client(client_provider)
+        self._size = len(self._exec_backend.scheduler_info()["workers"])
 
     @__init__.register
     def _cluster_provider(self, client_provider: Cluster):
         self._exec_backend = client_provider.get_client()
+        self._size = len(self._exec_backend.scheduler_info()["workers"])
 
     def __call__(self, fn: Callable, data: Sequence):
         output_f = self._exec_backend.map(fn, data)
         return [o.result() for o in output_f]
+
+    @property
+    def size(self):
+        return self._size
 
 
 class ProcPoolExec(IntExecABC):
     """
     concurrent.futures.ProcessPoolExecutor abstraction class functor.
     """
+
     def __init__(self, max_workers=None):
         from concurrent.futures import ProcessPoolExecutor
+
         self._exec_backend = ProcessPoolExecutor
-        self._max_workers = max_workers
+        if max_workers:
+            self._size = max_workers
+        elif sys.version_info.minor >= 13:
+            self._size = os.process_cpu_count()
+        else:
+            self._size = os.cpu_count()
 
     def __call__(self, fn: Callable, data: Sequence):
-        with self._exec_backend(max_workers=self._max_workers) as executor:
+        with self._exec_backend(max_workers=self._size) as executor:
             output_f = executor.map(fn, data)
         return output_f
+
+    @property
+    def size(self):
+        return self._size
 
 
 class RayExec(ExtExecABC):
     """
     Ray abstraction class functor.
     """
+
     pass
