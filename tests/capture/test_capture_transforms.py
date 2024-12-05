@@ -244,7 +244,7 @@ dummy_main = jax.core.MainTrace(level=1, trace_type=DummyTrace)
 dummy_trace = dummy_main.with_cur_sublevel()
 
 
-def init_test_variables(level=0, transforms=()):
+def init_program_and_trace(level=0, transforms=()):
     """Create basic TransformProgram, MainTrace, and TransformTrace for unit testing."""
     program = TransformProgram()
     for tr in transforms:
@@ -263,13 +263,13 @@ class TestTransformTracer:
 
     def test_is_abstract(self):
         """Test that a TransformTracer is considered to be abstract."""
-        _, _, trace = init_test_variables()
+        _, _, trace = init_program_and_trace()
         tracer = TransformTracer(trace, 0, 0)
         assert qml.math.is_abstract(tracer)
 
     def test_transform_tracer_interface(self):
         """Test that a TransformTracer belongs to the "jax" interface."""
-        _, _, trace = init_test_variables()
+        _, _, trace = init_program_and_trace()
         tracer = trace.pure(0)
         assert qml.math.get_interface(tracer) == "jax"
 
@@ -314,13 +314,13 @@ class TestTransformTracer:
     )
     def test_aval(self, val, expected_aval):
         """Test that the abstract evaluation of a TransformTracer is set correctly."""
-        _, _, trace = init_test_variables()
+        _, _, trace = init_program_and_trace()
         tracer = TransformTracer(trace, val, 0)
         assert tracer.aval == expected_aval
 
     def test_full_lower(self):
         """Test that TransformTracer.full_lower returns the same class."""
-        _, _, trace = init_test_variables()
+        _, _, trace = init_program_and_trace()
         tracer = TransformTracer(trace, 0, 0)
         assert tracer.full_lower() is tracer
 
@@ -331,7 +331,7 @@ class TestTransformTracer:
         val = 2
         idx = 3
 
-        dummy_program, main, _ = init_test_variables(level=level)
+        dummy_program, main, _ = init_program_and_trace(level=level)
         trace = TransformTrace(main, sublevel, dummy_program)
         tracer = TransformTracer(trace, val, idx)
 
@@ -419,7 +419,7 @@ class TestTransformTrace:
 
     def test_pure(self):
         """Test that TransformTrace.pure returns the correct output."""
-        _, _, trace = init_test_variables()
+        _, _, trace = init_program_and_trace()
         tracer = trace.pure(1.5)
         assert tracer._trace is trace
         assert tracer.aval == jax.core.ShapedArray((), float)
@@ -437,7 +437,7 @@ class TestTransformTrace:
         def _(x, *_):
             return jax.core.ShapedArray((), type(x))
 
-        _, _, trace = init_test_variables(level=0, transforms=[change_rotations])
+        _, _, trace = init_program_and_trace(level=0, transforms=[change_rotations])
         summands = [1.5, 2.5]
         tracers = [trace.pure(s) for s in summands]
         res = trace.process_primitive(add_prim, tracers, {})
@@ -446,7 +446,7 @@ class TestTransformTrace:
     def test_process_primitive_skip_if_idx_out_of_range(self):
         """Test that primitives are not processed if the index of any of the tracers is
         more than the length of the transform program"""
-        _, _, trace = init_test_variables(transforms=[change_rotations])
+        _, _, trace = init_program_and_trace(transforms=[change_rotations])
 
         # args are [RX rotation angle=0.5, wire=0]
         args = [0.5, 0]
@@ -458,7 +458,7 @@ class TestTransformTrace:
     def test_process_primitive_non_plxpr_transform_error(self):
         """Test that an error is raised if attempting to process a primitive using a transform
         that does not provide a ``plxpr_transform`` attribute."""
-        _, _, trace = init_test_variables(transforms=[non_plxpr_transform])
+        _, _, trace = init_program_and_trace(transforms=[non_plxpr_transform])
 
         # args are [RX rotation angle=0.5, wire=0]
         args = [0.5, 0]
@@ -482,7 +482,7 @@ class TestTransformTrace:
     )
     def test_process_primitive(self, primitive, args, n_wires, expected_op):
         """Test that primitives are processed correctly when they should not be skipped"""
-        _, _, trace = init_test_variables(transforms=[change_rotations])
+        _, _, trace = init_program_and_trace(transforms=[change_rotations])
         tracers = [trace.pure(a) for a in args]
         params = {"n_wires": n_wires}
         res = trace.process_primitive(primitive, tracers, params)
@@ -499,7 +499,7 @@ class TestTransformTrace:
     def test_process_primitive_multiple_transforms(self, primitive, args, n_wires, expected_op):
         """Test that primitives are transformed correctly when the program
         has multiple transforms."""
-        _, _, trace = init_test_variables(transforms=[change_rotations, change_rotations])
+        _, _, trace = init_program_and_trace(transforms=[change_rotations, change_rotations])
         tracers = [trace.pure(a) for a in args]
         params = {"n_wires": n_wires}
         res = trace.process_primitive(primitive, tracers, params)
@@ -535,7 +535,7 @@ class TestTransformInterpreter:
 
     def test_read_with_trace_already_boxed(self):
         """Test that values that are already boxed into tracers are not changed."""
-        program, _, trace = init_test_variables()
+        program, _, trace = init_program_and_trace()
         inval = trace.pure(1.5)
         interpreter = TransformInterpreter(program)
         interpreter._trace = trace
@@ -556,7 +556,7 @@ class TestTransformInterpreter:
     def test_read_with_trace_unboxed(self, inval):
         """Test that values that are not boxed into tracers belonging to the interpreter
         are boxed in TransformTracers."""
-        program, _, trace = init_test_variables(level=2)
+        program, _, trace = init_program_and_trace(level=2)
         interpreter = TransformInterpreter(program)
         interpreter._trace = trace
 
@@ -570,7 +570,7 @@ class TestTransformInterpreterIntegration:
 
     def test_call(self):
         """Test that calling an interpreted function gives the correct results."""
-        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+        program, _, _ = init_program_and_trace(transforms=[change_rotations, expval_to_var])
 
         @TransformInterpreter(program)
         def f(x):
@@ -602,7 +602,7 @@ class TestTransformInterpreterIntegration:
     def test_adjoint_transform(self, lazy):
         """Test that the correct error is raised if intepreted function contains Adjoint
         primitives."""
-        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+        program, _, _ = init_program_and_trace(transforms=[change_rotations, expval_to_var])
 
         @TransformInterpreter(program)
         def f(x):
@@ -619,7 +619,7 @@ class TestTransformInterpreterIntegration:
     def test_ctrl_transform(self):
         """Test that the correct error is raised if intepreted function contains Control
         primitives."""
-        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+        program, _, _ = init_program_and_trace(transforms=[change_rotations, expval_to_var])
 
         @TransformInterpreter(program)
         def f(x):
@@ -636,7 +636,7 @@ class TestTransformInterpreterIntegration:
     def test_cond(self):
         """Test that calling an interpreted function with cond primitives gives the correct
         results."""
-        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+        program, _, _ = init_program_and_trace(transforms=[change_rotations, expval_to_var])
 
         @TransformInterpreter(program)
         def f(x):
@@ -734,7 +734,7 @@ class TestTransformInterpreterIntegration:
     def test_for_loop(self):
         """Test that calling an interpreted function with for_loop primitives gives the correct
         results."""
-        program, _, _ = init_test_variables(transforms=[change_rotations])
+        program, _, _ = init_program_and_trace(transforms=[change_rotations])
 
         @TransformInterpreter(program)
         def f(x, n):
@@ -763,7 +763,7 @@ class TestTransformInterpreterIntegration:
         """Test that calling an interpreted function with while_loop primitives gives the correct
         results."""
         # pylint: disable=undefined-loop-variable
-        program, _, _ = init_test_variables(transforms=[change_rotations])
+        program, _, _ = init_program_and_trace(transforms=[change_rotations])
 
         @TransformInterpreter(program)
         def f(x, n):
@@ -792,7 +792,7 @@ class TestTransformInterpreterIntegration:
     def test_qnode(self):
         """Test that calling an interpreted function with qnode primitives gives the correct
         results."""
-        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+        program, _, _ = init_program_and_trace(transforms=[change_rotations, expval_to_var])
         dev = qml.device("default.qubit", wires=2)
 
         @TransformInterpreter(program)
@@ -827,7 +827,7 @@ class TestTransformInterpreterIntegration:
     def test_grad_and_jac(self, grad_f):
         """Test that calling an interpreted function with qnode primitives gives the correct
         results."""
-        program, _, _ = init_test_variables(transforms=[change_rotations, expval_to_var])
+        program, _, _ = init_program_and_trace(transforms=[change_rotations, expval_to_var])
         dev = qml.device("default.qubit", wires=2)
 
         @TransformInterpreter(program)
