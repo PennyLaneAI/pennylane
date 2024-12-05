@@ -25,7 +25,7 @@ from pennylane.pauli import PauliSentence
 
 
 def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wire: int = None):
-    r"""Khaneja-Glaser involution, which is a type-AIII Cartan involution with p=q.
+    r"""Khaneja-Glaser involution, which is a type-:func:`~AIII` Cartan involution with p=q.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Input operator

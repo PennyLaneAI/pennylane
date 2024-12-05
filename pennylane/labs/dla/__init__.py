@@ -60,7 +60,7 @@ when it fulfills :math:`\Theta(\Theta(g)) = g \ \forall g \in \mathfrak{g}`. Inv
 
     ~even_odd_involution
     ~concurrence_involution
-    ~khaneja_glaser_involutio
+    ~khaneja_glaser_involution
     ~AI
     ~AII
     ~AIII
