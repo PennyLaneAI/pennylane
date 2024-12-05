@@ -146,17 +146,25 @@ def _map_wires_plxpr_transform(
         raise ValueError("The 'queue' argument is not supported in the plxpr transformation.")
 
     print(
-        f"_map_wires_plxpr_transform called with \nprimitive: {primitive}, \ntracers: {tracers}, \nparams: {params}, \ntargs: {targs}, \ntkwargs: {tkwargs}, \nstate: {state}\n"
+        f"\n\n_map_wires_plxpr_transform called with \nprimitive: {primitive}, \ntracers: {tracers}, \nparams: {params}, \ntargs: {targs}, \ntkwargs: {tkwargs}, \nstate: {state}\n"
     )
+
+    # With this, only the first operator is mapped
+    # wire_map = tkwargs.pop("wire_map", None)
+    wire_map = tkwargs.get("wire_map", None)
+
+    # This is None if 'n_wires' is not in the params
+    n_wires = params.get("n_wires")
 
     with qml.QueuingManager.stop_recording():
         # With this, the arguments of operators are made of TransformTracers
         # and we cannot use op.map_wires since it does not work
-        tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
+        # tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
 
         # With this, the arguments of operators do not have TransformTracers
         tracers_in = [t.val for t in tracers]
         op = primitive.impl(*tracers_in, **params)
+        print(f"op: {op}")
 
     for t in tracers:
         if isinstance(t, TransformTracer):
@@ -168,33 +176,59 @@ def _map_wires_plxpr_transform(
             print(f"t: {t} is not a TransformTracer")
 
     # TODO: map wires of a pure measurement process (like probs)
-    if not isinstance(op, qml.operation.Operator):
+    # if not isinstance(op, qml.operation.Operator) and qml.math.is_abstract(op.obs):
+    if isinstance(op, MeasurementProcess):
+
         meas_tracers = []
         for t in tracers:
             if isinstance(t, TransformTracer):
-                meas_tracers.append(TransformTracer(t._trace, t.val, t.idx + 1))
+
+                # This currently gets both qml.probs() and qml.expval(qml.PauliZ(0)) to work
+                if len(op.wires) > 0:
+                    mapped_op = op.map_wires(wire_map=wire_map)
+
+                    meas_tracers.append(TransformTracer(t._trace, *mapped_op.wires, t.idx + 1))
+
+                else:
+                    meas_tracers.append(TransformTracer(t._trace, t.val, t.idx + 1))
+
             else:
                 meas_tracers.append(t)
 
         return primitive.bind(*meas_tracers, **params)
-
-    # With this, only the first operator is mapped
-    # wire_map = tkwargs.pop("wire_map", None)
-    wire_map = tkwargs.get("wire_map", None)
 
     # For this to work as expected, the wires should not be TransformTracers
     mapped_op = op.map_wires(wire_map=wire_map)
     print(f"op: {op}")
     print(f"mapped_op: {mapped_op}\n")
 
-    n_wires = params.get("n_wires")
+    # This is for cases like qml.H(1) @ qml.H(2), which don't have 'n_wires' in the params
+    if n_wires is None:
+
+        op_tracers = []
+        for t in tracers:
+            if isinstance(t, TransformTracer):
+
+                mapped_op = t.val.map_wires(wire_map=wire_map)
+                op_tracers.append(
+                    TransformTracer(
+                        t._trace,
+                        *mapped_op.wires,
+                        t.idx + 1,
+                    )
+                )
+            else:
+                op_tracers.append(t)
+
+        return primitive.bind(*op_tracers, **params)
+
     split = None if n_wires == 0 else -n_wires
     tracers_no_wires = tracers[:split]
     tracers_wires = tracers[split:]
 
-    print(f"split: {split}")
-    print(f"tracers_no_wires: {tracers_no_wires}")
-    print(f"tracers_wires: {tracers_wires}")
+    # print(f"split: {split}")
+    # print(f"tracers_no_wires: {tracers_no_wires}")
+    # print(f"tracers_wires: {tracers_wires}")
 
     op_tracers = []
     for t in tracers_no_wires:
@@ -223,11 +257,7 @@ def _map_wires_plxpr_transform(
         else:
             op_tracers.append(t)
 
-    # return mapped_op
     return primitive.bind(*op_tracers, **params)
-
-    # If we return operators without binding them, we get an UnexpectedTracerError
-    # raise NotImplementedError("This function is not implemented yet.")
 
 
 @partial(transform, plxpr_transform=_map_wires_plxpr_transform)

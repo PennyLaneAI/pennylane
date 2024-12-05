@@ -861,10 +861,7 @@ class TestMapWiresTransform:
         """Test that a simple qnode with a single gate is transformed correctly."""
 
         program = TransformProgram()
-        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2, 2: 3})
-        main = jax.core.MainTrace(
-            level=0, trace_type=TransformTrace, transform_program=program, state=None
-        )
+        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2, 2: 3, 3: 2})
 
         @TransformInterpreter(program)
         @qml.qnode(
@@ -873,28 +870,33 @@ class TestMapWiresTransform:
         def f(x):
             qml.RZ(x, 0)
             qml.PhaseShift(x, 1)
-            qml.Hadamard(2)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0])
+            qml.Hadamard(2) @ qml.Hadamard(3)
+            return qml.expval(qml.PauliZ(3)), qml.probs(wires=[1])
 
         jaxpr = jax.make_jaxpr(f)(0.1)
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
-        # for eq in inner_jaxpr.eqns:
-        #    if eqn.primitive.name  == "RZ":
-        #        assert eq.invars[-1] == 1
-
+        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert inner_jaxpr.eqns[0].invars[-1].val == 1
+
+        assert inner_jaxpr.eqns[1].primitive == qml.PhaseShift._primitive
         assert inner_jaxpr.eqns[1].invars[-1].val == 2
-        assert inner_jaxpr.eqns[2].invars[-1].val == 3
+
+        assert inner_jaxpr.eqns[2].primitive == qml.ops.Prod._primitive
+        assert inner_jaxpr.eqns[2].invars[0].val == 3
+        assert inner_jaxpr.eqns[2].invars[1].val == 2
+
+        assert inner_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+        assert inner_jaxpr.eqns[3].invars[-1].val == 2
+
+        assert inner_jaxpr.eqns[5].primitive == qml.measurements.ProbabilityMP._wires_primitive
+        assert inner_jaxpr.eqns[5].invars[-1].val == 2
 
     def test_qnode_simple_const(self):
         """Test that a simple qnode with a single gate is transformed correctly."""
 
         program = TransformProgram()
         program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2})
-        main = jax.core.MainTrace(
-            level=0, trace_type=TransformTrace, transform_program=program, state=None
-        )
 
         const = 0.1
 
@@ -906,12 +908,100 @@ class TestMapWiresTransform:
             qml.RZ(const, 0)
             qml.PhaseShift(const, 1)
             qml.Hadamard(2)
-            return qml.expval(qml.PauliZ(1)), qml.probs(wires=[0])
+            qml.RX(const, 0) + qml.X(0)
+            return qml.state()
 
         jaxpr = jax.make_jaxpr(f)()
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
+        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert inner_jaxpr.eqns[0].invars[-1].val == 1
+
+        assert inner_jaxpr.eqns[1].primitive == qml.PhaseShift._primitive
         assert inner_jaxpr.eqns[1].invars[-1].val == 2
+
+        assert inner_jaxpr.eqns[2].primitive == qml.Hadamard._primitive
         assert inner_jaxpr.eqns[2].invars[-1].val == 2
-        assert inner_jaxpr.eqns[3].invars[-1].val == 2
+
+        assert inner_jaxpr.eqns[3].primitive == qml.ops.Sum._primitive
+        assert inner_jaxpr.eqns[3].invars[0].val == 1
+        assert inner_jaxpr.eqns[3].invars[1].val == 1
+
+    def test_qnode_for_loop(self):
+        """Test that a qnode with a for loop is transformed correctly."""
+
+        program = TransformProgram()
+        program.add_transform(_map_wires_transform, wire_map={0: 1})
+
+        @TransformInterpreter(program)
+        @qml.qnode(
+            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
+        )
+        def f(x):
+            @qml.for_loop(3)
+            def g(i):
+                qml.RZ(x, 0)
+
+            g()
+            return qml.expval(qml.PauliZ(3))
+
+        jaxpr = jax.make_jaxpr(f)(0.1)
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        print(inner_jaxpr)
+        loop_jaxpr = inner_jaxpr.eqns[0].params["jaxpr_body_fn"]
+
+        assert loop_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert loop_jaxpr.eqns[0].invars[-1].val == 1
+
+
+    def test_qnode_while_loop(self):
+        """Test that a qnode with a while loop is transformed correctly."""
+
+        program = TransformProgram()
+        program.add_transform(_map_wires_transform, wire_map={0: 1})
+
+        @TransformInterpreter(program)
+        @qml.qnode(
+            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
+        )
+        def f(x):
+            @qml.while_loop(lambda i: i < 3)
+            def g(i):
+                qml.RZ(x, 0)
+                return i + 1
+
+            g(0)
+            return qml.expval(qml.PauliZ(3))
+
+        jaxpr = jax.make_jaxpr(f)(0.1)
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        loop_jaxpr = inner_jaxpr.eqns[0].params["jaxpr_body_fn"]
+
+        assert loop_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert loop_jaxpr.eqns[0].invars[-1].val == 1    
+
+
+    def test_qnode_conditional(self):
+        """Test that a qnode with a conditional is transformed correctly."""
+
+        program = TransformProgram()
+        program.add_transform(_map_wires_transform, wire_map={0: 1})
+
+        @TransformInterpreter(program)
+        @qml.qnode(
+            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
+        )
+        def f(x):
+            @qml.cond(x > 0.5)
+            def g():
+                qml.RZ(x, 0)
+
+            g()
+            return qml.expval(qml.PauliZ(3))
+
+        jaxpr = jax.make_jaxpr(f)(0.1)
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        cond_jaxpr = inner_jaxpr.eqns[1].params["jaxpr_branches"][0]
+
+        assert cond_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert cond_jaxpr.eqns[0].invars[-1].val == 1    
