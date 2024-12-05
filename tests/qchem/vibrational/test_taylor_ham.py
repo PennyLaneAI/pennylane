@@ -823,7 +823,7 @@ def test_taylor_hamiltonian():
     "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
 )
 def test_fit_onebody():
-    _, _, anh_pes, _ = _remove_harmonic(test_pes_object.freqs, test_pes_object.pes_onemode)
+    anh_pes, _ = _remove_harmonic(test_pes_object.freqs, test_pes_object.pes_onemode)
     coeff_1D, _ = _fit_onebody(anh_pes, 4, 2)
 
     assert np.allclose(abs(coeff_1D), abs(taylor_1D), atol=1e-10)
