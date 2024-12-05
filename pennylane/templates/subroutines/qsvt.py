@@ -207,12 +207,12 @@ class QSVT(Operation):
     Raises:
         ValueError: if the input block encoding is not an operator
 
-    **Example 1:**
+    **Example**
 
     This example shows how to use the :class:`~.QSVT` template with :class:`~.PrepSelPrep`.
-    This block encoding is used when it is known the pauli representation of the Hamiltonian.
-    It is chosen the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` and the
-    hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`.
+    This block encoding is used when it is known the pauli representation of the hamiltonian.
+    In this example it will be applied the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to
+    the block-encoded hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`.
 
     .. code-block::
 
@@ -220,7 +220,6 @@ class QSVT(Operation):
         coeffs = np.array([0.1, -0.7, -0.2])
         obs = [qml.X(3), qml.X(3) @ qml.Z(4), qml.Z(3) @ qml.Y(4)]
         H = qml.dot(coeffs, obs)
-
 
         control_wires = [1, 2]
         block_encode = qml.PrepSelPrep(H, control=control_wires)
@@ -249,16 +248,53 @@ class QSVT(Operation):
          [ 0.3502+0.j     -0.    +0.j      0.    +0.j     -0.    -0.0968j]
          [-0.    +0.j     -0.2534-0.j     -0.    +0.0968j -0.    +0.j    ]]
 
+
     More examples can be found below in Usage Details.
 
     .. details::
         :title: Usage Details
 
-        **Example 1:**
+    Although it is recommended to use :class:`~.PrepSelPrep`, the block encoding :class:`~.Qubitization`
+    can be used as well in the same way.
 
-        This example shows how to use the :class:`~.QSVT` template with :class:`~.FABLE`.
+    .. code-block::
+
+        poly = np.array([0,-1, 0, 0.5, 0 , 0.5])
+        coeffs = np.array([0.1, -0.7, -0.2])
+        obs = [qml.X(3), qml.X(3) @ qml.Z(4), qml.Z(3) @ qml.Y(4)]
+        H = qml.dot(coeffs, obs)
+
+        control_wires = [1, 2]
+        block_encode = qml.Qubitization(H, control=control_wires)
+        angles = qml.poly_to_angles(poly, "QSVT")
+        projectors = [
+            qml.PCPhase(angles[i], dim=2 ** len(H.wires), wires=control_wires + H.wires)
+            for i in range(len(angles))
+        ]
+
+        dev = qml.device("default.qubit")
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.ctrl(qml.QSVT, control=0, control_values=[1])(block_encode, projectors)
+            qml.ctrl(qml.adjoint(qml.QSVT), control=0, control_values=[0])(block_encode, projectors)
+            qml.Hadamard(0)
+            return qml.state()
+
+        matrix = qml.matrix(circuit, wire_order=[0] + control_wires + H.wires)()
+
+    .. code-block:: pycon
+
+        >>>print(np.round(matrix[: 2 ** len(H.wires), : 2 ** len(H.wires)], 4))
+        [[-0.    +0.j      0.    +0.0968j  0.3502-0.j     -0.    -0.j    ]
+         [ 0.    -0.0968j -0.    -0.j     -0.    -0.j     -0.2534+0.j    ]
+         [ 0.3502+0.j     -0.    +0.j      0.    +0.j     -0.    -0.0968j]
+         [-0.    +0.j     -0.2534-0.j     -0.    +0.0968j -0.    +0.j    ]]
+
+
+        Other possible approach is to embed a matrix :math:`A` via :class:`~.FABLE`.
         This matrix block-encoding is slower for simulation but is hardware compatible.
-        It is chosen the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` and an
+        The following example uses the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` and an
         arbitrary hermitian matrix.
 
         .. code-block::
@@ -292,12 +328,9 @@ class QSVT(Operation):
             [[-0.1942+0.j -0.0979+0.j]
              [-0.0979-0.j  0.0995-0.j]]
 
-        **Example 2:**
 
-        This example shows how to use the :class:`~.QSVT` template with :class:`~.BlockEncode`.
+        Finally, the previous example can also be implemented using :class:`~.BlockEncode`.
         This matrix block-encoding is faster for simulation but is not hardware compatible.
-        It is chosen the polynomial :math:`p(x) = -x - 0.5x^3 + 0.5x^5` and an
-        arbitrary hermitian matrix.
 
         .. code-block::
 
@@ -330,7 +363,6 @@ class QSVT(Operation):
             >>>print(np.round(matrix[: len(input_matrix), : len(input_matrix)], 4))
             [[-0.1942+0.j -0.0979+0.j]
              [-0.0979-0.j  0.0995-0.j]]
-
     """
 
     num_wires = AnyWires
