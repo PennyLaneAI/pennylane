@@ -298,7 +298,7 @@ def run(
     ):
         # no need to use pure callbacks around execute_fn or the jpc when taking
         # higher order derivatives
-        config = replace(config, interface=Interface.JAX)
+        resolved_execution_config = replace(resolved_execution_config, interface=Interface.JAX)
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
