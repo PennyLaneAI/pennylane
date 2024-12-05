@@ -606,7 +606,8 @@ class TrotterizedQfunc(Operation):
         id=None,
         **non_trainable_kwargs,
     ):
-        # Enforce the function signature: f(time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n)
+        # This class requires the input function (qfunc) has a very specific
+        # signature: qfunc(time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n)
 
         if qfunc is None:
             raise ValueError("The qfunc must be provided to be trotterized.")
