@@ -41,7 +41,7 @@ restrictions and constraints you may discover.
 
     Once the plxpr representation is created, we can evaluate it using
 
-    >>> jax.core.eval_jaxpr(plxpr.jaxpr, [], 5.3)
+    >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.3)
     [Array(28.09, dtype=float64, weak_type=True)]
 
 
@@ -299,56 +299,45 @@ For loops
 ---------
 
 Most ``for`` loop constructs will be properly captured and compiled by AutoGraph.
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def f():
+        for x in [0, 1, 2]:
+            qml.RY(x * jnp.pi / 4, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+>>> plxpr = make_plxpr(f)()
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, jaxpr.consts)
+[Array(-0.70710678, dtype=float64)]
+
 This includes automatic unpacking and enumeration through JAX arrays:
 
->>> @qjit(autograph=True)
-... def f(weights):
+>>> def f(weights):
 ...     z = 0.
 ...     for i, (x, y) in enumerate(weights):
 ...         z = i * x + i ** 2 * y
 ...     return z
 >>> weights = jnp.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]]).T
->>> f(weights)
+>>> plxpr = make_plxpr(f)(weights)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, [], weights)
 Array(8.4, dtype=float64)
-
-This also works when looping through Python containers, **as long as the containers
-can be converted to a JAX array**:
-
->>> weights = [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]
->>> f(weights)
-Array(3.4, dtype=float64)
-
-If the container cannot be converted to a JAX array (e.g., a list of strings),
-then AutoGraph will **not** capture the for loop; instead, AutoGraph will
-fallback to Python, and the loop will be unrolled at compile-time:
-
-.. code-block:: python
-
-    dev = qml.device("lightning.qubit", wires=1)
-
-    @qjit(autograph=True)
-    @qml.qnode(dev)
-    def f():
-        params = ["0", "1", "2"]
-        for x in params:
-            qml.RY(int(x) * jnp.pi / 4, wires=0)
-        return qml.expval(qml.PauliZ(0))
-
->>> f()
-Array(-0.70710678, dtype=float64)
 
 The Python ``range`` function is also fully supported by AutoGraph, even when
 its input is a **dynamic variable** (i.e., its numeric value is only known at
 runtime):
 
->>> @qjit(autograph=True)
-... def f(n):
+>>> def f(n):
 ...     x = -jnp.log(n)
 ...     for k in range(1, n + 1):
 ...         x = x + 1 / k
 ...     return x
->>> f(100000)
-Array(0.57722066, dtype=float64)
+>>> plxpr = make_plxpr(f)(0)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, [], 1000)
+[Array(0.57771558, dtype=float64, weak_type=True)]
 
 Indexing within a loop
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -357,110 +346,61 @@ Indexing arrays within a for loop will generally work, but care must be taken.
 
 For example, using a for loop with static bounds to index a JAX array is straightforward:
 
->>> dev = qml.device("lightning.qubit", wires=3)
->>> @qjit(autograph=True)
+>>> dev = qml.device("default.qubit", wires=3)
 ... @qml.qnode(dev)
 ... def f(x):
 ...     for i in range(3):
 ...         qml.RX(x[i], wires=i)
 ...     return qml.expval(qml.PauliZ(0))
 >>> weights = jnp.array([0.1, 0.2, 0.3])
->>> f(weights)
-Array(0.99500417, dtype=float64)
+>>> plxpr = make_plxpr(f)(weights)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, [], weights)
+[Array(0.99500417, dtype=float64)]
 
-However, for optimal performance, indexing within a for loop with AutoGraph will require
-that the object indexed is a JAX array or dynamic runtime variable.
+However, indexing within a for loop with AutoGraph will require that the object indexed is
+a JAX array or dynamic runtime variable.
 
 If the array you are indexing within the for loop is not a JAX array
-or dynamic variable, but an object that can be converted to a JAX array
-(such as a NumPy array or a list of floats), then AutoGraph will raise a warning,
-and fallback to Python to evaluate the loop at compile-time:
+or dynamic variable, an error will be raised:
 
->>> @qjit(autograph=True)
 ... @qml.qnode(dev)
 ... def f():
 ...     x = [0.1, 0.2, 0.3]
 ...     for i in range(3):
 ...         qml.RX(x[i], wires=i)
 ...     return qml.expval(qml.PauliZ(0))
-Warning: If you intended for the conversion to happen, make sure that the(now dynamic) loop variable is not used in tracing-incompatible ways,
-for instance by indexing a Python list with it. In that case, the list should be wrapped into an array.
-To understand different types of JAX tracing errors, please refer to the guide at: https://jax.readthedocs.io/en/latest/errors.html
-If you did not intend for the conversion to happen, you may safely ignore this warning.
-
-The compiled function will still execute, but has been compiled without the for
-loop (the for loop was unrolled at compilation):
-
->>> f()
-Array(0.99500417, dtype=float64)
+>>> plxpr = make_plxpr(f)()
+AutoGraphError: Tracing of an AutoGraph converted for loop failed with an exception:
+  TracerIntegerConversionError:    The __index__() method was called on traced array with shape int64[]
+    The error occurred while tracing the function functional_for at /Users/lillian.frederiksen/pennylane/pennylane/capture/autograph/ag_primitives.py:176 for jit. This concrete value was not available in Python because it depends on the value of the argument i.
+    See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
 
 To allow AutoGraph conversion to work in this case, simply convert the list to
 a JAX array:
 
->>> @qjit(autograph=True)
 ... @qml.qnode(dev)
 ... def f():
 ...     x = jnp.array([0.1, 0.2, 0.3])
 ...     for i in range(3):
 ...         qml.RX(x[i], wires=i)
 ...     return qml.expval(qml.PauliZ(0))
->>> f()
-Array(0.99500417, dtype=float64)
+>>> plxpr = make_plxpr(f)()
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)
+[Array(0.99500417, dtype=float64)]
 
+If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this for loop.
 
-What if the object you are indexing **cannot** be converted to a JAX
-array? In this case, it is not possible for AutoGraph to capture this for
-loop. However, AutoGraph will continue to fallback to Python for interpreting
-the for loop:
+If you are updating elements of the array, this must be done using the JAX `.at` and `.set` syntax.
 
->>> @qjit(autograph=True)
-... @qml.qnode(dev)
-... def f():
-...     x = ["0.1", "0.2", "0.3"]
-...     for i in range(3):
-...         qml.RX(float(x[i]), wires=i)
-...     return qml.expval(qml.PauliZ(0))
-Warning: If you intended for the conversion to happen, make sure that the(now dynamic) loop variable is not used in tracing-incompatible ways,
-for instance by indexing a Python list with it. In that case, the list should be wrapped into an array.
-To understand different types of JAX tracing errors, please refer to the guide at: https://jax.readthedocs.io/en/latest/errors.html
-If you did not intend for the conversion to happen, you may safely ignore this warning.
-
-Something similar will also happen with list manipulations/operations:
-
->>> @qjit(autograph=True)
-... def f():
-...     my_list = []
-...     for i in range(2):
-...         my_list.append(i)
-...     return my_list
-...
->>> f()
-UserWarning: Tracing of an AutoGraph converted for loop failed with an exception:
-AutoGraphError: The variable 'my_list' was initialized with type <class 'list'>, which is not compatible with JAX. Typically, this is the case for
-non-numeric values. You may still use such a variable as a constant inside a loop, but it cannot be updated from one iteration to the next, 
-or accessed outside the loop scope if it was defined inside of it.
-...
-[Array(0, dtype=int64), Array(1, dtype=int64)]
-
-In this case, the code still executes, but AutoGraph is telling us that it fell back to executing the loop at compile time. Instead, results can be accumulated by indexing into a pre-allocated JAX array, provided the type and size are known ahead of time:
-
->>> @qjit(autograph=True)
-... def f():
+>>> def f():
 ...     my_list = jnp.empty(2, dtype=int)
 ...     for i in range(2):
-...         my_list[i] = i
+...         my_list = my_list.at[i].set(i)  # *not* my_list[i] = i
 ...     return my_list
-...
->>> f()
+>>> plxpr = make_plxpr(f)()
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, [])
 Array([0, 1], dtype=int64)
 
-Here, AutoGraph is able to properly capture the for loop.
-
-.. note::
-
-    If you wish to suppress this warning, or even activate 'strict mode'
-    so that AutoGraph warnings are treated as errors, see the :ref:`debugging`
-    section.
 
 Dynamic indexing
 ~~~~~~~~~~~~~~~~
@@ -469,53 +409,28 @@ Indexing into arrays where the for loop has **dynamic bounds** (that is, where
 the size of the loop is set by a dynamic runtime variable) will also work, as long
 as the object indexed is a JAX array:
 
->>> @qjit(autograph=True)
-... @qml.qnode(dev)
+>>> @qml.qnode(dev)
 ... def f(n):
 ...     x = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
 ...     for i in range(n):
 ...         qml.RY(x[i], wires=0)
 ...     return qml.expval(qml.PauliZ(0))
->>> f(2)
+>>> plxpr = make_plxpr(f)(0)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
 Array(0.70710678, dtype=float64)
->>> f(3)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 3)
 Array(-0.70710678, dtype=float64)
 
 However AutoGraph conversion will fail if the object being indexed by the
 loop with dynamic bounds is **not** a JAX array, because you cannot index
-standard Python objects with dynamic variables.
-
-In this case, AutoGraph will raise a warning, but the compilation of the function
-will ultimately fail:
-
->>> @qjit(autograph=True)
-... @qml.qnode(dev)
-... def f(n):
-...     x = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
-...     for i in range(n):
-...         qml.RY(x[i], wires=0)
-...     return qml.expval(qml.PauliZ(0))
-TracerIntegerConversionError: The __index__() method was called on traced array with shape int64[].
-See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
-
-To resolve this, ensure that all objects that are indexed within dynamic for
-loops are JAX arrays.
+standard Python objects with dynamic variables. Ensure that all objects that
+]are indexed within dynamic for loops are JAX arrays.
 
 Break and continue
 ~~~~~~~~~~~~~~~~~~
 
 Within a for loop, control flow statements ``break`` and ``continue``
-are not currently supported. Usage will result in an error:
-
-
->>> @qjit(autograph=True)
-... def f(x):
-...     for i in range(10):
-...         x = x + x ** 2
-...         if x > 5:
-...             break
-...     return x
-SyntaxError: 'break' outside loop
+are not currently supported.
 
 
 Updating and assigning variables
@@ -523,8 +438,7 @@ Updating and assigning variables
 
 For loops that update variables can also be converted with AutoGraph:
 
->>> @qjit(autograph=True)
-... def f(x):
+>>> def f(x):
 ...     for y in [0, 4, 5]:
 ...         x = x + y
 ...     return x
@@ -572,16 +486,6 @@ Within a while loop, control flow statements ``break`` and ``continue``
 are not currently supported. Usage will result in an error:
 
 
->>> @qjit(autograph=True)
-... def f(x):
-...     while x < 5:
-...         if x < 0:
-...             continue
-...         x = x + x ** 2
-...     return x
-SyntaxError: 'continue' not properly in loop
-
-
 Updating and assigning variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -616,202 +520,52 @@ function within the loop --- do not have any type restrictions.
 Logical statements
 ------------------
 
-AutoGraph has support for capturing logical statements that involve dynamic variables --- that is,
-statements involving ``and``, ``not``, and ``or`` that return booleans --- allowing them to be
-computed at runtime.
-
->>> @qjit(autograph=True)
-... def f(x: float, y: float):
-...     a = x >= 0.0 and x <= 1.0
-...     b = not y >= 1.0
-...     return a or b
->>> f(0.5, 1.1)
-Array(True, dtype=bool)
->>> f(1.5, 1.6)
-Array(False, dtype=bool)
-
-Internally, logical statements are converted as follows:
-
-- ``x and y`` to ``jnp.logical_and(x, y)``
-- ``x or y`` to ``jnp.logical_or(x, y)``
-- ``not x`` to ``jnp.logical_not(x)``
-
-This can be useful when building dynamic circuits, with gates dependent on the output
-of multiple measurements. For example,
-
-.. code-block:: python
-
-    dev = qml.device("lightning.qubit", wires=2)
-
-    @qjit(autograph=True)
-    @qml.qnode(dev)
-    def circuit():
-        qml.RX(0.1, wires=0)
-        qml.RY(0.5, wires=1)
-
-        m1 = measure(0)
-        m2 = measure(1)
-
-        if m1 and not m2:
-            qml.Hadamard(wires=1)
-        elif m1 and m2:
-            qml.RX(0.5, wires=1)
-        else:
-            qml.RY(0.5, wires=1)
-
-        return qml.expval(qml.PauliZ(1))
-
->>> circuit()
-Array(0.87758256, dtype=float64)
-
-Note that there are a couple of important constraints and restrictions that must be
-considered when working with logical statements.
-
-All arguments must be dynamic
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Only cases where **all arguments to the logical statement are dynamic** (that is, dependent on
-runtime values) are captured and converted by AutoGraph. Cases where one or both of the arguments
-are static will result in the logical statement falling back to Python, and
-being interpreted at compile time.
-
-For example,
-
->>> @qjit(autograph=True)
-... def f(x):
-...     return x and True
-TracerBoolConversionError: Attempted boolean conversion of traced array with shape float64[]..
-The error occurred while tracing the function f_1 at /tmp/__autograph_generated_file3sgpmu5h.py:6 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument x.
-
-Here, ``x`` is dynamic, but the other argument is static. As a result, Python will attempt
-to evaluate this expression at compile time and fail.
-
-To avoid this, please use ``jnp.logical_and(x, y)``, ``jnp.logical_or(x, y)``,
-and ``jnp.logical_not(x)`` explicitly if one of your arguments is static:
-
->>> @qjit(autograph=True)
-... def f(x):
-...     return jnp.logical_and(x, True)
->>> f(False)
-Array(False, dtype=bool)
->>> f(True)
-Array(True, dtype=bool)
-
-Array arguments
-~~~~~~~~~~~~~~~
-
-Note that, like with NumPy and JAX, logical operators apply elementwise to array arguments:
-
->>> @qjit(autograph=True)
-... def f(x, y):
-...     return x and y
->>> f(jnp.array([0, 1]), jnp.array([1, 1]))
-Array([False,  True], dtype=bool)
-
-Care must therefore be taken when using logical operators within conditional branches;
-``jnp.all`` and ``jnp.any`` can be used to generate a single boolean for conditionals:
-
->>> @qjit(autograph=True)
-... def f(x, y):
-...     if jnp.all(x and y):
-...         z = 1
-...     else:
-...         z = -1
-...     return z
->>> f(jnp.array([0, 1]), jnp.array([1, 1]))
-Array(-1, dtype=int64)
-
-.. _debugging:
+AutoGraph in PennyLane currently does not provide support for capturing logical statements that involve dynamic variables --- that is,
+statements involving ``and``, ``not``, and ``or`` that return booleans.
 
 Debugging
 ---------
 
-Catalyst provides the following functions to help with debugging AutoGraph:
-
-.. raw:: html
-
-    <div class="summary-table">
-
-.. autosummary::
-    :nosignatures:
-
-    ~catalyst.autograph_strict_conversion
-    ~catalyst.autograph_ignore_fallbacks
-    ~catalyst.autograph_source
-
-.. raw:: html
-
-    </div>
-    <div class="summary-table">
-
-The global variables ``autograph_strict_conversion`` and ``autograph_ignore_fallbacks``
-can be useful for changing the behaviour of AutoGraph, to ensure that it is capturing
-what is intended.
-
-To avoid Python fallback behaviour, ``autograph_strict_conversion`` can be set
-to ``True``, causing conversion failures to be treated as errors, rather than
-falling back to interpreting the control flow via Python.
-
-For example, consider the case of indexing a non-JAX array object within a for
-loop. By default, AutoGraph will fallback to Python. If we want to instead ensure
-that all parts of our program control flow *are* being captured, we can set
-``autograph_strict_conversion``:
-
->>> catalyst.autograph_strict_conversion = True
->>> dev = qml.device("lightning.qubit", wires=1)
->>> @qjit(autograph=True)
-... @qml.qnode(dev)
-... def f():
-...     params = ["0", "1", "2"]
-...     for x in params:
-...         qml.RY(int(x) * jnp.pi / 4, wires=0)
-...     return qml.expval(qml.PauliZ(0))
-AutoGraphError: Could not convert the iteration target ['0', '1', '2'] to array while processing the following with AutoGraph:
-  File "<ipython-input-44-dbae11e6d745>", line 7, in f
-    for x in params:
-
-In other cases, the fallback behaviour might be preferable, and you may want to
-silence AutoGraph warnings; this can be done via ``autograph_ignore_fallbacks``:
-
->>> catalyst.autograph_strict_conversion = False
->>> catalyst.autograph_ignore_fallbacks = True
->>> @qjit(autograph=True)
-... @qml.qnode(dev)
-... def f():
-...     x = ["0.1", "0.2", "0.3"]
-...     for i in range(3):
-...         qml.RX(float(x[i]), wires=i)
-...     return qml.expval(qml.PauliZ(0))
->>> f()
-Array(0.99500417, dtype=float64)
-
-Finally, we've seen examples above where we have used the JAXPR representation
+We've seen examples in the above code where we have used the jaxpr representation
 of the compiled function in order to verify that AutoGraph is correctly capturing
-the control flow. In addition, the function :func:`~.autograph_source` allows
-you to view the converted Python code generated by AutoGraph:
+the control flow. This can be a useful tool in debugging issues.
 
->>> @qjit(autograph=True)
-... def f(n):
+In addition, the function :func:`~.autograph_source` is provided,
+and allows you to view the converted Python code generated by AutoGraph:
+
+>>> def f(n):
 ...     x = - jnp.log(n)
 ...     for k in range(1, n + 1):
 ...         x = x + 1 / k
 ...     return x
->>> print(catalyst.autograph_source(f))
-def f_1(n):
-    with ag__.FunctionScope('f', 'fscope', ag__.ConversionOptions(recursive=True, user_requested=True, optional_features=(), internal_convert_user_code=True)) as fscope:
-        x = -ag__.converted_call(jnp.log, (n,), None, fscope)
+>>> plxpr = make_plxpr(f)(0)
+>>> print(qml.capture.autograph.autograph_source(f))
+def ag__f(n):
+    with ag__.FunctionScope('f', 'fscope', ag__.ConversionOptions(recursive=True, user_requested=True, optional_features=ag__.Feature.BUILTIN_FUNCTIONS, internal_convert_user_code=True)) as fscope:
+        do_return = False
+        retval_ = ag__.UndefinedReturnValue()
+        x = -ag__.converted_call(ag__.ld(jnp).log, (ag__.ld(n),), None, fscope)
+
         def get_state():
             return (x,)
+
         def set_state(vars_):
             nonlocal x
-            (x,) = vars_
+            x, = vars_
+
         def loop_body(itr):
             nonlocal x
             k = itr
-            x = x + 1 / k
+            x = ag__.ld(x) + 1 / ag__.ld(k)
         k = ag__.Undefined('k')
-        ag__.for_stmt(ag__.converted_call(range, (1, n + 1), None, fscope), None, loop_body, get_state, set_state, ('x',), {'iterate_names': 'k'})
-        return x
+        ag__.for_stmt(ag__.converted_call(ag__.ld(range), (1, ag__.ld(n) + 1), None, fscope), None, loop_body, get_state, set_state, ('x',), {'iterate_names': 'k'})
+        try:
+            do_return = True
+            retval_ = ag__.ld(x)
+        except:
+            do_return = False
+            raise
+        return fscope.ret(retval_, do_return)
 
 
 Native Python control flow without AutoGraph
@@ -819,7 +573,7 @@ Native Python control flow without AutoGraph
 
 It's important to note that native Python control flow --- in cases where the
 control flow parameters are static --- will continue to work with
-Catalyst **without** AutoGraph. However, if AutoGraph is not enabled, such
+PennyLane **without** AutoGraph. However, if AutoGraph is not enabled, such
 control flow will be evaluated at compile time, and not preserved in the
 compiled program.
 
@@ -843,100 +597,6 @@ rather than runtime.
 
 For more details, see the :ref:`compile-time vs. runtime <compile_time>`
 documentation.
-
-
-Disabling AutoGraph for a specific function or for calls inside a context
--------------------------------------------------------------------------
-
-The decorator :func:`~.disable_autograph` allows one to disable Autograph
-from auto-converting specific external functions when called within a qjit-compiled
-function with ``autograph=True``:
-
-.. code-block:: python
-
-    def approximate_e(n):
-      num = 1.
-      fac = 1.
-      for i in range(1, n + 1):
-          fac *= i
-          num += 1. / fac
-      return num
-
-    @qml.qjit(autograph=True)
-    def g(x: float, N: int):
-
-      for i in range(N):
-          x = x + catalyst.disable_autograph(approximate_e)(10) / x ** i
-
-      return x
-
->>> g(0.1, 10)
-Array(4.02997319, dtype=float64)
-
-Note that for Autograph to be disabled, the decorated function must be
-defined **outside** the qjit-compiled function. If it is defined within
-the qjit-compiled function, it will continue to be converted with Autograph.
-
-In addition, Autograph can also be disabled for all externally defined functions called
-within a qjit-compiled function via the context manager syntax:
-
-.. code-block:: python
-
-    @qml.qjit(autograph=True)
-    def g(x: float, N: int):
-
-      for i in range(N):
-          with catalyst.disable_autograph:
-            x = x + approximate_e(10) / x ** i
-
-      return x
-
-As before, note that any local code defined **within** the context
-manager, including calls to functions defined **within** the context
-manager, will continue to be converted. *Only calls made within the context manager
-to external functions will avoid conversion*.
-
-For example, the function ``approximate_e`` **will** be converted with Autograph
-if defined within function ``g``:
-
-.. code-block:: python
-
-    @qml.qjit(autograph=True, static_argnums=1)
-    def g(x: float, N: int):
-
-        def approximate_e(n):
-          num = 1.
-          fac = 1.
-          for i in range(1, n + 1):
-              fac *= i
-              num += 1. / fac
-          return num
-
-      for i in range(N):
-          x = x + catalyst.disable_autograph(approximate_e)(N) / x ** i
-
-      return x
-
-Adding modules for Autograph conversion
----------------------------------------
-
-Library code is not meant to be targeted by Autograph conversion, hence
-``pennylane``, ``catalyst`` and ``jax`` modules have been excluded from it.
-But sometimes it might make sense enabling specific submodules from the
-excluded modules for which conversion may be appropriate. For these cases
-one can use the ``autograph_include`` parameter, which provides a list
-of modules/submodules that will always be enabled for conversion no matter
-if the default conversion rules were excluding them before.
-
-This example shows how you can enable a previously excluded submodule:
-
->>> import excluded_module
-... @qjit(autograph=True, autograph_include=["excluded_module.submodule"])
-... def g(x: int):
-...     return excluded_module.submodule.f(x)
-
-Notice that ``autograph=True`` must be set in order to process the
-``autograph_include`` list, otherwise an error will be reported.
 
 
 In-place JAX array updates
