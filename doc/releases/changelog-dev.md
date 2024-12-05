@@ -48,6 +48,7 @@
     are added to the device API for devices that provides a TOML configuration file and thus have
     a `capabilities` property.
     [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
+    [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
@@ -145,6 +146,9 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
+* Added Pauli String representations for the gates X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP.
+  [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
+  
 * `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
   [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
 
@@ -154,7 +158,17 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
 
+* The `diagonalize_measurements` transform no longer raises an error for unknown observables. Instead,
+  they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
+  observables that are also unsupported by the device.
+  [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
+
 <h4>Capturing and representing hybrid programs</h4>
+
+* Execution with capture enabled now follows a new execution pipeline and natively passes the
+  captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
+  only works with a reduced feature set.
+  [(#6596)](https://github.com/PennyLaneAI/pennylane/pull/6596)
 
 * PennyLane transforms can now be captured as primitives with experimental program capture enabled.
   [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
@@ -350,6 +364,10 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* Subclasses of `qml.ops.Controlled` no longer bind the primitives of their base operators when program capture
+  is enabled.
+  [(#6672)](https://github.com/PennyLaneAI/pennylane/pull/6672)
+
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply the complex conjugate
   of the unitaries instead of the adjoint, providing the correct result.
   [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
@@ -378,6 +396,7 @@ Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
+Lasse Dierich,
 Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
