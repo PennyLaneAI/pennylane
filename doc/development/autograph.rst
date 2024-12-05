@@ -1,15 +1,16 @@
-AutoGraph guide
-===============
+Guide for AutoGraph for plxpr capture
+=====================================
 
 .. figure:: ../_static/catalyst-autograph.png
     :width: 70%
     :alt: AutoGraph Illustration
     :align: center
 
-When capturing PennyLane programs as PLXPRs using AutoGraph you can represent quantum
-programs with **structure**. That is, you can use classical control flow
-(such as conditionals and loops) with quantum operations and measurements,
-and this structure is captured and preserved in the PLXPR.
+When capturing PennyLane programs as a plxpr instance using AutoGraph, you
+can represent quantum programs with **structure**. That is, you can use
+classical control flow (such as conditionals and loops) with quantum operations
+and measurements, and this structure is captured and preserved in the plxpr
+representation.
 
 PennyLane provides various high-level functions, such as :func:`~.cond`,
 :func:`~.for_loop`, and :func:`~.while_loop`, that work with native PennyLane
@@ -20,6 +21,29 @@ with **native Python control flow**, such as if statements and for loops.
 
 Here, we'll aim to provide an overview of AutoGraph, as well as various
 restrictions and constraints you may discover.
+
+.. note::
+
+    When converting code in these examples, we will use the `make_plxpr` function,
+    which uses AutoGraph by default. When creating the initial plxpr representation,
+    we must call the constructor function produced by `make_plxpr` with some initial
+    values, which should have the same type and shape as the values we intend to use:
+
+    .. code-block:: python
+
+        def f(x):
+            if x > 5:
+                x = x ** 2
+            return x
+
+
+    >>> plxpr = make_plxpr(f)(0.0)
+
+    Once the plxpr representation is created, we can evaluate it using
+
+    >>> jax.core.eval_jaxpr(plxpr.jaxpr, [], 5.3)
+    [Array(28.09, dtype=float64, weak_type=True)]
+
 
 
 Using AutoGraph
@@ -196,8 +220,7 @@ Different branches must assign the same type
 
 Different branches of an if statement must always assign variables with the same type across branches,
 if those variables are used in the outer scope (external variables). The type must be the same in the sense
-that the *structure* of the variable should not change across branches. The underlying data type (`dtype`)
-may be different, since data type promotion is applied across branches.
+that the *structure* of the variable should not change across branches, and the dtypes must match.
 
 In particular, this requires that if an external variable is assigned an array in one
 branch, other branches must also assign arrays of the same shape:
@@ -210,6 +233,7 @@ branch, other branches must also assign arrays of the same shape:
 ...     return jnp.sum(y)
 >>> make_plxpr(f)(0.5)
 ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(float64[3]) vs ShapedArray(float64[2])s
+
 >>> def f(x):
 ...     if x > 1:
 ...         y = jnp.array([0.1, 0.2, 0.3])
@@ -225,61 +249,32 @@ More generally, this also applies to common container classes such as
 then all other branches must also assign the external variable with the same
 type, nested structure, number of elements, element types, and array shapes.
 
-Automatic data type promotion in branches
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Different branches of an if statement may assign external variables with different data types (dtypes) ---
-PennyLane will automatically perform data type promotion (such as converting integers to floats):
-
->>> @qjit(autograph=True)
-... def f(x):
-...     if x > 5:
-...         y = 5.0
-...     else:
-...         y = 4
-...     return y
->>> f(0.5)
-Array(4., dtype=float64)
-
-New variable assignments
+Changing a variable type
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-If a new, previously non-existent variable is assigned in one branch, it must
-be assigned in **all** branches. This means that you **must** include an
-``else`` statement if you are assigning a new variable:
+We can change the type of an existing variable ``y``, as long as we make sure to change it in all branches.
+This means will need to include an ``else`` statement to also change the type:
 
->>> @qjit(autograph=True)
-... def f(x):
+>>> def f(x):
+...     y = -1.0
 ...     if x > 5:
-...         y = 0.4
-...     return x
->>> f(0.5)
-AutoGraphError: Some branches did not define a value for variable 'y'
-
-If the variable exists before the if statement, however, this restriction
-does not apply **as long as you don't change the type**:
-
->>> @qjit(autograph=True)
-... def f(x):
-...     y = 0.1
-...     if x > 5:
-...         y = 0.4
+...         y = 4
 ...     return y
->>> f(0.5)
-Array(0.4, dtype=float64)
+>>> plxpr = make_plxpr(f)(0.5)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
+ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(float64[], weak_type=True) vs ShapedArray(int64[], weak_type=True)
 
-If we change the type of the ``y``, however, we will need to include an
-``else`` statement to also change the type:
+Even if we want to keep the value in the ``else`` condition, we need to update it to the new data type:
 
->>> @qjit(autograph=True)
-... def f(x):
-...     y = 0.1
+>>> def f(x):
+...     y = -1.0
 ...     if x > 5:
 ...         y = 4
 ...     else:
 ...         y = -1
 ...     return y
->>> f(0.5)
+>>> plxpr = make_plxpr(f)(0.5)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
 Array(-1, dtype=int64)
 
 Compatible type assignments
@@ -290,14 +285,14 @@ types (Booleans, Python numeric types, JAX arrays, and PennyLane quantum
 operators). Non-compatible types (such as strings) used
 after the if statement will result in an error:
 
->>> @qjit(autograph=True)
-... def f(x):
+>>> def f(x):
 ...     if x > 5:
 ...         y = "a"
 ...     else:
 ...         y = "b"
 ...     return y
->>> f(0.5)
+>>> plxpr = make_plxpr(f)(0.5)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
 TypeError: Value 'a' with type <class 'str'> is not a valid JAX type
 
 For loops
