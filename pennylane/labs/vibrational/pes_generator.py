@@ -35,7 +35,8 @@ from pennylane.qchem.vibrational.vibrational_class import (
 HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
 C_LIGHT = 3 * 10**8  # m/s
 BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
-AU_TO_CM = 219475 # factor to convert Hartree to cm^-1
+AU_TO_CM = 219475  # factor to convert Hartree to cm^-1
+
 
 def _import_mpi4py():
     """Import mpi4py."""
@@ -881,7 +882,7 @@ def vibrational_pes(
         pes_data = [pes_onebody, pes_twobody, pes_threebody]
         dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
 
-    freqs = freqs/AU_TO_CM
+    freqs = freqs / AU_TO_CM
     return VibrationalPES(
         freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
     )
