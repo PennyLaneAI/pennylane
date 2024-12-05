@@ -1,11 +1,6 @@
 Guide for AutoGraph for plxpr capture
 =====================================
 
-.. figure:: ../_static/catalyst-autograph.png
-    :width: 70%
-    :alt: AutoGraph Illustration
-    :align: center
-
 When capturing PennyLane programs as a plxpr instance using AutoGraph, you
 can represent quantum programs with **structure**. That is, you can use
 classical control flow (such as conditionals and loops) with quantum operations
