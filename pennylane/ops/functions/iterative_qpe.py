@@ -19,6 +19,7 @@ This module contains the qml.iterative_qpe function.
 import numpy as np
 
 import pennylane as qml
+from pennylane import compiler
 
 
 def iterative_qpe(base, aux_wire, iters):
@@ -75,8 +76,8 @@ def iterative_qpe(base, aux_wire, iters):
                                                                      ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                       ╚═══════╡ ╰Sample[MCM]
     """
-
-    if qml.capture.enabled():
+    active_jit = compiler.active_compiler()
+    if qml.capture.enabled() or active_jit:
         measurements = qml.math.zeros(iters, dtype=int, like="jax")
     else:
         measurements = [0] * iters
@@ -91,16 +92,16 @@ def iterative_qpe(base, aux_wire, iters):
         def g(j):
             meas = measurements[iters - i + j]
 
-            def cond_func(k):
-                qml.PhaseShift(-2.0 * np.pi / 2 ** (k + 2), wires=aux_wire)
+            def cond_func():
+                qml.PhaseShift(-2.0 * np.pi / 2 ** (j + 2), wires=aux_wire)
 
-            qml.cond(meas, cond_func)(j)
+            qml.cond(meas, cond_func)()
 
         g()  # pylint: disable=no-value-for-parameter
 
         qml.Hadamard(wires=aux_wire)
         m = qml.measure(wires=aux_wire, reset=True)
-        if qml.capture.enabled():
+        if qml.capture.enabled() or active_jit:
             measurements = measurements.at[iters - i - 1].set(m)
         else:
             measurements[iters - i - 1] = m
