@@ -222,9 +222,9 @@ def get_canonical_interface_name(user_input: Union[str, Interface]) -> Interface
         Interface: canonical interface
     """
 
+    if user_input in SUPPORTED_INTERFACE_NAMES:
+        return user_input
     try:
-        if user_input in SUPPORTED_INTERFACE_NAMES:
-            return user_input
         return INTERFACE_MAP[user_input]
     except KeyError as exc:
         raise ValueError(
