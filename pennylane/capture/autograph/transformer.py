@@ -128,6 +128,11 @@ def run_autograph(fn):
     user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
     new_fn, module, source_map = TRANSFORMER.transform(fn, user_context)
+
+    # needed for autograph_source when examining a converted QNode
+    if isinstance(new_fn, qml.QNode):
+        new_fn.func.ag_unconverted = fn.func
+
     new_fn.ag_module = module
     new_fn.ag_source_map = source_map
     new_fn.ag_unconverted = fn
