@@ -26,6 +26,8 @@ restrictions and constraints you may discover.
 
     .. code-block:: python
 
+        from pennylane.capture import make_plxpr
+
         def f(x):
             if x > 5:
                 x = x ** 2
@@ -36,7 +38,8 @@ restrictions and constraints you may discover.
 
     Once the plxpr representation is created, we can evaluate it using
 
-    >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.3)
+    >>> from jax.core import eval_jaxpr
+    >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.3)
     [Array(28.09, dtype=float64, weak_type=True)]
 
 
@@ -49,15 +52,18 @@ fork of the AutoGraph module in TensorFlow (
 `official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
 ).
 
-The :func:`~pennylane.capture.make_plxpr` function uses AutoGraph by default.
+The :func:`~pennylane.capture.make_plxpr` function uses AutoGraph by default. Consider a function using
+Python control flow:
 
 .. code-block:: python
 
-    dev = qml.device("lightning.qubit", wires=4)
+    dev = qml.device("default.qubit", wires=4)
 
     @qml.qnode(dev)
     def cost(weights, data):
-        qml.AngleEmbedding(data, wires=range(4))
+
+        for w in dev.wires.labels:
+            qml.X(w)
 
         for x in weights:
 
@@ -72,26 +78,35 @@ The :func:`~pennylane.capture.make_plxpr` function uses AutoGraph by default.
 
         return qml.expval(qml.PauliZ(0) + qml.PauliZ(3))
 
+While this function cannot be captured directly, it can be converted to native PennyLane syntax
+using AutoGraph and captured. This is the default behaviour of :func:`~.autograph.make_plxpr`.
+
 >>> weights = jnp.linspace(-1, 1, 20).reshape([5, 4])
 >>> data = jnp.ones([4])
->>> cost(weights, data)
-Array(0.30455313, dtype=float64)
+>>> plxpr = make_plxpr(cost)(weights, data)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights, data)
+[Array(-0.45165857, dtype=float64)]
 
 This would be equivalent to writing the following program, without using
 AutoGraph, but instead using :func:`~.cond` and :func:`~.for_loop`:
 
 .. code-block:: python
 
-    @qjit(autograph=False)
     @qml.qnode(dev)
     def cost(weights, data):
-        qml.AngleEmbedding(data, wires=range(4))
 
+        @qml.for_loop(0, 4, 1)
+        def initialize_loop(w):
+            qml.X(w)
+
+        @qml.for_loop(0, jnp.shape(weights)[0], 1)
         def layer_loop(i):
             x = weights[i]
+
+            @qml.for_loop(0, 4, 1)
             def wire_loop(j):
 
-                @cond(x[j] > 0)
+                @qml.cond(x[j] > 0)
                 def trainable_gate():
                     qml.RX(x[j], wires=j)
 
@@ -101,43 +116,20 @@ AutoGraph, but instead using :func:`~.cond` and :func:`~.for_loop`:
 
                 trainable_gate()
 
+            @qml.for_loop(0, 4, 1)
             def cnot_loop(j):
                 qml.CNOT(wires=[j, jnp.mod((j + 1), 4)])
 
-            for_loop(0, 4, 1)(wire_loop)()
-            for_loop(0, 4, 1)(cnot_loop)()
+            wire_loop()
+            cnot_loop()
 
-        for_loop(0, jnp.shape(weights)[0], 1)(layer_loop)()
+        initialize_loop()
+        layer_loop()
         return qml.expval(qml.PauliZ(0) + qml.PauliZ(3))
 
->>> cost(weights, data)
-Array(0.30455313, dtype=float64)
-
-We can verify that the control flow is being correctly captured and
-converted is to examine the plxpr representation of the compiled
-program:
-
->>> g.jaxpr
-{ lambda ; a:f64[] b:i64[]. let
-    c:f64[] = for[
-      apply_reverse_transform=False
-      body_jaxpr={ lambda ; d:i64[] e:f64[]. let
-          f:bool[] = gt e 5.0
-          g:f64[] = cond[
-            branch_jaxprs=[
-              { lambda ; a:f64[] b_:f64[]. let c:f64[] = integer_pow[y=2] a in (c,) },
-              { lambda ; a_:f64[] b:f64[]. let c:f64[] = integer_pow[y=3] b in (c,) }
-            ]
-          ] f e e
-          h:f64[] = add e g
-        in (h,) }
-      body_nconsts=0
-    ] 0 b 1 0 a
-  in (c,) }
-
-Here, we can see the for loop contained within the ``qcond`` operation, and
-the two branches of the ``if`` statement represented by the ``branch_jaxprs``
-list.
+>>> plxpr = make_plxpr(cost)(weights, data)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights, data)
+[Array(-0.45165857, dtype=float64)]
 
 Currently, AutoGraph supports converting the following Python statements:
 
@@ -174,7 +166,7 @@ are automatically *excluded* from the AutoGraph conversion.
         return x
 
 >>> plxpr = make_plxpr(g)(0.0, 1)  # initialize with arguments of correct type and shape
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.4, 6)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.4, 6)
 [Array(22.14135448, dtype=float64)]
 
 
@@ -236,7 +228,7 @@ ValueError: Mismatch in output abstract values in false branch #0 at position 0:
 ...         y = jnp.array([0.4, 0.5, -0.1])
 ...     return jnp.sum(y)
 >>> plxpr = make_plxpr(f)(0.5)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
 [Array(0.8, dtype=float64)]
 
 More generally, this also applies to common container classes such as
@@ -256,7 +248,7 @@ This means will need to include an ``else`` statement to also change the type:
 ...         y = 4
 ...     return y
 >>> plxpr = make_plxpr(f)(0.5)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
 ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(float64[], weak_type=True) vs ShapedArray(int64[], weak_type=True)
 
 Even if we want to keep the value in the ``else`` condition, we need to update it to the new data type:
@@ -269,7 +261,7 @@ Even if we want to keep the value in the ``else`` condition, we need to update i
 ...         y = -1
 ...     return y
 >>> plxpr = make_plxpr(f)(0.5)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
 Array(-1, dtype=int64)
 
 Compatible type assignments
@@ -287,7 +279,7 @@ after the if statement will result in an error:
 ...         y = "b"
 ...     return y
 >>> plxpr = make_plxpr(f)(0.5)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7.0)
 TypeError: Value 'a' with type <class 'str'> is not a valid JAX type
 
 For loops
@@ -306,7 +298,7 @@ Most ``for`` loop constructs will be properly captured and compiled by AutoGraph
         return qml.expval(qml.PauliZ(0))
 
 >>> plxpr = make_plxpr(f)()
->>> jax.core.eval_jaxpr(plxpr.jaxpr, jaxpr.consts)
+>>> eval_jaxpr(plxpr.jaxpr, jaxpr.consts)
 [Array(-0.70710678, dtype=float64)]
 
 This includes automatic unpacking and enumeration through JAX arrays:
@@ -318,7 +310,7 @@ This includes automatic unpacking and enumeration through JAX arrays:
 ...     return z
 >>> weights = jnp.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]]).T
 >>> plxpr = make_plxpr(f)(weights)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, [], weights)
+>>> eval_jaxpr(plxpr.jaxpr, [], weights)
 Array(8.4, dtype=float64)
 
 The Python ``range`` function is also fully supported by AutoGraph, even when
@@ -331,7 +323,7 @@ runtime):
 ...         x = x + 1 / k
 ...     return x
 >>> plxpr = make_plxpr(f)(0)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, [], 1000)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1000)
 [Array(0.57771558, dtype=float64, weak_type=True)]
 
 Indexing within a loop
@@ -349,7 +341,7 @@ For example, using a for loop with static bounds to index a JAX array is straigh
 ...     return qml.expval(qml.PauliZ(0))
 >>> weights = jnp.array([0.1, 0.2, 0.3])
 >>> plxpr = make_plxpr(f)(weights)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, [], weights)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights)
 [Array(0.99500417, dtype=float64)]
 
 However, indexing within a for loop with AutoGraph will require that the object indexed is
@@ -380,7 +372,7 @@ a JAX array:
 ...         qml.RX(x[i], wires=i)
 ...     return qml.expval(qml.PauliZ(0))
 >>> plxpr = make_plxpr(f)()
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
 [Array(0.99500417, dtype=float64)]
 
 If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this for loop.
@@ -393,7 +385,7 @@ If you are updating elements of the array, this must be done using the JAX `.at`
 ...         my_list = my_list.at[i].set(i)  # *not* my_list[i] = i
 ...     return my_list
 >>> plxpr = make_plxpr(f)()
->>> jax.core.eval_jaxpr(plxpr.jaxpr, [])
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
 Array([0, 1], dtype=int64)
 
 
@@ -411,9 +403,9 @@ as the object indexed is a JAX array:
 ...         qml.RY(x[i], wires=0)
 ...     return qml.expval(qml.PauliZ(0))
 >>> plxpr = make_plxpr(f)(0)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
 Array(0.70710678, dtype=float64)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 3)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 3)
 Array(-0.70710678, dtype=float64)
 
 However AutoGraph conversion will fail if the object being indexed by the
@@ -438,7 +430,7 @@ For loops that update variables can also be converted with AutoGraph:
 ...         x = x + y
 ...     return x
 >>> plxpr = make_plxpr(f)(0)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 3)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 3)
 [Array(12, dtype=int64)]
 
 However, like with conditionals, a similar restriction applies: variables
@@ -453,7 +445,7 @@ You can also utilize temporary variables within a for loop:
 ...         x = x + y * c
 ...     return x
 >>> plxpr = make_plxpr(f)(0)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4)
 [Array(22, dtype=int64)]
 
 Temporary variables used inside a loop --- and that are **not** passed to a
@@ -472,7 +464,7 @@ AutoGraph:
 ...         n += 1
 ...     return n
 >>> plxpr = make_plxpr(f)(0.0)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.1)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.1)
 [Array(9., dtype=float64, weak_type=True)]
 
 Break and continue
@@ -492,7 +484,7 @@ As with for loops, while loops that update variables can also be converted with 
 ...         x = x + 2
 ...     return x
 >>> plxpr = make_plxpr(f)(0.0)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4.4)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4.4)
 [Array(6.4, dtype=float64, weak_type=True)]
 
 However, like with conditionals, a similar restriction applies: variables
@@ -507,7 +499,7 @@ You can also utilize temporary variables within a while loop:
 ...         x = x + 2 * len(c)
 ...     return x
 >>> plxpr = make_plxpr(f)(0.0)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4.4)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4.4)
 [Array(8.4, dtype=float64, weak_type=True)]
 
 Temporary variables used inside a loop --- and that are **not** passed to a
@@ -522,9 +514,49 @@ statements involving ``and``, ``not``, and ``or`` that return booleans.
 Debugging
 ---------
 
-We've seen examples in the above code where we have used the jaxpr representation
-of the compiled function in order to verify that AutoGraph is correctly capturing
-the control flow. This can be a useful tool in debugging issues.
+One useful tool in debugging issues is to examine the plxpr representation
+of the compiled function, in order to verify that AutoGraph is correctly capturing
+the control flow. For example, consider:
+
+.. code-block:: python
+
+    def f(x, n):
+
+        for i in range(n):
+
+            if x > 5:
+                y = x ** 2
+            else:
+                y = x ** 3
+
+            x = x + y
+
+        return x
+
+We can verify that the control flow is being correctly captured and
+converted by examining the plxpr representation of the compiled
+program:
+
+>>> make_plxpr(f)(0.0, 0)
+{ lambda ; a:f64[] b:i64[]. let
+    c:f64[] = for_loop[
+      args_slice=slice(0, None, None)
+      consts_slice=slice(0, 0, None)
+      jaxpr_body_fn={ lambda ; d:i64[] e:f64[]. let
+          f:bool[] = gt e 5.0
+          g:f64[] = cond[
+            args_slice=slice(4, None, None)
+            consts_slices=[slice(2, 3, None), slice(3, 4, None)]
+            jaxpr_branches=[{ lambda a:f64[]; . let b:f64[] = integer_pow[y=2] a in (b,) }, { lambda a:f64[]; . let b:f64[] = integer_pow[y=3] a in (b,) }]
+          ] f True e e
+          h:f64[] = add e g
+        in (h,) }
+    ] 0 b 1 a
+  in (c,) }
+
+Here, we can see the ``cond`` operation inside the for loop, and
+the two branches of the ``if`` statement represented by the ``jaxpr_branches``
+list.
 
 In addition, the function :func:`~.autograph_source` is provided,
 and allows you to view the converted Python code generated by AutoGraph:
@@ -633,7 +665,7 @@ To update array values when using JAX, the `JAX syntax for array assignment
         return result
 
 >>> plxpr = make_plxpr(f)(jnp.zeros(3))
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, jnp.array([0.1, 0.2, 0.3]))
+>>> eval_jaxprF(plxpr.jaxpr, plxpr.consts, jnp.array([0.1, 0.2, 0.3]))
 [Array([0.2, 0.4, 0.6], dtype=float64)]
 
 Similarly, to update array values with an operation when using JAX, the JAX syntax for array
