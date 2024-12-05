@@ -18,7 +18,6 @@ import numpy as np
 
 from pennylane.bose import BoseSentence, BoseWord
 
-
 # pylint: disable=import-outside-toplevel
 
 
