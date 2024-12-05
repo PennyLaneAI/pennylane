@@ -83,25 +83,6 @@
 added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
-* Support is added for `if`/`else` statements and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`.
-  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
-  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
-  
-* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
-  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
-
-* Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
-  [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
-
-* The `qml.qchem.factorize` function now supports new methods for double factorization:
-  Cholesky decomposition (`cholesky=True`) and compressed double factorization (`compressed=True`).
-  [(#6573)](https://github.com/PennyLaneAI/pennylane/pull/6573)
-  [(#6611)](https://github.com/PennyLaneAI/pennylane/pull/6611)
-
-* Added `qml.qchem.symmetry_shift` function to perform the
-  [block-invariant symmetry shift](https://arxiv.org/pdf/2304.13772) on the electronic integrals.
-  [(#6574)](https://github.com/PennyLaneAI/pennylane/pull/6574)
-
 
 <h4>New API for Qubit Mixed</h4>
 
@@ -113,6 +94,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 * Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
+  
+* Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
+  [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
 * Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
   [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
@@ -132,11 +116,6 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 
 * Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
   [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
-
-* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`
-  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
-  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
-  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
