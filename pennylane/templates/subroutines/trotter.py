@@ -520,26 +520,26 @@ class TrotterizedQfunc(Operation):
 
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
-    Suppose we have direct access to the operators which represent the exponentiated terms of 
+    Suppose we have direct access to the operators which represent the exponentiated terms of
     a hamiltonian:
 
     .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} | for j \in [1, N] \}.
-    
+
     Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
     first order expansion :math:`S_{1}(t)`; this class expands it to any higher order Suzuki-Trotter product.
 
     .. warning::
 
-        :code:`TrotterizedQfunc` requires that the input function has a very specific function signature. 
+        :code:`TrotterizedQfunc` requires that the input function has a very specific function signature.
         The first argument should be a time parameter which will be modified according to the Suzuki-Trotter
-        product formula. The wires required by the circuit should be either the last explicit argument or the 
+        product formula. The wires required by the circuit should be either the last explicit argument or the
         first keyword argument. :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
-    
+
     .. warning::
 
         :code:`TrotterizedQfunc` currently does not support pickling. Instead please decompose the operation
-        first before attempting to pickle the quantum circuit. 
-    
+        first before attempting to pickle the quantum circuit.
+
     Args:
         time (float): the time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         *trainable_args (tuple): the trainable arguments of the first-order expansion function
@@ -550,10 +550,10 @@ class TrotterizedQfunc(Operation):
         reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
         name (str): an optional name for the instance
         **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
-    
+
     Raises:
-        ValueError: A qfunc must be provided to be trotterized. 
-    
+        ValueError: A qfunc must be provided to be trotterized.
+
     **Example**
 
     .. code-block:: python3
@@ -570,18 +570,18 @@ class TrotterizedQfunc(Operation):
         @qml.qnode(qml.device("default.qubit"))
         def my_circuit(time, angles, num_trotter_steps):
             TrotterizedQfunc(
-                time, 
-                *angles, 
-                qfunc=first_order_expansion, 
-                n=num_trotter_steps, 
-                order=2, 
-                wires=['a', 'b', 'c'], 
+                time,
+                *angles,
+                qfunc=first_order_expansion,
+                n=num_trotter_steps,
+                order=2,
+                wires=['a', 'b', 'c'],
                 flip=True,
             )
             return qml.state()
-        
+
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
-            
+
         >>> time = 0.1
         >>> angles = (0.12, -3.45)
         >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
@@ -714,33 +714,33 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
 
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
-    Suppose we have direct access to the operators which represent the exponentiated terms of 
+    Suppose we have direct access to the operators which represent the exponentiated terms of
     a Hamiltonian:
 
     .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} for j \in [1, N] \}.
-    
+
     Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
     first order expansion :math:`S_{1}(t)`, this function expands it to any higher order Suzuki-Trotter product.
 
     .. warning::
 
-        :code:`trotterize()` requires the :code:`qfunc` argument to be a function with a specific call 
-        signature. The first argument of the :code:`qfunc` function should be a time parameter which will be modified according to the 
-        Suzuki-Trotter product formula. The wires required by the circuit should be either the last 
-        positional argument or the first keyword argument: 
+        :code:`trotterize()` requires the :code:`qfunc` argument to be a function with a specific call
+        signature. The first argument of the :code:`qfunc` function should be a time parameter which will be modified according to the
+        Suzuki-Trotter product formula. The wires required by the circuit should be either the last
+        positional argument or the first keyword argument:
         :code:`qfunc((time, arg1, ..., arg_n, wires=[...], kwarg_1, ..., kwarg_n))`
-    
+
     Args:
         qfunc (Callable): the first-order expansion given as a callable function which queues operations
         n (int): an integer representing the number of Trotter steps to perform
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
         name (str): an optional name for the instance
-    
+
     Returns:
-        Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of 
+        Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of
             :class:`~.TrotterizedQfunc`
-    
+
     **Example**
 
     .. code-block:: python3
@@ -760,12 +760,12 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
                 order=2,
             )(time, theta, phi, wires=['a', 'b', 'c'], flip=True)
             return qml.state()
-        
+
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
-            
+
         >>> time = 0.1
         >>> theta, phi = (0.12, -3.45)
-        >>> 
+        >>>
         >>> print(qml.draw(my_circuit, level=3)(time, theta, phi, num_trotter_steps=1))
         a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
         b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
