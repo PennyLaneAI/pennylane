@@ -467,6 +467,7 @@ def test_taylor_coeffs_dipole():
     coeffs_x_arr, coeffs_y_arr, coeffs_z_arr = taylor_dipole_coeffs(pes_object_3D, 4, 1)
     assert np.allclose(coeffs_x_arr[0], expected_coeffs_x_arr[0], atol=1e-10)
     assert np.allclose(coeffs_x_arr[1], expected_coeffs_x_arr[1], atol=1e-10)
+    assert np.allclose(coeffs_x_arr[2], expected_coeffs_x_arr[2], atol=1e-10)
     assert np.allclose(abs(coeffs_y_arr[0]), abs(expected_coeffs_y_arr[0]), atol=1e-8)
     assert np.allclose(abs(coeffs_y_arr[1]), abs(expected_coeffs_y_arr[1]), atol=1e-8)
     assert np.allclose(abs(coeffs_z_arr[0]), abs(expected_coeffs_z_arr[0]), atol=1e-8)
