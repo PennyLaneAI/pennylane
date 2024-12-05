@@ -14,7 +14,6 @@
 """The functions related to the construction of the Christiansen form Hamiltonian."""
 
 import numpy as np
-import pennylane as qml
 
 # pylint: disable = too-many-branches, too-many-positional-arguments
 
@@ -22,9 +21,7 @@ from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
 
 
-def christiansen_bosonic(
-    one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True
-):
+def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ordered=True):
     r"""Build the bosonic operators in the Christiansen form.
 
     Args:
@@ -157,7 +154,6 @@ def christiansen_dipole(pes, nbos=16, do_cubic=False):
     two_x = d_arr[1][0, :, :, :, :, :, :] if len(d_arr) > 1 else None
     three_x = d_arr[2][0, :, :, :, :, :, :, :, :, :] if len(d_arr) == 3 else None
     cform_bosonic_x = christiansen_bosonic(one=one_x, two=two_x, three=three_x)
-    print(cform_bosonic_x)
     cform_qubit_x = christiansen_mapping(cform_bosonic_x)
 
     one_y = d_arr[0][1, :, :, :]
