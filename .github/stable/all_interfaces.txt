@@ -61,7 +61,7 @@ optree==0.12.1
 osqp==0.6.7.post1
 packaging==24.1
 pathspec==0.12.1
-PennyLane_Lightning==0.38.0
+PennyLane_Lightning==0.39.0
 pillow==10.4.0
 platformdirs==4.2.2
 pluggy==1.5.0
@@ -79,7 +79,7 @@ pytest-forked==1.6.0
 pytest-mock==3.14.0
 pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
-pytorch-triton-rocm==2.3.0
+pytorch-triton==2.3.0
 PyYAML==6.0.2
 qdldl==0.1.7.post4
 requests==2.32.3
@@ -97,7 +97,7 @@ termcolor==2.4.0
 tf_keras==2.16.0
 toml==0.10.2
 tomli==2.0.1
-torch==2.3.0+rocm6.0
+torch==2.3.0
 typing_extensions==4.12.2
 urllib3==2.2.2
 virtualenv==20.26.3

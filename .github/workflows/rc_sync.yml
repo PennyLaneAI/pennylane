@@ -26,6 +26,8 @@ jobs:
     steps:
       # Checks-out the PennyLane repository
       - uses: actions/checkout@v3
+        with:
+          ref: master
 
       # Check for the existence of an rc branch for the current PennyLane version
       - name: Check for rc branch
@@ -65,13 +67,8 @@ jobs:
       # Create PR to master
       - name: Create pull request
         if: ${{ env.new_changes == 'true' }}
-        uses: repo-sync/pull-request@v2
-        with:
-          source_branch: "${{ env.tmp_branch }}"
-          destination_branch: "master"
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
-          pr_title: "Daily rc sync to master"
-          pr_body: "Automatic sync from the release candidate to master during a feature freeze."
-          pr_allow_empty: false
-          pr_draft: false
-          pr_reviewer: "mudit2812,albi3ro"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git checkout ${{ env.tmp_branch }}
+          gh pr create --title "Daily rc sync to master" --body "" --reviewer "mudit2812,albi3ro"

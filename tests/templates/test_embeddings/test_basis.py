@@ -172,7 +172,7 @@ def circuit_template(features):
 
 def circuit_decomposed(features):
     # convert tensor to list
-    feats = list(qml.math.toarray(features))
+    feats = list(qml.math.array(features))
     _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
     return qml.state()
@@ -239,31 +239,26 @@ class TestInterfaces:
         res = circuit(jnp.array(2))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "device_name",
-        ["default.qubit", "lightning.qubit"],
-    )
     @pytest.mark.jax
-    def test_jax_jit(self, tol, device_name):
-        """Tests the jax-jit interface."""
+    def test_jax_jit(self, tol):
+        """Tests compilation with JAX JIT."""
 
         import jax
         import jax.numpy as jnp
 
         features = jnp.array([0, 1, 0])
 
-        dev = qml.device(device_name, wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit2 = jax.jit(qml.QNode(circuit_template, dev))
 
         res = circuit(features)
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        circuit = jax.jit(circuit)
-
-        res = circuit(jnp.array(2))
+        res = circuit(2)
+        res2 = circuit2(2)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf

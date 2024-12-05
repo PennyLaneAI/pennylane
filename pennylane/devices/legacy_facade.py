@@ -22,9 +22,9 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
+from pennylane.math import get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
-from pennylane.workflow.execution import INTERFACE_MAP
 
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
@@ -64,10 +64,6 @@ def _set_shots(device, shots):
     >>> _set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
-    # note, this function duplicates qml.workflow.set_shots
-    # duplicated here to avoid circular dependency issues
-    # qml.workflow.set_shots can be independently deprecated soon
-    # this version of the function is private to LegacyDeviceFacade
     shots = qml.measurements.Shots(shots)
     shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:
@@ -143,7 +139,7 @@ class LegacyDeviceFacade(Device):
 
     >>> from pennylane.devices import DefaultMixed, LegacyDeviceFacade
     >>> legacy_dev = DefaultMixed(wires=2)
-    >>> new_dev = LegacyDeviceFacade(dev)
+    >>> new_dev = LegacyDeviceFacade(legacy_dev)
     >>> new_dev.preprocess()
     (TransformProgram(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
     ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=None,
@@ -168,6 +164,7 @@ class LegacyDeviceFacade(Device):
             )
 
         self._device = device
+        self.config_filepath = getattr(self._device, "config_filepath", None)
 
     @property
     def tracker(self):
@@ -238,7 +235,7 @@ class LegacyDeviceFacade(Device):
                 mcm_config=execution_config.mcm_config,
             )
         else:
-            program.add_transform(qml.defer_measurements, device=self)
+            program.add_transform(qml.defer_measurements, allow_postselect=False)
 
         return program, execution_config
 
@@ -323,7 +320,7 @@ class LegacyDeviceFacade(Device):
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
         if interface != "numpy":
-            interface = INTERFACE_MAP.get(interface, interface)
+            interface = get_canonical_interface_name(interface)
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
             return False

@@ -23,12 +23,22 @@ are located in the:
 files.
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.op_math.condition import Conditional, ConditionalTransformError
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 terminal_meas = [
     qml.probs(wires=[1, 0]),

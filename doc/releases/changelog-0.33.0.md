@@ -244,7 +244,7 @@
     ```
 
 * A QNode that has been decorated with `qjit` from PennyLane's
-  [Catalyst](https://docs.pennylane.ai/projects/catalyst) library for just-in-time hybrid
+  [Catalyst](https://docs.pennylane.ai/projects/catalyst/en/stable/index.html) library for just-in-time hybrid
   compilation is now compatible with `qml.draw`.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 

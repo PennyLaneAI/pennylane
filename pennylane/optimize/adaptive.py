@@ -199,6 +199,7 @@ class AdaptiveOptimizer:
         """
         cost = circuit()
         qnode = copy.copy(circuit)
+        tape = qml.workflow.construct_tape(qnode)()
 
         if drain_pool:
             operator_pool = [
@@ -206,7 +207,7 @@ class AdaptiveOptimizer:
                 for gate in operator_pool
                 if all(
                     gate.name != operation.name or gate.wires != operation.wires
-                    for operation in circuit.tape.operations
+                    for operation in tape.operations
                 )
             ]
 

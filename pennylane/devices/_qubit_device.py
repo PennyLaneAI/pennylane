@@ -1630,7 +1630,7 @@ class QubitDevice(Device):
             * Cannot differentiate with respect to state-prep operations.
 
             * Does not work for parametrized observables like
-              :class:`~.Hamiltonian` or :class:`~.Hermitian`.
+              :class:`~.ops.LinearCombination` or :class:`~.Hermitian`.
 
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
@@ -1706,7 +1706,7 @@ class QubitDevice(Device):
                     )
                 ops = op.decomposition()
                 expanded_ops.extend(reversed(ops))
-            elif op.name not in ("StatePrep", "QubitStateVector", "BasisState", "Snapshot"):
+            elif op.name not in ("StatePrep", "BasisState", "Snapshot"):
                 expanded_ops.append(op)
 
         trainable_params = []

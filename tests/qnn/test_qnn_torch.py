@@ -15,6 +15,7 @@
 Tests for the pennylane.qnn.torch module.
 """
 import math
+import warnings
 from collections import defaultdict
 from unittest import mock
 
@@ -23,6 +24,14 @@ import pytest
 
 import pennylane as qml
 from pennylane.qnn.torch import TorchLayer
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 torch = pytest.importorskip("torch")
 
@@ -635,7 +644,7 @@ def test_qnode_interface_not_mutated(interface):
     assert (
         qlayer.qnode.interface
         == circuit.interface
-        == qml.workflow.execution.INTERFACE_MAP[interface]
+        == qml.math.get_canonical_interface_name(interface)
     )
 
 

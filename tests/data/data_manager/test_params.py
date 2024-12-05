@@ -23,6 +23,7 @@ from pennylane.data.data_manager.params import (
     ParamArg,
     format_param_args,
     format_params,
+    provide_defaults,
 )
 
 pytestmark = pytest.mark.data
@@ -106,12 +107,12 @@ def test_format_params():
     """Test that format_params calls format_param_args with each parameter."""
     assert format_params(
         layout=[1, 4], bondlength=["0.5", "0.6"], z="full", y=ParamArg.DEFAULT
-    ) == {
-        "bondlength": ["0.5", "0.6"],
-        "layout": ["1x4"],
-        "y": ParamArg.DEFAULT,
-        "z": ParamArg.FULL,
-    }
+    ) == [
+        {"name": "layout", "values": ["1x4"]},
+        {"name": "bondlength", "values": ["0.5", "0.6"]},
+        {"name": "z", "values": ParamArg.FULL},
+        {"name": "y", "values": ParamArg.DEFAULT},
+    ]
 
 
 class TestDescription:
@@ -126,3 +127,68 @@ class TestDescription:
         """Test that __repr__ is equivalent to dict __repr__."""
         params = {"foo": "bar", "x": "y"}
         assert repr(Description(params)) == f"Description({repr(params)})"
+
+
+@pytest.mark.parametrize(
+    "data_name, params, expected_params",
+    [
+        (
+            "qchem",
+            [{"name": "molname", "values": ["H2"]}],
+            [
+                {"name": "molname", "values": ["H2"]},
+                {"default": True, "name": "basis"},
+                {"default": True, "name": "bondlength"},
+            ],
+        ),
+        (
+            "qchem",
+            [{"name": "molname", "values": ["H2"]}, {"name": "bondlength", "values": ["0.82"]}],
+            [
+                {"name": "molname", "values": ["H2"]},
+                {"name": "bondlength", "values": ["0.82"]},
+                {"default": True, "name": "basis"},
+            ],
+        ),
+        (
+            "qspin",
+            [{"name": "sysname", "values": ["BoseHubbard"]}],
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"default": True, "name": "periodicity"},
+                {"default": True, "name": "lattice"},
+                {"default": True, "name": "layout"},
+            ],
+        ),
+        (
+            "qspin",
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"name": "periodicity", "values": ["closed"]},
+            ],
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"name": "periodicity", "values": ["closed"]},
+                {"default": True, "name": "lattice"},
+                {"default": True, "name": "layout"},
+            ],
+        ),
+        (
+            "qspin",
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"name": "periodicity", "values": ["closed"]},
+                {"name": "lattice", "values": ["chain"]},
+            ],
+            [
+                {"name": "sysname", "values": ["BoseHubbard"]},
+                {"name": "periodicity", "values": ["closed"]},
+                {"name": "lattice", "values": ["chain"]},
+                {"default": True, "name": "layout"},
+            ],
+        ),
+        ("other", [], []),
+    ],
+)
+def test_provide_defaults(data_name, params, expected_params):
+    assert provide_defaults(data_name, params) == expected_params

@@ -15,7 +15,7 @@
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
 
-# pylint: disable=abstract-method
+# pylint: disable=abstract-method,too-many-arguments
 
 import numpy as np
 import pytest
@@ -236,10 +236,10 @@ class TestSpsaGradient:
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
-    def test_all_zero_diff_methods(self):
+    def test_all_zero_diff_methods(self, seed):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
         dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
 
         @qml.qnode(dev)
@@ -260,10 +260,10 @@ class TestSpsaGradient:
             assert result.shape == (4, 3)
             assert np.allclose(result, 0)
 
-    def test_all_zero_diff_methods_multiple_returns(self):
+    def test_all_zero_diff_methods_multiple_returns(self, seed):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
 
@@ -333,10 +333,10 @@ class TestSpsaGradient:
 
         assert len(tapes) == n
 
-    def test_independent_parameters(self):
+    def test_independent_parameters(self, seed):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
 
         with qml.queuing.AnnotatedQueue() as q1:
@@ -514,11 +514,11 @@ class TestSpsaGradient:
 class TestSpsaGradientIntegration:
     """Tests for the SPSA gradient transform"""
 
-    def test_ragged_output(self, approx_order, strategy, validate):
+    def test_ragged_output(self, approx_order, strategy, validate, seed):
         """Test that the Jacobian is correctly returned for a tape with ragged output"""
-        dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector, seed=seed)
         params = [1.0, 1.0, 1.0]
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(params[0], wires=[0])
@@ -556,11 +556,11 @@ class TestSpsaGradientIntegration:
             assert res[1][1].shape == (4,)
             assert res[1][2].shape == (4,)
 
-    def test_single_expectation_value(self, approx_order, strategy, validate):
+    def test_single_expectation_value(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        rng = np.random.default_rng(42)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        rng = np.random.default_rng(seed)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -602,12 +602,12 @@ class TestSpsaGradientIntegration:
             # 1 / num_params here.
             assert np.allclose([2 * r for r in res], expected, atol=spsa_shot_vec_tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
-        rng = np.random.default_rng(5214)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        rng = np.random.default_rng(seed)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -651,7 +651,7 @@ class TestSpsaGradientIntegration:
             # 1 / num_params here.
             assert np.allclose([2 * r for r in res], expected, atol=spsa_shot_vec_tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -659,8 +659,8 @@ class TestSpsaGradientIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        rng = np.random.default_rng(42)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        rng = np.random.default_rng(seed)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -704,7 +704,9 @@ class TestSpsaGradientIntegration:
             # parameter, so that we do not need to compensate like in the other tests
             assert np.allclose(res, expected, atol=spsa_shot_vec_tol, rtol=0)
 
-    def test_multiple_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
+    def test_multiple_expectation_value_with_argnum_one(
+        self, approx_order, strategy, validate, seed
+    ):
         """Tests correct output shape and evaluation for a tape
         with a multiple measurement, where only one parameter is chosen to
         be trainable.
@@ -712,8 +714,8 @@ class TestSpsaGradientIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        rng = np.random.default_rng(42)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        rng = np.random.default_rng(seed)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -751,11 +753,11 @@ class TestSpsaGradientIntegration:
             assert isinstance(res[1], tuple)
             assert np.allclose(res[1][0], 0)
 
-    def test_multiple_expectation_values(self, approx_order, strategy, validate):
+    def test_multiple_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
-        rng = np.random.default_rng(42)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        rng = np.random.default_rng(seed)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -805,11 +807,11 @@ class TestSpsaGradientIntegration:
             res_1 = (2 * res[1][0], 2 * res[1][1])
             assert np.allclose(res_1, [0, np.cos(y)], atol=spsa_shot_vec_tol, rtol=0)
 
-    def test_var_expectation_values(self, approx_order, strategy, validate):
+    def test_var_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
-        rng = np.random.default_rng(52)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=rng)
+        rng = np.random.default_rng(seed)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
 
         x = 0.543
         y = -0.654
@@ -860,11 +862,11 @@ class TestSpsaGradientIntegration:
                 res_1, [0, -2 * np.cos(y) * np.sin(y)], atol=spsa_shot_vec_tol, rtol=0
             )
 
-    def test_prob_expectation_values(self, approx_order, strategy, validate):
+    def test_prob_expectation_values(self, approx_order, strategy, validate, seed):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        rng = np.random.default_rng(42)
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        rng = np.random.default_rng(seed)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector, seed=seed)
         x = 0.543
         y = -0.654
 
@@ -944,12 +946,12 @@ class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    def test_autograd(self, approx_order, strategy):
+    def test_autograd(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = pnp.array([0.543, -0.654], requires_grad=True)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -987,12 +989,12 @@ class TestSpsaGradientDifferentiation:
             assert np.allclose(res, expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd_ragged(self, approx_order, strategy):
+    def test_autograd_ragged(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = pnp.array([0.543, -0.654], requires_grad=True)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1027,14 +1029,14 @@ class TestSpsaGradientDifferentiation:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf(self, approx_order, strategy):
+    def test_tf(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         with tf.GradientTape(persistent=True) as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -1069,14 +1071,14 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose([res_0, res_1], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy):
+    def test_tf_ragged(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         with tf.GradientTape(persistent=True) as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -1108,14 +1110,14 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res_01[0], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, approx_order, strategy):
+    def test_torch(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         def cost_fn(params):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1150,7 +1152,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, approx_order, strategy):
+    def test_jax(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
@@ -1158,7 +1160,7 @@ class TestSpsaGradientDifferentiation:
 
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = jnp.array([0.543, -0.654])
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:

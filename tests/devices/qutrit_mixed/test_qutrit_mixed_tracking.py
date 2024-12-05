@@ -201,7 +201,6 @@ class TestExecuteTracker:
         assert dev.tracker.totals["simulations"] == 1
         assert dev.tracker.totals["shots"] == 3 * expected_shots
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_multiple_expval_with_prods(self):
         """
         Test tracker tracks default qutrit mixed execute number of shots for new and old opmath tensors.

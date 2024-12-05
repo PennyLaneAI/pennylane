@@ -30,15 +30,6 @@ jax = pytest.importorskip("jax")
 from pennylane.capture import make_plxpr  # pylint: disable=wrong-import-position
 
 
-@pytest.fixture
-def enable_disable_plxpr():
-    # if 'noautofixt' in request.keywords:
-    #     return
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
-
-
 def test_error_is_raised_with_capture_disabled():
     dev = qml.device("default.qubit", wires=1)
 
