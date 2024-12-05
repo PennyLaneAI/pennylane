@@ -418,6 +418,27 @@ def test_fit_threebody():
     assert np.allclose(abs(coeff_3D), abs(taylor_3D), atol=1e-10)
 
 
+@pytest.mark.usefixtures("skip_if_no_sklearn_support")
+def test_fit_onebody_error():
+    """Test that the fitting for one-mode operators raises the appropriate error"""
+    with pytest.raises(ValueError, match="Taylor expansion degree is"):
+        _fit_onebody(pes_object_3D.pes_onemode, 1, 2)
+
+
+@pytest.mark.usefixtures("skip_if_no_sklearn_support")
+def test_fit_twobody_error():
+    """Test that the fitting for two-mode operators raises the appropriate error"""
+    with pytest.raises(ValueError, match="Taylor expansion degree is"):
+        _fit_twobody(pes_object_3D.pes_twomode, 1, 2)
+
+
+@pytest.mark.usefixtures("skip_if_no_sklearn_support")
+def test_fit_threebody_error():
+    """Test that the fitting for three-mode operators raises the appropriate error"""
+    with pytest.raises(ValueError, match="Taylor expansion degree is"):
+        _fit_threebody(pes_object_3D.pes_threemode, 1, 2)
+
+
 def test_twomode_degs():
     """Test that _twobody_degs produces the right combinations"""
     expected_degs = [(1, 1), (2, 1), (1, 2), (3, 1), (2, 2), (1, 3)]
@@ -432,9 +453,7 @@ def test_threemode_degs():
     assert fit_degs == expected_degs
 
 
-@pytest.mark.usefixtures(
-    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
-)
+@pytest.mark.usefixtures("skip_if_no_sklearn_support")
 def test_taylor_coeffs():
     """Test that the computer taylor coeffs for Hamiltonian are accurate"""
     taylor_coeffs_1D, taylor_coeffs_2D, _ = taylor_coeffs(pes_object_3D, 4, 2)
@@ -442,9 +461,7 @@ def test_taylor_coeffs():
     assert np.allclose(abs(taylor_coeffs_2D), abs(taylor_2D), atol=1e-8)
 
 
-@pytest.mark.usefixtures(
-    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
-)
+@pytest.mark.usefixtures("skip_if_no_sklearn_support")
 def test_taylor_coeffs_dipole():
     """Test that the computed taylor coeffs for dipoles are accurate"""
     coeffs_x_arr, coeffs_y_arr, coeffs_z_arr = taylor_dipole_coeffs(pes_object_3D, 4, 1)
