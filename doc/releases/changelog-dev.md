@@ -361,6 +361,10 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* Subclasses of `qml.ops.Controlled` no longer bind the primitives of their base operators when program capture
+  is enabled.
+  [(#6672)](https://github.com/PennyLaneAI/pennylane/pull/6672)
+
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates now apply the complex conjugate
   of the unitaries instead of the adjoint, providing the correct result.
   [(#6604)](https://github.com/PennyLaneAI/pennylane/pull/6604)
