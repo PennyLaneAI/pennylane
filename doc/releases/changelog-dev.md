@@ -170,6 +170,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
   captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
   only works with a reduced feature set.
+  [(#6655)](https://github.com/PennyLaneAI/pennylane/pull/6655)
   [(#6596)](https://github.com/PennyLaneAI/pennylane/pull/6596)
 
 * PennyLane transforms can now be captured as primitives with experimental program capture enabled.
