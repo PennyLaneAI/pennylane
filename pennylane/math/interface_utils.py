@@ -32,6 +32,20 @@ class Interface(Enum):
     TF_AUTOGRAPH = "tf-autograph"
     AUTO = "auto"
 
+    def get_like(self):
+        """Returns the 'like' name for the interface."""
+        mapping = {
+            Interface.AUTOGRAD: "autograd",
+            Interface.NUMPY: "numpy",
+            Interface.TORCH: "torch",
+            Interface.JAX: "jax",
+            Interface.JAX_JIT: "jax",
+            Interface.TF: "tensorflow",
+            Interface.TF_AUTOGRAPH: "tensorflow",
+            Interface.AUTO: None,
+        }
+        return mapping[self]
+
 
 INTERFACE_MAP = {
     None: Interface.NUMPY,

@@ -56,7 +56,7 @@ def _convert_to_interface(result, interface: Interface):
     if isinstance(result, dict):
         return {k: _convert_to_interface(v, interface) for k, v in result.items()}
 
-    return qml.math.asarray(result, like=interface.value)
+    return qml.math.asarray(result, like=interface.get_like())
 
 
 def _make_execution_config(
