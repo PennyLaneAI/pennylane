@@ -19,9 +19,9 @@ restrictions and constraints you may discover.
 
 .. note::
 
-    When converting code in these examples, we will use the `make_plxpr` function,
+    When converting code in these examples, we will use the :func:`~.autograph.make_plxpr` function,
     which uses AutoGraph by default. When creating the initial plxpr representation,
-    we must call the constructor function produced by `make_plxpr` with some initial
+    we must call the constructor function produced by :func:`~.autograph.make_plxpr` with some initial
     values, which should have the same type and shape as the values we intend to use:
 
     .. code-block:: python
@@ -358,7 +358,7 @@ a JAX array or dynamic runtime variable.
 If the array you are indexing within the for loop is not a JAX array
 or dynamic variable, an error will be raised:
 
-... @qml.qnode(dev)
+>>> @qml.qnode(dev)
 ... def f():
 ...     x = [0.1, 0.2, 0.3]
 ...     for i in range(3):
@@ -373,7 +373,7 @@ AutoGraphError: Tracing of an AutoGraph converted for loop failed with an except
 To allow AutoGraph conversion to work in this case, simply convert the list to
 a JAX array:
 
-... @qml.qnode(dev)
+>>> @qml.qnode(dev)
 ... def f():
 ...     x = jnp.array([0.1, 0.2, 0.3])
 ...     for i in range(3):
@@ -437,8 +437,9 @@ For loops that update variables can also be converted with AutoGraph:
 ...     for y in [0, 4, 5]:
 ...         x = x + y
 ...     return x
->>> f(4)
-Array(13, dtype=int64)
+>>> plxpr = make_plxpr(f)(0)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 3)
+[Array(12, dtype=int64)]
 
 However, like with conditionals, a similar restriction applies: variables
 which are updated across iterations of the loop must have a JAX compilable
@@ -446,14 +447,14 @@ type (Booleans, Python numeric types, and JAX arrays).
 
 You can also utilize temporary variables within a for loop:
 
->>> @qjit(autograph=True)
-... def f(x):
+>>> def f(x):
 ...     for y in [0, 4, 5]:
 ...         c = 2
 ...         x = x + y * c
 ...     return x
->>> f(4)
-Array(22, dtype=int64)
+>>> plxpr = make_plxpr(f)(0)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4)
+[Array(22, dtype=int64)]
 
 Temporary variables used inside a loop --- and that are **not** passed to a
 function within the loop --- do not have any type restrictions.
@@ -464,15 +465,15 @@ While loops
 Most ``while`` loop constructs will be properly captured and compiled by
 AutoGraph:
 
->>> @qjit(autograph=True)
-... def f(param):
+>>> def f(param):
 ...     n = 0.
 ...     while param < 0.5:
 ...         param *= 1.2
 ...         n += 1
 ...     return n
->>> f(0.1)
-Array(9., dtype=float64)
+>>> plxpr = make_plxpr(f)(0.0)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.1)
+[Array(9., dtype=float64, weak_type=True)]
 
 Break and continue
 ~~~~~~~~~~~~~~~~~~
@@ -486,13 +487,13 @@ Updating and assigning variables
 
 As with for loops, while loops that update variables can also be converted with AutoGraph:
 
->>> @qjit(autograph=True)
-... def f(x):
+>>> def f(x):
 ...     while x < 5:
 ...         x = x + 2
 ...     return x
->>> f(4)
-Array(6.4, dtype=float64)
+>>> plxpr = make_plxpr(f)(0.0)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4.4)
+[Array(6.4, dtype=float64, weak_type=True)]
 
 However, like with conditionals, a similar restriction applies: variables
 which are updated across iterations of the loop must have a JAX compilable
@@ -500,14 +501,14 @@ type (Booleans, Python numeric types, and JAX arrays).
 
 You can also utilize temporary variables within a while loop:
 
->>> @qjit(autograph=True)
-... def f(x):
+>>> def f(x):
 ...     while x < 5:
 ...         c = "hi"
 ...         x = x + 2 * len(c)
 ...     return x
->>> f(4)
-Array(8.4, dtype=float64)
+>>> plxpr = make_plxpr(f)(0.0)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4.4)
+[Array(8.4, dtype=float64, weak_type=True)]
 
 Temporary variables used inside a loop --- and that are **not** passed to a
 function within the loop --- do not have any type restrictions.
@@ -572,26 +573,45 @@ PennyLane **without** AutoGraph. However, if AutoGraph is not enabled, such
 control flow will be evaluated at compile time, and not preserved in the
 compiled program.
 
-
 Let's consider an example where a for loop is evaluated at compile time:
 
->>> @qjit
-... def f(x):
+>>> def f(x):
 ...     for i in range(2):
 ...         print(i, x)
 ...         x = x / 2
 ...     return x ** 2
->>> f(2.)
+>>> plxpr = make_plxpr(f, autograph=False)(0.0)
 0 Traced<ShapedArray(float64[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>
 1 Traced<ShapedArray(float64[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>
-Array(0.25, dtype=float64)
 
-Here, the for loop is evaluated at compile time (notice the multiple tracers
-that have been printed out during program capture --- one for each loop!),
-rather than runtime.
+>>> plxpr
+{ lambda ; a:f64[]. let
+    b:f64[] = div a 2.0
+    c:f64[] = div b 2.0
+    d:f64[] = integer_pow[y=2] c
+  in (d,) }
 
-For more details, see the :ref:`compile-time vs. runtime <compile_time>`
-documentation.
+Here, the for loop is evaluated at compile time, rather than runtime. Notice the multiple tracers that
+have been printed out during program capture --- one for each loop --- as well as the unrolling of the
+loop in the resulting plxpr.
+
+With AutoGraph, we instead get a single print of the tracers, and compile with a for loop that can be
+evaluated at runtime:
+
+>>> plxpr = make_plxpr(f, autograph=True)(0.0)
+Traced<ShapedArray(int64[], weak_type=True)>with<DynamicJaxprTrace(level=2/0)> Traced<ShapedArray(float64[], weak_type=True)>with<DynamicJaxprTrace(level=2/0)>
+
+>>> plxpr
+{ lambda ; a:f64[]. let
+    b:f64[] = for_loop[
+      args_slice=slice(0, None, None)
+      consts_slice=slice(0, 0, None)
+      jaxpr_body_fn={ lambda ; c:i64[] d:f64[]. let
+          e:f64[] = div d 2.0
+        in (e,) }
+    ] 0 2 1 a
+    f:f64[] = integer_pow[y=2] b
+  in (f,) }
 
 
 In-place JAX array updates
@@ -603,7 +623,6 @@ To update array values when using JAX, the `JAX syntax for array assignment
 
 .. code-block:: python
 
-    @qjit(autograph=True, abstracted_axes=(0,))
     def f(x):
         first_dim = x.shape[0]
         result = jnp.empty((first_dim,), dtype=x.dtype)
@@ -613,32 +632,14 @@ To update array values when using JAX, the `JAX syntax for array assignment
 
         return result
 
->>> f(jnp.array([0.1, 0.2, 0.3]))
-Array([0.2, 0.4, 0.6], dtype=float64)
-
-However, if updating a single static index or slice of the array, then Autograph supports conversion
-of standard Python array assignment syntax:
-
-.. code-block:: python
-
-    @qjit(autograph=True)
-    def f(x, y):
-        y[1:10:2] = x  # static slice index
-        y[0] = x[-1] ** 2   # single integer index
-        return y
-
->>> x = jnp.linspace(2, 5, 5)
->>> y = jnp.zeros([11])
->>> f(x, y)
-Array([25.,  2.,  0.,  2.75,  0.,  3.5,  0.,  4.25,  0., 5.,  0.], dtype=float64)
-
-Under the hood, Catalyst converts anything coming in the latter notation into the former one.
+>>> plxpr = make_plxpr(f)(jnp.zeros(3))
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, jnp.array([0.1, 0.2, 0.3]))
+[Array([0.2, 0.4, 0.6], dtype=float64)]
 
 Similarly, to update array values with an operation when using JAX, the JAX syntax for array
 update (which uses the array `at` and the `add`, `multiply`, etc. methods) must be used:
 
->>> @qjit(autograph=True)
-... def f(x):
+>>> def f(x):
 ...     first_dim = x.shape[0]
 ...     result = jnp.copy(x)
 ...
@@ -646,28 +647,3 @@ update (which uses the array `at` and the `add`, `multiply`, etc. methods) must 
 ...         result = result.at[i].multiply(2)
 ...
 ...     return result
-
-Again, if updating a single index or slice of the array, then Autograph supports conversion of
-standard Python array operator assignment syntax for the equivalent in-place expressions
-listed in the `JAX documentation for jax.numpy.ndarray.at
-<https://jax.readthedocs.io/en/latest/_autosummary/jax.numpy.ndarray.at.html#jax.numpy.ndarray.at>`__:
-
->>> @qjit(autograph=True)
-... def f(x):
-...     first_dim = x.shape[0]
-...     result = jnp.copy(x)
-...
-...     for i in range(first_dim):
-...         result[i] *= 2
-...
-...     return result
-
-Under the hood, Catalyst converts anything coming in the latter notation into the former one.
-
-The list of supported operators includes:
-- ``=`` (set)
-- ``+=`` (add)
-- ``-=`` (add with negation)
-- ``*=`` (multiply)
-- ``/=`` (divide)
-- ``**=`` (power)
