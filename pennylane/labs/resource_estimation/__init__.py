@@ -184,5 +184,9 @@ from .ops import (
 )
 
 from .templates import (
+    ResourceControlledSequence,
+    ResourceModExp,
+    ResourceMultiplier,
+    ResourcePhaseAdder,
     ResourceQFT,
 )
