@@ -63,18 +63,6 @@ Involutions
 
     ~even_odd_involution
     ~concurrence_involution
-
-
-Involutions
-~~~~~~~~~~~
-
-.. currentmodule:: pennylane.labs.dla
-
-.. autosummary::
-    :toctree: api
-
-    ~even_odd_involution
-    ~concurrence_involution
     ~khaneja_glaser_involutio
     ~AI
     ~AII
