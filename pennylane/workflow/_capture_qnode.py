@@ -119,7 +119,7 @@ from pennylane.typing import TensorLike
 has_jax = True
 try:
     import jax
-    from jax.interpreters import ad, batching
+    from jax.interpreters import ad, batching, mlir
 except ImportError:
     has_jax = False
 
@@ -190,7 +190,9 @@ def _get_qnode_prim():
 
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
-    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
+    def qnode_impl(
+        *args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None
+    ):
         if shots != device.shots:
             raise NotImplementedError(
                 "Overriding shots is not yet supported with the program capture execution."
@@ -297,6 +299,8 @@ def _get_qnode_prim():
     ad.primitive_jvps[qnode_prim] = _qnode_jvp
 
     batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
+
+    mlir.register_lowering(qnode_prim, mlir.lower_fun(qnode_impl, multiple_results=True))
 
     return qnode_prim
 
