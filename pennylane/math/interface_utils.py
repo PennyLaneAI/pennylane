@@ -32,6 +32,20 @@ class Interface(Enum):
     TF_AUTOGRAPH = "tf-autograph"
     AUTO = "auto"
 
+    def get_like(self):
+        """Maps canonical set of interfaces to those known by autoray."""
+        mapping = {
+            Interface.AUTOGRAD: "autograd",
+            Interface.NUMPY: "numpy",
+            Interface.TORCH: "torch",
+            Interface.JAX: "jax",
+            Interface.JAX_JIT: "jax",
+            Interface.TF: "tensorflow",
+            Interface.TF_AUTOGRAPH: "tensorflow",
+            Interface.AUTO: None,
+        }
+        return mapping[self]
+
 
 INTERFACE_MAP = {
     None: Interface.NUMPY,
@@ -208,9 +222,9 @@ def get_canonical_interface_name(user_input: Union[str, Interface]) -> Interface
         Interface: canonical interface
     """
 
+    if user_input in SUPPORTED_INTERFACE_NAMES:
+        return user_input
     try:
-        if user_input in SUPPORTED_INTERFACE_NAMES:
-            return user_input
         return INTERFACE_MAP[user_input]
     except KeyError as exc:
         raise ValueError(

@@ -56,7 +56,7 @@ def test_auto_with_autograd():
         QuantumScript([qml.RX(x, wires=0)], [qml.expval(qml.PauliZ(0))]),
     ]
     resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == "autograd"
+    assert resolved_interface == Interface.AUTOGRAD
 
 
 @pytest.mark.jax
@@ -72,7 +72,7 @@ def test_auto_with_jax():
         QuantumScript([qml.RX(jnp.array(0.5), wires=0)], [qml.expval(qml.PauliZ(0))]),
     ]
     resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == "jax"
+    assert resolved_interface == Interface.JAX
 
 
 def test_auto_with_unsupported_interface():
