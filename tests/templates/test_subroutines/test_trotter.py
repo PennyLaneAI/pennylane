@@ -45,6 +45,9 @@ test_hamiltonians = (
 )
 
 p_4 = (4 - 4 ** (1 / 3)) ** -1
+p_6 = (4 - 4 ** (1 / 5)) ** -1
+p4_comp = 1 - (4 * p_4)
+p6_comp = 1 - (4 * p_6)
 
 test_decompositions = (
     {  # (hamiltonian_index, order): decomposition assuming t = 4.2, computed by hand
@@ -1337,405 +1340,758 @@ class TestTrotterizedQfuncInitialization:
 class TestTrotterizedQfuncIntegration:
     """Test the TrotterizedQfunc decomposes correctly."""
 
-    def test_decomposition(self):
-        """Test the decompose method"""
-        assert True
-
-
-#     #   Circuit execution tests:
-#     @pytest.mark.parametrize("order", (1, 2, 4))
-#     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
-#     def test_execute_circuit(self, hamiltonian, hamiltonian_index, order):
-#         """Test that the gate executes correctly in a circuit."""
-#         wires = hamiltonian.wires
-#         dev = qml.device("default.qubit", wires=wires)
-
-#         @qml.qnode(dev)
-#         def circ():
-#             qml.TrotterProduct(hamiltonian, time=4.2, order=order)
-#             return qml.state()
-
-#         initial_state = qnp.zeros(2 ** (len(wires)))
-#         initial_state[0] = 1
-
-#         expected_state = (
-#             reduce(
-#                 lambda x, y: x @ y,
-#                 [
-#                     qml.matrix(op, wire_order=wires)
-#                     for op in test_decompositions[(hamiltonian_index, order)]
-#                 ],
-#             )
-#             @ initial_state
-#         )
-#         state = circ()
-
-#         assert qnp.allclose(expected_state, state)
-
-#     @pytest.mark.parametrize("order", (1, 2))
-#     @pytest.mark.parametrize("num_steps", (1, 2, 3))
-#     def test_execute_circuit_n_steps(self, num_steps, order):
-#         """Test that the circuit executes as expected when we set the number of trotter steps"""
-#         time = 0.5
-#         hamiltonian = qml.sum(qml.PauliX(0), qml.PauliZ(0))
-
-#         if order == 1:
-#             base_decomp = [
-#                 qml.exp(qml.PauliZ(0), 0.5j / num_steps),
-#                 qml.exp(qml.PauliX(0), 0.5j / num_steps),
-#             ]
-#         if order == 2:
-#             base_decomp = [
-#                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
-#                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
-#                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
-#                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
-#             ]
-
-#         true_decomp = base_decomp * num_steps
-
-#         wires = hamiltonian.wires
-#         dev = qml.device("default.qubit", wires=wires)
-
-#         @qml.qnode(dev)
-#         def circ():
-#             qml.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
-#             return qml.state()
-
-#         initial_state = qnp.zeros(2 ** (len(wires)))
-#         initial_state[0] = 1
-
-#         expected_state = (
-#             reduce(
-#                 lambda x, y: x @ y, [qml.matrix(op, wire_order=wires) for op in true_decomp[::-1]]
-#             )
-#             @ initial_state
-#         )
-#         state = circ()
-#         assert qnp.allclose(expected_state, state)
-
-#     @pytest.mark.jax
-#     @pytest.mark.parametrize("time", (0.5, 1, 2))
-#     def test_jax_execute(self, time):
-#         """Test that the gate executes correctly in the jax interface."""
-#         from jax import numpy as jnp
-
-#         time = jnp.array(time)
-#         coeffs = jnp.array([1.23, -0.45])
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=2)
-
-#         @qml.qnode(dev)
-#         def circ(time, coeffs):
-#             h = qml.dot(coeffs, terms)
-#             qml.TrotterProduct(h, time, n=2, order=2)
-#             return qml.state()
-
-#         initial_state = jnp.array([1.0, 0.0, 0.0, 0.0])
-
-#         expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
-
-#         expected_state = (
-#             reduce(
-#                 lambda x, y: x @ y,
-#                 [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-#             )
-#             @ initial_state
-#         )
-
-#         state = circ(time, coeffs)
-#         assert allclose(expected_state, state)
-
-#     @pytest.mark.jax
-#     @pytest.mark.parametrize("time", (0.5, 1, 2))
-#     def test_jaxjit_execute(self, time):
-#         """Test that the gate executes correctly in the jax interface with jit."""
-#         import jax
-#         from jax import numpy as jnp
-
-#         time = jnp.array(time)
-#         c1 = jnp.array(1.23)
-#         c2 = jnp.array(-0.45)
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=2)
-
-#         @jax.jit
-#         @qml.qnode(dev, interface="jax")
-#         def circ(time, c1, c2):
-#             h = qml.sum(
-#                 qml.s_prod(c1, terms[0]),
-#                 qml.s_prod(c2, terms[1]),
-#             )
-#             qml.TrotterProduct(h, time, n=2, order=2, check_hermitian=False)
-#             return qml.state()
-
-#         initial_state = jnp.array([1.0, 0.0, 0.0, 0.0])
-
-#         expected_product_sequence = _generate_simple_decomp([c1, c2], terms, time, order=2, n=2)
-
-#         expected_state = (
-#             reduce(
-#                 lambda x, y: x @ y,
-#                 [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-#             )
-#             @ initial_state
-#         )
-
-#         state = circ(time, c1, c2)
-#         assert allclose(expected_state, state)
-
-#     @pytest.mark.tf
-#     @pytest.mark.parametrize("time", (0.5, 1, 2))
-#     def test_tf_execute(self, time):
-#         """Test that the gate executes correctly in the tensorflow interface."""
-#         import tensorflow as tf
-
-#         time = tf.Variable(time, dtype=tf.complex128)
-#         coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=2)
-
-#         @qml.qnode(dev)
-#         def circ(time, coeffs):
-#             h = qml.sum(
-#                 qml.s_prod(coeffs[0], terms[0]),
-#                 qml.s_prod(coeffs[1], terms[1]),
-#             )
-#             qml.TrotterProduct(h, time, n=2, order=2)
-
-#             return qml.state()
-
-#         initial_state = tf.Variable([1.0, 0.0, 0.0, 0.0], dtype=tf.complex128)
-
-#         expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
-
-#         expected_state = tf.linalg.matvec(
-#             reduce(
-#                 lambda x, y: x @ y,
-#                 [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-#             ),
-#             initial_state,
-#         )
-
-#         state = circ(time, coeffs)
-#         assert allclose(expected_state, state)
-
-#     @pytest.mark.torch
-#     @pytest.mark.parametrize("time", (0.5, 1, 2))
-#     def test_torch_execute(self, time):
-#         """Test that the gate executes correctly in the torch interface."""
-#         import torch
-
-#         time = torch.tensor(time, dtype=torch.complex64, requires_grad=True)
-#         coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=2)
-
-#         @qml.qnode(dev)
-#         def circ(time, coeffs):
-#             h = qml.dot(coeffs, terms)
-#             qml.TrotterProduct(h, time, n=2, order=2)
-#             return qml.state()
-
-#         initial_state = torch.tensor([1.0, 0.0, 0.0, 0.0], dtype=torch.complex64)
-
-#         expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
-
-#         expected_state = (
-#             reduce(
-#                 lambda x, y: x @ y,
-#                 [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-#             )
-#             @ initial_state
-#         )
-
-#         state = circ(time, coeffs)
-#         assert allclose(expected_state, state)
-
-#     @pytest.mark.autograd
-#     @pytest.mark.parametrize("time", (0.5, 1, 2))
-#     def test_autograd_execute(self, time):
-#         """Test that the gate executes correctly in the autograd interface."""
-#         time = qnp.array(time)
-#         coeffs = qnp.array([1.23, -0.45])
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=2)
-
-#         @qml.qnode(dev)
-#         def circ(time, coeffs):
-#             h = qml.dot(coeffs, terms)
-#             qml.TrotterProduct(h, time, n=2, order=2)
-#             return qml.state()
-
-#         initial_state = qnp.array([1.0, 0.0, 0.0, 0.0])
-
-#         expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
-
-#         expected_state = (
-#             reduce(
-#                 lambda x, y: x @ y,
-#                 [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-#             )
-#             @ initial_state
-#         )
-
-#         state = circ(time, coeffs)
-#         assert qnp.allclose(expected_state, state)
-
-#     @pytest.mark.autograd
-#     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
-#     def test_autograd_gradient(self, order, n):
-#         """Test that the gradient is computed correctly"""
-#         time = qnp.array(1.5)
-#         coeffs = qnp.array([1.23, -0.45])
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=1)
-
-#         @qml.qnode(dev)
-#         def circ(time, coeffs):
-#             h = qml.dot(coeffs, terms)
-#             qml.TrotterProduct(h, time, n=n, order=order)
-#             return qml.expval(qml.Hadamard(0))
-
-#         @qml.qnode(dev)
-#         def reference_circ(time, coeffs):
-#             with qml.QueuingManager.stop_recording():
-#                 decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-
-#             for op in decomp[::-1]:
-#                 qml.apply(op)
-
-#             return qml.expval(qml.Hadamard(0))
-
-#         measured_time_grad, measured_coeff_grad = qml.grad(circ)(time, coeffs)
-#         reference_time_grad, reference_coeff_grad = qml.grad(reference_circ)(time, coeffs)
-#         assert allclose(measured_time_grad, reference_time_grad)
-#         assert allclose(measured_coeff_grad, reference_coeff_grad)
-
-#     @pytest.mark.torch
-#     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
-#     def test_torch_gradient(self, order, n):
-#         """Test that the gradient is computed correctly using torch"""
-#         import torch
-
-#         time = torch.tensor(1.5, dtype=torch.complex64, requires_grad=True)
-#         coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
-#         time_reference = torch.tensor(1.5, dtype=torch.complex64, requires_grad=True)
-#         coeffs_reference = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=1)
-
-#         @qml.qnode(dev)
-#         def circ(time, coeffs):
-#             h = qml.dot(coeffs, terms)
-#             qml.TrotterProduct(h, time, n=n, order=order)
-#             return qml.expval(qml.Hadamard(0))
-
-#         @qml.qnode(dev)
-#         def reference_circ(time, coeffs):
-#             with qml.QueuingManager.stop_recording():
-#                 decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-
-#             for op in decomp[::-1]:
-#                 qml.apply(op)
-
-#             return qml.expval(qml.Hadamard(0))
-
-#         res_circ = circ(time, coeffs)
-#         res_circ.backward()
-#         measured_time_grad = time.grad
-#         measured_coeff_grad = coeffs.grad
-
-#         ref_circ = reference_circ(time_reference, coeffs_reference)
-#         ref_circ.backward()
-#         reference_time_grad = time_reference.grad
-#         reference_coeff_grad = coeffs_reference.grad
-
-#         assert allclose(measured_time_grad, reference_time_grad)
-#         assert allclose(measured_coeff_grad, reference_coeff_grad)
-
-#     @pytest.mark.tf
-#     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
-#     def test_tf_gradient(self, order, n):
-#         """Test that the gradient is computed correctly using tensorflow"""
-#         import tensorflow as tf
-
-#         time = tf.Variable(1.5, dtype=tf.complex128)
-#         coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=1)
-
-#         @qml.qnode(dev)
-#         def circ(time, coeffs):
-#             h = qml.sum(
-#                 qml.s_prod(coeffs[0], terms[0]),
-#                 qml.s_prod(coeffs[1], terms[1]),
-#             )
-#             qml.TrotterProduct(h, time, n=n, order=order)
-#             return qml.expval(qml.Hadamard(0))
-
-#         @qml.qnode(dev)
-#         def reference_circ(time, coeffs):
-#             with qml.QueuingManager.stop_recording():
-#                 decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-
-#             for op in decomp[::-1]:
-#                 qml.apply(op)
-
-#             return qml.expval(qml.Hadamard(0))
-
-#         with tf.GradientTape() as tape:
-#             result = circ(time, coeffs)
-
-#         measured_time_grad, measured_coeff_grad = tape.gradient(result, (time, coeffs))
-
-#         with tf.GradientTape() as tape:
-#             result = reference_circ(time, coeffs)
-
-#         reference_time_grad, reference_coeff_grad = tape.gradient(result, (time, coeffs))
-#         assert allclose(measured_time_grad, reference_time_grad)
-#         assert allclose(measured_coeff_grad, reference_coeff_grad)
-
-#     @pytest.mark.jax
-#     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
-#     def test_jax_gradient(self, order, n):
-#         """Test that the gradient is computed correctly"""
-#         import jax
-#         from jax import numpy as jnp
-
-#         time = jnp.array(1.5)
-#         coeffs = jnp.array([1.23, -0.45])
-#         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-#         dev = qml.device("default.qubit", wires=1)
-
-#         @qml.qnode(dev)
-#         def circ(time, coeffs):
-#             h = qml.dot(coeffs, terms)
-#             qml.TrotterProduct(h, time, n=n, order=order)
-#             return qml.expval(qml.Hadamard(0))
-
-#         @qml.qnode(dev)
-#         def reference_circ(time, coeffs):
-#             with qml.QueuingManager.stop_recording():
-#                 decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-
-#             for op in decomp[::-1]:
-#                 qml.apply(op)
-
-#             return qml.expval(qml.Hadamard(0))
-
-#         measured_time_grad, measured_coeff_grad = jax.grad(circ, argnums=[0, 1])(time, coeffs)
-#         reference_time_grad, reference_coeff_grad = jax.grad(reference_circ, argnums=[0, 1])(
-#             time, coeffs
-#         )
-#         assert allclose(measured_time_grad, reference_time_grad)
-#         assert allclose(measured_coeff_grad, reference_coeff_grad)
+    expected_decomps_order_reverse = (  # computed by hand assuming t = 0.1
+        (False, 1, [qml.RX(0.1 * 1.23, "a"), qml.RY(0.1 * 1.23, "a"), qml.CNOT(["a", "b"])]),
+        (
+            False,
+            2,
+            [
+                qml.RX((0.1 / 2) * 1.23, "a"),
+                qml.RY((0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((0.1 / 2) * 1.23, "a"),
+                qml.RX((0.1 / 2) * 1.23, "a"),
+            ],
+        ),
+        (
+            False,
+            4,
+            [
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+            ],
+        ),
+        (
+            False,
+            6,
+            [
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+            ],
+        ),
+        (True, 1, [qml.CNOT(["a", "b"]), qml.RY(0.1 * 1.23, "a"), qml.RX(0.1 * 1.23, "a")]),
+        (
+            True,
+            2,
+            [
+                qml.CNOT(["a", "b"]),
+                qml.RY((0.1 / 2) * 1.23, "a"),
+                qml.RX((0.1 / 2) * 1.23, "a"),
+                qml.RX((0.1 / 2) * 1.23, "a"),
+                qml.RY((0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+            ],
+        ),
+        (
+            True,
+            4,
+            [
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.RY((p_4 * 0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+            ],
+        ),
+    )
+
+    @pytest.mark.parametrize("reverse, order, expected_decomp", expected_decomps_order_reverse)
+    def test_decomposition(self, reverse, order, expected_decomp):
+        """Test the decompose method works as expected."""
+
+        def first_order_expansion(time, theta, wires, flip=False):
+            "This is the first order expansion (U_1)."
+            qml.RX(time * theta, wires[0])
+            qml.RY(time * theta, wires[0])
+            if flip:
+                qml.CNOT(wires)
+
+        op = TrotterizedQfunc(
+            0.1,
+            1.23,
+            qfunc=first_order_expansion,
+            reverse=reverse,
+            order=order,
+            wires=["a", "b"],
+            flip=True,
+        )
+
+        expected_decomp = expected_decomp
+        assert op.decomposition() == expected_decomp
+
+    expected_decomps_n = (
+        (
+            1,
+            [
+                qml.RX((0.1 / 2) * 1.23, "a"),
+                qml.RY((0.1 / 2) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((0.1 / 2) * 1.23, "a"),
+                qml.RX((0.1 / 2) * 1.23, "a"),
+            ],
+        ),
+        (
+            2,
+            [
+                qml.RX((0.1 / 4) * 1.23, "a"),
+                qml.RY((0.1 / 4) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((0.1 / 4) * 1.23, "a"),
+                qml.RX((0.1 / 4) * 1.23, "a"),
+            ],
+        ),
+        (
+            10,
+            [
+                qml.RX((0.1 / 20) * 1.23, "a"),
+                qml.RY((0.1 / 20) * 1.23, "a"),
+                qml.CNOT(["a", "b"]),
+                qml.CNOT(["a", "b"]),
+                qml.RY((0.1 / 20) * 1.23, "a"),
+                qml.RX((0.1 / 20) * 1.23, "a"),
+            ],
+        ),
+    )
+
+    @pytest.mark.parametrize("n, expected_decomp", expected_decomps_n)
+    def test_decomposition_num_steps(self, n, expected_decomp):
+        """Test the decomposition is correct given a number of steps."""
+
+        def first_order_expansion(time, theta, wires, flip=False):
+            "This is the first order expansion (U_1)."
+            qml.RX(time * theta, wires[0])
+            qml.RY(time * theta, wires[0])
+            if flip:
+                qml.CNOT(wires)
+
+        op = TrotterizedQfunc(
+            0.1,
+            1.23,
+            qfunc=first_order_expansion,
+            n=n,
+            order=2,
+            wires=["a", "b"],
+            flip=True,
+        )
+
+        expected_decomp = expected_decomp * n
+        assert op.decomposition() == expected_decomp
+
+    def _generate_simple_decomp_trotterize(self, time, order, reverse, args, wires):
+        arg1, arg2 = args
+
+        if order == 1:
+            expected_decomp = [
+                qml.RX(time * arg1, wires=wires[0]),
+                qml.RY(time * arg2, wires=wires[0]),
+                qml.MultiRZ(arg1, wires=wires),
+                qml.CNOT([wires[0], wires[1]]),
+                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]]),
+                qml.CNOT([wires[0], wires[1]]),
+                qml.QFT(wires=wires[1:-1]),
+                qml.QFT(wires=wires[1:-1]),
+                qml.QFT(wires=wires[1:-1]),
+            ]
+
+            if reverse:
+                expected_decomp = expected_decomp[::-1]
+
+        if order == 2:
+            expected_decomp = [
+                qml.RX((time / 2) * arg1, wires=wires[0]),
+                qml.RY((time / 2) * arg2, wires=wires[0]),
+                qml.MultiRZ(arg1, wires=wires),
+                qml.CNOT([wires[0], wires[1]]),
+                qml.ControlledPhaseShift((time / 2) * arg2, wires=[wires[1], wires[0]]),
+                qml.CNOT([wires[0], wires[1]]),
+                qml.QFT(wires=wires[1:-1]),
+                qml.QFT(wires=wires[1:-1]),
+                qml.QFT(wires=wires[1:-1]),
+            ]
+
+            if reverse:
+                expected_decomp = expected_decomp[::-1]
+
+            expected_decomp = expected_decomp + expected_decomp[::-1]
+
+        if order == 4:
+            expected_decomp1 = [
+                qml.RX((p_4 * time / 2) * arg1, wires=wires[0]),
+                qml.RY((p_4 * time / 2) * arg2, wires=wires[0]),
+                qml.MultiRZ(arg1, wires=wires),
+                qml.CNOT([wires[0], wires[1]]),
+                qml.ControlledPhaseShift((p_4 * time / 2) * arg2, wires=[wires[1], wires[0]]),
+                qml.CNOT([wires[0], wires[1]]),
+                qml.QFT(wires=wires[1:-1]),
+                qml.QFT(wires=wires[1:-1]),
+                qml.QFT(wires=wires[1:-1]),
+            ]
+
+            expected_decomp1 = (
+                expected_decomp1[::-1] + expected_decomp1
+                if reverse
+                else expected_decomp1 + expected_decomp1[::-1]
+            )
+
+            expected_decomp2 = [
+                qml.RX((p4_comp * time / 2) * arg1, wires=wires[0]),
+                qml.RY((p4_comp * time / 2) * arg2, wires=wires[0]),
+                qml.MultiRZ(arg1, wires=wires),
+                qml.CNOT([wires[0], wires[1]]),
+                qml.ControlledPhaseShift((p4_comp * time / 2) * arg2, wires=[wires[1], wires[0]]),
+                qml.CNOT([wires[0], wires[1]]),
+                qml.QFT(wires=wires[1:-1]),
+                qml.QFT(wires=wires[1:-1]),
+                qml.QFT(wires=wires[1:-1]),
+            ]
+
+            expected_decomp2 = (
+                expected_decomp2[::-1] + expected_decomp2
+                if reverse
+                else expected_decomp2 + expected_decomp2[::-1]
+            )
+
+            expected_decomp = expected_decomp1 * 2 + expected_decomp2 + expected_decomp1 * 2
+
+        return expected_decomp
+
+    #   Circuit execution tests:
+    @pytest.mark.parametrize("n", (1, 2, 3))
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("reverse", (True, False))
+    def test_execute_circuit(self, n, order, reverse):
+        """Test that the gate executes correctly in a circuit."""
+        time = 0.1
+        wires = ["aux1", "aux2", 0, 1, "target"]
+        arg1 = 2.34
+        arg2 = -6.78
+        args = (arg1, arg2)
+        kwargs = {"kwarg1": True, "kwarg2": 3}
+
+        def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
+            """Arbitrarily complex qfunc"""
+            qml.RX(time * arg1, wires=wires[0])
+            qml.RY(time * arg2, wires=wires[0])
+            qml.MultiRZ(arg1, wires=wires)
+
+            if kwarg1:
+                qml.CNOT([wires[0], wires[1]])
+                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qml.CNOT([wires[0], wires[1]])
+
+            for _ in range(kwarg2):
+                qml.QFT(wires=wires[1:-1])
+
+        expected_t = time / n
+        expected_decomp = self._generate_simple_decomp_trotterize(
+            expected_t, order, reverse, args, wires
+        )
+        expected_decomp = expected_decomp * n
+
+        @qml.qnode(qml.device("default.qubit", wires=wires))
+        def circ(time, alpha, beta, wires, **kwargs):
+            TrotterizedQfunc(
+                time,
+                alpha,
+                beta,
+                qfunc=my_qfunc,
+                n=n,
+                order=order,
+                reverse=reverse,
+                wires=wires,
+                **kwargs,
+            )
+            return qml.state()
+
+        initial_state = qnp.zeros(2 ** (len(wires)))
+        initial_state[0] = 1
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
+            )
+            @ initial_state
+        )
+
+        state = circ(time, *args, wires=wires, **kwargs)
+        assert qnp.allclose(expected_state, state)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n", (1, 2, 3))
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("reverse", (True, False))
+    def test_jax_execute(self, n, order, reverse):
+        """Test that the gate executes correctly in the jax interface."""
+        from jax import numpy as jnp
+
+        time = jnp.array(0.1)
+        wires = ["aux1", "aux2", 0, 1, "target"]
+        arg1 = jnp.array(2.34)
+        arg2 = jnp.array(-6.78)
+        args = (arg1, arg2)
+        kwargs = {"kwarg1": True, "kwarg2": 3}
+
+        def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
+            """Arbitrarily complex qfunc"""
+            qml.RX(time * arg1, wires=wires[0])
+            qml.RY(time * arg2, wires=wires[0])
+            qml.MultiRZ(arg1, wires=wires)
+
+            if kwarg1:
+                qml.CNOT([wires[0], wires[1]])
+                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qml.CNOT([wires[0], wires[1]])
+
+            for _ in range(kwarg2):
+                qml.QFT(wires=wires[1:-1])
+
+        expected_t = time / n
+        expected_decomp = self._generate_simple_decomp_trotterize(
+            expected_t, order, reverse, args, wires
+        )
+        expected_decomp = expected_decomp * n
+
+        @qml.qnode(qml.device("default.qubit", wires=wires))
+        def circ(time, alpha, beta, wires, **kwargs):
+            TrotterizedQfunc(
+                time,
+                alpha,
+                beta,
+                qfunc=my_qfunc,
+                n=n,
+                order=order,
+                reverse=reverse,
+                wires=wires,
+                **kwargs,
+            )
+            return qml.state()
+
+        initial_state = qnp.zeros(2 ** (len(wires)))
+        initial_state[0] = 1
+
+        initial_state = jnp.array(initial_state)
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
+            )
+            @ initial_state
+        )
+
+        state = circ(time, *args, wires=wires, **kwargs)
+        assert allclose(expected_state, state)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n", (1, 2, 3))
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("reverse", (True, False))
+    def test_jaxjit_execute(self, n, order, reverse):
+        """Test that the gate executes correctly in the jax interface."""
+        import jax
+        from jax import numpy as jnp
+
+        time = jnp.array(0.1)
+        wires = ["aux1", "aux2", 0, 1, "target"]
+        arg1 = jnp.array(2.34)
+        arg2 = jnp.array(-6.78)
+        args = (arg1, arg2)
+        kwargs = {"kwarg1": True, "kwarg2": 3}
+
+        def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
+            """Arbitrarily complex qfunc"""
+            qml.RX(time * arg1, wires=wires[0])
+            qml.RY(time * arg2, wires=wires[0])
+            qml.MultiRZ(arg1, wires=wires)
+
+            if kwarg1:
+                qml.CNOT([wires[0], wires[1]])
+                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qml.CNOT([wires[0], wires[1]])
+
+            for _ in range(kwarg2):
+                qml.QFT(wires=wires[1:-1])
+
+        expected_t = time / n
+        expected_decomp = self._generate_simple_decomp_trotterize(
+            expected_t, order, reverse, args, wires
+        )
+        expected_decomp = expected_decomp * n
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit", wires=wires), interface="jax")
+        def circ(time, alpha, beta, wires, **kwargs):
+            TrotterizedQfunc(
+                time,
+                alpha,
+                beta,
+                qfunc=my_qfunc,
+                n=n,
+                order=order,
+                reverse=reverse,
+                wires=wires,
+                **kwargs,
+            )
+            return qml.state()
+
+        initial_state = qnp.zeros(2 ** (len(wires)))
+        initial_state[0] = 1
+
+        initial_state = jnp.array(initial_state)
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
+            )
+            @ initial_state
+        )
+
+        state = circ(time, *args, wires=wires, **kwargs)
+        assert allclose(expected_state, state)
+
+    #   Circuit gradient tests:
+    @pytest.mark.parametrize("n", (1, 2, 3))
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("reverse", (True, False))
+    def test_gradient(self, n, order, reverse):
+        """Test that the gradient is computed correctly"""
+        time = qnp.array(0.1)
+        wires = ["aux1", "aux2", 0, 1, "target"]
+        arg1 = qnp.array(2.34)
+        arg2 = qnp.array(-6.78)
+        args = (arg1, arg2)
+        kwargs = {"kwarg1": True, "kwarg2": 3}
+
+        def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
+            """Arbitrarily complex qfunc"""
+            qml.RX(time * arg1, wires=wires[0])
+            qml.RY(time * arg2, wires=wires[0])
+            qml.MultiRZ(arg1, wires=wires)
+
+            if kwarg1:
+                qml.CNOT([wires[0], wires[1]])
+                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qml.CNOT([wires[0], wires[1]])
+
+            for _ in range(kwarg2):
+                qml.QFT(wires=wires[1:-1])
+
+        @qml.qnode(qml.device("default.qubit", wires=wires))
+        def circ(time, alpha, beta, wires, **kwargs):
+            TrotterizedQfunc(
+                time,
+                alpha,
+                beta,
+                qfunc=my_qfunc,
+                n=n,
+                order=order,
+                reverse=reverse,
+                wires=wires,
+                **kwargs,
+            )
+            return qml.expval(qml.Hadamard(wires[1]))
+
+        @qml.qnode(qml.device("default.qubit", wires=wires))
+        def reference_circ(time, alpha, beta, wires):
+            with qml.QueuingManager.stop_recording():
+                expected_t = time / n
+                expected_decomp = self._generate_simple_decomp_trotterize(
+                    expected_t, order, reverse, (alpha, beta), wires
+                )
+                expected_decomp = expected_decomp * n
+
+            for op in expected_decomp:
+                qml.apply(op)
+
+            return qml.expval(qml.Hadamard(wires[1]))
+
+        measured_time_grad, measured_arg1_grad, measured_arg2_grad = qml.grad(circ)(
+            time, arg1, arg2, wires, **kwargs
+        )
+        reference_time_grad, reference_arg1_grad, reference_arg2_grad = qml.grad(reference_circ)(
+            time, arg1, arg2, wires
+        )
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_arg1_grad, reference_arg1_grad)
+        assert allclose(measured_arg2_grad, reference_arg2_grad)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n", (1, 2, 3))
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("reverse", (True, False))
+    def test_jax_gradient(self, n, order, reverse):
+        """Test that the gradient is computed correctly"""
+        import jax
+        from jax import numpy as jnp
+
+        time = jnp.array(0.1)
+        wires = ["aux1", "aux2", 0, 1, "target"]
+        arg1 = jnp.array(2.34)
+        arg2 = jnp.array(-6.78)
+        args = (arg1, arg2)
+        kwargs = {"kwarg1": True, "kwarg2": 3}
+
+        def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
+            """Arbitrarily complex qfunc"""
+            qml.RX(time * arg1, wires=wires[0])
+            qml.RY(time * arg2, wires=wires[0])
+            qml.MultiRZ(arg1, wires=wires)
+
+            if kwarg1:
+                qml.CNOT([wires[0], wires[1]])
+                qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]])
+                qml.CNOT([wires[0], wires[1]])
+
+            for _ in range(kwarg2):
+                qml.QFT(wires=wires[1:-1])
+
+        expected_t = time / n
+        expected_decomp = self._generate_simple_decomp_trotterize(
+            expected_t, order, reverse, args, wires
+        )
+        expected_decomp = expected_decomp * n
+
+        @qml.qnode(qml.device("default.qubit", wires=wires))
+        def circ(time, alpha, beta, wires, **kwargs):
+            TrotterizedQfunc(
+                time,
+                alpha,
+                beta,
+                qfunc=my_qfunc,
+                n=n,
+                order=order,
+                reverse=reverse,
+                wires=wires,
+                **kwargs,
+            )
+            return qml.expval(qml.Hadamard(wires[1]))
+
+        @qml.qnode(qml.device("default.qubit", wires=wires))
+        def reference_circ(time, alpha, beta, wires):
+            with qml.QueuingManager.stop_recording():
+                expected_t = time / n
+                expected_decomp = self._generate_simple_decomp_trotterize(
+                    expected_t, order, reverse, (alpha, beta), wires
+                )
+                expected_decomp = expected_decomp * n
+
+            for op in expected_decomp:
+                qml.apply(op)
+
+            return qml.expval(qml.Hadamard(wires[1]))
+
+        measured_time_grad, measured_arg1_grad, measured_arg2_grad = jax.grad(
+            circ, argnums=[0, 1, 2]
+        )(time, arg1, arg2, wires, **kwargs)
+        reference_time_grad, reference_arg1_grad, reference_arg2_grad = jax.grad(
+            reference_circ, argnums=[0, 1, 2]
+        )(time, arg1, arg2, wires)
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_arg1_grad, reference_arg1_grad)
+        assert allclose(measured_arg2_grad, reference_arg2_grad)

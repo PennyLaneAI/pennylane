@@ -649,12 +649,12 @@ class TrotterizedQfunc(Operation):
         decomp = (
             _recursive_qfunc(
                 time / n, order, qfunc, self.wires, reverse, *qfunc_args, **qfunc_kwargs
-            )[::-1]
+            )
             * n
         )
 
         if qml.QueuingManager.recording():
-            for op in decomp:  # apply operators in reverse order of expression
+            for op in decomp:
                 qml.apply(op)
 
         return decomp
