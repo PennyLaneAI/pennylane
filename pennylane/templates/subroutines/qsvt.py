@@ -204,10 +204,10 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
         block_encoding (str): Specifies the type of block encoding to use. Options include:
 
             - ``"prepselprep"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.PrepSelPrep`.
-                Default encoding for Hamiltonians.
+              Default encoding for Hamiltonians.
             - ``"qubitization"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.Qubitization`.
             - ``"embedding"``: Embeds the matrix ``A`` using :class:`~pennylane.BlockEncode`.
-                Template not hardware compatible. Default encoding for matrices.
+              Template not hardware compatible. Default encoding for matrices.
             - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Template hardware compatible.
 
 
@@ -320,7 +320,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
         .. code-block:: pycon
 
-            >>>print(4* np.linalg.norm(A, ord='fro')**2)
+            >>> print(4* np.linalg.norm(A, ord='fro')**2)
             0.8000000000000004
 
 
