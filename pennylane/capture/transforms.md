@@ -209,6 +209,10 @@ class EvalTrace(Trace):
         """Just do standard evaluation of the primitive being binded (bound?)"""
         print("Binding primitive with standard evaluation")
         return [primitive.impl(*tracers, **params)]
+
+
+# Let's add it to the trace_stack so that we can use it to interpret primitives:
+trace_stack.append(MainTrace(0, EvalTrace, None))
 ```
 
 With this interpreter, we can evaluate functions. Let's try it out. First, we define a simple
@@ -271,7 +275,7 @@ To create new transforms for PLxPR, or to register already-existing transforms f
 transforming PLxPR, use the `custom_plxpr_transform` decorator of `TransformDispatcher`:
 
 ```python
-def _rx_to_ry_plxpr(primitive, tracers, params, targs, tkwargs, state=None):
+def _rx_to_ry_plxpr(primitive, tracers, params, targs, tkwargs, state):
     from pennylane.capture import TransformTracer
 
     # Step 1: Transform primitive

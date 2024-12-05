@@ -21,6 +21,7 @@ from dataclasses import replace
 from numbers import Number
 from typing import Optional, Union, overload
 
+import pennylane as qml
 from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
@@ -29,8 +30,18 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
-from .capabilities import DeviceCapabilities
+from .capabilities import (
+    DeviceCapabilities,
+    observable_stopping_condition_factory,
+    validate_mcm_method,
+)
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .preprocess import (
+    decompose,
+    validate_device_wires,
+    validate_measurements,
+    validate_observables,
+)
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -119,6 +130,8 @@ class Device(abc.ABC):
         * ``gradient_keyword_arguments``: Options for the gradient method.
 
         * ``derivative_order``: Relevant for requested device derivatives.
+
+        * ``mcm_config``: Options for methods of handling mid-circuit-measures.
 
     """
 
@@ -335,7 +348,9 @@ class Device(abc.ABC):
         transform_program = self.preprocess_transforms(execution_config)
         return transform_program, execution_config
 
-    def setup_execution_config(self, config: Optional[ExecutionConfig] = None) -> ExecutionConfig:
+    def setup_execution_config(
+        self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
+    ) -> ExecutionConfig:
         """Sets up an ``ExecutionConfig`` that configures the execution behaviour.
 
         The execution config stores information on how the device should perform the execution,
@@ -349,6 +364,7 @@ class Device(abc.ABC):
         Args:
             config (ExecutionConfig): The initial ExecutionConfig object that describes the
                 parameters needed to configure the execution behaviour.
+            circuit (QuantumScript): The quantum circuit to customize the execution config for.
 
         Returns:
             ExecutionConfig: The updated ExecutionConfig object
@@ -365,6 +381,16 @@ class Device(abc.ABC):
 
         if self.supports_derivatives(config) and config.gradient_method in ("best", None):
             return replace(config, gradient_method="device")
+
+        shots_present = circuit and bool(circuit.shots)
+        validate_mcm_method(self.capabilities, config.mcm_config.mcm_method, shots_present)
+        if config.mcm_config.mcm_method is None and self.capabilities is not None:
+            # This is a sensible default strategy for resolving the MCM method based on declared
+            # capabilities of a device, but if a device wishes to do this differently, it should
+            # override the ``setup_execution_config`` method itself.
+            default_mcm_method = _default_mcm_method(self.capabilities, shots_present)
+            new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
+            config = replace(config, mcm_config=new_mcm_config)
 
         return config
 
@@ -463,7 +489,94 @@ class Device(abc.ABC):
                 return self.preprocess(execution_config)[0]
             return self.preprocess()[0]
 
-        return TransformProgram()
+        if not self.capabilities:
+            # The capabilities are required to construct a default transform program.
+            return TransformProgram()
+
+        if not execution_config:
+            execution_config = ExecutionConfig()
+
+        program = TransformProgram()
+
+        # First handle mid-circuit measurements because it may add wires. At this point we
+        # should assume that the mcm method is already validated and resolved.
+        if execution_config.mcm_config.mcm_method == "deferred":
+            program.add_transform(
+                qml.transforms.defer_measurements,
+                allow_postselect=self.capabilities.supports_operation("Projector"),
+            )
+        elif execution_config.mcm_config.mcm_method == "one-shot":
+            program.add_transform(
+                qml.transforms.dynamic_one_shot,
+                postselect_mode=execution_config.mcm_config.postselect_mode,
+            )
+
+        capabilities_analytic = self.capabilities.filter(finite_shots=False)
+        capabilities_shots = self.capabilities.filter(finite_shots=True)
+
+        needs_diagonalization = False
+        base_obs = {"PauliZ": qml.Z, "PauliX": qml.X, "PauliY": qml.Y, "Hadamard": qml.H}
+        if (
+            not all(obs in self.capabilities.observables for obs in base_obs)
+            # This check is to confirm that `split_non_commuting` has been applied, since
+            # `diagonalize_measurements` does not work with non-commuting measurements. If
+            # a device is flexible enough to support non-commuting observables but for some
+            # reason does not support all of `PauliZ`, `PauliX`, `PauliY`, and `Hadamard`,
+            # we consider it enough of an edge case that the device should just implement
+            # its own preprocessing transform.
+            and not self.capabilities.non_commuting_observables
+        ):
+            needs_diagonalization = True
+        else:
+            # If the circuit does not need diagonalization, we decompose the circuit before
+            # potentially applying `split_non_commuting` that produces multiple tapes with
+            # duplicated operations. Otherwise, `decompose` has to be applied last because
+            # `diagonalize_measurements` may add additional gates that are not supported.
+            program.add_transform(
+                decompose,
+                stopping_condition=capabilities_analytic.supports_operation,
+                stopping_condition_shots=capabilities_shots.supports_operation,
+                name=self.name,
+            )
+
+        if not self.capabilities.overlapping_observables:
+            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        elif not self.capabilities.non_commuting_observables:
+            program.add_transform(qml.transforms.split_non_commuting, grouping_strategy="qwc")
+        elif not self.capabilities.supports_observable("Sum"):
+            program.add_transform(qml.transforms.split_to_single_terms)
+
+        if needs_diagonalization:
+            obs_names = base_obs.keys() & self.capabilities.observables.keys()
+            obs = {base_obs[obs] for obs in obs_names}
+            program.add_transform(qml.transforms.diagonalize_measurements, supported_base_obs=obs)
+            program.add_transform(
+                decompose,
+                stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
+                stopping_condition_shots=lambda o: capabilities_shots.supports_operation(o.name),
+                name=self.name,
+            )
+
+        program.add_transform(qml.transforms.broadcast_expand)
+
+        # Handle validations
+        program.add_transform(validate_device_wires, self.wires, name=self.name)
+        program.add_transform(
+            validate_measurements,
+            analytic_measurements=lambda mp: type(mp).__name__
+            in capabilities_analytic.measurement_processes,
+            sample_measurements=lambda mp: type(mp).__name__
+            in capabilities_shots.measurement_processes,
+            name=self.name,
+        )
+        program.add_transform(
+            validate_observables,
+            stopping_condition=observable_stopping_condition_factory(capabilities_analytic),
+            stopping_condition_shots=observable_stopping_condition_factory(capabilities_shots),
+            name=self.name,
+        )
+
+        return program
 
     @abc.abstractmethod
     @overload
@@ -871,3 +984,20 @@ class Device(abc.ABC):
 
         """
         raise NotImplementedError
+
+
+def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -> str:
+    """Simple strategy to find the best match for the default mcm method."""
+
+    supports_one_shot = "one-shot" in capabilities.supported_mcm_methods
+    has_device_support = "device" in capabilities.supported_mcm_methods
+
+    # In finite shots mode, the one-shot method is the default even if there is device support.
+    # This is to ensure consistency with old behaviour. Although I'm not too sure about this.
+    if supports_one_shot and shots_present:
+        return "one-shot"
+
+    if has_device_support:
+        return "device"
+
+    return "deferred"

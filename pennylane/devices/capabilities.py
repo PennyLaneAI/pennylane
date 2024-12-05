@@ -15,16 +15,15 @@
 Defines the DeviceCapabilities class, and tools to load it from a TOML file.
 """
 import re
-import sys
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-from typing import Optional
+from typing import Callable, Optional, Union
 
-if sys.version_info >= (3, 11):
-    import tomllib as toml  # pragma: no cover
-else:
-    import tomli as toml
+import tomlkit as toml
+
+import pennylane as qml
+from pennylane.operation import Operator
 
 ALL_SUPPORTED_SCHEMAS = [3]
 
@@ -35,8 +34,8 @@ class InvalidCapabilitiesError(Exception):
 
 def load_toml_file(file_path: str) -> dict:
     """Loads a TOML file and returns the parsed dict."""
-    with open(file_path, "rb") as f:
-        return toml.load(f)
+    with open(file_path, "r") as file:
+        return toml.load(file)
 
 
 class ExecutionCondition(Enum):
@@ -173,12 +172,14 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         update_device_capabilities(capabilities, document, runtime_interface)
         return capabilities
 
-    def supports_operation(self, operation_name: str) -> bool:
+    def supports_operation(self, operation: Union[str, Operator]) -> bool:
         """Checks if the given operation is supported by name."""
+        operation_name = operation if isinstance(operation, str) else operation.name
         return bool(_get_supported_base_op(operation_name, self.operations))
 
-    def supports_observable(self, observable_name: str) -> bool:
+    def supports_observable(self, observable: Union[str, Operator]) -> bool:
         """Checks if the given observable is supported by name."""
+        observable_name = observable if isinstance(observable, str) else observable.name
         return bool(_get_supported_base_op(observable_name, self.observables))
 
 
@@ -398,4 +399,61 @@ def update_device_capabilities(
     if runtime_interface == "qjit" and "qjit" in document and not capabilities.qjit_compatible:
         raise InvalidCapabilitiesError(
             "qjit-specific sections are found but the device is not qjit-compatible."
+        )
+
+
+def observable_stopping_condition_factory(
+    capabilities: DeviceCapabilities,
+) -> Callable[[qml.operation.Operator], bool]:
+    """Returns a default observable validation check from a capabilities object.
+
+    The returned function checks if an observable is supported, for composite and nested
+    observables, check that the operands are supported.
+
+    """
+
+    def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+
+        if not capabilities.supports_observable(obs.name):
+            return False
+
+        if isinstance(obs, qml.ops.CompositeOp):
+            return all(observable_stopping_condition(op) for op in obs.operands)
+
+        if isinstance(obs, qml.ops.SymbolicOp):
+            return observable_stopping_condition(obs.base)
+
+        return True
+
+    return observable_stopping_condition
+
+
+def validate_mcm_method(capabilities: DeviceCapabilities, mcm_method: str, shots_present: bool):
+    """Validates an MCM method against the device's capabilities.'"""
+
+    if mcm_method is None or mcm_method == "deferred":
+        return  # no need to validate if requested deferred or if no method is requested.
+
+    if mcm_method == "one-shot" and not shots_present:
+        raise qml.QuantumFunctionError(
+            'The "one-shot" MCM method is only supported with finite shots.'
+        )
+
+    if capabilities is None:
+        # If the device does not declare its supported mcm methods through capabilities,
+        # simply check that the requested mcm method is something we recognize.
+        if mcm_method not in ("deferred", "one-shot", "tree-traversal"):
+            raise qml.QuantumFunctionError(
+                f'Requested MCM method "{mcm_method}" unsupported by the device. Supported methods '
+                f'are: "deferred", "one-shot", and "tree-traversal".'
+            )
+        return
+
+    if mcm_method not in capabilities.supported_mcm_methods:
+
+        supported_methods = capabilities.supported_mcm_methods + ["deferred"]
+        supported_method_strings = [f'"{m}"' for m in supported_methods]
+        raise qml.QuantumFunctionError(
+            f'Requested MCM method "{mcm_method}" unsupported by the device. Supported methods '
+            f"are: {', '.join(supported_method_strings)}."
         )
