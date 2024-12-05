@@ -61,9 +61,18 @@ def _construct_ml_execution_pipeline(
     cache = _cache_transform in inner_transform_program
     diff_method = config.gradient_method
 
+    # moved to its own explicit step so that it will be easier to remove
+    def inner_execute_with_empty_jac(tapes, **_):
+        return inner_execute(tapes), []
+
+    execute_fn = inner_execute
+    if config.interface == Interface.TF_AUTOGRAPH:
+        execute_fn = inner_execute_with_empty_jac
+
+    jpc = None
+
     if config.use_device_jacobian_product and config.interface != Interface.TF_AUTOGRAPH:
         jpc = DeviceJacobianProducts(device, config)
-        execute_fn = inner_execute
 
     elif config.use_device_gradient:
         jpc = DeviceDerivatives(device, config)
@@ -124,8 +133,6 @@ def _construct_ml_execution_pipeline(
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
     elif config.interface != Interface.TF_AUTOGRAPH:
-
-        execute_fn = inner_execute
 
         # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
         cache_full_jacobian = (config.interface == Interface.AUTOGRAD) and not cache
@@ -273,14 +280,6 @@ def run(
         ResultBatch: results of the execution
     """
     inner_execute = _make_inner_execute(device, inner_transform_program, resolved_execution_config)
-
-    # moved to its own explicit step so that it will be easier to remove
-    def inner_execute_with_empty_jac(tapes, **_):
-        return inner_execute(tapes), []
-
-    execute_fn = inner_execute
-    if resolved_execution_config.interface == Interface.TF_AUTOGRAPH:
-        execute_fn = inner_execute_with_empty_jac
 
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = (
