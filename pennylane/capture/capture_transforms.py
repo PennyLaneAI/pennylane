@@ -55,11 +55,6 @@ class TransformTrace(Trace):
 
     lift = sublift = pure
 
-    @property
-    def state(self):
-        """Dictionary containing environment information for transforms to use."""
-        return self._state
-
     def process_primitive(self, primitive: Primitive, tracers: tuple[Tracer], params: dict):
         """Interpret a given primitive.
 
@@ -90,7 +85,7 @@ class TransformTrace(Trace):
         bind_fn = transform.plxpr_transform
         targs, tkwargs = transform.args, transform.kwargs
 
-        return bind_fn(primitive, tracers, params, targs, tkwargs, state=transform_state)
+        return bind_fn(primitive, tracers, params, targs, tkwargs, transform_state)
 
 
 class TransformTracer(Tracer):
@@ -294,6 +289,7 @@ class TransformInterpreter(PlxprInterpreter):
 
         """
         invals = [self.read(invar) for invar in eqn.invars]
+
         traced_invals = []
         for inval in invals:
             # The following branch is added because we want observables to get transformed.
@@ -304,9 +300,9 @@ class TransformInterpreter(PlxprInterpreter):
             if isinstance(inval, qml.operation.Operator):
                 # pylint: disable=protected-access
                 op_tracers, op_params = self._env[id(inval)]
-                self._state[-1]["op_is_observable"] = True
+                self._state[-1]["is_measurement_obs"] = True
                 new_inval = inval._primitive.bind(*op_tracers, **op_params)
-                self._state[-1].pop("op_is_observable")
+                self._state[-1].pop("is_measurement_obs")
                 traced_invals.append(self.read_with_trace(new_inval))
                 continue
             traced_invals.append(self.read_with_trace(inval))

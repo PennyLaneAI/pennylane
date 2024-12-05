@@ -405,11 +405,11 @@ class TestProbs:
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])
     def test_observable_is_measurement_value_list(
-        self, shots, phi, tol, tol_stochastic
+        self, shots, phi, tol, tol_stochastic, seed
     ):  # pylint: disable=too-many-arguments
         """Test that probs for mid-circuit measurement values
         are correct for a measurement value list."""
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=seed)
 
         @qml.qnode(dev)
         def circuit(phi):
