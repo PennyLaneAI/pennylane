@@ -56,6 +56,9 @@ Utility functions
 Involutions
 ~~~~~~~~~~~
 
+A map :math:`\Theta: \mathfrak{g} \rightarrow \mathfrak{g}` from the Lie algebra :math:`\mathfrak{g}` to itself is called an involution
+when it it fulfills :math:`\Theta(\Theta(g)) = g \ \forall g \in \mathfrak{g}`. Involutions are used to construct a :func:`~cartan_decomp`.
+
 .. currentmodule:: pennylane.labs.dla
 
 .. autosummary::
