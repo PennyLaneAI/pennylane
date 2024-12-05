@@ -19,8 +19,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-import pennylane as qml
-
 from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
@@ -152,9 +150,7 @@ def optimize_geometry(molecule, method="rhf"):
             Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
 
     Returns:
-        tuple: A tuple containing the following:
-         - :func:`~pennylane.qchem.molecule.Molecule` object with optimized geometry
-         - pyscf.scf object
+        array[array[float]]: optimized atomic positions in Cartesian coordinates
 
     """
     pyscf = _import_pyscf()
@@ -164,18 +160,9 @@ def optimize_geometry(molecule, method="rhf"):
     scf_res = _single_point(molecule, method)
     geom_eq = optimize(scf_res, maxsteps=100)
 
-    mol_eq = qml.qchem.Molecule(
-        molecule.symbols,
-        geom_eq.atom_coords(unit="B"),
-        unit="Bohr",
-        basis_name=molecule.basis_name,
-        charge=molecule.charge,
-        mult=molecule.mult,
-        load_data=molecule.load_data,
-    )
-
-    scf_result = _single_point(mol_eq, method)
-    return mol_eq, scf_result
+    if molecule.unit == "angstrom":
+        return geom_eq.atom_coords(unit="A")
+    return geom_eq.atom_coords(unit="B")
 
 
 def _get_rhf_dipole(scf_result):
