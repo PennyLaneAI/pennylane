@@ -133,9 +133,7 @@ def run(
     Returns:
         ResultBatch: results of the execution
     """
-    cache = _cache_transform in inner_transform_program
     inner_execute = _make_inner_execute(device, inner_transform_program, resolved_execution_config)
-    diff_method = resolved_execution_config.gradient_method
 
     # moved to its own explicit step so that it will be easier to remove
     def inner_execute_with_empty_jac(tapes, **_):
@@ -158,6 +156,7 @@ def run(
         results = inner_execute(tapes)
         return results
 
+    diff_method = resolved_execution_config.gradient_method
     if (
         resolved_execution_config.use_device_jacobian_product
         and resolved_execution_config.interface != Interface.TF_AUTOGRAPH
@@ -228,9 +227,9 @@ def run(
 
     elif resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
         # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
-        cache_full_jacobian = (
-            resolved_execution_config.interface == Interface.AUTOGRAD
-        ) and not cache
+        cache_full_jacobian = (resolved_execution_config.interface == Interface.AUTOGRAD) and not (
+            _cache_transform in inner_transform_program
+        )
 
         # we can have higher order derivatives when the `inner_execute` used to take
         # transform gradients is itself differentiable
