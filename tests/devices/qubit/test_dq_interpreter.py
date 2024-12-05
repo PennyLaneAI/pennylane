@@ -154,6 +154,19 @@ def test_mcm_reset():
     assert qml.math.allclose(out, jnp.array([1.0, 0.0]))  # reset into zero state.
 
 
+def test_mcm_postselect_on_opposite_value():
+    """Test that the results are nan's if we postselect on the opposite of the mcm."""
+
+    @DefaultQubitInterpreter(num_wires=1)
+    def f():
+        qml.measure(0, postselect=1)
+        return qml.expval(qml.Z(0)), qml.state()
+
+    expval, state = f()
+    assert jax.numpy.isnan(expval)
+    assert jax.numpy.isnan(state).all()
+
+
 def test_operator_arithmetic():
     """Test that dq can execute operator arithmetic."""
 
@@ -170,7 +183,7 @@ def test_operator_arithmetic():
 
 
 def test_parameter_broadcasting():
-    """Test that dq can execute a circuit with parameter broadcasting."""
+    """Test that DefaultQubit can execute a circuit with parameter broadcasting."""
 
     @DefaultQubitInterpreter(num_wires=3)
     def f(x):

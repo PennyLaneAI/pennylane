@@ -159,6 +159,7 @@ def _(self, *invals, reset, postselect):
     mcms = {}
     self.state = apply_operation(mp, self.state, mid_measurements=mcms, prng_key=new_key)
     if mp.postselect is not None:
+        # Divide by zero to create NaNs for MCM values that differ from the postselection value
         self.state = self.state / (1 - jax.numpy.abs(mp.postselect - mcms[mp]))
     return mcms[mp]
 

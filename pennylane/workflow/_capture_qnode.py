@@ -14,8 +14,8 @@
 """
 This submodule defines a capture compatible call to QNodes.
 
-Workflow Developement Status
-----------------------------
+Workflow Development Status
+---------------------------
 
 The non-exhaustive list of unsupported features are:
 
@@ -29,10 +29,10 @@ and reshape the outputs from measurements on the device when multiple measuremen
 **Gradients other than default qubit backprop**. We managed to get backprop of default qubit for
 free, but no other gradients methods have support yet.
 
-*MCM methods other than single branch statistics*.  Mid circuit measurements
+**MCM methods other than single branch statistics**. Mid circuit measurements
 are only handled via a "single branch statistics" algorithm, which will lead to unexpected
-results. Even on analytic devices, once branch will be randomly chosen on each execution.
-Returning measurments based on mid circuit measurements, ``qml.sample(m0)``,
+results. Even on analytic devices, one branch will be randomly chosen on each execution.
+Returning measurements based on mid circuit measurements, ``qml.sample(m0)``,
 is also not yet supported on default qubit or lightning.
 
 >>> @qml.qnode(qml.device('default.qubit', wires=1))
@@ -50,7 +50,7 @@ Array(-0.87758256, dtype=float64))
 np.float64(0.06120871905481362)
 >>> qml.capture.enable()
 
-*Device preprocessing and validation*.  No device preprocessing and validation will occur. The captured
+**Device preprocessing and validation**. No device preprocessing and validation will occur. The captured
 jaxpr is directly sent to the device, whether or not the device can handle it.
 
 >>> @qml.qnode(qml.device('default.qubit', wires=3))
@@ -60,10 +60,10 @@ jaxpr is directly sent to the device, whether or not the device can handle it.
 >>> circuit()
 MatrixUndefinedError:
 
-*Transforms are still under developement*.  No transforms will currently be applied as part of the workflow.
+**Transforms are still under development**. No transforms will currently be applied as part of the workflow.
 
-*Breaking vmap/ parameter broadcasting into a non-broadcasted state*. The current workflow assumes
-that the device execution can natively handled broadcasted parameters. vmap and parameter broadcasting
+**Breaking ``vmap``/parameter broadcasting into a non-broadcasted state**. The current workflow assumes
+that the device execution can natively handle broadcasted parameters. ``vmap`` and parameter broadcasting
 will not work with devices other than default qubit.
 
 >>> @qml.qnode(qml.device('lightning.qubit', wires=1))
@@ -75,11 +75,11 @@ TypeError: RX(): incompatible function arguments. The following argument types a
     1. (self: pennylane_lightning.lightning_qubit_ops.StateVectorC128, arg0: list[int], arg1: bool, arg2: list[float]) -> None
     2. (self: pennylane_lightning.lightning_qubit_ops.StateVectorC128, arg0: list[int], arg1: list[bool], arg2: list[int], arg3: bool, arg4: list[float]) -> None
 
-*Grouping commuting measurements and/ or splitting up non-commuting measurements.* Currently, each
+**Grouping commuting measurements and/or splitting up non-commuting measurements.** Currently, each
 measurment is fully independent and generated from different raw samples than every other measurement.
 To generate multiple measurments from the same samples, we need a way of denoting which measurements
-should be taken together.  A "Combination measurement process" higher order primitive, or something like it.
-We will also need to figure out how to implement splitting up a circuit with non-commuting measuremets into
+should be taken together. A "Combination measurement process" higher order primitive, or something like it.
+We will also need to figure out how to implement splitting up a circuit with non-commuting measurements into
 multiple circuits.
 
 >>> @qml.qnode(qml.device('default.qubit', wires=1, shots=5))
@@ -89,20 +89,20 @@ multiple circuits.
 >>> circuit()
 (Array([1, 0, 1, 0, 0], dtype=int64), Array([0, 0, 1, 0, 0], dtype=int64))
 
-*Figuring out what types of data can be sent to the device.* Is the device always
-responsible for converting jax arrays to numpy arrays? Is the device responsible for having a 
+**Figuring out what types of data can be sent to the device.** Is the device always
+responsible for converting jax arrays to numpy arrays? Is the device responsible for having a
 pure-callback boundary if the execution is not jittable? We do have an opportunity here
-to have gpu-end-to-end simulation on lightning gpu and lightning kokkos.
+to have GPU end-to-end simulation on ``lightning.gpu`` and ``lightning.kokkos``.
 
-*Jitting workflows involving qnodes*. While the execution of jaxpr on default qubit is
+**Jitting workflows involving qnodes**. While the execution of jaxpr on ``default.qubit`` is
 currently jittable, we will need to register a lowering for the qnode primitive.  We will also
-need to figure out where to apply a ``jax.pure_callback`` for devices like lightning qubit that are
+need to figure out where to apply a ``jax.pure_callback`` for devices like ``lightning.qubit`` that are
 not jittable.
 
-*Result caching*. The new workflow is not capable of caching the results of executions, and we have
+**Result caching**. The new workflow is not capable of caching the results of executions, and we have
 not even started thinking about how it might be possible to do so.
 
-*Unknown other features*. The workflow currently has limited testing, so this list of unsupported
+**Unknown other features**. The workflow currently has limited testing, so this list of unsupported
 features is non-exhaustive.
 
 """
@@ -190,16 +190,14 @@ def _get_qnode_prim():
 
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
-    def qnode_impl(
-        *args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None
-    ):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
         if shots != device.shots:
             raise NotImplementedError(
-                "override shots are not yet supported with the program capture execution."
+                "Overriding shots is not yet supported with the program capture execution."
             )
         if qnode_kwargs["diff_method"] not in {"backprop", "best"}:
             raise NotImplementedError(
-                "only backpropagation derivatives are supported at this time."
+                "Only backpropagation derivatives are supported at this time."
             )
 
         consts = args[:n_consts]
@@ -208,7 +206,7 @@ def _get_qnode_prim():
         if batch_dims is None:
             return device.eval_jaxpr(qfunc_jaxpr, consts, *non_const_args)
         return jax.vmap(partial(device.eval_jaxpr, qfunc_jaxpr, consts), batch_dims[n_consts:])(
-            *jax.tree_util.tree_leaves(non_const_args)
+            *non_const_args
         )
 
     # pylint: disable=unused-argument
