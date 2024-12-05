@@ -309,7 +309,7 @@ class TestMidMeasureExecute:
 
     @pytest.mark.xfail(strict=False)  # single branch statistics sometimes gives good results
     @pytest.mark.parametrize("reset", [True, False])
-    @pytest.mark.parametrize("postselect", [pytest.param(None, marks=pytest.mark.xfail), 0, 1])
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     def test_simple_circuit_execution(self, phi, reset, postselect, get_device, shots, mp_fn, seed):
         """Test that circuits with mid-circuit measurements can be executed in a QNode."""
