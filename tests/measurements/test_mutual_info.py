@@ -22,12 +22,6 @@ from pennylane.measurements import MutualInfo
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
-DEP_WARNING_MESSAGE_MUTUAL_INFO = (
-    "The qml.qinfo.mutual_info transform is deprecated and will be removed "
-    "in v0.40. Instead include the qml.mutual_info measurement process in the "
-    "return line of your QNode."
-)
-
 
 class TestMutualInfoUnitTests:
     """Tests for the mutual_info function"""
@@ -188,7 +182,7 @@ class TestIntegration:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state(self, device, interface, params):
-        """Test that the mutual information transform works for QNodes by comparing
+        """Test that the mutual information works for QNodes by comparing
         against analytic values"""
         dev = qml.device(device, wires=2)
 
@@ -198,13 +192,9 @@ class TestIntegration:
         def circuit(params):
             qml.RY(params, wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.state()
+            return qml.mutual_info(wires0=[0], wires1=[1])
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            actual = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])(params)
+        actual = circuit(params)
 
         # compare transform results with analytic values
         expected = -2 * np.cos(params / 2) ** 2 * np.log(
@@ -246,74 +236,11 @@ class TestIntegration:
 
         assert np.allclose(actual, expected)
 
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    def test_mutual_info_wire_labels(self, device):
-        """Test that mutual_info is correct with custom wire labels"""
-        param = np.array([0.678, 1.234])
-        wires = ["a", 8]
-        dev = qml.device(device, wires=wires)
-
-        @qml.qnode(dev)
-        def circuit(param):
-            qml.RY(param, wires=wires[0])
-            qml.CNOT(wires=wires)
-            return qml.state()
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            actual = qml.qinfo.mutual_info(circuit, wires0=[wires[0]], wires1=[wires[1]])(param)
-
-        # compare transform results with analytic values
-        expected = -2 * np.cos(param / 2) ** 2 * np.log(np.cos(param / 2) ** 2) - 2 * np.sin(
-            param / 2
-        ) ** 2 * np.log(np.sin(param / 2) ** 2)
-
-        assert np.allclose(actual, expected)
-
-    def test_mutual_info_cannot_specify_device(self):
-        """Test that an error is raised if a device or device wires are given
-        to the mutual_info transform manually."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RY(params, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
-            _ = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1], device=dev)
-
-        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
-            _ = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1], device_wires=dev.wires)
-
-    def test_mutual_info_no_state_error(self):
-        """Test that the correct error is raised if the return type is not State."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.RY(params, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs()
-
-        transformed_circuit = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
-
-        with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-            ):
-                _ = transformed_circuit(0.1)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state_jax_jit(self, params):
         """Test that the mutual information transform works for QNodes by comparing
         against analytic values, for the JAX-jit interface"""
-        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
@@ -324,13 +251,9 @@ class TestIntegration:
         def circuit(params):
             qml.RY(params, wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.state()
+            return qml.mutual_info(wires0=[0], wires1=[1])
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            actual = jax.jit(qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1]))(params)
+        actual = circuit(params)
 
         # compare transform results with analytic values
         expected = -2 * jnp.cos(params / 2) ** 2 * jnp.log(

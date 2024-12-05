@@ -27,7 +27,6 @@ import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.typing import TensorLike
-from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -105,7 +104,7 @@ class MultiRZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]])
         """
-        eigs = qml.math.convert_like(pauli_eigs(num_wires), theta)
+        eigs = qml.math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -153,7 +152,7 @@ class MultiRZ(Operation):
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
                 0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        eigs = qml.math.convert_like(pauli_eigs(num_wires), theta)
+        eigs = qml.math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -482,10 +481,10 @@ class PauliRot(Operation):
         **Example:**
 
         >>> qml.PauliRot.compute_decomposition(1.2, "XY", wires=(0,1))
-        [Hadamard(wires=[0]),
+        [H(0),
         RX(1.5707963267948966, wires=[1]),
         MultiRZ(1.2, wires=[0, 1]),
-        Hadamard(wires=[0]),
+        H(0),
         RX(-1.5707963267948966, wires=[1])]
 
         """
@@ -1286,7 +1285,7 @@ class IsingXY(Operation):
         **Example:**
 
         >>> qml.IsingXY.compute_decomposition(1.23, wires=(0,1))
-        [Hadamard(wires=[0]), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), Hadamard(wires=[0])]
+        [H(0), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), H(0)]
 
         """
         return [

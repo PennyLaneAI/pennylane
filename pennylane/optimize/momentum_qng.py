@@ -16,9 +16,8 @@
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
 from pennylane import numpy as pnp
-from pennylane.utils import _flatten, unflatten
 
-from .qng import QNGOptimizer
+from .qng import QNGOptimizer, _flatten_np, _unflatten_np
 
 
 class MomentumQNGOptimizer(QNGOptimizer):
@@ -32,7 +31,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     We are grateful to David Wierichs for his generous help with the multi-argument variant of the ``MomentumQNGOptimizer`` class.
 
-    ``MomentumQNGOptimizer`` is a subclass of the ``QNGOptimizer`` class and requires one additional
+    ``MomentumQNGOptimizer`` is a subclass of ``QNGOptimizer`` that requires one additional
     hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG
     reduces to the basic QNG.
     In this way, the parameter update rule in Momentum-QNG reads:
@@ -44,9 +43,6 @@ class MomentumQNGOptimizer(QNGOptimizer):
     of the Fubini-Study metric tensor and :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
     is an expectation value of some observable measured on the variational
     quantum circuit :math:`U(x^{(t)})`.
-
-    For details on quantum natural gradient, see :class:`~.pennylane.QNGOptimizer`.
-    Also, see :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
 
     **Examples:**
 
@@ -78,8 +74,11 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     .. seealso::
 
+        For details on quantum natural gradient, see :class:`~.pennylane.QNGOptimizer`.
+        See :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
         Also see the examples from the reference above, benchmarking the Momentum-QNG optimizer
         against the basic QNG, Momentum and Adam:
+
         - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
@@ -102,7 +101,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
-        super().__init__(stepsize)
+        super().__init__(stepsize, approx, lam)
         self.momentum = momentum
         self.accumulation = None
 
@@ -131,12 +130,12 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                grad_flat = pnp.array(list(_flatten(grad[trained_index])))
+                grad_flat = pnp.array(list(_flatten_np(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                qng_update = pnp.linalg.solve(metric_tensor[trained_index], grad_flat)
+                qng_update = pnp.linalg.pinv(metric_tensor[trained_index]) @ grad_flat
 
                 self.accumulation[trained_index] *= self.momentum
-                self.accumulation[trained_index] += self.stepsize * unflatten(
+                self.accumulation[trained_index] += self.stepsize * _unflatten_np(
                     qng_update, grad[trained_index]
                 )
                 args_new[index] = arg - self.accumulation[trained_index]

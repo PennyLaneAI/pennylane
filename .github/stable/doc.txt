@@ -1,6 +1,6 @@
 absl-py==2.1.0
 aiohappyeyeballs==2.4.3
-aiohttp==3.10.8
+aiohttp==3.10.10
 aiosignal==1.3.1
 alabaster==0.7.16
 appdirs==1.4.4
@@ -12,7 +12,7 @@ autoray==0.6.12
 babel==2.16.0
 cachetools==5.5.0
 certifi==2024.8.30
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
 cirq-core==1.3.0
 contourpy==1.3.0
 cycler==0.12.1
@@ -29,7 +29,7 @@ google-auth==2.35.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 graphviz==0.20.3
-grpcio==1.66.2
+grpcio==1.67.0
 h5py==3.12.1
 idna==3.10
 imagesize==1.4.1
@@ -45,7 +45,7 @@ latexcodec==3.0.0
 libclang==18.1.1
 m2r2==0.3.2
 Markdown==3.7
-MarkupSafe==2.1.5
+MarkupSafe==3.0.1
 matplotlib==3.8.0
 mistune==0.8.4
 ml_dtypes==0.5.0
@@ -61,8 +61,9 @@ packaging==24.1
 pandas==2.2.3
 pennylane-sphinx-theme==0.5.8
 PennyLane_Lightning==0.38.0
-pillow==10.4.0
+pillow==11.0.0
 pluggy==1.5.0
+propcache==0.2.0
 protobuf==3.19.6
 PubChemPy==1.0.4
 pyasn1==0.6.1
@@ -71,7 +72,7 @@ pybtex==0.24.0
 pybtex-docutils==1.0.3
 Pygments==2.18.0
 pygments-github-lexers==0.0.5
-pyparsing==3.1.4
+pyparsing==3.2.0
 pyscf==2.7.0
 pytest==8.3.3
 python-dateutil==2.9.0.post0
@@ -105,7 +106,7 @@ tensorflow==2.11.1
 tensorflow-estimator==2.11.0
 tensorflow-io-gcs-filesystem==0.37.1
 tensornetwork==0.3.0
-termcolor==2.4.0
+termcolor==2.5.0
 toml==0.10.2
 tomli==2.0.2
 torch==1.9.0+cpu
@@ -116,5 +117,5 @@ urllib3==1.26.20
 Werkzeug==3.0.4
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
-yarl==1.13.1
+yarl==1.15.4
 zipp==3.20.2

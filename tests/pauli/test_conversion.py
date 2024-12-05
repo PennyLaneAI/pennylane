@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Tensor
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.conversion import _generalized_pauli_decompose
@@ -45,51 +44,49 @@ test_general_matrix = [
 test_diff_matrix1 = [[[-2, -2 + 1j]], [[-2, -2 + 1j], [-1, -1j]]]
 test_diff_matrix2 = [[[-2, -2 + 1j], [-2 - 1j, 0]], [[2.5, -0.5], [-0.5, 2.5]]]
 
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning)
-    hamiltonian_ps = (
-        (
-            qml.ops.Hamiltonian([], []),
-            PauliSentence(),
+hamiltonian_ps = (
+    (
+        qml.Hamiltonian([], []),
+        PauliSentence(),
+    ),
+    (
+        qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
+        PauliSentence({PauliWord({0: "Z"}): 2}),
+    ),
+    (
+        qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
+        PauliSentence({PauliWord({0: "Z"}): 2}),
+    ),
+    (
+        qml.Hamiltonian(
+            [2, -0.5],
+            [qml.PauliZ(wires=0), qml.prod(qml.X(wires=0), qml.Z(wires=1))],
         ),
-        (
-            qml.ops.Hamiltonian([2], [qml.PauliZ(wires=0)]),
-            PauliSentence({PauliWord({0: "Z"}): 2}),
+        PauliSentence(
+            {
+                PauliWord({0: "Z"}): 2,
+                PauliWord({0: "X", 1: "Z"}): -0.5,
+            }
         ),
-        (
-            qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
-            PauliSentence({PauliWord({0: "Z"}): 2}),
+    ),
+    (
+        qml.Hamiltonian(
+            [2, -0.5, 3.14],
+            [
+                qml.PauliZ(wires=0),
+                qml.prod(qml.X(wires=0), qml.Z(wires="a")),
+                qml.Identity(wires="b"),
+            ],
         ),
-        (
-            qml.ops.Hamiltonian(
-                [2, -0.5],
-                [qml.PauliZ(wires=0), qml.operation.Tensor(qml.X(wires=0), qml.Z(wires=1))],
-            ),
-            PauliSentence(
-                {
-                    PauliWord({0: "Z"}): 2,
-                    PauliWord({0: "X", 1: "Z"}): -0.5,
-                }
-            ),
+        PauliSentence(
+            {
+                PauliWord({0: "Z"}): 2,
+                PauliWord({0: "X", "a": "Z"}): -0.5,
+                PauliWord({}): 3.14,
+            }
         ),
-        (
-            qml.ops.Hamiltonian(
-                [2, -0.5, 3.14],
-                [
-                    qml.PauliZ(wires=0),
-                    qml.operation.Tensor(qml.X(wires=0), qml.Z(wires="a")),
-                    qml.Identity(wires="b"),
-                ],
-            ),
-            PauliSentence(
-                {
-                    PauliWord({0: "Z"}): 2,
-                    PauliWord({0: "X", "a": "Z"}): -0.5,
-                    PauliWord({}): 3.14,
-                }
-            ),
-        ),
-    )
+    ),
+)
 
 
 class TestDecomposition:
@@ -116,33 +113,22 @@ class TestDecomposition:
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
         _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
         for tensor in tensors:
-            all_identities = all(isinstance(o, Identity) for o in tensor.obs)
-            no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
+            all_identities = all(isinstance(o, Identity) for o in tensor.operands)
+            no_identities = not any(isinstance(o, Identity) for o in tensor.operands)
             assert all_identities or no_identities
 
     def test_hide_identity_true_all_identities(self):
         """Tests that the all identity operator remains even with hide_identity = True."""
         H = np.eye(4)
         _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
         for tensor in tensors:
-            assert all(isinstance(o, Identity) for o in tensor.obs)
+            assert all(isinstance(o, Identity) for o in tensor.operands)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types_legacy_opmath(self, hamiltonian, hide_identity):
-        """Tests that the Hamiltonian decomposes into a linear combination of Pauli words."""
-        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
-
-        _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
-
-    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -159,8 +145,8 @@ class TestDecomposition:
         _, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
         n = int(np.log2(len(hamiltonian)))
 
-        tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-        assert all(len(tensor.obs) == n for tensor in tensors)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), decomposed_obs)
+        assert all(len(tensor.operands) == n for tensor in tensors)
 
     # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
@@ -259,36 +245,22 @@ class TestPhasedDecomposition:
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
         _, obs_list = qml.pauli_decompose(H, hide_identity=True, check_hermitian=False).terms()
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
         for tensor in tensors:
-            all_identities = all(isinstance(o, Identity) for o in tensor.obs)
-            no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
+            all_identities = all(isinstance(o, Identity) for o in tensor.operands)
+            no_identities = not any(isinstance(o, Identity) for o in tensor.operands)
             assert all_identities or no_identities
 
     def test_hide_identity_true_all_identities(self):
         """Tests that the all identity operator remains even with hide_identity = True."""
         H = np.eye(4)
         _, obs_list = qml.pauli_decompose(H, hide_identity=True, check_hermitian=False).terms()
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
 
         for tensor in tensors:
-            assert all(isinstance(o, Identity) for o in tensor.obs)
+            assert all(isinstance(o, Identity) for o in tensor.operands)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types_legacy_opmath(self, hamiltonian, hide_identity):
-        """Tests that the Hamiltonian decomposes into a linear combination of tensors,
-        the identity matrix, and Pauli matrices."""
-        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
-
-        _, decomposed_obs = qml.pauli_decompose(
-            hamiltonian, hide_identity, check_hermitian=False
-        ).terms()
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
-
-    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
@@ -308,8 +280,8 @@ class TestPhasedDecomposition:
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, check_hermitian=False).terms()
         n = int(np.log2(len(hamiltonian)))
 
-        tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-        assert all(len(tensor.obs) == n for tensor in tensors)
+        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), decomposed_obs)
+        assert all(len(tensor.operands) == n for tensor in tensors)
 
     # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
@@ -339,36 +311,7 @@ class TestPhasedDecomposition:
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
     # pylint: disable = consider-using-generator
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("matrix", test_general_matrix)
-    def test_observable_types_general_legacy_opmath(self, matrix, hide_identity):
-        """Tests that the matrix decomposes into a linear combination of tensors,
-        the identity matrix, and Pauli matrices."""
-        shape = matrix.shape
-        num_qubits = int(np.ceil(np.log2(max(shape))))
-        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(
-            matrix, hide_identity, check_hermitian=False
-        ).terms()
-
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
-
-        linear_comb = sum(
-            [
-                decomposed_coeff[i] * qml.matrix(o, wire_order=range(num_qubits))
-                for i, o in enumerate(decomposed_obs)
-            ]
-        )
-        assert np.allclose(matrix, linear_comb[: shape[0], : shape[1]])
-
-        if not hide_identity:
-            tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-            assert all(len(tensor.obs) == num_qubits for tensor in tensors)
-
-    # pylint: disable = consider-using-generator
-    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
     def test_observable_types_general(self, matrix, hide_identity):
@@ -515,7 +458,6 @@ class TestPauliSentence:
         (qml.Identity(wires=0), PauliSentence({PauliWord({}): 1})),
     )
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", pauli_op_ps)
     def test_pauli_ops(self, op, ps):
         """Test that PL Pauli ops are properly cast to a PauliSentence."""
@@ -537,13 +479,11 @@ class TestPauliSentence:
         (qml.PauliX(wires=0) @ qml.PauliY(wires=0), PauliSentence({PauliWord({0: "Z"}): 1j})),
     )
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", tensor_ps)
     def test_tensor(self, op, ps):
         """Test that Tensors of Pauli ops are properly cast to a PauliSentence."""
         assert pauli_sentence(op) == ps
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_tensor_raises_error(self):
         """Test that Tensors of non-Pauli ops raise error when cast to a PauliSentence."""
         h_mat = np.array([[1, 1], [1, -1]])
@@ -553,15 +493,9 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match="Op must be a linear combination of"):
             pauli_sentence(op)
 
-    @pytest.mark.filterwarnings(
-        "ignore:qml.ops.Hamiltonian uses:pennylane.PennyLaneDeprecationWarning"
-    )
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", hamiltonian_ps)
     def test_hamiltonian(self, op, ps):
         """Test that a Hamiltonian is properly cast to a PauliSentence."""
-        if qml.operation.active_new_opmath():
-            op = qml.operation.convert_to_legacy_H(op)
         assert pauli_sentence(op) == ps
 
     operator_ps = (
@@ -582,14 +516,6 @@ class TestPauliSentence:
                 {
                     PauliWord({0: "Z"}): 2,
                     PauliWord({0: "X", 1: "Z"}): -0.5,
-                }
-            ),
-        ),
-        (
-            qml.operation.Tensor(qml.PauliX(wires=0), qml.PauliZ(wires=1)),
-            PauliSentence(
-                {
-                    PauliWord({0: "X", 1: "Z"}): 1,
                 }
             ),
         ),
@@ -627,7 +553,6 @@ class TestPauliSentence:
             qml.Hadamard(wires=0),
             qml.Hamiltonian([1, 2], [qml.Projector([0], wires=0), qml.PauliZ(wires=1)]),
             qml.RX(1.23, wires="a") + qml.PauliZ(wires=0),
-            qml.ops.Hamiltonian([1, 2], [qml.Projector([0], wires=0), qml.Z(1)]),
         )
 
     @pytest.mark.parametrize("op", error_ps)

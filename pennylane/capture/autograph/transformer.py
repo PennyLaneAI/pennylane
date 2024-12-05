@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,14 +22,14 @@ by PennyLane.
 """
 import copy
 import inspect
-from contextlib import ContextDecorator
 
-import pennylane as qml
-from malt.core import ag_ctx, converter
+from malt.core import converter
 from malt.impl.api import PyToPy
 
-from . import ag_primitives, operator_update
-from .utils import AutoGraphError
+import pennylane as qml
+
+from . import ag_primitives
+from .ag_primitives import AutoGraphError
 
 
 class PennyLaneTransformer(PyToPy):
@@ -42,10 +42,10 @@ class PennyLaneTransformer(PyToPy):
         self._extra_locals = None
 
     def transform(self, obj, user_context):
-        """Launch the transformation process. Typically this only works on function objects.
+        """Launch the transformation process. Typically, this only works on function objects.
         Here we also allow QNodes to be transformed."""
 
-        # By default AutoGraph will only convert function or method objects, not arbitrary classes
+        # By default, AutoGraph will only convert function or method objects, not arbitrary classes
         # such as QNode objects. Here we handle them explicitly, but we might need a more general
         # way to handle these in the future.
         # We may also need to check how this interacts with other common function decorators.
@@ -94,8 +94,8 @@ class PennyLaneTransformer(PyToPy):
     def get_cached_function(self, fn):
         """Retrieve a Python function object for a previously converted function.
         Note that repeatedly calling this function with the same arguments will result in new
-        function objects every time, however their source code should be identical with the
-        exception of auto-generated names."""
+        function objects every time, however their source code should be identical except for
+        the auto-generated names."""
 
         # Converted functions are cached as a _PythonFnFactory object.
         if self._cache.has(fn, TOPLEVEL_OPTIONS):
@@ -115,24 +115,15 @@ class PennyLaneTransformer(PyToPy):
 
         return new_fn
 
-    def transform_ast(self, node, ctx):
-        """Overload of PyToPy.transform_ast from DiastaticMalt
-
-        .. note::
-            Once the operator_update interface has been migrated to the
-            DiastaticMalt project, this overload can be deleted."""
-        # The operator_update transform would be more correct if placed with
-        # slices.transform in PyToPy.transform_ast in DiastaticMalt rather than
-        # at the beginning of the transformation. operator_update.transform
-        # should come after the unsupported features check and intial analysis,
-        # but it fails if it does not come before variables.transform.
-        node = operator_update.transform(node, ctx)
-        node = super().transform_ast(node, ctx)
-        return node
-
 
 def run_autograph(fn):
-    """Decorator that converts the given function into graph form."""
+    """Decorator that converts the given function into graph form.
+
+    .. warning::
+
+        Nested functions are only lazily converted by AutoGraph. If the input includes nested
+        functions, these won't be converted until the first time the function is traced.
+    """
 
     user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
@@ -149,10 +140,9 @@ def autograph_source(fn):
 
     .. warning::
 
-        Nested functions (those not directly decorated with ``@qjit``) are only lazily converted by
-        AutoGraph. Make sure that the function has been traced at least once before accessing its
-        transformed source code, for example by specifying the signature of the compiled program
-        or by running it at least once.
+        Nested functions are only lazily converted by AutoGraph. Make sure that the function has
+        been traced at least once before accessing its transformed source code, for example by
+        specifying the signature of the compiled program or by running it at least once.
 
     Args:
         fn (Callable): the original function object that was converted
@@ -168,6 +158,8 @@ def autograph_source(fn):
 
     .. code-block:: python
 
+        from pennylane.capture.autograph import run_autograph, autograph_source
+
         def decide(x):
             if x < 5:
                 y = 15
@@ -175,28 +167,38 @@ def autograph_source(fn):
                 y = 1
             return y
 
-        @qjit(autograph=True)
-        def func(x: int):
-            y = decide(x)
-            return y ** 2
+        ag_decide = run_autograph(decide)
 
-    >>> print(autograph_source(decide))
-    def decide_1(x):
-        with ag__.FunctionScope('decide', 'fscope', ag__.STD) as fscope:
+    >>> print(autograph_source(ag_fn))
+    def ag__decide(x):
+        with ag__.FunctionScope('decide', 'fscope', ag__.ConversionOptions(recursive=True, user_requested=True, optional_features=ag__.Feature.BUILTIN_FUNCTIONS, internal_convert_user_code=True)) as fscope:
+            do_return = False
+            retval_ = ag__.UndefinedReturnValue()
+
             def get_state():
                 return (y,)
+
             def set_state(vars_):
                 nonlocal y
-                (y,) = vars_
+                y, = vars_
+
             def if_body():
                 nonlocal y
                 y = 15
+
             def else_body():
                 nonlocal y
                 y = 1
             y = ag__.Undefined('y')
-            ag__.if_stmt(x < 5, if_body, else_body, get_state, set_state, ('y',), 1)
-            return y
+
+            ag__.if_stmt(ag__.ld(x) < 5, if_body, else_body, get_state, set_state, ('y',), 1)
+            try:
+                do_return = True
+                retval_ = ag__.ld(y)
+            except:
+                do_return = False
+                raise
+            return fscope.ret(retval_, do_return)
     """
 
     # Handle directly converted objects.
@@ -217,88 +219,18 @@ def autograph_source(fn):
     )
 
 
-class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
-    """Context decorator that disables AutoGraph for the given function/context.
-
-    .. note::
-
-        A singleton instance is used for discarding parentheses usage:
-
-        @disable_autograph
-        instead of
-        @DisableAutograph()
-
-        with disable_autograph:
-        instead of
-        with DisableAutograph()
-
-    **Example 1: as a function decorator**
-
-    .. code-block:: python
-
-        @disable_autograph
-        def f():
-            x = 6
-            if x > 5:
-                y = x ** 2
-            else:
-                y = x ** 3
-            return y
-
-        @qjit(autograph=True)
-        def g(x: float, n: int):
-            for _ in range(n):
-                x = x + f()
-            return x
-
-    >>> print(g(0.4, 6))
-    216.4
-
-    **Example 2: as a context manager**
-
-    .. code-block:: python
-
-        def f():
-            x = 6
-            if x > 5:
-                y = x ** 2
-            else:
-                y = x ** 3
-            return y
-
-        @qjit(autograph=True)
-        def g():
-            x = 0.4
-            with disable_autograph:
-                x += f()
-            return x
-
-    >>> print(g())
-    36.4
-    """
-
-    def __init__(self):
-        super().__init__(status=ag_ctx.Status.DISABLED)
-
-
-# Singleton instance of DisableAutograph
-disable_autograph = DisableAutograph()
-
-# converter.Feature.LISTS permits overloading the 'set_item' function in 'ag_primitives.py'
-OPTIONAL_FEATURES = [converter.Feature.BUILTIN_FUNCTIONS, converter.Feature.LISTS]
-
 TOPLEVEL_OPTIONS = converter.ConversionOptions(
     recursive=True,
     user_requested=True,
     internal_convert_user_code=True,
-    optional_features=OPTIONAL_FEATURES,
+    optional_features=[converter.Feature.BUILTIN_FUNCTIONS],
 )
 
 NESTED_OPTIONS = converter.ConversionOptions(
     recursive=True,
     user_requested=False,
     internal_convert_user_code=True,
-    optional_features=OPTIONAL_FEATURES,
+    optional_features=[converter.Feature.BUILTIN_FUNCTIONS],
 )
 
 STANDARD_OPTIONS = converter.STANDARD_OPTIONS

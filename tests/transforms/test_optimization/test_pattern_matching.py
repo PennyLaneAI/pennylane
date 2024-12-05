@@ -14,6 +14,8 @@
 """
 Unit tests for the optimization transform ``pattern_matching_optimization``.
 """
+import warnings
+
 # pylint: disable=too-many-statements
 import pytest
 
@@ -27,6 +29,13 @@ from pennylane.transforms.optimization.pattern_matching import (
     pattern_matching,
     pattern_matching_optimization,
 )
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestPatternMatchingOptimization:

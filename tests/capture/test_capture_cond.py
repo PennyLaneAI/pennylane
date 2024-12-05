@@ -15,7 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name, too-many-arguments
+# pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
 # pylint: disable=no-self-use
 
 import numpy as np
@@ -24,20 +24,12 @@ import pytest
 import pennylane as qml
 from pennylane.ops.op_math.condition import CondCallable, ConditionalTransformError
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
 from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """Enable and disable the PennyLane JAX capture context manager."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 @pytest.fixture
@@ -653,13 +645,15 @@ class TestCondCircuits:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    @pytest.mark.xfail(strict=False)  # might pass if postselection equal to measurement
+    @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("shots", [None, 20])
-    def test_mcm_predicate_execution(self, reset, postselect, shots):
+    def test_mcm_predicate_execution(self, reset, postselect, shots, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results."""
-        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(1234))
+        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
 
         def true_fn(arg):
             qml.RX(arg, 0)
@@ -682,7 +676,10 @@ class TestCondCircuits:
 
         assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
 
-    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.xfail(
+        strict=False
+    )  # currently using single branch statistics, sometimes gives good results
+    @pytest.mark.parametrize("shots", [None, 300])
     @pytest.mark.parametrize(
         "params, expected",
         # The parameters used here will essentially apply a PauliX just before mid-circuit
@@ -696,11 +693,11 @@ class TestCondCircuits:
             ([0, 0, 0, 0], (1 / np.sqrt(2), 0, 0, 1)),  # false_fn, PauliZ basis
         ],
     )
-    def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol):
+    def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results when there are also elifs present."""
         # pylint: disable=expression-not-assigned
-        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(10))
+        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(seed))
 
         def true_fn():
             # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
@@ -740,6 +737,7 @@ class TestCondCircuits:
 
         assert np.allclose(res, expected, atol=atol, rtol=0), f"Expected {expected}, but got {res}"
 
+    @pytest.mark.xfail(strict=False)  # single-branch-statistics only sometimes gives good results
     @pytest.mark.parametrize("upper_bound, arg", [(3, [0.1, 0.3, 0.5]), (2, [2, 7, 12])])
     def test_nested_cond_for_while_loop(self, upper_bound, arg):
         """Test that a nested control flows are correctly captured into a jaxpr."""

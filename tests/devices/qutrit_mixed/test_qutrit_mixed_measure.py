@@ -427,7 +427,6 @@ class TestBroadcasting:
         assert np.allclose(res, expected)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestSumOfTermsDifferentiability:
     x = 0.52
 

@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,8 +32,6 @@ from malt.pyct.origin_info import LineLocation
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue
 
-from .utils import AutoGraphError, Patcher
-
 has_jax = True
 try:
     import jax
@@ -41,7 +39,7 @@ try:
     from jax.core import ShapedArray
     from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-except ImportError:
+except ImportError:  # pragma: no cover
     has_jax = False
 
 
@@ -55,10 +53,13 @@ __all__ = [
     "not_",
     "set_item",
     "update_item_with_op",
-]
 
 
-def assert_results(results, var_names):
+class AutoGraphError(Exception):
+    """Errors related to PennyLane's AutoGraph submodule."""
+
+
+def _assert_results(results, var_names):
     """Assert that none of the results are undefined, i.e. have no value."""
 
     assert len(results) == len(var_names)
@@ -70,7 +71,7 @@ def assert_results(results, var_names):
     return results
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
@@ -92,30 +93,37 @@ def if_stmt(
         set_state(init_state)
         true_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     @functional_cond.otherwise
     def functional_cond():
         set_state(init_state)
         false_fn()
         results = get_state()
-        return assert_results(results, symbol_names)
+        return _assert_results(results, symbol_names)
 
     results = functional_cond()
     set_state(results)
 
 
-def assert_iteration_inputs(inputs, symbol_names):
-    """All loop carried values, variables that are updated each iteration or accessed after the
-    loop terminates, need to be initialized prior to entering the loop.
+def _assert_iteration_inputs(inputs, symbol_names):
+    """Assert that all loop carried values, variables that are updated each iteration or accessed after the
+    loop terminates, are initialized prior to entering the loop.
 
     The reason is two-fold:
       - the type information from those variables is required for tracing
-      - we want to avoid access of a variable that is uninitialized, or uninitialized in a subset
+      - we want to avoid accessing a variable that is uninitialized, or uninitialized in a subset
         of execution paths
 
     Additionally, these types need to be valid JAX types.
+
+    Args:
+        inputs (Tuple): The loop carried values
+        symbol_names (Tuple[str]): The names of the loop carried values.
     """
+
+    if not has_jax:  # pragma: no cover
+        raise ImportError("autograph capture requires JAX to be installed.")
 
     for i, inp in enumerate(inputs):
         if isinstance(inp, Undefined):
@@ -141,10 +149,10 @@ def assert_iteration_inputs(inputs, symbol_names):
             ) from e
 
 
-def assert_iteration_results(inputs, outputs, symbol_names):
-    """The results of a for loop should have the identical type as the inputs, since they are
-    "passed" as inputs to the next iteration. A mismatch here may indicate that a loop carried
-    variable was initialized with wrong type.
+def _assert_iteration_results(inputs, outputs, symbol_names):
+    """The results of a for loop should have the identical type as the inputs since they are
+    "passed" as inputs to the next iteration. A mismatch here may indicate that a loop-carried
+    variable was initialized with the wrong type.
     """
 
     for i, (inp, out) in enumerate(zip(inputs, outputs)):
@@ -157,6 +165,8 @@ def assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
+
+# pylint: disable=too-many-positional-arguments
 def _call_pennylane_for(
     start,
     stop,
@@ -173,7 +183,7 @@ def _call_pennylane_for(
     # Ensure iteration arguments are properly initialized. We cannot process uninitialized
     # loop carried values as we need their type information for tracing.
     init_iter_args = get_state()
-    assert_iteration_inputs(init_iter_args, symbol_names)
+    _assert_iteration_inputs(init_iter_args, symbol_names)
 
     @qml.for_loop(start, stop, step)
     def functional_for(i, *iter_args):
@@ -197,17 +207,8 @@ def _call_pennylane_for(
         return get_state()
 
     final_iter_args = functional_for(*init_iter_args)
-    assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
+    _assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
     return final_iter_args
-
-
-def _call_python_for(body_fn, get_state, non_array_iterable):
-    """Fallback to a Python implementation of for loops."""
-
-    for elem in non_array_iterable:
-        body_fn(elem)
-
-    return get_state()
 
 
 # pylint: disable=too-many-statements
@@ -226,28 +227,20 @@ def for_stmt(
     assert _extra_test is None
 
     # The general approach is to convert as much code as possible into a graph-based form:
-    # - For loops over iterables will attempt a conversion of the iterable to array, and fall back
-    #   to Python otherwise.
-    # - For loops over a Python range will be converted to a native PennyLane for loop. However,
-    #   since the now dynamic iteration variable can cause issues in downstream user code, any
-    #   errors raised during the tracing of the loop body will restart the tracing process using
-    #   a Python loop instead.
+    # - For loops over iterables will attempt a conversion of the iterable to array
+    # - For loops over a Python range will be converted to a native PennyLane for_loop. The now
+    #   dynamic iteration variable can cause issues in downstream user code that raise an error.
     # - For loops over a Python enumeration use a combination of the above, providing a dynamic
-    #   iteration variable and conversion of the iterable to array. If either fails, a fallback to
-    #   Python is used.
-    # Note that there are two reasons a fallback to Python could have been triggered:
-    # - the iterable provided by the user is not convertible to an array
-    #   -> this will fallback to a Python loop silently (without a warning), since there isn't a
-    #      simple fix to make this loop traceable
-    # - an exception is raised during the tracing of the loop body after conversion
-    #   -> this will raise a warning to allow users to correct mistakes and allow the conversion
-    #      to succeed, for example because they forgot to use a list instead of an array
+    #   iteration variable and conversion of the iterable to array.
 
-    # pylint: disable=missing-class-docstring, too-few-public-methods, multiple-statements
-    class EmptyResult: ...
+    # Any of these could fail depending on the compatibility of the user code. A failure could
+    # also occur because an exception is raised during the tracing of the loop body after conversion
+    # (for example because the user forgot to use a list instead of an array)
+    # The PennyLane autograph implementation does not currently fall back to a Python loop in this case,
+    # but this has been implemented in Catalyst and could be extended to this. It does, however, require an
+    # active qeueing context.
 
-    results = EmptyResult()
-    fallback = False
+    exception_raised = None
     init_state = get_state()
     assert len(init_state) == len(symbol_names)
 
@@ -260,86 +253,51 @@ def for_stmt(
         enum_start = iteration_target.start_idx
         try:
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except:  # pylint: disable=bare-except
-            iteration_array = None
-            fallback = True
+        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
+            exception_raised = e
     else:
         start, stop, step = 0, len(iteration_target), 1
         enum_start = None
         try:
             iteration_array = jnp.asarray(iteration_target)
-        except:  # pylint: disable=bare-except
-            iteration_array = None
-            fallback = True
+        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
+            exception_raised = e
 
-    if qml.capture.autograph.autograph_strict_conversion and fallback:
-        # pylint: disable=import-outside-toplevel
-        import inspect
-
-        for_loop_info = get_source_code_info(inspect.stack()[1])
+    if exception_raised:
 
         raise AutoGraphError(
             f"Could not convert the iteration target {iteration_target} to array while processing "
-            f"the following with AutoGraph:\n{for_loop_info}"
-        )
+            f"a for-loop with AutoGraph."
+        ) from exception_raised
 
-    # Attempt to trace the PennyLane for loop.
-    if not fallback:
-        reference_tracers = (start, stop, step, *init_state)
-        # num_instructions = get_program_length(reference_tracers)
-
-        try:
-            set_state(init_state)
-            results = _call_pennylane_for(
-                start,
-                stop,
-                step,
-                body_fn,
-                get_state,
-                set_state,
-                symbol_names,
-                enum_start,
-                iteration_array,
-            )
-
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            if qml.capture.autograph.autograph_strict_conversion:
-                raise e
-
-            fallback = True
-            # reset_program_to_length(reference_tracers, *num_instructions)
-
-            # pylint: disable=import-outside-toplevel
-            import inspect
-            import textwrap
-
-            for_loop_info = get_source_code_info(inspect.stack()[1])
-
-            if not qml.capture.autograph.autograph_ignore_fallbacks:
-                warnings.warn(
-                    f"Tracing of an AutoGraph converted for loop failed with an exception:\n"
-                    f"  {type(e).__name__}:{textwrap.indent(str(e), '    ')}\n"
-                    f"\n"
-                    f"The error ocurred within the body of the following for loop statement:\n"
-                    f"{for_loop_info}"
-                    f"\n"
-                    f"If you intended for the conversion to happen, make sure that the (now "
-                    f"dynamic) loop variable is not used in tracing-incompatible ways, for "
-                    f"instance by indexing a Python list with it. In that case, the list should be "
-                    f"wrapped into an array.\n"
-                    f"To understand different types of JAX tracing errors, please refer to the "
-                    f"guide at: https://jax.readthedocs.io/en/latest/errors.html\n"
-                    f"\n"
-                    f"If you did not intend for the conversion to happen, you may safely ignore "
-                    f"this warning."
-                )
-
-    # If anything goes wrong, we fall back to Python.
-    if fallback:
+    try:
         set_state(init_state)
-        results = _call_python_for(body_fn, get_state, iteration_target)
+        results = _call_pennylane_for(
+            start,
+            stop,
+            step,
+            body_fn,
+            get_state,
+            set_state,
+            symbol_names,
+            enum_start,
+            iteration_array,
+        )
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # pylint: disable=import-outside-toplevel
+        import textwrap
 
-    assert not isinstance(results, EmptyResult), "results variable must be assigned to"
+        raise AutoGraphError(
+            f"Tracing of an AutoGraph converted for loop failed with an exception:\n"
+            f"  {type(e).__name__}:{textwrap.indent(str(e), '    ')}\n"
+            f"\n"
+            f"Make sure that loop variables are not used in tracing-incompatible ways, for instance "
+            f"by indexing a Python list with it (rather than a JAX array). Also ensure all variables "
+            f"are initialized before the loop begins, and that they don't change type across iterations.\n"
+            f"To understand different types of JAX tracing errors, please refer to the guide at: "
+            f"https://jax.readthedocs.io/en/latest/errors.html"
+        ) from e
+
     set_state(results)
 
 
@@ -347,7 +305,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
     """Dispatch to a PennyLane implementation of while loops."""
 
     init_iter_args = get_state()
-    assert_iteration_inputs(init_iter_args, symbol_names)
+    _assert_iteration_inputs(init_iter_args, symbol_names)
 
     def test(state):
         old = get_state()
@@ -363,43 +321,14 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
         return get_state()
 
     final_iter_args = functional_while(init_iter_args)
-    assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
     return final_iter_args
-
-
-def _call_python_while(loop_test, loop_body, get_state, _set_state):
-    """Fallback to a Python implementation of while loops."""
-
-    while loop_test():
-        loop_body()
-
-    return get_state()
 
 
 def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
     """An implementation of the AutoGraph 'while ..' statement. The interface is defined by
     AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
-
-    fallback = False
-    init_state = get_state()
-
-    reference_tracers = init_state
-    # num_instructions = get_program_length(reference_tracers)
-
-    try:
-        results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
-
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        if qml.capture.autograph.autograph_strict_conversion:
-            raise e
-
-        fallback = True
-        # reset_program_to_length(reference_tracers, *num_instructions)
-
-    if fallback:
-        set_state(init_state)
-        results = _call_python_while(loop_test, loop_body, get_state, set_state)
-
+  
+    results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
 
 
@@ -490,9 +419,46 @@ module_allowlist = (
 )
 
 
+class Patcher:
+    """Patcher, a class to replace object attributes.
+
+    Args:
+        patch_data: List of triples. The first element in the triple corresponds to the object
+        whose attribute is to be replaced. The second element is the attribute name. The third
+        element is the new value assigned to the attribute.
+    """
+
+    def __init__(self, *patch_data):
+        self.backup = {}
+        self.patch_data = patch_data
+
+        assert all(len(data) == 3 for data in patch_data)
+
+    def __enter__(self):
+        for obj, attr_name, fn in self.patch_data:
+            self.backup[(obj, attr_name)] = getattr(obj, attr_name)
+            setattr(obj, attr_name, fn)
+
+    def __exit__(self, _type, _value, _traceback):
+        for obj, attr_name, _ in self.patch_data:
+            setattr(obj, attr_name, self.backup[(obj, attr_name)])
+
+
 def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
-    """We want AutoGraph to use our own instance of the AST transformer when recursively
-    transforming functions, but otherwise duplicate the same behaviour."""
+    """A wrapper for the autograph ``converted_call`` function, imported here as
+    ``ag_converted_call``. It returns the result of executing a possibly-converted
+     function ``fn`` with the specified ``args`` and ``kwargs``.
+
+     We want AutoGraph to use its standard behaviour with a few exceptions:
+
+       1. We want to use our own instance of the AST transformer when
+           recursively transforming functions
+       2. We want to ignore certain PennyLane modules and functions when
+           converting (i.e. don't let autograph convert them)
+       3. We want to handle QNodes, while AutoGraph generally only works on
+           functions, and to handle PennyLane wrapper functions like ctrl
+           and adjoint
+    """
 
     # TODO: eliminate the need for patching by improving the autograph interface
     with Patcher(
@@ -508,13 +474,15 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             qml.jacobian,
             qml.vjp,
             qml.jvp,
-            # qml.vmap,  # ToDo: does this need to be replaced with something or is it just not relevant for PL?
         ):
             assert args and callable(args[0])
             wrapped_fn = args[0]
 
-            def passthrough_wrapper(*args, **kwargs):
-                return converted_call(wrapped_fn, args, kwargs, caller_fn_scope, options)
+            @functools.wraps(wrapped_fn)
+            def passthrough_wrapper(*inner_args, **inner_kwargs):
+                return converted_call(
+                    wrapped_fn, inner_args, inner_kwargs, caller_fn_scope, options
+                )
 
             return fn(
                 passthrough_wrapper,
@@ -522,13 +490,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
                 **(kwargs if kwargs is not None else {}),
             )
 
-        # TODO: find a way to handle custom decorators more effectively with autograph
-        # We need to unpack nested QNode and QJIT calls as autograph will have trouble handling
-        # them. Ideally, we only want the wrapped function to be transformed by autograph, rather
-        # than the QNode or QJIT call method.
-
-        # For QNode calls, we employ a wrapper to correctly forward the quantum function call to
-        # autograph, while still invoking the QNode call method in the surrounding tracing context.
+        # For QNode calls, we employ a wrapper to forward the quantum function call to autograph
         if isinstance(fn, qml.QNode):
 
             @functools.wraps(fn.func)
@@ -541,6 +503,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             return new_qnode()
 
         return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
+
 
 
 def set_item(target, i, x):
@@ -612,13 +575,9 @@ def update_item_with_op(target, index, x, op):
 
 
 class PRange:
-    """PennyLane range object.
-
-    Can be passed to a Python for loop for native conversion to a for_loop call.
-    Otherwise this class behaves exactly like the Python range class.
-
-    Without this native conversion, all iteration targets in a Python for loop must be convertible
-    to arrays. For all other inputs the loop will be treated as a regular Python loop.
+    """PennyLane range object. This class re-implements the built-in range class
+    (which can't be inherited from). The only change is saving and accessing the
+    inputs directly, to circumvent some JAX-unfriendly code in the Python range.
     """
 
     def __init__(self, start_stop, stop=None, step=None):
@@ -642,57 +601,51 @@ class PRange:
     # pylint: disable=missing-function-docstring
 
     @property
-    def start(self) -> int:  # pragma: nocover
+    def start(self) -> int:  # pragma: no cover
         return self.py_range.start
 
     @property
-    def stop(self) -> int:  # pragma: nocover
+    def stop(self) -> int:  # pragma: no cover
         return self.py_range.stop
 
     @property
-    def step(self) -> int:  # pragma: nocover
+    def step(self) -> int:  # pragma: no cover
         return self.py_range.step
 
-    def count(self, __value: int) -> int:  # pragma: nocover
+    def count(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.count(__value)
 
-    def index(self, __value: int) -> int:  # pragma: nocover
+    def index(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.index(__value)
 
-    def __len__(self) -> int:  # pragma: nocover
+    def __len__(self) -> int:  # pragma: no cover
         return self.py_range.__len__()
 
-    def __eq__(self, __value: object) -> bool:  # pragma: nocover
+    def __eq__(self, __value: object) -> bool:  # pragma: no cover
         return self.py_range.__eq__(__value)
 
-    def __hash__(self) -> int:  # pragma: nocover
+    def __hash__(self) -> int:  # pragma: no cover
         return self.py_range.__hash__()
 
-    def __contains__(self, __key: object) -> bool:  # pragma: nocover
+    def __contains__(self, __key: object) -> bool:  # pragma: no cover
         return self.py_range.__contains__(__key)
 
-    def __iter__(self) -> Iterator[int]:  # pragma: nocover
+    def __iter__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__iter__()
 
     def __getitem__(
         self, __key: Union[SupportsIndex, slice]
-    ) -> Union[int, range]:  # pragma: nocover
+    ) -> Union[int, range]:  # pragma: no cover
         return self.py_range.__getitem__(__key)
 
-    def __reversed__(self) -> Iterator[int]:  # pragma: nocover
+    def __reversed__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, super-init-not-called
 class PEnumerate(enumerate):
-    """PennyLane enumeration object.
-
-    Can be passed to a Python for loop for conversion into a for_loop call. The loop index, as well
-    as the iterable element will be provided to the loop body.
-    Otherwise this class behaves exactly like the Python enumerate class.
-
-    Note that the iterable must be convertible to an array, otherwise the loop will be treated as a
-    regular Python loop.
+    """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
+    input iteration_target and start_idx, which are used by the for-loop conversion.
     """
 
     def __init__(self, iterable, start=0):

@@ -23,8 +23,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.operation import active_new_opmath, convert_to_opmath
-from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence, simplify
+from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires
 
@@ -170,7 +169,7 @@ def symmetry_generators(h):
             tau[idx] = pauli_map[f"{x}{z}"]
 
         ham = qml.pauli.PauliSentence({qml.pauli.PauliWord(tau): 1.0})
-        ham = ham.operation(h.wires) if active_new_opmath() else ham.hamiltonian(h.wires)
+        ham = ham.operation(h.wires)
         generators.append(ham)
 
     return generators
@@ -256,7 +255,7 @@ def clifford(generators, paulixops):
 
     u = functools.reduce(lambda p, q: p @ q, cliff)
 
-    return u.operation() if active_new_opmath() else u.hamiltonian()
+    return u.operation()
 
 
 def _split_pauli_sentence(pl_sentence, max_size=15000):
@@ -320,9 +319,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
 
     c = qml.math.stack(qml.math.multiply(val * complex(1.0), list(ts_ps.values())))
 
-    tapered_ham = (
-        qml.simplify(qml.dot(c, o)) if active_new_opmath() else simplify(qml.Hamiltonian(c, o))
-    )
+    tapered_ham = qml.simplify(qml.dot(c, o))
     # If simplified Hamiltonian is missing wires, then add wires manually for consistency
     if set(wires_tap) != tapered_ham.wires.toset():
         identity_op = functools.reduce(
@@ -333,12 +330,8 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
             ],
         )
 
-        if active_new_opmath():
-            return tapered_ham + (0.0 * identity_op)
+        return tapered_ham + (0.0 * identity_op)
 
-        tapered_ham = qml.Hamiltonian(
-            np.array([*tapered_ham.coeffs, 0.0]), [*tapered_ham.ops, identity_op]
-        )
     return tapered_ham
 
 
@@ -584,21 +577,16 @@ def _build_generator(operation, wire_order, op_gen=None):
             op_gen.pop(PauliWord({}), 0.0)
         else:  # Single-parameter gates
             try:
-                # TODO: simplify when qml.generator has a proper support for "arithmetic".
-                op_gen = (
-                    operation.generator()
-                    if active_new_opmath()
-                    else qml.generator(operation, "arithmetic")
-                ).pauli_rep
+                op_gen = operation.generator().pauli_rep
 
             except (ValueError, qml.operation.GeneratorUndefinedError) as exc:
                 raise NotImplementedError(
                     f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
                 ) from exc
     else:  # check that user-provided generator is correct
-        if not isinstance(
-            op_gen, (qml.ops.Hamiltonian, qml.ops.LinearCombination, PauliSentence)
-        ) and not isinstance(getattr(op_gen, "pauli_rep", None), PauliSentence):
+        if not isinstance(op_gen, (qml.ops.LinearCombination, PauliSentence)) and not isinstance(
+            getattr(op_gen, "pauli_rep", None), PauliSentence
+        ):
             raise ValueError(
                 f"Generator for the operation needs to be a valid operator, but got {type(op_gen)}."
             )
@@ -618,7 +606,7 @@ def _build_generator(operation, wire_order, op_gen=None):
             raise ValueError(
                 f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
             )
-        op_gen = convert_to_opmath(op_gen).pauli_rep
+        op_gen = op_gen.pauli_rep
 
     return op_gen
 
@@ -771,7 +759,7 @@ def taper_operation(
     # Obtain the tapered generator for the operation
     with qml.QueuingManager.stop_recording():
         # Get pauli rep for symmetery generators
-        ps_gen = list(map(lambda x: convert_to_opmath(x).pauli_rep, generators))
+        ps_gen = list(map(lambda x: x.pauli_rep, generators))
 
         gen_tapered = PauliSentence({})
         if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qml.math.allclose(

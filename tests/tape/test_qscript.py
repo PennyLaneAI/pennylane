@@ -332,7 +332,11 @@ class TestUpdate:
     def test_update_output_dim(self, m, output_dim, ops, factor):
         """Test setting the output_dim property."""
         qs = QuantumScript(ops, m)
-        assert qs.output_dim == output_dim * factor
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert qs.output_dim == output_dim * factor
 
     def test_lazy_batch_size_and_output_dim(self):
         """Test that batch_size and output_dim are computed lazily."""
@@ -347,7 +351,11 @@ class TestUpdate:
         # now evaluate it
         assert qs.batch_size == 2
         assert qs._output_dim is None  # setting batch_size didn't set output_dim
-        assert qs.output_dim == 2
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert qs.output_dim == 2
         copied = qs.copy()
         assert qs._batch_size == 2
         assert qs._output_dim == 2
@@ -361,7 +369,10 @@ class TestUpdate:
         assert qs._batch_size is _UNSET_BATCH_SIZE
         assert qs._output_dim is None
 
-        assert qs.output_dim == 2  # getting this sets both _output_dim and _batch_size
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert qs.output_dim == 2  # getting this sets both _output_dim and _batch_size
         assert qs._output_dim == 2
         assert qs._batch_size == 2
 
@@ -573,7 +584,10 @@ class TestScriptCopying:
         assert qs.shots is copied_qs.shots
 
         # check that the output dim is identical
-        assert qs.output_dim == copied_qs.output_dim
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert qs.output_dim == copied_qs.output_dim
 
     # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
@@ -608,7 +622,10 @@ class TestScriptCopying:
         assert qs.shots is copied_qs.shots
 
         # check that the output dim is identical
-        assert qs.output_dim == copied_qs.output_dim
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert qs.output_dim == copied_qs.output_dim
 
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
@@ -628,7 +645,10 @@ class TestScriptCopying:
         assert copied_qs.shots is qs.shots
 
         # check that the output dim is identical
-        assert qs.output_dim == copied_qs.output_dim
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert qs.output_dim == copied_qs.output_dim
 
         # The underlying operation data has also been copied
         assert copied_qs.operations[0].wires is not qs.operations[0].wires
@@ -656,17 +676,21 @@ class TestScriptCopying:
         """Test that copy with update dict behaves as expected for setting measurements"""
 
         ops = [qml.X("b"), qml.RX(1.2, "a")]
-        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+        tape = QuantumScript(
+            ops, measurements=[qml.expval(2 * qml.X(0))], shots=2500, trainable_params=[1]
+        )
 
-        new_measurements = [qml.expval(qml.X(0)), qml.sample()]
+        new_measurements = [qml.expval(2 * qml.X(0)), qml.sample(), qml.var(3 * qml.Y(1))]
         new_tape = tape.copy(measurements=new_measurements)
 
-        assert tape.measurements == [qml.counts()]
+        assert tape.measurements == [qml.expval(2 * qml.X(0))]
         assert new_tape.measurements == new_measurements
 
         assert new_tape.operations == tape.operations == ops
         assert new_tape.shots == tape.shots == Shots(2500)
-        assert new_tape.trainable_params == tape.trainable_params == [1]
+
+        assert tape.trainable_params == [1]
+        assert new_tape.trainable_params == [0, 1, 2]
 
     def test_copy_update_operations(self):
         """Test that copy with update dict behaves as expected for setting operations"""
@@ -686,9 +710,7 @@ class TestScriptCopying:
             new_tape.measurements == new_tape2.measurements == tape.measurements == [qml.counts()]
         )
         assert new_tape.shots == new_tape2.shots == tape.shots == Shots(2500)
-        assert (
-            new_tape.trainable_params == new_tape2.trainable_params == tape.trainable_params == [1]
-        )
+        assert new_tape.trainable_params == new_tape2.trainable_params == []
 
     def test_copy_update_trainable_params(self):
         """Test that copy with update dict behaves as expected for setting trainable parameters"""
@@ -734,13 +756,18 @@ class TestScriptCopying:
 
     def test_cached_properties_when_updating_operations(self):
         """Test that if the operations are updated, the cached attributes relevant
-        to operations (batch_size, output_dim) are not copied over from the original tape"""
+        to operations (batch_size, output_dim) are not copied over from the original tape,
+        and trainable_params are re-calculated"""
 
         ops = [qml.X("b"), qml.RX([1.2, 2.3], "a")]
         tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
 
         assert tape.batch_size == 2
-        assert tape.output_dim == 2
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert tape.output_dim == 2
+        assert tape.trainable_params == [1]
 
         new_ops = [qml.RX([1.2, 2.3, 3.4], 0)]
         new_tape = tape.copy(operations=new_ops)
@@ -749,21 +776,32 @@ class TestScriptCopying:
         assert new_tape.operations == new_ops
 
         assert new_tape.batch_size == 3
-        assert new_tape.output_dim == 3
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert new_tape.output_dim == 3
+        assert new_tape.trainable_params == [0]
 
     def test_cached_properties_when_updating_measurements(self):
         """Test that if the measurements are updated, the cached attributes relevant
         to measurements (obs_sharing_wires, obs_sharing_wires_id, output_dim) are not
-        copied over from the original tape"""
+        copied over from the original tape, and trainable_params are re-calculated"""
 
         measurements = [qml.counts()]
         tape = QuantumScript(
-            [qml.RX([1.2, 2.3], 0)], measurements=measurements, shots=2500, trainable_params=[1]
+            [qml.RY(1.2, 1), qml.RX([1.2, 2.3], 0)],
+            measurements=measurements,
+            shots=2500,
+            trainable_params=[1],
         )
 
         assert tape.obs_sharing_wires == []
         assert tape.obs_sharing_wires_id == []
-        assert tape.output_dim == 2
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert tape.output_dim == 2
+        assert tape.trainable_params == [1]
 
         new_measurements = [qml.expval(qml.X(0)), qml.var(qml.Y(0))]
         new_tape = tape.copy(measurements=new_measurements)
@@ -771,9 +809,68 @@ class TestScriptCopying:
         assert tape.measurements == measurements
         assert new_tape.measurements == new_measurements
 
-        assert new_tape.output_dim == 4
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+        ):
+            assert new_tape.output_dim == 4
         assert new_tape.obs_sharing_wires == [qml.X(0), qml.Y(0)]
         assert new_tape.obs_sharing_wires_id == [0, 1]
+        assert new_tape.trainable_params == [0, 1]
+
+    def test_setting_trainable_params_to_none(self):
+        """Test that setting trainable params to None resets the tape and calculates
+        the trainable_params for the new operations"""
+
+        tape = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.RX(1.2, 0), qml.RY(2.3, 1)], trainable_params=[1]
+        )
+
+        assert tape.num_params == 1
+        assert qml.equal(tape.get_operation(0)[0], qml.RY(2.3, 1))
+
+        new_tape = tape.copy(trainable_params=None)
+
+        assert new_tape.num_params == 2
+        assert qml.equal(new_tape.get_operation(0)[0], qml.RX(1.2, 0))
+        assert qml.equal(new_tape.get_operation(1)[0], qml.RY(2.3, 1))
+
+    def test_setting_measurements_and_trainable_params(self):
+        """Test that when explicitly setting both measurements and trainable params, the
+        specified trainable params are used instead of defaulting to resetting"""
+        measurements = [qml.expval(2 * qml.X(0))]
+        tape = QuantumScript(
+            [qml.RX(1.2, 0)], measurements=measurements, shots=2500, trainable_params=[1]
+        )
+
+        new_measurements = [qml.expval(2 * qml.X(0)), qml.var(3 * qml.Y(1))]
+        new_tape = tape.copy(
+            measurements=new_measurements, trainable_params=[1, 2]
+        )  # continue ignoring param in RX
+
+        assert tape.measurements == measurements
+        assert new_tape.measurements == new_measurements
+
+        assert tape.trainable_params == [1]
+        assert new_tape.trainable_params == [1, 2]
+
+    def test_setting_operations_and_trainable_params(self):
+        """Test that when explicitly setting both operations and trainable params, the
+        specified trainable params are used instead of defaulting to resetting"""
+        ops = [qml.RX(1.2, 0)]
+        tape = QuantumScript(
+            ops, measurements=[qml.expval(2 * qml.X(0))], shots=2500, trainable_params=[0]
+        )
+
+        new_ops = [qml.RX(1.2, 0), qml.RY(2.3, 1)]
+        new_tape = tape.copy(
+            operations=new_ops, trainable_params=[0, 1]
+        )  # continue ignoring param in 2*X(0)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert tape.trainable_params == [0]
+        assert new_tape.trainable_params == [0, 1]
 
 
 def test_adjoint():
@@ -1178,9 +1275,9 @@ class TestOutputShape:
 
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
         qs = QuantumScript(ops, [measurement], shots=shots)
-        program, _ = dev.preprocess()
-        # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, gradient_fn=None, transform_program=program)[0]
+        program = dev.preprocess_transforms()
+        # TODO: test diff_method is not None when the interface `execute` functions are implemented
+        res = qml.execute([qs], dev, diff_method=None, transform_program=program)[0]
 
         if isinstance(shots, tuple):
             res_shape = tuple(r.shape for r in res)
@@ -1206,8 +1303,8 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, gradient_fn=None)[0]
+        # TODO: test diff_method is not None when the interface `execute` functions are implemented
+        res = qml.execute([qs], dev, diff_method=None)[0]
         res_shape = tuple(r.shape for r in res)
 
         assert res_shape == expected
@@ -1238,8 +1335,8 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, gradient_fn=None)[0]
+        # TODO: test diff_method is not None when the interface `execute` functions are implemented
+        res = qml.execute([qs], dev, diff_method=None)[0]
         res_shape = tuple(tuple(r_.shape for r_ in r) for r in res)
 
         assert res_shape == expected
@@ -1265,7 +1362,7 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        res = qml.execute([qs], dev, gradient_fn=None)[0]
+        res = qml.execute([qs], dev, diff_method=None)[0]
         res_shape = tuple(r.shape for r in res)
 
         assert res_shape == expected
@@ -1297,8 +1394,8 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
-        expected_shape = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[
+        program = dev.preprocess_transforms()
+        expected_shape = qml.execute([tape], dev, diff_method=None, transform_program=program)[
             0
         ].shape
 
@@ -1328,8 +1425,8 @@ class TestOutputShape:
                 qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
-        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
+        program = dev.preprocess_transforms()
+        expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         actual = tape.shape(dev)
 
         for exp, act in zip(expected, actual):
@@ -1356,7 +1453,7 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        expected = qml.execute([qs], dev, gradient_fn=None)[0]
+        expected = qml.execute([qs], dev, diff_method=None)[0]
         expected_shape = tuple(tuple(e_.shape for e_ in e) for e in expected)
 
         assert res == expected_shape
@@ -1379,8 +1476,8 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        program, _ = dev.preprocess()
-        expected = qml.execute([qs], dev, gradient_fn=None, transform_program=program)[0]
+        program = dev.preprocess_transforms()
+        expected = qml.execute([qs], dev, diff_method=None, transform_program=program)[0]
         expected_shape = tuple(tuple(e_.shape for e_ in e) for e in expected)
 
         assert res == expected_shape
@@ -1420,7 +1517,7 @@ class TestNumericType:
         a, b = 0.3, 0.2
         ops = [qml.RY(a, 0), qml.RZ(b, 0)]
         qs = QuantumScript(ops, [ret], shots=shots)
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         if not isinstance(result, tuple):
             result = (result,)
@@ -1441,7 +1538,7 @@ class TestNumericType:
         ops = [qml.RY(a, 0), qml.RZ(b, 0)]
         qs = QuantumScript(ops, [ret])
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
@@ -1453,7 +1550,7 @@ class TestNumericType:
         dev = qml.device("default.qubit", wires=3, shots=5)
         qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample()], shots=5)
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, np.int64)
@@ -1476,7 +1573,7 @@ class TestNumericType:
 
         qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))], shots=5)
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
@@ -1497,7 +1594,7 @@ class TestNumericType:
         m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample()]
         qs = QuantumScript(ops, m, shots=5)
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
@@ -1637,3 +1734,14 @@ def test_jax_pytree_integration(qscript_type):
     assert data[3] == 3.4
     assert data[4] == 2.0
     assert qml.math.allclose(data[5], eye_mat)
+
+
+@pytest.mark.parametrize("qscript_type", (QuantumScript, qml.tape.QuantumTape))
+@pytest.mark.parametrize("shots", [None, 1, 10])
+def test_output_dim_is_deprecated(qscript_type, shots):
+    """Test that the output_dim property is deprecated."""
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="The 'output_dim' property is deprecated"
+    ):
+        qscript = qscript_type([], [], shots=shots)
+        _ = qscript.output_dim

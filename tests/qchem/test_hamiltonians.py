@@ -22,7 +22,6 @@ from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
-from pennylane.operation import active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -224,7 +223,6 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
         )
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
 
@@ -232,10 +230,7 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     args = []
     h = qchem.diff_hamiltonian(mol)(*args)
 
-    ops = [
-        qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
-    ]
+    ops = list(map(qml.simplify, h_ref_data[1]))
     h_ref = qml.Hamiltonian(h_ref_data[0], ops)
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
@@ -243,7 +238,7 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
 
-    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
+    assert isinstance(h, qml.ops.Sum)
 
     wire_order = h_ref.wires
     assert np.allclose(
@@ -252,7 +247,6 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     )
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_diff_hamiltonian_active_space():
     r"""Test that diff_hamiltonian works when an active space is defined."""
 
@@ -264,7 +258,7 @@ def test_diff_hamiltonian_active_space():
 
     h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
 
-    assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
+    assert isinstance(h, qml.ops.Sum)
 
 
 @pytest.mark.parametrize(
@@ -345,7 +339,6 @@ def test_gradient_expvalH():
     assert np.allclose(grad_qml[0][0], grad_finitediff)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestJax:
     @pytest.mark.jax
     def test_gradient_expvalH(self):

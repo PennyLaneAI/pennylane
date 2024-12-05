@@ -147,7 +147,7 @@ class Evolution(Exp):
                 f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(-ixG)."
                 f"The generator is not defined."
             )
-        return self.base
+        return -1 * self.base
 
     def __copy__(self):
         copied = super().__copy__()
