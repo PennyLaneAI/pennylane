@@ -1,0 +1,63 @@
+# This workflow is designed to run unit tests and open a pull request to update
+# JSON files that store test durations for better load balancing
+
+name: Update Durations
+on:
+  workflow_dispatch:
+  # Scheduled trigger every Saturday at 2:47am UTC
+  schedule:
+  - cron: '47 2 * * 6'
+
+concurrency:
+  group: update-durations-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-durations:
+    uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      branch: master
+      upload_to_codecov: false
+      run_lightened_ci: true
+      skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
+
+  merge-durations-files:
+    needs: update-durations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: durations-*
+          path: ./
+          merge-multiple: false
+
+      - name: Merge artifacts into single file
+        run: |
+          mkdir durations
+          jq -s 'add' durations-core-*/*.json > durations/core_tests_durations.json
+          jq -s 'add' durations-jax-*/*.json > durations/jax_tests_durations.json
+          jq -s 'add' durations-tf-*/*.json > durations/tf_tests_durations.json
+
+      - name: Upload combined durations artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-durations
+          path: ./durations
+          include-hidden-files: true
+
+  upload-durations:
+    needs:
+      - update-durations
+      - merge-durations-files
+    uses: ./.github/workflows/check_in_artifact.yml
+    with:
+      artifact_name_pattern: "merged-durations"
+      artifact_save_path: ".github/durations"
+      merge_multiple: true
+      pull_request_head_branch_name: bot/update-durations
+      commit_message_description: Update test durations
+      pull_request_title: Update test durations
+      pull_request_body: Automatic update of test duration files

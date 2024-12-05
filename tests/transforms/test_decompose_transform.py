@@ -137,7 +137,7 @@ class TestDecompose:
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        with pytest.warns(UserWarning, match="has no supported decomposition"):
+        with pytest.warns(UserWarning, match="does not define a decomposition"):
             decompose(tape, gate_set=lambda op: op.name not in {"RX"})
 
     def test_infinite_decomposition_loop(self):

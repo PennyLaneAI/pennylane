@@ -14,12 +14,21 @@
 """
 Unit tests for the qml.simplify function
 """
+import warnings
+
 # pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumScript
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def build_op():

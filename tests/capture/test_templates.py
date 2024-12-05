@@ -27,20 +27,8 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-pytestmark = [
-    pytest.mark.jax,
-    pytest.mark.filterwarnings(
-        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
-    ),
-]
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 unmodified_templates_cases = [
@@ -120,9 +108,6 @@ unmodified_templates_cases = [
     (qml.ArbitraryStatePreparation, (jnp.ones(6), [2, 3]), {}),
     (qml.ArbitraryStatePreparation, (jnp.zeros(14),), {"wires": [3, 2, 0]}),
     (qml.ArbitraryStatePreparation, (), {"weights": jnp.ones(2), "wires": [1]}),
-    (qml.BasisStatePreparation, (jnp.array([0, 1]), [2, 3]), {}),
-    (qml.BasisStatePreparation, (jnp.ones(3),), {"wires": [3, 2, 0]}),
-    (qml.BasisStatePreparation, (), {"basis_state": jnp.ones(1), "wires": [1]}),
     (qml.CosineWindow, ([2, 3],), {}),
     (qml.CosineWindow, (), {"wires": [2, 0, 1]}),
     (qml.MottonenStatePreparation, (jnp.ones(4) / 2, [2, 3]), {}),
@@ -267,6 +252,7 @@ tested_modified_templates = [
     qml.OutMultiplier,
     qml.OutAdder,
     qml.ModExp,
+    qml.OutPoly,
 ]
 
 
@@ -630,7 +616,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.QuantumMonteCarlo(probs, **kwargs)
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_qubitization(self):
         """Test the primitive bind call of Qubitization."""
 
@@ -661,7 +646,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Qubitization(**kwargs))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_qrom(self):
         """Test the primitive bind call of QROM."""
 
@@ -696,7 +680,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROM(**kwargs))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_phase_adder(self):
         """Test the primitive bind call of PhaseAdder."""
 
@@ -731,7 +714,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.PhaseAdder(**kwargs))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_adder(self):
         """Test the primitive bind call of Adder."""
 
@@ -766,7 +748,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Adder(**kwargs))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_multiplier(self):
         """Test the primitive bind call of Multiplier."""
 
@@ -801,7 +782,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Multiplier(**kwargs))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_out_multiplier(self):
         """Test the primitive bind call of OutMultiplier."""
 
@@ -837,7 +817,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutMultiplier(**kwargs))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_out_adder(self):
         """Test the primitive bind call of OutAdder."""
 
@@ -873,7 +852,6 @@ class TestModifiedTemplates:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutAdder(**kwargs))
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_mod_exp(self):
         """Test the primitive bind call of ModExp."""
 
@@ -908,6 +886,46 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.ModExp(**kwargs))
+
+    def test_out_poly(self):
+        """Test the primitive bind call of OutPoly."""
+
+        def func(x, y):
+            return x**2 + y
+
+        kwargs = {
+            "polynomial_function": func,
+            "input_registers": [[0, 1], [2, 3]],
+            "output_wires": [4, 5],
+            "mod": 3,
+            "work_wires": [6, 7],
+        }
+
+        def qfunc():
+            qml.OutPoly(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.OutPoly._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+
+        assert eqn.params == kwargs
+
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.OutPoly(**kwargs))
 
     @pytest.mark.parametrize(
         "template, kwargs",

@@ -22,7 +22,6 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import Tensor
 from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
 matI = np.eye(2)
@@ -403,11 +402,6 @@ class TestPauliWord:
             assert pw_op.name == op.name
             assert pw_op.wires == op.wires
 
-        if isinstance(op, qml.ops.Prod):  # pylint: disable=no-member
-            pw_tensor_op = pw.operation(get_as_tensor=True)
-            expected_tensor_op = qml.operation.Tensor(*op.operands)
-            qml.assert_equal(pw_tensor_op, expected_tensor_op)
-
     def test_operation_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity."""
         op = PauliWord({}).operation(wire_order=[0, 1])
@@ -419,63 +413,6 @@ class TestPauliWord:
         """Test that an empty PauliWord is cast to qml.Identity() operation."""
         res = pw4.operation()
         assert res == qml.Identity()
-
-    tup_pw_hamiltonian = (
-        (PauliWord({0: X}), qml.Hamiltonian([1], [qml.PauliX(wires=0)])),
-        (
-            pw1,
-            qml.Hamiltonian([1], [qml.operation.Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2))]),
-        ),
-        (
-            pw2,
-            qml.Hamiltonian(
-                [1],
-                [
-                    qml.operation.Tensor(
-                        qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")
-                    )
-                ],
-            ),
-        ),
-        (
-            pw3,
-            qml.Hamiltonian(
-                [1],
-                [
-                    qml.operation.Tensor(
-                        qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")
-                    )
-                ],
-            ),
-        ),
-    )
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    @pytest.mark.parametrize("pw, h", tup_pw_hamiltonian)
-    def test_hamiltonian(self, pw, h):
-        """Test that a PauliWord can be cast to a Hamiltonian."""
-        pw_h = pw.hamiltonian()
-        h = qml.operation.convert_to_legacy_H(h)
-        assert pw_h.compare(h)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_empty(self):
-        """Test that an empty PauliWord with wire_order returns Identity Hamiltonian."""
-        op = PauliWord({}).hamiltonian(wire_order=[0, 1])
-        id = qml.Hamiltonian([1], [qml.Identity(wires=[0, 1])])
-        assert op.compare(id)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_empty_error(self):
-        """Test that a ValueError is raised if an empty PauliWord is
-        cast to a Hamiltonian."""
-        with pytest.raises(ValueError, match="Can't get the Hamiltonian for an empty PauliWord."):
-            pw4.hamiltonian()
-
-    def test_hamiltonian_deprecation(self):
-        """Test that the correct deprecation warning is raised when calling hamiltonian()"""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="PauliWord.hamiltonian"):
-            _ = pw1.hamiltonian()
 
     def test_pickling(self):
         """Check that pauliwords can be pickled and unpickled."""
@@ -1007,79 +944,6 @@ class TestPauliSentence:
         id = qml.s_prod(0.0, qml.Identity(wires=["a", "b"]))
 
         qml.assert_equal(op, id)
-
-    tup_ps_hamiltonian = (
-        (PauliSentence({PauliWord({0: X}): 1}), qml.Hamiltonian([1], [qml.PauliX(wires=0)])),
-        (
-            ps1_hamiltonian,
-            qml.Hamiltonian(
-                [1.23, 4.0, -0.5],
-                [
-                    Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2)),
-                    Tensor(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
-                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
-                ],
-            ),
-        ),
-        (
-            ps2_hamiltonian,
-            qml.Hamiltonian(
-                [-1.23, -4.0, 0.5],
-                [
-                    Tensor(qml.PauliX(wires=1), qml.PauliY(wires=2)),
-                    Tensor(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
-                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
-                ],
-            ),
-        ),
-        (
-            ps3,
-            qml.Hamiltonian(
-                [-0.5, 1.0],
-                [
-                    Tensor(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
-                    qml.Identity(wires=[0, "b", "c"]),
-                ],
-            ),
-        ),
-    )
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    @pytest.mark.parametrize("ps, h", tup_ps_hamiltonian)
-    def test_hamiltonian(self, ps, h):
-        """Test that a PauliSentence can be cast to a Hamiltonian."""
-        ps_h = ps.hamiltonian()
-        h = qml.operation.convert_to_legacy_H(h)
-        assert ps_h.compare(h)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_empty(self):
-        """Test that an empty PauliSentence with wire_order returns Identity."""
-        op = ps5.hamiltonian(wire_order=[0, 1])
-        id = qml.Hamiltonian([], [])
-        assert op.compare(id)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_empty_error(self):
-        """Test that a ValueError is raised if an empty PauliSentence is
-        cast to a Hamiltonian."""
-        with pytest.raises(
-            ValueError, match="Can't get the Hamiltonian for an empty PauliSentence."
-        ):
-            ps5.hamiltonian()
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_wire_order(self):
-        """Test that the wire_order parameter is used when the pauli representation is empty"""
-        op = ps5.hamiltonian(wire_order=["a", "b"])
-        id = qml.Hamiltonian([], [])
-
-        qml.assert_equal(op, id)
-
-    def test_hamiltonian_deprecation(self):
-        """Test that the correct deprecation warning is raised when calling hamiltonian()"""
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="PauliSentence.hamiltonian"):
-            _ = ps1.hamiltonian()
 
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""

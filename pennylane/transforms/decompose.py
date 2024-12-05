@@ -18,8 +18,8 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=unnecessary-lambda-assignment
 
 import warnings
-from collections.abc import Callable, Generator
-from typing import Iterable, Optional
+from collections.abc import Callable, Generator, Iterable
+from typing import Optional
 
 import pennylane as qml
 from pennylane.transforms.core import transform
@@ -66,9 +66,12 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
-        gate_set (Iterable[Union[str, type]] or Callable[Operator, bool], optional): Decomposition gates defined by either (1) a gate set of operators or (2) a rule that they must follow.
-            Defaults to None. If ``None``, gate set defaults to all available :doc:`quantum operators </introduction/operations>`.
-        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None. If ``None``, the circuit will be decomposed until the target gate set is reached.
+        gate_set (Iterable[str or type] or Callable, optional): The target gate set specified as
+            either (1) a sequence of operator types and/or names or (2) a function that returns
+            ``True`` if the operator belongs to the target gate set. Defaults to ``None``, in which
+            case the gate set is considered to be all available :doc:`quantum operators </introduction/operations>`.
+        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None.
+            If ``None``, the circuit will be decomposed until the target gate set is reached.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -77,11 +80,16 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     .. note::
 
-        This function does not guarantee a decomposition to the target gate set. During the decomposition, if an unsupported operation is encountered
-        the function will leave it in the circuit and raise a ``UserWarning`` indicating no defined decomposition. To waive this warning, simply add the operator
-        to the defined gate set.
+        This function does not guarantee a decomposition to the target gate set. If an operation
+        with no defined decomposition is encountered during decomposition, it will be left in the
+        circuit even if it does not belong in the target gate set. In this case, a ``UserWarning``
+        will be raised. To suppress this warning, simply add the operator to the gate set.
 
-    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that is intended for device developers. This function will decompose a quantum circuit into a set of basis gates available on a specific device architecture.
+    .. seealso::
+
+        :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` for a
+        transform that is intended for device developers. This function will decompose a quantum
+        circuit into a set of basis gates available on a specific device architecture.
 
     **Example**
 
@@ -90,7 +98,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
     >>> ops = [qml.IsingXX(1.2, wires=(0,1))]
     >>> tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.Z(0))])
 
-    You can then decompose the circuit into a set of gates:
+    You can decompose the circuit into a set of gates:
 
     >>> batch, fn = qml.transforms.decompose(tape, gate_set={qml.CNOT, qml.RX})
     >>> batch[0].circuit
@@ -116,7 +124,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
     1: ───────────────────────────────├●─┤
     2: ───────────────────────────────╰X─┤
 
-    You can also use callable functions to build a decomposition gate set:
+    You can also use a function to build a decomposition gate set:
 
     .. code-block:: python
 
@@ -134,9 +142,9 @@ def decompose(tape, gate_set=None, max_expansion=None):
     1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
     2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
 
-    You can use the ``max_expansion`` kwarg to have control over the number
-    of decomposition stages applied to the circuit. By default, the function will decompose
-    the circuit until the desired gate set is reached.
+    You can use the ``max_expansion`` argument to control the number of decomposition stages
+    applied to the circuit. By default, the function will decompose the circuit until the desired
+    gate set is reached.
 
     The example below demonstrates how the user can visualize the decomposition in stages:
 
@@ -200,8 +208,9 @@ def decompose(tape, gate_set=None, max_expansion=None):
         if not op.has_decomposition:
             if not gate_set(op):
                 warnings.warn(
-                    f"Operator {op.name} has no supported decomposition and was not found in the set of allowed decomposition gates."
-                    f"To remove this warning, add the operator name ({op.name}) or type ({type(op)}) to the allowed set of gates.",
+                    f"Operator {op.name} does not define a decomposition and was not "
+                    f"found in the target gate set. To remove this warning, add the operator name "
+                    f"({op.name}) or type ({type(op)}) to the gate set.",
                     UserWarning,
                 )
             return True
@@ -222,9 +231,9 @@ def decompose(tape, gate_set=None, max_expansion=None):
         ]
     except RecursionError as e:
         raise RecursionError(
-            "Reached recursion limit trying to decompose operations. "
-            "Operator decomposition may have entered an infinite loop."
-            "Setting ``max_expansion`` will terminate the decomposition after a set number."
+            "Reached recursion limit trying to decompose operations. Operator decomposition may "
+            "have entered an infinite loop. Setting max_expansion will terminate the decomposition "
+            "at a fixed recursion depth."
         ) from e
 
     tape = tape.copy(operations=new_ops)

@@ -81,7 +81,8 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Ca
     ...     return qml.probs(wires=0)
     >>> circuit()
     tensor([0.64596329, 0.35403671], requires_grad=True)
-    >>> list(circuit.tape)
+    >>> tape = qml.workflow.construct_tape(circuit)()
+    >>> list(tape)
     [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
      probs(wires=[0])]
     """

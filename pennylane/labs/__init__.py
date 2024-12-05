@@ -11,8 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""":code:`pennylane/labs/` module contains experimental features enabling
-advanced quantum computing research."""
+r"""
+.. currentmodule:: pennylane
+
+This module contains experimental features enabling
+advanced quantum computing research.
+
+.. currentmodule:: pennylane.labs
+
+Modules
+~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    dla
+    resource_estimation
+
+"""
+
+from pennylane.labs import dla
+from pennylane.labs import resource_estimation
 
 
 __all__ = []

@@ -22,7 +22,8 @@ import numpy as np
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
 
-from .utils import get_deep_interface, is_abstract
+from .interface_utils import get_deep_interface
+from .utils import is_abstract
 
 
 def _i(name):
@@ -246,6 +247,10 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experime
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "ravel"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "vstack"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "unstack"] = "tensorflow"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "gather"] = "tensorflow"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "concat"] = "tensorflow"
+
 
 tf_fft_functions = [
     "fft",
@@ -268,7 +273,14 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 
 
 def _coerce_tensorflow_diag(x, **kwargs):
-    return ar.autoray.tensorflow_diag(_tf_convert_to_tensor(x), **kwargs)
+    x = _tf_convert_to_tensor(x)
+    tf = _i("tf")
+    nd = len(x.shape)
+    if nd == 2:
+        return tf.linalg.diag_part(x, **kwargs)
+    if nd == 1:
+        return tf.linalg.diag(x, **kwargs)
+    raise ValueError("Input must be 1- or 2-d.")
 
 
 ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)

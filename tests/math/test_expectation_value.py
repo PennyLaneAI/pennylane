@@ -29,7 +29,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 
 class TestExpectationValueMath:
-    """Tests for Expectation value of a operator for a state vector."""
+    """Tests for Expectation value of a single operator for a state vector."""
 
     ops_vs_vecstates = [
         ([[1, 0], [0, 0]], [1, 0], 1),
@@ -60,7 +60,7 @@ class TestExpectationValueMath:
     @pytest.mark.parametrize("operator_and_states", ops_vs_vecstates)
     @pytest.mark.parametrize("func", array_funcs)
     def test_mat_expectation_value(self, operator_and_states, func):
-        """Test the expectation value of a operator for a vector state."""
+        """Test the expectation value of a single operator for a vector state."""
         ops, state_vectors, expected = operator_and_states
         ops = func(ops)
         state_vectors = func(state_vectors)

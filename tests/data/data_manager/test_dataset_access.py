@@ -15,6 +15,7 @@
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
 import os
+import re
 from pathlib import Path, PosixPath
 from typing import NamedTuple
 from unittest.mock import MagicMock, call, patch
@@ -25,7 +26,18 @@ import requests
 import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
-from pennylane.data.data_manager import S3_URL, _validate_attributes
+from pennylane.data.data_manager import _validate_attributes
+from pennylane.data.data_manager.graphql import GRAPHQL_URL
+
+from .support import (
+    _dataclass_ids,
+    _error_response,
+    _get_urls_resp,
+    _list_attrs_resp,
+    _parameter_tree,
+    _qchem_parameter_tree,
+    _rydberggpt_url_resp,
+)
 
 has_rich = False
 try:
@@ -76,29 +88,12 @@ _data_struct = {
 }
 
 
-@pytest.fixture(scope="session")
-def httpserver_listen_address():
-    return ("localhost", 8888)
-
-
 # pylint:disable=unused-argument
 def get_mock(url, timeout=1.0):
     """Return the foldermap or data_struct according to URL"""
     resp = MagicMock(ok=True)
     resp.json.return_value = _folder_map if "foldermap" in url else _data_struct
     return resp
-
-
-def head_mock(url):
-    """Return a fake header stating content-length is 1."""
-    return NamedTuple("Head", headers=dict)(headers={"Content-Length": 10000})
-
-
-@pytest.fixture
-def mock_get_args():
-    """A Mock object that tracks the arguments passed to ``mock_requests_get``."""
-
-    return MagicMock()
 
 
 @pytest.fixture(autouse=True)
@@ -136,6 +131,68 @@ def mock_requests_get(request, monkeypatch, mock_get_args):
     return mock_get
 
 
+@pytest.fixture(scope="session")
+def httpserver_listen_address():
+    return ("localhost", 8888)
+
+
+# pylint:disable=unused-argument
+# pylint:disable=dangerous-default-value
+def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json"}):
+    """Return mocked get response depending on json content."""
+    resp = MagicMock(ok=True)
+    if "ErrorQuery" in json["query"]:
+        resp.json.return_value = _error_response
+    elif "ListAttributes" in json["query"][0]:
+        resp.json.return_value = _list_attrs_resp
+    return resp
+
+
+# pylint:disable=unused-argument
+def graphql_mock(url, query, variables=None):
+    """Return the JSON according to the query."""
+    if "ListAttributes" in query:
+        json_data = _list_attrs_resp
+    elif variables is not None and variables["datasetClassId"] == "rydberggpt":
+        json_data = _rydberggpt_url_resp
+    elif "GetDatasetsForDownload" in query:
+        json_data = _get_urls_resp
+    elif "GetParameterTree" in query:
+        json_data = _parameter_tree
+    elif "GetDatasetClasses" in query:
+        json_data = _dataclass_ids
+    return json_data
+
+
+# pylint:disable=unused-argument
+def graphql_mock_qchem(url, query, variables=None):
+    """Return the JSON according to the query."""
+    if "ListAttributes" in query:
+        json_data = _list_attrs_resp
+    elif "GetParameterTree" in query:
+        json_data = _qchem_parameter_tree
+    elif "GetDatasetClasses" in query:
+        json_data = _dataclass_ids
+    return json_data
+
+
+def get_dataset_urls_mock(class_id, parameters):
+    """Returns an empty response for the ``get_dataset_urls`` function."""
+    return []
+
+
+def head_mock(url):
+    """Return a fake header stating content-length is 1."""
+    return NamedTuple("Head", headers=dict)(headers={"Content-Length": 10000})
+
+
+@pytest.fixture
+def mock_get_args():
+    """A Mock object that tracks the arguments passed to ``mock_requests_get``."""
+
+    return MagicMock()
+
+
 def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
     """Patch to write a nonsense dataset rather than a downloaded one."""
     # If filename == foo/bar/x_y_z_attr.dat, content == "x_y_z_attr"
@@ -159,7 +216,6 @@ def mock_load(monkeypatch):
     return mock
 
 
-@patch.object(requests, "get", get_mock)
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch("pennylane.data.data_manager.sleep")
 @patch("builtins.input")
@@ -169,63 +225,83 @@ class TestLoadInteractive:
     [data name, *params, attributes, Force, Folder, continue]
     """
 
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     @pytest.mark.parametrize(
-        ("side_effect", "data_name", "kwargs", "sleep_call_count"),
+        ("side_effect"),
         [
             (
-                ["1", "1", "2", "", "", ""],
-                "qchem",
-                {
-                    "attributes": ["hamiltonian"],
-                    "folder_path": PosixPath(""),
-                    "force": False,
-                    "molname": "H2",
-                    "basis": "6-31G",
-                    "bondlength": "0.46",
-                },
-                2,
+                [
+                    "qspin",
+                    "Heisenberg",
+                    "open",
+                    "chain",
+                    "1x4",
+                    "full",
+                    True,
+                    PosixPath("/my/path"),
+                    "Y",
+                ]
             ),
             (
-                ["2", "1, 4", "Y", "/my/path", "y"],
-                "qspin",
-                {
-                    "attributes": ["parameters", "full"],
-                    "folder_path": PosixPath("/my/path"),
-                    "force": True,
-                    "sysname": "Heisenberg",
-                    "periodicity": "closed",
-                    "lattice": "chain",
-                    "layout": "1x4",
-                },
-                4,
+                [
+                    "qspin",
+                    "Heisenberg",
+                    "open",
+                    "chain",
+                    "1x4",
+                    "[parameters, shadow_basis, shadow_meas]",
+                    True,
+                    PosixPath("/my/path"),
+                    "Y",
+                ]
             ),
         ],
     )
     def test_load_interactive_success(
-        self, mock_input, mock_sleep, mock_load, side_effect, data_name, kwargs, sleep_call_count
+        self,
+        mock_input,
+        mock_sleep,
+        mock_load,
+        side_effect,
     ):  # pylint:disable=too-many-arguments, redefined-outer-name
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
-        mock_load.assert_called_once_with(data_name, **kwargs)
-        assert mock_sleep.call_count == sleep_call_count
 
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     def test_load_interactive_without_confirm(
         self, mock_input, _mock_sleep, mock_load
     ):  # pylint:disable=redefined-outer-name
         """Test that load_interactive returns None if the user doesn't confirm."""
-        mock_input.side_effect = ["1", "1", "2", "", "", "n"]
+        mock_input.side_effect = [
+            "qspin",
+            "Heisenberg",
+            "open",
+            "chain",
+            "1x4",
+            "full",
+            True,
+            PosixPath("/my/path"),
+            "n",
+        ]
         assert qml.data.load_interactive() is None
         mock_load.assert_not_called()
 
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     @pytest.mark.parametrize(
         ("side_effect", "error_message"),
         [
-            (["foo"], "Must enter an integer between 1 and 2"),
-            (["0"], "Must enter an integer between 1 and 2"),
-            (["3"], "Must enter an integer between 1 and 2"),
-            (["1", "1", "0"], "Must enter a list of integers between 1 and 5"),
-            (["1", "1", "1 2"], "Must enter a list of integers between 1 and 5"),
+            (["foo"], re.escape("Must select a single data name from ['other', 'qchem', 'qspin']")),
+            (["qspin", "foo"], "Must enter a valid sysname:"),
+            (["qspin", "Ising", "foo"], "Must enter a valid periodicity:"),
+            (["qspin", "Ising", "open", "foo"], "Must enter a valid lattice:"),
+            (["qspin", "Ising", "open", "chain", "foo"], "Must enter a valid layout:"),
+            (
+                ["qspin", "Ising", "open", "chain", "1x4", "foo"],
+                re.escape(
+                    "Must select a list of attributes from ['ground_energies', 'ground_states', 'hamiltonians', 'num_phases', 'order_params', 'parameters', 'shadow_basis', 'shadow_meas', 'spin_system']"
+                ),
+            ),
         ],
     )
     def test_load_interactive_invalid_inputs(
@@ -236,11 +312,45 @@ class TestLoadInteractive:
         with pytest.raises(ValueError, match=error_message):
             qml.data.load_interactive()
 
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock_qchem)
+    @pytest.mark.parametrize(
+        ("side_effect"),
+        [
+            (
+                [
+                    "qchem",
+                    "H2",
+                    "STO-3G",
+                    "0.742",
+                    "full",
+                    True,
+                    PosixPath("/my/path"),
+                    "Y",
+                ]
+            ),
+        ],
+    )
+    def test_load_interactive_qchem(
+        self,
+        mock_input,
+        mock_sleep,
+        mock_load,
+        side_effect,
+    ):
+        """Test that load_interactive succeeds."""
+        mock_input.side_effect = side_effect
+        assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
 
-@patch.object(requests, "get", get_mock)
+
 class TestMiscHelpers:
     """Test miscellaneous helper functions in data_manager."""
 
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
+    def test_list_data_names(self):
+        """Test list_data_names."""
+        assert qml.data.list_data_names() == ["other", "qchem", "qspin"]
+
+    @patch.object(requests, "get", get_mock)
     def test_list_datasets(self, tmp_path):
         """Test that list_datasets returns either the S3 foldermap, or the local tree."""
         assert qml.data.list_datasets() == {
@@ -248,11 +358,37 @@ class TestMiscHelpers:
             "qchem": {"H2": {"6-31G": ["0.46", "1.0", "1.16"]}},
         }
 
+    @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     def test_list_attributes(self):
-        """Test list_attributes"""
-        assert qml.data.list_attributes("qchem") == _data_struct["qchem"]["attributes"]
-        with pytest.raises(ValueError, match="Currently the hosted datasets are of types"):
-            qml.data.list_attributes("invalid_data_name")
+        """Test list_attributes."""
+        assert qml.data.list_attributes("qchem") == [
+            "basis_rot_groupings",
+            "basis_rot_samples",
+            "dipole_op",
+            "fci_energy",
+            "fci_spectrum",
+            "hamiltonian",
+            "hf_state",
+            "molecule",
+            "number_op",
+            "optimal_sector",
+            "paulix_ops",
+            "qwc_groupings",
+            "qwc_samples",
+            "sparse_hamiltonian",
+            "spin2_op",
+            "spinz_op",
+            "symmetries",
+            "tapered_dipole_op",
+            "tapered_hamiltonian",
+            "tapered_hf_state",
+            "tapered_num_op",
+            "tapered_spin2_op",
+            "tapered_spinz_op",
+            "vqe_energy",
+            "vqe_gates",
+            "vqe_params",
+        ]
 
 
 @pytest.fixture
@@ -269,15 +405,17 @@ def mock_download_dataset(monkeypatch):
 
 # pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
 @pytest.mark.parametrize(
     "data_name, params, expect_paths",
     [
         (
             "qchem",
-            {"molname": "H2", "basis": "6-31G", "bondlength": ["0.46", "1.16"]},
-            ["qchem/H2/6-31G/0.46.h5", "qchem/H2/6-31G/1.16.h5"],
-        )
+            {"molname": "H2", "basis": "STO-3G", "bondlength": ["1.0", "0.46", "1.16"]},
+            ["qchem/h2_sto-3g_1.0.h5", "qchem/h2_sto-3g_0.46.h5", "qchem/h2_sto-3g_1.16.h5"],
+        ),
+        ("other", {"name": "rydberggpt"}, ["rydberggpt/rydberggpt.h5"]),
     ],
 )
 @pytest.mark.parametrize("progress_bar", [True, False])
@@ -295,12 +433,21 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
         attributes=attributes,
         **params,
     )
-
     assert {Path(dset.bind.filename) for dset in dsets} == {
         Path(tmp_path, path) for path in expect_paths
     }
 
 
+@patch.object(pennylane.data.data_manager, "get_dataset_urls", get_dataset_urls_mock)
+def test_load_bad_config():
+    msg = re.escape(
+        """No datasets exist for the provided configuration.\nPlease check the available datasets by using the ``qml.data.list_datasets()`` function."""
+    )
+    with pytest.raises(ValueError, match=msg):
+        pennylane.data.data_manager.load(data_name="qchem", molname="bad_name")
+
+
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 def test_load_except(monkeypatch, tmp_path):
     """Test that an exception raised by _download_dataset is propagated."""
@@ -340,6 +487,7 @@ def test_download_dataset_full_or_partial(
     assert download_full.called is not called_partial
 
 
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.parametrize("force", (True, False))
 @patch("pennylane.data.data_manager._download_full")
 def test_download_dataset_full_call(download_full, force):
@@ -351,7 +499,7 @@ def test_download_dataset_full_call(download_full, force):
     pbar_task = MagicMock()
 
     pennylane.data.data_manager._download_dataset(
-        f"{S3_URL}/dataset/path",
+        f"{GRAPHQL_URL}/dataset/path",
         attributes=None,
         dest=dest,
         force=force,
@@ -360,10 +508,11 @@ def test_download_dataset_full_call(download_full, force):
     )
 
     download_full.assert_called_once_with(
-        f"{S3_URL}/dataset/path", block_size=1, dest=dest, pbar_task=pbar_task
+        f"{GRAPHQL_URL}/dataset/path", block_size=1, dest=dest, pbar_task=pbar_task
     )
 
 
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.parametrize("attributes", [None, ["x"]])
 @pytest.mark.parametrize("force", (True, False))
 @patch("pennylane.data.data_manager._download_partial")
@@ -376,7 +525,7 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
     pbar_task = MagicMock()
 
     pennylane.data.data_manager._download_dataset(
-        f"{S3_URL}/dataset/path",
+        f"{GRAPHQL_URL}/dataset/path",
         attributes=attributes,
         dest=dest,
         force=force,
@@ -385,7 +534,7 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
     )
 
     download_partial.assert_called_once_with(
-        f"{S3_URL}/dataset/path",
+        f"{GRAPHQL_URL}/dataset/path",
         dest=dest,
         attributes=attributes,
         overwrite=force,
@@ -400,7 +549,7 @@ def test_download_full(tmp_path):
     """Tests that _download_dataset will fetch the dataset file
     at ``s3_url`` into ``dest``."""
     pennylane.data.data_manager._download_full(
-        "dataset/path", tmp_path / "dataset", block_size=1, pbar_task=None
+        f"{GRAPHQL_URL}/dataset/path", tmp_path / "dataset", block_size=1, pbar_task=None
     )
 
     with open(tmp_path / "dataset", "rb") as f:
@@ -521,78 +670,17 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
     open_hdf5_s3.assert_not_called()
 
 
-@patch("builtins.open")
-@patch.object(pennylane.data.data_manager, "head", head_mock)
-@pytest.mark.parametrize(
-    "datapath, escaped",
-    [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
-)
-def test_download_datasets_escapes_url(_, tmp_path, mock_get_args, datapath, escaped):
-    """Tests that _download_datasets escapes special characters in a URL when doing a full download."""
-
-    dest = MagicMock()
-    dest.exists.return_value = False
-
-    pennylane.data.data_manager._download_datasets(
-        S3_URL,
-        folder_path=tmp_path,
-        data_paths=[datapath],
-        attributes=None,
-        force=True,
-        block_size=1,
-        num_threads=1,
-        pbar=MagicMock(),
-    )
-
-    mock_get_args.assert_called_once()
-    assert mock_get_args.call_args[0] == (f"{S3_URL}/{escaped}",)
-
-
-@patch("pennylane.data.data_manager._download_partial")
-@pytest.mark.parametrize(
-    "datapath, escaped",
-    [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
-)
-def test_download_datasets_escapes_url_partial(download_partial, tmp_path, datapath, escaped):
-    """Tests that _download_datasets escapes special characters in a URL when doing a partial
-    download."""
-    attributes = ["attr"]
-    force = False
-    pbar = MagicMock()
-    pbar_task = MagicMock()
-    pbar.add_task.return_value = pbar_task
-
-    pennylane.data.data_manager._download_datasets(
-        S3_URL,
-        folder_path=tmp_path,
-        data_paths=[datapath],
-        attributes=attributes,
-        force=force,
-        block_size=1,
-        num_threads=1,
-        pbar=pbar,
-    )
-
-    download_partial.assert_called_once_with(
-        f"{S3_URL}/{escaped}",
-        dest=tmp_path / datapath,
-        attributes=attributes,
-        overwrite=force,
-        block_size=1,
-        pbar_task=pbar_task,
-    )
-
-
+@patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.parametrize(
     "attributes,msg",
     [
         (
-            ["x", "y", "z", "foo"],
-            r"'foo' is an invalid attribute for 'my_dataset'. Valid attributes are: \['x', 'y', 'z'\]",
+            ["basis_rot_groupings", "basis_rot_samples", "dipole_op", "fci_energy", "foo"],
+            r"'foo' is an invalid attribute for 'my_dataset'. Valid attributes are: \['basis_rot_groupings', 'basis_rot_samples', 'dipole_op', 'fci_energy', 'fci_spectrum', 'hamiltonian', 'hf_state', 'molecule', 'number_op', 'optimal_sector', 'paulix_ops', 'qwc_groupings', 'qwc_samples', 'sparse_hamiltonian', 'spin2_op', 'spinz_op', 'symmetries', 'tapered_dipole_op', 'tapered_hamiltonian', 'tapered_hf_state', 'tapered_num_op', 'tapered_spin2_op', 'tapered_spinz_op', 'vqe_energy', 'vqe_gates', 'vqe_params'\]",
         ),
         (
-            ["x", "y", "z", "foo", "bar"],
-            r"\['foo', 'bar'\] are invalid attributes for 'my_dataset'. Valid attributes are: \['x', 'y', 'z'\]",
+            ["basis_rot_groupings", "basis_rot_samples", "dipole_op", "fci_energy", "foo", "bar"],
+            r"\['foo', 'bar'\] are invalid attributes for 'my_dataset'. Valid attributes are: \['basis_rot_groupings', 'basis_rot_samples', 'dipole_op', 'fci_energy', 'fci_spectrum', 'hamiltonian', 'hf_state', 'molecule', 'number_op', 'optimal_sector', 'paulix_ops', 'qwc_groupings', 'qwc_samples', 'sparse_hamiltonian', 'spin2_op', 'spinz_op', 'symmetries', 'tapered_dipole_op', 'tapered_hamiltonian', 'tapered_hf_state', 'tapered_num_op', 'tapered_spin2_op', 'tapered_spinz_op', 'vqe_energy', 'vqe_gates', 'vqe_params'\]",
         ),
     ],
 )
@@ -600,7 +688,54 @@ def test_validate_attributes_except(attributes, msg):
     """Test that ``_validate_attributes()`` raises a ValueError when passed
     invalid attributes."""
 
-    data_struct = {"my_dataset": {"attributes": ["x", "y", "z"]}}
-
     with pytest.raises(ValueError, match=msg):
-        _validate_attributes(data_struct, "my_dataset", attributes)
+        _validate_attributes("my_dataset", attributes)
+
+
+class TestGetGraphql:
+    """Tests for the ``get_graphql()`` function."""
+
+    query = (
+        """
+        query ListAttributes($datasetClassId: String!) {
+          datasetClass($datasetClassId: String!) {
+            attributes {
+                name
+            }
+          }
+        }
+        """,
+    )
+    inputs = {"input": {"datasetClassId": "qspin"}}
+
+    @patch.object(pennylane.data.data_manager.graphql, "post", post_mock)
+    def test_return_json(self):
+        """Tests that an expected json response is returned for a valid query and url."""
+        response = pennylane.data.data_manager.graphql.get_graphql(
+            GRAPHQL_URL,
+            self.query,
+            self.inputs,
+        )
+        assert response == _list_attrs_resp
+
+    @patch.object(pennylane.data.data_manager.graphql, "post", post_mock)
+    def test_error_response(self):
+        """Tests that GraphQLError is raised with error messages when
+        the returned json contains an error message.
+        """
+        error_query = """
+            query ErrorQuery {
+              errorQuery {
+                  field
+              }
+            }
+            """
+
+        with pytest.raises(
+            pennylane.data.data_manager.graphql.GraphQLError,
+            match="Errors in request: Mock error message.",
+        ):
+            pennylane.data.data_manager.graphql.get_graphql(
+                GRAPHQL_URL,
+                error_query,
+            )

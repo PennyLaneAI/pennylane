@@ -25,7 +25,7 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     Shots,
 )
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation
@@ -158,7 +158,7 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int
     num_shots = 0
     for group in groups:
         if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
+            group[0].obs, qml.ops.LinearCombination
         ):
             H_executions = _get_num_executions_for_expval_H(group[0].obs)
             num_executions += H_executions
@@ -238,9 +238,7 @@ def measure_with_samples(
     groups, indices = _group_measurements(mps)
     all_res = []
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, (Hamiltonian, LinearCombination)
-        ):
+        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, LinearCombination):
             measure_fn = _measure_hamiltonian_with_samples
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
             measure_fn = _measure_sum_with_samples

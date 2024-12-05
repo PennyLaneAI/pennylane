@@ -33,7 +33,7 @@ default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove
 
 @transform
 def compile(
-    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1, expand_depth=5
+    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
@@ -60,7 +60,6 @@ def compile(
             however, doing so may produce a new circuit where applying the set
             of transforms again may yield further improvement, so the number of
             such passes can be adjusted.
-        expand_depth (int): The depth to use for tape expansion into the basis gates.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The compiled circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
@@ -162,6 +161,7 @@ def compile(
         ───RY(-1.57)─╰X─┤
 
     """
+
     # Ensure that everything in the pipeline is a valid qfunc or tape transform
     if pipeline is None:
         pipeline = default_pipeline
@@ -192,7 +192,6 @@ def compile(
         [expanded_tape], _ = qml.devices.preprocess.decompose(
             tape,
             stopping_condition=stop_at,
-            max_expansion=expand_depth,
             name="compile",
             error=qml.operation.DecompositionUndefinedError,
             skip_initial_state_prep=False,

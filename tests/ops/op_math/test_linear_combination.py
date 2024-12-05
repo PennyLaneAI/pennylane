@@ -14,6 +14,8 @@
 """
 Tests for the LinearCombination class.
 """
+import warnings
+
 # pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
 from copy import copy
@@ -25,52 +27,16 @@ import scipy
 import pennylane as qml
 from pennylane import X, Y, Z
 from pennylane import numpy as pnp
-from pennylane.operation import enable_new_opmath_cm
 from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
 
 
-@pytest.mark.usefixtures("legacy_opmath_only")
-def test_switching():
-    """Test that switching to new from old opmath changes the dispatch of qml.Hamiltonian"""
-    Ham = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
-    assert isinstance(Ham, qml.Hamiltonian)
-    assert not isinstance(Ham, qml.ops.LinearCombination)
-
-    with enable_new_opmath_cm(warn=False):
-        LC = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
-        assert isinstance(LC, qml.Hamiltonian)
-        assert isinstance(LC, qml.ops.LinearCombination)
-
-
-def test_isinstance_Hamiltonian():
-    """Test that Hamiltonian and LinearCombination can be used interchangeably when new opmath is disabled or enabled"""
-    H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
-    assert isinstance(H, qml.Hamiltonian)
-
-
-def test_mixed_legacy_warning_Hamiltonian_legacy():
-    """Test that mixing legacy ops and LinearCombination.compare raises a warning in legacy opmath"""
-
-    op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
-    op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
-
-    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
-        res = op1.compare(op2)
-
-    assert res
-
-
-def test_mixed_legacy_warning_Tensor():
-    """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
-    op1 = qml.ops.LinearCombination([1.0], [X(0) @ qml.Hadamard(1)])
-    op2 = qml.operation.Tensor(X(0), qml.Hadamard(1))
-
-    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
-        res = op1.compare(op2)
-
-    assert res
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 # Make test data in different interfaces, if installed
@@ -555,7 +521,6 @@ def circuit2(param):
 dev = qml.device("default.qubit", wires=2)
 
 
-@pytest.mark.usefixtures("new_opmath_only")
 class TestLinearCombination:
     """Test the LinearCombination class"""
 

@@ -20,11 +20,35 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+class TestBasics:
+    """Test basic properties of the MomentumQNGOptimizer."""
+
+    def test_initialization_default(self):
+        """Test that initializing MomentumQNGOptimizer with default values works."""
+        opt = qml.MomentumQNGOptimizer()
+        assert opt.stepsize == 0.01
+        assert opt.approx == "block-diag"
+        assert opt.lam == 0
+        assert opt.momentum == 0.9
+        assert opt.accumulation is None
+        assert opt.metric_tensor is None
+
+    def test_initialization_custom_values(self):
+        """Test that initializing MomentumQNGOptimizer with custom values works."""
+        opt = qml.MomentumQNGOptimizer(stepsize=0.05, momentum=0.8, approx="diag", lam=1e-9)
+        assert opt.stepsize == 0.05
+        assert opt.approx == "diag"
+        assert opt.lam == 1e-9
+        assert opt.momentum == 0.8
+        assert opt.accumulation is None
+        assert opt.metric_tensor is None
+
+
 class TestOptimize:
     """Test basic optimization integration"""
 
     @pytest.mark.parametrize("rho", [0.9, 0.0])
-    def test_step_and_cost_autograd(self, rho):
+    def test_step_and_cost(self, rho):
         """Test that the correct cost and step is returned after 8 optimization steps via the
         step_and_cost method for the MomentumQNG optimizer"""
         dev = qml.device("default.qubit", wires=1)
@@ -57,7 +81,6 @@ class TestOptimize:
             var -= accum
             assert np.allclose([var1, var2], var)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_step_and_cost_autograd_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned after 8 optimization steps via the
         step_and_cost method for the MomentumQNG optimizer when the generator
@@ -126,7 +149,7 @@ class TestOptimize:
 
         stepsize = 0.05
         momentum = 0.7
-        # Create two optimizers so that the opt.accumulation state does not
+        # Create multiple optimizers so that the opt.accumulation state does not
         # interact between tests for step_and_cost and for step.
         opt1 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
         opt2 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
@@ -280,7 +303,7 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(theta), -1, atol=1e-4)
 
-    def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
+    def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct MomentumQNG value every step, the correct parameter updates, and
         correct cost after a few steps"""
@@ -328,10 +351,7 @@ class TestOptimize:
             grad = gradient(theta)
             dtheta *= rho
             dtheta += tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
-            print(circuit(*theta))
             assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost
         assert np.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)
-        if qml.operation.active_new_opmath():
-            assert len(recwarn) == 0

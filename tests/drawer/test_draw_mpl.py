@@ -187,6 +187,21 @@ class TestKwargs:
             assert l.get_fontsize() == 20
         plt.close()
 
+    def test_hide_wire_labels(self):
+        """Test that wire labels are skipped with show_wire_labels=False."""
+        fig, ax = qml.draw_mpl(circuit1, show_wire_labels=False)(1.23, 2.34)
+        fig_with_labels, ax_with_labels = qml.draw_mpl(circuit1)(1.23, 2.34)
+
+        # Only PauliX gate labels should be present
+        assert len(ax.texts) == 2
+        assert len(ax_with_labels.texts) == 2 + 3
+        assert ax.texts[0].get_text() == "RX"
+        assert ax.texts[1].get_text() == "RY"
+        assert fig.get_figwidth() == 4
+        assert fig_with_labels.get_figwidth() == 4 + 1
+
+        plt.close()
+
     @pytest.mark.parametrize(
         "notches, n_patches",
         [
@@ -312,6 +327,75 @@ class TestWireBehaviour:
         for w in ax.lines[:3]:  # three wires
             assert w.get_color() == "black"
             assert w.get_linewidth() == 4
+
+        @qml.qnode(dev)
+        def f_circ(x):
+            """Circuit on ten qubits."""
+            qml.RX(x, wires=0)
+            for w in range(10):
+                qml.Hadamard(w)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+
+        # All wires are orange
+        wire_options = {"color": "orange"}
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for w in ax.lines:
+            assert w.get_color() == "orange"
+
+        # Wires are orange and cyan
+        wire_options = {0: {"color": "orange"}, 1: {"color": "cyan"}}
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        assert ax.lines[0].get_color() == "orange"
+        assert ax.lines[1].get_color() == "cyan"
+        assert ax.lines[2].get_color() == "black"
+
+        # Make all wires cyan and bold,
+        # except for wires 2 and 6, which are dashed and another color
+        wire_options = {
+            "color": "cyan",
+            "linewidth": 5,
+            2: {"linestyle": "--", "color": "red"},
+            6: {"linestyle": "--", "color": "orange", "linewidth": 1},
+        }
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for i, w in enumerate(ax.lines):
+            if i == 2:
+                assert w.get_color() == "red"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            elif i == 6:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 1
+            else:
+                assert w.get_color() == "cyan"
+                assert w.get_linestyle() == "-"
+                assert w.get_linewidth() == 5
+
+        wire_options = {
+            "linewidth": 5,
+            2: {"linestyle": "--", "color": "red"},
+            6: {"linestyle": "--", "color": "orange"},
+        }
+
+        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+
+        for i, w in enumerate(ax.lines):
+            if i == 2:
+                assert w.get_color() == "red"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            elif i == 6:
+                assert w.get_color() == "orange"
+                assert w.get_linestyle() == "--"
+                assert w.get_linewidth() == 5
+            else:
+                assert w.get_color() == "black"
+                assert w.get_linestyle() == "-"
+                assert w.get_linewidth() == 5
 
         plt.close()
 

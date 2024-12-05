@@ -16,7 +16,7 @@ Unit tests for the composite operator class of qubit operations
 """
 import inspect
 
-# pylint:disable=protected-access
+# pylint:disable=protected-access, use-implicit-booleaness-not-comparison
 from copy import copy
 
 import numpy as np
@@ -24,7 +24,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math import CompositeOp, Prod, SProd, Sum
+from pennylane.ops.op_math import CompositeOp
 from pennylane.wires import Wires
 
 ops = (
@@ -38,7 +38,7 @@ ops = (
 )
 
 ops_rep = (
-    "X(0) # Z(0) # Hadamard(wires=[0])",
+    "X(0) # Z(0) # H(0)",
     "(CNOT(wires=[0, 1])) # RX(1.23, wires=[1]) # I(0)",
     "IsingXX(4.56, wires=[2, 3]) # (Toffoli(wires=[1, 2, 3])) # Rot(0.34, 1.0, 0, wires=[0])",
 )
@@ -212,27 +212,6 @@ class TestConstruction:
         """Test the build_pauli_rep"""
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
-
-    def test_tensor_and_hamiltonian_converted(self):
-        """Test that Tensor and Hamiltonian instances get converted to Prod and Sum."""
-        operands = [
-            qml.Hamiltonian(
-                [1.1, 2.2], [qml.PauliZ(0), qml.operation.Tensor(qml.PauliX(0), qml.PauliZ(1))]
-            ),
-            qml.prod(qml.PauliX(0), qml.PauliZ(1)),
-            qml.operation.Tensor(qml.PauliX(2), qml.PauliZ(3)),
-        ]
-        op = qml.sum(*operands)
-        assert isinstance(op[0], Sum)
-        assert isinstance(op[0][1], SProd)
-        assert isinstance(op[0][1].base, Prod)
-        assert op[1] is operands[1]
-        assert isinstance(op[2], Prod)
-        assert op.operands == (
-            qml.dot([1.1, 2.2], [qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliZ(1))]),
-            operands[1],
-            qml.prod(qml.PauliX(2), qml.PauliZ(3)),
-        )
 
 
 @pytest.mark.parametrize("math_op", [qml.prod, qml.sum])

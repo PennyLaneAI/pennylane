@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import I, X, Y, Z, math
 from pennylane.fermi import FermiWord
 
-from .lattice import Lattice, _generate_lattice
+from .lattice import Lattice, generate_lattice
 
 # pylint: disable=too-many-arguments, too-many-branches
 
@@ -35,20 +35,23 @@ def transverse_ising(
 
         \hat{H} =  -J \sum_{<i,j>} \sigma_i^{z} \sigma_j^{z} - h\sum_{i} \sigma_{i}^{x}
 
-    where ``J`` is the coupling parameter defined for the Hamiltonian, ``h`` is the strength of the
-    transverse magnetic field and ``i,j`` represent the indices for neighbouring spins.
+    where :math:`J` is the coupling parameter defined for the Hamiltonian, :math:`h` is the strength of the
+    transverse magnetic field, :math:`<i,j>` represents the indices for neighbouring sites and
+    :math:`\sigma` is a Pauli operator.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (float or List[float] or List[math.array[float]]): Coupling between spins. It can
-            be a number, a list of length equal to ``neighbour_order`` or a square matrix of shape
+        coupling (float or tensor_like[float]): Coupling between spins. It should
+            be a number, an array of length equal to ``neighbour_order`` or a square matrix of shape
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
         h (float): Value of external magnetic field. Default is 1.0.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -72,9 +75,8 @@ def transverse_ising(
     + -0.1 * X(2)
     + -0.1 * X(3)
     )
-
     """
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     if isinstance(coupling, (int, float, complex)):
         coupling = [coupling]
@@ -111,18 +113,20 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
          \hat{H} = J\sum_{<i,j>}(\sigma_i^x\sigma_j^x + \sigma_i^y\sigma_j^y + \sigma_i^z\sigma_j^z)
 
-    where ``J`` is the coupling constant defined for the Hamiltonian, and ``i,j`` represent the
-    indices for neighbouring spins.
+    where :math:`J` is the coupling constant defined for the Hamiltonian, :math:`<i,j>` represents the
+    indices for neighbouring sites and :math:`\sigma` is a Pauli operator.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins. It can be a
-            2D array of shape ``(neighbour_order, 3)`` or a 3D array of shape
+        coupling (tensor_like[float]): Coupling between spins. It can be an
+            array of shape ``(neighbour_order, 3)`` or
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -132,7 +136,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     **Example**
 
     >>> n_cells = [2,2]
-    >>> j = [[0.5, 0.5, 0.5]]
+    >>> j = np.array([0.5, 0.5, 0.5])
     >>> spin_ham = qml.spin.heisenberg("square", n_cells, coupling=j)
     >>> spin_ham
     (
@@ -151,7 +155,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     )
     """
 
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     if coupling is None:
         coupling = [[1.0, 1.0, 1.0]]
@@ -200,27 +204,29 @@ def fermi_hubbard(
 
     .. math::
 
-        \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
+        \hat{H} = -t\sum_{<i,j>, \sigma} c_{i\sigma}^{\dagger}c_{j\sigma} + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
 
-    where ``t`` is the hopping term representing the kinetic energy of electrons, ``U`` is the
-    on-site Coulomb interaction, representing the repulsion between electrons, ``i,j`` represent the
-    indices for neighbouring spins, :math:`\sigma` is the spin degree of freedom, and
+    where :math:`t` is the hopping term representing the kinetic energy of electrons, :math:`U` is the
+    on-site Coulomb interaction representing the repulsion between electrons, :math:`<i,j>` represents the
+    indices of neighbouring spins, :math:`\sigma` is the spin degree of freedom, and
     :math:`n_{i \uparrow}, n_{i \downarrow}` are number operators for spin-up and spin-down fermions
-    at site ``i``. This function assumes there are two fermions with opposite spins on each lattice
+    at site :math:`i`. This function assumes two fermions with opposite spins on each lattice
     site.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        hopping (float or List[float] or List[math.array(float)]): Hopping strength between
-            neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
-            a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
+        hopping (float or tensor_like[float]): Hopping strength between
+            neighbouring sites. It can be a number, an array of length equal to ``neighbour_order`` or
+            a square matrix of shape ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        coulomb (float or List[float]): Coulomb interaction between spins. It can be a constant or a
-            list of length equal to number of spins.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+        coulomb (float or tensor_like[float]): Coulomb interaction between spins. It can be a constant or an
+            array of length equal to the number of spins.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
@@ -232,9 +238,9 @@ def fermi_hubbard(
     **Example**
 
     >>> n_cells = [2]
-    >>> h = [0.5]
+    >>> t = 0.5
     >>> u = 1.0
-    >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=h, coulomb=u)
+    >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=t, coulomb=u)
     >>> spin_ham
     (
     -0.25 * (Y(0) @ Z(1) @ Y(2))
@@ -251,7 +257,7 @@ def fermi_hubbard(
     )
     """
 
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     if isinstance(hopping, (int, float, complex)):
         hopping = [hopping]
@@ -327,34 +333,36 @@ def emery(
 
     .. math::
         \begin{align*}
-          \hat{H} & = -\sum_{\langle i,j \rangle, \sigma} t_{ij}(c_{i\sigma}^{\dagger}c_{j\sigma})
-          + \sum_{i}U_{i}n_{i \uparrow} n_{i\downarrow} + \sum_{<i,j>}V_{ij}(n_{i \uparrow} +
+          \hat{H} & = - t \sum_{\langle i,j \rangle, \sigma} c_{i\sigma}^{\dagger}c_{j\sigma}
+          + U \sum_{i} n_{i \uparrow} n_{i\downarrow} + V \sum_{<i,j>} (n_{i \uparrow} +
           n_{i \downarrow})(n_{j \uparrow} + n_{j \downarrow})\ ,
         \end{align*}
 
-    where :math:`t_{ij}` is the hopping term representing the kinetic energy of electrons,
-    :math:`U_{i}` is the on-site Coulomb interaction, representing the repulsion between electrons,
-    :math:`V_{ij}` is the intersite coupling, :math:`i, j` are the indices for neighbouring spins,
+    where :math:`t` is the hopping term representing the kinetic energy of electrons,
+    :math:`U` is the on-site Coulomb interaction representing the repulsion between electrons,
+    :math:`V` is the intersite coupling, :math:`<i,j>` represents the indices for neighbouring sites,
     :math:`\sigma` is the spin degree of freedom, and :math:`n_{k \uparrow}`, :math:`n_{k \downarrow}`
     are number operators for spin-up and spin-down fermions at site :math:`k`.
-    This function assumes there are two fermions with opposite spins on each lattice site.
+    This function assumes two fermions with opposite spins on each lattice site.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping (float or list[float] or tensor_like[float]): Hopping strength between
-            neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
+        hopping (float or tensor_like[float]): Hopping strength between
+            neighbouring sites. It can be a number, an array of length equal to ``neighbour_order`` or
             a square matrix of shape ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        coulomb (float or list[float]): Coulomb interaction between spins. It can be a constant or a
-            list of length equal to number of spins.
-        intersite_coupling (float or list[float] or tensor_like[float]): Interaction strength between spins on
-            neighbouring sites. It can be a number, a list with length equal to ``neighbour_order`` or
+        coulomb (float or tensor_like[float]): Coulomb interaction between spins. It can be a number or an
+            array of length equal to the number of spins. Default value is 1.0.
+        intersite_coupling (float or tensor_like[float]): Interaction strength between spins on
+            neighbouring sites. It can be a number, an array with length equal to ``neighbour_order`` or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
@@ -371,11 +379,10 @@ def emery(
     **Example**
 
     >>> n_cells = [2]
-    >>> h = [0.5]
+    >>> h = 0.5
     >>> u = 1.0
     >>> v = 0.2
-    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u,
-                   intersite_coupling=v)
+    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u, intersite_coupling=v)
     >>> spin_ham
     (
       -0.25 * (Y(0) @ Z(1) @ Y(2))
@@ -397,7 +404,7 @@ def emery(
 
     """
 
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     hopping = (
         math.asarray([hopping])
@@ -486,25 +493,30 @@ def haldane(
 ):
     r"""Generates the Hamiltonian for the Haldane model on a lattice.
 
-    The `Hamiltonian <https://arxiv.org/pdf/2211.13615>`_ for the  `Haldane model <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_  is represented as:
+    The `Hamiltonian <https://arxiv.org/pdf/2211.13615>`_ for the
+    `Haldane model <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_
+    is represented as:
 
     .. math::
 
         \begin{align*}
-          \hat{H} & = -\sum_{\langle i,j \rangle}t_{ij}^{1}
-          (c_{i\sigma}^\dagger c_{j\sigma} + c_{j\sigma}^\dagger c_{i\sigma})
-          - \sum_{\langle\langle i,j \rangle\rangle, \sigma} t_{ij}^{2}
-          \left( e^{i\phi_{ij}} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi_{ij}} c_{j\sigma}^\dagger c_{i\sigma} \right)
+          \hat{H} & = - t^{1} \sum_{\langle i,j \rangle, \sigma}
+          c_{i\sigma}^\dagger c_{j\sigma}
+          - t^{2} \sum_{\langle\langle i,j \rangle\rangle, \sigma}
+          \left( e^{i\phi} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi} c_{j\sigma}^\dagger c_{i\sigma} \right)
         \end{align*}
 
-    where :math:`t^{1}_{ij}` is the hopping term representing the hopping amplitude between neighbouring
-    sites :math:`\langle i,j \rangle`, :math:`t^{2}_{ij}` is the hopping amplitude between next-nearest neighbours :math:`\langle \langle i,j \rangle \rangle`, :math:`\phi_{ij}` is the phase
-    factor that breaks time-reversal symmetry in the system, and :math:`\sigma` is the spin degree of freedom.
-    This function assumes there are two fermions with opposite spins on each lattice site.
+    where :math:`t^{1}` is the hopping amplitude between neighbouring
+    sites :math:`\langle i,j \rangle`, :math:`t^{2}` is the hopping amplitude between
+    next-nearest neighbour sites :math:`\langle \langle i,j \rangle \rangle`, :math:`\phi` is
+    the phase factor that breaks time-reversal symmetry in the system, and :math:`\sigma` is the
+    spin degree of freedom. This function assumes two fermions with opposite spins on each lattice
+    site.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'triangle'``, ``'honeycomb'``,  ``'kagome'``, ``'lieb'``,
+            ``'cubic'``, ``'bcc'``, ``'fcc'`` or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         hopping (float or tensor_like[float]): Hopping strength between
             nearest neighbouring sites. It can be a number, or
@@ -517,8 +529,9 @@ def haldane(
         phi (float or tensor_like[float]): Phase factor in the system. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
             ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
@@ -547,7 +560,7 @@ def haldane(
 
     """
 
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order=2)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order=2)
 
     hopping = (
         math.asarray([hopping])
@@ -611,28 +624,32 @@ def haldane(
 
 
 def kitaev(n_cells, coupling=None, boundary_condition=False):
-    r"""Generates the Hamiltonian for the Kitaev model on the Honeycomb lattice.
+    r"""Generates the Hamiltonian for the Kitaev model on the honeycomb lattice.
 
     The `Kitaev <https://arxiv.org/abs/cond-mat/0506438>`_ model Hamiltonian is represented as:
 
     .. math::
         \begin{align*}
-          \hat{H} = K_x.\sum_{\langle i,j \rangle \in X}\sigma_i^x\sigma_j^x +
-          \:\: K_y.\sum_{\langle i,j \rangle \in Y}\sigma_i^y\sigma_j^y +
-          \:\: K_z.\sum_{\langle i,j \rangle \in Z}\sigma_i^z\sigma_j^z
+          \hat{H} = K_X \sum_{\langle i,j \rangle \in X}\sigma_i^x\sigma_j^x +
+          \:\: K_Y \sum_{\langle i,j \rangle \in Y}\sigma_i^y\sigma_j^y +
+          \:\: K_Z \sum_{\langle i,j \rangle \in Z}\sigma_i^z\sigma_j^z
         \end{align*}
 
-    where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian,
-    and :math:`X`, :math:`Y`, :math:`Z` represent the set of edges in the Honeycomb lattice between spins
-    :math:`i` and :math:`j` with real-space bond directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}],
-    \frac{\sqrt{3}}{2}, -\frac{1}{2}]`, respectively.
+    where :math:`\sigma` is a Pauli operator and :math:`<i,j>` represents the indices for
+    neighbouring spins. The parameters :math:`K_X`, :math:`K_Y`, :math:`K_Z` are the coupling
+    constants defined for the Hamiltonian, where :math:`X`, :math:`Y`, :math:`Z` represent the set
+    of edges in the Honeycomb lattice between spins :math:`i` and :math:`j` with real-space bond
+    directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}], [\frac{\sqrt{3}}{2}, -\frac{1}{2}]`,
+    respectively.
 
     Args:
-       n_cells (list[int]): Number of cells in each direction of the grid.
-       coupling (Optional[list[float] or tensor_like(float)]): Coupling between spins, it is a list of length 3.
-                            Default value is [1.0, 1.0, 1.0].
-       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes.
-           The default is ``False``, indicating open boundary conditions for all.
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        coupling (tensor_like[float]): Coupling between spins. It can be an array of length 3 defining
+            :math:`K_X`, :math:`K_Y`, :math:`K_Z` coupling constants. Default value is 1.0 for each
+            coupling constant.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
 
     Raises:
        ValueError: if ``coupling`` doesn't have correct dimensions.
@@ -642,8 +659,8 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
 
     **Example**
 
-    >>> n_cells = [2,2]
-    >>> k = [0.5, 0.6, 0.7]
+    >>> n_cells = [2, 2]
+    >>> k = np.array([0.5, 0.6, 0.7])
     >>> spin_ham = qml.spin.kitaev(n_cells, coupling=k)
     >>> spin_ham
     (
@@ -692,10 +709,10 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
 
 
 def spin_hamiltonian(lattice):
-    r"""Generates a spin Hamiltonian for a custom lattice.
+    r"""Generates a spin Hamiltonian for a custom :class:`~pennylane.spin.Lattice` object.
 
     Args:
-        lattice (Lattice): custom lattice defined with custom_edges
+        lattice (Lattice): custom lattice defined with ``custom_edges``
 
     Raises:
         ValueError: if the provided Lattice does not have ``custom_edges`` defined with operators
