@@ -274,7 +274,6 @@ class TestBroadcasting:
         assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
 
 
-
 @flaky(max_runs=5, min_passes=1)
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
@@ -310,7 +309,7 @@ class TestSampleMeasurements:
         )
         return ["00", "01", "10", "11"], probs
 
-    @pytest.mark.parametrize('x', [0.732, 0.488])
+    @pytest.mark.parametrize("x", [0.732, 0.488])
     def test_single_expval(self, x, seed):
         """Test a simple circuit with a single expval measurement"""
         qs = qml.tape.QuantumScript(
@@ -323,7 +322,7 @@ class TestSampleMeasurements:
         assert result.shape == ()
         assert np.allclose(result, self.expval_of_RY_circ(x), rtol=0.2)
 
-    @pytest.mark.parametrize('x', [0.732, 0.488])
+    @pytest.mark.parametrize("x", [0.732, 0.488])
     def test_single_sample(self, x, seed):
         """Test a simple circuit with a single sample measurement"""
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=10000)
@@ -337,8 +336,8 @@ class TestSampleMeasurements:
             rtol=0.2,
         )
 
-    @pytest.mark.parametrize('x', [0.732, 0.488])
-    @pytest.mark.parametrize('y', [0.732, 0.488])
+    @pytest.mark.parametrize("x", [0.732, 0.488])
+    @pytest.mark.parametrize("y", [0.732, 0.488])
     def test_multi_measurements(self, x, y, seed):
         """Test a simple circuit containing multiple measurements"""
         num_shots = 10000
@@ -380,7 +379,7 @@ class TestSampleMeasurements:
         [(10000, 3), 20000, (30000, 2)],
     ]
 
-    @pytest.mark.parametrize('x', [0.732, 0.488])
+    @pytest.mark.parametrize("x", [0.732, 0.488])
     @pytest.mark.parametrize("shots", shots_data)
     def test_expval_shot_vector(self, shots, x, seed):
         """Test a simple circuit with a single expval measurement for shot vectors"""
@@ -396,7 +395,7 @@ class TestSampleMeasurements:
         assert all(res.shape == () for res in result)
         assert all(np.allclose(res, expected, rtol=0.2) for res in result)
 
-    @pytest.mark.parametrize('x', [0.732, 0.488])
+    @pytest.mark.parametrize("x", [0.732, 0.488])
     @pytest.mark.parametrize("shots", shots_data)
     def test_sample_shot_vector(self, shots, x, seed):
         """Test a simple circuit with a single sample measurement for shot vectors"""
@@ -415,8 +414,8 @@ class TestSampleMeasurements:
             for res, s in zip(result, shots)
         )
 
-    @pytest.mark.parametrize('x', [0.732, 0.488])
-    @pytest.mark.parametrize('y', [0.732, 0.488])
+    @pytest.mark.parametrize("x", [0.732, 0.488])
+    @pytest.mark.parametrize("y", [0.732, 0.488])
     @pytest.mark.parametrize("shots", shots_data)
     def test_multi_measurement_shot_vector(self, shots, x, y, seed):
         """Test a simple circuit containing multiple measurements for shot vectors"""
@@ -459,8 +458,8 @@ class TestSampleMeasurements:
 
             assert shot_res[2].shape == (s, 2)
 
-    @pytest.mark.parametrize('x', [0.732, 0.488])
-    @pytest.mark.parametrize('y', [0.732, 0.488])
+    @pytest.mark.parametrize("x", [0.732, 0.488])
+    @pytest.mark.parametrize("y", [0.732, 0.488])
     def test_custom_wire_labels(self, x, y, seed):
         """Test that custom wire labels works as expected"""
         num_shots = 10000
