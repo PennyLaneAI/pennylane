@@ -38,7 +38,6 @@ def qsvt_legacy(A, angles, wires, convention=None):
         The ``qsvt_legacy`` function has been deprecated.
         Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
 
-        
     .. note ::
 
         :class:`~.BlockEncode` and :class:`~.PCPhase` used in this implementation of QSVT
