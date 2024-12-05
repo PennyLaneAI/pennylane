@@ -206,9 +206,10 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
             - ``"prepselprep"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.PrepSelPrep`.
                 Default encoding for Hamiltonians.
             - ``"qubitization"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.Qubitization`.
-            - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Default encoding for matrices.
             - ``"embedding"``: Embeds the matrix ``A`` using :class:`~pennylane.BlockEncode`.
-                Template not hardware compatible.
+                Template not hardware compatible. Default encoding for matrices.
+            - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Template hardware compatible.
+
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
@@ -307,6 +308,22 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
              [ 0.     -0.0912 -0.     -0.    ]
              [-0.0056  0.     -0.0788  0.0164]
              [-0.0054 -0.      0.0164 -0.0842]]
+
+        Note that for the FABLE block encoding to function correctly, it must comply with the following:
+
+        .. math::
+
+                d \|A\|^2 \leq 1,
+
+        where :math:`d` is the maximum dimension of :math:`A` and :math:`\|A\|` is the 2-norm of :math:`A`.
+        In the previous example this is satisfied since :math:`d = 4` and :math:`\|A\|^2 = 0.2`:
+
+        .. code-block:: pycon
+
+            >>>print(4* np.linalg.norm(A, ord='fro')**2)
+            0.8000000000000004
+
+
     """
 
     if encoding_wires is None or block_encoding is None or "wires" in kwargs.keys():
@@ -351,8 +368,22 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
             )
 
         A = qml.math.array(A)
+        max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
 
-        if block_encoding == "embedding":
+        if block_encoding == "fable":
+            if qml.math.linalg.norm(max_dimension * qml.math.ravel(A), np.inf) > 1:
+                raise ValueError(
+                    "The subnormalization factor should be lower than 1. Ensure that the product of the maximum dimension of A and its square norm is less than 1."
+                )
+
+            # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
+
+            fable_norm = int(np.ceil(np.log2(max_dimension)))
+            encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
+
+            projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
+
+        else:
             c, r = qml.math.shape(A)
 
             for idx, phi in enumerate(angles):
@@ -360,17 +391,6 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
                 projectors.append(qml.PCPhase(phi, dim=dim, wires=encoding_wires))
 
             encoding = qml.BlockEncode(A, wires=encoding_wires)
-
-        else:
-
-            # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
-
-            max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
-
-            fable_norm = int(np.ceil(np.log2(max_dimension)))
-            encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
-
-            projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
 
     return QSVT(encoding, projectors)
 

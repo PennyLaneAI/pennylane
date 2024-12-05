@@ -771,6 +771,13 @@ class Testqsvt:
                 [0, 1],
                 "block_encoding should take",
             ),
+            (
+                [[1, 0], [0, 1]],
+                [0.3, 0, 0.4],
+                "fable",
+                [0, 1],
+                "The subnormalization factor should be lower than 1",
+            ),
             (qml.Z(0) - qml.X(0), [0.3, 0, 0.4], "fable", [1], "block_encoding should take"),
             (qml.Z(0) - qml.X(0), [0.3, 0, 0.4], "prepselprep", [0], "Control wires in"),
         ],
