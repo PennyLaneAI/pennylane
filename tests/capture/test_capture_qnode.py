@@ -65,8 +65,9 @@ def test_error_if_shot_vector():
         circuit()
 
     jax.make_jaxpr(partial(circuit, shots=50))()  # should run fine
-    res = circuit(shots=50)
-    assert qml.math.allclose(res, jax.numpy.zeros((50,)))
+    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+        res = circuit(shots=50)
+        assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
 
 def test_error_if_overridden_shot_vector():
@@ -169,8 +170,9 @@ def test_overriding_shots():
         (50,), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
     )
 
-    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-    assert qml.math.allclose(res, jax.numpy.zeros((50,)))
+    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
 
 def test_providing_keyword_argument():
@@ -358,9 +360,9 @@ class TestQNodeVmapIntegration:
     @pytest.mark.parametrize(
         "input, expected_shape",
         [
-            (jax.numpy.array([0.1]), (1,)),
-            (jax.numpy.array([0.1, 0.2]), (2,)),
-            (jax.numpy.array([0.1, 0.2, 0.3]), (3,)),
+            (jax.numpy.array([0.1], dtype=jax.numpy.float32), (1,)),
+            (jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float32), (2,)),
+            (jax.numpy.array([0.1, 0.2, 0.3], dtype=jax.numpy.float32), (3,)),
         ],
     )
     def test_qnode_vmap(self, input, expected_shape):
@@ -509,7 +511,8 @@ class TestQNodeVmapIntegration:
         x = jax.numpy.array([1.0, 2.0, 3.0])
 
         jaxpr = jax.make_jaxpr(jax.vmap(partial(circuit, shots=50), in_axes=0))(x)
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]
@@ -524,8 +527,9 @@ class TestQNodeVmapIntegration:
 
         assert eqn0.outvars[0].aval.shape == (3, 50)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qml.math.allclose(res, jax.numpy.zeros((3, 50)))
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+            assert qml.math.allclose(res, jax.numpy.zeros((3, 50)))
 
     def test_vmap_error_indexing(self):
         """Test that an IndexError is raised when indexing a batched parameter."""
@@ -832,6 +836,8 @@ class TestQNodeVmapIntegration:
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
         expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
+        # note! Any failures here my be a result of a side effect from a different test
+        # fails when testing tests/capture, passes with tests/capture/test_capture_qnode
         assert jax.numpy.allclose(result[0], expected)
         assert jax.numpy.allclose(result[1], expected)
         assert jax.numpy.allclose(result[2], expected)
