@@ -22,6 +22,9 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+  # Scheduled trigger on Wednesdays at 3:00am UTC
+  schedule:
+    - cron: "0 3 * * 3"
 
 permissions: write-all
 
@@ -63,7 +66,7 @@ jobs:
         path: doc.txt
 
   upload-stable-deps:
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'schedule'
     needs:
       - determine_runner
       - sphinx
