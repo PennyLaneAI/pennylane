@@ -25,6 +25,7 @@ from pennylane.transforms.optimization import merge_rotations
 from pennylane.workflow import run
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize(
     "interface, gradient_method",
     (["numpy", qml.gradients.param_shift], ["torch", None], ["torch", "backprop"]),
