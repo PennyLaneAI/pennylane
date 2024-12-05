@@ -294,6 +294,7 @@ class TransformInterpreter(PlxprInterpreter):
 
         """
         invals = [self.read(invar) for invar in eqn.invars]
+
         traced_invals = []
         for inval in invals:
             # The following branch is added because we want observables to get transformed.
@@ -304,9 +305,9 @@ class TransformInterpreter(PlxprInterpreter):
             if isinstance(inval, qml.operation.Operator):
                 # pylint: disable=protected-access
                 op_tracers, op_params = self._env[id(inval)]
-                self._state[-1]["op_is_observable"] = True
+                self._state[-1]["is_measurement_obs"] = True
                 new_inval = inval._primitive.bind(*op_tracers, **op_params)
-                self._state[-1].pop("op_is_observable")
+                self._state[-1].pop("is_measurement_obs")
                 traced_invals.append(self.read_with_trace(new_inval))
                 continue
             traced_invals.append(self.read_with_trace(inval))
