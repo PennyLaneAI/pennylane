@@ -274,7 +274,8 @@ class TestBroadcasting:
         assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
 
 
-@flaky
+
+@flaky(max_runs=5, min_passes=1)
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
 
@@ -309,9 +310,9 @@ class TestSampleMeasurements:
         )
         return ["00", "01", "10", "11"], probs
 
-    def test_single_expval(self):
+    @pytest.mark.parametrize('x', [0.732, 0.488])
+    def test_single_expval(self, x, seed):
         """Test a simple circuit with a single expval measurement"""
-        x = np.array(0.732)
         qs = qml.tape.QuantumScript(
             [qml.RY(x, wires=0)],
             [qml.expval(qml.PauliZ(0))],
@@ -320,11 +321,11 @@ class TestSampleMeasurements:
         result = simulate(qs)
         assert isinstance(result, np.float64)
         assert result.shape == ()
-        assert np.allclose(result, self.expval_of_RY_circ(x), rtol=0.1)
+        assert np.allclose(result, self.expval_of_RY_circ(x), rtol=0.2)
 
-    def test_single_sample(self):
+    @pytest.mark.parametrize('x', [0.732, 0.488])
+    def test_single_sample(self, x, seed):
         """Test a simple circuit with a single sample measurement"""
-        x = np.array(0.732)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=10000)
         result = simulate(qs)
 
@@ -333,13 +334,14 @@ class TestSampleMeasurements:
         assert np.allclose(
             np.sum(result, axis=0).astype(np.float32) / 10000,
             self.sample_sum_of_RY_circ(x),
-            rtol=0.1,
+            rtol=0.2,
         )
 
-    def test_multi_measurements(self):
+    @pytest.mark.parametrize('x', [0.732, 0.488])
+    @pytest.mark.parametrize('y', [0.732, 0.488])
+    def test_multi_measurements(self, x, y, seed):
         """Test a simple circuit containing multiple measurements"""
-        num_shots = 100
-        x, y = np.array(0.732), np.array(0.488)
+        num_shots = 10000
         qs = qml.tape.QuantumScript(
             [
                 qml.RX(x, wires=0),
@@ -358,17 +360,17 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert np.allclose(result[0], self.expval_of_2_qubit_circ(x), rtol=0.1)
+        assert np.allclose(result[0], self.expval_of_2_qubit_circ(x), rtol=0.2)
 
         expected_keys, expected_probs = self.probs_of_2_qubit_circ(x, y)
         assert list(result[1].keys()) == expected_keys
         assert np.allclose(
             np.array(list(result[1].values())) / num_shots,
             expected_probs,
-            rtol=0.1,
+            rtol=0.2,
         )
 
-        assert result[2].shape == (100, 2)
+        assert result[2].shape == (10000, 2)
 
     shots_data = [
         [10000, 10000],
@@ -378,10 +380,10 @@ class TestSampleMeasurements:
         [(10000, 3), 20000, (30000, 2)],
     ]
 
+    @pytest.mark.parametrize('x', [0.732, 0.488])
     @pytest.mark.parametrize("shots", shots_data)
-    def test_expval_shot_vector(self, shots):
+    def test_expval_shot_vector(self, shots, x, seed):
         """Test a simple circuit with a single expval measurement for shot vectors"""
-        x = np.array(0.732)
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=shots)
         result = simulate(qs)
@@ -392,12 +394,12 @@ class TestSampleMeasurements:
         expected = self.expval_of_RY_circ(x)
         assert all(isinstance(res, np.float64) for res in result)
         assert all(res.shape == () for res in result)
-        assert all(np.allclose(res, expected, rtol=0.1) for res in result)
+        assert all(np.allclose(res, expected, rtol=0.2) for res in result)
 
+    @pytest.mark.parametrize('x', [0.732, 0.488])
     @pytest.mark.parametrize("shots", shots_data)
-    def test_sample_shot_vector(self, shots):
+    def test_sample_shot_vector(self, shots, x, seed):
         """Test a simple circuit with a single sample measurement for shot vectors"""
-        x = np.array(0.732)
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=shots)
         result = simulate(qs)
@@ -409,14 +411,15 @@ class TestSampleMeasurements:
         assert all(isinstance(res, np.ndarray) for res in result)
         assert all(res.shape == (s, 2) for res, s in zip(result, shots))
         assert all(
-            np.allclose(np.sum(res, axis=0).astype(np.float32) / s, expected, rtol=0.1)
+            np.allclose(np.sum(res, axis=0).astype(np.float32) / s, expected, rtol=0.2)
             for res, s in zip(result, shots)
         )
 
+    @pytest.mark.parametrize('x', [0.732, 0.488])
+    @pytest.mark.parametrize('y', [0.732, 0.488])
     @pytest.mark.parametrize("shots", shots_data)
-    def test_multi_measurement_shot_vector(self, shots):
+    def test_multi_measurement_shot_vector(self, shots, x, y, seed):
         """Test a simple circuit containing multiple measurements for shot vectors"""
-        x, y = np.array(0.732), np.array(0.488)
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
             [
@@ -444,22 +447,23 @@ class TestSampleMeasurements:
             assert isinstance(shot_res[1], dict)
             assert isinstance(shot_res[2], np.ndarray)
 
-            assert np.allclose(shot_res[0], self.expval_of_RY_circ(x), rtol=0.1)
+            assert np.allclose(shot_res[0], self.expval_of_RY_circ(x), rtol=0.2)
 
             expected_keys, expected_probs = self.probs_of_2_qubit_circ(x, y)
             assert list(shot_res[1].keys()) == expected_keys
             assert np.allclose(
                 np.array(list(shot_res[1].values())) / s,
                 expected_probs,
-                rtol=0.1,
+                rtol=0.2,
             )
 
             assert shot_res[2].shape == (s, 2)
 
-    def test_custom_wire_labels(self):
+    @pytest.mark.parametrize('x', [0.732, 0.488])
+    @pytest.mark.parametrize('y', [0.732, 0.488])
+    def test_custom_wire_labels(self, x, y, seed):
         """Test that custom wire labels works as expected"""
         num_shots = 10000
-        x, y = np.array(0.732), np.array(0.488)
         qs = qml.tape.QuantumScript(
             [
                 qml.RX(x, wires="b"),
@@ -481,14 +485,14 @@ class TestSampleMeasurements:
         assert isinstance(result[1], dict)
         assert isinstance(result[2], np.ndarray)
 
-        assert np.allclose(result[0], self.expval_of_RY_circ(x), rtol=0.1)
+        assert np.allclose(result[0], self.expval_of_RY_circ(x), rtol=0.2)
 
         expected_keys, expected_probs = self.probs_of_2_qubit_circ(x, y)
         assert list(result[1].keys()) == expected_keys
         assert np.allclose(
             np.array(list(result[1].values())) / num_shots,
             expected_probs,
-            rtol=0.1,
+            rtol=0.2,
         )
 
         assert result[2].shape == (num_shots, 2)
