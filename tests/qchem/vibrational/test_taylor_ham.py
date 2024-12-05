@@ -204,7 +204,7 @@ taylor_3D = np.array(
 
 freqs = [0.00589689, 0.01232428, 0.01232428]
 
-Uloc = [
+uloc = [
     [1.0, 0.0, 0.0],
     [0.0, -0.70710712, -0.70710644],
     [0.0, -0.70710644, 0.70710712],
@@ -787,12 +787,12 @@ def test_taylor_kinetic():
         (BoseWord({(0, 2): "+", (1, 2): "-"}), (0.0061621399793208905 + 0j)),
         (BoseWord({(0, 2): "-", (1, 2): "-"}), (-0.0030810699896604453 + 0j)),
     ]
-    taylor_kin = _taylor_kinetic([taylor_1D, taylor_2D], freqs, Uloc=Uloc)
+    taylor_kin = _taylor_kinetic([taylor_1D, taylor_2D], freqs, uloc=uloc)
     assert expected_taylor_kin == list(taylor_kin.items())
 
 
 def test_taylor_bosonic():
-    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, Uloc=Uloc)
+    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, uloc=uloc)
     sorted_arr = sorted(taylor_bos.items(), key=lambda x: x[1].real)
     sorted_ops_arr, sorted_coeffs_arr = zip(*sorted_arr)
 
@@ -810,7 +810,7 @@ def test_taylor_hamiltonian():
     pes_object_2D = vibrational.vibrational_pes(mol, dipole_level=2, cubic=False, localize=True)
 
     taylor_ham = taylor_hamiltonian(pes_object_2D, 4, 2)
-    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, Uloc=Uloc)
+    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, uloc=uloc)
 
     assert len(taylor_ham) == len(taylor_bos)
     assert all(
