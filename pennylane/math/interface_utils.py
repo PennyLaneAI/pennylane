@@ -33,7 +33,7 @@ class Interface(Enum):
     AUTO = "auto"
 
     def get_like(self):
-        """Returns the 'like' name for the interface."""
+        """Maps canonical set of interfaces to those known by autoray."""
         mapping = {
             Interface.AUTOGRAD: "autograd",
             Interface.NUMPY: "numpy",
