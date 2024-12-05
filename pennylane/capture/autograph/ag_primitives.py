@@ -165,7 +165,6 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
-
 # pylint: disable=too-many-positional-arguments
 def _call_pennylane_for(
     start,
@@ -321,13 +320,13 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
         return get_state()
 
     final_iter_args = functional_while(init_iter_args)
+
     return final_iter_args
 
 
 def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
     """An implementation of the AutoGraph 'while ..' statement. The interface is defined by
     AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
-  
     results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
 

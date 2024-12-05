@@ -190,7 +190,6 @@ def autograph_source(fn):
                 nonlocal y
                 y = 1
             y = ag__.Undefined('y')
-
             ag__.if_stmt(ag__.ld(x) < 5, if_body, else_body, get_state, set_state, ('y',), 1)
             try:
                 do_return = True
