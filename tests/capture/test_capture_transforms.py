@@ -38,6 +38,8 @@ from pennylane.capture.primitives import (
 )
 from pennylane.transforms.core import TransformError, TransformProgram, transform
 
+from pennylane.ops.functions.map_wires import _map_wires_transform
+
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
@@ -850,3 +852,66 @@ class TestTransformInterpreterIntegration:
         assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.VarianceMP._obs_primitive
+
+
+class TestMapWiresTransform:
+    """Unit tests for the MapWiresTransform class."""
+
+    def test_qnode_simple(self):
+        """Test that a simple qnode with a single gate is transformed correctly."""
+
+        program = TransformProgram()
+        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2, 2: 3})
+        main = jax.core.MainTrace(
+            level=0, trace_type=TransformTrace, transform_program=program, state=None
+        )
+
+        @TransformInterpreter(program)
+        @qml.qnode(
+            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
+        )
+        def f(x):
+            qml.RZ(x, 0)
+            qml.PhaseShift(x, 1)
+            qml.Hadamard(2)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0])
+
+        jaxpr = jax.make_jaxpr(f)(0.1)
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        # for eq in inner_jaxpr.eqns:
+        #    if eqn.primitive.name  == "RZ":
+        #        assert eq.invars[-1] == 1
+
+        assert inner_jaxpr.eqns[0].invars[-1].val == 1
+        assert inner_jaxpr.eqns[1].invars[-1].val == 2
+        assert inner_jaxpr.eqns[2].invars[-1].val == 3
+
+    def test_qnode_simple_const(self):
+        """Test that a simple qnode with a single gate is transformed correctly."""
+
+        program = TransformProgram()
+        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2})
+        main = jax.core.MainTrace(
+            level=0, trace_type=TransformTrace, transform_program=program, state=None
+        )
+
+        const = 0.1
+
+        @TransformInterpreter(program)
+        @qml.qnode(
+            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
+        )
+        def f():
+            qml.RZ(const, 0)
+            qml.PhaseShift(const, 1)
+            qml.Hadamard(2)
+            return qml.expval(qml.PauliZ(1)), qml.probs(wires=[0])
+
+        jaxpr = jax.make_jaxpr(f)()
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        assert inner_jaxpr.eqns[0].invars[-1].val == 1
+        assert inner_jaxpr.eqns[1].invars[-1].val == 2
+        assert inner_jaxpr.eqns[2].invars[-1].val == 2
+        assert inner_jaxpr.eqns[3].invars[-1].val == 2

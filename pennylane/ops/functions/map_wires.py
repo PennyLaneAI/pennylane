@@ -142,12 +142,20 @@ def _map_wires_plxpr_transform(
     # pylint: disable=import-outside-toplevel
     from pennylane.capture import TransformTracer
 
+    if "queue" in tkwargs:
+        raise ValueError("The 'queue' argument is not supported in the plxpr transformation.")
+
     print(
         f"_map_wires_plxpr_transform called with \nprimitive: {primitive}, \ntracers: {tracers}, \nparams: {params}, \ntargs: {targs}, \ntkwargs: {tkwargs}, \nstate: {state}\n"
     )
 
     with qml.QueuingManager.stop_recording():
+        # With this, the arguments of operators are made of TransformTracers
+        # and we cannot use op.map_wires since it does not work
         tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
+
+        # With this, the arguments of operators do not have TransformTracers
+        tracers_in = [t.val for t in tracers]
         op = primitive.impl(*tracers_in, **params)
 
     for t in tracers:
@@ -156,37 +164,70 @@ def _map_wires_plxpr_transform(
             print(f"t._trace: {t._trace}")
             print(f"t.val: {t.val}")
             print(f"t.idx: {t.idx}")
+        else:
+            print(f"t: {t} is not a TransformTracer")
 
-    # With measurements I get:
-    # AttributeError: 'AbstractOperator' object has no attribute '_iter'
+    # TODO: map wires of a pure measurement process (like probs)
     if not isinstance(op, qml.operation.Operator):
-        tracers = [
-            TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
-            for t in tracers
-        ]
-        return primitive.bind(*tracers, **params)
+        meas_tracers = []
+        for t in tracers:
+            if isinstance(t, TransformTracer):
+                meas_tracers.append(TransformTracer(t._trace, t.val, t.idx + 1))
+            else:
+                meas_tracers.append(t)
 
+        return primitive.bind(*meas_tracers, **params)
+
+    # With this, only the first operator is mapped
     # wire_map = tkwargs.pop("wire_map", None)
     wire_map = tkwargs.get("wire_map", None)
-    mapped_op = op.map_wires(wire_map=wire_map) if wire_map is not None else op
+
+    # For this to work as expected, the wires should not be TransformTracers
+    mapped_op = op.map_wires(wire_map=wire_map)
+    print(f"op: {op}")
     print(f"mapped_op: {mapped_op}\n")
 
-    tracers = [
-        (
-            TransformTracer(
-                t._trace, wire_map.get(t.val, t.val) if wire_map is not None else t.val, t.idx + 1
-            )
-            if isinstance(t, TransformTracer)
-            else t
-        )
-        for t in tracers
-    ]
+    n_wires = params.get("n_wires")
+    split = None if n_wires == 0 else -n_wires
+    tracers_no_wires = tracers[:split]
+    tracers_wires = tracers[split:]
 
-    return primitive.bind(*tracers, **params)
+    print(f"split: {split}")
+    print(f"tracers_no_wires: {tracers_no_wires}")
+    print(f"tracers_wires: {tracers_wires}")
+
+    op_tracers = []
+    for t in tracers_no_wires:
+        if isinstance(t, TransformTracer):
+            op_tracers.append(
+                TransformTracer(
+                    t._trace,
+                    t.val,
+                    t.idx + 1,
+                )
+            )
+        else:
+            op_tracers.append(t)
+
+    for t in tracers_wires:
+        if isinstance(t, TransformTracer):
+            op_tracers.append(
+                TransformTracer(
+                    t._trace,
+                    *mapped_op.wires,
+                    # or
+                    # wire_map.get(t.val, t.val),
+                    t.idx + 1,
+                )
+            )
+        else:
+            op_tracers.append(t)
+
+    # return mapped_op
+    return primitive.bind(*op_tracers, **params)
 
     # If we return operators without binding them, we get an UnexpectedTracerError
-
-    raise NotImplementedError("This function is not implemented yet.")
+    # raise NotImplementedError("This function is not implemented yet.")
 
 
 @partial(transform, plxpr_transform=_map_wires_plxpr_transform)

@@ -1516,8 +1516,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Returns:
             .Operator: new operator
         """
+        print(f"map_wires called with wire_map: {wire_map}")
+        print(f"self.wires: {self.wires}")
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        print(f"new_op._wires: {new_op._wires}")
         if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
