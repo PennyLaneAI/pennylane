@@ -24,6 +24,7 @@ from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.logging import debug_logger
+from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -176,6 +177,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
+    interface = get_canonical_interface_name(interface)
     state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.value)
 
     # initial state is batched only if the state preparation (if it exists) is batched
@@ -663,6 +665,8 @@ def prepend_state_prep(circuit, state, interface, wires):
     of the original circuit (which included all wires)."""
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
+
+    interface = get_canonical_interface_name(interface)
     state = create_initial_state(wires, None, like=interface.value) if state is None else state
     return qml.tape.QuantumScript(
         [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
