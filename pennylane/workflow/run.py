@@ -48,23 +48,14 @@ def _construct_ml_execution_pipeline(
     Returns:
         tuple: A tuple containing:
             - `jpc`: Jacobian product class for computing gradients efficiently.
-            - `execute_fn` (Callable): The function to execute quantum tapes within the
+            - `execute_fn`: The function to execute quantum tapes within the
               machine learning framework boundary.
-            - `config` (ExecutionConfig): modified execution config
-            - `diff_method` (Callable): Method for computing gradients, or None
+            - `config`: modified execution config
+            - `diff_method`: Method for computing gradients, or None
               if not applicable.
 
     Raises:
-        ValueError: If gradients are computed on execution (`grad_on_execution=True`) but
-            the provided gradient method creates ambiguity.
-
-    Notes:
-        - TensorFlow Autograph (`Interface.TF_AUTOGRAPH`) is handled as a special case due
-          to its unique execution requirements.
-        - Higher-order derivatives are supported by iteratively constructing execution
-          boundaries using `TransformJacobianProducts`.
-        - The returned execution pipeline ensures compatibility with the specified
-          interface, including JAX, TensorFlow, and Autograd.
+        ValueError: If gradients are computed on execution (`grad_on_execution=True`)
     """
     inner_execute = _make_inner_execute(device, inner_transform_program, config)
     cache = _cache_transform in inner_transform_program
