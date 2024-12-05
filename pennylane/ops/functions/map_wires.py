@@ -199,7 +199,6 @@ def _map_wires_plxpr_transform(
 
     # For this to work as expected, the wires should not be TransformTracers
     mapped_op = op.map_wires(wire_map=wire_map)
-    print(f"op: {op}")
     print(f"mapped_op: {mapped_op}\n")
 
     # This is for cases like qml.H(1) @ qml.H(2), which don't have 'n_wires' in the params
