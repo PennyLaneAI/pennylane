@@ -39,7 +39,6 @@ class TestGQSP:
         op = qml.GQSP(unitary(1), angles, control=0)
         qml.ops.functions.assert_valid(op)
 
-    @pytest.mark.torch
     @pytest.mark.parametrize(
         ("unitary", "poly"),
         [
@@ -48,7 +47,7 @@ class TestGQSP:
             (qml.RY(0.2, wires=1), [0.4, -0, 0.2, 0, 0.2]),
         ],
     )
-    def test_correct_solution(self, unitary, poly):
+    def test_correct_algorithm(self, unitary, poly):
         """Test that poly_to_angles and GQSP produce the correct solution"""
 
         angles = qml.poly_to_angles(poly, "GQSP")
@@ -63,6 +62,39 @@ class TestGQSP:
         unitary_matrix = qml.matrix(unitary)
         expected_output = sum(
             [coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate(poly)]
+        )
+        generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
+
+        assert np.allclose(expected_output, generated_output)
+
+    @pytest.mark.parametrize(
+        ("unitary"),
+        [
+            (qml.RX(0.3, wires=1)),
+            (qml.RZ(1.3, wires=1)),
+            (qml.RY(0.2, wires=1)),
+        ],
+    )
+    def test_correct_template(self, unitary):
+        """Test that GQSP produce the correct solution"""
+
+        # Precalucated angles for polynomial p(x) = 0.1 + 0.2x + 0.3x^2
+        angles = [
+            np.array([0.10798862, 0.22107159, 1.25635543]),
+            np.array([-3.14159265, 0.0, 0.0]),
+            np.array([3.14159265, 0.0, 0.0]),
+        ]
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(angles):
+            qml.GQSP(unitary, angles, control=0)
+            return qml.expval(qml.Z(0))
+
+        unitary_matrix = qml.matrix(unitary)
+        expected_output = sum(
+            [coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate([0.1, 0.2, 0.3])]
         )
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
 
