@@ -50,7 +50,6 @@ def _construct_ml_execution_pipeline(
             - `jpc`: Jacobian product class for computing gradients efficiently.
             - `execute_fn`: The function to execute quantum tapes within the
               machine learning framework boundary.
-            - `config`: modified execution config
             - `diff_method`: Method for computing gradients, or None
               if not applicable.
 
@@ -166,12 +165,7 @@ def _construct_ml_execution_pipeline(
                 config.gradient_keyword_arguments,
             )
 
-            if config.interface == Interface.JAX_JIT:
-                # no need to use pure callbacks around execute_fn or the jpc when taking
-                # higher order derivatives
-                config = replace(config, interface=Interface.JAX)
-
-    return jpc, execute_fn, config, diff_method
+    return jpc, execute_fn, diff_method
 
 
 # pylint: disable=import-outside-toplevel
@@ -294,9 +288,17 @@ def run(
         results = inner_execute(tapes)
         return results
 
-    jpc, execute_fn, resolved_execution_config, diff_method = _construct_ml_execution_pipeline(
+    jpc, execute_fn, diff_method = _construct_ml_execution_pipeline(
         resolved_execution_config, device, inner_transform_program
     )
+
+    if (
+        resolved_execution_config.interface == Interface.JAX_JIT
+        and resolved_execution_config.derivative_order > 1
+    ):
+        # no need to use pure callbacks around execute_fn or the jpc when taking
+        # higher order derivatives
+        config = replace(config, interface=Interface.JAX)
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
