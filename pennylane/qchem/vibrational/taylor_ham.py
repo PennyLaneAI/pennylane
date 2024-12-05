@@ -525,7 +525,7 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
 
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the taylor expansion
-        freqs (list(float)): the harmonic frequencies
+        freqs (list(float)): the harmonic frequencies in cm^-1
         is_loc (bool): whether or not if localized
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes

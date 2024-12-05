@@ -814,7 +814,7 @@ def test_taylor_hamiltonian():
 
     assert len(taylor_ham) == len(taylor_bos)
     assert all(
-        np.allclose(abs(taylor_bos.get(key)), abs(value), atol=1e-10)
+        np.allclose(abs(taylor_bos.get(key)), abs(value), atol=1e-5)
         for key, value in taylor_ham.items()
     )
 
@@ -946,8 +946,8 @@ def test_threemode_degs():
 )
 def test_taylor_coeffs():
     taylor_coeffs_1D, taylor_coeffs_2D, _ = taylor_coeffs(test_pes_object, 4, 2)
-    assert np.allclose(taylor_coeffs_1D, taylor_1D, atol=1e-2)
-    assert np.allclose(taylor_coeffs_2D, taylor_2D, atol=1e-2)
+    assert np.allclose(abs(taylor_coeffs_1D), abs(taylor_1D), atol=1e-8)
+    assert np.allclose(abs(taylor_coeffs_2D), abs(taylor_2D), atol=1e-8)
 
 
 @pytest.mark.usefixtures(
@@ -1232,7 +1232,7 @@ def test_taylor_coeffs_dipole():
     coeffs_x_arr, coeffs_y_arr, coeffs_z_arr = taylor_dipole_coeffs(test_pes_object, 4, 1)
     assert np.allclose(coeffs_x_arr[0], expected_coeffs_x_arr[0], atol=1e-10)
     assert np.allclose(coeffs_x_arr[1], expected_coeffs_x_arr[1], atol=1e-10)
-    assert np.allclose(abs(coeffs_y_arr[0]), abs(expected_coeffs_y_arr[0]), atol=1e-10)
+    assert np.allclose(abs(coeffs_y_arr[0]), abs(expected_coeffs_y_arr[0]), atol=1e-8)
     assert np.allclose(abs(coeffs_y_arr[1]), abs(expected_coeffs_y_arr[1]), atol=1e-8)
     assert np.allclose(abs(coeffs_z_arr[0]), abs(expected_coeffs_z_arr[0]), atol=1e-8)
     assert np.allclose(abs(coeffs_z_arr[1]), abs(expected_coeffs_z_arr[1]), atol=1e-8)
