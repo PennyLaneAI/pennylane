@@ -153,7 +153,10 @@ def _get_interface_of_single_tensor(tensor):
     """
     namespace = tensor.__class__.__module__.split(".")[0]
 
-    if namespace in ("pennylane", "autograd"):
+    if namespace == "pennylane":
+        return "jax" if "Tracer" in tensor.__class__.__name__ else "autograd"
+
+    if namespace == "autograd":
         return "autograd"
 
     res = ar.infer_backend(tensor)
