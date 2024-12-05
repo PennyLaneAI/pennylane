@@ -24,6 +24,7 @@ Experimental Lie theory features
     ~structure_constants_dense
     ~cartan_decomp
     ~recursive_cartan_decomp
+    ~variational_kak
 
 
 Utility functions
@@ -52,6 +53,8 @@ Utility functions
     ~orthonormalize
     ~check_orthonormal
     ~trace_inner_product
+    ~validate_kak
+    ~run_opt
 
 
 Involutions
@@ -111,5 +114,5 @@ from .involutions import (
     DIII,
     ClassB,
 )
-
 from .cartan_subalgebra import cartan_subalgebra
+from .variational_kak import validate_kak, variational_kak, run_opt
