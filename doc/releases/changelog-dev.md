@@ -220,7 +220,8 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added native `ResourceOperator` subclasses for each of the multi qubit operators.
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
 
-* Added native `ResourceOperator` subclasses for Adjoint, Controlled, and Pow.
+* Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
+   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
 <h3>Breaking changes 💔</h3>

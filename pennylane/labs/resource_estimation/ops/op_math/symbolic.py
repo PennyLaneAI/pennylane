@@ -27,17 +27,16 @@ from pennylane.ops.op_math.pow import PowOperation
 class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
     """Resource class for Adjoint"""
 
-    @staticmethod
-    def _resource_decomp(base_class, base_params, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    @classmethod
+    def _resource_decomp(cls, base_class, base_params, **kwargs) -> Dict[re.CompressedResourceOp, int]:
         try:
             return base_class.adjoint_resource_decomp(**base_params)
         except re.ResourcesNotDefined:
             gate_types = defaultdict(int)
             decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                resources = gate.op_type.adjoint_resource_decomp(**gate.params)
-                _scale_dict(resources, count, in_place=True)
-                _combine_dict(gate_types, resources, in_place=True)
+                rep = cls.resource_rep(gate.op_type, gate.params)
+                gate_types[rep] = count
 
             return gate_types
 
@@ -72,7 +71,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         except re.ResourcesNotDefined:
             pass
 
-        gate_types = {}
+        gate_types = defaultdict(int)
 
         if num_ctrl_values == 0:
             decomp = base_class.resources(**base_params, **kwargs)
