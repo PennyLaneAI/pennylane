@@ -28,7 +28,9 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
     """Resource class for Adjoint"""
 
     @classmethod
-    def _resource_decomp(cls, base_class, base_params, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    def _resource_decomp(
+        cls, base_class, base_params, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         try:
             return base_class.adjoint_resource_decomp(**base_params)
         except re.ResourcesNotDefined:
@@ -143,12 +145,23 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 class ResourcePow(PowOperation, re.ResourceOperator):
     """Resource class for Pow"""
 
-    @staticmethod
+    @classmethod
     def _resource_decomp(
-        base_class, z, base_params, **kwargs
+        cls, base_class, z, base_params, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
         try:
             return base_class.pow_resource_decomp(z, **base_params)
+        except re.ResourcesNotDefined:
+            pass
+
+        try:
+            gate_types = defaultdict(int)
+            decomp = base_class.resources(**base_params, **kwargs)
+            for gate, count in decomp.items():
+                rep = cls.resource_rep(gate.op_type, z, gate.params)
+                gate_types[rep] = count
+
+            return gate_types
         except re.ResourcesNotDefined:
             pass
 
