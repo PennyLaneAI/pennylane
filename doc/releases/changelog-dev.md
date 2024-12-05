@@ -74,9 +74,9 @@
   [(#6563)](https://github.com/PennyLaneAI/pennylane/pull/6563)
 
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping
-[(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
 added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
-[(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
+  [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
 
 <h4>New API for Qubit Mixed</h4>
@@ -102,6 +102,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 * Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
   [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
 
+* Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
+  [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
+
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
 
@@ -118,6 +121,7 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
   * Implemented helper functions for geometry optimization, harmonic analysis,
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
+    [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
   * Implemented helper functions for calculating one-mode PES, two-mode PES, and
     three-mode PES.
     [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
