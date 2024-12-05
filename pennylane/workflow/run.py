@@ -28,6 +28,154 @@ from pennylane.workflow import _cache_transform
 from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
 
 
+def _construct_ml_execution_pipeline(
+    config: "qml.devices.ExecutionConfig",
+    device: "qml.devices.Device",
+    inner_transform_program: "qml.transforms.core.TransformProgram",
+):
+    """Constructs the machine learning execution pipeline based on the configuration, device,
+    and inner transformation program.
+
+    This function determines the execution function (`execute_fn`) and the Jacobian product
+    class (`jpc`) required for gradient computations. It adapts the execution logic based
+    on the specified interface, gradient method, and device capabilities.
+
+    Args:
+        config (qml.devices.ExecutionConfig): resolved execution configuration
+        device (qml.devices.Device): a Pennylane device
+        inner_transform_program (qml.transforms.core.TransformProgram): the transformation applied to quantum tapes before execution
+
+    Returns:
+        tuple: A tuple containing:
+            - `jpc`: Jacobian product class for computing gradients efficiently.
+            - `execute_fn` (Callable): The function to execute quantum tapes within the
+              machine learning framework boundary.
+            - `config` (ExecutionConfig): modified execution config
+            - `diff_method` (Callable): Method for computing gradients, or None
+              if not applicable.
+
+    Raises:
+        ValueError: If gradients are computed on execution (`grad_on_execution=True`) but
+            the provided gradient method creates ambiguity.
+
+    Notes:
+        - TensorFlow Autograph (`Interface.TF_AUTOGRAPH`) is handled as a special case due
+          to its unique execution requirements.
+        - Higher-order derivatives are supported by iteratively constructing execution
+          boundaries using `TransformJacobianProducts`.
+        - The returned execution pipeline ensures compatibility with the specified
+          interface, including JAX, TensorFlow, and Autograd.
+    """
+    inner_execute = _make_inner_execute(device, inner_transform_program, config)
+    cache = _cache_transform in inner_transform_program
+    diff_method = config.gradient_method
+
+    if config.use_device_jacobian_product and config.interface != Interface.TF_AUTOGRAPH:
+        jpc = DeviceJacobianProducts(device, config)
+        execute_fn = inner_execute
+
+    elif config.use_device_gradient:
+        jpc = DeviceDerivatives(device, config)
+
+        if config.interface != Interface.TF_AUTOGRAPH:
+            execute_fn = (
+                jpc.execute_and_cache_jacobian if config.grad_on_execution else inner_execute
+            )
+
+        elif config.grad_on_execution:
+
+            def wrap_execute_and_compute_derivatives(internal_tapes):
+                """A partial function that wraps the execute_and_compute_derivatives
+                method of the device.
+
+                Closure Variables:
+                    device: The device to execute on
+                    resolved_execution_config: the ExecutionConfig that specifies how to perform the simulations.
+                """
+                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
+
+                return device.execute_and_compute_derivatives(numpy_tapes, config)
+
+            execute_fn = wrap_execute_and_compute_derivatives
+
+            diff_method = None
+
+        else:
+
+            def execution_with_dummy_jac(internal_tapes) -> tuple[ResultBatch, tuple]:
+                """A wrapper around device.execute that adds an empty tuple instead of derivatives.
+
+                Closure Variables:
+                    device: the device to execute on
+                    resolved_execution_config: the ExecutionConfig that specifies how to perform the simulations.
+                """
+                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
+                return device.execute(numpy_tapes, config), tuple()
+
+            execute_fn = execution_with_dummy_jac
+
+            def device_compute_derivatives(internal_tapes):
+                """A partial function that wraps compute_derivatives method of the device.
+
+                Closure Variables:
+                    device: the device to execute on
+                    resolved_execution_config: the ExecutionConfig that specifies how to take the derivative.
+                """
+                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
+                return device.compute_derivatives(numpy_tapes, config)
+
+            diff_method = device_compute_derivatives
+
+    elif config.grad_on_execution is True:
+        # In "forward" mode, gradients are automatically handled
+        # within execute_and_gradients, so providing a diff_method
+        # in this case would have ambiguous behaviour.
+        raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
+
+    elif config.interface != Interface.TF_AUTOGRAPH:
+
+        execute_fn = inner_execute
+
+        # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
+        cache_full_jacobian = (config.interface == Interface.AUTOGRAD) and not cache
+
+        # we can have higher order derivatives when the `inner_execute` used to take
+        # transform gradients is itself differentiable
+        # To make the inner execute itself differentiable, we make it an interface boundary with
+        # its own jacobian product class
+        # this mechanism unpacks the currently existing recursion
+        jpc = TransformJacobianProducts(
+            execute_fn,
+            diff_method,
+            config.gradient_keyword_arguments,
+            cache_full_jacobian,
+        )
+        for i in range(1, config.derivative_order):
+            differentiable = i > 1
+            ml_boundary_execute = _get_ml_boundary_execute(
+                config,
+                differentiable=differentiable,
+            )
+            execute_fn = partial(
+                ml_boundary_execute,
+                execute_fn=execute_fn,
+                jpc=jpc,
+                device=device,
+            )
+            jpc = TransformJacobianProducts(
+                execute_fn,
+                diff_method,
+                config.gradient_keyword_arguments,
+            )
+
+            if config.interface == Interface.JAX_JIT:
+                # no need to use pure callbacks around execute_fn or the jpc when taking
+                # higher order derivatives
+                config = replace(config, interface=Interface.JAX)
+
+    return jpc, execute_fn, config, diff_method
+
+
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
     resolved_execution_config: "qml.devices.ExecutionConfig", differentiable=False
@@ -156,116 +304,9 @@ def run(
         results = inner_execute(tapes)
         return results
 
-    diff_method = resolved_execution_config.gradient_method
-    if (
-        resolved_execution_config.use_device_jacobian_product
-        and resolved_execution_config.interface != Interface.TF_AUTOGRAPH
-    ):
-        jpc = DeviceJacobianProducts(device, resolved_execution_config)
-
-    elif resolved_execution_config.use_device_gradient:
-        jpc = DeviceDerivatives(device, resolved_execution_config)
-
-        if resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
-            execute_fn = (
-                jpc.execute_and_cache_jacobian
-                if resolved_execution_config.grad_on_execution
-                else inner_execute
-            )
-
-        elif resolved_execution_config.grad_on_execution:
-
-            def wrap_execute_and_compute_derivatives(internal_tapes):
-                """A partial function that wraps the execute_and_compute_derivatives
-                method of the device.
-
-                Closure Variables:
-                    device: The device to execute on
-                    resolved_execution_config: the ExecutionConfig that specifies how to perform the simulations.
-                """
-                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
-
-                return device.execute_and_compute_derivatives(
-                    numpy_tapes, resolved_execution_config
-                )
-
-            execute_fn = wrap_execute_and_compute_derivatives
-
-            diff_method = None
-
-        else:
-
-            def execution_with_dummy_jac(internal_tapes) -> tuple[ResultBatch, tuple]:
-                """A wrapper around device.execute that adds an empty tuple instead of derivatives.
-
-                Closure Variables:
-                    device: the device to execute on
-                    resolved_execution_config: the ExecutionConfig that specifies how to perform the simulations.
-                """
-                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
-                return device.execute(numpy_tapes, resolved_execution_config), tuple()
-
-            execute_fn = execution_with_dummy_jac
-
-            def device_compute_derivatives(internal_tapes):
-                """A partial function that wraps compute_derivatives method of the device.
-
-                Closure Variables:
-                    device: the device to execute on
-                    resolved_execution_config: the ExecutionConfig that specifies how to take the derivative.
-                """
-                numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
-                return device.compute_derivatives(numpy_tapes, resolved_execution_config)
-
-            diff_method = device_compute_derivatives
-
-    elif resolved_execution_config.grad_on_execution is True:
-        # In "forward" mode, gradients are automatically handled
-        # within execute_and_gradients, so providing a diff_method
-        # in this case would have ambiguous behaviour.
-        raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
-
-    elif resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
-        # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
-        cache_full_jacobian = (resolved_execution_config.interface == Interface.AUTOGRAD) and not (
-            _cache_transform in inner_transform_program
-        )
-
-        # we can have higher order derivatives when the `inner_execute` used to take
-        # transform gradients is itself differentiable
-        # To make the inner execute itself differentiable, we make it an interface boundary with
-        # its own jacobian product class
-        # this mechanism unpacks the currently existing recursion
-        jpc = TransformJacobianProducts(
-            execute_fn,
-            diff_method,
-            resolved_execution_config.gradient_keyword_arguments,
-            cache_full_jacobian,
-        )
-        for i in range(1, resolved_execution_config.derivative_order):
-            differentiable = i > 1
-            ml_boundary_execute = _get_ml_boundary_execute(
-                resolved_execution_config,
-                differentiable=differentiable,
-            )
-            execute_fn = partial(
-                ml_boundary_execute,
-                execute_fn=execute_fn,
-                jpc=jpc,
-                device=device,
-            )
-            jpc = TransformJacobianProducts(
-                execute_fn,
-                diff_method,
-                resolved_execution_config.gradient_keyword_arguments,
-            )
-
-            if resolved_execution_config.interface == Interface.JAX_JIT:
-                # no need to use pure callbacks around execute_fn or the jpc when taking
-                # higher order derivatives
-                resolved_execution_config = replace(
-                    resolved_execution_config, interface=Interface.JAX
-                )
+    jpc, execute_fn, resolved_execution_config, diff_method = _construct_ml_execution_pipeline(
+        resolved_execution_config, device, inner_transform_program
+    )
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
