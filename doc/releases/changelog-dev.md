@@ -146,6 +146,9 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
+* Added Pauli String representations for the gates X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP.
+  [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
+  
 * `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
   [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
 
@@ -393,6 +396,7 @@ Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
+Lasse Dierich,
 Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
