@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane import BasisState, DeviceError, StatePrep
 from pennylane.devices import DefaultMixed
 from pennylane.devices.default_mixed import DefaultMixedNewAPI
+from pennylane.math import Interface
 from pennylane.ops import (
     CNOT,
     CZ,
@@ -1375,5 +1376,5 @@ class TestDefaultMixedNewAPIInit:
         )  # in-valid one for this device
         processed_config = dev._setup_execution_config(execution_config)
         assert (
-            processed_config.interface is None
-        ), "The interface should be set to None for an invalid gradient method"
+            processed_config.interface is Interface.NUMPY
+        ), "The interface should be set to numpy for an invalid gradient method"

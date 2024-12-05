@@ -353,6 +353,19 @@ def test_qnode_jvp():
     assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
 
+def test_qnode_jit():
+    """Test that executions on default qubit can be jitted."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    x = jax.numpy.array(-0.5)
+    res = jax.jit(circuit)(0.5)
+    assert qml.math.allclose(res, jax.numpy.cos(x))
+
+
 # pylint: disable=too-many-public-methods
 class TestQNodeVmapIntegration:
     """Tests for integrating JAX vmap with the QNode primitive."""
