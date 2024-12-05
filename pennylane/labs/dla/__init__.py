@@ -35,23 +35,17 @@ Utility functions
     :toctree: api
 
     ~adjvec_to_op
-    ~change_basis_ad_rep
-    ~check_orthonormal
-    ~check_commutation
-    ~check_all_commuting
-    ~check_cartan_decomp
     ~op_to_adjvec
+    ~trace_inner_product
     ~orthonormalize
     ~pauli_coefficients
     ~batched_pauli_decompose
-    ~pauli_coefficients
-    ~check_cartan_decomp
+    ~check_orthonormal
     ~check_commutation
     ~check_all_commuting
+    ~check_cartan_decomp
+    ~change_basis_ad_rep
     ~apply_basis_change
-    ~orthonormalize
-    ~check_orthonormal
-    ~trace_inner_product
 
 Involutions
 ~~~~~~~~~~~
