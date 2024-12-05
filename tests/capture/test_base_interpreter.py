@@ -140,6 +140,37 @@ def test_default_operator_handling():
     assert jaxpr.eqns[5].primitive == qml.ops.Sum._primitive
 
 
+@pytest.mark.parametrize(
+    "op_class, args, kwargs",
+    [
+        # (qml.ControlledQubitUnitary, (jnp.eye(2), [0, 1]), {}),
+        (qml.CH, ([0, 1],), {}),
+        (qml.CY, ([0, 1],), {}),
+        (qml.CZ, ([0, 1],), {}),
+        (qml.CSWAP, ([0, 1, 2],), {}),
+        (qml.CCZ, ([0, 1, 2],), {}),
+        (qml.CNOT, ([0, 1],), {}),
+        (qml.Toffoli, ([0, 1, 2],), {}),
+        (qml.MultiControlledX, (), {"wires": [0, 1, 2, 3]}),
+        (qml.CRX, (1.5, [0, 1]), {}),
+        (qml.CRY, (1.5, [0, 1]), {}),
+        (qml.CRZ, (1.5, [0, 1]), {}),
+        (qml.CRot, (1.5, 2.5, 3.5, [0, 1]), {}),
+        (qml.ControlledPhaseShift, (1.5, [0, 1]), {}),
+    ],
+)
+def test_controlled_operator_handling(op_class, args, kwargs):
+    """Test that PlxprInterpreter can handle controlled operators"""
+
+    @PlxprInterpreter()
+    def f():
+        op_class(*args, **kwargs)
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert jaxpr.eqns[0].primitive == op_class._primitive
+
+
 def test_default_measurement_handling():
     """Test that measurements are simply re-queued by default."""
 
@@ -461,7 +492,7 @@ class TestHigherOrderPrimitiveRegistrations:
         dev = qml.device("default.qubit", wires=1)
 
         @AddNoise()
-        @qml.qnode(dev, diff_method="adjoint", grad_on_execution=False)
+        @qml.qnode(dev, diff_method="backprop", grad_on_execution=False)
         def f():
             qml.I(0)
             qml.I(0)
@@ -477,7 +508,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert inner_jaxpr.eqns[1].primitive == qml.RX._primitive
         assert inner_jaxpr.eqns[3].primitive == qml.RX._primitive
 
-        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "adjoint"
+        assert jaxpr.eqns[0].params["qnode_kwargs"]["diff_method"] == "backprop"
         assert jaxpr.eqns[0].params["qnode_kwargs"]["grad_on_execution"] is False
         assert jaxpr.eqns[0].params["device"] == dev
 
