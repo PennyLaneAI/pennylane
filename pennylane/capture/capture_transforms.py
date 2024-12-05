@@ -55,11 +55,6 @@ class TransformTrace(Trace):
 
     lift = sublift = pure
 
-    @property
-    def state(self):
-        """Dictionary containing environment information for transforms to use."""
-        return self._state
-
     def process_primitive(self, primitive: Primitive, tracers: tuple[Tracer], params: dict):
         """Interpret a given primitive.
 
@@ -90,7 +85,7 @@ class TransformTrace(Trace):
         bind_fn = transform.plxpr_transform
         targs, tkwargs = transform.args, transform.kwargs
 
-        return bind_fn(primitive, tracers, params, targs, tkwargs, state=transform_state)
+        return bind_fn(primitive, tracers, params, targs, tkwargs, transform_state)
 
 
 class TransformTracer(Tracer):

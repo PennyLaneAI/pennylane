@@ -65,7 +65,8 @@ def _change_rotations_plxpr_transform(
 def change_rotations(
     tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
 ):  # pylint: disable=unused-argument
-    """Convert RX to RY, RY to RZ, and RZ to RX tape transform."""
+    """Convert RX to RY, RY to RZ, and RZ to RX tape transform. The tape implementation is not
+    used for testing, but added for the sake of correctness."""
     op_map = {
         "RX": qml.RY,
         "RY": qml.RZ,
@@ -100,7 +101,8 @@ def _obs_z_to_x_plxpr_transform(
 def obs_z_to_x(
     tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
 ):  # pylint: disable=unused-argument
-    """Convert PauliZ observable to PauliX tape transform."""
+    """Convert PauliZ observable to PauliX tape transform. The tape implementation is not
+    used for testing, but added for the sake of correctness."""
     new_measurements = [
         type(mp)(obs=qml.X(mp.wires[0])) if isinstance(mp.obs, qml.Z) else mp
         for mp in tape.measurements
