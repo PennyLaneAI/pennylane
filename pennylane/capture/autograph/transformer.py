@@ -123,6 +123,9 @@ def run_autograph(fn):
 
         Nested functions are only lazily converted by AutoGraph. If the input includes nested
         functions, these won't be converted until the first time the function is traced.
+
+    There are some limitations and sharp bits regarding AutoGraph; to better understand
+    supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
     """
 
     user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)

@@ -129,6 +129,9 @@ def make_plxpr(
 
         >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
         [Array(8, dtype=int64, weak_type=True)]
+
+        There are some limitations and sharp bits regarding AutoGraph; to better understand
+        supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
     """
     if not has_jax:  # pragma: no cover
         raise ImportError(
