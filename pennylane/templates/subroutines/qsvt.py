@@ -359,9 +359,10 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
         else:
 
-            # It is normalized to ensure that the block encoding is the desired one.
-            s = int(np.ceil(np.log2(max(len(A), len(A[0])))))
-            encoding = qml.FABLE(2**s * A, wires=encoding_wires)
+            # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
+            max_dimension = max(np.shape(A))
+            fable_norm = int(np.ceil(np.log2(max_dimension)))
+            encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
 
             projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
 
