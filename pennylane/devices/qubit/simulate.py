@@ -176,7 +176,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface)
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.value)
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -663,7 +663,7 @@ def prepend_state_prep(circuit, state, interface, wires):
     of the original circuit (which included all wires)."""
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
-    state = create_initial_state(wires, None, like=interface) if state is None else state
+    state = create_initial_state(wires, None, like=interface.value) if state is None else state
     return qml.tape.QuantumScript(
         [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
         + circuit.operations,

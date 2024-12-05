@@ -47,7 +47,7 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface)
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.value)
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
