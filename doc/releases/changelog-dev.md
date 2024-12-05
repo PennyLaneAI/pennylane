@@ -78,6 +78,7 @@
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
 
 * Added a `cartan_subalgebra` function to compute the (horizontal) Cartan subalgebra of a Cartan decomposition.
+  [(#6403)](https://github.com/PennyLaneAI/pennylane/pull/6403)
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
 
 * Added a `recursive_cartan_decomp` function and all canonical Cartan involutions.
