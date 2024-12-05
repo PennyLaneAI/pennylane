@@ -22,7 +22,7 @@ from pennylane.bose import BoseSentence, BoseWord
 
 
 def _import_sklearn():
-    """Import mpi4py."""
+    """Import sklearn."""
     try:
         import sklearn
     except ImportError as Error:
@@ -31,15 +31,6 @@ def _import_sklearn():
         ) from Error
 
     return sklearn
-
-
-def _obtain_r2(ytrue, yfit):
-    """Calculates coefficient of determination of accuracy of fit of a model."""
-    ymean = np.sum(ytrue) / len(ytrue)
-    ssres = np.sum((ytrue - yfit) ** 2)
-    sstot = np.sum((ytrue - ymean) ** 2)
-
-    return 1 - ssres / sstot
 
 
 def _remove_harmonic(freqs, onemode_pes):
@@ -84,7 +75,7 @@ def _fit_onebody(onemode_op, deg, min_deg=3):
     from sklearn.preprocessing import PolynomialFeatures
 
     if deg < min_deg:
-        raise Exception(
+        raise ValueError(
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
         )
 
@@ -148,7 +139,7 @@ def _fit_twobody(twomode_op, deg, min_deg=3):
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     if deg < min_deg:
-        raise Exception(
+        raise ValueError(
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
         )
 
@@ -239,7 +230,7 @@ def _fit_threebody(threemode_op, deg, min_deg=3):
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
     if deg < min_deg:
-        raise Exception(
+        raise ValueError(
             f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
         )
 
@@ -412,9 +403,6 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
     taylor_deg = num_1D_coeffs + start_deg - 1
 
     ordered_dict = BoseSentence({})
-
-    if num_coups > 3:
-        raise ValueError("Found 4-mode expansion coefficients, not defined!")
 
     # One-mode expansion
     for mode in range(num_modes):
