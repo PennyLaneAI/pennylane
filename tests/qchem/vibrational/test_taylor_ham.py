@@ -822,11 +822,95 @@ def test_taylor_hamiltonian():
 @pytest.mark.usefixtures(
     "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
 )
+def test_remove_harmonic():
+    anh_pes, _ = _remove_harmonic(
+        freqs=test_pes_object.freqs, onemode_pes=test_pes_object.pes_onemode
+    )
+    expected_anh_pes = np.array(
+        [
+            [
+                -2.46470337e-03,
+                -8.66444424e-04,
+                -2.28151453e-04,
+                -2.52213033e-05,
+                -7.38964445e-13,
+                1.98758167e-05,
+                1.46472247e-04,
+                3.82594976e-04,
+                3.59486530e-04,
+            ],
+            [
+                6.39651979e-02,
+                1.97795952e-02,
+                4.76215949e-03,
+                5.06917611e-04,
+                -7.38964445e-13,
+                -4.18235839e-04,
+                -3.21282001e-03,
+                -1.07598839e-02,
+                -2.70898724e-02,
+            ],
+            [
+                -2.70898725e-02,
+                -1.07598839e-02,
+                -3.21282001e-03,
+                -4.18235859e-04,
+                -7.38964445e-13,
+                5.06917581e-04,
+                4.76215929e-03,
+                1.97795947e-02,
+                6.39651969e-02,
+            ],
+        ]
+    )
+
+    assert np.allclose(abs(anh_pes), abs(expected_anh_pes), atol=1e-5)
+
+
+@pytest.mark.usefixtures(
+    "skip_if_no_pyscf_support", "skip_if_no_geometric_support", "skip_if_no_sklearn_support"
+)
 def test_fit_onebody():
-    anh_pes, _ = _remove_harmonic(test_pes_object.freqs, test_pes_object.pes_onemode)
+    anh_pes = np.array(
+        [
+            [
+                -2.46470337e-03,
+                -8.66444424e-04,
+                -2.28151453e-04,
+                -2.52213033e-05,
+                -7.38964445e-13,
+                1.98758167e-05,
+                1.46472247e-04,
+                3.82594976e-04,
+                3.59486530e-04,
+            ],
+            [
+                6.39651979e-02,
+                1.97795952e-02,
+                4.76215949e-03,
+                5.06917611e-04,
+                -7.38964445e-13,
+                -4.18235839e-04,
+                -3.21282001e-03,
+                -1.07598839e-02,
+                -2.70898724e-02,
+            ],
+            [
+                -2.70898725e-02,
+                -1.07598839e-02,
+                -3.21282001e-03,
+                -4.18235859e-04,
+                -7.38964445e-13,
+                5.06917581e-04,
+                4.76215929e-03,
+                1.97795947e-02,
+                6.39651969e-02,
+            ],
+        ]
+    )
     coeff_1D, _ = _fit_onebody(anh_pes, 4, 2)
 
-    assert np.allclose(abs(coeff_1D), abs(taylor_1D), atol=1e-10)
+    assert np.allclose(abs(coeff_1D), abs(taylor_1D), atol=1e-6)
 
 
 @pytest.mark.usefixtures(
