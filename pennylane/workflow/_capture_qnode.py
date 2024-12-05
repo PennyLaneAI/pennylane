@@ -190,7 +190,9 @@ def _get_qnode_prim():
 
     # pylint: disable=too-many-arguments, unused-argument
     @qnode_prim.def_impl
-    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None):
+    def qnode_impl(
+        *args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts, batch_dims=None
+    ):
         if shots != device.shots:
             raise NotImplementedError(
                 "Overriding shots is not yet supported with the program capture execution."
