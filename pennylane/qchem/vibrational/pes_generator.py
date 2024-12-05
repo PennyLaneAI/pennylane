@@ -17,10 +17,14 @@ per normal modes on a grid."""
 import itertools
 import subprocess
 
+from pathlib import Path
+
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
+from pennylane.workflow import executor
 
 from .localize_modes import localize_normal_modes
 from .vibrational_class import (
@@ -40,20 +44,7 @@ HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
 C_LIGHT = 3 * 10**8  # m/s
 BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
 
-
-def _import_mpi4py():
-    """Import mpi4py."""
-    try:
-        import mpi4py
-    except ImportError as Error:
-        raise ImportError(
-            "This feature requires mpi4py. It can be installed with: pip install mpi4py."
-        ) from Error
-
-    return mpi4py
-
-
-def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False):
+def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipole=False, executor: Optional[executor.RemoteExecABC] = None):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by displacement vectors.
 
     Args:
@@ -74,14 +65,7 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
 
     """
 
-    _import_mpi4py()
-    from mpi4py import MPI
-
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-
     local_pes_onebody, local_dipole_onebody = _local_pes_onemode(
-        comm,
         molecule,
         scf_result,
         freqs,
@@ -89,6 +73,7 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
         grid,
         method=method,
         dipole=dipole,
+        executor = executor,
     )
 
     filename = f"v1data_{rank}.hdf5"
@@ -96,29 +81,19 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
         f.create_dataset("V1_PES", data=local_pes_onebody)
         if dipole:
             f.create_dataset("D1_DMS", data=local_dipole_onebody)
-        f.close()
 
-    comm.Barrier()
     pes_onebody = None
     dipole_onebody = None
-    if rank == 0:
-        pes_onebody, dipole_onebody = _load_pes_onemode(
-            comm.Get_size(), len(freqs), len(grid), dipole=dipole
-        )
-        subprocess.run(
-            ["rm", "v1data*"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            shell=True,
-            check=False,
-        )
 
-    comm.Barrier()
-    pes_onebody = comm.bcast(pes_onebody, root=0)
+    pes_onebody, dipole_onebody = _load_pes_onemode(
+        comm.Get_size(), len(freqs), len(grid), dipole=dipole
+    )
+
+    # Remove matched files
+    for f in Path(".").glob("v1data*"):
+        f.unlink()
 
     if dipole:
-        dipole_onebody = comm.bcast(dipole_onebody, root=0)
         return pes_onebody, dipole_onebody
 
     return pes_onebody, None
