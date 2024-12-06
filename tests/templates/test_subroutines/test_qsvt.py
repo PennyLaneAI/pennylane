@@ -679,10 +679,17 @@ class TestRootFindingSolver:
             ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
         ],
     )
-    def test_correctness_QSP_angles_root_finding(self, poly):
+    @pytest.mark.parametrize(
+        "angle_solver",
+        [
+            "root-finding",
+            "iterative",
+        ]
+    )
+    def test_correctness_QSP_angles_root_finding(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(poly, "QSP", angle_solver="root-finding")
+        angles = qml.poly_to_angles(poly, "QSP", angle_solver=angle_solver)
         x = 0.5
 
         @qml.qnode(qml.device("default.qubit"))
