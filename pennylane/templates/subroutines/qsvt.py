@@ -21,11 +21,14 @@ import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
+from pennylane.math.utils import requires_grad
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+from autograd import jacobian, hessian
 
 
 def qsvt(A, angles, wires, convention=None):
@@ -569,8 +572,131 @@ def _compute_qsp_angle(poly_coeffs):
             )
 
     return rotation_angles
+###########################################################################################################################
+"""
+Implementation of the QSP (Quantum Signal Processing) algorithm proposed in https://arxiv.org/pdf/2002.11649 
+"""
 
+import scipy
 
+# @qjit
+def cheby_pol(degree, x):
+    """cos(degree*arcos(x))"""
+    # if np.abs(x) > 1:
+    #     raise ValueError()
+    return qml.numpy.cos(degree * qml.numpy.arccos(x))
+
+# @qjit
+def poly_func(
+    coeffs, degree, parity, x):
+    """\sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(karccos(x))"""
+    if parity == 0:
+        assert degree == 2 * len(coeffs) - 2
+        return np.sum(
+            np.array([coeffs[i] * cheby_pol(2 * i, x) for i in range(len(coeffs))])
+        )
+    if parity == 1:
+        assert degree == 2 * len(coeffs) - 1
+        return np.sum(
+            np.array([coeffs[i] * cheby_pol(2 * i + 1, x) for i in range(len(coeffs))])
+        )
+    assert degree == 2 * len(coeffs) - 2 + parity
+    return qml.numpy.sum(
+        qml.numpy.array([coeffs[i] * cheby_pol(2 * i + parity, x) for i in range(len(coeffs))])
+    )
+
+# @qjit
+def z_rotation(phi):
+    return qml.numpy.array([[qml.numpy.exp(1j * phi), 0.0], [0.0, qml.numpy.exp(-1j * phi)]])
+
+# @qjit
+def W_of_x(x):
+    """W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
+    return qml.numpy.array(
+        [
+            [cheby_pol(1, x), 1j * qml.numpy.sqrt(1 - cheby_pol(1, x) ** 2)],
+            [1j * qml.numpy.sqrt(1 - cheby_pol(1, x) ** 2), cheby_pol(1, x)],
+        ]
+    )
+
+# @qjit
+def qsp_iterate(phi, x):
+    """defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
+    return W_of_x(x) @ z_rotation(phi)
+
+from functools import reduce
+
+# @qjit
+def qsp_iterates(phis, x):
+    """Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)"""
+    mtx = qml.math.eye(2)
+    for phi in phis[::-1][:-1]:
+        mtx = qml.numpy.dot(qsp_iterate(phi, x), mtx)
+    mtx = z_rotation(phis[0]) @ mtx
+
+    return mtx
+
+def grid_pts(degree):
+    """x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) Grid over which the polynomials are evaluated and the optimization is carried defined in page 8"""
+    d = int(qml.math.ceil((degree + 1) / 2))
+    return qml.numpy.array([qml.math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)], requires_grad=True)
+
+def qsp_optimization(degree, coeffs_target_func, opt_method="Newton-CG"):
+    """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid"""
+    parity = degree % 2
+
+    grid_points = grid_pts(degree)
+    initial_guess = [qml.numpy.pi / 4] + [0.0] * (degree - 1) + [qml.numpy.pi / 4]
+    initial_guess = qml.numpy.array(initial_guess, requires_grad=True)
+    targets = [poly_func(coeffs_target_func, degree, parity, x) for x in grid_points]
+
+    def obj_function(phi):
+        # Equation (23)
+        obj_func = 0.0
+
+        for i,x in enumerate(grid_points):
+            obj_func += (
+                qml.numpy.real(qsp_iterates(phi, x)[0, 0])
+                - targets[i]
+            ) ** 2
+
+        return 1 / len(grid_points) * obj_func
+
+    opt_kwargs = {}
+    opt_kwargs["jac"] = jacobian(obj_function)
+    if opt_method == "Newton-CG":
+        opt_kwargs["hess"] = hessian(obj_function)
+
+    results = scipy.optimize.minimize(
+        fun=obj_function,
+        x0=initial_guess,
+        method=opt_method,
+        **opt_kwargs
+    )
+    phis = results.x
+    cost_func = results.fun
+
+    print(f"cost function {cost_func}")
+    return phis, cost_func
+
+def _compute_qsp_angles_iteratively(polynomial_coeffs_in_cano_basis, opt_method="Newton-CG"):
+    polynomial_coeffs_in_cheby_basis = chebyshev.poly2cheb(polynomial_coeffs_in_cano_basis)
+    degree = len(polynomial_coeffs_in_cheby_basis) - 1
+    
+    coeffs_odd = polynomial_coeffs_in_cheby_basis[1::2]
+    coeffs_even = polynomial_coeffs_in_cheby_basis[0::2]
+
+    if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
+        coeffs_target_func = qml.numpy.array(coeffs_even)
+    elif np.allclose(coeffs_even, np.zeros_like(coeffs_even)):
+        coeffs_target_func = qml.numpy.array(coeffs_odd)
+    else:
+        raise ValueError()
+
+    angles, *_ = qsp_optimization(degree=degree, coeffs_target_func=coeffs_target_func, opt_method=opt_method)
+    
+    return angles 
+###########################################################################################################################
 def transform_angles(angles, routine1, routine2):
     r"""
     Converts angles for quantum signal processing (QSP) and quantum singular value transformation (QSVT) routines.
@@ -760,10 +886,15 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
     if routine == "QSVT":
         if angle_solver == "root-finding":
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
+        elif angle_solver == "iterative":
+            return transform_angles(_compute_qsp_angles_iteratively(poly), "QSP", "QSVT")
+
         raise AssertionError("Invalid angle solver method. We currently support 'root-finding'")
 
     if routine == "QSP":
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
+        elif angle_solver == "iterative":
+            return _compute_qsp_angles_iteratively(poly)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
     raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")
