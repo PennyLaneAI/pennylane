@@ -309,15 +309,16 @@ class TestSampleMeasurements:
         )
         return ["00", "01", "10", "11"], probs
 
+    @pytest.mark.parametrize("interface", ml_interfaces)
     @pytest.mark.parametrize("x", [0.732, 0.488])
-    def test_single_expval(self, x, seed):
+    def test_single_expval(self, x, interface, seed):
         """Test a simple circuit with a single expval measurement"""
         qs = qml.tape.QuantumScript(
             [qml.RY(x, wires=0)],
             [qml.expval(qml.PauliZ(0))],
             shots=10000,
         )
-        result = simulate(qs, rng=seed)
+        result = simulate(qs, rng=seed, interface=interface)
         assert isinstance(result, np.float64)
         assert result.shape == ()
         assert np.allclose(result, self.expval_of_RY_circ(x), atol=0.05)
