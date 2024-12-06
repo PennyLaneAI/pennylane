@@ -321,6 +321,7 @@ def test_taylor_kinetic():
     assert expected_taylor_kin == list(taylor_kin.items())
 
 
+# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     ("taylor_1D", "taylor_2D", "freqs", "is_loc", "uloc", "reference_ops", "reference_coeffs"),
     [
@@ -344,9 +345,13 @@ def test_taylor_kinetic():
         ),
     ],
 )
-def test_taylor_bosonic(taylor_1D, taylor_2D, freqs, is_loc, uloc, reference_ops, reference_coeffs):
+def test_taylor_bosonic(
+    taylor_1D_coeffs, taylor_2D_coeffs, ref_freqs, is_loc, ref_uloc, reference_ops, reference_coeffs
+):
     """Test that taylor_bosonic produces the correct bosonic hamiltonian"""
-    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, is_loc=is_loc, uloc=uloc)
+    taylor_bos = taylor_bosonic(
+        [taylor_1D_coeffs, taylor_2D_coeffs], ref_freqs, is_loc=is_loc, uloc=ref_uloc
+    )
     if is_loc:
         sorted_arr = sorted(taylor_bos.items(), key=lambda x: x[1].real)
     else:
