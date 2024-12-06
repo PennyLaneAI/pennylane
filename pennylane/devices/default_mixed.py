@@ -731,7 +731,7 @@ class DefaultMixedLegacy(QubitDevice):
 
         else:
             raise qml.DeviceError(
-                f"Snapshots of {type(measurement)} are not yet supported on default.mixed"
+                f"Snapshots of {type(measurement)} are not yet supported on default.mixed.legacy"
             )
 
         self._state = pre_rotated_state
