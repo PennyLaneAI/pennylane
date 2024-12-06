@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+  [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
+
 * Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
   class. Device developers are encouraged to override these two methods separately instead of the
   `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these
@@ -260,6 +263,10 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 
 * Added native `ResourceOperator` subclasses for each of the multi qubit operators.
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
+
+* Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
+  symbolic operation classes.
+  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
 <h3>Breaking changes 💔</h3>
 
