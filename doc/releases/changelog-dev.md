@@ -166,7 +166,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
 * Improved performance of ``iterative_qpe`` tests.
-  [(#6681)](https://github.com/PennyLaneAI/pennylane/pull/6681)
+  [(#6683)](https://github.com/PennyLaneAI/pennylane/pull/6683)
 
 <h4>Capturing and representing hybrid programs</h4>
 
