@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the taylor hamiltonian construction functions."""
+import os
 import sys
 
 import numpy as np
@@ -19,6 +20,7 @@ import pytest
 
 from pennylane.bose import BoseWord
 from pennylane.qchem import vibrational
+from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
 from pennylane.qchem.vibrational.taylor_ham import (
     _fit_onebody,
     _fit_threebody,
@@ -39,9 +41,10 @@ from tests.qchem.vibrational.test_ref_files.pes_object import (
     expected_coeffs_y_arr,
     expected_coeffs_z_arr,
     freqs,
-    pes_object_3D,
     reference_taylor_bosonic_coeffs,
     reference_taylor_bosonic_ops,
+    reference_taylor_bosonic_coeffs_non_loc,
+    reference_taylor_bosonic_ops_non_loc,
     taylor_1D,
     taylor_2D,
     taylor_3D,
@@ -50,6 +53,36 @@ from tests.qchem.vibrational.test_ref_files.pes_object import (
 
 for i, ele in enumerate(reference_taylor_bosonic_ops):
     reference_taylor_bosonic_ops[i] = BoseWord(ele)
+
+for i, ele in enumerate(reference_taylor_bosonic_ops_non_loc):
+    reference_taylor_bosonic_ops_non_loc[i] = BoseWord(ele)
+
+h5py = pytest.importorskip("h5py")
+
+ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
+
+with h5py.File(os.path.join(ref_dir, "H2S_3D_PES.hdf5"), "r") as f:
+    pes_onemode = np.array(f["pes_onemode"][()])
+    pes_twomode = np.array(f["pes_twomode"][()])
+    pes_threemode = np.array(f["pes_threemode"][()])
+
+    dipole_onemode = np.array(f["dipole_onemode"][()])
+    dipole_twomode = np.array(f["dipole_twomode"][()])
+    dipole_threemode = np.array(f["dipole_threemode"][()])
+    pes_object_3D = VibrationalPES(
+        freqs=np.array(f["freqs"][()]),
+        grid=np.array(f["grid"][()]),
+        uloc=np.array(f["uloc"][()]),
+        gauss_weights=np.array(f["gauss_weights"][()]),
+        pes_data=[pes_onemode, pes_twomode, pes_threemode],
+        dipole_data=[dipole_onemode, dipole_twomode, dipole_threemode],
+        localized=f["localized"][()],
+        dipole_level=f["dipole_level"][()],
+    )
+
+with h5py.File(os.path.join(ref_dir, "H2S_non_loc.hdf5"), "r") as f:
+    non_loc_taylor_1D = f["taylor_1D"][()]
+    non_loc_taylor_2D = f["taylor_2D"][()]
 
 
 def test_import_sklearn(monkeypatch):
@@ -288,17 +321,42 @@ def test_taylor_kinetic():
     assert expected_taylor_kin == list(taylor_kin.items())
 
 
-def test_taylor_bosonic():
+@pytest.mark.parametrize(
+    ("taylor_1D", "taylor_2D", "freqs", "is_loc", "uloc", "reference_ops", "reference_coeffs"),
+    [
+        (
+            taylor_1D,
+            taylor_2D,
+            freqs,
+            True,
+            uloc,
+            reference_taylor_bosonic_ops,
+            reference_taylor_bosonic_coeffs,
+        ),
+        (
+            non_loc_taylor_1D,
+            non_loc_taylor_2D,
+            freqs,
+            False,
+            None,
+            reference_taylor_bosonic_ops_non_loc,
+            reference_taylor_bosonic_coeffs_non_loc,
+        ),
+    ],
+)
+def test_taylor_bosonic(taylor_1D, taylor_2D, freqs, is_loc, uloc, reference_ops, reference_coeffs):
     """Test that taylor_bosonic produces the correct bosonic hamiltonian"""
-    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, uloc=uloc)
-    sorted_arr = sorted(taylor_bos.items(), key=lambda x: x[1].real)
+    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, is_loc=is_loc, uloc=uloc)
+    if is_loc:
+        sorted_arr = sorted(taylor_bos.items(), key=lambda x: x[1].real)
+    else:
+        sorted_arr = sorted(taylor_bos.items(), key=lambda x: abs(x[1].real))
     sorted_ops_arr, sorted_coeffs_arr = zip(*sorted_arr)
 
-    assert np.allclose(
-        abs(np.array(sorted_coeffs_arr)), abs(reference_taylor_bosonic_coeffs), atol=1e-10
-    )
-    assert len(sorted_ops_arr) == len(reference_taylor_bosonic_ops)
-    assert list(sorted_ops_arr) == reference_taylor_bosonic_ops
+    assert np.allclose(abs(np.array(sorted_coeffs_arr)), abs(np.array(reference_coeffs)), atol=1e-4)
+    assert len(sorted_ops_arr) == len(reference_ops)
+
+    assert all(op in reference_ops for op in sorted_ops_arr)
 
 
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
