@@ -173,9 +173,6 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
-* Improved performance of ``iterative_qpe`` tests. Removed the overwhelming shots with exact solution via `qml.probs`.
-  [(#6683)](https://github.com/PennyLaneAI/pennylane/pull/6683)
-
 <h4>Capturing and representing hybrid programs</h4>
 
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
