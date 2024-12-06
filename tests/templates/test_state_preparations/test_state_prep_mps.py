@@ -16,9 +16,9 @@ Tests for the MPSPrep template.
 """
 
 import numpy as np
+import pytest
 
 import pennylane as qml
-import pytest
 
 
 def test_standard_validity():

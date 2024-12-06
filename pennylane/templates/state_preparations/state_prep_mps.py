@@ -15,9 +15,9 @@
 Contains the MPSPrep template.
 """
 
+import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.wires import Wires
-import pennylane as qml
 
 
 class MPSPrep(Operation):
