@@ -122,6 +122,9 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
   [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
 
+* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
+  [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
+
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
 
