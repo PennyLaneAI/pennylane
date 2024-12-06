@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the classical shadows transforms"""
-import warnings
 
 # pylint: disable=too-few-public-methods
 import pytest
@@ -20,13 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.shadows.transforms import _replace_obs
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
