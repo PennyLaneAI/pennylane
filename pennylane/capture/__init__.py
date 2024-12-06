@@ -29,6 +29,7 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
+    ~convert_to_tape
     ~create_operator_primitive
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
@@ -36,7 +37,6 @@ quantum-classical programs.
     ~make_plxpr
     ~PlxprInterpreter
     ~FlatFn
-
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
