@@ -1377,3 +1377,7 @@ class TestDefaultMixedNewAPIInit:
         assert (
             processed_config.interface is None
         ), "The interface should be set to None for an invalid gradient method"
+
+
+class IntegrationTestDefaultMixedNewAPI:
+    
