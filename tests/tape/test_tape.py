@@ -14,7 +14,6 @@
 """Unit tests for the QuantumTape"""
 # pylint: disable=protected-access,too-few-public-methods
 import copy
-import warnings
 from collections import defaultdict
 
 import numpy as np
@@ -33,13 +32,6 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def TestOperationMonkeypatching():
