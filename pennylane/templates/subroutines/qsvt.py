@@ -333,7 +333,6 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
             qml.PennyLaneDeprecationWarning,
         )
 
-    angles = qml.poly_to_angles(poly, "QSVT")
     projectors = []
 
     # If the input A is a Hamiltonian
@@ -354,6 +353,8 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
             if block_encoding == "qubitization"
             else qml.PrepSelPrep(A, control=encoding_wires)
         )
+
+        angles = qml.poly_to_angles(poly, "QSVT")
 
         projectors = [
             qml.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
@@ -380,12 +381,14 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
             fable_norm = int(np.ceil(np.log2(max_dimension)))
             encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
+            angles = qml.poly_to_angles(poly, "QSVT")
 
             projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
 
         else:
             c, r = qml.math.shape(A)
 
+            angles = qml.poly_to_angles(poly, "QSVT")
             for idx, phi in enumerate(angles):
                 dim = c if idx % 2 else r
                 projectors.append(qml.PCPhase(phi, dim=dim, wires=encoding_wires))
