@@ -13,13 +13,12 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 # pylint: disable= missing-function-docstring
-from functools import partial, singledispatch
+from functools import partial
 from typing import List, Tuple, Union
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import QubitUnitary, Y
+from pennylane import QubitUnitary
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
@@ -109,152 +108,6 @@ def cartan_decomp(
             m.append(op)
 
     return k, m
-
-
-# dispatch to different input types
-def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
-    r"""The Even-Odd involution
-
-    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__.
-    For Pauli words and sentences, it comes down to counting non-trivial Paulis in Pauli words.
-
-    Args:
-        op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
-
-    Returns:
-        bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
-
-    .. seealso:: :func:`~cartan_decomp`
-
-    **Example**
-
-    >>> from pennylane import X, Y, Z
-    >>> from pennylane.labs.dla import even_odd_involution
-    >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2)]
-    >>> [even_odd_involution(op) for op in ops]
-    [True, False, True]
-
-    Operators with an odd number of non-identity Paulis yield ``1``, whereas even ones yield ``0``.
-
-    The function also works with dense matrix representations.
-
-    >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
-    >>> [even_odd_involution(op_m) for op_m in ops_m]
-    [True, False, True]
-
-    """
-    return _even_odd_involution(op)
-
-
-@singledispatch
-def _even_odd_involution(op):  # pylint:disable=unused-argument, missing-function-docstring
-    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
-
-
-@_even_odd_involution.register(PauliSentence)
-def _even_odd_involution_ps(op: PauliSentence):
-    # Generalization to sums of Paulis: check each term and assert they all have the same parity
-    parity = []
-    for pw in op.keys():
-        parity.append(len(pw) % 2)
-
-    # only makes sense if parity is the same for all terms, e.g. Heisenberg model
-    assert all(
-        parity[0] == p for p in parity
-    ), f"The Even-Odd involution is not well-defined for operator {op} as individual terms have different parity"
-    return bool(parity[0])
-
-
-@_even_odd_involution.register(np.ndarray)
-def _even_odd_involution_matrix(op: np.ndarray):
-    """see Table CI in https://arxiv.org/abs/2406.04418"""
-    n = int(np.round(np.log2(op.shape[-1])))
-    YYY = qml.prod(*[Y(i) for i in range(n)])
-    YYY = qml.matrix(YYY, range(n))
-
-    transformed = YYY @ op.conj() @ YYY
-    if np.allclose(transformed, op):
-        return False
-    if np.allclose(transformed, -op):
-        return True
-    raise ValueError(f"The Even-Odd involution is not well-defined for operator {op}.")
-
-
-@_even_odd_involution.register(Operator)
-def _even_odd_involution_op(op: Operator):
-    """use pauli representation"""
-    return _even_odd_involution_ps(op.pauli_rep)
-
-
-# dispatch to different input types
-def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
-    r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
-
-    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__.
-    For Pauli words and sentences, it comes down to counting Pauli-Y operators.
-
-    Args:
-        op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
-
-    Returns:
-        bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
-
-    .. seealso:: :func:`~cartan_decomp`
-
-    **Example**
-
-    >>> from pennylane import X, Y, Z
-    >>> from pennylane.labs.dla import concurrence_involution
-    >>> ops = [X(0), X(0) @ Y(1), X(0) @ Y(1) @ Z(2), Y(0) @ Y(2)]
-    >>> [concurrence_involution(op) for op in ops]
-    [False, True, True, False]
-
-    Operators with an odd number of ``Y`` operators yield ``1``, whereas even ones yield ``0``.
-
-    The function also works with dense matrix representations.
-
-    >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
-    >>> [even_odd_involution(op_m) for op_m in ops_m]
-    [False, True, True, False]
-
-    """
-    return _concurrence_involution(op)
-
-
-@singledispatch
-def _concurrence_involution(op):
-    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
-
-
-@_concurrence_involution.register(PauliSentence)
-def _concurrence_involution_pauli(op: PauliSentence):
-    # Generalization to sums of Paulis: check each term and assert they all have the same parity
-    parity = []
-    for pw in op.keys():
-        result = sum(1 if el == "Y" else 0 for el in pw.values())
-        parity.append(result % 2)
-
-    # only makes sense if parity is the same for all terms, e.g. Heisenberg model
-    assert all(
-        parity[0] == p for p in parity
-    ), f"The concurrence canonical decomposition is not well-defined for operator {op} as individual terms have different parity"
-    return bool(parity[0])
-
-
-@_concurrence_involution.register(Operator)
-def _concurrence_involution_operator(op: Operator):
-    return _concurrence_involution_matrix(op.matrix())
-
-
-@_concurrence_involution.register(np.ndarray)
-def _concurrence_involution_matrix(op: np.ndarray):
-    if np.allclose(op, -op.T):
-        return True
-    if np.allclose(op, op.T):
-        return False
-    raise ValueError(
-        f"The concurrence canonical decomposition is not well-defined for operator {op}"
-    )
 
 
 IDENTITY = object()

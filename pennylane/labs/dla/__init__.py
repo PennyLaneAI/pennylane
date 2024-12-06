@@ -79,8 +79,6 @@ from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
 from .cartan import (
     cartan_decomp,
-    even_odd_involution,
-    concurrence_involution,
     recursive_cartan_decomp,
 )
 from .dense_util import (
@@ -100,6 +98,8 @@ from .dense_util import (
 
 from .involutions import (
     khaneja_glaser_involution,
+    even_odd_involution,
+    concurrence_involution,
     AI,
     AII,
     AIII,
