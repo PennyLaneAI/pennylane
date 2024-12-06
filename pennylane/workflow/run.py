@@ -29,8 +29,7 @@ from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, Transf
 
 
 def _construct_tf_autograph_pipeline(config, device, inner_transform_program):
-    """
-    Handles the pipeline construction for the TF_AUTOGRAPH interface.
+    """Handles the pipeline construction for the TF_AUTOGRAPH interface.
 
     This function determines the execution function (`execute_fn`) and gradient method specifically
     for the TensorFlow Autograph interface.
@@ -90,8 +89,7 @@ def _construct_tf_autograph_pipeline(config, device, inner_transform_program):
 
 
 def _construct_ml_execution_pipeline(config, device, inner_transform_program):
-    """
-    Constructs the ML execution pipeline for all interfaces except TF_AUTOGRAPH.
+    """Constructs the ML execution pipeline for all interfaces except TF_AUTOGRAPH.
 
     This function determines the execution function (`execute_fn`) and the Jacobian product
     class (`jpc`) required for gradient computations.
