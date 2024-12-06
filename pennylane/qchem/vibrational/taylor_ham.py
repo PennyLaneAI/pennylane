@@ -540,7 +540,7 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
 
 
 def taylor_hamiltonian(pes_object, max_deg=4, min_deg=3):
-    """Compute Taylor hamiltonian from PES object
+    """Compute Taylor vibrational Hamiltonian.
 
     Args:
         pes_object (VibrationalPES): object containing the vibrational potential energy surface data
@@ -548,7 +548,7 @@ def taylor_hamiltonian(pes_object, max_deg=4, min_deg=3):
         min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
-        BoseSentence: Taylor hamiltonian for given PES and degree
+        BoseSentence: the bosonic form of the Taylor Hamiltonian
     """
     coeffs_arr = taylor_coeffs(pes_object, max_deg, min_deg)
     ham = taylor_bosonic(
