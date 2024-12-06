@@ -44,10 +44,10 @@ def _orthogonal_complement_basis(h, m, tol):
 
     # Compute the orthonormal basis of h using QR decomposition
 
-    Q, _ = np.linalg.qr(h.T)
+    Q = np.linalg.qr(h.T)[0].T
 
     # Step 2: Project each vector in m onto the orthogonal complement of span(h)
-    projections = m - np.dot(np.dot(m, Q), Q.T)
+    projections = m - np.dot(np.dot(m, Q.T), Q)
     assert np.allclose(
         np.tensordot(h, projections, axes=[[1], [1]]), 0.0
     ), f"{np.tensordot(h, projections, axes=[[1], [1]])}"
@@ -70,20 +70,20 @@ def cartan_subalgebra(
     g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
 ):
     r"""
-    Compute Cartan subalgebra (CSA) m in g, the odd parity subspace. I.e. the maximal Abelian subalgebra in m.
+    Compute a Cartan subalgebra (CSA) h in m, the odd parity subspace. I.e. a maximal Abelian subalgebra in m.
 
     .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`
 
     Args:
         g (List[Union[PauliSentence, np.ndarray]]): Lie algebra :math:`\mathfrak{g}`, which is assumed to be ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
-        k (List[Union[PauliSentence, np.ndarray]]): Vertical space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+        k (List[Union[PauliSentence, np.ndarray]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         m (List[Union[PauliSentence, np.ndarray]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         ad (Array): The math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`
         start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
         tol (float): Numerical tolerance for linear independence check
         verbose (bool): Whether or not to output progress during computation
         return_adjvec (bool): The output format. If ``False``, returns operators in their original
-            input format (matrices of :class:`~PauliSentence`). If ``True``, returns the spaces as adjoint representaiton vectors.
+            input format (matrices or :class:`~PauliSentence`). If ``True``, returns the spaces as adjoint representation vectors.
         is_orthogonal (bool): Whether the basis elements are all orthogonal, both within
             and between ``g``, ``k`` and ``m``.
 
@@ -92,7 +92,7 @@ def cartan_subalgebra(
         np.ndarray: Adjoint vectors for :math:`\mathfrak{k}` of dimension :math:`|\mathfrak{k}| \times |\mathfrak{g}|`.
         np.ndarray: Adjoint vectors for :math:`\tilde{\mathfrak{m}}` of dimension :math:`|\tilde{\mathfrak{m}}| \times |\mathfrak{g}|`.
         np.ndarray: Adjoint vectors for :math:`\mathfrak{h}` of dimension :math:`|\mathfrak{h}| \times |\mathfrak{g}|`.
-        np.ndarray: The new :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}_\text{new}`, according to the ordering of new vectors.
+        np.ndarray: The new :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}_\text{new}`, according to the new basis.
 
     **Example**
 
@@ -115,7 +115,8 @@ def cartan_subalgebra(
     We can confirm that these all commute with each other, as the CSA is Abelian (= all operators commute).
 
     >>> from pennylane.labs.dla import check_all_commuting
-    >>> assert check_all_commuting(h)
+    >>> check_all_commuting(h)
+    True
 
     We can opt-in to return what we call adjoint vectors of dimension :math:`|\mathfrak{g}|`, where each component corresponds to an entry in (the ordered) ``g``.
     The adjoint vectors for the Cartan subalgebra are in ``np_h``.
@@ -145,7 +146,7 @@ def cartan_subalgebra(
         :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}` and its adjoint representation.
 
         We start by computing these ingredients using :func:`~cartan_decomp` and :func:`~structure_constants`.
-        As an example, we take the Lie algebra of the Heisenberg model with generators :math:`\{X_i X_j, Y_i Y_j, Z_i, Z_j\}`.
+        As an example, we take the Lie algebra of the Heisenberg model with generators :math:`\{X_i X_{i+1}, Y_i Y_{i+1}, Z_i Z_{i+1}\}`.
 
         >>> from pennylane.labs.dla import lie_closure_dense, cartan_decomp
         >>> n = 3
@@ -154,14 +155,15 @@ def cartan_subalgebra(
         >>> gens += [Z(i) @ Z(i+1) for i in range(n-1)]
         >>> g = lie_closure_dense(gens)
 
-        Taking the Heisenberg Lie algebra, can perform the Cartan decomposition. We take the :math:`~even_odd_involution` as a valid Cartan involution.
+        Taking the Heisenberg Lie algebra, we can perform the Cartan decomposition. We take the :func:`~even_odd_involution` as a valid Cartan involution.
         The resulting vertical and horizontal subspaces :math:`\mathfrak{k}` and :math:`\mathfrak{m}` need to fulfill the commutation relations
         :math:`[\mathfrak{k}, \mathfrak{k}] \subeq \mathfrak{k}`, :math:`[\mathfrak{k}, \mathfrak{m}] \subeq \mathfrak{m}` and :math:`[\mathfrak{m}, \mathfrak{m}] \subeq \mathfrak{k}`,
-        which we can check using the helper function :math:`~check_cartan_decomp`.
+        which we can check using the helper function :func:`~check_cartan_decomp`.
 
         >>> from pennylane.labs.dla import even_odd_involution, check_cartan_decomp
         >>> k, m = cartan_decomp(g, even_odd_involution)
-        >>> assert check_cartan_decomp(k, m) # check commutation relations to be valid Cartan decomposition
+        >>> check_cartan_decomp(k, m) # check commutation relations to be valid Cartan decomposition
+        True
 
         Our life is easier when we use a canonical ordering of the operators. This is why we re-define ``g`` with the new ordering in terms of operators in :math:`\mathfrak{k}` first, and then
         all remaining operators from :math:`\mathfrak{m}`.
@@ -206,7 +208,6 @@ def cartan_subalgebra(
         >>> assert check_all_commuting(h_op)
 
         Last but not least, the adjoint representation ``new_adj`` is updated to represent the new basis and its ordering of ``g``.
-        In particular, we can compute commutators between
     """
 
     g_copy = copy.deepcopy(g)
@@ -228,15 +229,14 @@ def cartan_subalgebra(
             # intersect kernel to stay in m
             kernel_intersection = _intersect_bases(kernel_intersection, new_kernel, rcond=tol)
 
-        if kernel_intersection.shape[1] == len(np_h):
-            # No new vector was added from all the kernels
-            break
-
         kernel_intersection = _gram_schmidt(kernel_intersection)  # orthogonalize
         for vec in kernel_intersection.T:
             if _is_independent(vec, np.array(np_h).T, tol):
                 np_h = np.vstack([np_h, vec])
                 break
+        else:
+            # No new vector was added from all the kernels
+            break
 
         iteration += 1
 

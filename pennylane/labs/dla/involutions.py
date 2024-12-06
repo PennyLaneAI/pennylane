@@ -33,8 +33,7 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
         wire (int): Qubit wire on which to perform Khaneja-Glaser decomposition
 
     Returns:
-        bool: Accordingly to whether ``op`` should go to the even or odd subspace of the
-        decomposition
+        bool: Whether ``op`` should go to the even or odd subspace of the decomposition
 
     .. seealso:: :func:`~cartan_decomp`
 
@@ -43,9 +42,10 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
     Let us perform a full recursive Khaneja-Glaser decomposition of
     :math:`\mathfrak{g} = \mathfrak{su}(8)`, i.e. the Lie algebra of all Pauli words on 3 qubits.
 
-    >>> g = list(qml.pauli.pauli_group(3)) # su(8)
-    >>> g = [_.pauli_rep for _ in g]
+    >>> g = list(qml.pauli.pauli_group(3)) # u(8)
     >>> g = g[1:] # remove identity
+    >>> g = [op.pauli_rep for op in g]
+
 
     We perform the first iteration on the first qubit. We use :func:`~cartan_decomp`.
 
@@ -89,10 +89,12 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
 
 
 def int_log2(x):
+    """Compute the integer closest to log_2(x)."""
     return int(np.round(np.log2(x)))
 
 
 def is_qubit_case(p, q):
+    """Return whether p and q are the same and a power of 2."""
     return p == q and 2 ** int_log2(p) == p
 
 
@@ -114,7 +116,7 @@ def J(n, wire=None):
 def Ipq(p, q, wire=None):
     """This is the canonical transformation operator for AIII and BDI Cartan
     decompositions. For an :math:`N`-qubit system (:math:`n=2^N`) and
-    :math:`p=q=n/2`, it equals :math:`-Z_0`."""
+    :math:`p=q=n/2`, it equals :math:`Z_0`."""
     # If p = q and they are a power of two, use Pauli representation
     if is_qubit_case(p, q):
         if wire is None:
@@ -128,7 +130,7 @@ def Ipq(p, q, wire=None):
 def Kpq(p, q, wire=None):
     """This is the canonical transformation operator for CII Cartan
     decompositions. For an :math:`N`-qubit system (:math:`n=2^N`) and
-    :math:`p=q=n/2`, it equals :math:`-Z_1`."""
+    :math:`p=q=n/2`, it equals :math:`Z_1`."""
     # If p = q and they are a power of two, use Pauli representation
     if is_qubit_case(p, q):
         if wire is None:
@@ -136,14 +138,9 @@ def Kpq(p, q, wire=None):
         return Z(wire).matrix(wire_order=range(int_log2(p) + 1))
     if wire is not None:
         raise ValueError("The wire argument is only supported for p=q=2**N for some integer N.")
-    KKm = np.block(
-        [
-            [np.eye(p), np.zeros((p, q)), np.zeros((p, p)), np.zeros((p, q))],
-            [np.zeros((q, p)), -np.eye(q), np.zeros((q, p)), np.zeros((q, q))],
-            [np.zeros((p, p)), np.zeros((p, q)), np.eye(p), np.zeros((p, q))],
-            [np.zeros((q, p)), np.zeros((q, q)), np.zeros((q, p)), -np.eye(q)],
-        ]
-    )
+    zeros = np.zeros((p+q, p+q))
+    d = np.diag(np.concatenate([np.ones(p), -np.ones(q)]))
+    KKm = np.block([[d, zeros], [zeros, d]])
     return KKm
 
 
@@ -498,10 +495,6 @@ def _CII_op(op: Operator, p: int = None, q: int = None, wire: Optional[int] = No
 def DIII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type DIII, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
 
-    .. note:: Note that we work with Hermitian
-        operators internally, so that the input will be multiplied by :math:`i` before
-        evaluating the involution.
-
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is
             evaluated and for which the parity under the involution is returned.
@@ -528,8 +521,6 @@ def _DIII_matrix(op: np.ndarray, wire: Optional[int] = None) -> bool:
     r"""Matrix implementation of the canonical form of the DIII involution
     :math:`\theta: x \mapsto Y_0 x Y_0`.
     """
-    op *= 1j
-
     y = J(op.shape[-1] // 2, wire=wire)
     return np.allclose(op, y @ op @ y)
 
@@ -558,10 +549,6 @@ def _DIII_op(op: Operator, wire: Optional[int] = None) -> bool:
 
 def ClassB(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of class B, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
-
-    .. note:: Note that we work with Hermitian
-        operators internally, so that the input will be multiplied by :math:`i` before
-        evaluating the involution.
 
     Args:
         op (Union[np.ndarray, PauliSentence, Operator]): Operator on which the involution is

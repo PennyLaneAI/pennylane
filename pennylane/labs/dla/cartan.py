@@ -118,10 +118,6 @@ def pauli_y_eigenbasis(wire, num_wires):
     return QubitUnitary(V, wire).matrix(wire_order=range(num_wires))
 
 
-def _not_implemented_yet(wire, num_wires, pair):
-    raise NotImplementedError(
-        f"The pair {pair} is a valid pair of involutions conceptually, but the basis change between them has not been implemented yet."
-    )
 
 
 _basis_change_constructors = {
@@ -287,6 +283,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     # Prerun the validation by obtaining the required basis changes and raising an error if
     # an invalid pair is found.
     basis_changes = []
+    # Take the functions name, or its `func` attribute if it exists (e.g. for `partial` of an involution)
     names = [getattr(phi, "func", phi).__name__ for phi in chain]
 
     # Assume some standard behaviour regarding the wires on which we need to perform basis changes
