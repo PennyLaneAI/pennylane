@@ -223,7 +223,6 @@ def execute(
         derivative_order=max_diff,
     )
 
-    # pylint: disable=protected-access
     if transform_program is None or inner_transform is None:
         transform_program, inner_transform = _setup_transform_program(
             transform_program, device, config, cache, cachesize
