@@ -24,7 +24,6 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Wires
-from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 
 from .controlled import ControlledOp
@@ -120,7 +119,7 @@ class ControlledQubitUnitary(ControlledOp):
             data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
         )
 
-    # pylint: disable= too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         base,
@@ -136,7 +135,9 @@ class ControlledQubitUnitary(ControlledOp):
             )
 
         if isinstance(base, Iterable):
-            base = QubitUnitary(base, wires=wires, unitary_check=unitary_check)
+            # We use type.__call__ instead of calling the class directly so that we don't bind the
+            # operator primitive when new program capture is enabled
+            base = type.__call__(qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check)
 
         super().__init__(
             base,
@@ -217,7 +218,11 @@ class CH(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
-        super().__init__(qml.Hadamard(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Hadamard, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CH(wires={self.wires.tolist()})"
@@ -329,7 +334,10 @@ class CY(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.Y(wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Y, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
@@ -435,7 +443,10 @@ class CZ(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.Z(wires=wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Z, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
 
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
@@ -522,7 +533,11 @@ class CSWAP(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:1]
         target_wires = wires[1:]
-        super().__init__(qml.SWAP(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.SWAP, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
@@ -646,7 +661,11 @@ class CCZ(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        super().__init__(qml.PauliZ(wires=target_wires), control_wires, id=id)
+
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Z, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
@@ -789,7 +808,10 @@ class CNOT(ControlledOp):
         return cls._primitive.bind(*wires, n_wires=2)
 
     def __init__(self, wires, id=None):
-        super().__init__(qml.PauliX(wires=wires[1:]), wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=wires[1:])
+        super().__init__(base, wires[:1], id=id)
 
     @property
     def has_decomposition(self):
@@ -900,7 +922,10 @@ class Toffoli(ControlledOp):
     def __init__(self, wires, id=None):
         control_wires = wires[:2]
         target_wires = wires[2:]
-        super().__init__(qml.PauliX(wires=target_wires), control_wires, id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=target_wires)
+        super().__init__(base, control_wires, id=id)
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
@@ -1126,8 +1151,11 @@ class MultiControlledX(ControlledOp):
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.X, wires=wires)
         super().__init__(
-            qml.X(wires),
+            base,
             control_wires=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -1290,7 +1318,10 @@ class CRX(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RX(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RX, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRX({self.data[0]}, wires={self.wires.tolist()})"
@@ -1443,7 +1474,10 @@ class CRY(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RY(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RY, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRY({self.data[0]}, wires={self.wires.tolist()}))"
@@ -1596,7 +1630,10 @@ class CRZ(ControlledOp):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.RZ(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.RZ, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"CRZ({self.data[0]}, wires={self.wires})"
@@ -1780,10 +1817,13 @@ class CRot(ControlledOp):
     name = "CRot"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
-    def __init__(self, phi, theta, omega, wires, id=None):  # pylint: disable=too-many-arguments
-        super().__init__(
-            qml.Rot(phi, theta, omega, wires=wires[1:]), control_wires=wires[:1], id=id
-        )
+    def __init__(
+        self, phi, theta, omega, wires, id=None
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.Rot, phi, theta, omega, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         params = ", ".join([repr(p) for p in self.parameters])
@@ -1798,7 +1838,9 @@ class CRot(ControlledOp):
 
     # pylint: disable=too-many-arguments
     @classmethod
-    def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
+    def _primitive_bind_call(
+        cls, phi, theta, omega, wires, id=None
+    ):  # pylint: disable=too-many-positional-arguments
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
 
     @staticmethod
@@ -1949,7 +1991,10 @@ class ControlledPhaseShift(ControlledOp):
     parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires, id=None):
-        super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
+        # We use type.__call__ instead of calling the class directly so that we don't bind the
+        # operator primitive when new program capture is enabled
+        base = type.__call__(qml.PhaseShift, phi, wires=wires[1:])
+        super().__init__(base, control_wires=wires[:1], id=id)
 
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
