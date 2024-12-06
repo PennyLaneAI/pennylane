@@ -328,8 +328,9 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
     if encoding_wires is None or block_encoding is None or "wires" in kwargs.keys():
         warnings.warn(
-            "You could be using the old `qsvt` functionality (now `qml.qsvt_legacy`). Make sure you pass a "
-            "polynomial instead of angles. Set a value for `block_encoding` if you want to silent this warning.",
+            "You may be trying to use the old `qsvt` functionality (now `qml.qsvt_legacy`)."
+            "Make sure you pass a polynomial instead of angles."
+            "Set a value for `block_encoding` to silence this warning.",
             qml.PennyLaneDeprecationWarning,
         )
 

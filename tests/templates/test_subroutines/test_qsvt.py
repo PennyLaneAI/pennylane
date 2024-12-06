@@ -665,7 +665,7 @@ class Testqsvt:
     def test_qsvt_warning(self):
         """Test that qsvt through warning."""
         with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="You could be using the old `qsvt`"
+            qml.PennyLaneDeprecationWarning, match="You may be trying to use the old `qsvt`"
         ):
             qml.qsvt([[0.1, 0.2], [0.2, -0.1]], [0.1, 0, 0.1], [0, 1, 2])
 
