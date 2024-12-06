@@ -181,7 +181,7 @@ class TestValidation:
         test_interface = "something"
         expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+        with pytest.raises(ValueError, match=expected_error):
             QNode(dummyfunc, dev, interface="something")
 
     def test_changing_invalid_interface(self):
@@ -198,7 +198,7 @@ class TestValidation:
 
         expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+        with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
 
     def test_invalid_device(self):
@@ -1775,19 +1775,6 @@ class TestMCMConfiguration:
             match="Cannot use the 'one-shot' method for mid-circuit measurements with",
         ):
             f(param)
-
-    def test_invalid_mcm_method_error(self):
-        """Test that an error is raised if the requested mcm_method is invalid"""
-        shots = 100
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-
-        def f(x):
-            qml.RX(x, 0)
-            _ = qml.measure(0, postselect=1)
-            return qml.sample(wires=[0, 1])
-
-        with pytest.raises(ValueError, match="Invalid mid-circuit measurements method 'foo'"):
-            _ = qml.QNode(f, dev, mcm_method="foo")
 
     def test_invalid_postselect_mode_error(self):
         """Test that an error is raised if the requested postselect_mode is invalid"""

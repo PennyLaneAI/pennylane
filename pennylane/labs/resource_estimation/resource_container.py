@@ -14,7 +14,6 @@
 r"""Base classes for resource estimation."""
 import copy
 from collections import defaultdict
-from dataclasses import dataclass
 
 from pennylane.labs.resource_estimation import ResourceOperator
 
@@ -74,7 +73,7 @@ class CompressedResourceOp:
         return self._name
 
 
-@dataclass
+# @dataclass
 class Resources:
     r"""Contains attributes which store key resources such as number of gates, number of wires, and gate types.
 
@@ -118,6 +117,15 @@ class Resources:
         """Add two resources objects in series"""
         return add_in_series(self, other)
 
+    def __eq__(self, other: "Resources") -> bool:
+        """Test if two resource objects are equal"""
+        if self.num_wires != other.num_wires:
+            return False
+        if self.num_gates != other.num_gates:
+            return False
+
+        return self.gate_types == other.gate_types
+
     def __mul__(self, scalar: int) -> "Resources":
         """Scale a resources object in series"""
         return mul_in_series(self, scalar)
@@ -146,6 +154,14 @@ class Resources:
         )
         items += "\ngate_types:\n{" + gate_type_str + "}"
         return items
+
+    def __repr__(self):
+        """Compact string representation of the Resources object"""
+        return {
+            "gate_types": self.gate_types,
+            "num_gates": self.num_gates,
+            "num_wires": self.num_wires,
+        }.__repr__()
 
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
