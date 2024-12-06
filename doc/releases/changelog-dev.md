@@ -57,6 +57,11 @@
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
 
+  * New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
+    The functionality `qml.poly_to_angles` has been also extended to support GQSP.
+    [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
+
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
@@ -197,6 +202,9 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
 <h4>Other Improvements</h4>
+
+* Standardize supported interfaces to an internal Enum object. 
+  [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
   [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
