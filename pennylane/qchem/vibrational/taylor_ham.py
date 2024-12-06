@@ -187,7 +187,6 @@ def _generate_bin_occupations(max_occ, nbins):
     """
     combinations = list(itertools.product(range(max_occ + 1), repeat=nbins))
 
-    # Filter valid combinations
     valid_combinations = [combo for combo in combinations if sum(combo) == max_occ]
 
     return valid_combinations
@@ -313,7 +312,7 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
     r"""Calculates Taylor form fitted coefficients for dipole construction.
 
     Args:
-        pes (VibrationalPES): the PES object
+        pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
 
@@ -551,7 +550,7 @@ def taylor_hamiltonian(pes_object, max_deg=4, min_deg=3):
     """Compute Taylor hamiltonian from PES object
 
     Args:
-        pes_object(VibrationalPES): the PES object
+        pes_object (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
 
