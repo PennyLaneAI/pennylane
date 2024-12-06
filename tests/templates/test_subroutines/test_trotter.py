@@ -1278,7 +1278,6 @@ class TestTrotterizedQfuncInitialization:
             n=n,
             order=order,
             reverse=reverse,
-            name=name,
             wires=wires,
             **qfunc_kwargs,
         )
@@ -1326,7 +1325,7 @@ class TestTrotterizedQfuncInitialization:
         def my_dummy_qfunc(time, wires, **kwargs):  # pylint:disable=unused-argument
             qml.RZ(time, wires[0])
 
-        for special_key in ["n", "name", "order", "qfunc", "reverse"]:
+        for special_key in ["n", "order", "qfunc", "reverse"]:
             with pytest.raises(ValueError, match="Cannot use any of the specailized names:"):
                 kwargs = {special_key: 1}
                 qml.trotterize(my_dummy_qfunc)(0.1, wires=[0, 1], **kwargs)
