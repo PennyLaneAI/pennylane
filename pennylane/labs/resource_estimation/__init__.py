@@ -161,6 +161,7 @@ from .ops import (
     ResourceDoubleExcitation,
     ResourceDoubleExcitationMinus,
     ResourceDoubleExcitationPlus,
+    ResourceExp,
     ResourceFermionicSWAP,
     ResourceGlobalPhase,
     ResourceHadamard,
@@ -194,4 +195,8 @@ from .ops import (
 
 from .templates import (
     ResourceQFT,
+    ResourceQuantumPhaseEstimation,
+    ResourceStatePrep,
+    ResourceTrotterProduct,
+    resource_trotterize,
 )
