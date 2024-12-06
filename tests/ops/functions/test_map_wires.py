@@ -14,7 +14,6 @@
 """
 Unit tests for the qml.map_wires function
 """
-import warnings
 
 # pylint: disable=too-few-public-methods
 from functools import partial
@@ -25,13 +24,6 @@ import pennylane as qml
 from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def build_op():
@@ -203,8 +195,9 @@ class TestMapWiresQNodes:
 
         m_qnode = qml.map_wires(qnode, wire_map=wire_map)
         assert m_qnode() == qnode()
-        assert len(m_qnode.tape) == 2
-        tapes, _ = m_qnode.transform_program((m_qnode.tape,))
+        m_tape = qml.workflow.construct_tape(m_qnode)()
+        assert len(m_tape) == 2
+        tapes, _ = m_qnode.transform_program((m_tape,))
 
         m_op = tapes[0].operations
         m_obs = tapes[0].observables
@@ -228,12 +221,13 @@ class TestMapWiresCallables:
         mapped_op_2 = qml.prod(qml.PauliX(4), qml.PauliY(3))
         qnode = qml.QNode(qfunc, dev)
         m_qnode = qml.QNode(m_qfunc, dev)
+        m_tape = qml.workflow.construct_tape(m_qnode)()
 
         # TODO: Use qml.equal when supported
 
         assert qml.math.allclose(m_qnode(), qnode())
-        assert len(m_qnode.tape) == 4
-        m_ops = m_qnode.tape.operations
+        assert len(m_tape) == 4
+        m_ops = m_tape.operations
         assert isinstance(m_ops[0], Prod)
         assert isinstance(m_ops[1], Prod)
         assert m_ops[0].data == mapped_op.data
@@ -242,8 +236,8 @@ class TestMapWiresCallables:
         assert m_ops[1].data == mapped_op_2.data
         assert m_ops[1].wires == mapped_op_2.wires
         assert m_ops[1].arithmetic_depth == mapped_op_2.arithmetic_depth
-        assert m_qnode.tape.observables[0].wires == Wires(wire_map[0])
-        assert m_qnode.tape.observables[1].wires == Wires(wire_map[1])
+        assert m_tape.observables[0].wires == Wires(wire_map[0])
+        assert m_tape.observables[1].wires == Wires(wire_map[1])
 
     @pytest.mark.jax
     def test_jitting_simplified_qfunc(self):
