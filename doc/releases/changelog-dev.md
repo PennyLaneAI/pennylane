@@ -175,6 +175,11 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Added `TransformInterpreter`, `TransformTrace`, and `TransformTracer` classes to the `qml.capture`
+  module. These classes can collectively be used to define transforms that can natively transform
+  PLxPR without the need to first create a `QuantumTape`.
+  [(#6389)](https://github.com/PennyLaneAI/pennylane/pull/6389)
+
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
   captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
   only works with a reduced feature set.
@@ -425,6 +430,7 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
+Mudit Pandey,
 Andrija Paurevic,
 Justin Pickering,
 Jay Soni,
