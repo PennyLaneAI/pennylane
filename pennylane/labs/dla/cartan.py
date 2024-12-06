@@ -154,6 +154,37 @@ def _check_classb_sequence(before, after):
     )
 
 
+def _check_chain(chain, num_wires):
+    """Validate a chain of involutions for a recursive Cartan decomposition."""
+    # Take the functions name, or its `func` attribute if it exists (e.g. for `partial` of an involution)
+    names = [getattr(phi, "func", phi).__name__ for phi in chain]
+
+    # Assume some standard behaviour regarding the wires on which we need to perform basis changes
+    basis_changes = []
+    wire = 0
+    for i, name in enumerate(names[:-1]):
+        invol_pair = (name, names[i + 1])
+        if invol_pair not in _basis_change_constructors:
+            raise ValueError(
+                f"The specified chain contains the pair {'-->'.join(invol_pair)}, "
+                "which is not a valid pair."
+            )
+        # Run specific check for sequence of three involutions where ClassB is the middle one
+        if name == "ClassB" and i > 0:
+            _check_classb_sequence(names[i - 1], names[i + 1])
+        bc_constructor = _basis_change_constructors[invol_pair]
+        if bc_constructor is IDENTITY:
+            bc = bc_constructor
+        else:
+            bc = bc_constructor(wire, num_wires)
+            # Next assumption: The wire is only incremented if a basis change is applied.
+            wire += 1
+        basis_changes.append(bc)
+
+    basis_changes.append(IDENTITY)  # Do not perform any basis change after last involution.
+    return names, basis_changes
+
+
 def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     r"""Apply a recursive Cartan decomposition specified by a chain of decomposition types.
     The decompositions will use canonical involutions and hardcoded basis transformations
@@ -280,36 +311,11 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
 
     # Prerun the validation by obtaining the required basis changes and raising an error if
     # an invalid pair is found.
-    basis_changes = []
-    # Take the functions name, or its `func` attribute if it exists (e.g. for `partial` of an involution)
-    names = [getattr(phi, "func", phi).__name__ for phi in chain]
-
-    # Assume some standard behaviour regarding the wires on which we need to perform basis changes
-    wire = 0
     num_wires = int_log2(np.shape(g)[-1])
-    for i, name in enumerate(names[:-1]):
-        invol_pair = (name, names[i + 1])
-        if invol_pair not in _basis_change_constructors:
-            raise ValueError(
-                f"The specified chain contains the pair {'-->'.join(invol_pair)}, "
-                "which is not a valid pair."
-            )
-        # Run specific check for sequence of three involutions where ClassB is the middle one
-        if name == "ClassB" and i > 0:
-            _check_classb_sequence(names[i - 1], names[i + 1])
-        bc_constructor = _basis_change_constructors[invol_pair]
-        if bc_constructor is IDENTITY:
-            bc = bc_constructor
-        else:
-            bc = bc_constructor(wire, num_wires)
-            # Next assumption: The wire is only incremented if a basis change is applied.
-            wire += 1
-        basis_changes.append(bc)
-
-    basis_changes.append(IDENTITY)  # Do not perform any basis change after last involution.
+    names, basis_changes = _check_chain(chain, num_wires)
 
     decompositions = {}
-    for i, (phi, bc) in enumerate(zip(chain, basis_changes)):
+    for i, (phi, name, bc) in enumerate(zip(chain, names, basis_changes)):
         try:
             k, m = cartan_decomp(g, phi)
         except ValueError as e:
@@ -321,11 +327,10 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
 
         if validate:
             check_cartan_decomp(k, m, verbose=verbose)
-        name = getattr(phi, "func", phi).__name__
         if verbose:
             print(f"Iteration {i}: {len(g):>4} -{name:-^10}> {len(k):>4},{len(m):>4}")
         decompositions[i] = (k, m)
-        if bc is not IDENTITY:
+        if not (bc is IDENTITY):
             k = apply_basis_change(bc, k)
             m = apply_basis_change(bc, m)
         g = k

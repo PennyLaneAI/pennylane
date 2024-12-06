@@ -26,13 +26,14 @@ from .dense_util import adjvec_to_op, change_basis_ad_rep, op_to_adjvec
 
 def _gram_schmidt(X):
     """Orthogonalize basis of column vectors in X"""
-    Q, _ = np.linalg.qr(X, mode="reduced")
-    return Q
+    Q, _ = np.linalg.qr(X.T, mode="reduced")
+    return Q.T
 
 
 def _is_independent(v, A, tol=1e-14):
+    """Check whether ``v`` is independent of the columns of A."""
     v /= np.linalg.norm(v)
-    v = v - A @ qml.math.linalg.solve(qml.math.conj(A.T) @ A, A.conj().T) @ v
+    v = v - A @ qml.math.linalg.solve(A.conj().T @ A, A.conj().T) @ v
     return np.linalg.norm(v) > tol
 
 
@@ -44,7 +45,7 @@ def _orthogonal_complement_basis(h, m, tol):
 
     # Compute the orthonormal basis of h using QR decomposition
 
-    Q = np.linalg.qr(h.T)[0].T
+    Q = _gram_schmidt(h)
 
     # Step 2: Project each vector in m onto the orthogonal complement of span(h)
     projections = m - np.dot(np.dot(m, Q.T), Q)
@@ -165,8 +166,8 @@ def cartan_subalgebra(
         >>> check_cartan_decomp(k, m) # check commutation relations to be valid Cartan decomposition
         True
 
-        Our life is easier when we use a canonical ordering of the operators. This is why we re-define ``g`` with the new ordering in terms of operators in :math:`\mathfrak{k}` first, and then
-        all remaining operators from :math:`\mathfrak{m}`.
+        Our life is easier when we use a canonical ordering of the operators. This is why we re-define ``g`` with the new ordering in terms of operators in ``k`` first, and then
+        all remaining operators from ``m``.
 
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
         >>> adj = structure_constants_dense(g) # compute adjoint representation of g
@@ -218,7 +219,7 @@ def cartan_subalgebra(
     while True:
         if verbose:
             print(f"iteration {iteration}: Found {len(np_h)} independent Abelian operators.")
-        kernel_intersection = np_m.T
+        kernel_intersection = np_m
         for h_i in np_h:
 
             # obtain adjoint rep of candidate h_i
@@ -227,10 +228,10 @@ def cartan_subalgebra(
             new_kernel = null_space(adjoint_of_h_i, rcond=tol)
 
             # intersect kernel to stay in m
-            kernel_intersection = _intersect_bases(kernel_intersection, new_kernel, rcond=tol)
+            kernel_intersection = _intersect_bases(kernel_intersection.T, new_kernel, rcond=tol).T
 
         kernel_intersection = _gram_schmidt(kernel_intersection)  # orthogonalize
-        for vec in kernel_intersection.T:
+        for vec in kernel_intersection:
             if _is_independent(vec, np.array(np_h).T, tol):
                 np_h = np.vstack([np_h, vec])
                 break
@@ -240,12 +241,12 @@ def cartan_subalgebra(
 
         iteration += 1
 
-    np_h = _gram_schmidt(np_h.T).T  # orthogonalize Abelian subalgebra
+    np_h = _gram_schmidt(np_h)  # orthogonalize Abelian subalgebra
     np_k = op_to_adjvec(
         k, g, is_orthogonal=is_orthogonal
     )  # adjoint vectors of k space for re-ordering
     np_oldg = np.vstack([np_k, np_m])
-    np_k = _gram_schmidt(np_k.T).T
+    np_k = _gram_schmidt(np_k)
 
     np_mtilde = _orthogonal_complement_basis(np_h, np_m, tol=tol)  # the "rest" of m without h
     np_newg = np.vstack([np_k, np_mtilde, np_h])

@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure_dense.py functionality"""
-# pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring
 import numpy as np
+
+# pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring
+import pytest
 
 import pennylane as qml
 from pennylane import X, Z
@@ -25,9 +27,10 @@ from pennylane.labs.dla import (
 )
 
 
-def test_Ising2():
+@pytest.mark.parametrize("n, len_g, len_h, len_mtilde", [(2, 6, 2, 2), (3, 15, 2, 6)])
+def test_Ising(n, len_g, len_h, len_mtilde):
     """Test Cartan subalgebra of 2 qubit Ising model"""
-    gens = [X(0) @ X(1), Z(0), Z(1)]
+    gens = [X(w) @ X(w + 1) for w in range(n - 1)] + [Z(w) for w in range(n)]
     gens = [op.pauli_rep for op in gens]
     g = qml.lie_closure(gens, pauli=True)
 
@@ -35,12 +38,13 @@ def test_Ising2():
     assert check_cartan_decomp(k, m)
 
     g = k + m
+    assert len(g) == len_g
 
     adj = qml.structure_constants(g)
 
     newg, k, mtilde, h, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=0)
-    assert len(h) == 2
-    assert len(mtilde) == 2
+    assert len(h) == len_h
+    assert len(mtilde) == len_mtilde
     assert len(h) + len(mtilde) == len(m)
 
     new_adj_re = qml.structure_constants(newg)
