@@ -14,7 +14,6 @@
 r"""Base classes for resource estimation."""
 import copy
 from collections import defaultdict
-from dataclasses import dataclass
 
 from pennylane.labs.resource_estimation import ResourceOperator
 
