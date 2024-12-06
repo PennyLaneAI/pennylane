@@ -21,9 +21,11 @@ from pennylane.operation import AnyWires, Operation
 
 def _assign_states(basis_list):
     r"""
-    Given a list of :math:`m` basis states, this function generates a dictionary assigning to each of them
-    the :math:`m`-th basis states in the computational base. Also, if a state within ``basis_list`` is one
-    of the first :math:`m` basis states, this state will be assigned to itself.
+    This function maps a given list of :math:`m` basis states to the first :math:`m` basis states in the computational basis as.
+
+   For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis state of length :math:`4` will be mapped as :math:`{s_0: |0000>, s_1: |0001>, s_2: |0010>, ...}`.
+     
+  Note that if a state in ``basis_list`` is one of the first :math:`m` basis states, this state will be mapped to itself.
 
     ** Example **
 
@@ -89,7 +91,7 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
         basis1 (List): The initial basis state, represented as a list of binary digits.
         basis2 (List): The target basis state, represented as a list of binary digits.
         wires (Sequence[int]): The list of wires that the operator acts on
-        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation
+        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
 
     Returns:
         list: A list of operators that map :math:`|\text{basis1}\rangle` to :math:`|\text{basis2}\rangle`.
@@ -116,18 +118,15 @@ class Superposition(Operation):
 
     .. math::
 
-        |\phi\rangle = \sum_i^m c_i |b_i\rangle
+        |\phi\rangle = \sum_i^m c_i |b_i\rangle.
 
-    The decomposition has a complexity that grows linearly with the number of terms,
-    unlike other methods such as :class:`~.MottonenStatePreparation`, that grows exponentially
-    with the number of qubits. More information on the decomposition can be
-    found below in Implementation Details.
+    See the Details section for more information about the decomposition.
 
     Args:
-        coeffs (List[float]): List of coefficients :math:`c_i`
-        basis (List[List[int]]): List of basis states :math:`|b_i\rangle`
-        wires (Sequence[int]): List of wires that the operator acts on
-        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation
+        coeffs (List[float]): list of coefficients :math:`c_i`
+        basis (List[List[int]]): list of basis states :math:`|b_i\rangle`
+        wires (Sequence[int]): list of wires that the operator acts on
+        work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
 
     **Example**
 
@@ -139,8 +138,6 @@ class Superposition(Operation):
         work_wire = 3
 
         dev = qml.device('default.qubit')
-
-
         @qml.qnode(dev)
         def circuit():
             qml.Superposition(coeffs, basis, wires, work_wire)
@@ -154,7 +151,7 @@ class Superposition(Operation):
 
 
     .. details::
-        :title: Implementation Details
+        :title: Details
 
         The construction of this template is divided into two blocks.
         The first block takes the list of coefficients :math:`c_i` and prepares the state:
@@ -177,6 +174,10 @@ class Superposition(Operation):
         .. math::
 
             |\phi\rangle = \sum_i^m c_i |b_i\rangle.
+            
+        The decomposition has a complexity that grows linearly with the number of terms,
+        unlike other methods such as :class:`~.MottonenStatePreparation`, that grows exponentially
+        with the number of qubits.
     """
 
     num_wires = AnyWires
@@ -234,10 +235,10 @@ class Superposition(Operation):
         r"""Representation of the operator as a product of other operators.
 
         Args:
-            coefs (List[float]): List of coefficients :math:`c_i`
-            basis (List[List[int]]): List of basis states :math:`|b_i\rangle`
-            wires (Sequence[int]): List of wires that the operator acts on
-            work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation
+            coefs (List[float]): list of coefficients :math:`c_i`
+            basis (List[List[int]]): list of basis states :math:`|b_i\rangle`
+            wires (Sequence[int]): list of wires that the operator acts on
+            work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
 
         Returns:
             list[.Operator]: Decomposition of the operator
