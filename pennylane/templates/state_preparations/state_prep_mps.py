@@ -17,6 +17,7 @@ Contains the MPSPrep template.
 
 from pennylane.operation import Operation
 from pennylane.wires import Wires
+import pennylane as qml
 
 
 class MPSPrep(Operation):
@@ -121,6 +122,45 @@ class MPSPrep(Operation):
     """
 
     def __init__(self, mps, wires, id=None):
+
+        # Validate the shape and dimensions of the first tensor
+        assert len(qml.math.shape(mps[0])) == 2, "The first tensor must have exactly 2 dimensions."
+        dj0, dj2 = qml.math.shape(mps[0])
+        assert dj0 == 2, "The first dimension of the first tensor must be exactly 2."
+        assert qml.math.log2(
+            dj2
+        ).is_integer(), "The second dimension of the first tensor must be a power of 2."
+
+        # Validate the shapes of the intermediate tensors
+        for i, array in enumerate(mps[1:-1], start=1):
+            shape = qml.math.shape(array)
+            assert len(shape) == 3, f"Tensor {i} must have exactly 3 dimensions."
+            new_dj0, new_dj1, new_dj2 = shape
+            assert new_dj1 == 2, f"The second dimension of tensor {i} must be exactly 2."
+            assert qml.math.log2(
+                new_dj0
+            ).is_integer(), f"The first dimension of tensor {i} must be a power of 2."
+            assert qml.math.log2(
+                new_dj1
+            ).is_integer(), f"The second dimension of tensor {i} must be a power of 2."
+            assert qml.math.log2(
+                new_dj2
+            ).is_integer(), f"The third dimension of tensor {i} must be a power of 2."
+            assert (
+                new_dj0 == dj2
+            ), f"Dimension mismatch: tensor {i}'s first dimension does not match the previous third dimension."
+            dj0, dj1, dj2 = new_dj0, new_dj1, new_dj2
+
+        # Validate the shape and dimensions of the last tensor
+        assert len(qml.math.shape(mps[-1])) == 2, "The last tensor must have exactly 2 dimensions."
+        new_dj0, new_dj1 = qml.math.shape(mps[-1])
+        assert new_dj1 == 2, "The second dimension of the last tensor must be exactly 2."
+        assert qml.math.log2(
+            new_dj0
+        ).is_integer(), "The first dimension of the last tensor must be a power of 2."
+        assert (
+            new_dj0 == dj2
+        ), "Dimension mismatch: the last tensor's first dimension does not match the previous third dimension."
         super().__init__(*mps, wires=wires, id=id)
 
     @property
