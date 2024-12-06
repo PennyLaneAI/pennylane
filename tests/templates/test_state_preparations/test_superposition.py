@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -107,6 +107,14 @@ class TestSuperposition:
         for op1, op2 in zip(decomposition, expected):
             assert qml.equal(op1, op2)
 
+    def test_raise_error(self):
+        """Test that the Superposition template raises an error if a basis state is repeated."""
+
+        with pytest.raises(ValueError, match="The basis states must be unique."):
+            qml.Superposition(
+                [0.5, 0.5, 0.5, 0.5], [[0, 1], [0, 0], [1, 1], [0, 0]], wires=range(2), work_wire=2
+            )
+
     @pytest.mark.parametrize(
         "state_vector",
         [
@@ -125,6 +133,11 @@ class TestSuperposition:
             return qml.expval(qml.PauliZ(0))
 
         qml.grad(circuit)(state_vector)
+
+    def test_access_work_wire(self):
+        """Test that the work_wire can be accessed."""
+        op = qml.Superposition([0.5, 0.5], [[0, 0], [1, 1]], wires=range(2), work_wire=2)
+        assert op.work_wire == qml.wires.Wires(2)
 
 
 @pytest.mark.parametrize(

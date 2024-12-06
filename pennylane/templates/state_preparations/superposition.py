@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
 
-def _get_permutation(basis_list):
+def _assign_states(basis_list):
     r"""
     Given a list of :math:`m` basis states, this function generates a dictionary assigning to each of them
     the :math:`m`-th basis states in the computational base. Also, if a state within ``basis_list`` is one
@@ -30,7 +30,7 @@ def _get_permutation(basis_list):
     .. code-block:: pycon
 
         >>> basis_list = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
-        >>> _get_permutation(basis_list)
+        >>> _assign_states(basis_list)
         {
         [1, 1, 0, 0]: [0, 0, 0, 0],
         [1, 0, 1, 0]: [0, 0, 0, 1],
@@ -42,7 +42,7 @@ def _get_permutation(basis_list):
     .. code-block:: pycon
 
         >>>> basis_list = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
-        >>> _get_permutation(basis_list)
+        >>> _assign_states(basis_list)
         {
         [1, 1, 0, 0]: [0, 0, 0, 0],
         [0, 1, 0, 1]: [0, 0, 1, 0],
@@ -187,6 +187,13 @@ class Superposition(Operation):
         self, coeffs, basis, wires, work_wire, id=None
     ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
+        unique_basis = qml.math.unique(
+            qml.math.array([tuple(sub_array) for sub_array in basis]), axis=0
+        )
+
+        if len(unique_basis) != len(basis):
+            raise ValueError("The basis states must be unique.")
+
         self.hyperparameters["basis"] = tuple(tuple(b) for b in basis)
         self.hyperparameters["target_wires"] = qml.wires.Wires(wires)
         self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
@@ -248,7 +255,7 @@ class Superposition(Operation):
         """
 
         dic_state = dict(zip(basis, coefs))
-        perms = _get_permutation(basis)
+        perms = _assign_states(basis)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
         sorted_coefficients = [
