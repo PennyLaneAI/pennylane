@@ -21,7 +21,6 @@ import copy
 import itertools
 import string
 import sys
-import warnings
 from functools import partial, reduce
 from itertools import product
 from os import environ
@@ -39,14 +38,6 @@ from pennylane import numpy as np
 from pennylane import qcut
 from pennylane.queuing import WrappedObj
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 pytestmark = pytest.mark.qcut
 

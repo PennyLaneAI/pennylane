@@ -14,7 +14,6 @@
 """
 Unit tests for the optimization transform ``cancel_inverses``.
 """
-import warnings
 
 import pytest
 from utils import compare_operation_lists
@@ -23,13 +22,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.optimization import cancel_inverses
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 class TestCancelInverses:
@@ -250,7 +242,8 @@ class TestCancelInversesInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
@@ -277,7 +270,8 @@ class TestCancelInversesInterfaces:
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
@@ -309,7 +303,8 @@ class TestCancelInversesInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -332,7 +327,8 @@ class TestCancelInversesInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
 
@@ -408,8 +404,8 @@ class TestTransformDispatch:
             cancel_inverses(qfunc_circuit)(a)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
-        new_circuit([0.1, 0.2])
-        assert len(new_circuit.tape.operations) == 5
+        tape = qml.workflow.construct_tape(new_circuit)([0.1, 0.2])
+        assert len(tape.operations) == 5
 
     def test_qnode(self):
         """Test the transform on a qnode directly."""

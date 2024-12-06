@@ -23,7 +23,6 @@ are located in the:
 files.
 """
 
-import warnings
 
 import numpy as np
 import pytest
@@ -31,14 +30,6 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.op_math.condition import Conditional, ConditionalTransformError
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 terminal_meas = [
     qml.probs(wires=[1, 0]),
@@ -653,7 +644,7 @@ class TestPythonFallback:
             circuit(0.5)
 
     def test_qnode(self):
-        """Test that qml.cond fallsback to Python when used
+        """Test that qml.cond falls back to Python when used
         within a QNode"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -664,18 +655,18 @@ class TestPythonFallback:
             c(x, wires=0)
             return qml.probs(wires=0)
 
-        circuit(3)
-        ops = circuit.tape.operations
+        tape = qml.workflow.construct_tape(circuit)(3)
+        ops = tape.operations
         assert len(ops) == 1
         assert ops[0].name == "RX"
 
-        circuit(2)
-        ops = circuit.tape.operations
+        tape = qml.workflow.construct_tape(circuit)(2)
+        ops = tape.operations
         assert len(ops) == 1
         assert ops[0].name == "RY"
         assert np.allclose(ops[0].parameters[0], 2**2)
 
-        circuit(1)
-        ops = circuit.tape.operations
+        tape = qml.workflow.construct_tape(circuit)(1)
+        ops = tape.operations
         assert len(ops) == 1
         assert ops[0].name == "RZ"

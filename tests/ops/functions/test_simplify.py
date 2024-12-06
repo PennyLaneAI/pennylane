@@ -14,7 +14,6 @@
 """
 Unit tests for the qml.simplify function
 """
-import warnings
 
 # pylint: disable=too-few-public-methods
 import pytest
@@ -22,13 +21,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumScript
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 def build_op():
@@ -150,7 +142,8 @@ class TestSimplifyQNodes:
         s_qnode = qml.simplify(qnode)
         assert s_qnode() == qnode()
 
-        [s_tape], _ = s_qnode.transform_program([s_qnode.tape])
+        tape = qml.workflow.construct_tape(s_qnode)()
+        [s_tape], _ = s_qnode.transform_program([tape])
         assert len(s_tape) == 2
 
         s_op = s_tape.operations[0]
@@ -184,8 +177,9 @@ class TestSimplifyCallables:
         s_qnode = qml.QNode(s_qfunc, dev)
 
         assert (s_qnode() == qnode()).all()
-        assert len(s_qnode.tape) == 2
-        s_op = s_qnode.tape.operations[0]
+        s_tape = qml.workflow.construct_tape(s_qnode)()
+        assert len(s_tape) == 2
+        s_op = s_tape.operations[0]
         assert isinstance(s_op, qml.PauliZ)
         assert s_op.data == simplified_tape_op.data
         assert s_op.wires == simplified_tape_op.wires

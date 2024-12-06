@@ -16,7 +16,6 @@ Unit tests for the Sum arithmetic class of qubit operations
 """
 # pylint: disable=eval-used, unused-argument
 
-import warnings
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -28,14 +27,6 @@ from pennylane import X, Y, Z, math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
 
 no_mat_ops = (
     qml.Barrier,
@@ -1346,8 +1337,8 @@ class TestIntegration:
                 Sum(qml.s_prod(1.1, qml.PauliX(0)), qml.s_prod(qnp.array(2.2), qml.PauliY(1)))
             )
 
-        circuit()
-        assert circuit.tape.trainable_params == [1]
+        tape = qml.workflow.construct_tape(circuit)()
+        assert tape.trainable_params == [1]
 
 
 # pylint: disable=too-few-public-methods
