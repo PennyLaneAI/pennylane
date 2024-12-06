@@ -204,8 +204,7 @@ ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
 
 
-# !TODO: when removing this class, rename operations_mixed back to operations
-class DefaultMixed(QubitDevice):
+class DefaultMixedLegacy(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
 
     .. warning::
@@ -235,7 +234,7 @@ class DefaultMixed(QubitDevice):
     """
 
     name = "Default mixed-state qubit PennyLane plugin"
-    short_name = "default.mixed"
+    short_name = "default.mixed.legacy"
     pennylane_requires = __version__
     version = __version__
     author = "Xanadu Inc."
@@ -326,10 +325,10 @@ class DefaultMixed(QubitDevice):
         capabilities.update(
             returns_state=True,
             passthru_devices={
-                "autograd": "default.mixed",
-                "tf": "default.mixed",
-                "torch": "default.mixed",
-                "jax": "default.mixed",
+                "autograd": "default.mixed.legacy",
+                "tf": "default.mixed.legacy",
+                "torch": "default.mixed.legacy",
+                "jax": "default.mixed.legacy",
             },
         )
         return capabilities
@@ -883,7 +882,7 @@ class DefaultMixed(QubitDevice):
 
 @simulator_tracking
 @single_tape_support
-class DefaultMixedNewAPI(Device):
+class DefaultMixed(Device):
     r"""A PennyLane Python-based device for mixed-state qubit simulation.
 
     Args:
@@ -919,7 +918,7 @@ class DefaultMixedNewAPI(Device):
         wires=None,
         shots=None,
         seed="global",
-        # The following parameters are inherited from DefaultMixed
+        # The following parameters are inherited from DefaultMixedLegacy
         readout_prob=None,
     ) -> None:
 

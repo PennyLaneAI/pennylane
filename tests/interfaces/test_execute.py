@@ -48,7 +48,7 @@ def test_caching(diff_method):
 def test_execute_legacy_device():
     """Test that qml.execute works when passed a legacy device class."""
 
-    dev = qml.devices.DefaultMixed(wires=2)
+    dev = qml.devices.DefaultMixedLegacy(wires=2)
 
     tape = qml.tape.QuantumScript([qml.RX(0.1, 0)], [qml.expval(qml.Z(0))])
 
