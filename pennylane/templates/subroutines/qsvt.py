@@ -194,7 +194,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
     Args:
 
         A (Union[tensor_like, Operator]): The matrix on which the QSVT will be applied.
-            This can be an array or an object that has a Pauli representation.
+            This can be an array or an object that has a Pauli representation. See :func:`~.pauli_decompose`.
 
         poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
 
@@ -341,7 +341,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
         if block_encoding not in ["prepselprep", "qubitization", None]:
             raise ValueError(
-                "block_encoding should take the value 'prepselprep' or 'qubitization'. If you intend to use block encoding for a matrix, please provide the matrix of the hamiltonian as input. For more details, see the 'qml.matrix' function."
+                "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a Hamiltonian or has a Pauli decomposition, block_encoding should take the value 'prepselprep' or 'qubitization'. Otherwise, please provide the matrix of the Hamiltonian as input. For more details, see the 'qml.matrix' function."
             )
 
         if any(wire in qml.wires.Wires(encoding_wires) for wire in A.wires):
@@ -366,7 +366,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
         if block_encoding not in ["embedding", "fable", None]:
             raise ValueError(
-                "block_encoding should take the value 'embedding' or 'fable'. If you intend to use block encoding for a linear combination of Paulis, please provide the Pauli decomposition of the matrix as input. For more details, see the 'qml.pauli_decompose' function."
+                "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a matrix block_encoding should take the value 'embedding' or 'fable'. Otherwise, please provide an input with a Pauli decomposition. For more details, see the 'qml.pauli_decompose' function."
             )
 
         A = qml.math.array(A)
