@@ -135,6 +135,7 @@ def processing_fn(res):
     return res[0]
 
 
+# This transform does not work with dynamic wires
 def _map_wires_plxpr_transform(
     primitive, tracers, params, targs, tkwargs, state=None
 ):  # pylint: disable=unused-argument, too-many-arguments, too-many-positional-arguments
@@ -157,33 +158,16 @@ def _map_wires_plxpr_transform(
     n_wires = params.get("n_wires")
 
     with qml.QueuingManager.stop_recording():
-        # With this, the arguments of operators are made of TransformTracers
-        # and we cannot use op.map_wires since it does not work
-        # tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
-
         # With this, the arguments of operators do not have TransformTracers
         tracers_in = [t.val for t in tracers]
         op = primitive.impl(*tracers_in, **params)
-        print(f"op: {op}")
 
-    for t in tracers:
-        if isinstance(t, TransformTracer):
-            print(f"TransformTracer: {t}")
-            print(f"t._trace: {t._trace}")
-            print(f"t.val: {t.val}")
-            print(f"t.idx: {t.idx}")
-        else:
-            print(f"t: {t} is not a TransformTracer")
-
-    # TODO: map wires of a pure measurement process (like probs)
-    # if not isinstance(op, qml.operation.Operator) and qml.math.is_abstract(op.obs):
     if isinstance(op, MeasurementProcess):
 
         meas_tracers = []
         for t in tracers:
             if isinstance(t, TransformTracer):
 
-                # This currently gets both qml.probs() and qml.expval(qml.PauliZ(0)) to work
                 if len(op.wires) > 0:
 
                     meas_tracers.append(
@@ -198,18 +182,31 @@ def _map_wires_plxpr_transform(
 
         return primitive.bind(*meas_tracers, **params)
 
-    # TODO: This must be fixed in the base implementation.
-    # This is for cases like qml.H(1) @ qml.H(2)
+    # TODO: complete this
+    # This is for nested operations
     if n_wires is None:
 
+        print(f"op: {op}")
+        mapped_op = op.map_wires(wire_map=wire_map)
+        print(f"mapped_op: {mapped_op}")
+
+        inner_abs_ops = []
+
+        for idx, single_mapped_op in enumerate(mapped_op.operands):
+            roba = single_mapped_op._primitive.bind(
+                *single_mapped_op.parameters, *single_mapped_op.wires
+            )
+            inner_abs_ops.append(roba)
+
         op_tracers = []
-        for t in tracers:
+        for idx, t in enumerate(tracers):
             if isinstance(t, TransformTracer):
 
                 op_tracers.append(
                     TransformTracer(
                         t._trace,
-                        *t.val.map_wires(wire_map=wire_map).wires,
+                        inner_abs_ops[idx],
+                        # *t.val.map_wires(wire_map=wire_map).wires,
                         t.idx + 1,
                     )
                 )
