@@ -149,11 +149,9 @@ def _fit_twobody(twomode_op, max_deg, min_deg=3):
     predicted_2D = np.zeros_like(twomode_op)
 
     grid_2D = np.array(np.meshgrid(gauss_grid, gauss_grid))
-    q1 = grid_2D[0, ::].flatten()
-    q2 = grid_2D[1, ::].flatten()
+    q1, q2 = (grid.flatten() for grid in grid_2D)
     idx_2D = np.array(np.meshgrid(range(quad_order), range(quad_order)))
-    idx1 = idx_2D[0, ::].flatten()
-    idx2 = idx_2D[1, ::].flatten()
+    idx1, idx2 = (idx.flatten() for idx in idx_2D)
     num_2D = len(q1)
 
     features = np.zeros((num_2D, num_coeffs))
@@ -248,13 +246,9 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
     coeffs = np.zeros((nmodes, nmodes, nmodes, num_coeffs))
 
     grid_3D = np.array(np.meshgrid(gauss_grid, gauss_grid, gauss_grid))
-    q1 = grid_3D[0, ::].flatten()
-    q2 = grid_3D[1, ::].flatten()
-    q3 = grid_3D[2, ::].flatten()
+    q1, q2, q3 = (grid.flatten() for grid in grid_3D)
     idx_3D = np.array(np.meshgrid(range(quad_order), range(quad_order), range(quad_order)))
-    idx1 = idx_3D[0, ::].flatten()
-    idx2 = idx_3D[1, ::].flatten()
-    idx3 = idx_3D[2, ::].flatten()
+    idx1, idx2, idx3 = (idx.flatten() for idx in idx_3D)
     num_3D = len(q1)
 
     features = np.zeros((num_3D, num_coeffs))
@@ -309,7 +303,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
 
 def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
-    r"""Calculates Taylor form fitted coefficients for dipole construction.
+    r"""Compute fitted coefficients for the Taylor dipole operator.
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
@@ -470,7 +464,6 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the frequencies
         is_loc (bool): whether or not if localized
-        uloc (list(float)): localization matrix indicating the relationship between original and
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
