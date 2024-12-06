@@ -96,7 +96,7 @@ class MPSPrep(Operation):
         Additionally, the physical dimension of the site should always be fixed at :math:`2`,
         while the other dimensions must be powers of two.
 
-        The following examples shows a valid MPS input containing four tensors with
+        The following example shows a valid MPS input containing four tensors with
         dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
 
         .. code-block::
