@@ -1924,7 +1924,8 @@ class TestTrotterizedQfuncIntegration:
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("reverse", (True, False))
-    def test_jaxjit_execute(self, n, order, reverse):
+    @pytest.mark.parametrize("method", ("backprop", "parameter-shift"))
+    def test_jaxjit_execute(self, n, order, reverse, method):
         """Test that the gate executes correctly in the jax interface."""
         import jax
         from jax import numpy as jnp
@@ -1957,7 +1958,7 @@ class TestTrotterizedQfuncIntegration:
         expected_decomp = expected_decomp * n
 
         @partial(jax.jit, static_argnames=["wires", "kwarg1", "kwarg2"])
-        @qml.qnode(qml.device("default.qubit", wires=wires), interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=wires), interface="jax", diff_method=method)
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
                 time,
@@ -1992,7 +1993,8 @@ class TestTrotterizedQfuncIntegration:
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("reverse", (True, False))
-    def test_gradient(self, n, order, reverse):
+    @pytest.mark.parametrize("method", ("backprop", "parameter-shift"))
+    def test_gradient(self, n, order, reverse, method):
         """Test that the gradient is computed correctly"""
         time = qnp.array(0.1)
         wires = ["aux1", "aux2", 0, 1, "target"]
@@ -2014,7 +2016,7 @@ class TestTrotterizedQfuncIntegration:
             for _ in range(kwarg2):
                 qml.QFT(wires=wires[1:-1])
 
-        @qml.qnode(qml.device("default.qubit", wires=wires))
+        @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
                 time,
@@ -2027,9 +2029,9 @@ class TestTrotterizedQfuncIntegration:
                 wires=wires,
                 **kwargs,
             )
-            return qml.expval(qml.Hadamard(wires[1]))
+            return qml.expval(qml.Hadamard(wires[0]))
 
-        @qml.qnode(qml.device("default.qubit", wires=wires))
+        @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def reference_circ(time, alpha, beta, wires):
             with qml.QueuingManager.stop_recording():
                 expected_t = time / n
@@ -2041,7 +2043,7 @@ class TestTrotterizedQfuncIntegration:
             for op in expected_decomp:
                 qml.apply(op)
 
-            return qml.expval(qml.Hadamard(wires[1]))
+            return qml.expval(qml.Hadamard(wires[0]))
 
         measured_time_grad, measured_arg1_grad, measured_arg2_grad = qml.grad(circ)(
             time, arg1, arg2, wires, **kwargs
@@ -2057,7 +2059,8 @@ class TestTrotterizedQfuncIntegration:
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("reverse", (True, False))
-    def test_jax_gradient(self, n, order, reverse):
+    @pytest.mark.parametrize("method", ("backprop", "parameter-shift"))
+    def test_jax_gradient(self, n, order, reverse, method):
         """Test that the gradient is computed correctly"""
         import jax
         from jax import numpy as jnp
@@ -2089,7 +2092,7 @@ class TestTrotterizedQfuncIntegration:
         )
         expected_decomp = expected_decomp * n
 
-        @qml.qnode(qml.device("default.qubit", wires=wires))
+        @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
                 time,
@@ -2102,9 +2105,9 @@ class TestTrotterizedQfuncIntegration:
                 wires=wires,
                 **kwargs,
             )
-            return qml.expval(qml.Hadamard(wires[1]))
+            return qml.expval(qml.Hadamard(wires[0]))
 
-        @qml.qnode(qml.device("default.qubit", wires=wires))
+        @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def reference_circ(time, alpha, beta, wires):
             with qml.QueuingManager.stop_recording():
                 expected_t = time / n
@@ -2116,7 +2119,7 @@ class TestTrotterizedQfuncIntegration:
             for op in expected_decomp:
                 qml.apply(op)
 
-            return qml.expval(qml.Hadamard(wires[1]))
+            return qml.expval(qml.Hadamard(wires[0]))
 
         measured_time_grad, measured_arg1_grad, measured_arg2_grad = jax.grad(
             circ, argnums=[0, 1, 2]

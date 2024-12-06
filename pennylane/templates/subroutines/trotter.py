@@ -523,7 +523,7 @@ class TrotterizedQfunc(Operation):
     Suppose we have direct access to the operators which represent the exponentiated terms of
     a hamiltonian:
 
-    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} for j \in [1, N] \}.
+    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}}, j \in [1, N] \}.
 
     Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represent the
     first order expansion :math:`S_{1}(t)`; this class expands it to any higher order Suzuki-Trotter product.
@@ -713,7 +713,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
     Suppose we have direct access to the operators which represent the exponentiated terms of
     a Hamiltonian:
 
-    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} for j \in [1, N] \}.
+    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}}, j \in [1, N] \}.
 
     Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represent the
     first order expansion :math:`S_{1}(t)`, this function expands it to any higher order Suzuki-Trotter product.
