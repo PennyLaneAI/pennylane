@@ -131,7 +131,7 @@ def run_autograph(fn):
 
     Returns:
         Callable: For a function, the converted function is returned directly.
-        For a QNode, the ``QNode.func`` will be updated with the converted version of ``func``.
+        For a QNode, a copy of the QNode will be returned with ``QNode.func`` replaced with the converted version of ``func``.
         For any other callable ``obj``, the returned function will be a converted version of
         ``lambda *args, **kwargs: obj(*args, **kwargs)``
 
