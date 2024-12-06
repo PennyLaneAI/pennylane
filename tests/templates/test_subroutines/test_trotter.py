@@ -1265,11 +1265,10 @@ class TestTrotterizedQfuncInitialization:
     )
 
     @pytest.mark.parametrize("wires", wire_data)
-    @pytest.mark.parametrize("name", (None, "MyCustomTrotter"))
     @pytest.mark.parametrize("n, time, order, reverse", hyperparams_data)
     @pytest.mark.parametrize("qfunc_args, qfunc_kwargs", args_kwargs_data)
     def test_parameters_and_hyperparameters(
-        self, time, qfunc_args, wires, n, order, reverse, name, qfunc_kwargs
+        self, time, qfunc_args, wires, n, order, reverse, qfunc_kwargs
     ):
         """Test that the parameters and hyperparameters are set correctly"""
         op = TrotterizedQfunc(
@@ -1294,9 +1293,6 @@ class TestTrotterizedQfuncInitialization:
         assert op.data == (time,) + qfunc_args
         assert op.parameters == list((time,) + qfunc_args)
         assert op.hyperparameters == expected_hyperparams
-
-        expected_name = name or "TrotterizedQfunc"
-        assert op.name == expected_name
 
     @pytest.mark.parametrize("wires", wire_data)
     @pytest.mark.parametrize("n, time, order, reverse", hyperparams_data)

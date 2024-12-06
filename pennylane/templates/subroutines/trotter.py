@@ -548,7 +548,6 @@ class TrotterizedQfunc(Operation):
         n (int): an integer representing the number of Trotter steps to perform
         order (int): an integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         reverse (bool): if true, reverse the order of the operations queued by :code:`qfunc`
-        name (str): an optional name for the instance
         **non_trainable_kwargs (dict): non-trainable keyword arguments of the first-order expansion function
 
     Raises:
@@ -602,7 +601,6 @@ class TrotterizedQfunc(Operation):
         n=1,
         order=2,
         reverse=False,
-        name=None,
         id=None,
         **non_trainable_kwargs,
     ):
@@ -628,9 +626,6 @@ class TrotterizedQfunc(Operation):
         self._hyperparameters["reverse"] = reverse
 
         super().__init__(time, *trainable_args, wires=wires, id=id)
-
-        if name:
-            self._name = name  # Override name if a custom name is provided
 
     def decomposition(self) -> list[Operator]:
         """The decomposition"""
@@ -689,7 +684,7 @@ class TrotterizedQfunc(Operation):
         return cls(*data, **dict(metadata))
 
 
-def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
+def trotterize(qfunc, n=1, order=2, reverse=False):
     r"""Generates higher order Suzuki-Trotter product formulas from a set of
     operations defined in a function.
 
@@ -781,7 +776,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
     @wraps(qfunc)
     def wrapper(time, *args, **kwargs):
 
-        special_keys = ["n", "name", "order", "qfunc", "reverse"]
+        special_keys = ["n", "order", "qfunc", "reverse"]
         if any(key in kwargs for key in special_keys):
             raise ValueError(
                 f"Cannot use any of the specailized names:\n {special_keys}\nas keyword"
@@ -789,7 +784,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
             )
 
         return TrotterizedQfunc(
-            time, *args, qfunc=qfunc, n=n, order=order, reverse=reverse, name=name, **kwargs
+            time, *args, qfunc=qfunc, n=n, order=order, reverse=reverse, **kwargs
         )
 
     return wrapper
