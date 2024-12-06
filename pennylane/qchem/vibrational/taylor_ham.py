@@ -286,7 +286,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
         min_deg (int): minimum degree of taylor form polynomial
 
     Returns:
-        list(list(floats)): the coeffs of the one-body, two-body, three-body terms
+        list(list(floats)): the coefficients of the one-body, two-body and three-body terms
     """
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
