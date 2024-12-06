@@ -123,7 +123,7 @@ class MPSPrep(Operation):
 
     def __init__(self, mps, wires, id=None):
 
-        if not qml.math.is_abstract(mps[0]):
+        if not qml.math.is_abstract(mps):
             # Validate the shape and dimensions of the first tensor
             assert qml.math.isclose(
                 len(qml.math.shape(mps[0])), 2
