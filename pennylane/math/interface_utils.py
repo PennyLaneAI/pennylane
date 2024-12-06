@@ -14,51 +14,63 @@
 """Functions related to interfaces"""
 
 import warnings
-from typing import Literal, get_args
+from enum import Enum
+from typing import Literal, Union
 
 import autoray as ar
 
-SupportedInterfaceUserInput = Literal[
-    None,
-    "auto",
-    "autograd",
-    "numpy",
-    "scipy",
-    "jax",
-    "jax-jit",
-    "jax-python",
-    "JAX",
-    "torch",
-    "pytorch",
-    "tf",
-    "tensorflow",
-    "tensorflow-autograph",
-    "tf-autograph",
-]
 
-_mapping_output = (
-    "numpy",
-    "auto",
-    "autograd",
-    "autograd",
-    "numpy",
-    "jax",
-    "jax-jit",
-    "jax",
-    "jax",
-    "torch",
-    "torch",
-    "tf",
-    "tf",
-    "tf-autograph",
-    "tf-autograph",
-)
+class Interface(Enum):
+    """Canonical set of interfaces supported."""
 
-INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
+    AUTOGRAD = "autograd"
+    NUMPY = "numpy"
+    TORCH = "torch"
+    JAX = "jax"
+    JAX_JIT = "jax-jit"
+    TF = "tf"
+    TF_AUTOGRAPH = "tf-autograph"
+    AUTO = "auto"
+
+    def get_like(self):
+        """Maps canonical set of interfaces to those known by autoray."""
+        mapping = {
+            Interface.AUTOGRAD: "autograd",
+            Interface.NUMPY: "numpy",
+            Interface.TORCH: "torch",
+            Interface.JAX: "jax",
+            Interface.JAX_JIT: "jax",
+            Interface.TF: "tensorflow",
+            Interface.TF_AUTOGRAPH: "tensorflow",
+            Interface.AUTO: None,
+        }
+        return mapping[self]
+
+
+INTERFACE_MAP = {
+    None: Interface.NUMPY,
+    "auto": Interface.AUTO,
+    "autograd": Interface.AUTOGRAD,
+    "numpy": Interface.NUMPY,
+    "scipy": Interface.NUMPY,
+    "jax": Interface.JAX,
+    "jax-jit": Interface.JAX_JIT,
+    "jax-python": Interface.JAX,
+    "JAX": Interface.JAX,
+    "torch": Interface.TORCH,
+    "pytorch": Interface.TORCH,
+    "tf": Interface.TF,
+    "tensorflow": Interface.TF,
+    "tensorflow-autograph": Interface.TF_AUTOGRAPH,
+    "tf-autograph": Interface.TF_AUTOGRAPH,
+}
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
-SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
-"""list[str]: allowed interface strings"""
+SupportedInterfaceUserInput = Literal[tuple(INTERFACE_MAP.keys())]
+"""list[str]: allowed interface names that the user can input"""
+
+SUPPORTED_INTERFACE_NAMES = list(Interface)
+"""list[Interface]: allowed interface names"""
 
 
 def get_interface(*values):
@@ -197,22 +209,24 @@ def get_deep_interface(value):
     return _get_interface_of_single_tensor(itr)
 
 
-def get_canonical_interface_name(interface):
+def get_canonical_interface_name(user_input: Union[str, Interface]) -> Interface:
     """Helper function to get the canonical interface name.
 
     Args:
-        interface (str): original interface to use as reference
+        interface (str, Interface): reference interface
 
     Raises:
         ValueError: key does not exist in the interface map
 
     Returns:
-        str: new interface
+        Interface: canonical interface
     """
 
+    if user_input in SUPPORTED_INTERFACE_NAMES:
+        return user_input
     try:
-        return INTERFACE_MAP[interface]
+        return INTERFACE_MAP[user_input]
     except KeyError as exc:
         raise ValueError(
-            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
+            f"Unknown interface {user_input}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
         ) from exc

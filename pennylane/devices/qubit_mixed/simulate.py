@@ -11,26 +11,39 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Simulate a quantum script for a qutrit mixed state device."""
-# pylint: disable=protected-access
-from numpy.random import default_rng
-
+"""Simulate a quantum script for a qubit mixed state device."""
 import pennylane as qml
-from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
-from .sampling import measure_with_samples
-from .utils import QUDIT_DIM
+
+INTERFACE_TO_LIKE = {
+    # map interfaces known by autoray to themselves
+    "numpy": "numpy",
+    "autograd": "autograd",
+    "jax": "jax",
+    "torch": "torch",
+    "tensorflow": "tensorflow",
+    # map non-standard interfaces to those known by autoray
+    "auto": None,
+    "scipy": "numpy",
+    "jax-jit": "jax",
+    "jax-python": "jax",
+    "JAX": "jax",
+    "pytorch": "torch",
+    "tf": "tensorflow",
+    "tensorflow-autograph": "tensorflow",
+    "tf-autograph": "tensorflow",
+}
 
 
 def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     """
     Get the final state that results from executing the given quantum script.
 
-    This is an internal function that will be called by ``default.qutrit.mixed``.
+    This is an internal function that will be called by ``default.mixed``.
 
     Args:
         circuit (.QuantumScript): The single circuit to simulate
@@ -48,8 +61,9 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    interface = get_canonical_interface_name(interface)
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
+    state = create_initial_state(
+        sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface] if interface else None
+    )
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -72,21 +86,20 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
         # We know they belong at the end because the circuit is in standard wire-order
         # Since it is a dm, we must pad it with 0s on the last row and last column
         current_axis = num_operated_wires + i + is_state_batched
-        state = qml.math.stack(
-            ([state] + [qml.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=current_axis
-        )
-        state = qml.math.stack(([state] + [qml.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=-1)
+        state = qml.math.stack(([state] + [qml.math.zeros_like(state)]), axis=current_axis)
+        state = qml.math.stack(([state] + [qml.math.zeros_like(state)]), axis=-1)
 
     return state, is_state_batched
 
 
-def measure_final_state(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments, unused-argument
+def measure_final_state(
     circuit, state, is_state_batched, rng=None, prng_key=None, readout_errors=None
 ) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
-    This is an internal function that will be called by ``default.qutrit.mixed``.
+    This is an internal function that will be called by ``default.mixed``.
 
     Args:
         circuit (.QuantumScript): The single circuit to simulate
@@ -116,30 +129,12 @@ def measure_final_state(  # pylint: disable=too-many-arguments
         return tuple(
             measure(mp, state, is_state_batched, readout_errors) for mp in circuit.measurements
         )
-
-    # finite-shot case
-    rng = default_rng(rng)
-    results = tuple(
-        measure_with_samples(
-            mp,
-            state,
-            shots=circuit.shots,
-            is_state_batched=is_state_batched,
-            rng=rng,
-            prng_key=prng_key,
-            readout_errors=readout_errors,
-        )
-        for mp in circuit.measurements
-    )
-
-    if len(circuit.measurements) == 1:
-        return results[0]
-    if circuit.shots.has_partitioned_shots:
-        return tuple(zip(*results))
-    return results
+    # !TODO: add finite-shot branch afterwards. After implementation of finite-shot scenario, del this line.
+    raise NotImplementedError
 
 
-def simulate(  # pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+def simulate(
     circuit: qml.tape.QuantumScript,
     rng=None,
     prng_key=None,
@@ -149,32 +144,35 @@ def simulate(  # pylint: disable=too-many-arguments
 ) -> Result:
     """Simulate a single quantum script.
 
-    This is an internal function that will be called by ``default.qutrit.mixed``.
+        This is an internal function that will be called by ``default.mixed``.
 
-    Args:
-        circuit (QuantumTape): The single circuit to simulate
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
-        debugger (_Debugger): The debugger to use
-        interface (str): The machine learning interface to create the initial state with
-        readout_errors (List[Callable]): List of channels to apply to each wire being measured
-        to simulate readout errors.
+        Args:
+            circuit (QuantumScript): The single circuit to simulate
+            rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]): A
+                seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+                If no value is provided, a default RNG will be used.
+            prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+                the key to the JAX pseudo random number generator. If None, a random key will be
+                generated. Only for simulation using JAX.
+            debugger (_Debugger): The debugger to use
+            interface (str): The machine learning interface to create the initial state with
+            readout_errors (List[Callable]): List of channels to apply to each wire being measured
+            to simulate readout errors.
 
-    Returns:
-        tuple(TensorLike): The results of the simulation
+        Returns:
+            tuple(TensorLike): The results of the simulation
 
-    Note that this function can return measurements for non-commuting observables simultaneously.
+        Note that this function can return measurements for non-commuting observables simultaneously.
 
-    This function assumes that all operations provide matrices.
+        This function assumes that all operations provide matrices.
 
-    >>> qs = qml.tape.QuantumScript([qml.TRX(1.2, wires=0)], [qml.expval(qml.GellMann(0, 3)), qml.probs(wires=(0,1))])
+    >>> qs = qml.tape.QuantumScript(
+    ...     [qml.RX(1.2, wires=0)],
+    ...     [qml.expval(qml.PauliX(0)), qml.probs(wires=(0, 1))]
+    ... )
     >>> simulate(qs)
-    (0.36235775447667357,
-    tensor([0.68117888, 0.        , 0.        , 0.31882112, 0.        , 0.        ], requires_grad=True))
+    (0.0, array([0.68117888, 0.        , 0.31882112, 0.        ]))
+
 
     """
     state, is_state_batched = get_final_state(
