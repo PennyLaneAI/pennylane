@@ -499,7 +499,7 @@ class TrotterizedQfunc(Operation):
     operations defined in a function.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
-    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+    a Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
     the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
     :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
@@ -523,9 +523,9 @@ class TrotterizedQfunc(Operation):
     Suppose we have direct access to the operators which represent the exponentiated terms of
     a hamiltonian:
 
-    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} | for j \in [1, N] \}.
+    .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} for j \in [1, N] \}.
 
-    Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
+    Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represent the
     first order expansion :math:`S_{1}(t)`; this class expands it to any higher order Suzuki-Trotter product.
 
     .. warning::
@@ -715,7 +715,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
 
     .. math:: \{ \hat{U}_{j} = e^{i t O_{j}} for j \in [1, N] \}.
 
-    Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represents the
+    Given a quantum circuit which uses these :math:`\hat{U}_{j}` operators to represent the
     first order expansion :math:`S_{1}(t)`, this function expands it to any higher order Suzuki-Trotter product.
 
     .. warning::
@@ -799,7 +799,7 @@ def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kw
         order (int): the order of the Trotter expansion
         ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
     Returns:
-        list: the approximation as product of exponentials of the Hamiltonian terms
+        list: the approximation as a product of exponentials of the Hamiltonian terms
     """
     if order == 1:
         tape = qml.tape.make_qscript(qfunc)(time, *qfunc_args, wires=wires, **qfunc_kwargs)
