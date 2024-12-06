@@ -138,7 +138,7 @@ def Kpq(p, q, wire=None):
         return Z(wire).matrix(wire_order=range(int_log2(p) + 1))
     if wire is not None:
         raise ValueError("The wire argument is only supported for p=q=2**N for some integer N.")
-    zeros = np.zeros((p+q, p+q))
+    zeros = np.zeros((p + q, p + q))
     d = np.diag(np.concatenate([np.ones(p), -np.ones(q)]))
     KKm = np.block([[d, zeros], [zeros, d]])
     return KKm

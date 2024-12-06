@@ -118,8 +118,6 @@ def pauli_y_eigenbasis(wire, num_wires):
     return QubitUnitary(V, wire).matrix(wire_order=range(num_wires))
 
 
-
-
 _basis_change_constructors = {
     ("AI", "BDI"): IDENTITY,
     ("AI", "DIII"): IDENTITY,
