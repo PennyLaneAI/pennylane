@@ -175,7 +175,7 @@ def _fit_twobody(twomode_op, max_deg, min_deg=3):
 
 def _generate_bin_occupations(max_occ, nbins):
     """
-    Generate all valid combinations of bin occupations for a given number of bins 
+    Generate all valid combinations of bin occupations for a given number of bins
     and a total maximum occupancy.
 
     Args:
@@ -323,15 +323,21 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
             - list(floats): coefficients for y-displacements
             - list(floats): coefficients for z-displacements
     """
-    coeffs_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onemode[:, :, 0], max_deg, min_deg=min_deg)
+    coeffs_x_1D, predicted_x_1D = _fit_onebody(
+        pes.dipole_onemode[:, :, 0], max_deg, min_deg=min_deg
+    )
     coeffs_x_arr = [coeffs_x_1D]
     predicted_x_arr = [predicted_x_1D]
 
-    coeffs_y_1D, predicted_y_1D = _fit_onebody(pes.dipole_onemode[:, :, 1], max_deg, min_deg=min_deg)
+    coeffs_y_1D, predicted_y_1D = _fit_onebody(
+        pes.dipole_onemode[:, :, 1], max_deg, min_deg=min_deg
+    )
     coeffs_y_arr = [coeffs_y_1D]
     predicted_y_arr = [predicted_y_1D]
 
-    coeffs_z_1D, predicted_z_1D = _fit_onebody(pes.dipole_onemode[:, :, 2], max_deg, min_deg=min_deg)
+    coeffs_z_1D, predicted_z_1D = _fit_onebody(
+        pes.dipole_onemode[:, :, 2], max_deg, min_deg=min_deg
+    )
     coeffs_z_arr = [coeffs_z_1D]
     predicted_z_arr = [predicted_z_1D]
 
