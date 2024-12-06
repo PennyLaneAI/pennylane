@@ -91,7 +91,7 @@ observables = {
     "Sum",
 }
 
-operations_mixed = {
+operations = {
     "Identity",
     "Snapshot",
     "BasisState",
@@ -175,7 +175,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    expected_set = operations_mixed | {"Snapshot"} | channels
+    expected_set = operations | {"Snapshot"} | channels
     return op.name in expected_set
 
 
@@ -240,7 +240,8 @@ class DefaultMixed(QubitDevice):
     version = __version__
     author = "Xanadu Inc."
 
-    operations = operations_mixed
+    # copy the operations from external
+    operations = operations.copy()
 
     _reshape = staticmethod(qnp.reshape)
     _flatten = staticmethod(qnp.flatten)
