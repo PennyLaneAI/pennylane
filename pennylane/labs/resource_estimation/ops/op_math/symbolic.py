@@ -24,7 +24,7 @@ from pennylane.ops.op_math.pow import PowOperation
 
 
 class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
-    """Resource class for Adjoint"""
+    """Resource class for the Adjoint symbolic operation."""
 
     @classmethod
     def _resource_decomp(
@@ -59,7 +59,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
 
 class ResourceControlled(ControlledOp, re.ResourceOperator):
-    """Resource class for Controlled"""
+    """Resource class for the Controlled symbolic operation."""
 
     @classmethod
     def _resource_decomp(
@@ -142,7 +142,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
 
 class ResourcePow(PowOperation, re.ResourceOperator):
-    """Resource class for Pow"""
+    """Resource class for the Pow symbolic operation."""
 
     @classmethod
     def _resource_decomp(

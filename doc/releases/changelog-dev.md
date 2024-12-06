@@ -262,7 +262,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
 
 * Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
-   symbolic operation classes.
+  symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
 <h3>Breaking changes 💔</h3>
