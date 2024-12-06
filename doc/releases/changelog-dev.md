@@ -118,6 +118,9 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 new device API of `default_mixed` should be able to take the stochastic arguments
 such as `shots`, `rng` and `prng_key`.
 
+* Migrate the old `DefaultMixed` to `DefaultMixedNewAPI`. Basically, previous class `qml.devices.default_mixed.DefaultMixed` was renamed to `DefaultMixedLegacy`, and `DefaultMixedNewAPI` was renamed to `DefaultMixed`. Users will not experience any differences, but for some users who delved deep into PennyLane codebase and happened to use specifically the legacy class, they have to change the classname.
+  [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
+
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
 

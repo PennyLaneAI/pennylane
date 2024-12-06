@@ -51,6 +51,7 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     ExecutionConfig
     MCMConfig
     Device
+    DefaultMixed
     DefaultQubit
     DefaultTensor
     NullQubit
@@ -134,6 +135,13 @@ Qubit Simulation Tools
 .. automodule:: pennylane.devices.qubit
 
 
+Qubit Mixed-State Simulation Tools
+----------------------
+
+.. currentmodule:: pennylane.devices.qubit_mixed
+.. automodule:: pennylane.devices.qubit_mixed
+
+
 Qutrit Mixed-State Simulation Tools
 -----------------------------------
 
@@ -153,7 +161,7 @@ from .legacy_facade import LegacyDeviceFacade
 # DefaultTensor is not imported here to avoid warnings
 # from quimb in case it is installed on the system.
 from .default_gaussian import DefaultGaussian
-from .default_mixed import DefaultMixed
+from .default_mixed import DefaultMixed, DefaultMixedLegacy
 from .default_clifford import DefaultClifford
 from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
