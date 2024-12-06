@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``default.mixed`` device for the Torch interface.
+Tests for the ``default.mixed.legacy`` device for the Torch interface.
 """
 import numpy as np
 
@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices.default_mixed import DefaultMixed
+from pennylane.devices.default_mixed import DefaultMixedLegacy
 
 pytestmark = pytest.mark.torch
 
@@ -29,23 +29,23 @@ torch = pytest.importorskip("torch")
 
 
 class TestQNodeIntegration:
-    """Integration tests for default.mixed with Torch. This test ensures it integrates
+    """Integration tests for default.mixed.legacy with Torch. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
 
     def test_load_device(self):
         """Test that the plugin device loads correctly"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
         assert dev.num_wires == 2
         assert dev.shots == qml.measurements.Shots(None)
-        assert dev.short_name == "default.mixed"
-        assert dev.target_device.capabilities()["passthru_devices"]["torch"] == "default.mixed"
+        assert dev.short_name == "default.mixed.legacy"
+        assert dev.target_device.capabilities()["passthru_devices"]["torch"] == "default.mixed.legacy"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
         p = torch.tensor(0.543)
 
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
@@ -60,7 +60,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after evaluating a
         quantum function on the device"""
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         state = dev.state
         expected = np.zeros((4, 4))
@@ -110,7 +110,7 @@ class TestDtypePreserved:
         else:
             r_dtype_torch = torch.float64
 
-        dev = qml.device("default.mixed", wires=3, r_dtype=r_dtype)
+        dev = qml.device("default.mixed.legacy", wires=3, r_dtype=r_dtype)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
@@ -138,7 +138,7 @@ class TestDtypePreserved:
 
         p = torch.tensor(0.543)
 
-        dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
+        dev = qml.device("default.mixed.legacy", wires=3, c_dtype=c_dtype)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
@@ -150,13 +150,13 @@ class TestDtypePreserved:
 
 
 class TestOps:
-    """Unit tests for operations supported by the default.mixed device with Torch"""
+    """Unit tests for operations supported by the default.mixed.legacy device with Torch"""
 
     def test_multirz_jacobian(self):
         """Test that the patched numpy functions are used for the MultiRZ
         operation and the jacobian can be computed."""
         wires = 4
-        dev = qml.device("default.mixed", wires=wires)
+        dev = qml.device("default.mixed.legacy", wires=wires)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(param):
@@ -170,7 +170,7 @@ class TestOps:
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = DefaultMixed(wires=["a", "b", "c"])
+        dev = DefaultMixedLegacy(wires=["a", "b", "c"])
         state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
@@ -185,7 +185,7 @@ class TestOps:
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
-        dev = DefaultMixed(wires=["a", "b", "c"])
+        dev = DefaultMixedLegacy(wires=["a", "b", "c"])
         state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
@@ -230,9 +230,9 @@ class TestApplyChannelMethodChoice:
         methods = ["_apply_channel", "_apply_channel_tensordot"]
         del methods[methods.index(exp_method)]
         unexp_method = methods[0]
-        spy_exp = mocker.spy(DefaultMixed, exp_method)
-        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
-        dev = qml.device("default.mixed", wires=dev_wires)
+        spy_exp = mocker.spy(DefaultMixedLegacy, exp_method)
+        spy_unexp = mocker.spy(DefaultMixedLegacy, unexp_method)
+        dev = qml.device("default.mixed.legacy", wires=dev_wires)
         state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
         dev._state = np.array(state).reshape([2] * (2 * dev_wires))
@@ -272,10 +272,10 @@ class TestApplyChannelMethodChoice:
 
         unexp_method = methods[0]
 
-        spy_exp = mocker.spy(DefaultMixed, exp_method)
-        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        spy_exp = mocker.spy(DefaultMixedLegacy, exp_method)
+        spy_unexp = mocker.spy(DefaultMixedLegacy, unexp_method)
 
-        dev = qml.device("default.mixed", wires=dev_wires)
+        dev = qml.device("default.mixed.legacy", wires=dev_wires)
 
         state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
@@ -291,14 +291,14 @@ class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
     def test_jacobian_variable_multiply(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.torch device
+        """Test that jacobian of a QNode with an attached default.mixed.legacy.torch device
         gives the correct result in the case of parameters multiplied by scalars"""
         x = torch.tensor(0.43316321, dtype=torch.float64)
         y = torch.tensor(0.2162158, dtype=torch.float64)
         z = torch.tensor(0.75110998, dtype=torch.float64)
         weights = torch.tensor([x, y, z], dtype=torch.float64, requires_grad=True)
 
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(p):
@@ -326,13 +326,13 @@ class TestPassthruIntegration:
         assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_repeated(self, tol):
-        """Test that the jacobian of a QNode with an attached default.mixed.torch device
+        """Test that the jacobian of a QNode with an attached default.mixed.legacy.torch device
         gives the correct result in the case of repeated parameters"""
         x = torch.tensor(0.43316321, dtype=torch.float64)
         y = torch.tensor(0.2162158, dtype=torch.float64)
         z = torch.tensor(0.75110998, dtype=torch.float64)
         p = torch.tensor([x, y, z], dtype=torch.float64, requires_grad=True)
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
@@ -356,7 +356,7 @@ class TestPassthruIntegration:
         assert torch.allclose(p.grad, expected, atol=tol, rtol=0)
 
     def test_backprop_jacobian_agrees_parameter_shift(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.torch device
+        """Test that jacobian of a QNode with an attached default.mixed.legacy.torch device
         gives the correct result with respect to the parameter-shift method"""
         p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
         p_torch = torch.tensor(p, dtype=torch.float64, requires_grad=True)
@@ -370,8 +370,8 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.mixed", wires=3)
-        dev2 = qml.device("default.mixed", wires=3)
+        dev1 = qml.device("default.mixed.legacy", wires=3)
+        dev2 = qml.device("default.mixed.legacy", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", interface="torch")
@@ -399,7 +399,7 @@ class TestPassthruIntegration:
     def test_state_differentiability(self, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
         # pylint: disable=too-many-arguments
-        dev = qml.device("default.mixed", wires=wires)
+        dev = qml.device("default.mixed.legacy", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
@@ -420,7 +420,7 @@ class TestPassthruIntegration:
     @pytest.mark.xfail(reason="see pytorch/pytorch/issues/94397")
     def test_state_vector_differentiability(self, tol):
         """Test that the device state vector can be differentiated directly"""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(a):
@@ -437,7 +437,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("wires", [range(2), [-12.32, "abc"]])
     def test_density_matrix_differentiability(self, wires, tol):
         """Test that the density matrix can be differentiated"""
-        dev = qml.device("default.mixed", wires=wires)
+        dev = qml.device("default.mixed.legacy", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
@@ -457,7 +457,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -481,7 +481,7 @@ class TestPassthruIntegration:
 
     def test_prob_vector_differentiability(self, tol):
         """Test that the device probability vector can be differentiated directly"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -517,7 +517,7 @@ class TestPassthruIntegration:
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
         # pylint: disable=unused-variable
-        dev = qml.device("default.mixed", wires=1, shots=100)
+        dev = qml.device("default.mixed.legacy", wires=1, shots=100)
 
         msg = "does not support backprop with requested circuit"
 
@@ -530,7 +530,7 @@ class TestPassthruIntegration:
 
     def test_expval_gradient(self, tol):
         """Tests that the gradient of expval is correct"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -554,7 +554,7 @@ class TestPassthruIntegration:
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         shift = torch.tensor(shift)
         x = torch.tensor(x, requires_grad=True)
@@ -576,7 +576,7 @@ class TestPassthruIntegration:
     def test_torch_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the TF interface, using a variety of differentiation methods."""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
         state = torch.tensor(
             1j * np.array([1, -1]) / np.sqrt(2), requires_grad=False, dtype=torch.complex128
         )
@@ -622,9 +622,9 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize(
         "dev_name,diff_method,grad_on_execution",
         [
-            ["default.mixed", "finite-diff", False],
-            ["default.mixed", "parameter-shift", False],
-            ["default.mixed", "backprop", True],
+            ["default.mixed.legacy", "finite-diff", False],
+            ["default.mixed.legacy", "parameter-shift", False],
+            ["default.mixed.legacy", "backprop", True],
         ],
     )
     def test_ragged_differentiation(self, dev_name, diff_method, grad_on_execution, tol):
@@ -668,7 +668,7 @@ class TestPassthruIntegration:
 
     def test_batching(self, tol):
         """Tests that the gradient of the qnode is correct with batching parameters"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @qml.batch_params
         @qml.qnode(dev, diff_method="backprop", interface="torch")
@@ -696,8 +696,8 @@ class TestPassthruIntegration:
 
 
 def test_template_integration():
-    """Test that a PassthruQNode default.mixed.torch works with templates."""
-    dev = qml.device("default.mixed", wires=2)
+    """Test that a PassthruQNode default.mixed.legacy.torch works with templates."""
+    dev = qml.device("default.mixed.legacy", wires=2)
 
     @qml.qnode(dev, interface="torch", diff_method="backprop")
     def circuit(weights):
@@ -715,7 +715,7 @@ def test_template_integration():
 
 
 class TestMeasurements:
-    """Tests for measurements with default.mixed"""
+    """Tests for measurements with default.mixed.legacy"""
 
     @pytest.mark.parametrize(
         "measurement",
@@ -727,9 +727,9 @@ class TestMeasurements:
         ],
     )
     def test_measurements_torch(self, measurement):
-        """Test sampling-based measurements work with `default.mixed` for trainable interfaces"""
+        """Test sampling-based measurements work with `default.mixed.legacy` for trainable interfaces"""
         num_shots = 1024
-        dev = qml.device("default.mixed", wires=2, shots=num_shots)
+        dev = qml.device("default.mixed.legacy", wires=2, shots=num_shots)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -748,7 +748,7 @@ class TestMeasurements:
     def test_measurement_diff(self, meas_op):
         """Test sequence of single-shot expectation values work for derivatives"""
         num_shots = 64
-        dev = qml.device("default.mixed", shots=[(1, num_shots)], wires=2)
+        dev = qml.device("default.mixed.legacy", shots=[(1, num_shots)], wires=2)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(angle):
