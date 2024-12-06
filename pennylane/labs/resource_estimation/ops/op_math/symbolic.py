@@ -20,7 +20,7 @@ from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import PowOperation
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments
+# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
 
 
 class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
