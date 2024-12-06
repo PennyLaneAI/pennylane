@@ -264,7 +264,7 @@ def autograph_source(fn):
         return inspect.getsource(new_fn)
 
     raise AutoGraphError(
-        "The given function was not converted by AutoGraph. If you expect the"
+        "The given function was not converted by AutoGraph. If you expect the "
         "given function to be converted, please submit a bug report."
     )
 

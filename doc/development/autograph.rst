@@ -20,9 +20,11 @@ restrictions and constraints you may discover.
 .. note::
 
     When converting code in these examples, we will use the :func:`~.autograph.make_plxpr` function,
-    which uses AutoGraph by default. When creating the initial plxpr representation,
-    we must call the constructor function produced by :func:`~.autograph.make_plxpr` with some initial
-    values, which should have the same type and shape as the values we intend to use:
+    which uses AutoGraph by default.
+
+    When creating the initial plxpr representation, we must call the constructor function produced
+    by :func:`~.autograph.make_plxpr` with some initial values, which should have the same type and
+    shape as the values we intend to use when evaluating:
 
     .. code-block:: python
 
@@ -34,12 +36,12 @@ restrictions and constraints you may discover.
             return x
 
 
-    >>> plxpr = make_plxpr(f)(0.0)
+    >>> plxpr = make_plxpr(f)(0.0)  # x will be a float
 
     Once the plxpr representation is created, we can evaluate it using
 
     >>> from jax.core import eval_jaxpr
-    >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.3)
+    >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.3)  # evaluate f(5.3)
     [Array(28.09, dtype=float64, weak_type=True)]
 
 
@@ -127,7 +129,9 @@ AutoGraph, but instead using :func:`~.cond` and :func:`~.for_loop`:
         layer_loop()
         return qml.expval(qml.PauliZ(0) + qml.PauliZ(3))
 
->>> plxpr = make_plxpr(cost)(weights, data)
+Once converted to native PennyLane control flow manually, AutoGraph is no longer needed:
+
+>>> plxpr = make_plxpr(cost, autograph=False)(weights, data)
 >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights, data)
 [Array(-0.45165857, dtype=float64)]
 
@@ -169,7 +173,6 @@ are automatically *excluded* from the AutoGraph conversion.
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.4, 6)
 [Array(22.14135448, dtype=float64)]
 
-
 If statements
 -------------
 
@@ -190,15 +193,15 @@ from each branch:
     def f(x):
         if x > 5:
             return jnp.array([1, 2])
-        return 0
+        return jnp.array([0])
 
 This will generate the following error:
 
 >>> make_plxpr(f)(0)
 ValueError: Mismatch in output abstract values in false branch #0 at position 1:
-ShapedArray(int64[], weak_type=True) vs ShapedArray(int64[2])
+ShapedArray(int64[1]) vs ShapedArray(int64[2])
 
-Another example is the use of different *structure* across branches. The structure of a function
+This is relevant for any example that uses different *structure* across branches. The structure of a function
 output is defined by things like the number of results, the containers used like lists or
 dictionaries, or more generally any (compile-time) PyTree metadata.
 
@@ -210,7 +213,8 @@ if those variables are used in the outer scope (external variables). The type mu
 that the *structure* of the variable should not change across branches, and the dtypes must match.
 
 In particular, this requires that if an external variable is assigned an array in one
-branch, other branches must also assign arrays of the same shape:
+branch, other branches must also assign arrays of the same shape. Consider this function, which has the
+same return shape regardless of branch, but differs in the shape of `y` in difference logic branches:
 
 >>> def f(x):
 ...     if x > 1:
@@ -220,6 +224,8 @@ branch, other branches must also assign arrays of the same shape:
 ...     return jnp.sum(y)
 >>> make_plxpr(f)(0.5)
 ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(float64[3]) vs ShapedArray(float64[2])s
+
+Instead, all possible outcomes for `y` at the end of the if/else block need to have the same shape:
 
 >>> def f(x):
 ...     if x > 1:
@@ -313,7 +319,7 @@ This includes automatic unpacking and enumeration through JAX arrays:
 >>> eval_jaxpr(plxpr.jaxpr, [], weights)
 Array(8.4, dtype=float64)
 
-The Python ``range`` function is also fully supported by AutoGraph, even when
+The Python ``range`` function is also supported by AutoGraph, even when
 its input is a **dynamic variable** (i.e., its numeric value is only known at
 runtime):
 
@@ -377,12 +383,12 @@ a JAX array:
 
 If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this for loop.
 
-If you are updating elements of the array, this must be done using the JAX `.at` and `.set` syntax.
+If you are updating elements of the array, this must be done using the JAX ``.at`` and ``.set`` syntax.
 
 >>> def f():
 ...     my_list = jnp.empty(2, dtype=int)
 ...     for i in range(2):
-...         my_list = my_list.at[i].set(i)  # *not* my_list[i] = i
+...         my_list = my_list.at[i].set(i)  # not my_list[i] = i
 ...     return my_list
 >>> plxpr = make_plxpr(f)()
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
@@ -411,7 +417,7 @@ Array(-0.70710678, dtype=float64)
 However AutoGraph conversion will fail if the object being indexed by the
 loop with dynamic bounds is **not** a JAX array, because you cannot index
 standard Python objects with dynamic variables. Ensure that all objects that
-]are indexed within dynamic for loops are JAX arrays.
+are indexed within dynamic for loops are JAX arrays.
 
 Break and continue
 ~~~~~~~~~~~~~~~~~~
@@ -505,6 +511,26 @@ You can also utilize temporary variables within a while loop:
 Temporary variables used inside a loop --- and that are **not** passed to a
 function within the loop --- do not have any type restrictions.
 
+A caveat regarding updating variables in a while loop is that it is not possible to
+update variables inside the loop test statement. For example, while the following
+works in standard Python:
+
+>>> def fn(limit):
+...     i = 0
+...     y = 0
+...     while (i := y) < limit:
+...         y += 1
+...     return i
+>>> fn(10)
+10
+
+any updates to the variables inside the while test function (in this case ``(i := y)``)
+will be ignored by AutoGraph:
+
+>>> plxpr = make_plxpr(fn)(0)
+>>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)
+[0]
+
 Logical statements
 ------------------
 
@@ -595,6 +621,42 @@ def ag__f(n):
             raise
         return fscope.ret(retval_, do_return)
 
+.. warning::
+
+    Nested functions are only lazily converted by AutoGraph. If the input includes nested
+    functions, these won't be converted until the first time the function is traced. This
+    is important to be aware of if examining the output of running autograph for debugging
+    purposes. In an example like:
+
+    .. code-block:: python
+
+        def f(x):
+            if x > 5:
+                y = x ** 2
+            else:
+                y = x ** 3
+            return y
+
+        def g(x, n):
+            for i in range(n):
+                x = x + f(x)
+            return x
+
+        ag_fn = make_plxpr(g)
+
+    we can access ``autograph_source(g)``, but we will get an error for ``autograph_source(f)``:
+
+    >>> autograph_source(f)
+    AutoGraphError: The given function was not converted by AutoGraph. If you expect the given function to be converted, please submit a bug report.
+
+    This is because it has only been lazily converted. To examine the inner function's Autograph
+    conversion, we must trace the output function from `make_plxpr` with values at least once:
+
+    >>> plxpr = ag_fn(0, 0)
+    >>> autograph_source(f)
+    def ag__f(x):
+        with ag__.FunctionScope('f', 'fscope', ag__.ConversionOptions(recursive=True, user_requested=False, optional_features=ag__.Feature.BUILTIN_FUNCTIONS, internal_convert_user_code=True)) as fscope:
+        ...
 
 Native Python control flow without AutoGraph
 --------------------------------------------
