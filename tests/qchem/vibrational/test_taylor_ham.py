@@ -20,7 +20,6 @@ import pytest
 
 from pennylane.bose import BoseWord
 from pennylane.qchem import vibrational
-from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
 from pennylane.qchem.vibrational.taylor_ham import (
     _fit_onebody,
     _fit_threebody,
@@ -36,14 +35,15 @@ from pennylane.qchem.vibrational.taylor_ham import (
     taylor_dipole_coeffs,
     taylor_hamiltonian,
 )
+from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
 from tests.qchem.vibrational.test_ref_files.pes_object import (
     expected_coeffs_x_arr,
     expected_coeffs_y_arr,
     expected_coeffs_z_arr,
     freqs,
     reference_taylor_bosonic_coeffs,
-    reference_taylor_bosonic_ops,
     reference_taylor_bosonic_coeffs_non_loc,
+    reference_taylor_bosonic_ops,
     reference_taylor_bosonic_ops_non_loc,
     taylor_1D,
     taylor_2D,
