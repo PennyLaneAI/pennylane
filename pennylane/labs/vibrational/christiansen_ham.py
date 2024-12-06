@@ -133,9 +133,17 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     return obs_sq
 
 
-def christiansen_hamiltonian(pes, nbos=16, do_cubic=False):
+def christiansen_hamiltonian(pes_object, nbos=16, cubic=False):
+    """Compute Christiansen hamiltonian from PES object
+    
+    Args:
+        pes_object(VibrationalPES): the PES object
+        nbos(int): the number of orbitals
+        cubic(bool): flag 
 
-    h_arr = christiansen_integrals(pes, nbos=nbos, do_cubic=do_cubic)
+    """
+
+    h_arr = christiansen_integrals(pes_object, nbos=nbos, do_cubic=cubic)
 
     one = h_arr[0]
     two = h_arr[1]
