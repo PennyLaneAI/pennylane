@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The functions related to the construction of the taylor form Hamiltonian."""
+"""The functions related to the construction of the Taylor form Hamiltonian."""
 import itertools
 
 import numpy as np
@@ -34,7 +34,7 @@ def _import_sklearn():
 
 
 def _remove_harmonic(freqs, onemode_pes):
-    """Removes the harmonic part from the PES
+    """Removes the harmonic part from the PES.
 
     Args:
         freqs (list(float)): normal mode frequencies
@@ -56,13 +56,13 @@ def _remove_harmonic(freqs, onemode_pes):
     return anh_pes, harmonic_pes
 
 
-def _fit_onebody(onemode_op, deg, min_deg=3):
+def _fit_onebody(onemode_op, max_deg, min_deg=3):
     r"""Fits the one-mode operator to get one-body coefficients.
 
     Args:
         onemode_op (list(list(float))): one-mode operator
-        deg (int): maximum degree of taylor form polynomial
-        min_deg (int): minimum degree of taylor form polynomial
+        max_deg (int): maximum degree of Taylor form polynomial
+        min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
         tuple (TensorLike[float], TensorLike[float]):
@@ -74,19 +74,19 @@ def _fit_onebody(onemode_op, deg, min_deg=3):
     from sklearn.linear_model import LinearRegression
     from sklearn.preprocessing import PolynomialFeatures
 
-    if deg < min_deg:
+    if max_deg < min_deg:
         raise ValueError(
-            f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
+            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than min_deg."
         )
 
     nmodes, quad_order = np.shape(onemode_op)
     grid, _ = np.polynomial.hermite.hermgauss(quad_order)
-    coeffs = np.zeros((nmodes, deg - min_deg + 1))
+    coeffs = np.zeros((nmodes, max_deg - min_deg + 1))
 
     predicted_1D = np.zeros_like(onemode_op)
 
     for i1 in range(nmodes):
-        poly1D = PolynomialFeatures(degree=(min_deg, deg), include_bias=False)
+        poly1D = PolynomialFeatures(degree=(min_deg, max_deg), include_bias=False)
         poly1D_features = poly1D.fit_transform(grid.reshape(-1, 1))
         poly1D_reg_model = LinearRegression()
         poly1D_reg_model.fit(poly1D_features, onemode_op[i1, :])
@@ -96,20 +96,19 @@ def _fit_onebody(onemode_op, deg, min_deg=3):
     return coeffs, predicted_1D
 
 
-def _twobody_degs(deg, min_deg=3):
+def _twobody_degs(max_deg, min_deg=3):
     """Finds the degree of fit for two-body coefficients.
 
     Args:
-        deg (int): the maximum total degree of the polynomial expansion
-        min_deg (int): The minimum degree to include in the expansion.
-            Defaults to 3.
+        max_deg (int): maximum degree of Taylor form polynomial
+        min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
         list(tuple): A list of tuples `(q1deg, q2deg)` where the sum of the two values is
             guaranteed to be between the maximum total degree and minimum degree.
     """
     fit_degs = []
-    for feat_deg in range(min_deg, deg + 1):
+    for feat_deg in range(min_deg, max_deg + 1):
         max_deg = feat_deg - 1
         for deg_dist in range(1, max_deg + 1):
             q1deg = max_deg - deg_dist + 1
@@ -119,13 +118,13 @@ def _twobody_degs(deg, min_deg=3):
     return fit_degs
 
 
-def _fit_twobody(twomode_op, deg, min_deg=3):
+def _fit_twobody(twomode_op, max_deg, min_deg=3):
     r"""Fits the two-mode operator to get two-body coefficients.
 
     Args:
         twomode_op (TensorLike[float]): two-mode operator
-        deg (int): maximum degree of taylor form polynomial
-        min_deg (int): minimum degree of taylor form polynomial
+        max_deg (int): maximum degree of Taylor form polynomial
+        min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
         tuple (TensorLike[float], TensorLike[float]):
@@ -138,12 +137,12 @@ def _fit_twobody(twomode_op, deg, min_deg=3):
     nmodes, _, quad_order, _ = np.shape(twomode_op)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
-    if deg < min_deg:
+    if max_deg < min_deg:
         raise ValueError(
-            f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
+            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than min_deg."
         )
 
-    fit_degs = _twobody_degs(deg, min_deg)
+    fit_degs = _twobody_degs(max_deg, min_deg)
     num_coeffs = len(fit_degs)
     coeffs = np.zeros((nmodes, nmodes, num_coeffs))
 
@@ -175,6 +174,17 @@ def _fit_twobody(twomode_op, deg, min_deg=3):
 
 
 def _generate_bin_occupations(max_occ, nbins):
+    """
+    Generate all valid combinations of bin occupations for a given number of bins 
+    and a total maximum occupancy.
+
+    Args:
+        max_occ(int): the maximum total number of items to be distributed across bins
+        nbins(int): the number of bins to distribute the items into
+
+    Returns
+        list(tuples): where each tuple represents a valid combination of item counts for the bins.
+    """
     combinations = list(itertools.product(range(max_occ + 1), repeat=nbins))
 
     # Filter valid combinations
@@ -183,20 +193,19 @@ def _generate_bin_occupations(max_occ, nbins):
     return valid_combinations
 
 
-def _threebody_degs(deg, min_deg=3):
+def _threebody_degs(max_deg, min_deg=3):
     """Finds the degree of fit for three-body coefficients.
 
     Args:
-        deg (int): the maximum total degree of the polynomial expansion
-        min_deg (int): The minimum degree to include in the expansion.
-            Defaults to 3.
+        max_deg (int): maximum degree of Taylor form polynomial
+        min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
         list(tuple): A list of tuples `(q1deg, q2deg, q3deg)` where the sum of the three values is
             guaranteed to be between the maximum total degree and minimum degree.
     """
     fit_degs = []
-    for feat_deg in range(min_deg, deg + 1):
+    for feat_deg in range(min_deg, max_deg + 1):
         max_deg = feat_deg - 3
         if max_deg < 0:
             continue
@@ -210,13 +219,13 @@ def _threebody_degs(deg, min_deg=3):
     return fit_degs
 
 
-def _fit_threebody(threemode_op, deg, min_deg=3):
+def _fit_threebody(threemode_op, max_deg, min_deg=3):
     r"""Fits the three-mode operator to get three-body coefficients.
 
     Args:
         threemode_op (TensorLike[float]): threemode operator
-        deg (int): maximum degree of taylor form polynomial
-        min_deg (int): minimum degree of taylor form polynomial
+        max_deg (int): maximum degree of Taylor form polynomial
+        min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
         tuple (TensorLike[float], TensorLike[float]):
@@ -229,13 +238,13 @@ def _fit_threebody(threemode_op, deg, min_deg=3):
     nmodes, _, _, quad_order, _, _ = np.shape(threemode_op)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
 
-    if deg < min_deg:
+    if max_deg < min_deg:
         raise ValueError(
-            f"Taylor expansion degree is {deg}<{min_deg}, minimal degree is set by min_deg keyword!"
+            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than min_deg."
         )
 
     predicted_3D = np.zeros_like(threemode_op)
-    fit_degs = _threebody_degs(deg)
+    fit_degs = _threebody_degs(max_deg)
     num_coeffs = len(fit_degs)
     coeffs = np.zeros((nmodes, nmodes, nmodes, num_coeffs))
 
@@ -269,12 +278,12 @@ def _fit_threebody(threemode_op, deg, min_deg=3):
     return coeffs, predicted_3D
 
 
-def taylor_coeffs(pes, deg=4, min_deg=3):
+def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Compute fitted coefficients for Taylor Hamiltonian.
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
-        deg (int): maximum degree of taylor form polynomial
+        max_deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
     Returns:
@@ -282,31 +291,31 @@ def taylor_coeffs(pes, deg=4, min_deg=3):
     """
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
-    coeff_1D, predicted_1D = _fit_onebody(anh_pes, deg, min_deg=min_deg)
+    coeff_1D, predicted_1D = _fit_onebody(anh_pes, max_deg, min_deg=min_deg)
     predicted_1D += harmonic_pes
     coeff_arr = [coeff_1D]
     predicted_arr = [predicted_1D]
 
     if pes.pes_twomode is not None:
-        coeff_2D, predicted_2D = _fit_twobody(pes.pes_twomode, deg, min_deg=min_deg)
+        coeff_2D, predicted_2D = _fit_twobody(pes.pes_twomode, max_deg, min_deg=min_deg)
         coeff_arr.append(coeff_2D)
         predicted_arr.append(predicted_2D)
 
     if pes.pes_threemode is not None:
-        coeff_3D, predicted_3D = _fit_threebody(pes.pes_threemode, deg, min_deg=min_deg)
+        coeff_3D, predicted_3D = _fit_threebody(pes.pes_threemode, max_deg, min_deg=min_deg)
         coeff_arr.append(coeff_3D)
         predicted_arr.append(predicted_3D)
 
     return coeff_arr
 
 
-def taylor_dipole_coeffs(pes, deg=4, min_deg=1):
+def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
     r"""Calculates Taylor form fitted coefficients for dipole construction.
 
     Args:
         pes (VibrationalPES): the PES object
-        deg (int): the maximum degree of the taylor polynomial
-        min_deg (int): the minimum degree of the taylor polynomial
+        max_deg (int): maximum degree of Taylor form polynomial
+        min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
         tuple: a tuple containing:
@@ -314,52 +323,52 @@ def taylor_dipole_coeffs(pes, deg=4, min_deg=1):
             - list(floats): coefficients for y-displacements
             - list(floats): coefficients for z-displacements
     """
-    coeffs_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onemode[:, :, 0], deg, min_deg=min_deg)
+    coeffs_x_1D, predicted_x_1D = _fit_onebody(pes.dipole_onemode[:, :, 0], max_deg, min_deg=min_deg)
     coeffs_x_arr = [coeffs_x_1D]
     predicted_x_arr = [predicted_x_1D]
 
-    coeffs_y_1D, predicted_y_1D = _fit_onebody(pes.dipole_onemode[:, :, 1], deg, min_deg=min_deg)
+    coeffs_y_1D, predicted_y_1D = _fit_onebody(pes.dipole_onemode[:, :, 1], max_deg, min_deg=min_deg)
     coeffs_y_arr = [coeffs_y_1D]
     predicted_y_arr = [predicted_y_1D]
 
-    coeffs_z_1D, predicted_z_1D = _fit_onebody(pes.dipole_onemode[:, :, 2], deg, min_deg=min_deg)
+    coeffs_z_1D, predicted_z_1D = _fit_onebody(pes.dipole_onemode[:, :, 2], max_deg, min_deg=min_deg)
     coeffs_z_arr = [coeffs_z_1D]
     predicted_z_arr = [predicted_z_1D]
 
     if pes.dipole_twomode is not None:
         coeffs_x_2D, predicted_x_2D = _fit_twobody(
-            pes.dipole_twomode[:, :, :, :, 0], deg, min_deg=min_deg
+            pes.dipole_twomode[:, :, :, :, 0], max_deg, min_deg=min_deg
         )
         coeffs_x_arr.append(coeffs_x_2D)
         predicted_x_arr.append(predicted_x_2D)
 
         coeffs_y_2D, predicted_y_2D = _fit_twobody(
-            pes.dipole_twomode[:, :, :, :, 1], deg, min_deg=min_deg
+            pes.dipole_twomode[:, :, :, :, 1], max_deg, min_deg=min_deg
         )
         coeffs_y_arr.append(coeffs_y_2D)
         predicted_y_arr.append(predicted_y_2D)
 
         coeffs_z_2D, predicted_z_2D = _fit_twobody(
-            pes.dipole_twomode[:, :, :, :, 2], deg, min_deg=min_deg
+            pes.dipole_twomode[:, :, :, :, 2], max_deg, min_deg=min_deg
         )
         coeffs_z_arr.append(coeffs_z_2D)
         predicted_z_arr.append(predicted_z_2D)
 
     if pes.dipole_threemode is not None:
         coeffs_x_3D, predicted_x_3D = _fit_threebody(
-            pes.dipole_threemode[:, :, :, :, :, :, 0], deg, min_deg=min_deg
+            pes.dipole_threemode[:, :, :, :, :, :, 0], max_deg, min_deg=min_deg
         )
         coeffs_x_arr.append(coeffs_x_3D)
         predicted_x_arr.append(predicted_x_3D)
 
         coeffs_y_3D, predicted_y_3D = _fit_threebody(
-            pes.dipole_threemode[:, :, :, :, :, :, 1], deg, min_deg=min_deg
+            pes.dipole_threemode[:, :, :, :, :, :, 1], max_deg, min_deg=min_deg
         )
         coeffs_y_arr.append(coeffs_y_3D)
         predicted_y_arr.append(predicted_y_3D)
 
         coeffs_z_3D, predicted_z_3D = _fit_threebody(
-            pes.dipole_threemode[:, :, :, :, :, :, 2], deg, min_deg=min_deg
+            pes.dipole_threemode[:, :, :, :, :, :, 2], max_deg, min_deg=min_deg
         )
         coeffs_z_arr.append(coeffs_z_3D)
         predicted_z_arr.append(predicted_z_3D)
@@ -385,51 +394,51 @@ def _position_to_boson(index, op):
 
 
 def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
-    """Build anharmonic term of taylor form bosonic observable from provided coefficients described
+    """Build anharmonic term of Taylor form bosonic observable from provided coefficients described
     in `Eq. 10 <https://arxiv.org/pdf/1703.09313>`_.
 
     Args:
-        taylor_coeffs_array (list(float)): the coeffs of the taylor expansion
+        taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         start_deg (int): the starting degree
 
     Returns:
-        BoseSentence: anharmonic term of the taylor hamiltonian for given coeffs
+        BoseSentence: anharmonic term of the Taylor hamiltonian for given coeffs
     """
     num_coups = len(taylor_coeffs_array)
 
     taylor_1D = taylor_coeffs_array[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
 
-    taylor_deg = num_1D_coeffs + start_deg - 1
+    Taylor_deg = num_1D_coeffs + start_deg - 1
 
     ordered_dict = BoseSentence({})
 
     # One-mode expansion
     for mode in range(num_modes):
         bosonized_qm = _position_to_boson(mode, "q")
-        for deg_i in range(start_deg, taylor_deg + 1):
+        for deg_i in range(start_deg, Taylor_deg + 1):
             coeff = taylor_1D[mode, deg_i - start_deg]
             qpow = bosonized_qm**deg_i
             ordered_dict += (coeff * qpow).normal_order()
     # Two-mode expansion
     if num_coups > 1:
-        taylor_2D = taylor_coeffs_array[1]
-        degs_2d = _twobody_degs(taylor_deg, min_deg=start_deg)
+        Taylor_2D = taylor_coeffs_array[1]
+        degs_2d = _twobody_degs(Taylor_deg, min_deg=start_deg)
         for m1 in range(num_modes):
             bosonized_qm1 = _position_to_boson(m1, "q")
             for m2 in range(m1):
                 bosonized_qm2 = _position_to_boson(m2, "q")
                 for deg_idx, Qs in enumerate(degs_2d):
                     q1deg, q2deg = Qs[:2]
-                    coeff = taylor_2D[m1, m2, deg_idx]
+                    coeff = Taylor_2D[m1, m2, deg_idx]
                     bosonized_qm1_pow = bosonized_qm1**q1deg
                     bosonized_qm2_pow = bosonized_qm2**q2deg
                     ordered_dict += (coeff * bosonized_qm1_pow * bosonized_qm2_pow).normal_order()
 
     # Three-mode expansion
     if num_coups > 2:
-        degs_3d = _threebody_degs(taylor_deg, min_deg=start_deg)
-        taylor_3D = taylor_coeffs_array[2]
+        degs_3d = _threebody_degs(Taylor_deg, min_deg=start_deg)
+        Taylor_3D = taylor_coeffs_array[2]
         for m1 in range(num_modes):
             bosonized_qm1 = _position_to_boson(m1, "q")
             for m2 in range(m1):
@@ -438,7 +447,7 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
                     bosonized_qm3 = _position_to_boson(m3, "q")
                     for deg_idx, Qs in enumerate(degs_3d):
                         q1deg, q2deg, q3deg = Qs[:3]
-                        coeff = taylor_3D[m1, m2, m3, deg_idx]
+                        coeff = Taylor_3D[m1, m2, m3, deg_idx]
                         bosonized_qm1_pow = bosonized_qm1**q1deg
                         bosonized_qm2_pow = bosonized_qm2**q2deg
                         bosonized_qm3_pow = bosonized_qm3**q3deg
@@ -450,10 +459,10 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
 
 
 def _taylor_kinetic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
-    """Build kinetic term of taylor form bosonic observable from provided coefficients
+    """Build kinetic term of Taylor form bosonic observable from provided coefficients
 
     Args:
-        taylor_coeffs_array (list(float)): the coeffs of the taylor expansion
+        taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the frequencies
         is_loc (bool): whether or not if localized
         uloc (list(float)): localization matrix indicating the relationship between original and
@@ -461,7 +470,7 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
             localized modes
 
     Returns:
-        BoseSentence: kinetic term of the taylor hamiltonian for given coeffs
+        BoseSentence: kinetic term of the Taylor hamiltonian for given coeffs
     """
     taylor_1D = taylor_coeffs_array[0]
     num_modes, _ = np.shape(taylor_1D)
@@ -484,15 +493,15 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
 
 
 def _taylor_harmonic(taylor_coeffs_array, freqs):
-    """Build harmonic term of taylor form bosonic observable from provided coefficients, see first
+    """Build harmonic term of Taylor form bosonic observable from provided coefficients, see first
     term of `Eq. 4 and Eq. 7 <https://arxiv.org/pdf/1703.09313>`_.
 
     Args:
-        taylor_coeffs_array (list(float)): the coeffs of the taylor expansion
+        Taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): vibrational frequencies
 
     Returns:
-        BoseSentence: harmonic term of the taylor hamiltonian for given coeffs
+        BoseSentence: harmonic term of the Taylor hamiltonian for given coeffs
     """
     taylor_1D = taylor_coeffs_array[0]
     num_modes, _ = np.shape(taylor_1D)
@@ -507,18 +516,18 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 
 
 def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
-    """Build taylor form bosonic observable from provided coefficients, following `Eq. 4 and Eq. 7
+    """Build Taylor form bosonic observable from provided coefficients, following `Eq. 4 and Eq. 7
     <https://arxiv.org/pdf/1703.09313>`_.
 
     Args:
-        taylor_coeffs_array (list(float)): the coeffs of the taylor expansion
+        taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the harmonic frequencies in cm^-1
         is_loc (bool): whether or not if localized
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
     Returns:
-        BoseSentence: taylor hamiltonian for given coeffs
+        BoseSentence: Taylor hamiltonian for given coeffs
     """
     if is_loc:
         start_deg = 2
@@ -532,18 +541,18 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
     return ham.normal_order()
 
 
-def taylor_hamiltonian(pes_object, deg=4, min_deg=3):
-    """Compute taylor hamiltonian from PES object
+def taylor_hamiltonian(pes_object, max_deg=4, min_deg=3):
+    """Compute Taylor hamiltonian from PES object
 
     Args:
         pes_object(VibrationalPES): the PES object
-        deg (int): the maximum degree of the taylor polynomial
-        min_deg (int): the minimum degree of the taylor polynomial
+        max_deg (int): maximum degree of Taylor form polynomial
+        min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
-        BoseSentence: taylor hamiltonian for given PES and degree
+        BoseSentence: Taylor hamiltonian for given PES and degree
     """
-    coeffs_arr = taylor_coeffs(pes_object, deg, min_deg)
+    coeffs_arr = taylor_coeffs(pes_object, max_deg, min_deg)
     ham = taylor_bosonic(
         coeffs_arr, pes_object.freqs, is_loc=pes_object.localized, uloc=pes_object.uloc
     )
