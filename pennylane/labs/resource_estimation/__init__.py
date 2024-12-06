@@ -61,22 +61,43 @@ Operators
     ~ResourceCSWAP
     ~ResourceCY
     ~ResourceCZ
+    ~ResourceDoubleExcitation
+    ~ResourceFermionicSWAP
     ~ResourceGlobalPhase
     ~ResourceHadamard
     ~ResourceIdentity
+    ~ResourceIsingXX
+    ~ResourceIsingXY
+    ~ResourceIsingYY
+    ~ResourceIsingZZ
     ~ResourceMultiControlledX
+    ~ResourceMultiRZ
+    ~ResourcePauliRot
     ~ResourcePhaseShift
+    ~ResourcePSWAP
     ~ResourceRot
     ~ResourceRX
     ~ResourceRY
     ~ResourceRZ
     ~ResourceS
+    ~ResourceSingleExcitationMinus
+    ~ResourceSingleExcitationPlus
     ~ResourceSWAP
     ~ResourceT
     ~ResourceToffoli
     ~ResourceX
     ~ResourceY
     ~ResourceZ
+
+Symbolic Operators
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceAdjoint
+    ~ResourceControlled
+    ~ResourcePow
 
 Templates
 ~~~~~~~~~
@@ -117,9 +138,11 @@ from .resource_container import (
 )
 
 from .ops import (
+    ResourceAdjoint,
     ResourceCCZ,
     ResourceCH,
     ResourceCNOT,
+    ResourceControlled,
     ResourceControlledPhaseShift,
     ResourceCRot,
     ResourceCRX,
@@ -128,16 +151,28 @@ from .ops import (
     ResourceCSWAP,
     ResourceCY,
     ResourceCZ,
+    ResourceDoubleExcitation,
+    ResourceFermionicSWAP,
     ResourceGlobalPhase,
     ResourceHadamard,
     ResourceIdentity,
+    ResourceIsingXX,
+    ResourceIsingXY,
+    ResourceIsingYY,
+    ResourceIsingZZ,
     ResourceMultiControlledX,
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourcePow,
+    ResourcePSWAP,
     ResourcePhaseShift,
     ResourceRot,
     ResourceRX,
     ResourceRY,
     ResourceRZ,
     ResourceS,
+    ResourceSingleExcitationMinus,
+    ResourceSingleExcitationPlus,
     ResourceSWAP,
     ResourceT,
     ResourceToffoli,

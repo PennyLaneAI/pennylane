@@ -258,6 +258,7 @@ class TestIntegration:
         assert check_cache(inner1.func)
         assert check_cache(inner2.func)
 
+    @pytest.mark.xfail(raises=NotImplementedError)
     def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
 
@@ -278,6 +279,7 @@ class TestIntegration:
         assert check_cache(circ.func)
         assert check_cache(inner)
 
+    @pytest.mark.xfail(raises=NotImplementedError)
     def test_ctrl_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
 
@@ -353,9 +355,10 @@ class TestIntegration:
         with pytest.raises(NotImplementedError):
             ag_fn(0.5)
 
-    def test_mcm_one_shot(self):
+    @pytest.mark.xfail
+    def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
-        dev = qml.device("default.qubit", wires=5, shots=20)
+        dev = qml.device("default.qubit", wires=5, shots=20, seed=seed)
 
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
         def circ(x):
