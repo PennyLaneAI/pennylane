@@ -1327,9 +1327,8 @@ class TestTrotterizedQfuncInitialization:
         """Test that an error is raised if the named kwargs for the qfunc match the
         names of the kwargs of the TrotterizedQfunc class."""
 
-        def my_dummy_qfunc(time, wires, **kwargs):
+        def my_dummy_qfunc(time, wires, **kwargs):  # pylint:disable=unused-argument
             qml.RZ(time, wires[0])
-            return
 
         for special_key in ["n", "name", "order", "qfunc", "reverse"]:
             with pytest.raises(ValueError, match="Cannot use any of the specailized names:"):
