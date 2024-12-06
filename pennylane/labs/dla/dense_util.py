@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-# pylint: disable=possibly-used-before-assignment, too-many-return-statements
+# pylint: disable=too-many-return-statements, missing-function-docstring, possibly-used-before-assignment
 from functools import reduce
 from itertools import combinations, combinations_with_replacement
 from typing import Iterable, List, Optional, Union
@@ -400,6 +400,20 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
         _ = print("[m, m] sub k not fulfilled") if verbose else None
 
     return all([check_kk, check_km, check_mm])
+
+
+def apply_basis_change(change_op, targets):
+    """Helper function for recursive Cartan decompositions"""
+    if single_target := np.ndim(targets) == 2:
+        targets = [targets]
+    if isinstance(targets, list):
+        targets = np.array(targets)
+    # Compute x V^\dagger for all x in ``targets``. ``moveaxis`` brings the batch axis to the front
+    out = np.moveaxis(np.tensordot(change_op, targets, axes=[[1], [1]]), 1, 0)
+    out = np.tensordot(out, change_op.conj().T, axes=[[2], [0]])
+    if single_target:
+        return out[0]
+    return out
 
 
 def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) -> np.ndarray:
