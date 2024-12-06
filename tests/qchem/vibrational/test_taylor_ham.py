@@ -323,7 +323,15 @@ def test_taylor_kinetic():
 
 # pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
-    ("taylor_1D", "taylor_2D", "freqs", "is_loc", "uloc", "reference_ops", "reference_coeffs"),
+    (
+        "taylor_1D_coeffs",
+        "taylor_2D_coeffs",
+        "ref_freqs",
+        "is_loc",
+        "ref_uloc",
+        "reference_ops",
+        "reference_coeffs",
+    ),
     [
         (
             taylor_1D,
