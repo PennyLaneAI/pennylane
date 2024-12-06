@@ -298,5 +298,6 @@ class TestUndoSwapsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
