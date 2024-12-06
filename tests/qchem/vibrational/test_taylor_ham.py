@@ -98,6 +98,8 @@ def test_import_sklearn(monkeypatch):
 
 def test_taylor_anharmonic():
     """Test that taylor_anharmonic produces the correct anharmonic term of the hamiltonian"""
+    
+    # Expected values generated using vibrant and manually transformed into BoseWords
     expected_anh_ham = [
         (BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "+"}), -1.5818170215014748e-05),
         (BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "-"}), -4.7454510645044245e-05),
@@ -274,6 +276,8 @@ def test_taylor_anharmonic():
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
 def test_taylor_harmonic():
     """Test that taylor_harmonic produces the correct harmonic term of the hamiltonian"""
+
+    # Expected values generated using vibrant and manually transformed into BoseWords
     expected_taylor_harm = [
         (BoseWord({(0, 0): "+", (1, 0): "+"}), 0.0014742224999999996),
         (BoseWord({(0, 0): "+", (1, 0): "-"}), 0.002948444999999999),
@@ -293,6 +297,7 @@ def test_taylor_harmonic():
 def test_taylor_kinetic():
     """Test that taylor_kinetic produces the correct kinetic term of the hamiltonian"""
 
+    # Expected values generated using vibrant and manually transformed into BoseWords
     expected_taylor_kin = [
         (BoseWord({(0, 0): "+", (1, 0): "+"}), (-0.0014742224999999994 + 0j)),
         (BoseWord({(0, 0): "+", (1, 0): "-"}), (0.0029484449999999988 + 0j)),
