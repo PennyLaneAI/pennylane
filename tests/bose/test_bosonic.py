@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane import numpy as pnp
-from pennylane.bose import BoseSentence, BoseWord
+from pennylane.bose import BoseSentence, BoseWord, from_string
 
 bw1 = BoseWord({(0, 0): "+", (1, 1): "-"})
 bw1_dag = BoseWord({(0, 1): "+", (1, 0): "-"})
@@ -637,6 +637,31 @@ class TestBoseWordArithmetic:
         ):
             method_to_test = getattr(bw1, method_name)
             _ = method_to_test(np.array([1, 2]))
+
+    bw_string = (
+        ("0+ 1-", bw1),
+        ("0+ 0-", bw2),
+        ("0+ 3 0+ 4", bw3),
+        ("10^ 30 0^ 400", bw5),
+        ("", bw4),
+        (" ", bw4),
+    )
+
+    @pytest.mark.parametrize("string, result_bw", bw_string)
+    def test_from_string(self, string, result_bw):
+        r"""Test that from_string function returns correct result"""
+        assert from_string(string) == result_bw
+
+    bw_string_error = (
+        "0+ a-",
+        "0+ 1-? 3+ 4-",
+    )
+
+    @pytest.mark.parametrize("string", bw_string_error)
+    def test_from_string_error(self, string):
+        r"""Test that an error is raised if an invalid string is passed to the from_string function."""
+        with pytest.raises(ValueError, match="Invalid character encountered in string "):
+            from_string(string)  # pylint: disable=pointless-statement
 
 
 bs1 = BoseSentence({bw1: 1.23, bw2: 4j, bw3: -0.5})
