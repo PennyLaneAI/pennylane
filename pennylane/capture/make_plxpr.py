@@ -40,7 +40,7 @@ def make_plxpr(
     Args:
         func (Callable): the ``Callable`` to be captured
 
-    Kwargs:
+    Keyword Args:
         static_argnums (Union(int, Sequence[int])): optional, an ``int`` or collection of ``int``\ s
             that specify which positional arguments to treat as static (trace- and compile-time constant).
         autograph (bool): whether to use AutoGraph to convert Python control flow to native PennyLane
@@ -88,9 +88,14 @@ def make_plxpr(
         :title: Usage Details
 
         The ``autograph`` argument is ``True`` by default, converting Pythonic control flow to PennyLane
-        supported control flow. This requires the diastatic-malt package, a standalone fork of the AutoGraph
+        supported control flow. This requires the ``diastatic-malt`` package, a standalone fork of the AutoGraph
         module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
         ).
+
+        .. note::
+
+            There are some limitations and sharp bits regarding AutoGraph; to better understand
+            supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
 
         On its own, capture of standard Python control flow is not supported:
 
@@ -129,9 +134,6 @@ def make_plxpr(
 
         >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
         [Array(8, dtype=int64, weak_type=True)]
-
-        There are some limitations and sharp bits regarding AutoGraph; to better understand
-        supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
     """
     if not has_jax:  # pragma: no cover
         raise ImportError(
