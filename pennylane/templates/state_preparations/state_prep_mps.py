@@ -93,8 +93,8 @@ class MPSPrep(Operation):
 
         Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
 
-        Additionally, the physical dimension of the site should always be fixed at :math:`2`,
-        while the other dimensions must be powers of two.
+        Additionally, the physical dimension of the site should always be fixed at :math:`2`
+        (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
 
         The following examples shows a valid MPS input containing four tensors with
         dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
@@ -140,16 +140,14 @@ class MPSPrep(Operation):
             assert qml.math.log2(
                 new_dj0
             ).is_integer(), f"The first dimension of tensor {i} must be a power of 2."
-            assert qml.math.log2(
-                new_dj1
-            ).is_integer(), f"The second dimension of tensor {i} must be a power of 2."
+            assert new_dj1 == 2
             assert qml.math.log2(
                 new_dj2
             ).is_integer(), f"The third dimension of tensor {i} must be a power of 2."
             assert (
                 new_dj0 == dj2
             ), f"Dimension mismatch: tensor {i}'s first dimension does not match the previous third dimension."
-            dj0, dj1, dj2 = new_dj0, new_dj1, new_dj2
+            dj2 = new_dj2
 
         # Validate the shape and dimensions of the last tensor
         assert len(qml.math.shape(mps[-1])) == 2, "The last tensor must have exactly 2 dimensions."
