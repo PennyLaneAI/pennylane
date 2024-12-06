@@ -273,7 +273,7 @@ def taylor_coeffs(pes, deg=4, min_deg=3):
     r"""Compute fitted coefficients for Taylor Hamiltonian.
 
     Args:
-        pes (VibrationalPES): the PES object
+        pes (VibrationalPES): object containing the vibrational potential energy surface data
         deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
