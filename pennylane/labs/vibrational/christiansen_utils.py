@@ -23,8 +23,6 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-au_to_cm = 219475
-
 
 def _cform_onemode_kinetic(freqs, nbos):
     """Calculates the kinetic energy part of the one body integrals to correct the integrals
