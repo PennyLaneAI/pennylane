@@ -50,11 +50,9 @@ Operators
 .. autosummary::
     :toctree: api
 
-    ~ResourceAdjoint
     ~ResourceCCZ
     ~ResourceCH
     ~ResourceCNOT
-    ~ResourceControlled
     ~ResourceControlledPhaseShift
     ~ResourceCRot
     ~ResourceCRX
@@ -76,7 +74,6 @@ Operators
     ~ResourceMultiRZ
     ~ResourcePauliRot
     ~ResourcePhaseShift
-    ~ResourcePow
     ~ResourcePSWAP
     ~ResourceRot
     ~ResourceRX
@@ -91,6 +88,16 @@ Operators
     ~ResourceX
     ~ResourceY
     ~ResourceZ
+
+Symbolic Operators
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceAdjoint
+    ~ResourceControlled
+    ~ResourcePow
 
 Templates
 ~~~~~~~~~
