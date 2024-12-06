@@ -223,3 +223,30 @@ def test_MPSPrep_error(mps, msg_match):
     """Test that proper errors are raised for MPSPrep"""
     with pytest.raises(AssertionError, match=msg_match):
         qml.MPSPrep(mps, wires=[0, 1, 2])
+
+
+@pytest.mark.jax
+def test_jax_mps():
+    """Check the operation works with jax."""
+
+    from jax import numpy as jnp
+
+    mps = [
+        jnp.array([[0.0, 0.107], [0.994, 0.0]]),
+        jnp.array(
+            [
+                [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+            ]
+        ),
+        jnp.array(
+            [
+                [[-1.0, 0.0], [0.0, 0.0]],
+                [[0.0, 0.0], [0.0, 1.0]],
+                [[0.0, -1.0], [0.0, 0.0]],
+                [[0.0, 0.0], [1.0, 0.0]],
+            ]
+        ),
+        jnp.array([[-1.0, -0.0], [-0.0, -1.0]]),
+    ]
+    _ = qml.MPSPrep(mps, wires=[0, 1, 2])
