@@ -270,7 +270,7 @@ def _fit_threebody(threemode_op, deg, min_deg=3):
 
 
 def taylor_coeffs(pes, deg=4, min_deg=3):
-    r"""Computes the Taylor form fitted coefficients for Hamiltonian construction
+    r"""Compute fitted coefficients for Taylor Hamiltonian.
 
     Args:
         pes (VibrationalPES): the PES object
