@@ -135,7 +135,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
 
 def christiansen_hamiltonian(pes_object, nbos=16, cubic=False):
     """Compute Christiansen Hamiltonian from given PES data.
-    
+
     Args:
         pes_object(VibrationalPES): object containing the vibrational potential energy surface data
         nbos(int): maximum number of bosonic states per mode
@@ -158,7 +158,7 @@ def christiansen_hamiltonian(pes_object, nbos=16, cubic=False):
 
 def christiansen_dipole(pes, nbos=16, do_cubic=False):
     """Computes the Christiansen integral coefficients for dipole construction.
-    
+
     Args:
         pes_object(VibrationalPES): object containing the vibrational potential energy surface data
         nbos(int): maximum number of bosonic states per mode

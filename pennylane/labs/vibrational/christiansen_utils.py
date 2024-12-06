@@ -29,13 +29,13 @@ au_to_cm = 219475
 def _cform_onemode_kinetic(freqs, nbos):
     """Calculates the kinetic energy part of the one body integrals to correct the integrals
     for localized modes
-    
+
     Args:
         freqs(int): the harmonic frequencies
         nbos(int): maximum number of bosonic states per mode
 
     Returns:
-        the kinetic energy part of the one body integrals    
+        the kinetic energy part of the one body integrals
     """
     # action of kinetic energy operator for m=1,...,M modes with frequencies freqs[m]
     nmodes = len(freqs)
@@ -74,13 +74,13 @@ def _cform_onemode_kinetic(freqs, nbos):
 def _cform_twomode_kinetic(pes_object, nbos):
     """Calculates the kinetic energy part of the two body integrals to correct the integrals
     for localized modes
-    
+
     Args:
         pes_object(VibrationalPES): object containing the vibrational potential energy surface data
         nbos(int): maximum number of bosonic states per mode
 
     Returns:
-        the kinetic energy part of the two body integrals    
+        the kinetic energy part of the two body integrals
     """
     nmodes = len(pes_object.freqs)
 
@@ -587,12 +587,12 @@ def _cform_threemode_dipole(pes_object, nbos):
 def _load_cform_onemode(num_proc, nmodes, quad_order):
     """
     Loader to collect and combine pes_onebody from multiple processors.
-    
+
     Args:
         num_proc (int): number of processors
         nmodes (int): number of normal modes
         quad_order (int): order for Gauss-Hermite quadratures
-    
+
     Returns:
         TensorLike[float]: one-body integrals for Christiansen Hamiltonian
     """
@@ -627,12 +627,12 @@ def _load_cform_onemode(num_proc, nmodes, quad_order):
 def _load_cform_twomode(num_proc, nmodes, quad_order):
     """
     Loader to collect and combine pes_twobody from multiple processors.
-    
+
     Args:
         num_proc (int): number of processors
         nmodes (int): number of normal modes
         quad_order (int): order for Gauss-Hermite quadratures
-    
+
     Returns:
         TensorLike[float]: two-body integrals for Christiansen Hamiltonian
     """
@@ -667,12 +667,12 @@ def _load_cform_twomode(num_proc, nmodes, quad_order):
 def _load_cform_threemode(num_proc, nmodes, quad_order):
     """
     Loader to collect and combine pes_threebody from multiple processors.
-    
+
     Args:
         num_proc (int): number of processors
         nmodes (int): number of normal modes
         quad_order (int): order for Gauss-Hermite quadratures
-    
+
     Returns:
         TensorLike[float]: three-body integrals for Christiansen Hamiltonian
     """
@@ -717,12 +717,12 @@ def _load_cform_threemode(num_proc, nmodes, quad_order):
 def _load_cform_onemode_dipole(num_proc, nmodes, quad_order):
     """
     Loader to collect and combine dipole_onebody from multiple processors.
-    
+
     Args:
         num_proc (int): number of processors
         nmodes (int): number of normal modes
         quad_order (int): order for Gauss-Hermite quadratures
-    
+
     Returns:
         TensorLike[float]: one-body integrals for Christiansen dipole operator
     """
@@ -757,12 +757,12 @@ def _load_cform_onemode_dipole(num_proc, nmodes, quad_order):
 def _load_cform_twomode_dipole(num_proc, nmodes, quad_order):
     """
     Loader to collect and combine dipole_twobody from multiple processors.
-    
+
     Args:
         num_proc (int): number of processors
         nmodes (int): number of normal modes
         quad_order (int): order for Gauss-Hermite quadratures
-    
+
     Returns:
         TensorLike[float]: two-body integrals for Christiansen dipole operator
     """
@@ -797,12 +797,12 @@ def _load_cform_twomode_dipole(num_proc, nmodes, quad_order):
 def _load_cform_threemode_dipole(num_proc, nmodes, quad_order):
     """
     Loader to collect and combine dipole_threebody from multiple processors.
-    
+
     Args:
         num_proc (int): number of processors
         nmodes (int): number of normal modes
         quad_order (int): order for Gauss-Hermite quadratures
-    
+
     Returns:
         TensorLike[float]: three-body integrals for Christiansen dipole operator
     """
@@ -846,12 +846,16 @@ def _load_cform_threemode_dipole(num_proc, nmodes, quad_order):
     return dipole_cform_threebody.transpose(9, 0, 1, 2, 3, 4, 5, 6, 7, 8)
 
 
-def christiansen_integrals(pes, nbos=16, do_cubic=False):
-    r"""Generates the vibrational Hamiltonian integrals in Christiansen form
+def christiansen_integrals(pes, nbos=16, cubic=False):
+    r"""Generates the vibrational Hamiltonian integrals in Christiansen form.
 
     Args:
-      pes: Build_pes object.
-      nbos: number of modal basis functions per-mode
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+        cubic(bool): Flag to include three-mode couplings. Default is ``False``.
+
+    Returns:
+        TensorLike[float]: the integrals for the Christiansen Hamiltonian
     """
 
     local_ham_cform_onebody = _cform_onemode(pes, nbos)
@@ -890,7 +894,7 @@ def christiansen_integrals(pes, nbos=16, do_cubic=False):
     comm.Barrier()
     ham_cform_twobody = comm.bcast(ham_cform_twobody, root=0)
 
-    if do_cubic:
+    if cubic:
         local_ham_cform_threebody = _cform_threemode(pes, nbos)
 
         f = h5py.File("cform_H3data" + f"_{rank}" + ".hdf5", "w")
@@ -914,12 +918,16 @@ def christiansen_integrals(pes, nbos=16, do_cubic=False):
     return H_arr
 
 
-def christiansen_integrals_dipole(pes, nbos=16, do_cubic=False):
-    r"""Generates the vibrational dipole integrals in Christiansen form
+def christiansen_integrals_dipole(pes, nbos=16, cubic=False):
+    r"""Generates the vibrational dipole integrals in Christiansen form.
 
     Args:
-      pes: Build_pes object.
-      nbos: number of modal basis functions per-mode
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+        cubic(bool): Flag to include three-mode couplings. Default is ``False``.
+
+    Returns:
+        TensorLike[float]: the integrals for the Christiansen dipole operator
     """
 
     local_dipole_cform_onebody = _cform_onemode_dipole(pes, nbos)
