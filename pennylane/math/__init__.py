@@ -50,7 +50,6 @@ from .multi_dispatch import (
     gammainc,
     get_trainable_indices,
     iscomplex,
-    jax_argnums_to_tape_trainable,
     kron,
     matmul,
     multi_dispatch,
@@ -90,11 +89,17 @@ from .utils import (
     cast,
     cast_like,
     convert_like,
+    in_backprop,
+    requires_grad,
+    is_abstract,
+)
+from .interface_utils import (
+    get_canonical_interface_name,
+    SupportedInterfaceUserInput,
+    SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
-    in_backprop,
-    is_abstract,
-    requires_grad,
+    Interface,
 )
 
 sum = ar.numpy.sum
@@ -160,6 +165,7 @@ __all__ = [
     "frobenius_inner_product",
     "get_dtype_name",
     "get_interface",
+    "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
     "in_backprop",

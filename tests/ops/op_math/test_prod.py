@@ -14,6 +14,8 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
+import warnings
+
 # pylint:disable=protected-access, unused-argument
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -25,6 +27,14 @@ from pennylane import math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
@@ -1304,11 +1314,11 @@ class TestSimplify:
 
     def test_grouping_with_product_of_sums(self):
         """Test that grouping works with product of two sums"""
-        prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
+        prod_op = qml.prod(qml.S(0) + qml.H(1), qml.S(0) + qml.H(1))
         final_op = qml.sum(
             qml.PauliZ(wires=[0]),
-            2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
-            qml.S(wires=[1]),
+            2 * qml.prod(qml.S(wires=[0]), qml.H(wires=[1])),
+            qml.I(wires=[1]),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member

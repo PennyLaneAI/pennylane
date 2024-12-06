@@ -1433,7 +1433,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
           0.5 * Y(0) + Z(0) @ X(1)
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
-        (using :class:`.Hamiltonian` and :class:`.SparseHamiltonian` respectively).
+        (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
 
         The default value to return is ``None``, indicating that the operation has
         no defined generator.
@@ -1518,7 +1518,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        if (p_rep := new_op.pauli_rep) is not None:
+        if (p_rep := self.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 

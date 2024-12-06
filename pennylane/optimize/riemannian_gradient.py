@@ -381,8 +381,9 @@ class RiemannianGradientOptimizer:
 
         obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
         # get all circuits we need to calculate the coefficients
+        tape = qml.workflow.construct_tape(self.circuit)()
         circuits = algebra_commutator(
-            self.circuit.qtape,
+            tape,
             obs_groupings,
             self.lie_algebra_basis_names,
             self.nqubits,
@@ -403,7 +404,7 @@ class RiemannianGradientOptimizer:
                 circuits, self.circuit.device, diff_method=None
             )  # pragma: no cover
 
-        program, _ = self.circuit.device.preprocess()
+        program = self.circuit.device.preprocess_transforms()
 
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)

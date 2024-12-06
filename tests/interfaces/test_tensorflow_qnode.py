@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
+import warnings
+
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods,comparison-with-callable, use-implicit-booleaness-not-comparison
@@ -20,6 +22,14 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the gradients.param_shift_hessian module."""
 
+import warnings
 from itertools import product
 
 import pytest
@@ -24,6 +25,13 @@ from pennylane.gradients.parameter_shift_hessian import (
     _generate_offdiag_tapes,
     _process_argnum,
 )
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestProcessArgnum:
@@ -1564,7 +1572,7 @@ class TestParameterShiftHessianQNode:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.param_shift_hessian(c)(x)) for c in circuits]
-        expected = [(3, 3), (1, 3, 3), (2, 3, 3), (3, 3, 4), (1, 3, 3, 4), (2, 3, 3, 4)]
+        expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
 
         assert all(t == e for t, e in zip(transform, expected))
 

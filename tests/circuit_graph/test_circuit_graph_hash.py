@@ -14,12 +14,21 @@
 """
 Unit and integration tests for creating the :mod:`pennylane` :attr:`QNode.qtape.graph.hash` attribute.
 """
+import warnings
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 class TestCircuitGraphHash:

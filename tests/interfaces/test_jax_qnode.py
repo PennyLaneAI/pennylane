@@ -14,6 +14,7 @@
 """Integration tests for using the JAX-Python interface with a QNode"""
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
 
+import warnings
 from itertools import product
 
 import numpy as np
@@ -22,6 +23,13 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def get_device(device_name, wires, seed):

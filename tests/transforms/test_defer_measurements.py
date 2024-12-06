@@ -15,6 +15,7 @@
 Tests for the transform implementing the deferred measurement principle.
 """
 import math
+import warnings
 
 # pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
@@ -26,6 +27,13 @@ import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Controlled
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def test_broadcasted_postselection(mocker):
@@ -88,6 +96,14 @@ def test_broadcasted_postselection_with_sample_error():
 
     with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
         _ = circuit()
+
+
+def test_allow_postselect():
+    """Tests that allow_postselect=False forbids postselection on mid-circuit measurements."""
+
+    circuit = qml.tape.QuantumScript([MidMeasureMP(wires=0, postselect=0)], [qml.expval(qml.Z(0))])
+    with pytest.raises(ValueError, match="Postselection is not allowed"):
+        _, __ = qml.defer_measurements(circuit, allow_postselect=False)
 
 
 def test_postselection_error_with_wrong_device():
@@ -182,22 +198,6 @@ def test_multi_mcm_stats_same_wire(mp, compose_mv):
 
 class TestQNode:
     """Test that the transform integrates well with QNodes."""
-
-    def test_custom_qnode_transform_error(self):
-        """Test that an error is raised if a user tries to give a device argument to the
-        transform when transformingn a qnode."""
-
-        dev = qml.device("default.qubit")
-
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def circ():
-            qml.PauliX(0)
-            qml.measure(0)
-            return qml.probs()
-
-        with pytest.raises(ValueError, match="Cannot provide a 'device'"):
-            _ = qml.defer_measurements(circ, device=dev)
 
     def test_only_mcm(self):
         """Test that a quantum function that only contains one mid-circuit
@@ -642,9 +642,9 @@ class TestQNode:
         assert isinstance(measurement, qml.measurements.MeasurementProcess)
 
         tensor = measurement.obs
-        assert len(tensor.obs) == 3
+        assert len(tensor.operands) == 3
 
-        for idx, ob in enumerate(tensor.obs):
+        for idx, ob in enumerate(tensor.operands):
             assert isinstance(ob, qml.PauliZ)
             assert ob.wires == qml.wires.Wires(tp_wires[idx])
 

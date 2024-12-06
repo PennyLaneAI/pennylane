@@ -111,7 +111,8 @@ def map_wires(
     >>> mapped_circuit = qml.map_wires(circuit, wire_map)
     >>> mapped_circuit()
     tensor([0.92885434, 0.07114566], requires_grad=True)
-    >>> list(mapped_circuit.tape)
+    >>> tape = qml.workflow.construct_tape(mapped_circuit)()
+    >>> list(tape)
     [((RX(0.54, wires=[3]) @ X(2)) @ Z(1)) @ RY(1.23, wires=[0]), probs(wires=[3])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):

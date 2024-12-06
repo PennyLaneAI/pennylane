@@ -27,15 +27,8 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 unmodified_templates_cases = [

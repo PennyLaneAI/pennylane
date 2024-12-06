@@ -932,7 +932,7 @@ class TestAdjointDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="adjoint")
-        batch, _ = dev.preprocess(config)[0]((qs,))
+        batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, self.ec)
@@ -951,7 +951,7 @@ class TestAdjointDifferentiation:
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="adjoint")
-        batch, _ = dev.preprocess(config)[0]((qs,))
+        batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives([qs], self.ec)
@@ -1008,7 +1008,7 @@ class TestAdjointDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="adjoint")
-        batch, _ = dev.preprocess(config)[0]((qs,))
+        batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
@@ -1031,7 +1031,7 @@ class TestAdjointDifferentiation:
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
         config = ExecutionConfig(gradient_method="adjoint")
-        batch, _ = dev.preprocess(config)[0]((qs,))
+        batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
@@ -1107,7 +1107,7 @@ class TestAdjointDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="adjoint")
-        batch, _ = dev.preprocess(config)[0]((qs,))
+        batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
@@ -1127,7 +1127,7 @@ class TestAdjointDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         config = ExecutionConfig(gradient_method="adjoint")
-        batch, _ = dev.preprocess(config)[0]((qs,))
+        batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]

@@ -14,6 +14,7 @@
 """Unit tests for the QuantumTape"""
 # pylint: disable=protected-access,too-few-public-methods
 import copy
+import warnings
 from collections import defaultdict
 
 import numpy as np
@@ -32,6 +33,13 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def TestOperationMonkeypatching():
@@ -1838,7 +1846,7 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         res = qml.execute(
             [tape], dev, diff_method=qml.gradients.param_shift, transform_program=program
         )[0]
@@ -1994,7 +2002,7 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         assert tape.shape(dev) == expected.shape
 
@@ -2022,7 +2030,7 @@ class TestOutputShape:
                 qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
         expected = tuple(i.shape for i in expected)
         assert tape.shape(dev) == expected

@@ -14,6 +14,8 @@
 """Integration tests for using the autograd interface with a QNode"""
 # pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-dict-literal, no-name-in-module
 
+import warnings
+
 import autograd
 import autograd.numpy as anp
 import pytest
@@ -23,6 +25,14 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [

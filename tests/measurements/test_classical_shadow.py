@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows measurement processes"""
 
 import copy
+import warnings
 
 import autograd.numpy
 import pytest
@@ -22,6 +23,14 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 # pylint: disable=dangerous-default-value, too-many-arguments
 

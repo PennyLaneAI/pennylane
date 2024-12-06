@@ -33,6 +33,10 @@ class LinearCombination(Sum):
     The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
 
+    .. note::
+
+        ``qml.Hamiltonian`` dispatches to :class:`~pennylane.ops.op_math.LinearCombination`.
+
     Args:
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
         observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
@@ -59,6 +63,11 @@ class LinearCombination(Sum):
     >>> print(H)
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
+    The same ``LinearCombination`` can be created using the ``qml.Hamiltonian`` alias:
+
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     The coefficients can be a trainable tensor, for example:
 

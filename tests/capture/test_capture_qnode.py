@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 jax = pytest.importorskip("jax")
 
@@ -30,11 +30,23 @@ jax = pytest.importorskip("jax")
 from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
 
 
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+def get_qnode_output_eqns(jaxpr):
+    """Extracts equations related to QNode outputs in the given JAX expression (jaxpr).
+
+    Parameters:
+        jaxpr: A JAX expression with equations, containing QNode-related operations.
+
+    Returns:
+        List of equations containing QNode outputs.
+    """
+
+    qnode_output_eqns = []
+
+    for eqn in jaxpr.eqns:
+        if eqn.primitive.name == "qnode":
+            qnode_output_eqns.append(eqn)
+
+    return qnode_output_eqns
 
 
 def test_error_if_shot_vector():
@@ -53,8 +65,9 @@ def test_error_if_shot_vector():
         circuit()
 
     jax.make_jaxpr(partial(circuit, shots=50))()  # should run fine
-    res = circuit(shots=50)
-    assert qml.math.allclose(res, jax.numpy.zeros((50,)))
+    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+        res = circuit(shots=50)
+        assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
 
 def test_error_if_overridden_shot_vector():
@@ -86,12 +99,8 @@ def test_error_if_no_device_wires():
         circuit()
 
 
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_simple_qnode(x64_mode):
+def test_simple_qnode():
     """Test capturing a qnode for a simple use."""
-
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     dev = qml.device("default.qubit", wires=4)
 
@@ -108,7 +117,7 @@ def test_simple_qnode(x64_mode):
     assert len(jaxpr.eqns) == 1
     eqn0 = jaxpr.eqns[0]
 
-    fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+    fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
     assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
 
@@ -136,14 +145,9 @@ def test_simple_qnode(x64_mode):
     output = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
     assert qml.math.allclose(output[0], jax.numpy.cos(0.5))
 
-    jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_overriding_shots(x64_mode):
+def test_overriding_shots():
     """Test that the number of shots can be overridden on call."""
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -163,13 +167,12 @@ def test_overriding_shots(x64_mode):
     )
 
     assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (50,), jax.numpy.int64 if x64_mode else jax.numpy.int32
+        (50,), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
     )
 
-    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-    assert qml.math.allclose(res, jax.numpy.zeros((50,)))
-
-    jax.config.update("jax_enable_x64", initial_mode)
+    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
 
 def test_providing_keyword_argument():
@@ -197,11 +200,8 @@ def test_providing_keyword_argument():
     assert qml.math.allclose(res2, jax.numpy.array([1, 0]))
 
 
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_multiple_measurements(x64_mode):
+def test_multiple_measurements():
     """Test that the qnode can return multiple measurements."""
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     @qml.qnode(qml.device("default.qubit", wires=3, shots=50))
     def circuit():
@@ -217,13 +217,13 @@ def test_multiple_measurements(x64_mode):
     assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (50, 3), jax.numpy.int64 if x64_mode else jax.numpy.int32
+        (50, 3), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
     )
     assert jaxpr.out_avals[1] == jax.core.ShapedArray(
-        (4,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        (4,), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
     )
     assert jaxpr.out_avals[2] == jax.core.ShapedArray(
-        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        (), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
     )
 
     res1, res2, res3 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
@@ -236,15 +236,9 @@ def test_multiple_measurements(x64_mode):
     assert qml.math.allclose(res2, jax.numpy.array([1, 0, 0, 0]))
     assert qml.math.allclose(res3, 1.0)
 
-    jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_complex_return_types(x64_mode):
+def test_complex_return_types():
     """Test returning measurements with complex values."""
-
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     @qml.qnode(qml.device("default.qubit", wires=3))
     def circuit():
@@ -258,13 +252,11 @@ def test_complex_return_types(x64_mode):
     assert qfunc_jaxpr.eqns[1].primitive == qml.measurements.DensityMatrixMP._wires_primitive
 
     assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (8,), jax.numpy.complex128 if x64_mode else jax.numpy.complex64
+        (8,), jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
     )
     assert jaxpr.out_avals[1] == jax.core.ShapedArray(
-        (4, 4), jax.numpy.complex128 if x64_mode else jax.numpy.complex64
+        (4, 4), jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
     )
-
-    jax.config.update("jax_enable_x64", initial_mode)
 
 
 def test_capture_qnode_kwargs():
@@ -361,15 +353,29 @@ def test_qnode_jvp():
     assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
 
+def test_qnode_jit():
+    """Test that executions on default qubit can be jitted."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    x = jax.numpy.array(-0.5)
+    res = jax.jit(circuit)(0.5)
+    assert qml.math.allclose(res, jax.numpy.cos(x))
+
+
+# pylint: disable=too-many-public-methods
 class TestQNodeVmapIntegration:
     """Tests for integrating JAX vmap with the QNode primitive."""
 
     @pytest.mark.parametrize(
         "input, expected_shape",
         [
-            (jax.numpy.array([0.1]), (1,)),
-            (jax.numpy.array([0.1, 0.2]), (2,)),
-            (jax.numpy.array([0.1, 0.2, 0.3]), (3,)),
+            (jax.numpy.array([0.1], dtype=jax.numpy.float32), (1,)),
+            (jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float32), (2,)),
+            (jax.numpy.array([0.1, 0.2, 0.3], dtype=jax.numpy.float32), (3,)),
         ],
     )
     def test_qnode_vmap(self, input, expected_shape):
@@ -389,13 +395,10 @@ class TestQNodeVmapIntegration:
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, input)
         assert qml.math.allclose(res, jax.numpy.cos(input))
 
-    @pytest.mark.parametrize("x64_mode", (True, False))
-    def test_qnode_vmap_x64_mode(self, x64_mode):
+    def test_qnode_vmap_x64_mode(self):
         """Test that JAX can vmap over the QNode primitive with x64 mode enabled/disabled."""
 
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        dtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
@@ -412,8 +415,6 @@ class TestQNodeVmapIntegration:
 
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(res, jax.numpy.cos(x))
-
-        jax.config.update("jax_enable_x64", initial_mode)
 
     def test_vmap_mixed_arguments(self):
         """Test vmap with a mix of batched and non-batched arguments."""
@@ -495,8 +496,8 @@ class TestQNodeVmapIntegration:
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(res, circuit(x))
 
-    def test_qnode_vmap_closure_error(self):
-        """Test that an error is raised when trying to vmap over a batched non-scalar closure variable."""
+    def test_qnode_vmap_closure_warn(self):
+        """Test that a warning is raised when trying to vmap over a batched non-scalar closure variable."""
         dev = qml.device("default.qubit", wires=2)
 
         const = jax.numpy.array([2.0, 6.6])
@@ -507,9 +508,7 @@ class TestQNodeVmapIntegration:
             qml.RX(const, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError, match="Only scalar constants are currently supported with jax.vmap."
-        ):
+        with pytest.warns(UserWarning, match="Constant argument at index 0 is not scalar. "):
             jax.make_jaxpr(jax.vmap(circuit))(jax.numpy.array([0.1, 0.2]))
 
     def test_vmap_overriding_shots(self):
@@ -525,7 +524,8 @@ class TestQNodeVmapIntegration:
         x = jax.numpy.array([1.0, 2.0, 3.0])
 
         jaxpr = jax.make_jaxpr(jax.vmap(partial(circuit, shots=50), in_axes=0))(x)
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]
@@ -540,8 +540,9 @@ class TestQNodeVmapIntegration:
 
         assert eqn0.outvars[0].aval.shape == (3, 50)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qml.math.allclose(res, jax.numpy.zeros((3, 50)))
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+            assert qml.math.allclose(res, jax.numpy.zeros((3, 50)))
 
     def test_vmap_error_indexing(self):
         """Test that an IndexError is raised when indexing a batched parameter."""
@@ -581,7 +582,7 @@ class TestQNodeVmapIntegration:
         param_array = jax.numpy.array([1.0, 1.2, 1.3])
         param_array_2 = jax.numpy.array([2.0, 2.1, 2.2])
 
-        with pytest.warns(UserWarning, match="Argument at index 1 has more"):
+        with pytest.warns(UserWarning, match="Argument at index 1 has size"):
             jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(param_array, param_array_2)
 
     def test_qnode_pytree_input_vmap(self):
@@ -637,15 +638,379 @@ class TestQNodeVmapIntegration:
         assert qml.math.allclose(out["b"], -jax.numpy.sin(x))
         assert list(out.keys()) == ["a", "b"]
 
-    def test_error_multidimensional_batching(self):
-        """Test that an error is raised when trying to vmap over a multidimensional batched parameter."""
+    def test_simple_multidim_case(self):
+        """Test vmap over a simple multidimensional case."""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qml.RX(jax.numpy.pi * x[0], wires=0)
+            qml.RY(x[1] ** 2, wires=0)
+            qml.RX(x[1] * x[2], wires=0)
+            return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError, match="Currently, only single-dimension batching is supported"
-        ):
-            jax.make_jaxpr(jax.vmap(circuit))(jax.numpy.array([[0.1, 0.2], [0.3, 0.4]]))
+        def cost_fn(x):
+            result = circuit(x)
+            return jax.numpy.cos(result) ** 2
+
+        x = jax.numpy.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+
+        jaxpr = jax.make_jaxpr(jax.vmap(cost_fn))(x)
+
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.out_avals[0].shape == (2,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        assert len(result[0]) == 2
+        assert jax.numpy.allclose(result[0][0], cost_fn(x[0]))
+        assert jax.numpy.allclose(result[0][1], cost_fn(x[1]))
+
+    def test_simple_multidim_case_2(self):
+        """Test vmap over a simple multidimensional case with a scalar and constant argument."""
+
+        # pylint: disable=import-outside-toplevel
+        from scipy.stats import unitary_group
+
+        const = jax.numpy.array(2.0)
+
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def circuit(x, y, U):
+            qml.QubitUnitary(U, wires=[0, 1, 2, 3])
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RX(x, wires=2)
+            qml.RY(const, wires=3)
+            return qml.expval(qml.Z(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3))
+
+        x = jax.numpy.array([0.4, 2.1, -1.3])
+        y = 2.71
+        U = jax.numpy.stack([unitary_group.rvs(16) for _ in range(3)])
+
+        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None, 0)))(x, y, U)
+        assert len(jaxpr.eqns[0].invars) == 4  # 3 args + 1 const
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.out_avals[0].shape == (3,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, U)
+        assert qml.math.allclose(result, circuit(x, y, U))
+
+    def test_vmap_circuit_inside(self):
+        """Test vmap of a hybrid workflow."""
+
+        def workflow(x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x):
+                qml.RX(jax.numpy.pi * x[0], wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            res1 = jax.vmap(circuit)(x)
+            res2 = jax.vmap(circuit, in_axes=0)(x)
+            res3 = jax.vmap(circuit, in_axes=(0,))(x)
+            return res1, res2, res3
+
+        x = jax.numpy.array(
+            [
+                [0.1, 0.2, 0.3],
+                [0.4, 0.5, 0.6],
+                [0.7, 0.8, 0.9],
+            ]
+        )
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 3
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978])
+        assert jax.numpy.allclose(result[0], expected)
+        assert jax.numpy.allclose(result[1], expected)
+        assert jax.numpy.allclose(result[2], expected)
+
+    def test_vmap_nonzero_axes(self):
+        """Test vmap of a hybrid workflow with axes > 0."""
+
+        def workflow(x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x):
+                qml.RX(jax.numpy.pi * x[0], wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            res1 = jax.vmap(circuit, in_axes=1)(x)
+            res2 = jax.vmap(circuit, in_axes=(1,))(x)
+            return res1, res2
+
+        x = jax.numpy.array(
+            [
+                [0.1, 0.4],
+                [0.2, 0.5],
+                [0.3, 0.6],
+            ]
+        )
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        expected = jax.numpy.array([0.93005586, 0.00498127])
+        assert jax.numpy.allclose(result[0], expected)
+        assert jax.numpy.allclose(result[1], expected)
+
+    def test_vmap_nonzero_axes_2(self):
+        """Test vmap of a hybrid workflow with axes > 0."""
+
+        def workflow(y, x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(y, x):
+                qml.RX(jax.numpy.pi * x[0] * y, wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2] * y, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            res1 = jax.vmap(circuit, in_axes=(None, 1))(y[0], x)
+            res2 = jax.vmap(circuit, in_axes=(0, 1))(y, x)
+            return res1, res2
+
+        x = jax.numpy.array(
+            [
+                [0.1, 0.4],
+                [0.2, 0.5],
+                [0.3, 0.6],
+            ]
+        )
+        y = jax.numpy.array([1, 2])
+
+        jaxpr = jax.make_jaxpr(workflow)(y, x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, y, x)
+        expected = jax.numpy.array([0.93005586, 0.00498127])
+        expected2 = jax.numpy.array([0.93005586, -0.97884155])
+        assert jax.numpy.allclose(result[0], expected)
+        assert jax.numpy.allclose(result[1], expected2)
+
+    def test_vmap_tuple_in_axes(self):
+        """Test vmap of a hybrid workflow with tuple in_axes."""
+
+        def workflow(x, y, z):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x, y):
+                qml.RX(jax.numpy.pi * x[0] + y - y, wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            def workflow2(x, y):
+                return circuit(x, y) * y
+
+            def workflow3(y, x):
+                return circuit(x, y) * y
+
+            def workflow4(y, x, z):
+                return circuit(x, y) * y * z
+
+            res1 = jax.vmap(workflow2, in_axes=(0, None))(x, y)
+            res2 = jax.vmap(workflow3, in_axes=(None, 0))(y, x)
+            res3 = jax.vmap(workflow4, in_axes=(None, 0, None))(y, x, z)
+            return res1, res2, res3
+
+        y = jax.numpy.pi
+        x = jax.numpy.array(
+            [
+                [0.1, 0.2, 0.3],
+                [0.4, 0.5, 0.6],
+                [0.7, 0.8, 0.9],
+            ]
+        )
+
+        jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 3
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
+        expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
+        # note! Any failures here my be a result of a side effect from a different test
+        # fails when testing tests/capture, passes with tests/capture/test_capture_qnode
+        assert jax.numpy.allclose(result[0], expected)
+        assert jax.numpy.allclose(result[1], expected)
+        assert jax.numpy.allclose(result[2], expected)
+
+    def test_vmap_pytree_in_axes(self):
+        """Test vmap of a hybrid workflow with pytree in_axes."""
+
+        def workflow(x, y, z):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x, y):
+                qml.RX(jax.numpy.pi * x["arr"][0] + y - y, wires=0)
+                qml.RY(x["arr"][1] ** 2, wires=0)
+                qml.RX(x["arr"][1] * x["arr"][2], wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            def workflow2(x, y):
+                return circuit(x, y) * y
+
+            def workflow3(y, x):
+                return circuit(x, y) * y
+
+            def workflow4(y, x, z):
+                return circuit(x, y) * y * z
+
+            res1 = jax.vmap(workflow2, in_axes=({"arr": 0, "foo": None}, None))(x, y)
+            res2 = jax.vmap(workflow2, in_axes=({"arr": 0, "foo": None}, None))(x, y)
+            res3 = jax.vmap(workflow3, in_axes=(None, {"arr": 0, "foo": None}))(y, x)
+            res4 = jax.vmap(workflow4, in_axes=(None, {"arr": 0, "foo": None}, None))(y, x, z)
+            return res1, res2, res3, res4
+
+        y = jax.numpy.pi
+        x = {
+            "arr": jax.numpy.array(
+                [
+                    [0.1, 0.2, 0.3],
+                    [0.4, 0.5, 0.6],
+                    [0.7, 0.8, 0.9],
+                ]
+            ),
+            "foo": None,
+        }
+
+        jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 4
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (3,)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["arr"], y, 1)
+        expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
+        assert jax.numpy.allclose(result[0], expected)
+        assert jax.numpy.allclose(result[1], expected)
+        assert jax.numpy.allclose(result[2], expected)
+        assert jax.numpy.allclose(result[3], expected)
+
+    def test_vmap_circuit_return_tensor(self):
+        """Test vmapping over a QNode that returns a tensor."""
+
+        def workflow(x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x):
+                qml.RX(jax.numpy.pi * x[0], wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.state()
+
+            res1 = jax.vmap(circuit)(x)
+            res2 = jax.vmap(circuit, out_axes=0)(x)
+            return res1, res2
+
+        x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 1
+            assert eqn.outvars[0].aval.shape == (2, 2)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        expected = jax.numpy.array(
+            [
+                [0.98235508 + 0.00253459j, 0.0198374 - 0.18595308j],
+                [0.10537427 + 0.2120056j, 0.23239136 - 0.94336851j],
+            ]
+        )
+        assert jax.numpy.allclose(result[0], expected)
+        assert jax.numpy.allclose(result[1], expected)
+
+    def test_vmap_circuit_return_tensor_pytree(self):
+        """Test vmapping over a QNode that returns a pytree tensor."""
+
+        def workflow(x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x):
+                qml.RX(jax.numpy.pi * x[0], wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.state(), qml.probs(0)
+
+            res1 = jax.vmap(circuit)(x)
+            return res1
+
+        x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        assert len(jaxpr.eqns[0].outvars) == 2
+        assert jaxpr.out_avals[0].shape == (2, 2)
+        assert jaxpr.out_avals[1].shape == (2, 2)
+
+        expected_state = jax.numpy.array(
+            [
+                [0.98235508 + 0.00253459j, 0.0198374 - 0.18595308j],
+                [0.10537427 + 0.2120056j, 0.23239136 - 0.94336851j],
+            ]
+        )
+        expected_probs = jax.numpy.array([[0.96502793, 0.03497207], [0.05605011, 0.94394989]])
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        assert jax.numpy.allclose(result[0], expected_state)
+        assert jax.numpy.allclose(result[1], expected_probs)
+
+    def test_vmap_circuit_return_tensor_out_axes_multiple(self):
+        """Test vmapping over a QNode that returns a tensor with multiple out_axes."""
+
+        def workflow(x):
+            @qml.qnode(qml.device("default.qubit", wires=1))
+            def circuit(x):
+                qml.RX(jax.numpy.pi * x[0], wires=0)
+                qml.RY(x[1] ** 2, wires=0)
+                qml.RX(x[1] * x[2], wires=0)
+                return qml.state(), qml.state()
+
+            res1 = jax.vmap(circuit, out_axes=1)(x)
+            res2 = jax.vmap(circuit, out_axes=(0, 1))(x)
+            return res1, res2
+
+        x = jax.numpy.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
+
+        jaxpr = jax.make_jaxpr(workflow)(x)
+
+        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        assert len(qnode_output_eqns) == 2
+        for eqn in qnode_output_eqns:
+            assert len(eqn.outvars) == 2
+            assert eqn.outvars[0].aval.shape == (2, 2)
+            assert eqn.outvars[1].aval.shape == (2, 2)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        expected = jax.numpy.array(
+            [
+                [0.98235508 + 0.00253459j, 0.0198374 - 0.18595308j],
+                [0.10537427 + 0.2120056j, 0.23239136 - 0.94336851j],
+            ]
+        )
+        assert jax.numpy.allclose(jax.numpy.transpose(result[0], (1, 0)), expected)
+        assert jax.numpy.allclose(jax.numpy.transpose(result[1], (1, 0)), expected)
+        assert jax.numpy.allclose(result[2], expected)
+        assert jax.numpy.allclose(jax.numpy.transpose(result[3], (1, 0)), expected)

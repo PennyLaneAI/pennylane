@@ -13,6 +13,8 @@
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
 
+import warnings
+
 # pylint: disable=too-many-arguments,too-few-public-methods,protected-access
 from functools import partial
 
@@ -23,6 +25,13 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
 
 
 def get_device(device_name, wires, seed):

@@ -23,9 +23,7 @@ from pennylane.wires import Wires
 
 def _check_hamiltonian_type(hamiltonian):
     if not isinstance(hamiltonian, Sum):
-        raise TypeError(
-            f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum, got {hamiltonian}"
-        )
+        raise TypeError(f"The given operator must be a PennyLane ~.Sum, got {hamiltonian}")
 
 
 def _extract_hamiltonian_coeffs_and_ops(hamiltonian):
@@ -106,7 +104,7 @@ class QDrift(Operation):
         seed (int): The seed for the random number generator.
 
     Raises:
-        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
+        TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`
         QuantumFunctionError: If the coefficients of ``hamiltonian`` are trainable and are used
             in a differentiable workflow.
         ValueError: If there is only one term in the Hamiltonian.
