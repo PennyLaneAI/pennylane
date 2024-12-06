@@ -57,6 +57,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Optional, Union
 
+from pennylane.devices.qubit_mixed import simulate
 from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.transforms.core import TransformProgram
 from pennylane.tape import QuantumScript
@@ -1075,39 +1076,3 @@ class DefaultMixedNewAPI(Device):
         )
 
         return transform_program, config
-
-
-# pylint: disable=too-many-positional-arguments, too-many-arguments
-def simulate(
-    circuit: qml.tape.QuantumScript,
-    rng=None,
-    prng_key=None,
-    debugger=None,
-    interface=None,
-    readout_errors=None,
-) -> Result:
-    """Simulate a single quantum script.
-
-    This is an internal function that will be called by ``default.qubit.mixed``.
-
-    Args:
-        circuit (QuantumTape): The single circuit to simulate
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
-        debugger (_Debugger): The debugger to use
-        interface (str): The machine learning interface to create the initial state with
-        readout_errors (List[Callable]): List of channels to apply to each wire being measured
-            to simulate readout errors.
-
-    Returns:
-        tuple(TensorLike): The results of the simulation
-
-    Note that this function can return measurements for non-commuting observables simultaneously.
-
-    This function assumes that all operations provide matrices.
-    """
-    raise NotImplementedError

@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qubit mixed state device."""
+# pylint: disable=protected-access
+from numpy.random import default_rng
+
 import pennylane as qml
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
+from .sampling import measure_with_samples
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
@@ -129,8 +133,25 @@ def measure_final_state(
         return tuple(
             measure(mp, state, is_state_batched, readout_errors) for mp in circuit.measurements
         )
-    # !TODO: add finite-shot branch afterwards. After implementation of finite-shot scenario, del this line.
-    raise NotImplementedError
+    # finite-shot case
+    rng = default_rng(rng)
+    results = tuple(
+        measure_with_samples(
+            mp,
+            state,
+            shots=circuit.shots,
+            is_state_batched=is_state_batched,
+            rng=rng,
+            prng_key=prng_key,
+            readout_errors=readout_errors,
+        )
+        for mp in circuit.measurements
+    )
+    if len(circuit.measurements) == 1:
+        return results[0]
+    if circuit.shots.has_partitioned_shots:
+        return tuple(zip(*results))
+    return results
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
