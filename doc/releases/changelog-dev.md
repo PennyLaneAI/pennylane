@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+  [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
+
 * Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
   class. Device developers are encouraged to override these two methods separately instead of the
   `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these
