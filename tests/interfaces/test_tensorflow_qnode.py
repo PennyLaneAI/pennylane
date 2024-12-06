@@ -81,7 +81,7 @@ class TestQNode:
 
         # if executing outside a gradient tape, the number of trainable parameters
         # cannot be determined by TensorFlow
-        tape = qml.workflow.construct_tape(a)
+        tape = qml.workflow.construct_tape(circuit)(a)
         assert tape.trainable_params == []
 
         with tf.GradientTape() as tape:
@@ -191,7 +191,7 @@ class TestQNode:
             res = circuit(a, b)
             res = tf.stack(res)
 
-        tape = qml.workflow.construct_tape(a, b)
+        tape = qml.workflow.construct_tape(circuit)(a, b)
         assert tape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
@@ -264,7 +264,7 @@ class TestQNode:
             res = tf.stack(res)
 
         # the tape has reported both gate arguments as trainable
-        tape = qml.workflow.construct_tape(a, b)
+        tape = qml.workflow.construct_tape(circuit)(a, b)
         assert tape.trainable_params == [0, 1]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
@@ -286,7 +286,7 @@ class TestQNode:
             res = tf.stack(res)
 
         # the tape has reported only the first argument as trainable
-        tape = qml.workflow.construct_tape(a, b)
+        tape = qml.workflow.construct_tape(circuit)(a, b)
         assert tape.trainable_params == [0]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
@@ -319,7 +319,7 @@ class TestQNode:
             res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
-            tape = qml.workflow.construct_tape(a, b, c)
+            tape = qml.workflow.construct_tape(circuit)(a, b, c)
             assert tape.trainable_params == [0, 2]
             assert tape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
 
@@ -355,7 +355,7 @@ class TestQNode:
             res = tf.stack(res)
 
         if diff_method == "finite-diff":
-            tape = qml.workflow.construct_tape(a, b)
+            tape = qml.workflow.construct_tape(circuit)(a, b)
             assert tape.trainable_params == []
 
         assert res.shape == (2,)
@@ -389,7 +389,7 @@ class TestQNode:
             res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            tape = qml.workflow.construct_tape(U, a)
+            tape = qml.workflow.construct_tape(circuit)(U, a)
             assert tape.trainable_params == [1]
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
