@@ -921,6 +921,64 @@ class TestMapWiresTransform:
         assert inner_jaxpr.eqns[3].primitive == qml.RX._primitive
         assert inner_jaxpr.eqns[3].invars[-1].val == 2
 
+    def test_qnode_controlled_ops(self):
+        """Test that a qnode with controlled operations is transformed correctly."""
+
+        program = TransformProgram()
+        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2, 2: 3, 3: 2})
+
+        @TransformInterpreter(program)
+        @qml.qnode(
+            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
+        )
+        def f(x):
+            qml.CNOT(wires=[0, 1])
+            qml.CY(wires=[1, 2])
+            qml.CZ(wires=[2, 3])
+            qml.CRX(x, wires=[0, 1])
+            qml.CRY(x, wires=[1, 2])
+            qml.CRZ(x, wires=[2, 3])
+            return qml.var(
+                qml.QubitUnitary(
+                    np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1]
+                )
+            )
+
+        jaxpr = jax.make_jaxpr(f)(0.1)
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        assert len(inner_jaxpr.eqns) == 8
+
+        assert inner_jaxpr.eqns[0].primitive == qml.CNOT._primitive
+        assert inner_jaxpr.eqns[0].invars[0].val == 1
+        assert inner_jaxpr.eqns[0].invars[1].val == 2
+
+        assert inner_jaxpr.eqns[1].primitive == qml.CY._primitive
+        assert inner_jaxpr.eqns[1].invars[0].val == 2
+        assert inner_jaxpr.eqns[1].invars[1].val == 3
+
+        assert inner_jaxpr.eqns[2].primitive == qml.CZ._primitive
+        assert inner_jaxpr.eqns[2].invars[0].val == 3
+        assert inner_jaxpr.eqns[2].invars[1].val == 2
+
+        assert inner_jaxpr.eqns[3].primitive == qml.CRX._primitive
+        assert inner_jaxpr.eqns[3].invars[1].val == 1
+        assert inner_jaxpr.eqns[3].invars[2].val == 2
+
+        assert inner_jaxpr.eqns[4].primitive == qml.CRY._primitive
+        assert inner_jaxpr.eqns[4].invars[1].val == 2
+        assert inner_jaxpr.eqns[4].invars[2].val == 3
+
+        assert inner_jaxpr.eqns[5].primitive == qml.CRZ._primitive
+        assert inner_jaxpr.eqns[5].invars[1].val == 3
+        assert inner_jaxpr.eqns[5].invars[2].val == 2
+
+        assert inner_jaxpr.eqns[6].primitive == qml.QubitUnitary._primitive
+        assert inner_jaxpr.eqns[6].invars[1].val == 1
+        assert inner_jaxpr.eqns[6].invars[2].val == 2
+
+        assert inner_jaxpr.eqns[7].primitive == qml.measurements.VarianceMP._obs_primitive
+
     def test_qnode_for_loop(self):
         """Test that a qnode with a for loop is transformed correctly."""
 
@@ -1002,5 +1060,3 @@ class TestMapWiresTransform:
 
         assert cond_jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert cond_jaxpr.eqns[0].invars[-1].val == 1
-        assert qfunc_jaxpr.eqns[1].primitive == qml.X._primitive
-        assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive

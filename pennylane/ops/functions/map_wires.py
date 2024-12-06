@@ -185,9 +185,10 @@ def _map_wires_plxpr_transform(
 
                 # This currently gets both qml.probs() and qml.expval(qml.PauliZ(0)) to work
                 if len(op.wires) > 0:
-                    mapped_op = op.map_wires(wire_map=wire_map)
 
-                    meas_tracers.append(TransformTracer(t._trace, *mapped_op.wires, t.idx + 1))
+                    meas_tracers.append(
+                        TransformTracer(t._trace, *op.map_wires(wire_map=wire_map).wires, t.idx + 1)
+                    )
 
                 else:
                     meas_tracers.append(TransformTracer(t._trace, t.val, t.idx + 1))
@@ -197,22 +198,18 @@ def _map_wires_plxpr_transform(
 
         return primitive.bind(*meas_tracers, **params)
 
-    # For this to work as expected, the wires should not be TransformTracers
-    mapped_op = op.map_wires(wire_map=wire_map)
-    print(f"mapped_op: {mapped_op}\n")
-
-    # This is for cases like qml.H(1) @ qml.H(2), which don't have 'n_wires' in the params
+    # TODO: This must be fixed in the base implementation.
+    # This is for cases like qml.H(1) @ qml.H(2)
     if n_wires is None:
 
         op_tracers = []
         for t in tracers:
             if isinstance(t, TransformTracer):
 
-                mapped_op = t.val.map_wires(wire_map=wire_map)
                 op_tracers.append(
                     TransformTracer(
                         t._trace,
-                        *mapped_op.wires,
+                        *t.val.map_wires(wire_map=wire_map).wires,
                         t.idx + 1,
                     )
                 )
@@ -225,9 +222,9 @@ def _map_wires_plxpr_transform(
     tracers_no_wires = tracers[:split]
     tracers_wires = tracers[split:]
 
-    # print(f"split: {split}")
-    # print(f"tracers_no_wires: {tracers_no_wires}")
-    # print(f"tracers_wires: {tracers_wires}")
+    print(f"split: {split}")
+    print(f"tracers_no_wires: {tracers_no_wires}")
+    print(f"tracers_wires: {tracers_wires}")
 
     op_tracers = []
     for t in tracers_no_wires:
@@ -242,12 +239,29 @@ def _map_wires_plxpr_transform(
         else:
             op_tracers.append(t)
 
-    for t in tracers_wires:
+    # For each wire, there is a separate TransformTracer,
+    # and the wire is the value of the TransformTracer
+
+    print(f"op: {op}")
+
+    # We disable the capture to call the map_wires method of the operator.
+    # The reason is that for ControlledOp the map_wires method binds the base operation
+    # with capture enabled
+    qml.capture.disable()
+    try:
+        mapped_wires = op.map_wires(wire_map=wire_map).wires
+    finally:
+        qml.capture.enable()
+
+    print(f"mapped_wires: {mapped_wires}")
+
+    for idx, t in enumerate(tracers_wires):
         if isinstance(t, TransformTracer):
+            # For this to work as expected, the wires should not be TransformTracers
             op_tracers.append(
                 TransformTracer(
                     t._trace,
-                    *mapped_op.wires,
+                    mapped_wires[idx],
                     # or
                     # wire_map.get(t.val, t.val),
                     t.idx + 1,
