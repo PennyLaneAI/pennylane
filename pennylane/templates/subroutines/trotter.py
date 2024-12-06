@@ -781,7 +781,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False, name=None):
     @wraps(qfunc)
     def wrapper(time, *args, **kwargs):
 
-        special_keys = ["n", "order", "qfunc", "reverse"]
+        special_keys = ["n", "name", "order", "qfunc", "reverse"]
         if any(key in kwargs for key in special_keys):
             raise ValueError(
                 f"Cannot use any of the specailized names:\n {special_keys}\nas keyword"

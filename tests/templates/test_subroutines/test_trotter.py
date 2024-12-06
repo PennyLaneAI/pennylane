@@ -1227,6 +1227,16 @@ class TestTrotterizedQfuncInitialization:
             kwargs = {"kwarg1": 1, "kwarg2": 2, "kwarg3": 3}
             TrotterizedQfunc(time, *args, **kwargs)
 
+    def test_infer_wires(self):
+        """Test that if the wires are not passes as kwargs then the last arg is
+        assumed to be the wires."""
+        time = 0.1
+        args = (2.34, -5.6, ["a", "b"])
+        kwargs = {"kwarg1": True, "kwarg2": 78.9}
+
+        op = TrotterizedQfunc(time, *args, qfunc=self.my_qfunc, **kwargs)
+        assert op.wires == qml.wires.Wires(["a", "b"])
+
     @pytest.mark.parametrize("order", [0, -1, 3])
     def test_error_order(self, order):
         """Test that an error is raised if the order is not a multiple of 2 or less than 1."""
@@ -1255,10 +1265,11 @@ class TestTrotterizedQfuncInitialization:
     )
 
     @pytest.mark.parametrize("wires", wire_data)
+    @pytest.mark.parametrize("name", (None, "MyCustomTrotter"))
     @pytest.mark.parametrize("n, time, order, reverse", hyperparams_data)
     @pytest.mark.parametrize("qfunc_args, qfunc_kwargs", args_kwargs_data)
     def test_parameters_and_hyperparameters(
-        self, time, qfunc_args, wires, n, order, reverse, qfunc_kwargs
+        self, time, qfunc_args, wires, n, order, reverse, name, qfunc_kwargs
     ):
         """Test that the parameters and hyperparameters are set correctly"""
         op = TrotterizedQfunc(
@@ -1268,6 +1279,7 @@ class TestTrotterizedQfuncInitialization:
             n=n,
             order=order,
             reverse=reverse,
+            name=name,
             wires=wires,
             **qfunc_kwargs,
         )
@@ -1282,6 +1294,9 @@ class TestTrotterizedQfuncInitialization:
         assert op.data == (time,) + qfunc_args
         assert op.parameters == list((time,) + qfunc_args)
         assert op.hyperparameters == expected_hyperparams
+
+        expected_name = name or "TrotterizedQfunc"
+        assert op.name == expected_name
 
     @pytest.mark.parametrize("wires", wire_data)
     @pytest.mark.parametrize("n, time, order, reverse", hyperparams_data)
@@ -1307,6 +1322,19 @@ class TestTrotterizedQfuncInitialization:
         assert op.data == (time,) + qfunc_args
         assert op.parameters == list((time,) + qfunc_args)
         assert op.hyperparameters == expected_hyperparams
+
+    def test_trotterize_error_if_repeated_kwarg(self):
+        """Test that an error is raised if the named kwargs for the qfunc match the
+        names of the kwargs of the TrotterizedQfunc class."""
+
+        def my_dummy_qfunc(time, wires, **kwargs):
+            qml.RZ(time, wires[0])
+            return
+
+        for special_key in ["n", "name", "order", "qfunc", "reverse"]:
+            with pytest.raises(ValueError, match="Cannot use any of the specailized names:"):
+                kwargs = {special_key: 1}
+                qml.trotterize(my_dummy_qfunc)(0.1, wires=[0, 1], **kwargs)
 
     def test_standard_validity(self):
         """Test standard validity criteria using assert_valid."""
