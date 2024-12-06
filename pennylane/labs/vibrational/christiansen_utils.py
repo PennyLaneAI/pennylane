@@ -594,10 +594,7 @@ def _load_cform_onemode(num_proc, nmodes, quad_order):
         quad_order (int): order for Gauss-Hermite quadratures
     
     Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: one-mode potential energy surface
-         - TensorLike[float] or None: one-mode dipole, returns ``None``
-           if dipole is set to ``False``
+        TensorLike[float]: one-body integrals for Christiansen Hamiltonian
     """
     final_shape = (nmodes, quad_order, quad_order)
     nmode_combos = int(nmodes)
@@ -637,10 +634,7 @@ def _load_cform_twomode(num_proc, nmodes, quad_order):
         quad_order (int): order for Gauss-Hermite quadratures
     
     Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: one-mode potential energy surface
-         - TensorLike[float] or None: one-mode dipole, returns ``None``
-           if dipole is set to ``False``
+        TensorLike[float]: two-body integrals for Christiansen Hamiltonian
     """
     final_shape = (nmodes, nmodes, quad_order, quad_order, quad_order, quad_order)
     nmode_combos = nmodes**2
@@ -680,10 +674,7 @@ def _load_cform_threemode(num_proc, nmodes, quad_order):
         quad_order (int): order for Gauss-Hermite quadratures
     
     Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: one-mode potential energy surface
-         - TensorLike[float] or None: one-mode dipole, returns ``None``
-           if dipole is set to ``False``
+        TensorLike[float]: three-body integrals for Christiansen Hamiltonian
     """
     final_shape = (
         nmodes,
@@ -733,10 +724,7 @@ def _load_cform_onemode_dipole(num_proc, nmodes, quad_order):
         quad_order (int): order for Gauss-Hermite quadratures
     
     Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: one-mode potential energy surface
-         - TensorLike[float] or None: one-mode dipole, returns ``None``
-           if dipole is set to ``False``
+        TensorLike[float]: one-body integrals for Christiansen dipole operator
     """
     final_shape = (nmodes, quad_order, quad_order)
     nmode_combos = int(nmodes)
@@ -776,10 +764,7 @@ def _load_cform_twomode_dipole(num_proc, nmodes, quad_order):
         quad_order (int): order for Gauss-Hermite quadratures
     
     Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: one-mode potential energy surface
-         - TensorLike[float] or None: one-mode dipole, returns ``None``
-           if dipole is set to ``False``
+        TensorLike[float]: two-body integrals for Christiansen dipole operator
     """
     final_shape = (nmodes, nmodes, quad_order, quad_order, quad_order, quad_order)
     nmode_combos = int(nmodes**2)
@@ -819,10 +804,7 @@ def _load_cform_threemode_dipole(num_proc, nmodes, quad_order):
         quad_order (int): order for Gauss-Hermite quadratures
     
     Returns:
-        tuple: A tuple containing the following:
-         - TensorLike[float]: one-mode potential energy surface
-         - TensorLike[float] or None: one-mode dipole, returns ``None``
-           if dipole is set to ``False``
+        TensorLike[float]: three-body integrals for Christiansen dipole operator
     """
     final_shape = (
         nmodes,
