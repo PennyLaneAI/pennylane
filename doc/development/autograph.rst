@@ -50,9 +50,7 @@ Using AutoGraph
 ---------------
 
 The AutoGraph feature in PennyLane is supported by the ``diastatic-malt`` `package <https://github.com/PennyLaneAI/diastatic-malt>`_, a standalone
-fork of the AutoGraph module in TensorFlow (
-`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
-).
+fork of the AutoGraph module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_).
 
 The :func:`~pennylane.capture.make_plxpr` function uses AutoGraph by default. Consider a function using
 Python control flow:
