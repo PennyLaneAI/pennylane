@@ -27,6 +27,16 @@ au_to_cm = 219475
 
 
 def _cform_onemode_kinetic(freqs, nbos):
+    """Calculates the kinetic energy part of the one body integrals to correct the integrals
+    for localized modes
+    
+    Args:
+        freqs(int): the harmonic frequencies
+        nbos(int): maximum number of bosonic states per mode
+
+    Returns:
+        the kinetic energy part of the one body integrals    
+    """
     # action of kinetic energy operator for m=1,...,M modes with frequencies freqs[m]
     nmodes = len(freqs)
     all_mode_combos = []
@@ -61,10 +71,18 @@ def _cform_onemode_kinetic(freqs, nbos):
     return local_K_mat
 
 
-def _cform_twomode_kinetic(pes_gen, nbos):
-    # action of kinetic energy operator for m=1,...,M localized modes with frequencies freqs[m]
-    # note that normal modes make this term zero, only appears for non-normal displacements
-    nmodes = len(pes_gen.freqs)
+def _cform_twomode_kinetic(pes_object, nbos):
+    """Calculates the kinetic energy part of the two body integrals to correct the integrals
+    for localized modes
+    
+    Args:
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+
+    Returns:
+        the kinetic energy part of the two body integrals    
+    """
+    nmodes = len(pes_object.freqs)
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -88,8 +106,8 @@ def _cform_twomode_kinetic(pes_gen, nbos):
             nn += 1
             continue
 
-        Usum = np.einsum("i,i->", pes_gen.uloc[:, ii], pes_gen.uloc[:, jj])
-        m_const = Usum * np.sqrt(pes_gen.freqs[ii] * pes_gen.freqs[jj]) / 4
+        Usum = np.einsum("i,i->", pes_object.uloc[:, ii], pes_object.uloc[:, jj])
+        m_const = Usum * np.sqrt(pes_object.freqs[ii] * pes_object.freqs[jj]) / 4
 
         mm = 0
         for [ki, kj, hi, hj] in boscombos_on_rank:
@@ -111,13 +129,20 @@ def _cform_twomode_kinetic(pes_gen, nbos):
     return local_kin_cform_twobody
 
 
-def _cform_onemode(pes_gen, nbos):
+def _cform_onemode(pes_object, nbos):
     """
-    Use the one-body potential energy surface and evaluate the modal integrals
-    to find the Christiansen form Hamiltonian.
+    Calculates the one-body integrals from the given potential energy surface data for the
+    Christiansen Hamiltonian
+
+    Args:
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+
+    Returns:
+        the one-body integrals for the Christiansen Hamiltonian
     """
 
-    nmodes = len(pes_gen.freqs)
+    nmodes = len(pes_object.freqs)
     all_mode_combos = []
     for aa in range(nmodes):
         all_mode_combos.append([aa])
@@ -143,23 +168,30 @@ def _cform_onemode(pes_gen, nbos):
             order_k[ki] = 1.0
             order_h = np.zeros(nbos)
             order_h[hi] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1, 1])(pes_gen.gauss_grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1, 1])(pes_gen.gauss_grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1, 1])(pes_object.gauss_grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1, 1])(pes_object.gauss_grid)
             quadrature = np.sum(
-                pes_gen.gauss_weights * pes_gen.pes_onebody[ii, :] * hermite_ki * hermite_hi
+                pes_object.gauss_weights * pes_object.pes_onebody[ii, :] * hermite_ki * hermite_hi
             )
             full_coeff = sqrt * quadrature  # * 219475 for converting into cm^-1
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_onebody[ind] += full_coeff
             mm += 1
         nn += 1
-    return local_ham_cform_onebody + _cform_onemode_kinetic(pes_gen.freqs, nbos)
+    return local_ham_cform_onebody + _cform_onemode_kinetic(pes_object.freqs, nbos)
 
 
 def _cform_onemode_dipole(pes, nbos):
     """
-    Use the one-body dipole functions and evaluate the modal integrals
-    to find the Christiansen form of the dipole term.
+    Calculates the one-body integrals from the given potential energy surface data for the
+    Christiansen dipole operator
+
+    Args:
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+
+    Returns:
+        the one-body integrals for the Christiansen dipole operator
     """
 
     nmodes = pes.dipole_onebody.shape[0]
@@ -204,13 +236,20 @@ def _cform_onemode_dipole(pes, nbos):
     return local_dipole_cform_onebody
 
 
-def _cform_twomode(pes_gen, nbos):
+def _cform_twomode(pes_object, nbos):
     """
-    Use the two-body potential energy surface and evaluate the modal integrals
-    to find the Christiansen form Hamiltonian.
+    Calculates the two-body integrals from the given potential energy surface data for the
+    Christiansen Hamiltonian
+
+    Args:
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+
+    Returns:
+        the two-body integrals for the Christiansen Hamiltonian
     """
 
-    nmodes = pes_gen.pes_twobody.shape[0]
+    nmodes = pes_object.pes_twobody.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -254,17 +293,17 @@ def _cform_twomode(pes_gen, nbos):
             order_hi[hi] = 1.0
             order_hj = np.zeros(nbos)
             order_hj[hj] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_gen.gauss_grid)
-            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_gen.gauss_grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_gen.gauss_grid)
-            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_gen.gauss_grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_object.gauss_grid)
+            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_object.gauss_grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_object.gauss_grid)
+            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_object.gauss_grid)
             quadrature = np.einsum(
                 "a,b,a,b,ab,a,b->",
-                pes_gen.gauss_weights,
-                pes_gen.gauss_weights,
+                pes_object.gauss_weights,
+                pes_object.gauss_weights,
                 hermite_ki,
                 hermite_kj,
-                pes_gen.pes_twobody[ii, jj, :, :],
+                pes_object.pes_twobody[ii, jj, :, :],
                 hermite_hi,
                 hermite_hj,
             )
@@ -276,13 +315,20 @@ def _cform_twomode(pes_gen, nbos):
     return local_ham_cform_twobody
 
 
-def _cform_twomode_dipole(pes, nbos):
+def _cform_twomode_dipole(pes_object, nbos):
     """
-    Use the two-body potential energy surface and evaluate the modal integrals
-    to find the Christiansen form of two-mode dipole.
+    Calculates the one-body integrals from the given potential energy surface data for the
+    Christiansen dipole operator
+
+    Args:
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+
+    Returns:
+        the one-body integrals for the Christiansen dipole operator
     """
 
-    nmodes = pes.dipole_twobody.shape[0]
+    nmodes = pes_object.dipole_twobody.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -326,19 +372,19 @@ def _cform_twomode_dipole(pes, nbos):
             order_hi[hi] = 1.0
             order_hj = np.zeros(nbos)
             order_hj[hj] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes.gauss_grid)
-            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes.gauss_grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes.gauss_grid)
-            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes.gauss_grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_object.gauss_grid)
+            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_object.gauss_grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_object.gauss_grid)
+            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_object.gauss_grid)
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum(
                     "a,b,a,b,ab,a,b->",
-                    pes.gauss_weights,
-                    pes.gauss_weights,
+                    pes_object.gauss_weights,
+                    pes_object.gauss_weights,
                     hermite_ki,
                     hermite_kj,
-                    pes.dipole_twobody[ii, jj, :, :, alpha],
+                    pes_object.dipole_twobody[ii, jj, :, :, alpha],
                     hermite_hi,
                     hermite_hj,
                 )
@@ -350,12 +396,19 @@ def _cform_twomode_dipole(pes, nbos):
     return local_dipole_cform_twobody
 
 
-def _cform_threemode(pes_gen, nbos):
+def _cform_threemode(pes_object, nbos):
     """
-    Use the three-body potential energy surface and evaluate the modal integrals
-    to find the Christiansen form Hamiltonian.
+    Calculates the three-body integrals from the given potential energy surface data for the
+    Christiansen Hamiltonian
+
+    Args:
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+
+    Returns:
+        the three-body integrals for the Christiansen Hamiltonian
     """
-    nmodes = pes_gen.pes_threebody.shape[0]
+    nmodes = pes_object.pes_threebody.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -409,22 +462,22 @@ def _cform_threemode(pes_gen, nbos):
             order_h2[h2] = 1.0
             order_h3 = np.zeros(nbos)
             order_h3[h3] = 1.0
-            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_gen.gauss_grid)
-            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_gen.gauss_grid)
-            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_gen.gauss_grid)
-            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_gen.gauss_grid)
-            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_gen.gauss_grid)
-            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_gen.gauss_grid)
+            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_object.gauss_grid)
+            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_object.gauss_grid)
+            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_object.gauss_grid)
+            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_object.gauss_grid)
+            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_object.gauss_grid)
+            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_object.gauss_grid)
 
             quadrature = np.einsum(
                 "a,b,c,a,b,c,abc,a,b,c->",
-                pes_gen.gauss_weights,
-                pes_gen.gauss_weights,
-                pes_gen.gauss_weights,
+                pes_object.gauss_weights,
+                pes_object.gauss_weights,
+                pes_object.gauss_weights,
                 hermite_k1,
                 hermite_k2,
                 hermite_k3,
-                pes_gen.pes_threebody[ii1, ii2, ii3, :, :, :],
+                pes_object.pes_threebody[ii1, ii2, ii3, :, :, :],
                 hermite_h1,
                 hermite_h2,
                 hermite_h3,
@@ -437,12 +490,19 @@ def _cform_threemode(pes_gen, nbos):
     return local_ham_cform_threebody
 
 
-def _cform_threemode_dipole(pes, nbos):
+def _cform_threemode_dipole(pes_object, nbos):
     """
-    Use the three-body dipole surface and evaluate the modal integrals
-    to find the Christiansen form dipole.
+    Calculates the one-body integrals from the given potential energy surface data for the
+    Christiansen dipole operator
+
+    Args:
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+
+    Returns:
+        the one-body integrals for the Christiansen dipole operator
     """
-    nmodes = pes.dipole_threebody.shape[0]
+    nmodes = pes_object.dipole_threebody.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -495,23 +555,23 @@ def _cform_threemode_dipole(pes, nbos):
             order_h2[h2] = 1.0
             order_h3 = np.zeros(nbos)
             order_h3[h3] = 1.0
-            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes.gauss_grid)
-            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes.gauss_grid)
-            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes.gauss_grid)
-            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes.gauss_grid)
-            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes.gauss_grid)
-            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes.gauss_grid)
+            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_object.gauss_grid)
+            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_object.gauss_grid)
+            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_object.gauss_grid)
+            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_object.gauss_grid)
+            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_object.gauss_grid)
+            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_object.gauss_grid)
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum(
                     "a,b,c,a,b,c,abc,a,b,c->",
-                    pes.gauss_weights,
-                    pes.gauss_weights,
-                    pes.gauss_weights,
+                    pes_object.gauss_weights,
+                    pes_object.gauss_weights,
+                    pes_object.gauss_weights,
                     hermite_k1,
                     hermite_k2,
                     hermite_k3,
-                    pes.dipole_threebody[ii1, ii2, ii3, :, :, :, alpha],
+                    pes_object.dipole_threebody[ii1, ii2, ii3, :, :, :, alpha],
                     hermite_h1,
                     hermite_h2,
                     hermite_h3,
@@ -524,22 +584,33 @@ def _cform_threemode_dipole(pes, nbos):
     return local_dipole_cform_threebody
 
 
-def _load_cform_onemode(num_pieces, nmodes, ngridpoints):
+def _load_cform_onemode(num_proc, nmodes, quad_order):
     """
-    Loader to combine results from multiple ranks.
+    Loader to collect and combine pes_onebody from multiple processors.
+    
+    Args:
+        num_proc (int): number of processors
+        nmodes (int): number of normal modes
+        quad_order (int): order for Gauss-Hermite quadratures
+    
+    Returns:
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
     """
-    final_shape = (nmodes, ngridpoints, ngridpoints)
+    final_shape = (nmodes, quad_order, quad_order)
     nmode_combos = int(nmodes)
 
     ham_cform_onebody = np.zeros(np.prod(final_shape))
     r0 = 0
     r1 = 0
     for mode_combo in range(nmode_combos):
-        local_chunk = np.zeros(ngridpoints**2)
+        local_chunk = np.zeros(quad_order**2)
 
         l0 = 0
         l1 = 0
-        for rank in range(num_pieces):
+        for rank in range(num_proc):
             f = h5py.File("cform_H1data" + f"_{rank}" + ".hdf5", "r+")
             local_ham_cform_onebody = f["H1"][()]
             chunk = np.array_split(local_ham_cform_onebody, nmode_combos)[mode_combo]  #
@@ -556,22 +627,33 @@ def _load_cform_onemode(num_pieces, nmodes, ngridpoints):
     return ham_cform_onebody
 
 
-def _load_cform_twomode(num_pieces, nmodes, ngridpoints):
+def _load_cform_twomode(num_proc, nmodes, quad_order):
     """
-    Loader to combine results from multiple ranks.
+    Loader to collect and combine pes_twobody from multiple processors.
+    
+    Args:
+        num_proc (int): number of processors
+        nmodes (int): number of normal modes
+        quad_order (int): order for Gauss-Hermite quadratures
+    
+    Returns:
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
     """
-    final_shape = (nmodes, nmodes, ngridpoints, ngridpoints, ngridpoints, ngridpoints)
+    final_shape = (nmodes, nmodes, quad_order, quad_order, quad_order, quad_order)
     nmode_combos = nmodes**2
 
     ham_cform_twobody = np.zeros(np.prod(final_shape))
     r0 = 0
     r1 = 0
     for mode_combo in range(nmode_combos):
-        local_chunk = np.zeros(ngridpoints**4)
+        local_chunk = np.zeros(quad_order**4)
 
         l0 = 0
         l1 = 0
-        for rank in range(num_pieces):
+        for rank in range(num_proc):
             f = h5py.File("cform_H2data" + f"_{rank}" + ".hdf5", "r+")
             local_ham_cform_twobody = f["H2"][()]
             chunk = np.array_split(local_ham_cform_twobody, nmode_combos)[mode_combo]  #
@@ -588,20 +670,31 @@ def _load_cform_twomode(num_pieces, nmodes, ngridpoints):
     return ham_cform_twobody
 
 
-def _load_cform_threemode(num_pieces, nmodes, ngridpoints):
+def _load_cform_threemode(num_proc, nmodes, quad_order):
     """
-    Loader to combine results from multiple ranks.
+    Loader to collect and combine pes_threebody from multiple processors.
+    
+    Args:
+        num_proc (int): number of processors
+        nmodes (int): number of normal modes
+        quad_order (int): order for Gauss-Hermite quadratures
+    
+    Returns:
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
     """
     final_shape = (
         nmodes,
         nmodes,
         nmodes,
-        ngridpoints,
-        ngridpoints,
-        ngridpoints,
-        ngridpoints,
-        ngridpoints,
-        ngridpoints,
+        quad_order,
+        quad_order,
+        quad_order,
+        quad_order,
+        quad_order,
+        quad_order,
     )
     nmode_combos = nmodes**3
 
@@ -609,11 +702,11 @@ def _load_cform_threemode(num_pieces, nmodes, ngridpoints):
     r0 = 0
     r1 = 0
     for mode_combo in range(nmode_combos):
-        local_chunk = np.zeros(ngridpoints**6)
+        local_chunk = np.zeros(quad_order**6)
 
         l0 = 0
         l1 = 0
-        for rank in range(num_pieces):
+        for rank in range(num_proc):
             f = h5py.File("cform_H3data" + f"_{rank}" + ".hdf5", "r+")
             local_ham_cform_threebody = f["H3"][()]  # 64 * 4096
             chunk = np.array_split(local_ham_cform_threebody, nmode_combos)[mode_combo]  #
@@ -630,22 +723,33 @@ def _load_cform_threemode(num_pieces, nmodes, ngridpoints):
     return ham_cform_threebody
 
 
-def _load_cform_onemode_dipole(num_pieces, nmodes, ngridpoints):
+def _load_cform_onemode_dipole(num_proc, nmodes, quad_order):
     """
-    Loader to combine results from multiple ranks.
+    Loader to collect and combine dipole_onebody from multiple processors.
+    
+    Args:
+        num_proc (int): number of processors
+        nmodes (int): number of normal modes
+        quad_order (int): order for Gauss-Hermite quadratures
+    
+    Returns:
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
     """
-    final_shape = (nmodes, ngridpoints, ngridpoints)
+    final_shape = (nmodes, quad_order, quad_order)
     nmode_combos = int(nmodes)
 
     dipole_cform_onebody = np.zeros((np.prod(final_shape), 3))
     r0 = 0
     r1 = 0
     for mode_combo in range(nmode_combos):
-        local_chunk = np.zeros((ngridpoints**2, 3))
+        local_chunk = np.zeros((quad_order**2, 3))
 
         l0 = 0
         l1 = 0
-        for rank in range(num_pieces):
+        for rank in range(num_proc):
             f = h5py.File("cform_D1data" + f"_{rank}" + ".hdf5", "r+")
             local_dipole_cform_onebody = f["D1"][()]
             chunk = np.array_split(local_dipole_cform_onebody, nmode_combos, axis=0)[mode_combo]  #
@@ -662,22 +766,33 @@ def _load_cform_onemode_dipole(num_pieces, nmodes, ngridpoints):
     return dipole_cform_onebody.transpose(3, 0, 1, 2)
 
 
-def _load_cform_twomode_dipole(num_pieces, nmodes, ngridpoints):
+def _load_cform_twomode_dipole(num_proc, nmodes, quad_order):
     """
-    Loader to combine results from multiple ranks.
+    Loader to collect and combine dipole_twobody from multiple processors.
+    
+    Args:
+        num_proc (int): number of processors
+        nmodes (int): number of normal modes
+        quad_order (int): order for Gauss-Hermite quadratures
+    
+    Returns:
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
     """
-    final_shape = (nmodes, nmodes, ngridpoints, ngridpoints, ngridpoints, ngridpoints)
+    final_shape = (nmodes, nmodes, quad_order, quad_order, quad_order, quad_order)
     nmode_combos = int(nmodes**2)
 
     dipole_cform_twobody = np.zeros((np.prod(final_shape), 3))
     r0 = 0
     r1 = 0
     for mode_combo in range(nmode_combos):
-        local_chunk = np.zeros((ngridpoints**4, 3))
+        local_chunk = np.zeros((quad_order**4, 3))
 
         l0 = 0
         l1 = 0
-        for rank in range(num_pieces):
+        for rank in range(num_proc):
             f = h5py.File("cform_D2data" + f"_{rank}" + ".hdf5", "r+")
             local_dipole_cform_twobody = f["D2"][()]
             chunk = np.array_split(local_dipole_cform_twobody, nmode_combos, axis=0)[mode_combo]  #
@@ -694,20 +809,31 @@ def _load_cform_twomode_dipole(num_pieces, nmodes, ngridpoints):
     return dipole_cform_twobody.transpose(6, 0, 1, 2, 3, 4, 5)
 
 
-def _load_cform_threemode_dipole(num_pieces, nmodes, ngridpoints):
+def _load_cform_threemode_dipole(num_proc, nmodes, quad_order):
     """
-    Loader to combine results from multiple ranks.
+    Loader to collect and combine dipole_threebody from multiple processors.
+    
+    Args:
+        num_proc (int): number of processors
+        nmodes (int): number of normal modes
+        quad_order (int): order for Gauss-Hermite quadratures
+    
+    Returns:
+        tuple: A tuple containing the following:
+         - TensorLike[float]: one-mode potential energy surface
+         - TensorLike[float] or None: one-mode dipole, returns ``None``
+           if dipole is set to ``False``
     """
     final_shape = (
         nmodes,
         nmodes,
         nmodes,
-        ngridpoints,
-        ngridpoints,
-        ngridpoints,
-        ngridpoints,
-        ngridpoints,
-        ngridpoints,
+        quad_order,
+        quad_order,
+        quad_order,
+        quad_order,
+        quad_order,
+        quad_order,
     )
     nmode_combos = int(nmodes**3)
 
@@ -715,11 +841,11 @@ def _load_cform_threemode_dipole(num_pieces, nmodes, ngridpoints):
     r0 = 0
     r1 = 0
     for mode_combo in range(nmode_combos):
-        local_chunk = np.zeros((ngridpoints**6, 3))
+        local_chunk = np.zeros((quad_order**6, 3))
 
         l0 = 0
         l1 = 0
-        for rank in range(num_pieces):
+        for rank in range(num_proc):
             f = h5py.File("cform_D3data" + f"_{rank}" + ".hdf5", "r+")
             local_dipole_cform_threebody = f["D3"][()]
             chunk = np.array_split(local_dipole_cform_threebody, nmode_combos, axis=0)[

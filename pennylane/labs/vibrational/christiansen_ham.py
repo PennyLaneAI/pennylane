@@ -134,13 +134,15 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
 
 
 def christiansen_hamiltonian(pes_object, nbos=16, cubic=False):
-    """Compute Christiansen hamiltonian from PES object
+    """Compute Christiansen Hamiltonian from given PES data.
     
     Args:
-        pes_object(VibrationalPES): the PES object
-        nbos(int): the number of orbitals
-        cubic(bool): flag 
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+        cubic(bool): Flag to include three-mode couplings. Default is ``False``.
 
+    Returns:
+        Union[PauliSentence, Operator]: the Christiansen Hamiltonian in the qubit basis
     """
 
     h_arr = christiansen_integrals(pes_object, nbos=nbos, do_cubic=cubic)
@@ -155,6 +157,19 @@ def christiansen_hamiltonian(pes_object, nbos=16, cubic=False):
 
 
 def christiansen_dipole(pes, nbos=16, do_cubic=False):
+    """Computes the Christiansen integral coefficients for dipole construction.
+    
+    Args:
+        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        nbos(int): maximum number of bosonic states per mode
+        cubic(bool): Flag to include three-mode couplings. Default is ``False``.
+
+    Returns:
+        tuple: a tuple containing:
+            - list(floats): integral coefficients for x-displacements
+            - list(floats): integral coefficients for y-displacements
+            - list(floats): integral coefficients for z-displacements
+    """
 
     d_arr = christiansen_integrals_dipole(pes, nbos=nbos, do_cubic=do_cubic)
 
