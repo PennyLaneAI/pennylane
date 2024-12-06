@@ -21,11 +21,19 @@ from pennylane.operation import AnyWires, Operation
 
 def _assign_states(basis_list):
     r"""
-    This function maps a given list of :math:`m` basis states to the first :math:`m` basis states in the computational basis as.
+    This function maps a given list of :math:`m` basis states to the first :math:`m` basis states in the
+    computational basis as. For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis
+    state of length :math:`4` will be mapped
+    as :math:`{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots}`.
+    Note that if a state in ``basis_list`` is one of the first :math:`m` basis states,
+    this state will be mapped to itself.
 
-   For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis state of length :math:`4` will be mapped as :math:`{s_0: |0000>, s_1: |0001>, s_2: |0010>, ...}`.
-     
-  Note that if a state in ``basis_list`` is one of the first :math:`m` basis states, this state will be mapped to itself.
+    Args:
+        basis_list (list): list of basis states to be mapped.
+
+    Returns:
+        dict: dictionary mapping basis states to the first :math:`m` basis states.
+
 
     ** Example **
 
@@ -160,21 +168,38 @@ class Superposition(Operation):
 
             |\phi\rangle = \sum_i^m c_i |i\rangle,
 
-        where :math:`|i\rangle` are the computational basis states. This is done using the
-        :class:`~.StatePrep` template.
+        where :math:`|i\rangle` are the computational basis states and :math:`m` is the number of terms
+        in the superposition. This is done using the
+        :class:`~.StatePrep` template in the fisrt :math:`\lceil \log_2 m \rceil` qubits.
+        This significantly reduces complexity by not having to work on the entire system.
 
-        The second block is responsible for the permutation of the basis states to the target basis states.
+        The second block is responsible for the permutation of the basis states previously prepared to
+        the target basis states.
 
         .. math::
 
             |i\rangle \rightarrow |b_i\rangle.
+
+        This block maps the elements one by one using an auxiliary qubit.
+        The process can be divided into three operations. Let's assume
+        we want to map :math:`|i\rangle` to :math:`|b_i\rangle`:
+
+        1. By using a multi-controlled NOT gate, we check if the input state is :math:`|i\rangle` and
+        store the information in the auxiliary qubit (if the state is :math:`|i\rangle` the auxiliary
+        qubit will be in the :math:`|1\rangle` state).
+
+        2. If the auxiliary qubit is in the :math:`|1\rangle` state, we modify the input state by adding
+        PauliX gates in the bits that are different between :math:`|i\rangle` and :math:`|b_i\rangle`.
+
+        3. By using a multi-controlled NOT gate, we check if the final state is :math:`|b_i\rangle` and
+        return to :math:`|0\rangle` the auxiliary qubit.
 
         Appliying these two blocks together results in the desired superposition:
 
         .. math::
 
             |\phi\rangle = \sum_i^m c_i |b_i\rangle.
-            
+
         The decomposition has a complexity that grows linearly with the number of terms,
         unlike other methods such as :class:`~.MottonenStatePreparation`, that grows exponentially
         with the number of qubits.
