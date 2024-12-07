@@ -580,6 +580,7 @@ class Rot(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         phi: TensorLike,
@@ -1031,6 +1032,7 @@ class U3(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         theta: TensorLike,

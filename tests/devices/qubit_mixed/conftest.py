@@ -42,3 +42,13 @@ def get_random_mixed_state(num_qubits):
 @pytest.fixture(scope="package")
 def random_mixed_state():
     return get_random_mixed_state
+
+
+@pytest.fixture(scope="package")
+def two_qubit_state():
+    return get_random_mixed_state(2)
+
+
+@pytest.fixture(scope="package")
+def two_qubit_batched_state():
+    return np.array([get_random_mixed_state(2) for _ in range(2)])

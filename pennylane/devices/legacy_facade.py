@@ -22,9 +22,9 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
+from pennylane.math import get_canonical_interface_name
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
-from pennylane.workflow.execution import INTERFACE_MAP
 
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
@@ -235,7 +235,7 @@ class LegacyDeviceFacade(Device):
                 mcm_config=execution_config.mcm_config,
             )
         else:
-            program.add_transform(qml.defer_measurements, device=self)
+            program.add_transform(qml.defer_measurements, allow_postselect=False)
 
         return program, execution_config
 
@@ -320,7 +320,7 @@ class LegacyDeviceFacade(Device):
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
         if interface != "numpy":
-            interface = INTERFACE_MAP.get(interface, interface)
+            interface = get_canonical_interface_name(interface).value
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
             return False
