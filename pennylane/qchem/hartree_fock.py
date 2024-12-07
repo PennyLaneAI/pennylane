@@ -126,16 +126,36 @@ def scf(mol, n_steps=50, tol=1e-8):
         r = mol.coordinates
         n_electron = mol.n_electrons
 
-        if r.requires_grad:
-            args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
-            args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
-            rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
-            s = overlap_matrix(basis_functions)(*args_[1:])
-            h_core = core_matrix(basis_functions, charges, r)(*args_)
+        if qml.math.get_interface(r) == "autograd":
+            if getattr(r, "requires_grad", False):
+                args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
+                # In autograd, _scf constructs args_ as r, alpha, coeff, r
+                args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
+                rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
+                s = overlap_matrix(basis_functions)(*args_[1:])
+                h_core = core_matrix(basis_functions, charges, r)(*args_)
+            else:
+                rep_tensor = repulsion_tensor(basis_functions)(*args)
+                s = overlap_matrix(basis_functions)(*args)
+                h_core = core_matrix(basis_functions, charges, r)(*args)
         else:
-            rep_tensor = repulsion_tensor(basis_functions)(*args)
-            s = overlap_matrix(basis_functions)(*args)
-            h_core = core_matrix(basis_functions, charges, r)(*args)
+            # NOTE: In JAX, args is ordered r, coeff, alpha.
+            # NOTE: core_matrix expects args_ to be r, r, coeff, alpha.
+            if (
+                len(args) > 0
+                and qml.math.get_interface(r) == "jax"
+                and qml.math.requires_grad(args[0])
+            ):
+                args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
+                args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
+                args_ = [args_[0], args_[3], args_[1], args_[2]]
+                rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
+                s = overlap_matrix(basis_functions)(*args_[1:])
+                h_core = core_matrix(basis_functions, charges, r)(*args_)
+            else:
+                rep_tensor = repulsion_tensor(basis_functions)(*args)
+                s = overlap_matrix(basis_functions)(*args)
+                h_core = core_matrix(basis_functions, charges, r)(*args)
 
         rng = qml.math.random.default_rng(2030)
         s = s + qml.math.diag(rng.random(len(s)) * 1.0e-12)
@@ -213,7 +233,9 @@ def nuclear_energy(charges, r):
         Returns:
             array[float]: nuclear-repulsion energy
         """
-        if r.requires_grad:
+        if getattr(r, "requires_grad", False) or (
+            len(args) > 0 and qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+        ):
             coor = args[0]
         else:
             coor = r
@@ -221,6 +243,7 @@ def nuclear_energy(charges, r):
         for i, r1 in enumerate(coor):
             for j, r2 in enumerate(coor[i + 1 :]):
                 e = e + (charges[i] * charges[i + j + 1] / qml.math.linalg.norm(r1 - r2))
+
         return e
 
     return _nuclear_energy
