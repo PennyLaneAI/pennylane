@@ -133,7 +133,7 @@ class TestLogging:
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<default.qubit device (wires=2)",
-                    f"interface=auto, diff_method={diff_method}, grad_on_execution=best,",
+                    f"interface=Interface.AUTO, diff_method={diff_method}, grad_on_execution=best,",
                 ],
             ),
             (

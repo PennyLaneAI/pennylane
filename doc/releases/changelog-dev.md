@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+  [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
+
 * Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
   class. Device developers are encouraged to override these two methods separately instead of the
   `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these
@@ -50,6 +53,18 @@
     [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
     [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
+* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
+  Autograph conversion is now used by default in `make_plxpr`, but can be skipped with the keyword arg `autograph=False`.
+  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
+  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
+  [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+
+  * New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
+    The functionality `qml.poly_to_angles` has been also extended to support GQSP.
+    [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
+
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
@@ -72,7 +87,7 @@
   [(#6392)](https://github.com/PennyLaneAI/pennylane/pull/6392)
 
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping
-  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576);
+  [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576); 
 added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using standard-binary mapping.
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
 
@@ -106,11 +121,6 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 
 * Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
   [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
-
-* Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via `autograph`
-  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
-  [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
-  [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
@@ -168,6 +178,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
   captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
   only works with a reduced feature set.
+  [(#6655)](https://github.com/PennyLaneAI/pennylane/pull/6655)
   [(#6596)](https://github.com/PennyLaneAI/pennylane/pull/6596)
 
 * PennyLane transforms can now be captured as primitives with experimental program capture enabled.
@@ -193,7 +204,14 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
+* The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`
+  and it will be deprecated in release v0.40.
+  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
+
 <h4>Other Improvements</h4>
+
+* Standardize supported interfaces to an internal Enum object. 
+  [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
   [(#6649)](https://github.com/PennyLaneAI/pennylane/pull/6649)
@@ -249,6 +267,10 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 
 * Added native `ResourceOperator` subclasses for each of the multi qubit operators.
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
+
+* Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
+  symbolic operation classes.
+  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
 <h3>Breaking changes 💔</h3>
 
@@ -397,6 +419,7 @@ Astral Cai,
 Yushao Chen,
 Diksha Dhawan,
 Lasse Dierich,
+Lillian Frederiksen,
 Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
