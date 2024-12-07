@@ -18,6 +18,7 @@ import itertools
 from pathlib import Path
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane.data.base._lazy_modules import h5py
@@ -28,14 +29,16 @@ from pennylane.qchem.vibrational.vibrational_class import (
     _single_point,
 )
 
-# pylint: disable=too-many-arguments, too-many-function-args, c-extension-no-member, too-many-branches
-# pylint: disable= import-outside-toplevel, too-many-positional-arguments, dangerous-default-value
+# pylint: disable=too-many-arguments, too-many-function-args, too-many-branches
+# pylint: disable= import-outside-toplevel, too-many-positional-arguments
 
 # constants
-HBAR = 6.022 * 1.055e12  # (amu)*(angstrom^2/s)
-C_LIGHT = 3 * 10**8  # m/s
+# TODO: Make this code work in atomic units only.
+HBAR = (
+    sp.constants.hbar * (1000 * sp.constants.Avogadro) * (10**20)
+)  # kg*(m^2/s) to (amu)*(angstrom^2/s)
 BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
-AU_TO_CM = 219475  # factor to convert Hartree to cm^-1
+CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relationship"][0]  # m to cm
 
 
 def _import_mpi4py():
@@ -70,7 +73,6 @@ def _pes_onemode(molecule, scf_result, freqs, vectors, grid, method="rhf", dipol
            if dipole is set to ``False``
 
     """
-
     _import_mpi4py()
     from mpi4py import MPI
 
@@ -160,7 +162,7 @@ def _local_pes_onemode(
 
         for job_idx, job in enumerate(jobs_on_rank):
             gridpoint = grid[job]
-            scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * C_LIGHT))
+            scaling = np.sqrt(HBAR / (2 * np.pi * freqs[mode] * 100 * sp.constants.c))
             positions = np.array(init_geom + scaling * gridpoint * vec)
 
             displ_mol = qml.qchem.Molecule(
@@ -260,7 +262,6 @@ def _pes_twomode(
            if dipole is set to ``False``
 
     """
-
     _import_mpi4py()
     from mpi4py import MPI
 
@@ -366,11 +367,11 @@ def _local_pes_twomode(
             continue  # pragma: no cover
 
         vec_a = vectors[mode_a]
-        scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * C_LIGHT))
+        scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * sp.constants.c))
 
         vec_b = vectors[mode_b]
 
-        scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * C_LIGHT))
+        scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * sp.constants.c))
         for job_idx, [i, gridpoint_1, j, gridpoint_2] in enumerate(jobs_on_rank):
 
             i, j = int(i), int(j)
@@ -547,13 +548,13 @@ def _local_pes_threemode(
             continue  # pragma: no cover
 
         vec_a = vectors[mode_a]
-        scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * C_LIGHT))
+        scaling_a = np.sqrt(HBAR / (2 * np.pi * freqs[mode_a] * 100 * sp.constants.c))
 
         vec_b = vectors[mode_b]
-        scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * C_LIGHT))
+        scaling_b = np.sqrt(HBAR / (2 * np.pi * freqs[mode_b] * 100 * sp.constants.c))
 
         vec_c = vectors[mode_c]
-        scaling_c = np.sqrt(HBAR / (2 * np.pi * freqs[mode_c] * 100 * C_LIGHT))
+        scaling_c = np.sqrt(HBAR / (2 * np.pi * freqs[mode_c] * 100 * sp.constants.c))
 
         for job_idx, [i, gridpoint_1, j, gridpoint_2, k, gridpoint_3] in enumerate(jobs_on_rank):
 
@@ -703,7 +704,6 @@ def _pes_threemode(
            if dipole is set to ``False``
 
     """
-
     _import_mpi4py()
     from mpi4py import MPI
 
@@ -757,7 +757,7 @@ def vibrational_pes(
     quad_order=9,
     method="rhf",
     localize=True,
-    bins=[2600],
+    bins=None,
     cubic=False,
     dipole_level=1,
 ):
@@ -791,6 +791,9 @@ def vibrational_pes(
          2.87234966e-02,  8.03213574e-02,  1.95651039e-01]])
 
     """
+    if bins is None:
+        bins = [2600]
+
     if dipole_level > 3 or dipole_level < 1:
         raise ValueError(
             "Currently, one-mode, two-mode and three-mode dipole calculations are supported. Please provide a value"
@@ -882,7 +885,7 @@ def vibrational_pes(
         pes_data = [pes_onebody, pes_twobody, pes_threebody]
         dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
 
-    freqs = freqs / AU_TO_CM
+    freqs = freqs / CM_TO_AU
     return VibrationalPES(
         freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
     )
