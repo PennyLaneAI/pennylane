@@ -885,7 +885,8 @@ def vibrational_pes(
         pes_data = [pes_onebody, pes_twobody, pes_threebody]
         dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
 
-    freqs = freqs / CM_TO_AU
+    freqs = freqs * CM_TO_AU
+    print("freqs: ", freqs)
     return VibrationalPES(
         freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
     )

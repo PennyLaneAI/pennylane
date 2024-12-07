@@ -29,7 +29,7 @@ class VibrationalPES:
     r"""Data class to save potential energy surface information computed along vibrational normal modes.
 
     Args:
-        freqs (list[float]): normal-mode frequencies in AU.
+        freqs (list[float]): normal-mode frequencies in atomic units
         grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
         gauss_weights (list[float]): the weights on the Gauss-Hermite quadrature grid
         uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
