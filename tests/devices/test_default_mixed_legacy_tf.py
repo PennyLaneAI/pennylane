@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``default.mixed`` device for the TensorFlow interface
+Tests for the ``default.mixed.legacy`` device for the TensorFlow interface
 """
 import numpy as np
 
@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices.default_mixed import DefaultMixed
+from pennylane.devices.default_mixed import DefaultMixedLegacy
 
 pytestmark = pytest.mark.tf
 
@@ -35,23 +35,23 @@ decorators_interfaces = [(lambda x: x, "tf"), (tf.function, "tf"), (lambda x: x,
 
 
 class TestQNodeIntegration:
-    """Integration tests for default.mixed.tf. This test ensures it integrates
+    """Integration tests for default.mixed.legacy.tf. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
 
     def test_load_device(self):
         """Test that the plugin device loads correctly"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
         assert dev.num_wires == 2
         assert dev.shots == qml.measurements.Shots(None)
-        assert dev.short_name == "default.mixed"
-        assert dev.target_device.capabilities()["passthru_devices"]["tf"] == "default.mixed"
+        assert dev.short_name == "default.mixed.legacy"
+        assert dev.target_device.capabilities()["passthru_devices"]["tf"] == "default.mixed.legacy"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
         p = tf.Variable(0.543)
 
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
@@ -66,7 +66,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after evaluating a
         quantum function on the device"""
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         state = dev.state
         expected = np.zeros((4, 4))
@@ -109,7 +109,7 @@ class TestDtypePreserved:
         for QNodes with real-valued outputs"""
         p = tf.constant(0.543)
 
-        dev = qml.device("default.mixed", wires=3, r_dtype=r_dtype)
+        dev = qml.device("default.mixed.legacy", wires=3, r_dtype=r_dtype)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
@@ -129,7 +129,7 @@ class TestDtypePreserved:
         for QNodes with complex-valued outputs"""
         p = tf.constant(0.543)
 
-        dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
+        dev = qml.device("default.mixed.legacy", wires=3, c_dtype=c_dtype)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
@@ -141,13 +141,13 @@ class TestDtypePreserved:
 
 
 class TestOps:
-    """Unit tests for operations supported by the default.mixed.tf device"""
+    """Unit tests for operations supported by the default.mixed.legacy.tf device"""
 
     def test_multirz_jacobian(self):
         """Test that the patched numpy functions are used for the MultiRZ
         operation and the jacobian can be computed."""
         wires = 4
-        dev = qml.device("default.mixed", wires=wires)
+        dev = qml.device("default.mixed.legacy", wires=wires)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(param):
@@ -166,7 +166,7 @@ class TestOps:
     @pytest.mark.parametrize("dtype", [tf.float32, tf.float64, tf.complex128])
     def test_full_subsystem(self, mocker, dtype):
         """Test applying a state vector to the full subsystem"""
-        dev = DefaultMixed(wires=["a", "b", "c"])
+        dev = DefaultMixedLegacy(wires=["a", "b", "c"])
         state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=dtype) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
@@ -182,7 +182,7 @@ class TestOps:
     def test_partial_subsystem(self, mocker, dtype):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
-        dev = DefaultMixed(wires=["a", "b", "c"])
+        dev = DefaultMixedLegacy(wires=["a", "b", "c"])
         state = tf.constant([1, 0, 1, 0], dtype=dtype) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
@@ -224,9 +224,9 @@ class TestApplyChannelMethodChoice:
         methods = ["_apply_channel", "_apply_channel_tensordot"]
         del methods[methods.index(exp_method)]
         unexp_method = methods[0]
-        spy_exp = mocker.spy(DefaultMixed, exp_method)
-        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
-        dev = qml.device("default.mixed", wires=dev_wires)
+        spy_exp = mocker.spy(DefaultMixedLegacy, exp_method)
+        spy_unexp = mocker.spy(DefaultMixedLegacy, unexp_method)
+        dev = qml.device("default.mixed.legacy", wires=dev_wires)
         state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
         dev._state = np.array(state).reshape([2] * (2 * dev_wires))
@@ -262,10 +262,10 @@ class TestApplyChannelMethodChoice:
 
         unexp_method = methods[0]
 
-        spy_exp = mocker.spy(DefaultMixed, exp_method)
-        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        spy_exp = mocker.spy(DefaultMixedLegacy, exp_method)
+        spy_unexp = mocker.spy(DefaultMixedLegacy, unexp_method)
 
-        dev = qml.device("default.mixed", wires=dev_wires)
+        dev = qml.device("default.mixed.legacy", wires=dev_wires)
 
         state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
@@ -282,14 +282,14 @@ class TestPassthruIntegration:
 
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_jacobian_variable_multiply(self, decorator, interface, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.tf device
+        """Test that jacobian of a QNode with an attached default.mixed.legacy.tf device
         gives the correct result in the case of parameters multiplied by scalars"""
         x = 0.43316321
         y = 0.2162158
         z = 0.75110998
         weights = tf.Variable([x, y, z], trainable=True)
 
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @decorator
         @qml.qnode(dev, interface=interface, diff_method="backprop")
@@ -321,13 +321,13 @@ class TestPassthruIntegration:
 
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_jacobian_repeated(self, decorator, interface, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.tf device
+        """Test that jacobian of a QNode with an attached default.mixed.legacy.tf device
         gives the correct result in the case of repeated parameters"""
         x = 0.43316321
         y = 0.2162158
         z = 0.75110998
         p = tf.Variable([x, y, z], trainable=True)
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @decorator
         @qml.qnode(dev, interface=interface, diff_method="backprop")
@@ -351,7 +351,7 @@ class TestPassthruIntegration:
 
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_backprop_jacobian_agrees_parameter_shift(self, decorator, interface, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.tf device
+        """Test that jacobian of a QNode with an attached default.mixed.legacy.tf device
         gives the correct result with respect to the parameter-shift method"""
         p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
         p_tf = tf.Variable(p, trainable=True)
@@ -364,8 +364,8 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.mixed", wires=3)
-        dev2 = qml.device("default.mixed", wires=3)
+        dev1 = qml.device("default.mixed.legacy", wires=3)
+        dev2 = qml.device("default.mixed.legacy", wires=3)
 
         def cost(x):
             return qml.math.stack(circuit(x))
@@ -396,7 +396,7 @@ class TestPassthruIntegration:
     def test_state_differentiability(self, decorator, interface, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
         # pylint: disable=too-many-arguments
-        dev = qml.device("default.mixed", wires=wires)
+        dev = qml.device("default.mixed.legacy", wires=wires)
 
         @decorator
         @qml.qnode(dev, interface=interface, diff_method="backprop")
@@ -420,7 +420,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_state_vector_differentiability(self, decorator, interface, tol):
         """Test that the device state vector can be differentiated directly"""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @decorator
         @qml.qnode(dev, interface=interface, diff_method="backprop")
@@ -442,7 +442,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("wires", [range(2), [-12.32, "abc"]])
     def test_density_matrix_differentiability(self, decorator, interface, wires, tol):
         """Test that the density matrix can be differentiated"""
-        dev = qml.device("default.mixed", wires=wires)
+        dev = qml.device("default.mixed.legacy", wires=wires)
 
         @decorator
         @qml.qnode(dev, diff_method="backprop", interface=interface)
@@ -466,7 +466,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_prob_differentiability(self, decorator, interface, tol):
         """Test that the device probability can be differentiated"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @decorator
         @qml.qnode(dev, diff_method="backprop", interface=interface)
@@ -493,7 +493,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_prob_vector_differentiability(self, decorator, interface, tol):
         """Test that the device probability vector can be differentiated directly"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @decorator
         @qml.qnode(dev, diff_method="backprop", interface=interface)
@@ -528,7 +528,7 @@ class TestPassthruIntegration:
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
         # pylint: disable=unused-variable
-        dev = qml.device("default.mixed", wires=1, shots=100)
+        dev = qml.device("default.mixed.legacy", wires=1, shots=100)
 
         msg = "support backprop with requested circuit"
 
@@ -542,7 +542,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_expval_gradient(self, decorator, interface, tol):
         """Tests that the gradient of expval is correct"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @decorator
         @qml.qnode(dev, diff_method="backprop", interface=interface)
@@ -572,7 +572,7 @@ class TestPassthruIntegration:
     def test_hessian_at_zero(self, decorator, interface, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         shift = tf.constant(shift)
         x = tf.Variable(x)
@@ -601,7 +601,7 @@ class TestPassthruIntegration:
     def test_tf_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the TF interface, using a variety of differentiation methods."""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
         state = tf.Variable(1j * np.array([1, -1]) / np.sqrt(2), trainable=False)
 
         @qml.qnode(dev, diff_method=diff_method, interface="tf")
@@ -648,9 +648,9 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize(
         "dev_name,diff_method,grad_on_execution",
         [
-            ["default.mixed", "finite-diff", False],
-            ["default.mixed", "parameter-shift", False],
-            ["default.mixed", "backprop", True],
+            ["default.mixed.legacy", "finite-diff", False],
+            ["default.mixed.legacy", "parameter-shift", False],
+            ["default.mixed.legacy", "backprop", True],
         ],
     )
     def test_ragged_differentiation(
@@ -698,7 +698,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_batching(self, decorator, interface, tol):
         """Tests that the gradient of the qnode is correct with batching"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @decorator
         @qml.batch_params
@@ -731,8 +731,8 @@ class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
     def test_template_integration(self):
-        """Test that a PassthruQNode default.mixed.tf works with templates."""
-        dev = qml.device("default.mixed", wires=2)
+        """Test that a PassthruQNode default.mixed.legacy.tf works with templates."""
+        dev = qml.device("default.mixed.legacy", wires=2)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(weights):
@@ -751,7 +751,7 @@ class TestHighLevelIntegration:
 
     def test_tf_function_channel_ops(self):
         """Test that tf.function works for a QNode with channel ops"""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed.legacy", wires=1)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(p):
@@ -776,7 +776,7 @@ class TestHighLevelIntegration:
 
 
 class TestMeasurements:
-    """Tests for measurements with default.mixed"""
+    """Tests for measurements with default.mixed.legacy"""
 
     @pytest.mark.parametrize(
         "measurement",
@@ -788,9 +788,9 @@ class TestMeasurements:
         ],
     )
     def test_measurements_tf(self, measurement):
-        """Test sampling-based measurements work with `default.mixed` for trainable interfaces"""
+        """Test sampling-based measurements work with `default.mixed.legacy` for trainable interfaces"""
         num_shots = 1024
-        dev = qml.device("default.mixed", wires=2, shots=num_shots)
+        dev = qml.device("default.mixed.legacy", wires=2, shots=num_shots)
 
         @qml.qnode(dev, interface="tf")
         def circuit(x):
@@ -809,7 +809,7 @@ class TestMeasurements:
     def test_measurement_diff(self, meas_op):
         """Test sequence of single-shot expectation values work for derivatives"""
         num_shots = 64
-        dev = qml.device("default.mixed", shots=[(1, num_shots)], wires=2)
+        dev = qml.device("default.mixed.legacy", shots=[(1, num_shots)], wires=2)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(angle):

@@ -91,7 +91,7 @@ observables = {
     "Sum",
 }
 
-operations_mixed = {
+operations = {
     "Identity",
     "Snapshot",
     "BasisState",
@@ -175,7 +175,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    expected_set = operations_mixed | {"Snapshot"} | channels
+    expected_set = operations | {"Snapshot"} | channels
     return op.name in expected_set
 
 
@@ -204,8 +204,7 @@ ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
 
 
-# !TODO: when removing this class, rename operations_mixed back to operations
-class DefaultMixed(QubitDevice):
+class DefaultMixedLegacy(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
 
     .. warning::
@@ -235,12 +234,13 @@ class DefaultMixed(QubitDevice):
     """
 
     name = "Default mixed-state qubit PennyLane plugin"
-    short_name = "default.mixed"
+    short_name = "default.mixed.legacy"
     pennylane_requires = __version__
     version = __version__
     author = "Xanadu Inc."
 
-    operations = operations_mixed
+    # copy the operations from external
+    operations = operations.copy()
 
     _reshape = staticmethod(qnp.reshape)
     _flatten = staticmethod(qnp.flatten)
@@ -325,10 +325,10 @@ class DefaultMixed(QubitDevice):
         capabilities.update(
             returns_state=True,
             passthru_devices={
-                "autograd": "default.mixed",
-                "tf": "default.mixed",
-                "torch": "default.mixed",
-                "jax": "default.mixed",
+                "autograd": "default.mixed.legacy",
+                "tf": "default.mixed.legacy",
+                "torch": "default.mixed.legacy",
+                "jax": "default.mixed.legacy",
             },
         )
         return capabilities
@@ -731,7 +731,7 @@ class DefaultMixed(QubitDevice):
 
         else:
             raise qml.DeviceError(
-                f"Snapshots of {type(measurement)} are not yet supported on default.mixed"
+                f"Snapshots of {type(measurement)} are not yet supported on default.mixed.legacy"
             )
 
         self._state = pre_rotated_state
@@ -882,7 +882,7 @@ class DefaultMixed(QubitDevice):
 
 @simulator_tracking
 @single_tape_support
-class DefaultMixedNewAPI(Device):
+class DefaultMixed(Device):
     r"""A PennyLane Python-based device for mixed-state qubit simulation.
 
     Args:
@@ -918,7 +918,7 @@ class DefaultMixedNewAPI(Device):
         wires=None,
         shots=None,
         seed="global",
-        # The following parameters are inherited from DefaultMixed
+        # The following parameters are inherited from DefaultMixedLegacy
         readout_prob=None,
     ) -> None:
 
