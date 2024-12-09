@@ -663,7 +663,7 @@ def apply_snapshot(
                 is_state_batched,
                 execution_kwargs.get("rng"),
                 execution_kwargs.get("prng_key"),
-            )[0]
+            )
 
         # Store snapshot with optional tag
         if op.tag:
