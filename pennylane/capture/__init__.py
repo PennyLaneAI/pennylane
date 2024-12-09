@@ -165,9 +165,12 @@ AbstractOperator: type
 AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
+TransformTrace: "jax.core.Trace"
+TransformTracer: "jax.core.Tracer"
+TransformInterpreter: type  # pylint: disable=redefined-outer-name
 
 
-# pylint: disable=import-outside-toplevel, redefined-outer-name
+# pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
 def __getattr__(key):
     if key == "AbstractOperator":
         from .primitives import _get_abstract_operator
@@ -189,6 +192,21 @@ def __getattr__(key):
 
         return PlxprInterpreter
 
+    if key == "TransformTrace":
+        from .capture_transforms import TransformTrace
+
+        return TransformTrace
+
+    if key == "TransformTracer":
+        from .capture_transforms import TransformTracer
+
+        return TransformTracer
+
+    if key == "TransformInterpreter":
+        from .capture_transforms import TransformInterpreter
+
+        return TransformInterpreter
+
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
 
@@ -208,4 +226,7 @@ __all__ = (
     "PlxprInterpreter",
     "FlatFn",
     "make_plxpr",
+    "TransformInterpreter",
+    "TransformTrace",
+    "TransformTracer",
 )

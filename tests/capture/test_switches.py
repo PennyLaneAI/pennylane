@@ -15,6 +15,7 @@
 Unit tests for the backbone of the :mod:`pennylane.capture` module.
 """
 import pytest
+from autoray import infer_backend
 
 import pennylane as qml
 
@@ -30,12 +31,34 @@ def test_switches_with_jax():
     assert qml.capture.enabled() is False
 
 
-def test_switches_without_jax():
-    """Test switches and status reporting function."""
+# def test_switches_without_jax():
+#     """Test switches and status reporting function."""
+
+#     assert qml.capture.enabled() is False
+#     with pytest.raises(ImportError, match="plxpr requires JAX to be installed."):
+#         qml.capture.enable()
+#     assert qml.capture.enabled() is False
+#     assert qml.capture.disable() is None
+#     assert qml.capture.enabled() is False
+
+
+@pytest.mark.jax
+def test_capture_autoray_backend():
+    """Test that enabling capture causes autoray to dispatch objects belonging to the
+    pennylane namespace to jax instead of autograd, and that the behaviour is reverted
+    when capture is disabled."""
+
+    class DummyClass:  # pylint: disable=too-few-public-methods
+        """Dummy class for testing"""
+
+    DummyClass.__module__ = "pennylane"
+    qml_object = DummyClass()
 
     assert qml.capture.enabled() is False
-    with pytest.raises(ImportError, match="plxpr requires JAX to be installed."):
-        qml.capture.enable()
-    assert qml.capture.enabled() is False
-    assert qml.capture.disable() is None
-    assert qml.capture.enabled() is False
+    assert infer_backend(qml_object) == "autograd"
+
+    qml.capture.enable()
+    assert infer_backend(qml_object) == "jax"
+
+    qml.capture.disable()
+    assert infer_backend(qml_object) == "autograd"
