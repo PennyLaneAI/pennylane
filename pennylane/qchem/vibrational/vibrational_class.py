@@ -38,7 +38,7 @@ class VibrationalPES:
         localized (bool): Flag that localization of modes was used to generate PES and dipole. Default is ``True``.
         dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
             1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-            value is 2.
+            value is 1.
 
     """
 
@@ -51,7 +51,7 @@ class VibrationalPES:
         pes_data,
         dipole_data,
         localized=True,
-        dipole_level=2,
+        dipole_level=1,
     ):
         self.freqs = freqs
         self.grid = grid
