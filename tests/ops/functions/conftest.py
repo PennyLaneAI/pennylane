@@ -25,6 +25,15 @@ import pennylane as qml
 from pennylane.operation import Channel, Observable, Operation, Operator
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
+from pennylane.templates.subroutines.trotter import TrotterizedQfunc
+
+
+def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
+    qml.RX(time * theta, wires[0])
+    qml.RY(time * phi, wires[0])
+    if flip:
+        qml.CNOT(wires)
+
 
 _INSTANCES_TO_TEST = [
     (qml.sum(qml.PauliX(0), qml.PauliZ(0)), {}),
@@ -64,6 +73,19 @@ _INSTANCES_TO_TEST = [
     (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
     (qml.Snapshot(tag="tag"), {}),
     (qml.Identity(0), {}),
+    (
+        TrotterizedQfunc(
+            0.1,
+            2.3,
+            -4.5,
+            qfunc=_trotterize_qfunc_dummy,
+            n=10,
+            order=2,
+            wires=[1, 2],
+            flip=True,
+        ),
+        {"skip_pickle": True},
+    ),
 ]
 """Valid operator instances that could not be auto-generated."""
 

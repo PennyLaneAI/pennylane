@@ -1097,6 +1097,7 @@ unsupported_templates = [
     qml.PrepSelPrep,
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
+    qml.TrotterizedQfunc,  # TODO: add support in follow up PR
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
