@@ -18,6 +18,8 @@ page in the developement guide.
 """
 # pylint: disable=protected-access, expression-not-assigned
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -28,6 +30,13 @@ from pennylane.tape import QuantumScript
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
+
+
+@pytest.fixture(autouse=True)
+def suppress_mpl_many_figures_warning():
+    warnings.filterwarnings(
+        "ignore", "More than 20 figures have been opened", category=RuntimeWarning
+    )
 
 
 def test_empty_tape():

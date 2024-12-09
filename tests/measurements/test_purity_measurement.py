@@ -199,7 +199,8 @@ class TestPurityIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
 
-        grad_purity = qml.grad(circuit)(param)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function"):
+            grad_purity = qml.grad(circuit)(param)
         expected_grad = expected_purity_grad_ising_xx(param) if is_partial else 0
         assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
 
@@ -220,7 +221,8 @@ class TestPurityIntegration:
             qml.BitFlip(p, wires=1)
             return qml.purity(wires=wires)
 
-        purity_grad = qml.grad(circuit)(param)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function"):
+            purity_grad = qml.grad(circuit)(param)
         expected_purity_grad = 0 if is_partial else 32 * (param - 0.5) ** 3
         assert qml.math.allclose(purity_grad, expected_purity_grad, rtol=1e-04, atol=1e-05)
 

@@ -16,9 +16,9 @@ Tests for the ``DatasetMolecule`` attribute type.
 """
 
 
-import numpy as np
 import pytest
 
+from pennylane import numpy as pnp
 from pennylane.data.attributes.molecule import DatasetMolecule
 from pennylane.data.base.typing_util import get_type_str
 from pennylane.qchem import Molecule
@@ -51,7 +51,7 @@ def _assert_molecules_equal(mol_in: Molecule, mol_out: Molecule):
 @pytest.mark.parametrize(
     ("symbols", "coordinates"),
     [
-        (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+        (["H", "F"], pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
     ],
 )
 class TestDatasetMolecule:

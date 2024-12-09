@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import vibrational_class
 
@@ -45,7 +46,7 @@ def test_optimize_geometry_methoderror():
     geometry optimization."""
 
     symbols = ["H", "H"]
-    geom = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+    geom = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(symbols, geom)
 
     with pytest.raises(
@@ -60,7 +61,7 @@ def test_optimize_geometry_methoderror():
     [
         (
             ["H", "F"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
             "Angstrom",
             "RHF",
             "6-31g",
@@ -68,7 +69,7 @@ def test_optimize_geometry_methoderror():
         ),
         (
             ["H", "F"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
             "Bohr",
             "UHF",
             "6-31g",
@@ -76,7 +77,7 @@ def test_optimize_geometry_methoderror():
         ),
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
             "Angstrom",
             "RHF",
             "6-31+g",
@@ -100,15 +101,15 @@ def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
     [
         (
             ["H", "F"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
             "Angstrom",
-            np.array([[0.0, 0.0, 0.03967348], [0.0, 0.0, 0.96032612]]),
+            pnp.array([[0.0, 0.0, 0.03967348], [0.0, 0.0, 0.96032612]]),
         ),
         (
             ["C", "O"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.88972613]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.88972613]]),
             "Bohr",
-            np.array([[0.0, 0.0, -0.12346543], [0.0, 0.0, 2.0131908]]),
+            pnp.array([[0.0, 0.0, -0.12346543], [0.0, 0.0, 2.0131908]]),
         ),
     ],
 )
@@ -128,13 +129,13 @@ def test_optimize_geometry(sym, geom, unit, expected_geom):
     [
         (
             ["H", "F"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            np.array([[[0.0, 0.0, -0.9706078], [0.0, 0.0, 0.05149763]]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            pnp.array([[[0.0, 0.0, -0.9706078], [0.0, 0.0, 0.05149763]]]),
         ),
         (
             ["C", "O"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            np.array([[[0.0, 0.0, -0.21807219], [0.0, 0.0, 0.1637143]]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            pnp.array([[[0.0, 0.0, -0.21807219], [0.0, 0.0, 0.1637143]]]),
         ),
     ],
 )
@@ -145,7 +146,7 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
     geom_eq = vibrational.optimize_geometry(mol)
     mol_eq = qml.qchem.Molecule(
         mol.symbols,
-        geom_eq,
+        pnp.asarray(geom_eq),
         unit=mol.unit,
         basis_name=mol.basis_name,
         load_data=mol.load_data,
@@ -326,7 +327,7 @@ def test_hess_methoderror():
     harmonic analysis."""
 
     symbols = ["H", "H"]
-    geom = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+    geom = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(symbols, geom)
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
@@ -341,7 +342,7 @@ def test_error_mode_localization():
     r"""Test that an error is raised if empty list of frequencies is provided for localization"""
 
     sym = ["H", "F"]
-    geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    geom = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
 
@@ -356,7 +357,7 @@ def test_error_mode_localization():
     [
         (
             ["H", "F"],
-            np.array([[0.0, 0.0, 0.03967368], [0.0, 0.0, 0.96032632]]),
+            pnp.array([[0.0, 0.0, 0.03967368], [0.0, 0.0, 0.96032632]]),
             "RHF",
             1,
             0,
@@ -364,7 +365,7 @@ def test_error_mode_localization():
         ),
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
             "RHF",
             3,
             1,
@@ -372,7 +373,7 @@ def test_error_mode_localization():
         ),
         (
             ["H", "H", "S"],
-            np.array(
+            pnp.array(
                 [
                     [0.0, -1.00688408, -0.9679942],
                     [0.0, 1.00688408, -0.9679942],

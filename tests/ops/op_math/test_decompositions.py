@@ -974,7 +974,8 @@ class TestTwoQubitUnitaryDecomposition:
 
         assert _compute_num_cnots(U) == 3
 
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+        with pytest.warns(RuntimeWarning, match="The two-qubit decomposition may not be diff"):
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 18
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -997,7 +998,8 @@ class TestTwoQubitUnitaryDecomposition:
 
         assert _compute_num_cnots(U) == 2
 
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+        with pytest.warns(RuntimeWarning, match="The two-qubit decomposition may not be diff"):
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 16
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -1018,7 +1020,8 @@ class TestTwoQubitUnitaryDecomposition:
 
         assert _compute_num_cnots(U) == 1
 
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+        with pytest.warns(RuntimeWarning, match="The two-qubit decomposition may not be diff"):
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 13
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -1039,7 +1042,8 @@ class TestTwoQubitUnitaryDecomposition:
 
         assert _compute_num_cnots(U) == 0
 
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+        with pytest.warns(RuntimeWarning, match="The two-qubit decomposition may not be diff"):
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 6
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -1207,7 +1211,8 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         def wrapped_decomposition(U):
             # the jitted function cannot return objects like operators,
             # so we cannot jit two_qubit_decomposition directly
-            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+            with pytest.warns(RuntimeWarning, match="The two-qubit decomposition may not be diff"):
+                obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
             with qml.queuing.AnnotatedQueue() as q:
                 for op in obtained_decomposition:
@@ -1238,7 +1243,8 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         def wrapped_decomposition(U):
             # the jitted function cannot return objects like operators,
             # so we cannot jit two_qubit_decomposition directly
-            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+            with pytest.warns(RuntimeWarning, match="The two-qubit decomposition may not be diff"):
+                obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
             with qml.queuing.AnnotatedQueue() as q:
                 for op in obtained_decomposition:
@@ -1284,7 +1290,8 @@ def test_two_qubit_decomposition_special_case_discontinuity():
         return mat
 
     mat = make_unitary(np.pi / 2)
-    decomp_mat = qml.matrix(two_qubit_decomposition, wire_order=(0, 1))(mat, wires=(0, 1))
+    with pytest.warns(RuntimeWarning, match="The two-qubit decomposition may not be diff"):
+        decomp_mat = qml.matrix(two_qubit_decomposition, wire_order=(0, 1))(mat, wires=(0, 1))
     assert qml.math.allclose(mat, decomp_mat)
 
 

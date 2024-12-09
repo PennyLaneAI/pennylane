@@ -793,7 +793,8 @@ class TestIntegration:
 
         res = func(phi)
         assert qml.math.allclose(res, np.cos(phi))
-        grad = qml.grad(func)(phi)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            grad = qml.grad(func)(phi)
         assert qml.math.allclose(grad, -np.sin(phi))
 
     @pytest.mark.jax

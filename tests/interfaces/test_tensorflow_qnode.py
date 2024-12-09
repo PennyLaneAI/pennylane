@@ -13,6 +13,7 @@
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
 import warnings
+from contextlib import nullcontext
 
 import numpy as np
 
@@ -839,7 +840,12 @@ class TestQubitIntegration:
 
             g = tape2.jacobian(res, x, experimental_use_pfor=False)
 
-        hess = tape1.jacobian(g, x)
+        with (
+            nullcontext()
+            if diff_method == "backprop"
+            else pytest.warns(UserWarning, match="PennyLane does not provide the higher order")
+        ):
+            hess = tape1.jacobian(g, x)
         a, b = x * 1.0
 
         expected_res = a * tf.cos(a) * tf.cos(b) + b * tf.cos(a) * tf.cos(b)

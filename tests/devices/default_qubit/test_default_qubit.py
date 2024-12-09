@@ -2239,5 +2239,6 @@ def test_renomalization_issue():
 
     circuit_qml = qml.QNode(circuit, qml.device("default.qubit", shots=1000), interface="jax")
 
-    circuit_qml(params)
+    with pytest.warns(UserWarning, match="Explicitly requested dtype <class 'jax.numpy.int64'>"):
+        circuit_qml(params)
     jax.config.update("jax_enable_x64", initial_mode)

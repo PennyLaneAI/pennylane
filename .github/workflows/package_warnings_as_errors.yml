@@ -19,7 +19,7 @@ jobs:
     uses: ./.github/workflows/interface-unit-tests.yml
     with:
       branch: ${{ github.ref }}
-      python_warning_level: 'error'
+      warnings_as_errors: true
       run_lightened_ci: false
       skip_ci_test_jobs: |
         tf-tests
