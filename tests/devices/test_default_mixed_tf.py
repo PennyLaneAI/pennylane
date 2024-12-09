@@ -245,10 +245,10 @@ class TestApplyChannelMethodChoice:
             (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
             (qml.MultiControlledX(wires=list(range(3))), "_apply_channel", 3),
             (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
-            (qml.PauliError("X", tf.constant(0.5), 0), "_apply_channel", 2),
-            (qml.PauliError("XXX", tf.constant(0.5), [0, 1, 2]), "_apply_channel", 4),
+            (qml.PauliError("X", tf.constant(0.5), wires=0), "_apply_channel", 2),
+            (qml.PauliError("XXX", tf.constant(0.5), wires=[0, 1, 2]), "_apply_channel", 4),
             (
-                qml.PauliError("X" * 8, tf.constant(0.5), list(range(8))),
+                qml.PauliError("X" * 8, tf.constant(0.5), wires=list(range(8))),
                 "_apply_channel_tensordot",
                 8,
             ),
