@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.qsvt import _complementary_poly
+from pennylane.templates.subroutines.qsvt import _complementary_poly, cheby_pol, poly_func, qsp_iterates, qsp_optimization
 
 
 def qfunc(A):
@@ -625,7 +625,7 @@ def test_global_phase_not_alway_applied():
 
 
 class TestRootFindingSolver:
-    def generate_polynomial_coeffs_in_canonical_basis(degree, parity=None):
+    def generate_polynomial_coeffs(degree, parity=None):
         np.random.seed(123)
         if parity is None:
             polynomial_coeffs_in_canonical_basis = np.random.normal(size=degree+1)
@@ -650,9 +650,9 @@ class TestRootFindingSolver:
             # ([0.1, 0, 0.3, 0, -0.1]),
             # ([0, 0.2, 0, 0.3]),
             # ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
-            (generate_polynomial_coeffs_in_canonical_basis(4,0)),
-            (generate_polynomial_coeffs_in_canonical_basis(3,1)),
-            (generate_polynomial_coeffs_in_canonical_basis(6,0)),
+            (generate_polynomial_coeffs(4,0)),
+            (generate_polynomial_coeffs(3,1)),
+            (generate_polynomial_coeffs(6,0)),
 
         ],
     )
@@ -674,15 +674,67 @@ class TestRootFindingSolver:
 
             assert np.isclose(P_magnitude_squared + Q_magnitude_squared, 1, atol=1e-7)
 
+    
+    @pytest.mark.parametrize(
+        "polynomial_coeffs_in_cheby_basis",
+        [
+            (generate_polynomial_coeffs(10,0)),
+            (generate_polynomial_coeffs(7,1)),
+            (generate_polynomial_coeffs(12,0)),
+        ]
+    )
+    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
+        degree = len(polynomial_coeffs_in_cheby_basis) - 1
+        parity = degree % 2
+        if parity:
+            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
+        else:
+            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
+        phis, cost_func = qsp_optimization(degree, target_polynomial_coeffs)
+        x_point = np.random.uniform(size=1, high=1, low=-1)
+        x_point = x_point.item()
+        delta = abs(
+            np.real(qsp_iterates(phis, x_point)[0, 0])
+            - poly_func(target_polynomial_coeffs, degree, parity, x_point)
+        )
+        print(f"delta {delta}")
+        # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
+        # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
+        tolerance = (
+            np.sum(
+                np.array(
+                    [
+                        2 * np.sqrt(cost_func) * abs(cheby_pol(2 * i, x_point))
+                        for i in range(len(target_polynomial_coeffs))
+                    ]
+                )
+            )
+            if not parity
+            else np.sum(
+                np.array(
+                    [
+                        2 * np.sqrt(cost_func) * abs(cheby_pol(2 * i + 1, x_point))
+                        for i in range(len(target_polynomial_coeffs))
+                    ]
+                )
+            )
+        )
+
+        assert np.isclose(
+            np.real(qsp_iterates(phis, x_point)[0, 0]),
+            poly_func(target_polynomial_coeffs, degree, parity, x_point),
+            atol=tolerance,
+        )
+
     @pytest.mark.parametrize(
         "angles",
         [
             # ([0.1, 2, 0.3, 3, -0.1]),
             # ([0, 0.2, 1, 0.3, 4, 2.4]),
             # ([-0.4, 2, 0.4, 0, -0.1, 0, 0.1]),
-            (generate_polynomial_coeffs_in_canonical_basis(4, None)),
-            (generate_polynomial_coeffs_in_canonical_basis(5, None)),
-            (generate_polynomial_coeffs_in_canonical_basis(6, None))
+            (generate_polynomial_coeffs(4, None)),
+            (generate_polynomial_coeffs(5, None)),
+            (generate_polynomial_coeffs(6, None))
         ],
     )
     def test_transform_angles(self, angles):
@@ -700,9 +752,9 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            (generate_polynomial_coeffs_in_canonical_basis(4,0)),
-            (generate_polynomial_coeffs_in_canonical_basis(3,1)),
-            (generate_polynomial_coeffs_in_canonical_basis(6,0)),
+            (generate_polynomial_coeffs(4,0)),
+            (generate_polynomial_coeffs(3,1)),
+            (generate_polynomial_coeffs(6,0)),
         ],
     )
     @pytest.mark.parametrize(
@@ -734,9 +786,9 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            (generate_polynomial_coeffs_in_canonical_basis(4,0)),
-            (generate_polynomial_coeffs_in_canonical_basis(3,1)),
-            (generate_polynomial_coeffs_in_canonical_basis(6,0)),
+            (generate_polynomial_coeffs(4,0)),
+            (generate_polynomial_coeffs(3,1)),
+            (generate_polynomial_coeffs(6,0)),
         ],
     )
     @pytest.mark.parametrize(
