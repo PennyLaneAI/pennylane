@@ -104,11 +104,16 @@ def _decompose_plxpr_transform(
                 UserWarning,
             )
 
-        tracers = [
-            TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
-            for t in tracers
-        ]
-        return primitive.bind(*tracers, **params)
+        new_tracers = []
+        for t in tracers:
+            if isinstance((inner_op := t.val), qml.operation.Operator):
+                inner_tracers, inner_params = state[-1].get("inval_op_cache")[id(inner_op)]
+                new_op = inner_op._primitive.bind(*inner_tracers, **inner_params)
+                t = TransformTracer(t._trace, new_op, t.idx + 1)
+            else:
+                t = TransformTracer(t._trace, t.val, t.idx + 1)
+            new_tracers.append(t)
+        return primitive.bind(*new_tracers, **params)
 
     return op.decomposition()
 
