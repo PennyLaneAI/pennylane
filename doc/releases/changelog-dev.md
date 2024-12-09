@@ -64,6 +64,37 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added a function `qml.trotterize` to generalize the Suzuki-Trotter product to arbitrary quantum functions.
+  [(#6627)](https://github.com/PennyLaneAI/pennylane/pull/6627)
+
+  ```python
+  def my_custom_first_order_expansion(time, theta, phi, wires, flip):
+    "This is the first order expansion (U_1)."
+    qml.RX(time*theta, wires[0])
+    qml.RY(time*phi, wires[1])
+    if flip:
+        qml.CNOT(wires=wires[:2])
+
+  @qml.qnode(qml.device("default.qubit"))
+  def my_circuit(time, angles, num_trotter_steps):
+      TrotterizedQfunc(
+          time,
+          *angles,
+          qfunc=my_custom_first_order_expansion,
+          n=num_trotter_steps,
+          order=2,
+          wires=['a', 'b'],
+          flip=True,
+      )
+      return qml.state()
+  ```
+  ```pycon
+  >>> time = 0.1
+  >>> angles = (0.12, -3.45)
+  >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
+  a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
+  b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+  ```
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
@@ -122,6 +153,11 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
   [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
 
+* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
+new device API of `default_mixed` should be able to take the stochastic arguments
+such as `shots`, `rng` and `prng_key`.
+[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
+
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
 
@@ -142,6 +178,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   * Implemented helper functions for calculating one-mode PES, two-mode PES, and
     three-mode PES.
     [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+    [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
@@ -164,6 +201,9 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
+
+* Added JAX support for the differentiable Hartree-Fock workflow.
+  [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
 
 * Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
