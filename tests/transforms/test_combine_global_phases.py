@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.transforms import combine_global_phases
 
 
 @pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
@@ -16,7 +17,7 @@ def test_output_state(phi1, phi2):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.qnode(device=dev)
-    def original_circuit(phi1, phi2):
+    def original_circuit():
         qml.Hadamard(wires=1)
         qml.GlobalPhase(phi1, wires=[0, 1])
         qml.PauliY(wires=0)
@@ -26,16 +27,8 @@ def test_output_state(phi1, phi2):
         qml.CNOT(wires=[2, 0])
         return qml.state()
 
-    @qml.qnode(device=dev)
-    def transformed_circuit(phi):
-        qml.Hadamard(wires=1)
-        qml.PauliY(wires=0)
-        qml.PauliX(wires=2)
-        qml.CNOT(wires=[1, 2])
-        qml.CNOT(wires=[2, 0])
-        qml.GlobalPhase(phi)
-        return qml.state()
+    transformed_circuit = combine_global_phases(original_circuit)
 
-    original_state = original_circuit(phi1, phi2)
-    transformed_state = transformed_circuit(phi1 + phi2)
+    original_state = original_circuit()
+    transformed_state = transformed_circuit()
     assert np.allclose(original_state, transformed_state)
