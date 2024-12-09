@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added new ``MPSPrep`` template to prepare quantum states in tensor simulators.
+  [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
+
 * Two new methods: `setup_execution_config` and `preprocess_transforms` are added to the `Device`
   class. Device developers are encouraged to override these two methods separately instead of the
   `preprocess` method. For now, to avoid ambiguity, a device is allowed to override either these
@@ -66,6 +69,12 @@
 * New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
   to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
+
+* New `qml.GQSP` template has been added to perform Generalized
+  Quantum Signal Processing (GQSP).
+  The functionality `qml.poly_to_angles` has been also extended to support GQSP.
+  [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
@@ -205,6 +214,10 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * `qml.capture.qnode_call` has been made private and moved to the `workflow` module.
   [(#6620)](https://github.com/PennyLaneAI/pennylane/pull/6620/)
 
+* The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`
+  and it will be deprecated in release v0.40.
+  [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
+
 <h4>Other Improvements</h4>
 
 * Standardize supported interfaces to an internal Enum object. 
@@ -264,6 +277,10 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 
 * Added native `ResourceOperator` subclasses for each of the multi qubit operators.
   [(#6538)](https://github.com/PennyLaneAI/pennylane/pull/6538)
+
+* Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
+  symbolic operation classes.
+  [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
 <h3>Breaking changes 💔</h3>
 
