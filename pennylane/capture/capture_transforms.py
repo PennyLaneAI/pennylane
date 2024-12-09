@@ -233,7 +233,9 @@ class TransformInterpreter(PlxprInterpreter):
         self._transform_program = transform_program
         # One "local" state dict for each transform, and an additional dict for a "global" state
         # that transforms can use if needed
-        self._state = [{} for _ in range(len(self._transform_program) + 1)]
+        self._inval_op_cache = {}
+        self._state = [{} for _ in range(len(self._transform_program))]
+        self._state.append({"inval_op_cache": self._inval_op_cache})
 
         super().__init__()
 
@@ -245,8 +247,10 @@ class TransformInterpreter(PlxprInterpreter):
         a Catalyst variant jaxpr.
         """
         self._trace = None
+        self._inval_op_cache = {}
         # _state has separate dictionaries to store global states for each transform
-        self._state = [{} for _ in range(len(self._transform_program) + 1)]
+        self._state = [{} for _ in range(len(self._transform_program))]
+        self._state.append({"inval_op_cache": self._inval_op_cache})
 
     def read_with_trace(self, var):
         """Extract the value corresponding to a variable and box it in a ``TransformTracer``
@@ -266,8 +270,8 @@ class TransformInterpreter(PlxprInterpreter):
 
         """
         invals = [self.read(invar) for invar in eqn.invars]
-        traced_invals = [self.read_with_trace(inval) for inval in invals]
         if isinstance(eqn.outvars[0], jax.core.DropVar):
+            traced_invals = [self.read_with_trace(inval) for inval in invals]
             return eqn.primitive.bind(*traced_invals, **eqn.params)
 
         with qml.QueuingManager.stop_recording():
@@ -276,7 +280,7 @@ class TransformInterpreter(PlxprInterpreter):
         # This is used for binding operators that are consumed by measurements. By saving the
         # operator to the environment, we can use it when interpreting measurement primitives
         # to transform observables differently than gates.
-        self._env[id(op)] = (traced_invals, eqn.params)
+        self._inval_op_cache[id(op)] = (invals, eqn.params)
         return op
 
     def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
@@ -289,25 +293,26 @@ class TransformInterpreter(PlxprInterpreter):
 
         """
         invals = [self.read(invar) for invar in eqn.invars]
+        invals = [self.read_with_trace(inval) for inval in invals]
 
-        traced_invals = []
-        for inval in invals:
-            # The following branch is added because we want observables to get transformed.
-            # However, due to the logic used in `interpret_operator_eqn`, we only transform
-            # operators that do not get consumed by other primitives. So, we do the transforming
-            # (binding) here instead. The global state is updated with the "op_is_observable" key
-            # because transforms may want special handling for observables of measurements.
-            if isinstance(inval, qml.operation.Operator):
-                # pylint: disable=protected-access
-                op_tracers, op_params = self._env[id(inval)]
-                self._state[-1]["is_measurement_obs"] = True
-                new_inval = inval._primitive.bind(*op_tracers, **op_params)
-                self._state[-1].pop("is_measurement_obs")
-                traced_invals.append(self.read_with_trace(new_inval))
-                continue
-            traced_invals.append(self.read_with_trace(inval))
+        # traced_invals = []
+        # for inval in invals:
+        #     # The following branch is added because we want observables to get transformed.
+        #     # However, due to the logic used in `interpret_operator_eqn`, we only transform
+        #     # operators that do not get consumed by other primitives. So, we do the transforming
+        #     # (binding) here instead. The global state is updated with the "op_is_observable" key
+        #     # because transforms may want special handling for observables of measurements.
+        #     if isinstance(inval, qml.operation.Operator):
+        #         # pylint: disable=protected-access
+        #         op_tracers, op_params = self._env[id(inval)]
+        #         self._state[-1]["is_measurement_obs"] = True
+        #         new_inval = inval._primitive.bind(*op_tracers, **op_params)
+        #         self._state[-1].pop("is_measurement_obs")
+        #         traced_invals.append(self.read_with_trace(new_inval))
+        #         continue
+        #     traced_invals.append(self.read_with_trace(inval))
 
-        return eqn.primitive.bind(*traced_invals, **eqn.params)
+        return eqn.primitive.bind(*invals, **eqn.params)
 
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
         """Evaluate a jaxpr.
