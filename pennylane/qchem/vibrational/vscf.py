@@ -88,11 +88,11 @@ def _update_h(h_mat, mode, active_ham_terms, mode_rot, ts_act, modals):
     return h_mat
 
 
-def _find_active_terms(ham_integrals, modals, cutoff):
+def _find_active_terms(ham_data, modals, cutoff):
     r"""Identifies the active terms in the Hamiltonian
 
     Args:
-        ham_integrals (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
+        ham_data (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
         modals (list[int]): A list containing the maximum number of modals to consider for each mode.
         cutoff (float): threshold value for including matrix elements into operator.
 
@@ -105,10 +105,10 @@ def _find_active_terms(ham_integrals, modals, cutoff):
     """
     active_ham_terms = {}
     active_num = 0
-    nmodes = np.shape(ham_integrals[0])[0]
+    nmodes = np.shape(ham_data[0])[0]
 
-    for n, ham_n in enumerate(ham_integrals):
-        ham_n = ham_integrals[n]
+    for n, ham_n in enumerate(ham_data):
+        ham_n = ham_data[n]
         for idx, h_val in np.ndenumerate(ham_n):
             if np.abs(h_val) < cutoff:
                 continue
@@ -169,11 +169,11 @@ def _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots):
     return np.sum(e0s)
 
 
-def _vscf(ham_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
+def _vscf(ham_data, modals, cutoff, tol=1e-8, max_iters=10000):
     r"""Performs the VSCF calculation.
 
     Args:
-        ham_integrals (list(TensorLike[float])): a list containing Hamiltonian integral matrices
+        ham_data (list(TensorLike[float])): a list containing Hamiltonian integral matrices
         modals (list(int)): A list containing the maximum number of modals to consider for each mode.
         cutoff (float): threshold value for including matrix elements into operator.
         tol (float): convergence tolerance for vscf calculation
@@ -186,11 +186,9 @@ def _vscf(ham_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
 
     """
 
-    nmodes = np.shape(ham_integrals[0])[0]
+    nmodes = np.shape(ham_data[0])[0]
 
-    active_ham_terms, active_mode_terms, active_num = _find_active_terms(
-        ham_integrals, modals, cutoff
-    )
+    active_ham_terms, active_mode_terms, active_num = _find_active_terms(ham_data, modals, cutoff)
     mode_rots = [np.eye(modals[mode]) for mode in range(nmodes)]
     h_mat = np.zeros((active_num, nmodes))
     for mode in range(nmodes):
@@ -238,11 +236,6 @@ def _rotate_one_body(h1, nmodes, mode_rots, modals):
 
     """
     imax = np.max(modals)
-    if imax > np.shape(h1)[1]:
-        raise ValueError(
-            "Number of maximum modals cannot be greater than the modals for unrotated integrals."
-        )
-
     h1_rot = np.zeros((nmodes, imax, imax))
     for m in range(nmodes):
         h1_rot[m, : modals[m], : modals[m]] = np.einsum(
@@ -326,45 +319,131 @@ def _rotate_three_body(h3, nmodes, mode_rots, modals):
     return h3_rot
 
 
-def vscf_hamiltonian(ham_integrals, modals=None, cutoff=None, cutoff_ratio=1e-6):
+def _rotate_dipole(dipole_data, mode_rots, modals):
+    r"""Generates VSCF rotated dipole.
+
+    Args:
+        dipole_data (list[TensorLike[float]]): A list of n-mode expansion of dipole integrals.
+        mode_rots (list[TensorLike[float]]): list of rotation matrices for all vibrational modes
+        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
+
+    Returns:
+        tuple(TensorLike[float]): a tuple of rotated dipole integrals
+
+    """
+    n = len(dipole_data)
+
+    if n > 3:
+        raise ValueError(f"Building n-mode dipole not implemented for {n}=>3!")
+
+    nmodes = np.shape(dipole_data[0])[0]
+    imax = np.max(modals)
+    d1_rot = np.zeros((3, nmodes, imax, imax))
+
+    for alpha in range(3):
+        d1_rot[alpha, ::] = _rotate_one_body(
+            dipole_data[0][alpha, ::], nmodes, mode_rots, modals=modals
+        )
+    dip_data = [d1_rot]
+
+    if n > 1:
+        d2_rot = np.zeros((3, nmodes, nmodes, imax, imax, imax, imax))
+        for alpha in range(3):
+            d2_rot[alpha, ::] = _rotate_two_body(
+                dipole_data[1][alpha, ::], nmodes, mode_rots, modals=modals
+            )
+        dip_data = [d1_rot, d2_rot]
+
+    if n > 2:
+        d3_rot = np.zeros((3, nmodes, nmodes, nmodes, imax, imax, imax, imax, imax, imax))
+        for alpha in range(3):
+            d3_rot[alpha, ::] = _rotate_three_body(
+                dipole_data[2][alpha, ::], nmodes, mode_rots, modals=modals
+            )
+        dip_data = [d1_rot, d2_rot, d3_rot]
+
+    return dip_data
+
+
+def _rotate_hamiltonian(ham_data, mode_rots, modals):
+    r"""Generates VSCF rotated Hamiltonian.
+
+    Args:
+        ham_data (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
+        mode_rots (list[TensorLike[float]]): list of rotation matrices for all vibrational modes
+        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
+
+    Returns:
+        tuple(TensorLike[float]): a tuple of rotated Hamiltonian integrals
+
+    """
+
+    n = len(ham_data)
+    nmodes = np.shape(ham_data[0])[0]
+
+    h1_rot = _rotate_one_body(ham_data[0], nmodes, mode_rots, modals)
+    h_data = [h1_rot]
+
+    if n > 1:
+        h2_rot = _rotate_two_body(ham_data[1], nmodes, mode_rots, modals)
+        h_data = [h1_rot, h2_rot]
+
+    if n > 2:
+        h3_rot = _rotate_three_body(ham_data[2], nmodes, mode_rots, modals)
+        h_data = [h1_rot, h2_rot, h3_rot]
+
+    return h_data
+
+
+def vscf_hamiltonian(ham_data, dipole_data=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
     r"""Generates VSCF rotated integrals for vibrational Hamiltonian.
 
     Args:
-        ham_integrals (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode. Defaults to maximum value if none is provided
+        ham_data (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
+        dipole_data (list[TensorLike[float]]): A list of n-mode expansion of dipole integrals. Default is ``None``.
+        modals (list[int]): A list containing the maximum number of modals to consider for each mode. Defalt to maximum number of modals.
         cutoff (float): threshold value for including matrix elements into operator.
-        cutoff_ratio (float): default ratio for zeroing elements which are smaller than this ratio with respect to biggest element in all H1,H2,...'s
+        cutoff_ratio (float): Default ratio for zeroing elements which are smaller than this ratio with respect to biggest element in all integrals. Default value is ``1e-6``.
 
     Returns:
         List[TensorLike[float]]: List of n-mode expansion of Hamiltonian integrals in VSCF basis.
 
     """
-    n = len(ham_integrals)
 
-    if n > 3:
-        raise ValueError(f"Building n-mode Hamiltonian not implemented for {n}=>3!")
+    if len(ham_data) > 3:
+        raise ValueError(
+            f"Building n-mode Hamiltonian is not implemented for n equal to {len(ham_data)}."
+        )
 
-    nmodes = np.shape(ham_integrals[0])[0]
+    if dipole_data is not None:
+        if len(dipole_data) > 3:
+            raise ValueError(
+                f"Building n-mode dipole is not implemented for n equal to {len(dipole_data)}."
+            )
 
-    imax = np.shape(ham_integrals[0])[1]
+    nmodes = np.shape(ham_data[0])[0]
+
+    imax = np.shape(ham_data[0])[1]
     max_modals = nmodes * [imax]
     if modals is None:
         modals = max_modals
     else:
+        if np.max(modals) > imax:
+            raise ValueError(
+                "Number of maximum modals cannot be greater than the modals for unrotated integrals."
+            )
         imax = np.max(modals)
 
     if cutoff is None:
-        max_val = np.max([np.max(np.abs(H)) for H in ham_integrals])
+        max_val = np.max([np.max(np.abs(H)) for H in ham_data])
         cutoff = max_val * cutoff_ratio
 
-    _, mode_rots = _vscf(ham_integrals, modals=max_modals, cutoff=cutoff)
-    h1_rot = _rotate_one_body(ham_integrals[0], nmodes, mode_rots, modals)
-    if n == 1:
-        return [h1_rot]
+    _, mode_rots = _vscf(ham_data, modals=max_modals, cutoff=cutoff)
 
-    h2_rot = _rotate_two_body(ham_integrals[1], nmodes, mode_rots, modals)
-    if n == 2:
-        return [h1_rot, h2_rot]
+    h_data = _rotate_hamiltonian(ham_data, mode_rots, modals)
 
-    h3_rot = _rotate_three_body(ham_integrals[2], nmodes, mode_rots, modals)
-    return [h1_rot, h2_rot, h3_rot]
+    if dipole_data is not None:
+        dip_data = _rotate_dipole(dipole_data, mode_rots, modals)
+        return h_data, dip_data
+
+    return h_data, None
