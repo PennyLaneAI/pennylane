@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
+import warnings
 
 # pylint: disable=too-many-arguments,unexpected-keyword-arg,no-member,comparison-with-callable, no-name-in-module
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-lambda-assignment, use-dict-literal
@@ -22,6 +23,14 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+
+
+@pytest.fixture(autouse=True)
+def suppress_tape_property_deprecation_warning():
+    warnings.filterwarnings(
+        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
+    )
+
 
 pytestmark = pytest.mark.torch
 
@@ -96,8 +105,7 @@ class TestQNode:
         assert res.shape == ()
 
         # the tape is able to deduce trainable parameters
-        tape = qml.workflow.construct_tape(circuit)(a)
-        assert tape.trainable_params == [0]
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         res.backward()
@@ -197,8 +205,7 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        tape = qml.workflow.construct_tape(circuit)(a, b)
-        assert tape.trainable_params == [0, 1]
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -257,8 +264,7 @@ class TestQNode:
         res = circuit(a, b)
 
         assert circuit.interface == interface
-        tape = qml.workflow.construct_tape(circuit)(a, b)
-        assert tape.trainable_params == [0, 1]
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -332,8 +338,7 @@ class TestQNode:
         res = circuit(a, b)
 
         # the tape has reported both gate arguments as trainable
-        tape = qml.workflow.construct_tape(circuit)(a, b)
-        assert tape.trainable_params == [0, 1]
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
 
@@ -359,8 +364,7 @@ class TestQNode:
         res = circuit(a, b)
 
         # the tape has reported only the first argument as trainable
-        tape = qml.workflow.construct_tape(circuit)(a, b)
-        assert tape.trainable_params == [0]
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
 
@@ -401,9 +405,8 @@ class TestQNode:
         res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
-            tape = qml.workflow.construct_tape(circuit)(a, b, c)
-            assert tape.trainable_params == [0, 2]
-            assert tape.get_parameters() == [a * c, c + c**2 + torch.sin(a)]
+            assert circuit.qtape.trainable_params == [0, 2]
+            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + torch.sin(a)]
 
         res.backward()
 
@@ -440,8 +443,7 @@ class TestQNode:
         res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            tape = qml.workflow.construct_tape(circuit)(a, b)
-            assert tape.trainable_params == []
+            assert circuit.qtape.trainable_params == []
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -494,8 +496,7 @@ class TestQNode:
         res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            tape = qml.workflow.construct_tape(circuit)(U, a)
-            assert tape.trainable_params == [1]
+            assert circuit.qtape.trainable_params == [1]
 
         assert np.allclose(res.detach(), -np.cos(a_val), atol=tol, rtol=0)
 
