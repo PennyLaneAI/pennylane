@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-# pylint: disable=possibly-used-before-assignment
-from itertools import combinations_with_replacement
-from typing import Iterable, Optional, Union
+# pylint: disable=possibly-used-before-assignment, too-many-return-statements
+from functools import reduce
+from itertools import combinations, combinations_with_replacement
+from typing import Iterable, List, Optional, Union
 
 import numpy as np
 from scipy.linalg import sqrtm
@@ -233,6 +234,301 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
     return H_ops
 
 
+def check_commutation(ops1, ops2, vspace):
+    r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+
+    .. warning:: This function is expensive to compute
+
+    Args:
+        ops1 (Iterable[PauliSentence]): First set of operators
+        ops2 (Iterable[PauliSentence]): Second set of operators
+        vspace (:class:`~PauliVSpace`): The vector space in form of a :class:`~PauliVSpace` that the operators should map to
+
+    Returns:
+        bool: Whether or not :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+
+    **Example**
+
+    >>> from pennylane.labs.dla import check_commutation
+    >>> ops1 = [qml.X(0).pauli_rep]
+    >>> ops2 = [qml.Y(0).pauli_rep]
+    >>> vspace1 = qml.pauli.PauliVSpace([qml.X(0).pauli_rep, qml.Y(0).pauli_rep], dtype=complex)
+
+    Because :math:`[X_0, Y_0] = 2i Z_0`, the commutators do not map to the selected vector space.
+
+    >>> check_commutation(ops1, ops2, vspace1)
+    False
+
+    Instead, we need the full :math:`\mathfrak{su}(2)` space.
+
+    >>> vspace2 = qml.pauli.PauliVSpace([qml.X(0).pauli_rep, qml.Y(0).pauli_rep, qml.Z(0).pauli_rep], dtype=complex)
+    >>> check_commutation(ops1, ops2, vspace2)
+    True
+    """
+    for o1 in ops1:
+        for o2 in ops2:
+            com = o1.commutator(o2)
+            com.simplify()
+            if len(com) != 0:
+                if vspace.is_independent(com):
+                    return False
+
+    return True
+
+
+def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
+    r"""Helper function to check if all operators in a set of operators commute
+
+    .. warning:: This function is expensive to compute
+
+    Args:
+        ops (List[Union[PauliSentence, np.ndarray, Operator]]): List of operators to check for mutual commutation
+
+    Returns:
+        bool: Whether or not all operators commute with each other
+
+    **Example**
+
+    >>> from pennylane.labs.dla import check_all_commuting
+    >>> from pennylane import X
+    >>> ops = [X(i) for i in range(10)]
+    >>> check_all_commuting(ops)
+    True
+
+    Operators on different wires (trivially) commute with each other.
+    """
+    if all(isinstance(op, PauliSentence) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj.commutator(oi)
+            com.simplify()
+            if len(com) != 0:
+                return False
+
+        return True
+
+    if all(isinstance(op, Operator) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = qml.simplify(qml.commutator(oj, oi))
+            if not qml.equal(com, 0 * qml.Identity()):
+                return False
+
+        return True
+
+    if all(isinstance(op, np.ndarray) for op in ops):
+        for oi, oj in combinations(ops, 2):
+            com = oj @ oi - oi @ oj
+            if not np.allclose(com, np.zeros_like(com)):
+                return False
+
+        return True
+
+    return NotImplemented
+
+
+def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
+    r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+
+    Check whether of not the following properties are fulfilled.
+
+    .. math::
+
+            [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} & \text{ (subalgebra)}\\
+            [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} & \text{ (reductive property)}\\
+            [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k} & \text{ (symmetric property)}
+
+    .. warning:: This function is expensive to compute
+
+    Args:
+        k (List[PauliSentence]): List of operators of the vertical subspace
+        m (List[PauliSentence]): List of operators of the horizontal subspace
+        verbose: Whether failures to meet one of the criteria should be printed
+
+    Returns:
+        bool: Whether or not all properties are fulfilled
+
+    .. seealso:: :func:`~cartan_decomp`
+
+    **Example**
+
+    We first construct a Lie algebra.
+
+    >>> from pennylane import X, Z
+    >>> from pennylane.labs.dla import concurrence_involution, even_odd_involution, cartan_decomp
+    >>> generators = [X(0) @ X(1), Z(0), Z(1)]
+    >>> g = qml.lie_closure(generators)
+    >>> g
+    [X(0) @ X(1),
+     Z(0),
+     Z(1),
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
+
+    We compute the Cartan decomposition with respect to the :func:`~concurrence_involution`.
+
+    >>> k, m = cartan_decomp(g, concurrence_involution)
+    >>> k, m
+    ([-1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1))],
+     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ Y(1))])
+
+    We can check the validity of the decomposition using ``check_cartan_decomp``.
+
+    >>> from pennylane.labs.dla import check_cartan_decomp
+    >>> check_cartan_decomp(k, m)
+    True
+
+    """
+    if any(isinstance(op, np.ndarray) for op in k):
+        k = [qml.pauli_decompose(op).pauli_rep for op in k]
+    if any(isinstance(op, np.ndarray) for op in m):
+        m = [qml.pauli_decompose(op).pauli_rep for op in m]
+
+    if any(isinstance(op, Operator) for op in k):
+        k = [op.pauli_rep for op in k]
+    if any(isinstance(op, Operator) for op in m):
+        m = [op.pauli_rep for op in m]
+
+    k_space = qml.pauli.PauliVSpace(k, dtype=complex)
+    m_space = qml.pauli.PauliVSpace(m, dtype=complex)
+
+    # Commutation relations for Cartan pair
+    if not (check_kk := check_commutation(k, k, k_space)):
+        _ = print("[k, k] sub k not fulfilled") if verbose else None
+    if not (check_km := check_commutation(k, m, m_space)):
+        _ = print("[k, m] sub m not fulfilled") if verbose else None
+    if not (check_mm := check_commutation(m, m, k_space)):
+        _ = print("[m, m] sub k not fulfilled") if verbose else None
+
+    return all([check_kk, check_km, check_mm])
+
+
+def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) -> np.ndarray:
+    r"""Orthonormalize a list of basis vectors.
+
+    Args:
+        basis (Iterable[Union[PauliSentence, Operator, np.ndarray]]): List of basis vectors.
+
+    Returns:
+        np.ndarray: Orthonormalized basis vectors.
+
+    .. seealso:: :func:`~trace_inner_product`, :func:`~orthonormalize`
+
+    **Example**
+
+    >>> from pennylane.labs.dla import orthonormalize, check_orthonormal, trace_inner_product
+    >>> ops = [qml.X(0), qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0)]
+    >>> check_orthonormal(ops, trace_inner_product)
+    False
+    >>> ops_orth = orthonormalize(ops)
+    >>> check_orthonormal(ops_orth, trace_inner_product)
+    True
+
+    This works also for lists of dense matrices as inputs
+    >>> ops_m = [qml.matrix(op) for op in ops]
+    >>> ops_m_orth = orthonormalize(ops_m)
+    >>> ops_m_orth.shape
+    (3, 2, 2)
+    """
+
+    if isinstance(basis, PauliVSpace) or all(
+        isinstance(op, (PauliSentence, Operator)) for op in basis
+    ):
+        return _orthonormalize_ps(basis)
+
+    if all(isinstance(op, np.ndarray) for op in basis):
+        return _orthonormalize_np(basis)
+
+    raise NotImplementedError(
+        f"orthonormalize not implemented for basis of type {type(basis[0])}:\n{basis}"
+    )
+
+
+def _orthonormalize_np(basis: Iterable[np.ndarray]):
+    basis = np.array(basis)
+    gram_inv = np.linalg.pinv(sqrtm(trace_inner_product(basis, basis).real))
+    return np.tensordot(gram_inv, basis, axes=1)
+
+
+def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, Operator]]]):
+    # We are generating a sparse pauli representation of the basis, where each entry of a basis vector corresponds to one of the Pauli words
+    if isinstance(basis, PauliVSpace):
+        basis = basis.basis
+
+    if not all(isinstance(op, PauliSentence) for op in basis):
+        basis = [op.pauli_rep for op in basis]
+
+    if len(basis) == 0:
+        return basis
+
+    # Set up all unique pauli words in the basis
+    all_pws = reduce(set.__or__, [set(ps.keys()) for ps in basis])
+    num_pw = len(all_pws)
+
+    # map pauli words to indices and back
+    _pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
+    _idx_to_pw = dict(enumerate(all_pws))
+
+    # dense matrix representation of the basis in the sparse pauli representation
+    _M = np.zeros((num_pw, len(basis)), dtype=float)
+
+    for i, gen in enumerate(basis):
+        for pw, value in gen.items():
+            _M[_pw_to_idx[pw], i] = value
+
+    # orthonormalize dense matrix using QR decomposition
+    def gram_schmidt(X):
+        Q, _ = np.linalg.qr(X)
+        return Q
+
+    OM = gram_schmidt(_M)
+
+    # make sure the resulting matrix is orthonormal
+    assert np.allclose(np.tensordot(OM.T, OM, axes=1), np.eye(OM.shape[1]))
+
+    # reconstruct orthonormalized operators
+    generators_orthogonal = []
+    for i in range(len(basis)):
+        u1 = PauliSentence({})
+        for j in range(num_pw):
+            u1 += _idx_to_pw[j] * OM[j, i]
+        u1.simplify()
+        generators_orthogonal.append(u1)
+
+    return generators_orthogonal
+
+
+def check_orthonormal(g: Iterable[Union[PauliSentence, Operator]], inner_product: callable) -> bool:
+    r"""
+    Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``.
+
+    Args:
+        g (Iterable[Union[PauliSentence, Operator]]): List of operators
+        inner_product (callable): Inner product function to check orthonormality
+
+    Returns:
+        bool: ``True`` if the operators are orthonormal, ``False`` otherwise.
+
+    .. seealso:: :func:`~trace_inner_product`, :func:`~orthonormalize`
+
+    **Example**
+
+    >>> from pennylane.labs.dla import orthonormalize, check_orthonormal, trace_inner_product
+    >>> ops = [qml.X(0), qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0)]
+    >>> check_orthonormal(ops, trace_inner_product)
+    False
+    >>> ops_orth = orthonormalize(ops)
+    >>> check_orthonormal(ops_orth, trace_inner_product)
+    True
+    """
+    for op in g:
+        if not np.isclose(inner_product(op, op), 1.0):
+            return False
+    for opi, opj in combinations(g, r=2):
+        if not np.isclose(inner_product(opi, opj), 0.0):
+            return False
+    return True
+
+
 def trace_inner_product(
     A: Union[PauliSentence, Operator, np.ndarray], B: Union[PauliSentence, Operator, np.ndarray]
 ):
@@ -287,6 +583,47 @@ def trace_inner_product(
         return np.tensordot(A, B, axes=[[-1, -2], [-2, -1]]) / A.shape[-1]
 
     raise NotImplementedError
+
+
+def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
+    r"""Apply the basis change between bases of operators to the adjoint representation.
+
+    Assume the adjoint repesentation is given in terms of a basis :math:`\{b_j\}`,
+    :math:`\text{ad_\mu}_{\alpha \beta} \propto \text{tr}\left(b_\mu \cdot [b_\alpha, b_\beta] \right)`.
+    We can represent the adjoint representation in terms of a new basis :math:`c_i = \sum_j T_{ij} b_j`
+    with the basis transformation matrix :math:`T` using ``change_basis_ad_rep``.
+
+    Args:
+        adj (numpy.ndarray): Adjoint representation in old basis.
+        basis_change (numpy.ndarray): Basis change matrix from old to new basis.
+
+    Returns:
+        numpy.ndarray: Adjoint representation in new basis.
+
+    **Example**
+
+    We choose a basis of a Lie algebra, compute its adjoint representation.
+
+    >>> from pennylane.labs.dla import change_basis_ad_rep
+    >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
+    >>> adj = qml.structure_constants(basis)
+
+    Now we change the basis and re-compute the adjoint representation in that new basis.
+
+    >>> basis_change = np.array([[1., 1., 0.], [0., 1., 1.], [0., 1., 1.]])
+    >>> new_ops = [qml.sum(*[basis_change[i,j] * basis[j] for j in range(3)]) for i in range(3)]
+    >>> new_adj = qml.structure_constants(new_ops)
+
+    We confirm that instead of re-computing the adjoint representation (typically expensive), we can
+    transform the old adjoint representation with the change of basis matrix.
+
+    >>> new_adj_re = change_basis_ad_rep(adj, basis_change)
+    np.allclose(new_adj, new_adj_re)
+    """
+    # Perform the einsum contraction "mnp, hm, in, jp -> hij" via three einsum steps
+    new_adj = np.einsum("mnp,im->inp", adj, np.linalg.pinv(basis_change.T))
+    new_adj = np.einsum("mnp,in->mip", new_adj, basis_change)
+    return np.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
 def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
