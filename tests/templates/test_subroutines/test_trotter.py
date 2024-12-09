@@ -1349,7 +1349,7 @@ class TestTrotterizedQfuncInitialization:
             wires=["a", "b", "c"],
             flip=True,
         )
-        qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_pickle=True)
+        qml.ops.functions.assert_valid(op, skip_pickle=True)
 
 
 class TestTrotterizedQfuncIntegration:

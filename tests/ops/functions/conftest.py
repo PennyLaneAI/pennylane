@@ -84,7 +84,7 @@ _INSTANCES_TO_TEST = [
             wires=[1, 2],
             flip=True,
         ),
-        {"skip_differentiation": True, "skip_pickle": True},
+        {"skip_pickle": True},
     ),
 ]
 """Valid operator instances that could not be auto-generated."""
