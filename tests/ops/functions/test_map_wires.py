@@ -197,10 +197,9 @@ class TestMapWiresQNodes:
         assert m_qnode() == qnode()
         m_tape = qml.workflow.construct_tape(m_qnode)()
         assert len(m_tape) == 2
-        tapes, _ = m_qnode.transform_program((m_tape,))
 
-        m_op = tapes[0].operations
-        m_obs = tapes[0].observables
+        m_op = m_tape.operations
+        m_obs = m_tape.observables
         qml.assert_equal(m_op[0], mapped_op)
         qml.assert_equal(m_obs[0], mapped_obs)
 
