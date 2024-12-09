@@ -15,8 +15,9 @@
 """Tests for the transform ``qml.transforms.split_non_commuting``"""
 from functools import partial
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane.transforms import split_non_commuting
 
@@ -161,7 +162,7 @@ class TestSplitNonCommuting:
         """Tests that a tape with no measurements is returned unchanged."""
 
         initial_tape = qml.tape.QuantumScript([qml.Z(0)], [])
-        tapes, fn = split_non_commuting(initial_tape)
+        tapes, _ = split_non_commuting(initial_tape)
         assert tapes == [initial_tape]
 
     @pytest.mark.parametrize(
@@ -191,7 +192,7 @@ class TestSplitNonCommuting:
     ):
         """Tests that precomputed grouping of a single Hamiltonian is used."""
 
-        H._grouping_indices = grouping_indices
+        H._grouping_indices = grouping_indices  # pylint: disable=protected-access
         initial_tape = qml.tape.QuantumScript([qml.X(0)], [qml.expval(H)], shots=100)
         tapes, fn = split_non_commuting(initial_tape)
         assert len(tapes) == len(grouping_indices)
@@ -351,7 +352,9 @@ class TestSplitNonCommuting:
             ),
         ],
     )
-    def test_grouping_strategies(self, obs, groups, results, expected_result, grouping_strategy):
+    def test_grouping_strategies(
+        self, obs, groups, results, expected_result, grouping_strategy
+    ):  # pylint: disable=too-many-arguments
         """Tests wire-based grouping and qwc grouping."""
 
         initial_tape = qml.tape.QuantumScript(
