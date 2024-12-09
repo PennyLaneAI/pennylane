@@ -20,7 +20,7 @@ from typing import get_type_hints
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
-def transform(
+def transform(  # pylint: disable=too-many-arguments
     quantum_transform,
     expand_transform=None,
     classical_cotransform=None,
@@ -28,7 +28,7 @@ def transform(
     final_transform=False,
     use_argnum_in_expand=False,
     plxpr_transform=None,
-):  # pylint: disable=too-many-arguments
+) -> TransformDispatcher:
     """Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
     :class:`~.QNode`.
 
@@ -60,7 +60,7 @@ def transform(
             of the transform program. ``is_informative`` supersedes ``final_transform``.
         use_argnum_in_expand=False (bool): Whether or not to use ``argnum`` of the tape to determine trainable parameters
             during the expansion transform process.
-        plxpr_transform=None (Optional[Callable]): Function for processing primitives when transforming PLxPR.
+        plxpr_transform=None (Optional[Callable]): Function for processing primitives when transforming PLxPR. **Experimental**
 
     Returns:
 

@@ -192,12 +192,15 @@ class TestTransformContainer:
             first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
         )
 
-        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
+        q_transform, args, kwargs, cotransform, plxpr_transform, is_informative, final_transform = (
+            container
+        )
 
         assert q_transform is first_valid_transform
         assert args == [0]
         assert kwargs == {}
         assert cotransform is None
+        assert plxpr_transform is None
         assert not is_informative
         assert not final_transform
 
@@ -205,6 +208,7 @@ class TestTransformContainer:
         assert container.args == [0]
         assert not container.kwargs
         assert container.classical_cotransform is None
+        assert container.plxpr_transform is None
         assert not container.is_informative
         assert not container.final_transform
 
@@ -459,6 +463,25 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             transform(first_valid_transform, expand_transform=non_valid_expand_transform)
 
+    def test_default_plxpr_transform_error(self):
+        """Test that an error is raised if attempting to use transform.plxpr_transform without
+        providing it on initialization."""
+
+        dispatched_transform = transform(first_valid_transform)
+        dummy_args = {
+            "primitive": None,
+            "tracers": None,
+            "params": None,
+            "targs": None,
+            "tkwargs": None,
+            "state": None,
+        }
+
+        with pytest.raises(
+            TransformError, match="first_valid_transform cannot be used to transform PLxPR."
+        ):
+            _ = dispatched_transform.plxpr_transform(**dummy_args)
+
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
         dispatched_transform = transform(second_valid_transform)
@@ -622,8 +645,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert new_dev.original_device is dev
         assert repr(new_dev).startswith("Transformed Device")
 
-        program, _ = dev.preprocess()
-        new_program, _ = new_dev.preprocess()
+        program = dev.preprocess_transforms()
+        new_program = new_dev.preprocess_transforms()
 
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
@@ -651,8 +674,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert new_dev.original_device is dev
         assert repr(new_dev).startswith("Transformed Device")
 
-        program, _ = dev.preprocess()
-        new_program, _ = new_dev.preprocess()
+        program = dev.preprocess_transforms()
+        new_program = new_dev.preprocess_transforms()
 
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
