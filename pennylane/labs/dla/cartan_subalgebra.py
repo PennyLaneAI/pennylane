@@ -71,15 +71,18 @@ def cartan_subalgebra(
     g, k, m, ad, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
 ):
     r"""
-    Compute a Cartan subalgebra (CSA) h in m, the odd parity subspace. I.e. a maximal Abelian subalgebra in m.
+    Compute a Cartan subalgebra (CSA) :math:`\mathfrak{h} \subseteq \mathfrak{m}`.
 
-    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`
+    A non-unique CSA is a maximal Abelian subalgebra in the horizontal subspace :math:`\mathfrak{m}` of a Cartan decomposition.
+    Note that this is sometimes called a horizontal CSA, and different to the definition of a CSA on `Wikipedia <https://en.wikipedia.org/wiki/Cartan_subalgebra>`__.
+
+    .. seealso:: :func:`~cartan_decomp`, :func:`~structure_constants`, `The KAK theorem (demo) <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__
 
     Args:
         g (List[Union[PauliSentence, np.ndarray]]): Lie algebra :math:`\mathfrak{g}`, which is assumed to be ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         k (List[Union[PauliSentence, np.ndarray]]): Vertical space :math:`\mathfrak{k}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
         m (List[Union[PauliSentence, np.ndarray]]): Horizontal space :math:`\mathfrak{m}` from Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
-        ad (Array): The math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}`
+        ad (Array): The :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}` (see :func:`~structure_constants`)
         start_idx (bool): Indicates from which element in ``m`` the CSA computation starts.
         tol (float): Numerical tolerance for linear independence check
         verbose (bool): Whether or not to output progress during computation
@@ -89,11 +92,10 @@ def cartan_subalgebra(
             and between ``g``, ``k`` and ``m``.
 
     Returns:
-        np.ndarray: Adjoint vectors for new ordered :math:`\mathfrak{g}` of dimension :math:`|\mathfrak{g}| \times |\mathfrak{g}|`, ordered as :math:`\mathfrak{g} = \mathfrak{k} \oplus \tilde{\mathfrak{m}} \oplus \mathfrak{h}`
-        np.ndarray: Adjoint vectors for :math:`\mathfrak{k}` of dimension :math:`|\mathfrak{k}| \times |\mathfrak{g}|`.
-        np.ndarray: Adjoint vectors for :math:`\tilde{\mathfrak{m}}` of dimension :math:`|\tilde{\mathfrak{m}}| \times |\mathfrak{g}|`.
-        np.ndarray: Adjoint vectors for :math:`\mathfrak{h}` of dimension :math:`|\mathfrak{h}| \times |\mathfrak{g}|`.
-        np.ndarray: The new :math:`|\mathfrak{g}| \times |\mathfrak{g}| \times |\mathfrak{g}|` dimensional adjoint representation of :math:`\mathfrak{g}_\text{new}`, according to the new basis.
+        Tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray): A tuple of adjoint vector representations
+            ``(newg, k, mtilde, h, new_adj)``, corresponding to
+            :math:`\mathfrak{g}`, :math:`\mathfrak{k}`, :math:`\tilde{\mathfrak{m}}`, :math:`\mathfrak{h}` and the new adjoint representation.
+            The dimensions are ``(|g|, |g|)``, ``(|k|, |g|)``, ``(|mtilde|, |g|)``, ``(|h|, |g|)`` and ``(|g|, |g|, |g|)``, respectively.
 
     **Example**
 

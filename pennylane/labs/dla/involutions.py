@@ -444,7 +444,7 @@ def CII(
     q: int = None,
     wire: Optional[int] = None,
 ) -> bool:
-    r"""Canonical Cartan decomposition of type CII, given by \theta: x \mapsto K_{p,q} x K_{p,q}.
+    r"""Canonical Cartan decomposition of type CII, given by :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
 
     The matrix :math:`K_{p,q}` is given by
 
