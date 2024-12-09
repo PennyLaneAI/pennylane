@@ -52,7 +52,7 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
     We perform the first iteration on the first qubit. We use :func:`~cartan_decomp`.
 
     >>> from functools import partial
-    >>> from pennylane.labs.dla import khaneja_glaser_involution
+    >>> from pennylane.labs.dla import cartan_decomp, khaneja_glaser_involution
     >>> k0, m0 = cartan_decomp(g, partial(khaneja_glaser_involution, wire=0))
     >>> print(f"First iteration, AIII: {len(k0)}, {len(m0)}")
     First iteration, AIII: 31, 32
