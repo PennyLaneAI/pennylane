@@ -715,7 +715,7 @@ class TestRootFindingSolver:
     def test_correctness_QSP_angles_root_finding(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(poly, "QSP", angle_solver=angle_solver)
+        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
         x = 0.5
 
         @qml.qnode(qml.device("default.qubit"))
@@ -749,7 +749,7 @@ class TestRootFindingSolver:
     def test_correctness_QSVT_angles(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
+        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
         x = 0.5
 
         block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
