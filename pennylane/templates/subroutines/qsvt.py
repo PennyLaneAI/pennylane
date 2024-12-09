@@ -472,6 +472,17 @@ class QSVT(Operation):
     >>> example_circuit()
     0.5403023058681395
 
+    We can visualize the circuit as follows:
+
+    >>> print(qml.draw(example_circuit)())
+    0: ──QSVT─┤  <Z>
+
+    To see the implementation details, we can expand the circuit:
+
+    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
+    >>> print(q_script.expand().draw(decimals=2))
+    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+
     See the Usage Details section for more examples on implementing QSVT with different block
     encoding methods.
 
