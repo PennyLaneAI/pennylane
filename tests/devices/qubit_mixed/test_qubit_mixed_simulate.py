@@ -275,6 +275,7 @@ class TestBroadcasting:
 
 
 @flaky(max_runs=5, min_passes=1)
+@pytest.mark.all_interfaces
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
 
