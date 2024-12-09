@@ -412,7 +412,10 @@ def test_prep_snap_clifford(circuit):
         (qml.GlobalPhase(1.0), (None, [])),
         (qml.Snapshot(), (None, [])),
         (qml.DepolarizingChannel(0.2, [2]), ("DEPOLARIZE1(0.2)", [2])),
-        (qml.PauliError("XYZ", 0.2, [0, 1, 2]), ("CORRELATED_ERROR(0.2)", ["X0", "Y1", "Z2"])),
+        (
+            qml.PauliError("XYZ", 0.2, wires=[0, 1, 2]),
+            ("CORRELATED_ERROR(0.2)", ["X0", "Y1", "Z2"]),
+        ),
     ],
 )
 def test_pl_to_stim(pl_op, stim_op):
