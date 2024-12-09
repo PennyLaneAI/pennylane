@@ -14,7 +14,6 @@
 """Unit tests for simulate in devices/qubit_mixed."""
 import numpy as np
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane import math
