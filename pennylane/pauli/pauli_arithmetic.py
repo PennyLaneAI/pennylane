@@ -999,7 +999,7 @@ class PauliSentence(dict):
         matrix.eliminate_zeros()
         return matrix
 
-    def operation(self, wire_order=None):
+    def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
             return qml.s_prod(0, Identity(wires=wire_order))
