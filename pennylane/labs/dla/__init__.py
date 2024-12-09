@@ -24,6 +24,7 @@ Experimental Lie theory features
     ~structure_constants_dense
     ~cartan_decomp
     ~recursive_cartan_decomp
+    ~cartan_subalgebra
 
 
 Utility functions
