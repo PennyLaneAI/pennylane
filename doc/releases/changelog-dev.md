@@ -142,6 +142,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
   * Implemented helper functions for calculating one-mode PES, two-mode PES, and
     three-mode PES.
     [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
+    [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
   * Implemented wrapper function for vibrational Hamiltonian calculation and dataclass
     for storing the data.
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
