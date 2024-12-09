@@ -387,6 +387,10 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
+  The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
+  [(#6642)](https://github.com/PennyLaneAI/pennylane/pull/6642)
+
 * Subclasses of `qml.ops.Controlled` no longer bind the primitives of their base operators when program capture
   is enabled.
   [(#6672)](https://github.com/PennyLaneAI/pennylane/pull/6672)
