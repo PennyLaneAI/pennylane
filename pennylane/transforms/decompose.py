@@ -19,6 +19,7 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 
 import warnings
 from collections.abc import Callable, Generator, Iterable
+from functools import partial
 from typing import Optional
 
 import pennylane as qml
@@ -60,7 +61,64 @@ def _operator_decomposition_gen(
             )
 
 
-@transform
+def _decompose_plxpr_transform(
+    primitive, tracers, params, targs, tkwargs, state=None
+):  # pylint: disable=unused-argument, too-many-arguments, too-many-positional-arguments
+    """Implementation for ``decompose`` with program capture"""
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture import TransformTracer
+
+    gate_set = tkwargs.get("gate_set", set(qml.ops.__all__))
+
+    if isinstance(gate_set, (str, type)):
+        gate_set = set([gate_set])
+
+    if isinstance(gate_set, Iterable):
+        gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+        gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+        gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
+
+    max_expansion = tkwargs.pop("max_expansion", None)
+
+    if max_expansion is not None:
+        raise qml.transforms.core.TransformError(
+            "Cannot specify 'max_expansion' with decompose when program capture is enabled."
+        )
+
+    with qml.QueuingManager.stop_recording():
+        tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
+        op = primitive.impl(*tracers_in, **params)
+
+    if (
+        isinstance(op, qml.measurements.MeasurementProcess)
+        or gate_set(op)
+        or not op.has_decomposition
+    ):
+        if isinstance(op, qml.measurements.MeasurementProcess) or gate_set(op):
+            pass
+        elif not op.has_decomposition:
+            warnings.warn(
+                f"Operator {op.name} does not define a decomposition and was not "
+                f"found in the target gate set. To remove this warning, add the operator name "
+                f"({op.name}) or type ({type(op)}) to the gate set.",
+                UserWarning,
+            )
+
+        new_tracers = []
+        for t in tracers:
+            if isinstance((inner_op := t.val), qml.operation.Operator):
+                inner_tracers, inner_params = state[-1].get("inval_op_cache")[id(inner_op)]
+                new_op = inner_op._primitive.bind(*inner_tracers, **inner_params)
+                t = TransformTracer(t._trace, new_op, t.idx + 1)
+            else:
+                t = TransformTracer(t._trace, t.val, t.idx + 1)
+            new_tracers.append(t)
+        return primitive.bind(*new_tracers, **params)
+
+    return op.decomposition()
+
+
+@partial(transform, plxpr_transform=_decompose_plxpr_transform)
 def decompose(tape, gate_set=None, max_expansion=None):
     """Decomposes a quantum circuit into a user-specified gate set.
 
