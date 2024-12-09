@@ -36,9 +36,8 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
+from pennylane.ops.functions.map_wires import MapWires
 from pennylane.transforms.core import TransformError, TransformProgram, transform
-
-from pennylane.ops.functions.map_wires import _map_wires_transform
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
@@ -839,30 +838,6 @@ class TestTransformInterpreterIntegration:
         assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
         assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.VarianceMP._obs_primitive
-
-
-from pennylane.ops.functions.map_wires import MapWires
-
-
-def normalize_var(var):
-    """
-    Normalize a Var object by removing the `id` while preserving its type and other attributes.
-    If the object is not a Var, return it as is.
-    """
-    var[0].aval
-
-
-def normalize_eqn(eqn):
-    """
-    Normalize an equation by processing its invars, outvars, and params.
-    """
-    normalized_eqn = {
-        "primitive": eqn.primitive,
-        "invars": [normalize_var(v) for v in eqn.invars],
-        "outvars": [normalize_var(v) for v in eqn.outvars],
-        "params": eqn.params,
-    }
-    return normalized_eqn
 
 
 # pylint: disable=protected-access, expression-not-assigned

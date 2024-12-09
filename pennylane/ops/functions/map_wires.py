@@ -17,10 +17,7 @@ This module contains the qml.map_wires function.
 from collections.abc import Callable
 from typing import Union, overload
 
-from functools import partial
-
 import pennylane as qml
-from pennylane import transform
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
