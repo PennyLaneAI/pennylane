@@ -253,9 +253,11 @@ tested_modified_templates = [
     qml.OutAdder,
     qml.ModExp,
     qml.OutPoly,
+    qml.GQSP,
 ]
 
 
+# pylint: disable=too-many-public-methods
 class TestModifiedTemplates:
     """Test that templates with custom primitive binds are captured as expected."""
 
@@ -926,6 +928,39 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutPoly(**kwargs))
+
+    def test_gqsp(self):
+        """Test the primitive bind call of GQSP."""
+
+        kwargs = {
+            "unitary": qml.RX(1, wires=1),
+            "control": 0,
+            "angles": np.ones([3, 3]),
+        }
+
+        def qfunc():
+            qml.GQSP(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.GQSP._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.GQSP(**kwargs))
 
     @pytest.mark.parametrize(
         "template, kwargs",
