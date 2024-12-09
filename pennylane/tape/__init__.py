@@ -19,3 +19,5 @@ validates quantum operations and measurements.
 from .operation_recorder import OperationRecorder
 from .qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch, make_qscript
 from .tape import QuantumTape, QuantumTapeBatch, TapeError, expand_tape_state_prep
+
+from .plxpr_to_tape import plxpr_to_tape

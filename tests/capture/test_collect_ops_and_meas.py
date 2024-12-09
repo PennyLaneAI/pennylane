@@ -23,7 +23,9 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.to_tape import CollectOpsandMeas  # pylint: disable=wrong-import-position
+from pennylane.capture.collect_ops_and_meas import (  # pylint: disable=wrong-import-position
+    CollectOpsandMeas,
+)
 
 
 class TestCollectOpsandMeas:
