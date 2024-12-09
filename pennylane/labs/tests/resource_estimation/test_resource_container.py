@@ -51,32 +51,39 @@ class ResourceDummyTrotterProduct(ResourceOperator):
     """Dummy testing class representing TrotterProduct gate"""
 
 
+class ResourceDummyAdjoint(ResourceOperator):
+    """Dummy testing class representing the Adjoint symbolic operator"""
+
+
 class TestCompressedResourceOp:
     """Testing the methods and attributes of the CompressedResourceOp class"""
 
     test_hamiltonian = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
     compressed_ops_and_params_lst = (
-        ("DummyX", ResourceDummyX, {"num_wires": 1}),
-        ("DummyQFT", ResourceDummyQFT, {"num_wires": 5}),
-        ("DummyQSVT", ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5}),
+        ("DummyX", ResourceDummyX, {"num_wires": 1}, None),
+        ("DummyQFT", ResourceDummyQFT, {"num_wires": 5}, None),
+        ("DummyQSVT", ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5}, None),
         (
             "DummyTrotterProduct",
             ResourceDummyTrotterProduct,
             {"Hamiltonian": test_hamiltonian, "num_steps": 5, "order": 2},
+            None,
         ),
+        ("X", ResourceDummyX, {"num_wires": 1}, "X"),
     )
 
     compressed_op_reprs = (
-        "DummyX(num_wires=1)",
-        "DummyQFT(num_wires=5)",
-        "DummyQSVT(num_wires=3, num_angles=5)",
-        "DummyTrotterProduct(Hamiltonian=X(0) + -1 * Y(1) + 0.5 * (Z(0) @ Z(1)), num_steps=5, order=2)",
+        "DummyX",
+        "DummyQFT",
+        "DummyQSVT",
+        "DummyTrotterProduct",
+        "X",
     )
 
-    @pytest.mark.parametrize("name, op_type, parameters", compressed_ops_and_params_lst)
-    def test_init(self, name, op_type, parameters):
+    @pytest.mark.parametrize("name, op_type, parameters, name_param", compressed_ops_and_params_lst)
+    def test_init(self, name, op_type, parameters, name_param):
         """Test that we can correctly instantiate CompressedResourceOp"""
-        cr_op = CompressedResourceOp(op_type, parameters)
+        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
 
         assert cr_op._name == name
         assert cr_op.op_type is op_type
@@ -93,6 +100,21 @@ class TestCompressedResourceOp:
         assert hash(CmprssedQSVT1) == hash(CmprssedQSVT2)  # compare identical instance
         assert hash(CmprssedQSVT1) != hash(Other)
 
+        # test dictionary as parameter
+        CmprssedAdjoint1 = CompressedResourceOp(
+            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}}
+        )
+        CmprssedAdjoint2 = CompressedResourceOp(
+            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 1}}
+        )
+        Other = CompressedResourceOp(
+            ResourceDummyAdjoint, {"base_class": ResourceDummyQFT, "base_params": {"num_wires": 2}}
+        )
+
+        assert hash(CmprssedAdjoint1) == hash(CmprssedAdjoint1)
+        assert hash(CmprssedAdjoint1) == hash(CmprssedAdjoint2)
+        assert hash(CmprssedAdjoint1) != hash(Other)
+
     def test_equality(self):
         """Test that the equality methods behaves as expected"""
         CmprssedQSVT1 = CompressedResourceOp(ResourceDummyQSVT, {"num_wires": 3, "num_angles": 5})
@@ -107,8 +129,8 @@ class TestCompressedResourceOp:
     @pytest.mark.parametrize("args, repr", zip(compressed_ops_and_params_lst, compressed_op_reprs))
     def test_repr(self, args, repr):
         """Test that the repr method behaves as expected."""
-        _, op_type, parameters = args
-        cr_op = CompressedResourceOp(op_type, parameters)
+        _, op_type, parameters, name_param = args
+        cr_op = CompressedResourceOp(op_type, parameters, name=name_param)
 
         assert str(cr_op) == repr
 
