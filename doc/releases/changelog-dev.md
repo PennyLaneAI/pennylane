@@ -127,6 +127,9 @@ added `binary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit 
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* A `qml.tape.plxpr_to_tape` function can now convert plxpr to a tape.
+  [(#6343)](https://github.com/PennyLaneAI/pennylane/pull/6343)
+
 * PennyLane transforms can now be captured as primitives with experimental program capture enabled.
   [(#6633)](https://github.com/PennyLaneAI/pennylane/pull/6633)
 

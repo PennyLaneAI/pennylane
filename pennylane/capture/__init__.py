@@ -57,6 +57,16 @@ import ``from pennylane.capture.primitives import *``.
     qnode_prim
     while_loop_prim
 
+See also:
+
+.. currentmodule:: pennylane
+
+..autosummary::
+    :toctree: api
+
+    ~pennylane.tape.plxpr_to_tape
+
+
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
 Whether or not the capturing mechanism is currently being used can be

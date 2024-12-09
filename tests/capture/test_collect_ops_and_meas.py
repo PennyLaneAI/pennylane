@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the conversion of plxpr to a tape.
+Tests for the collection of plxpr operations and measurements
 """
 
 import pytest
