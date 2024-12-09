@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the state module"""
-import warnings
 
 import numpy as np
 import pytest
@@ -24,13 +23,6 @@ from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
 from pennylane.measurements import DensityMatrixMP, State, StateMP, density_matrix, expval, state
 from pennylane.wires import WireError, Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 class TestStateMP:
@@ -247,8 +239,8 @@ class TestState:
             qml.Hadamard(0)
             return state()
 
-        func()
-        obs = func.qtape.observables
+        tape = qml.workflow.construct_tape(func)()
+        obs = tape.observables
         assert len(obs) == 1
         assert obs[0].return_type is State
 
@@ -578,8 +570,8 @@ class TestDensityMatrix:
             qml.Hadamard(0)
             return density_matrix(0)
 
-        func()
-        obs = func.qtape.observables
+        tape = qml.workflow.construct_tape(func)()
+        obs = tape.observables
         assert len(obs) == 1
         assert obs[0].return_type is State
 

@@ -14,19 +14,11 @@
 """
 Unit tests for the Tracker and constructor
 """
-import warnings
 
 import pytest
 
 import pennylane as qml
 from pennylane import Tracker
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 class TestTrackerCoreBehavior:
@@ -265,11 +257,10 @@ class TestDefaultTrackerIntegration:
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
-        # initial execution to get qtape
-        circuit()
+        tape = qml.workflow.construct_tape(circuit)()
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
-            circuit.device.batch_execute([circuit.qtape, circuit.qtape])
+            circuit.device.batch_execute([tape, tape])
 
         assert tracker.totals == {"executions": 2, "batches": 1, "batch_len": 2}
         assert tracker.history == {

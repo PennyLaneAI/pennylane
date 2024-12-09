@@ -18,7 +18,6 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 
 import contextlib
 import io
-import warnings
 
 import numpy as np
 import pytest
@@ -28,13 +27,6 @@ from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
-
-
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
 
 
 @pytest.fixture(name="ops")
@@ -261,8 +253,10 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parametrized_circuit_gaussian, dev)
-        qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
-        circuit = qnode.qtape.graph
+        tape = qml.workflow.construct_tape(qnode)(
+            *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
+        )
+        circuit = tape.graph
         layers = circuit.parametrized_layers
         ops = circuit.operations
 
@@ -280,8 +274,10 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parametrized_circuit_gaussian, dev)
-        qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
-        circuit = qnode.qtape.graph
+        tape = qml.workflow.construct_tape(qnode)(
+            *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
+        )
+        circuit = tape.graph
         result = list(circuit.iterate_parametrized_layers())
 
         assert len(result) == 3
@@ -314,8 +310,8 @@ class TestCircuitGraph:
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circ, dev)
-        qnode()
-        circuit = qnode.qtape.graph
+        tape = qml.workflow.construct_tape(qnode)()
+        circuit = tape.graph
         assert circuit.max_simultaneous_measurements == expected
 
     def test_print_contents(self):
