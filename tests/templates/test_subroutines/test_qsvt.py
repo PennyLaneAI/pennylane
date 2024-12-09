@@ -235,7 +235,7 @@ class TestQSVT:
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
-            [qml.PCPhase(phi, 2, wires=wires) for phi in angles],
+            [qml.PCPhase(phi, 2, wires) for phi in angles],
         )
 
         assert np.allclose(qml.matrix(op), default_matrix)
@@ -260,7 +260,7 @@ class TestQSVT:
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
-            [qml.PCPhase(phi, 2, wires=wires) for phi in angles],
+            [qml.PCPhase(phi, 2, wires) for phi in angles],
         )
 
         assert np.allclose(qml.matrix(op), default_matrix)
@@ -318,7 +318,7 @@ class TestQSVT:
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
-            [qml.PCPhase(phi, 2, wires=wires) for phi in angles],
+            [qml.PCPhase(phi, 2, wires) for phi in angles],
         )
 
         assert np.allclose(qml.matrix(op), default_matrix)
