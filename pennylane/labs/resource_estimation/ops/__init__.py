@@ -45,6 +45,7 @@ from .qubit import (
 )
 
 from .op_math import (
+    ResourceAdjoint,
     ResourceCY,
     ResourceCH,
     ResourceCZ,
@@ -57,5 +58,7 @@ from .op_math import (
     ResourceToffoli,
     ResourceMultiControlledX,
     ResourceCNOT,
+    ResourceControlled,
     ResourceControlledPhaseShift,
+    ResourcePow,
 )

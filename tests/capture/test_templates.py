@@ -253,6 +253,7 @@ tested_modified_templates = [
     qml.OutAdder,
     qml.ModExp,
     qml.OutPoly,
+    qml.MPSPrep,
     qml.GQSP,
 ]
 
@@ -570,6 +571,53 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.QSVT(block_encode, shifts)
+
+    def test_mps_prep(self):
+        """Test the primitive bind call of MPSPrep."""
+
+        mps = [
+            np.array([[0.0, 0.107], [0.994, 0.0]]),
+            np.array(
+                [
+                    [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                    [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                ]
+            ),
+            np.array(
+                [
+                    [[-1.0, 0.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 1.0]],
+                    [[0.0, -1.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [1.0, 0.0]],
+                ]
+            ),
+            np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
+        wires = [0, 1, 2]
+
+        def qfunc(mps):
+            qml.MPSPrep(mps=mps, wires=wires)
+
+        # Validate inputs
+        qfunc(mps)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(mps)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.MPSPrep._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == {"id": None, "wires": wires}
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
+
+        assert len(q) == 1
+        assert q.queue[0] == qml.MPSPrep(mps=mps, wires=wires)
 
     def test_quantum_monte_carlo(self):
         """Test the primitive bind call of QuantumMonteCarlo."""
@@ -1049,6 +1097,7 @@ unsupported_templates = [
     qml.PrepSelPrep,
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
+    qml.TrotterizedQfunc,  # TODO: add support in follow up PR
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
