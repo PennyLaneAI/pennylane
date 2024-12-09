@@ -225,9 +225,13 @@ class TestOps:
         (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
         (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
         (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
-        (qml.PauliError("X", np.array(0.5), 0), "_apply_channel", 2),
-        (qml.PauliError("XXX", np.array(0.5), [0, 1, 2]), "_apply_channel_tensordot", 4),
-        (qml.PauliError("X" * 8, np.array(0.5), list(range(8))), "_apply_channel_tensordot", 8),
+        (qml.PauliError("X", np.array(0.5), wires=0), "_apply_channel", 2),
+        (qml.PauliError("XXX", np.array(0.5), wires=[0, 1, 2]), "_apply_channel_tensordot", 4),
+        (
+            qml.PauliError("X" * 8, np.array(0.5), wires=list(range(8))),
+            "_apply_channel_tensordot",
+            8,
+        ),
     ],
 )
 def test_method_choice(mocker, op, exp_method, dev_wires):
