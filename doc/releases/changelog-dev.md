@@ -40,7 +40,7 @@
 * Shortened the string representation for the `qml.S`, `qml.T`, and `qml.SX` operators.
   [(#6542)](https://github.com/PennyLaneAI/pennylane/pull/6542)
 
-* Added JAX support for `molecular_hamiltonian`.
+* Added JAX support for the differentiable Hartree-Fock workflow.
   [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
 
 <h4>Capturing and representing hybrid programs</h4>
