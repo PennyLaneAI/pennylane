@@ -66,37 +66,47 @@ def _are_inverses(op1, op2):
 
 
 def _cancel_inverses_plxpr_transform(
-    self, primitive, tracers, params, targs, tkwargs, state=None
+    primitive, tracers, params, targs, tkwargs, state
 ):  # pylint: disable=unused-argument,too-many-arguments,too-many-positional-arguments
     """Implementation for applying ``cancel_inverses`` to PLxPR."""
     # pylint: disable=import-outside-toplevel
     from pennylane.capture import TransformTracer
 
-    previous_ops = state.get("cancel_inverses_previous_ops", {})
+    previous_ops = state[0].get("previous_ops", {})
 
     with qml.QueuingManager.stop_recording():
         tracers_in = [t.val if isinstance(t.val, qml.operation.Operator) else t for t in tracers]
         cur_op = primitive.impl(*tracers_in, **params)
+
+    # if isinstance(cur_op, qml.measurements.MeasurementProcess):
+    #     tracers = [TransformTracer(t._trace, t.val, t.idx + 1) for t in tracers]
+    #     return primitive.bind(*tracers, **params)
 
     prev_op = previous_ops.pop(cur_op.wires[0], None)
     if prev_op is None:
         # No operator to compare against, so we save the current op and don't bind anything
         for w in cur_op.wires:
             previous_ops[w] = cur_op
-        state["cancel_inverses_previous_ops"] = previous_ops
-        return None
+        state[0]["cancel_inverses_previous_ops"] = previous_ops
+        return []
 
     cancel = False
     if _are_inverses(cur_op, prev_op):
         if cur_op.wires == prev_op.wires:
             # Inverse ops, same wires. Cancel
             cancel = True
-        if (
-            len(Wires.shared_wires([cur_op.wires, prev_op.wires])) == len(cur_op.wires)
-            and cur_op in symmetric_over_all_wires
-        ):
+        if cur_op in symmetric_over_all_wires and len(
+            Wires.shared_wires([cur_op.wires, prev_op.wires])
+        ) == len(cur_op.wires):
             # Symmetric ops, full overlap in wires. Cancel
             cancel = True
+        if cur_op in symmetric_over_control_wires and (
+            len(Wires.shared_wires([cur_op.wires[:-1], prev_op.wires[:-1]]))
+            == len(cur_op.wires) - 1
+        ):
+            # Is controlled op that is symmetric over control wires, and control
+            # wires have full overlap with prvious op's control wires
+            return
 
     if cancel:
         # Update dictionary and don't bind any new primitives
