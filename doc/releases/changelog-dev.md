@@ -117,6 +117,7 @@ featuring a `simulate` function for simulating mixed states in analytic mode.
 * Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
 new device API of `default_mixed` should be able to take the stochastic arguments
 such as `shots`, `rng` and `prng_key`.
+[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
