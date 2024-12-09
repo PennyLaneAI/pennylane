@@ -37,9 +37,11 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
 
     .. seealso:: :func:`~cartan_decomp`
 
+    See `Khaneja and Glaser (2000) <https://arxiv.org/abs/quant-ph/0010100>`__ for reference.
+
     **Example**
 
-    Let us perform a full recursive Khaneja-Glaser decomposition of
+    Let us first perform a single Khaneja-Glaser decomposition of
     :math:`\mathfrak{g} = \mathfrak{su}(8)`, i.e. the Lie algebra of all Pauli words on 3 qubits.
 
     >>> g = list(qml.pauli.pauli_group(3)) # u(8)
@@ -50,23 +52,56 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
     We perform the first iteration on the first qubit. We use :func:`~cartan_decomp`.
 
     >>> from functools import partial
+    >>> from pennylane.labs.dla import khaneja_glaser_involution
     >>> k0, m0 = cartan_decomp(g, partial(khaneja_glaser_involution, wire=0))
-    >>> print(f"First iteration: {len(k0)}, {len(m0)}")
-    First iteration: 31, 32
+    >>> print(f"First iteration, AIII: {len(k0)}, {len(m0)}")
+    First iteration, AIII: 31, 32
     >>> assert qml.labs.dla.check_cartan_decomp(k0, m0) # check Cartan commutation relations
 
-    We continue this recursive process on the :math:`\mathfrak{k}` subalgebra with the other
-    two wires.
+    We see that we split the 63-dimensional algebra :math:`\mathfrak{su}(8)` into a 31-dimensional
+    and a 32-dimensional subspace, and :func:`~check_cartan_decomp` verified that they satisfy
+    the commutation relations of a Cartan decomposition.
 
-    >>> k1, m1 = cartan_decomp(k0, partial(khaneja_glaser_involution, wire=1))
-    >>> assert check_cartan_decomp(k1, m1)
-    >>> print(f"Second iteration: {len(k1)}, {len(m1)}")
-    Second iteration: 15, 16
+    To expand on this example, we continue process recursively on the :math:`\mathfrak{k}_0`
+    subalgebra. Before we can apply the Khaneja-Glaser (type AIII) decomposition a second time,
+    we need to a) remove the :math:`\mathfrak{u}(1)` center from
+    :math:`\mathfrak{k}_0=\mathfrak{su}(4)\oplus\mathfrak{su}(4)\oplus\mathfrak{u}(1)` to make it
+    semisimple and b) perform a different Cartan decomposition, which is sometimes termed class B.
 
-    >>> k2, m2 = cartan_decomp(k1, partial(khaneja_glaser_involution, wire=2))
-    >>> assert check_cartan_decomp(k2, m2)
-    >>> print(f"Third iteration: {len(k2)}, {len(m2)}")
-    Third iteration: 7, 8
+    >>> center_k0 = qml.center(k0, pauli=True) # Compute center of k0
+    >>> k0_semi = [op for op in k0 if op not in center_k0] # Remove center from k0
+    >>> print(f"Removed operators {center_k0}, new length: {len(k0_semi)}")
+    Removed operators [1.0 * Z(0)], new length: 30
+
+    >>> from pennylane.labs.dla import ClassB
+    >>> k1, m1 = cartan_decomp(k0_semi, partial(ClassB, wire=0))
+    >>> assert qml.labs.dla.check_cartan_decomp(k1, m1)
+    >>> print(f"First iteration, class B: {len(k1)}, {len(m1)}")
+    First iteration, class B: 15, 15
+
+    Now we arrived at the subalgebra :math:`\mathfrak{k}_1=\mathfrak{su}(4)` and can perform the
+    next iteration of the recursive decomposition.
+
+    >>> k2, m2 = cartan_decomp(k1, partial(khaneja_glaser_involution, wire=1))
+    >>> assert qml.labs.dla.check_cartan_decomp(k2, m2)
+    >>> print(f"Second iteration, AIII: {len(k2)}, {len(m2)}")
+    Second iteration, AIII: 7, 8
+
+    We can follow up on this by removing the center from :math:`\mathfrak{k}_1` again, and
+    applying a final class B decomposition:
+
+    >>> center_k2 = qml.center(k2, pauli=True)
+    >>> k2_semi = [op for op in k2 if op not in center_k2]
+    >>> print(f"Removed operators {center_k2}, new length: {len(k2_semi)}")
+    Removed operators [1.0 * Z(1)], new length: 6
+
+    >>> k3, m3 = cartan_decomp(k2_semi, partial(ClassB, wire=1))
+    >>> assert qml.labs.dla.check_cartan_decomp(k3, m3)
+    >>> print(f"Second iteration, class B: {len(k3)}, {len(m3)}")
+    Second iteration, class B: 3, 3
+
+    This concludes our example of the Khaneja-Glaser recursive decomposition, as we arrived at
+    easy to implement single-qubit operations.
     """
     if wire is None:
         raise ValueError(
