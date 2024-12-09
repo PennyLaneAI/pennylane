@@ -37,7 +37,9 @@ from pennylane.qchem.vibrational.vibrational_class import (
 HBAR = (
     sp.constants.hbar * (1000 * sp.constants.Avogadro) * (10**20)
 )  # kg*(m^2/s) to (amu)*(angstrom^2/s)
-BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
+BOHR_TO_ANG = (
+    sp.constants.physical_constants["Bohr radius"][0] * 1e10
+)  # factor to convert bohr to angstrom
 CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relationship"][0]  # m to cm
 
 
