@@ -734,7 +734,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
         name (str): an optional name for the instance
 
     Returns:
-        Callable: a function with the same signature as :code:`qfunc`, when called it queues an instance of
+        (Callable): a function with the same signature as :code:`qfunc`, when called it queues an instance of
             :class:`~.TrotterizedQfunc`
 
     **Example**
