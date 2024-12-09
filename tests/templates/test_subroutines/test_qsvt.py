@@ -625,12 +625,35 @@ def test_global_phase_not_alway_applied():
 
 
 class TestRootFindingSolver:
+    def generate_polynomial_coeffs_in_canonical_basis(degree, parity=None):
+        np.random.seed(123)
+        if parity is None:
+            polynomial_coeffs_in_canonical_basis = np.random.normal(size=degree+1)
+            return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
+        if parity == 0:
+            assert degree % 2 == 0.
+            polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
+            polynomial_coeffs_in_canonical_basis[0::2] = np.random.normal(size=degree//2+1)
+            return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
+        
+        if parity == 1:
+            assert degree % 2 == 1.
+            polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
+            polynomial_coeffs_in_canonical_basis[0::2] = np.random.uniform(size=degree//2+1)
+            return polynomial_coeffs_in_canonical_basis / np.sum(np.abs(polynomial_coeffs_in_canonical_basis))
+        
+        raise ValueError(f"parity must be None, 0 or 1 but got {parity}")
+
     @pytest.mark.parametrize(
         "P",
         [
-            ([0.1, 0, 0.3, 0, -0.1]),
-            ([0, 0.2, 0, 0.3]),
-            ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
+            # ([0.1, 0, 0.3, 0, -0.1]),
+            # ([0, 0.2, 0, 0.3]),
+            # ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
+            (generate_polynomial_coeffs_in_canonical_basis(4,0)),
+            (generate_polynomial_coeffs_in_canonical_basis(3,1)),
+            (generate_polynomial_coeffs_in_canonical_basis(6,0)),
+
         ],
     )
     def test_complementary_polynomial(self, P):
@@ -654,9 +677,12 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "angles",
         [
-            ([0.1, 2, 0.3, 3, -0.1]),
-            ([0, 0.2, 1, 0.3, 4, 2.4]),
-            ([-0.4, 2, 0.4, 0, -0.1, 0, 0.1]),
+            # ([0.1, 2, 0.3, 3, -0.1]),
+            # ([0, 0.2, 1, 0.3, 4, 2.4]),
+            # ([-0.4, 2, 0.4, 0, -0.1, 0, 0.1]),
+            (generate_polynomial_coeffs_in_canonical_basis(4, None)),
+            (generate_polynomial_coeffs_in_canonical_basis(5, None)),
+            (generate_polynomial_coeffs_in_canonical_basis(6, None))
         ],
     )
     def test_transform_angles(self, angles):
@@ -674,9 +700,9 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            ([0.1, 0, 0.3, 0, -0.1]),
-            ([0, 0.2, 0, 0.3]),
-            ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
+            (generate_polynomial_coeffs_in_canonical_basis(4,0)),
+            (generate_polynomial_coeffs_in_canonical_basis(3,1)),
+            (generate_polynomial_coeffs_in_canonical_basis(6,0)),
         ],
     )
     @pytest.mark.parametrize(
@@ -708,15 +734,22 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            ([0.1, 0, 0.3, 0, -0.1]),
-            ([0, 0.2, 0, 0.3]),
-            ([-0.4, 0, 0.4, 0, -0.1, 0, 0.1]),
+            (generate_polynomial_coeffs_in_canonical_basis(4,0)),
+            (generate_polynomial_coeffs_in_canonical_basis(3,1)),
+            (generate_polynomial_coeffs_in_canonical_basis(6,0)),
         ],
     )
-    def test_correctness_QSVT_angles(self, poly):
+    @pytest.mark.parametrize(
+        "angle_solver",
+        [
+            "root-finding",
+            "iterative",
+        ]
+    )
+    def test_correctness_QSVT_angles(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(poly, "QSVT")
+        angles = qml.poly_to_angles(poly, "QSVT", angle_solver=angle_solver)
         x = 0.5
 
         block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
