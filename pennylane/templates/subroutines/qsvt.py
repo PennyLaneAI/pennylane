@@ -21,7 +21,6 @@ import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
 
 import pennylane as qml
-from pennylane.math.utils import requires_grad
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
