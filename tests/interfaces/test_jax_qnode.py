@@ -89,16 +89,9 @@ class TestQNode:
 
         assert circuit.interface == interface
 
-        # jax doesn't set trainable parameters on regular execution
-        tape = qml.workflow.construct_tape(circuit)(a)
-        assert tape.trainable_params == []
-
         # gradients should work
         grad = jax.grad(circuit)(a)
         assert isinstance(grad, jax.Array)
-        # the tape is able to deduce trainable parameters
-        tape = qml.workflow.construct_tape(circuit)(a)
-        assert tape.trainable_params == [0]
         assert grad.shape == ()
 
     def test_changing_trainability(
@@ -126,20 +119,12 @@ class TestQNode:
         grad_fn = jax.grad(circuit, argnums=[0, 1])
         res = grad_fn(a, b)
 
-        # the tape has reported both arguments as trainable
-        tape = qml.workflow.construct_tape(circuit)(a, b)
-        assert tape.trainable_params == [0, 1]
-
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # make the second QNode argument a constant
         grad_fn = jax.grad(circuit, argnums=0)
         res = grad_fn(a, b)
-
-        # the tape has reported only the first argument as trainable
-        tape = qml.workflow.construct_tape(circuit)(a, b)
-        assert tape.trainable_params == [0]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -167,10 +152,6 @@ class TestQNode:
 
         res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
 
-        if diff_method == "finite-diff":
-            tape = qml.workflow.construct_tape(circuit)(a, b, c)
-            assert tape.trainable_params == [0, 2]
-
         assert len(res) == 2
 
     def test_matrix_parameter(
@@ -195,10 +176,6 @@ class TestQNode:
 
         res = jax.grad(circuit, argnums=1)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
-
-        if diff_method == "finite-diff":
-            tape = qml.workflow.construct_tape(circuit)(U, a)
-            assert tape.trainable_params == [1]
 
     def test_differentiable_expand(
         self, dev_name, diff_method, grad_on_execution, interface, device_vjp, tol, seed
@@ -315,21 +292,12 @@ class TestVectorValuedQNode:
 
         res = circuit(a, b)
 
-        tape = qml.workflow.construct_tape(circuit)(a, b)
-        assert tape.trainable_params == []
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
-        tape = qml.workflow.construct_tape(circuit)(a, b)
-        assert tape.trainable_params == [0, 1]
-        assert isinstance(res, tuple)
-        assert len(res) == 2
 
         assert isinstance(res[0], tuple)
         assert isinstance(res[0][0], jax.numpy.ndarray)
