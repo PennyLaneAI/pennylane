@@ -17,6 +17,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -31,7 +32,7 @@ from pennylane import (
     ResetError,
     math,
 )
-from pennylane.devices.qubit_mixed import apply_operation
+from pennylane.devices.qubit_mixed import apply_operation, measure
 from pennylane.devices.qubit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
@@ -688,3 +689,142 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         state = apply_operation_einsum(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize(
+    "state,shape", [("two_qubit_state", (4, 4)), ("two_qubit_batched_state", (2, 4, 4))]
+)
+class TestSnapshot:
+    """Test that apply_operation works for Snapshot ops"""
+
+    @pytest.mark.usefixtures("two_qubit_state")
+    def test_no_debugger(self, ml_framework, state, shape, request):
+        """Test that nothing happens when there is no debugger"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        new_state = apply_operation(qml.Snapshot(), initial_state, is_state_batched=len(shape) != 2)
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+    def test_empty_tag(self, ml_framework, state, shape, request):
+        """Test a snapshot is recorded properly when there is no tag"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        debugger = Debugger()
+        new_state = apply_operation(
+            qml.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [0]
+        assert debugger.snapshots[0].shape == shape
+        assert math.allclose(debugger.snapshots[0], math.reshape(initial_state, shape))
+
+    def test_provided_tag(self, ml_framework, state, shape, request):
+        """Test a snapshot is recorded properly when provided a tag"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+
+        debugger = Debugger()
+        tag = "dense"
+        new_state = apply_operation(
+            qml.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+        assert debugger.snapshots[tag].shape == shape
+        assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, shape))
+
+    def test_snapshot_with_measurement(self, ml_framework, state, shape, request):
+        """Test a snapshot with measurement"""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+        tag = "expected_value"
+
+        debugger = Debugger()
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=qml.expval(qml.PauliZ(0))),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=len(shape) != 2,
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        if len(shape) == 2:
+            assert debugger.snapshots[tag].shape == ()
+            # Expected value for PauliZ measurement would depend on the initial state
+            # This value should be calculated based on your test state
+            expected_value = measure(qml.expval(qml.PauliZ(0)), initial_state)
+            assert math.allclose(debugger.snapshots[tag], expected_value)
+        else:
+            assert debugger.snapshots[tag].shape == (2,)
+            expected_values = measure(
+                qml.expval(qml.PauliZ(0)), initial_state, is_state_batched=True
+            )
+            assert math.allclose(debugger.snapshots[tag], expected_values)
+
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.sample(wires=[0, 1]),
+            qml.counts(wires=[0, 1]),
+        ],
+    )
+    def test_snapshot_with_shots_and_measurement(
+        self, measurement, ml_framework, state, shape, request
+    ):
+        """Test snapshots with shots for various measurement types."""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+        tag = "measurement_snapshot"
+        is_state_batched = len(shape) != 2
+
+        shots = qml.measurements.Shots(1000)
+        debugger = Debugger()
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=measurement),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=is_state_batched,
+            tape_shots=shots,
+        )
+
+        # Check state is unchanged
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        # Check snapshot was stored
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        snapshot_result = debugger.snapshots[tag]
+
+        # Verify snapshot result based on measurement type
+        if isinstance(measurement, qml.measurements.SampleMP):
+            len_measured_wires = len(measurement.wires)
+            assert (
+                snapshot_result.shape == (1000, len_measured_wires)
+                if not is_state_batched
+                else (2, 1000, len_measured_wires)
+            )
+            assert set(np.unique(snapshot_result)) <= {0, 1}
+        elif isinstance(measurement, qml.measurements.CountsMP):
+            if is_state_batched:
+                snapshot_result = snapshot_result[0]
+            assert isinstance(snapshot_result, dict)
+            assert all(isinstance(k, str) for k in snapshot_result.keys())
+            assert sum(snapshot_result.values()) == 1000
