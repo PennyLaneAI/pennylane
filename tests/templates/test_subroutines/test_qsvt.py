@@ -713,11 +713,11 @@ class Testqsvt:
             qml.qsvt(A, poly, encoding_wires, block_encoding)
             return qml.state()
 
-        A = qml.math.atleast_2d(A)
+        A_matrix = qml.math.atleast_2d(A)
         # Calculation of the polynomial transformation on the input matrix
-        expected = sum(coef * matrix_power(A, i) for i, coef in enumerate(poly))
+        expected = sum(coef * matrix_power(A_matrix, i) for i, coef in enumerate(poly))
 
-        assert np.allclose(qml.matrix(circuit)()[: len(A), : len(A)].real, expected)
+        assert np.allclose(qml.matrix(circuit)()[: len(A_matrix), : len(A_matrix)].real, expected)
 
     @pytest.mark.parametrize(
         ("A", "poly", "block_encoding", "encoding_wires"),
