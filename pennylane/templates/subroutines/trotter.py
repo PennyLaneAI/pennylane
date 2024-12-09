@@ -583,11 +583,11 @@ class TrotterizedQfunc(Operation):
 
         >>> time = 0.1
         >>> angles = (0.12, -3.45)
-        >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
+        >>> print(qml.draw(my_circuit, level="device")(time, angles, num_trotter_steps=1))
         a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
         b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
         >>>
-        >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=3))
+        >>> print(qml.draw(my_circuit, level="device")(time, angles, num_trotter_steps=3))
         a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
         b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
 
@@ -762,12 +762,11 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
         >>> time = 0.1
         >>> theta, phi = (0.12, -3.45)
         >>>
-        >>> print(qml.draw(my_circuit, level=3)(time, theta, phi, num_trotter_steps=1))
+        >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
         a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
         b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
         >>>
-        >>>
-        >>> print(qml.draw(my_circuit, level=3)(time, theta, phi, num_trotter_steps=3))
+        >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=3))
         a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
         b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
 
