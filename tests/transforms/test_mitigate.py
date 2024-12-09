@@ -418,7 +418,7 @@ class TestMitiqIntegration:
 
         with pytest.warns(
             DeprecationWarning,
-            match="The property ``qiskit.circuit.instruction.Instruction.condition``",
+            match="Treating CircuitInstruction as an iterable is deprecated legacy",
         ):
             res_mitigated = mitigated_circuit(w1, w2)
         res_ideal = ideal_circuit(w1, w2)
