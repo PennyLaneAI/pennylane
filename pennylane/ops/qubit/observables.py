@@ -100,9 +100,6 @@ class Hermitian(Observable):
                 f"a matrix with shape {A.shape[0]}x{A.shape[0]} was passed."
             )
 
-        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
-            raise ValueError("Observable must be Hermitian.")
-
     def label(
         self,
         decimals: Optional[int] = None,
