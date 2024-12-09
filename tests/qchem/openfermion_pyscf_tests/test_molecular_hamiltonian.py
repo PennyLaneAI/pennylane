@@ -751,7 +751,7 @@ def test_mol_hamiltonian_with_read_structure(tmpdir):
         f.write(file_content)
 
     symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
-    H, num_qubits = qchem.molecular_hamiltonian(symbols, coordinates)
+    H, num_qubits = qchem.molecular_hamiltonian(symbols, np.asarray(coordinates))
     assert len(H.terms()) == 2
     assert num_qubits == 4
 
@@ -767,7 +767,7 @@ def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
 
     symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
 
-    molecule = qchem.Molecule(symbols, coordinates)
+    molecule = qchem.Molecule(symbols, np.asarray(coordinates))
     H, num_qubits = qchem.molecular_hamiltonian(molecule)
     assert len(H.terms()) == 2
     assert num_qubits == 4
