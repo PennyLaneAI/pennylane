@@ -377,8 +377,6 @@ class TestJaxExecuteIntegration:
 
     def test_reusing_quantum_tape(self, execute_kwargs, shots, device_name, seed):
         """Test re-using a quantum tape by passing new parameters"""
-        if execute_kwargs["diff_method"] == param_shift:
-            pytest.skip("Basic QNode execution wipes out trainable params with param-shift")
 
         device = get_device(device_name, seed)
 
@@ -818,7 +816,7 @@ class TestHamiltonianWorkflows:
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["diff_method"] == "adjoint":
-            pytest.skip("trainable hamiltonians not supported with adjoint")
+            pytest.xfail("trainable hamiltonians not supported with adjoint")
         if execute_kwargs["diff_method"] != "backprop":
             pytest.xfail(reason="parameter shift derivatives do not yet support sums.")
 

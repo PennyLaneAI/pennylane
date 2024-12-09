@@ -870,7 +870,6 @@ class TestCatalystSample:
 class TestCatalystMCMs:
     """Test dynamic_one_shot with Catalyst."""
 
-    @pytest.mark.xfail(reason="requires simultaneous catalyst pr")
     @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs])
     @pytest.mark.parametrize("meas_obj", [qml.PauliZ(0), [0], "mcm"])
     # pylint: disable=too-many-arguments

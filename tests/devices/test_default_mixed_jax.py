@@ -787,10 +787,6 @@ class TestPassthruIntegration:
         """Tests that the gradient of the qnode is correct with batching"""
         dev = qml.device("default.mixed", wires=2)
 
-        if decorator == jax.jit:
-            # TODO: https://github.com/PennyLaneAI/pennylane/issues/2762
-            pytest.xfail("Parameter broadcasting currently not supported for JAX jit")
-
         @partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):

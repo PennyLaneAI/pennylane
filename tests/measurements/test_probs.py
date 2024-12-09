@@ -480,7 +480,7 @@ class TestProbs:
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, 0)
-            return qml.probs(wires=dev.wires)  # TODO: Use ``qml.probs()`` when supported
+            return qml.probs()
 
         x = np.array([0, np.pi / 2])
         res = circuit(x)

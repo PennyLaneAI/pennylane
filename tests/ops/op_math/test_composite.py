@@ -408,15 +408,9 @@ class TestProperties:
                 qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
             ],
         ]
-
-        # TODO: Use qml.equal when supported for nested operators
-
         for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
             for op1, op2 in zip(list_op1, list_op2):
-                assert op1.name == op2.name
-                assert op1.wires == op2.wires
-                assert op1.data == op2.data
-                assert op1.arithmetic_depth == op2.arithmetic_depth
+                qml.assert_equal(op1, op2)
 
     def test_overlapping_ops_private_attribute(self):
         """Test that the private `_overlapping_ops` attribute gets updated after a call to

@@ -363,8 +363,7 @@ def test_jordan_wigner_fermi_word_ps(fermionic_op, result):
     assert qubit_op == expected_op
 
 
-# TODO: if qml.equal is extended to compare layers of nested ops, also test with FERMI_WORDS_AND_OPS_EXTENDED
-@pytest.mark.parametrize("fermionic_op, result", FERMI_WORDS_AND_OPS)
+@pytest.mark.parametrize("fermionic_op, result", FERMI_WORDS_AND_OPS + FERMI_WORDS_AND_OPS_EXTENDED)
 def test_jordan_wigner_fermi_word_operation(fermionic_op, result):
     wires = fermionic_op.wires or [0]
 

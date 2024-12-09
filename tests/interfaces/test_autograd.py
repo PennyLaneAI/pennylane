@@ -388,9 +388,6 @@ class TestAutogradExecuteIntegration:
             assert np.allclose(res[2], np.cos(0.5), atol=atol_for_shots(shots))
             assert np.allclose(res[3], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
 
-        if shots.has_partitioned_shots:
-            pytest.xfail("autograd jacobians do not work with ragged results and shot vectors.")
-            # TODO: autograd jacobians with ragged results and shot vectors
         jac = qml.jacobian(cost)(params)
         assert isinstance(jac, np.ndarray)
         if not shots.has_partitioned_shots:

@@ -709,7 +709,7 @@ class TestShowMatrices:
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
 
 
-# @pytest.mark.skip("Nested tapes are being deprecated")
+@pytest.mark.skip("Nested tapes are being deprecated")
 class TestNestedTapes:
     """Test situations with nested tapes."""
 
