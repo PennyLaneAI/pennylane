@@ -17,7 +17,7 @@ Unit tests for the metric tensor transform.
 import importlib
 
 # pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
-# pylint: disable=not-callable,too-many-statements
+# pylint: disable=not-callable,too-many-statements, too-many-positional-arguments
 import pytest
 from scipy.linalg import block_diag
 
@@ -1360,10 +1360,13 @@ class TestDifferentiability:
         def cost_full(*weights):
             return qml.metric_tensor(qnode, approx=None)(*weights)
 
-        _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
-        assert qml.math.allclose(_cost_full(*weights), cost_full(*weights), atol=tol, rtol=0)
-        jac = jax.jacobian(cost_full)(*weights)
-        expected_full = qml.jacobian(_cost_full)(*weights)
+        weights_jax = tuple(jax.numpy.array(w) for w in weights)
+        _cost_full_autograd = autodiff_metric_tensor(ansatz, num_wires=3)
+        v1 = _cost_full_autograd(*weights)
+        v2 = cost_full(*weights_jax)
+        assert qml.math.allclose(v1, v2, atol=tol, rtol=0)
+        jac = jax.jacobian(cost_full)(*weights_jax)
+        expected_full = qml.jacobian(_cost_full_autograd)(*weights)
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.tf

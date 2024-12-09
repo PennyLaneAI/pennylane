@@ -64,6 +64,18 @@ def init_state():
     return _init_state
 
 
+def get_legacy_capabilities(dev):
+    """Gets the capabilities dictionary of a device."""
+
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        return dev.target_device.capabilities()
+
+    if isinstance(dev, qml.devices.LegacyDevice):
+        return dev.capabilities()
+
+    return {}
+
+
 @pytest.fixture(scope="session")
 def skip_if():
     """Fixture to skip tests."""
@@ -71,7 +83,8 @@ def skip_if():
     def _skip_if(dev, capabilities):
         """Skip test if device has any of the given capabilities."""
 
-        dev_capabilities = dev.capabilities()
+        dev_capabilities = get_legacy_capabilities(dev)
+
         for capability, value in capabilities.items():
             # skip if capability not found, or if capability has specific value
             if capability not in dev_capabilities or dev_capabilities[capability] == value:

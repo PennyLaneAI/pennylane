@@ -1237,8 +1237,7 @@ def test_label_method(op, label1, label2, label3):
 @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
 def test_generators(op):
     """Check that the type of the generator returned by the qchem ops is
-    the same as the type pointed to by qml.Hamiltonian (either Hamiltonian
-    or LinearCombiantion) for both legacy and new opmath"""
+    the same as the type pointed to by LinearCombiantion"""
     if isinstance(op, (qml.ops.DoubleExcitationPlus, qml.ops.DoubleExcitationMinus)):
         pytest.skip(reason="Operator has SparseHamiltonian generator instead")
 
