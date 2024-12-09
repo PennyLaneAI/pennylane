@@ -553,11 +553,11 @@ class TrotterizedQfunc(Operation):
     Raises:
         ValueError: A qfunc must be provided to be trotterized.
 
+    See also :func:`~.trotterize`.
+
     **Example**
 
     .. code-block:: python3
-
-        from pennylane.templates.subroutines.trotter import TrotterizedQfunc
 
         def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
             "This is the first order expansion (U_1)."
@@ -568,13 +568,13 @@ class TrotterizedQfunc(Operation):
 
         @qml.qnode(qml.device("default.qubit"))
         def my_circuit(time, angles, num_trotter_steps):
-            TrotterizedQfunc(
+            qml.TrotterizedQfunc(
                 time,
                 *angles,
                 qfunc=first_order_expansion,
                 n=num_trotter_steps,
                 order=2,
-                wires=['a', 'b', 'c'],
+                wires=['a', 'b'],
                 flip=True,
             )
             return qml.state()
@@ -754,7 +754,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
                 first_order_expansion,
                 n=num_trotter_steps,
                 order=2,
-            )(time, theta, phi, wires=['a', 'b', 'c'], flip=True)
+            )(time, theta, phi, wires=['a', 'b'], flip=True)
             return qml.state()
 
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
