@@ -54,6 +54,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.pattern_matching_optimization
     ~transforms.transpile
     ~transforms.decompose
+    ~transforms.combine_global_phases
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -305,6 +306,7 @@ from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
+from .combine_global_phases import combine_global_phases
 
 from .mitigate import (
     mitigate_with_zne,

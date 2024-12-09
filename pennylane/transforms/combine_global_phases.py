@@ -1,0 +1,73 @@
+"""
+Provides a transform to combine all ``qml.GlobalPhase`` gates in a circuit into a single one applied at the end.
+"""
+
+import pennylane as qml
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
+
+
+@transform
+def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Combine all ``qml.GlobalPhase`` gates into a single ``qml.GlobalPhase`` operation.
+
+    Circuits passed through this transform will be updated to include the same operations and
+    measurements of the original input other than ``qml.GlobalPhase``.
+    A single ``qml.GlobalPhase`` operation will be added at the end of the new output circuit.
+    The total global phase is computed as the algebraic sum of all the phases in the original circuit.
+
+    Args:
+        tape (QNode or QuantumTape or Callable): the input circuit to be transformed.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    **Example**
+
+    Suppose we want to combine all the global phase gates in a given quantum circuit.
+    The ``combine_global_phases`` transform can be used to do this as follows:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        @qml.transforms.combine_global_phases
+        def circuit():
+            qml.GlobalPhase(0.3, wires=0)
+            qml.PauliY(wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=(1,2))
+            qml.GlobalPhase(0.46, wires=2)
+            return qml.expval(qml.X(0) @ qml.Z(1))
+
+    To check the result, let's print out the circuit:
+
+    >>> print(qml.draw(circuit)())
+    0: ──Y─────GlobalPhase(0.76)─┤ ╭<X@Z>
+    1: ──H─╭●──GlobalPhase(0.76)─┤ ╰<X@Z>
+    2: ────╰X──GlobalPhase(0.76)─┤
+    """
+
+    phi = 0
+    operations = []
+    for op in tape.operations:
+        if isinstance(op, qml.GlobalPhase):
+            phi += op.parameters[0]
+        else:
+            operations.append(op)
+
+    if phi != 0:
+        operations.append(qml.GlobalPhase(phi=phi))
+
+    new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
