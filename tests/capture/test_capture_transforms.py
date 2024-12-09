@@ -841,24 +841,47 @@ class TestTransformInterpreterIntegration:
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.VarianceMP._obs_primitive
 
 
+from pennylane.ops.functions.map_wires import MapWires
+
+
+def normalize_var(var):
+    """
+    Normalize a Var object by removing the `id` while preserving its type and other attributes.
+    If the object is not a Var, return it as is.
+    """
+    var[0].aval
+
+
+def normalize_eqn(eqn):
+    """
+    Normalize an equation by processing its invars, outvars, and params.
+    """
+    normalized_eqn = {
+        "primitive": eqn.primitive,
+        "invars": [normalize_var(v) for v in eqn.invars],
+        "outvars": [normalize_var(v) for v in eqn.outvars],
+        "params": eqn.params,
+    }
+    return normalized_eqn
+
+
+# pylint: disable=protected-access, expression-not-assigned
 class TestMapWiresTransform:
     """Unit tests for the MapWiresTransform class."""
 
     def test_qnode_simple(self):
-        """Test that a simple qnode with a single gate is transformed correctly."""
+        """Test that a simple qnode is transformed correctly."""
 
-        program = TransformProgram()
-        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2, 2: 3, 3: 2})
+        const = 0.1
 
-        @TransformInterpreter(program)
+        @MapWires(wire_map={0: 1, 1: 2, 2: 3, 3: 2})
         @qml.qnode(
             qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
         )
         def f(x):
             qml.RZ(x, 0)
-            qml.PhaseShift(x, 1)
+            qml.PhaseShift(const, 1)
             qml.Hadamard(2)
-            # qml.Hadamard(2) @ qml.Hadamard(3)
             return qml.expval(qml.PauliZ(3)), qml.probs(wires=[1])
 
         jaxpr = jax.make_jaxpr(f)(0.1)
@@ -873,7 +896,6 @@ class TestMapWiresTransform:
         assert inner_jaxpr.eqns[1].primitive == qml.PhaseShift._primitive
         assert inner_jaxpr.eqns[1].invars[-1].val == 2
 
-        # assert inner_jaxpr.eqns[2].primitive == qml.ops.Prod._primitive
         assert inner_jaxpr.eqns[2].primitive == qml.Hadamard._primitive
         assert inner_jaxpr.eqns[2].invars[-1].val == 3
 
@@ -883,68 +905,68 @@ class TestMapWiresTransform:
         assert inner_jaxpr.eqns[5].primitive == qml.measurements.ProbabilityMP._wires_primitive
         assert inner_jaxpr.eqns[5].invars[-1].val == 2
 
-    def test_qnode_simple_const(self):
-        """Test that a simple qnode with a single gate is transformed correctly."""
-
-        program = TransformProgram()
-        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2})
+    def test_qnode_nested_ops(self):
+        """Test that a qnode with nested operations is transformed correctly."""
 
         const = 0.1
 
-        @TransformInterpreter(program)
+        @MapWires(wire_map={0: 1, 1: 2})
         @qml.qnode(
             qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
         )
-        def f():
-            qml.RZ(const, 0)
-            qml.PhaseShift(const, 1)
-            qml.Hadamard(2)
-            qml.RX(const, 1)
-            # qml.RX(const, 0) @ qml.X(0)
+        def transformed_circuit(x):
+            qml.RZ(const, 0) + qml.RX(x, 0)
+            qml.PhaseShift(const, 1) @ qml.RX(x, 0) @ qml.X(0)
+            qml.Hadamard(2) @ qml.RX(x, 0) + 4 * qml.RX(const, 0)
             return qml.state()
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = jax.make_jaxpr(transformed_circuit)(0.1)
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
-        assert len(inner_jaxpr.eqns) == 5
+        # ensure every operation and measurement is captured
+        assert len(inner_jaxpr.eqns) == 15
 
         assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert inner_jaxpr.eqns[0].invars[-1].val == 1
 
-        assert inner_jaxpr.eqns[1].primitive == qml.PhaseShift._primitive
-        assert inner_jaxpr.eqns[1].invars[-1].val == 2
+        assert inner_jaxpr.eqns[1].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[1].invars[-1].val == 1
 
-        assert inner_jaxpr.eqns[2].primitive == qml.Hadamard._primitive
-        assert inner_jaxpr.eqns[2].invars[-1].val == 2
+        assert inner_jaxpr.eqns[2].primitive == qml.ops.Sum._primitive
 
-        # assert inner_jaxpr.eqns[3].primitive == qml.ops.Sum._primitive
-        assert inner_jaxpr.eqns[3].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[3].primitive == qml.PhaseShift._primitive
         assert inner_jaxpr.eqns[3].invars[-1].val == 2
 
-    def test_queue_not_implemeted(self):
-        """Test that an error is raised if the queue method is not implemented."""
+        assert inner_jaxpr.eqns[4].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[4].invars[-1].val == 1
 
-        program = TransformProgram()
-        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2}, queue=True)
+        assert inner_jaxpr.eqns[5].primitive == qml.ops.Prod._primitive
 
-        @TransformInterpreter(program)
-        def f():
-            qml.RZ(0.1, 0)
-            return qml.state()
+        assert inner_jaxpr.eqns[6].primitive == qml.X._primitive
+        assert inner_jaxpr.eqns[6].invars[-1].val == 1
 
-        with pytest.raises(
-            NotImplementedError,
-            match="The 'queue' argument is not yet supported with capture enabled",
-        ):
-            f()
+        assert inner_jaxpr.eqns[7].primitive == qml.ops.Prod._primitive
+
+        assert inner_jaxpr.eqns[8].primitive == qml.Hadamard._primitive
+        assert inner_jaxpr.eqns[8].invars[-1].val == 2
+
+        assert inner_jaxpr.eqns[9].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[9].invars[-1].val == 1
+
+        assert inner_jaxpr.eqns[10].primitive == qml.ops.Prod._primitive
+
+        assert inner_jaxpr.eqns[11].primitive == qml.RX._primitive
+        assert inner_jaxpr.eqns[11].invars[-1].val == 1
+
+        assert inner_jaxpr.eqns[12].primitive == qml.ops.SProd._primitive
+        assert inner_jaxpr.eqns[13].primitive == qml.ops.Sum._primitive
+
+        assert inner_jaxpr.eqns[14].primitive == qml.measurements.StateMP._wires_primitive
 
     def test_qnode_controlled_ops(self):
         """Test that a qnode with controlled operations is transformed correctly."""
 
-        program = TransformProgram()
-        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2, 2: 3, 3: 2})
-
-        @TransformInterpreter(program)
+        @MapWires(wire_map={0: 1, 1: 2, 2: 3, 3: 2})
         @qml.qnode(
             qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
         )
@@ -999,10 +1021,7 @@ class TestMapWiresTransform:
     def test_qnode_for_loop(self):
         """Test that a qnode with a for loop is transformed correctly."""
 
-        program = TransformProgram()
-        program.add_transform(_map_wires_transform, wire_map={0: 1})
-
-        @TransformInterpreter(program)
+        @MapWires(wire_map={0: 1})
         @qml.qnode(
             qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
         )
@@ -1026,10 +1045,7 @@ class TestMapWiresTransform:
     def test_qnode_while_loop(self):
         """Test that a qnode with a while loop is transformed correctly."""
 
-        program = TransformProgram()
-        program.add_transform(_map_wires_transform, wire_map={0: 1})
-
-        @TransformInterpreter(program)
+        @MapWires(wire_map={0: 1})
         @qml.qnode(
             qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
         )
@@ -1054,10 +1070,7 @@ class TestMapWiresTransform:
     def test_qnode_conditional(self):
         """Test that a qnode with a conditional is transformed correctly."""
 
-        program = TransformProgram()
-        program.add_transform(_map_wires_transform, wire_map={0: 1})
-
-        @TransformInterpreter(program)
+        @MapWires(wire_map={0: 1})
         @qml.qnode(
             qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
         )

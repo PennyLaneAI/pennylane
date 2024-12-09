@@ -135,126 +135,28 @@ def processing_fn(res):
     return res[0]
 
 
-# This transform does not work with dynamic wires
-def _map_wires_plxpr_transform(
-    primitive, tracers, params, targs, tkwargs, state=None
-):  # pylint: disable=unused-argument, too-many-arguments, too-many-positional-arguments
-    """Implementation for ``_map_wires_transform`` with program capture"""
-    # pylint: disable=import-outside-toplevel
-    from pennylane.capture import TransformTracer
+class MapWires(qml.capture.PlxprInterpreter):
+    """Interpreter that maps wires of operations and measurements."""
 
-    if tkwargs.get("queue"):
-        raise NotImplementedError("The 'queue' argument is not yet supported with capture enabled.")
+    def __init__(self, wire_map: dict) -> None:
+        """Initialize the interpreter."""
+        self.wire_map = wire_map
 
-    print(
-        f"\n\n_map_wires_plxpr_transform called with:"
-        f"\n- primitive: {primitive}"
-        f"\n- tracers: {tracers}"
-        f"\n- params: {params}"
-        f"\n- targs: {targs}"
-        f"\n- tkwargs: {tkwargs}"
-        f"\n- state: {state}\n"
-    )
-
-    wire_map = tkwargs.get("wire_map")
-    n_wires = params.get("n_wires")
-
-    with qml.QueuingManager.stop_recording():
-        tracers_in = [getattr(t, "val", t) for t in tracers]
-        op = primitive.impl(*tracers_in, **params)
-
-    # TODO: optimize this once all edge cases are covered
-    if isinstance(op, MeasurementProcess):
-
-        meas_tracers = []
-        for t in tracers:
-            if isinstance(t, TransformTracer):
-
-                if len(op.wires) > 0:
-
-                    meas_tracers.append(
-                        TransformTracer(t._trace, *op.map_wires(wire_map=wire_map).wires, t.idx + 1)
-                    )
-
-                else:
-                    meas_tracers.append(TransformTracer(t._trace, t.val, t.idx + 1))
-
-            else:
-                meas_tracers.append(t)
-
-        return primitive.bind(*meas_tracers, **params)
-
-    # TODO: complete this
-    # This is for nested operations
-    if n_wires is None:
-
-        print(f"op: {op}")
-        mapped_op = op.map_wires(wire_map=wire_map)
-        print(f"mapped_op: {mapped_op}")
-
-        inner_abs_ops = []
-
-        for idx, single_mapped_op in enumerate(mapped_op.operands):
-            roba = single_mapped_op._primitive.bind(
-                *single_mapped_op.parameters, *single_mapped_op.wires
-            )
-            inner_abs_ops.append(roba)
-
-        op_tracers = []
-        for idx, t in enumerate(tracers):
-            if isinstance(t, TransformTracer):
-
-                op_tracers.append(
-                    TransformTracer(
-                        t._trace,
-                        inner_abs_ops[idx],
-                        # *t.val.map_wires(wire_map=wire_map).wires,
-                        t.idx + 1,
-                    )
-                )
-            else:
-                op_tracers.append(t)
-
-        return primitive.bind(*op_tracers, **params)
-
-    # For each wire, there is a separate TransformTracer,
-    # and the wire is the value of the TransformTracer.
-    split = None if n_wires == 0 else -n_wires
-    tracers_no_wires, tracers_wires = tracers[:split], tracers[split:]
-
-    print(f"split: {split}")
-    print(f"tracers_no_wires: {tracers_no_wires}")
-    print(f"tracers_wires: {tracers_wires}")
-
-    op_tracers = [
-        TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
-        for t in tracers_no_wires
-    ]
-
-    # We disable the capture to call the map_wires method of the operator.
-    # The reason is that for ControlledOp the map_wires method binds the base operation
-    # if capture is enabled
-    qml.capture.disable()
-    try:
-        mapped_wires = op.map_wires(wire_map=wire_map).wires
-    finally:
+    def interpret_operation(self, op: Operator) -> Operator:
+        """Interpret an operation."""
+        qml.capture.disable()
+        op = op.map_wires(self.wire_map)
         qml.capture.enable()
+        return super().interpret_operation(op)
 
-    print(f"mapped_wires: {mapped_wires}")
-
-    op_tracers.extend(
-        (
-            TransformTracer(t._trace, mapped_wires[idx], t.idx + 1)
-            if isinstance(t, TransformTracer)
-            else t
-        )
-        for idx, t in enumerate(tracers_wires)
-    )
-
-    return primitive.bind(*op_tracers, **params)
+    def interpret_measurement(self, measurement: MeasurementProcess) -> MeasurementProcess:
+        """Interpret a measurement operation."""
+        qml.capture.disable()
+        measurement = measurement.map_wires(self.wire_map)
+        qml.capture.enable()
+        return super().interpret_measurement(measurement)
 
 
-@partial(transform, plxpr_transform=_map_wires_plxpr_transform)
 def _map_wires_transform(
     tape: QuantumScript, wire_map=None, queue=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
