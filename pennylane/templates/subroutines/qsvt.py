@@ -508,36 +508,28 @@ class QSVT(Operation):
 
                 poly = [0, -1, 0, 0.5, 0, 0.5]
                 angles = qml.poly_to_angles(poly, "QSVT")
-
                 input_matrix = np.array([[0.2, 0.1], [0.1, -0.1]])
 
                 wires = [1, 2]
                 block_encode = qml.BlockEncode(input_matrix, wires=wires)
-
                 projectors = [
                     qml.PCPhase(angles[i], dim=len(input_matrix), wires=wires)
                     for i in range(len(angles))
                 ]
 
                 dev = qml.device("default.qubit")
-
                 @qml.qnode(dev)
                 def circuit():
-                    qml.Hadamard(0)
-                    qml.ctrl(qml.QSVT, control=0, control_values=[1])(block_encode, projectors)
-                    qml.ctrl(qml.adjoint(qml.QSVT), control=0, control_values=[0])(
-                        block_encode, projectors
-                    )
-                    qml.Hadamard(0)
+                    qml.QSVT(block_encode, projectors)
                     return qml.state()
 
-                matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3, 4])()
+                matrix = qml.matrix(circuit, wire_order=[0, 1,2])()
 
             .. code-block:: pycon
 
-                >>>print(np.round(matrix[: len(input_matrix), : len(input_matrix)], 4))
-                [[-0.1942+0.j -0.0979+0.j]
-                 [-0.0979-0.j  0.0995-0.j]]
+                >>> print(np.round(matrix[: len(input_matrix), : len(input_matrix)], 4).real)
+                [[-0.1942 -0.0979]
+                 [-0.0979  0.0995]]
 
         * If the initial operator for which we apply the singular value transformation is a linear
             combination of unitaries, e.g., a Hamiltonian, it can be blcok-encoded with operations
@@ -548,11 +540,12 @@ class QSVT(Operation):
             blcok-encoded with :class:`~.PrepSelPrep`.
 
             poly = np.array([0, -1, 0, 0.5, 0, 0.5])
-            H = 0.1 * qml.X(3) - 0.7 * qml.X(3) @ qml.Z(4) - 0.2 * qml.Z(3) @ qml.Y(4)
+            H = 0.1 * qml.X(3) - 0.7 * qml.X(3) @ qml.Z(4) - 0.2 * qml.Z(3)
 
             control_wires = [1, 2]
             block_encode = qml.PrepSelPrep(H, control=control_wires)
             angles = qml.poly_to_angles(poly, "QSVT")
+
             projectors = [
                 qml.PCPhase(angles[i], dim=2 ** len(H.wires), wires=control_wires + H.wires)
                 for i in range(len(angles))
@@ -562,23 +555,18 @@ class QSVT(Operation):
 
             @qml.qnode(dev)
             def circuit():
-                qml.Hadamard(0)
-                qml.ctrl(qml.QSVT, control=0, control_values=[1])(block_encode, projectors)
-                qml.ctrl(qml.adjoint(qml.QSVT), control=0, control_values=[0])(
-                    block_encode, projectors
-                )
-                qml.Hadamard(0)
+                qml.QSVT(block_encode, projectors)
                 return qml.state()
 
-            matrix = qml.matrix(circuit, wire_order=[0] + control_wires + H.wires)()
+            matrix = qml.matrix(circuit, wire_order=[0] + control_wires + H.wires)()[: 2 ** len(H.wires), : 2 ** len(H.wires)]
 
         .. code-block:: pycon
 
-            >>>print(np.round(matrix[: 2 ** len(H.wires), : 2 ** len(H.wires)], 4))
-            [[-0.    +0.j      0.    +0.0968j  0.3502-0.j     -0.    -0.j    ]
-             [ 0.    -0.0968j -0.    -0.j     -0.    -0.j     -0.2534+0.j    ]
-             [ 0.3502+0.j     -0.    +0.j      0.    +0.j     -0.    -0.0968j]
-             [-0.    +0.j     -0.2534-0.j     -0.    +0.0968j -0.    +0.j    ]]
+            >>> print(np.round(matrix, 4).real)
+            [[ 0.144   0.      0.432   0.    ]
+             [ 0.      0.0858  0.     -0.343 ]
+             [ 0.432   0.     -0.144   0.    ]
+             [ 0.     -0.343   0.     -0.0858]]
     """
 
     num_wires = AnyWires
