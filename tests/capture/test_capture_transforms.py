@@ -921,6 +921,23 @@ class TestMapWiresTransform:
         assert inner_jaxpr.eqns[3].primitive == qml.RX._primitive
         assert inner_jaxpr.eqns[3].invars[-1].val == 2
 
+    def test_queue_not_implemeted(self):
+        """Test that an error is raised if the queue method is not implemented."""
+
+        program = TransformProgram()
+        program.add_transform(_map_wires_transform, wire_map={0: 1, 1: 2}, queue=True)
+
+        @TransformInterpreter(program)
+        def f():
+            qml.RZ(0.1, 0)
+            return qml.state()
+
+        with pytest.raises(
+            NotImplementedError,
+            match="The 'queue' argument is not yet supported with capture enabled",
+        ):
+            f()
+
     def test_qnode_controlled_ops(self):
         """Test that a qnode with controlled operations is transformed correctly."""
 

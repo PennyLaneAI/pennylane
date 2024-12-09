@@ -143,25 +143,27 @@ def _map_wires_plxpr_transform(
     # pylint: disable=import-outside-toplevel
     from pennylane.capture import TransformTracer
 
-    if "queue" in tkwargs:
-        raise ValueError("The 'queue' argument is not supported in the plxpr transformation.")
+    if tkwargs.get("queue"):
+        raise NotImplementedError("The 'queue' argument is not yet supported with capture enabled.")
 
     print(
-        f"\n\n_map_wires_plxpr_transform called with \nprimitive: {primitive}, \ntracers: {tracers}, \nparams: {params}, \ntargs: {targs}, \ntkwargs: {tkwargs}, \nstate: {state}\n"
+        f"\n\n_map_wires_plxpr_transform called with:"
+        f"\n- primitive: {primitive}"
+        f"\n- tracers: {tracers}"
+        f"\n- params: {params}"
+        f"\n- targs: {targs}"
+        f"\n- tkwargs: {tkwargs}"
+        f"\n- state: {state}\n"
     )
 
-    # With this, only the first operator is mapped
-    # wire_map = tkwargs.pop("wire_map", None)
-    wire_map = tkwargs.get("wire_map", None)
-
-    # This is None if 'n_wires' is not in the params
+    wire_map = tkwargs.get("wire_map")
     n_wires = params.get("n_wires")
 
     with qml.QueuingManager.stop_recording():
-        # With this, the arguments of operators do not have TransformTracers
-        tracers_in = [t.val for t in tracers]
+        tracers_in = [getattr(t, "val", t) for t in tracers]
         op = primitive.impl(*tracers_in, **params)
 
+    # TODO: optimize this once all edge cases are covered
     if isinstance(op, MeasurementProcess):
 
         meas_tracers = []
@@ -215,35 +217,23 @@ def _map_wires_plxpr_transform(
 
         return primitive.bind(*op_tracers, **params)
 
+    # For each wire, there is a separate TransformTracer,
+    # and the wire is the value of the TransformTracer.
     split = None if n_wires == 0 else -n_wires
-    tracers_no_wires = tracers[:split]
-    tracers_wires = tracers[split:]
+    tracers_no_wires, tracers_wires = tracers[:split], tracers[split:]
 
     print(f"split: {split}")
     print(f"tracers_no_wires: {tracers_no_wires}")
     print(f"tracers_wires: {tracers_wires}")
 
-    op_tracers = []
-    for t in tracers_no_wires:
-        if isinstance(t, TransformTracer):
-            op_tracers.append(
-                TransformTracer(
-                    t._trace,
-                    t.val,
-                    t.idx + 1,
-                )
-            )
-        else:
-            op_tracers.append(t)
-
-    # For each wire, there is a separate TransformTracer,
-    # and the wire is the value of the TransformTracer
-
-    print(f"op: {op}")
+    op_tracers = [
+        TransformTracer(t._trace, t.val, t.idx + 1) if isinstance(t, TransformTracer) else t
+        for t in tracers_no_wires
+    ]
 
     # We disable the capture to call the map_wires method of the operator.
     # The reason is that for ControlledOp the map_wires method binds the base operation
-    # with capture enabled
+    # if capture is enabled
     qml.capture.disable()
     try:
         mapped_wires = op.map_wires(wire_map=wire_map).wires
@@ -252,20 +242,14 @@ def _map_wires_plxpr_transform(
 
     print(f"mapped_wires: {mapped_wires}")
 
-    for idx, t in enumerate(tracers_wires):
-        if isinstance(t, TransformTracer):
-            # For this to work as expected, the wires should not be TransformTracers
-            op_tracers.append(
-                TransformTracer(
-                    t._trace,
-                    mapped_wires[idx],
-                    # or
-                    # wire_map.get(t.val, t.val),
-                    t.idx + 1,
-                )
-            )
-        else:
-            op_tracers.append(t)
+    op_tracers.extend(
+        (
+            TransformTracer(t._trace, mapped_wires[idx], t.idx + 1)
+            if isinstance(t, TransformTracer)
+            else t
+        )
+        for idx, t in enumerate(tracers_wires)
+    )
 
     return primitive.bind(*op_tracers, **params)
 
