@@ -696,6 +696,12 @@ class Testqsvt:
                 "fable",
                 [0, 1, 2, 3, 4],
             ),
+            (
+                0.3,
+                [0.2, 0, 0.3],
+                "embedding",
+                [0],
+            ),
         ],
     )
     def test_matrix_input(self, A, poly, encoding_wires, block_encoding):
@@ -707,6 +713,7 @@ class Testqsvt:
             qml.qsvt(A, poly, encoding_wires, block_encoding)
             return qml.state()
 
+        A = qml.math.atleast_2d(A)
         # Calculation of the polynomial transformation on the input matrix
         expected = sum(coef * matrix_power(A, i) for i, coef in enumerate(poly))
 
