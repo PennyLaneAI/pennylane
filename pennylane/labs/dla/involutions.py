@@ -210,7 +210,7 @@ def _AI_matrix(op: np.ndarray) -> bool:
     r"""Matrix implementation of the canonical form of the AI involution
     :math:`\theta: x \mapsto x^\ast`.
     """
-    op *= 1j
+    op = op * 1j
     return np.allclose(op, op.conj())
 
 
@@ -270,7 +270,7 @@ def _AII_matrix(op: np.ndarray, wire: Optional[int] = None) -> bool:
     r"""Matrix implementation of the canonical form of the AII involution
     :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
     """
-    op *= 1j
+    op = op * 1j
 
     y = J(op.shape[-1] // 2, wire=wire)
     return np.allclose(op, y @ op.conj() @ y)
@@ -313,7 +313,7 @@ def AIII(
 
     .. math::
         I_{p,q}=\text{diag}(\underset{p \text{times}}{\underbrace{1, \dots 1}},
-        \underset{p \text{times}}{\underbrace{-1, \dots -1}}).
+        \underset{q \text{times}}{\underbrace{-1, \dots -1}}).
 
     For :math:`p=q=2^N` for some integer :math:`N`, we have :math:`I_{p,q}=Z_0`.
 
@@ -352,7 +352,7 @@ def _AIII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: Optional[in
     r"""Matrix implementation of the canonical form of the AIII involution
     :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
     """
-    op *= 1j
+    op = op * 1j
 
     z = Ipq(p, q, wire=wire)
     return np.allclose(op, z @ op @ z)
@@ -397,7 +397,7 @@ def BDI(
 
     .. math::
         I_{p,q}=\text{diag}(\underset{p \text{times}}{\underbrace{1, \dots 1}},
-        \underset{p \text{times}}{\underbrace{-1, \dots -1}}).
+        \underset{q \text{times}}{\underbrace{-1, \dots -1}}).
 
     For :math:`p=q=2^N` for some integer :math:`N`, we have :math:`I_{p,q}=Z_0`.
 
@@ -452,9 +452,9 @@ def CII(
 
         K_{p,q}=\text{diag}(
         \underset{p \text{times}}{\underbrace{1, \dots 1}},
-        \underset{p \text{times}}{\underbrace{-1, \dots -1}},
+        \underset{q \text{times}}{\underbrace{-1, \dots -1}},
         \underset{p \text{times}}{\underbrace{1, \dots 1}},
-        \underset{p \text{times}}{\underbrace{-1, \dots -1}},
+        \underset{q \text{times}}{\underbrace{-1, \dots -1}},
         ).
 
     For :math:`p=q=2^N` for some integer :math:`N`, we have :math:`K_{p,q}=Z_1`.
@@ -494,7 +494,7 @@ def _CII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: Optional[int
     r"""Matrix implementation of the canonical form of the CII involution
     :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
     """
-    op *= 1j
+    op = op * 1j
 
     z = Kpq(p, q, wire=wire)
     return np.allclose(op, z @ op @ z)

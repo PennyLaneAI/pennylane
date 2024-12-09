@@ -128,7 +128,7 @@ def cartan_subalgebra(
 
     >>> v = np_h[0]
     >>> op = sum(v_i * g_i for v_i, g_i in zip(v, g))
-    >>> op = qml.simplify(op)
+    >>> op.simplify()
     >>> op
     Z(0) @ Z(1)
 

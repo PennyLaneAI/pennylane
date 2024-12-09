@@ -156,7 +156,7 @@ def _check_classb_sequence(before, after):
 
 def _check_chain(chain, num_wires):
     """Validate a chain of involutions for a recursive Cartan decomposition."""
-    # Take the functions name, or its `func` attribute if it exists (e.g. for `partial` of an involution)
+    # Take the function name or its `func` attribute if it exists (e.g., for `partial` of an involution)
     names = [getattr(phi, "func", phi).__name__ for phi in chain]
 
     # Assume some standard behaviour regarding the wires on which we need to perform basis changes
@@ -208,7 +208,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
             :func:`~.pennylane.labs.dla.ClassB`,
             or a partial evolution thereof.
         validate (bool): Whether or not to verify that the involutions return a subalgebra.
-        verbose (bool): Whether of not to print status updates during the computation.
+        verbose (bool): Whether or not to print status updates during the computation.
 
     Returns:
         dict: The decompositions at each level. The keys are (zero-based) integers for the
@@ -220,7 +220,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
 
     Let's set up the special unitary algebra on 2 qubits. Note that we are using the Hermitian
     matrices that correspond to the skew-Hermitian algebra elements via multiplication
-    by :math:`i`. Also note that :func:`~.pauli.pauli_group` returns the identity as first
+    by :math:`i`. Also note that :func:`~.pauli.pauli_group` returns the identity as the first
     element, which is not part of the special unitary algebra of traceless matrices.
 
     >>> g = [qml.matrix(op, wire_order=range(2)) for op in qml.pauli.pauli_group(2)] # u(4)
@@ -234,7 +234,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     Iteration 0:   15 -----AI---->    6,   9
     Iteration 1:    6 ----DIII--->    4,   2
 
-    The function prints progress of the decompositions by default, which can be deactivated by
+    The function prints the progress of the decompositions by default, which can be deactivated by
     setting ``verbose=False``. Here we see how the initial :math:`\mathfrak{g}=\mathfrak{su(4)}`
     was decomposed by AI into the six-dimensional :math:`\mathfrak{k}_1=\mathfrak{so(4)}` and a
     horizontal space of dimension nine. Then, :math:`\mathfrak{k}_1` was further decomposed
@@ -330,7 +330,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
         if verbose:
             print(f"Iteration {i}: {len(g):>4} -{name:-^10}> {len(k):>4},{len(m):>4}")
         decompositions[i] = (k, m)
-        if not (bc is IDENTITY):
+        if not bc is IDENTITY:
             k = apply_basis_change(bc, k)
             m = apply_basis_change(bc, m)
         g = k
