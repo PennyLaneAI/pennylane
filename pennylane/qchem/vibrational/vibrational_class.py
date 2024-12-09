@@ -23,15 +23,13 @@ from ..openfermion_pyscf import _import_pyscf
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
-BOHR_TO_ANG = 0.5291772106  # factor to convert bohr to angstrom
-
 
 @dataclass
 class VibrationalPES:
     r"""Data class to save potential energy surface information computed along vibrational normal modes.
 
     Args:
-        freqs (list[float]): normal-mode frequencies
+        freqs (list[float]): normal-mode frequencies in atomic units
         grid (list[float]): the sample points on the Gauss-Hermite quadrature grid
         gauss_weights (list[float]): the weights on the Gauss-Hermite quadrature grid
         uloc (TensorLike[float]): localization matrix indicating the relationship between original and localized modes
@@ -40,7 +38,7 @@ class VibrationalPES:
         localized (bool): Flag that localization of modes was used to generate PES and dipole. Default is ``True``.
         dipole_level (int): The level up to which dipole matrix elements are to be calculated. Input values can be
             1, 2, or 3 for upto one-mode dipole, two-mode dipole and three-mode dipole, respectively. Default
-            value is 2.
+            value is 1.
 
     """
 
@@ -53,7 +51,7 @@ class VibrationalPES:
         pes_data,
         dipole_data,
         localized=True,
-        dipole_level=2,
+        dipole_level=1,
     ):
         self.freqs = freqs
         self.grid = grid
