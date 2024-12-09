@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.math import Interface
 from pennylane.tape import QuantumScript
 from pennylane.workflow import _resolve_interface
 
@@ -28,7 +29,7 @@ def test_auto_with_numpy():
         QuantumScript([qml.RX(0.5, wires=0)], [qml.expval(qml.PauliZ(0))]),
     ]
     resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == "numpy"
+    assert resolved_interface == Interface.NUMPY
 
 
 @pytest.mark.tf
@@ -43,7 +44,7 @@ def test_auto_with_tf():
         QuantumScript([qml.RX(tf.Variable(0.5), wires=0)], [qml.expval(qml.PauliZ(0))]),
     ]
     resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == "tf"
+    assert resolved_interface == Interface.TF
 
 
 @pytest.mark.autograd
@@ -55,7 +56,7 @@ def test_auto_with_autograd():
         QuantumScript([qml.RX(x, wires=0)], [qml.expval(qml.PauliZ(0))]),
     ]
     resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == "autograd"
+    assert resolved_interface == Interface.AUTOGRAD
 
 
 @pytest.mark.jax
@@ -71,7 +72,7 @@ def test_auto_with_jax():
         QuantumScript([qml.RX(jnp.array(0.5), wires=0)], [qml.expval(qml.PauliZ(0))]),
     ]
     resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == "jax"
+    assert resolved_interface == Interface.JAX
 
 
 def test_auto_with_unsupported_interface():
@@ -92,7 +93,7 @@ def test_auto_with_unsupported_interface():
     graph = nx.complete_graph(3)
     tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
 
-    assert _resolve_interface("auto", [tape]) is None
+    assert _resolve_interface("auto", [tape]) == Interface.NUMPY
 
 
 @pytest.mark.tf
@@ -111,7 +112,7 @@ def test_tf_autograph():
         ]
         resolved_interface = _resolve_interface("tf", tapes)
 
-    assert resolved_interface == "tf-autograph"
+    assert resolved_interface == Interface.TF_AUTOGRAPH
 
 
 @pytest.mark.jax
@@ -130,7 +131,7 @@ def test_jax():
     assert not qml.math.is_abstract(x)
 
     resolved_interface_abstract = _resolve_interface("jax", tapes)
-    assert resolved_interface_abstract == "jax"
+    assert resolved_interface_abstract == Interface.JAX
 
 
 @pytest.mark.jax
@@ -152,7 +153,7 @@ def test_jax_jit():
         tapes = [
             QuantumScript([qml.RX(x, wires=0)], [qml.expval(qml.PauliZ(0))]),
         ]
-        assert _resolve_interface("jax", tapes) == "jax-jit"
+        assert _resolve_interface("jax", tapes) == Interface.JAX_JIT
 
     abstract_func(param)
 
