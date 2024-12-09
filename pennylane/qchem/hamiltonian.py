@@ -16,14 +16,17 @@ This module contains the functions needed for computing the molecular Hamiltonia
 """
 from functools import singledispatch
 
-# pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
-# pylint: disable=consider-using-generator, protected-access
 import pennylane as qml
 
 from .basis_data import atomic_numbers
 from .hartree_fock import nuclear_energy, scf
 from .molecule import Molecule
 from .observable_hf import fermionic_observable, qubit_observable
+
+# pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
+# pylint: disable=consider-using-generator, protected-access, too-many-positional-arguments
+# pylint: disable=possibly-used-before-assignment
+
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -508,10 +511,12 @@ def _molecular_hamiltonian(
         )
 
     if len(coordinates) == len(symbols) * 3:
-        geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
+        geometry_dhf = qml.math.array(
+            coordinates.reshape(len(symbols), 3), like=qml.math.get_deep_interface(coordinates)
+        )
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
-        geometry_dhf = qml.numpy.array(coordinates)
+        geometry_dhf = qml.math.array(coordinates, like=qml.math.get_deep_interface(coordinates))
         geometry_hf = coordinates.flatten()
 
     wires_map = None
@@ -548,6 +553,10 @@ def _molecular_hamiltonian(
         )
 
         requires_grad = args is not None
+        use_jax = any(qml.math.get_deep_interface(x) == "jax" for x in [coordinates, alpha, coeff])
+        interface_args = [{"like": "autograd", "requires_grad": requires_grad}, {"like": "jax"}][
+            use_jax
+        ]
         h = (
             qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
             if requires_grad
@@ -555,8 +564,7 @@ def _molecular_hamiltonian(
         )
 
         h_as_ps = qml.pauli.pauli_sentence(h)
-        coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=requires_grad)
-
+        coeffs = qml.math.real(qml.math.array(list(h_as_ps.values()), **interface_args))
         h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
         h = qml.s_prod(0, qml.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
 

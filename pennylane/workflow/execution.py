@@ -26,6 +26,7 @@ from warnings import warn
 from cachetools import Cache
 
 import pennylane as qml
+from pennylane.math import Interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import ResultBatch
 
@@ -39,12 +40,12 @@ logger.addHandler(logging.NullHandler())
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
+    interface: Interface, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
     """Imports and returns the function that binds derivatives of the required ml framework.
 
     Args:
-        interface (str): The designated ml framework.
+        interface (Interface): The designated ml framework.
 
         grad_on_execution (bool): whether or not the device derivatives are taken upon execution
     Returns:
@@ -55,23 +56,23 @@ def _get_ml_boundary_execute(
 
     """
     try:
-        if interface == "autograd":
+        if interface == Interface.AUTOGRAD:
             from .interfaces.autograd import autograd_execute as ml_boundary
 
-        elif interface == "tf-autograph":
+        elif interface == Interface.TF_AUTOGRAPH:
             from .interfaces.tensorflow_autograph import execute as ml_boundary
 
             ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
-        elif interface == "tf":
+        elif interface == Interface.TF:
             from .interfaces.tensorflow import tf_execute as full_ml_boundary
 
             ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
-        elif interface == "torch":
+        elif interface == Interface.TORCH:
             from .interfaces.torch import execute as ml_boundary
 
-        elif interface == "jax-jit":
+        elif interface == Interface.JAX_JIT:
             if device_vjp:
                 from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
@@ -132,8 +133,7 @@ def execute(
     tapes: QuantumScriptBatch,
     device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
     diff_method: Optional[Union[Callable, str, qml.transforms.core.TransformDispatcher]] = None,
-    interface: Optional[str] = "auto",
-    *,
+    interface: Optional[Union[str, Interface]] = Interface.AUTO,
     transform_program=None,
     inner_transform=None,
     config=None,
@@ -146,8 +146,7 @@ def execute(
     mcm_config=None,
     gradient_fn="unset",
 ) -> ResultBatch:
-    """New function to execute a batch of tapes on a device in an autodifferentiable-compatible
-    manner.
+    """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
@@ -157,13 +156,13 @@ def execute(
         diff_method (None, str, TransformDispatcher): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
-        interface (str): The interface that will be used for classical autodifferentiation.
+        interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         transform_program(.TransformProgram): A transform program to be applied to the initial tape.
         inner_transform (.TransformProgram): A transform program to be applied to the tapes in
             inner execution, inside the ml interface.
-        config (qml.devices.ExecutionConfig): A datastructure describing the parameters
+        config (qml.devices.ExecutionConfig): A data structure describing the parameters
             needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. Only applies
@@ -282,7 +281,7 @@ def execute(
 
     interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
-    if interface in {"jax", "jax-jit"}:
+    if interface in {Interface.JAX, Interface.JAX_JIT}:
         grad_on_execution = grad_on_execution if isinstance(diff_method, Callable) else False
 
     if (
@@ -321,7 +320,7 @@ def execute(
 
     execute_fn = inner_execute
 
-    if interface == "tf-autograph":
+    if interface == Interface.TF_AUTOGRAPH:
         execute_fn = inner_execute_with_empty_jac
 
     #### Executing the configured setup #####
@@ -331,7 +330,7 @@ def execute(
         return post_processing(tapes)
 
     # Exiting early if we do not need to deal with an interface boundary
-    no_interface_boundary_required = interface == "numpy" or config.gradient_method in {
+    no_interface_boundary_required = interface == Interface.NUMPY or config.gradient_method in {
         None,
         "backprop",
     }
@@ -339,13 +338,13 @@ def execute(
         results = inner_execute(tapes)
         return post_processing(results)
 
-    if config.use_device_jacobian_product and interface != "tf-autograph":
+    if config.use_device_jacobian_product and interface != Interface.TF_AUTOGRAPH:
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
         jpc = DeviceDerivatives(device, config)
 
-        if interface != "tf-autograph":
+        if interface != Interface.TF_AUTOGRAPH:
             execute_fn = (
                 jpc.execute_and_cache_jacobian if config.grad_on_execution else inner_execute
             )
@@ -399,9 +398,9 @@ def execute(
         # within execute_and_gradients, so providing a diff_method
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
-    elif interface != "tf-autograph":
+    elif interface != Interface.TF_AUTOGRAPH:
         # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
-        cache_full_jacobian = (interface == "autograd") and not cache
+        cache_full_jacobian = (interface == Interface.AUTOGRAD) and not cache
 
         # we can have higher order derivatives when the `inner_execute` used to take
         # transform gradients is itself differentiable
@@ -424,14 +423,14 @@ def execute(
             )
             jpc = TransformJacobianProducts(execute_fn, diff_method, gradient_kwargs)
 
-            if interface == "jax-jit":
+            if interface == Interface.JAX_JIT:
                 # no need to use pure callbacks around execute_fn or the jpc when taking
                 # higher order derivatives
-                interface = "jax"
+                interface = Interface.JAX
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
-    if "jax" in interface:
+    if interface in {Interface.JAX, Interface.JAX_JIT}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -443,7 +442,7 @@ def execute(
         differentiable=max_diff > 1,
     )
 
-    if interface != "tf-autograph":
+    if interface != Interface.TF_AUTOGRAPH:
         results = ml_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg

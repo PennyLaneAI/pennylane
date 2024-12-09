@@ -99,6 +99,7 @@ from .interface_utils import (
     SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
+    Interface,
 )
 
 sum = ar.numpy.sum

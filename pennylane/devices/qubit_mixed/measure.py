@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Code relevant for performing measurements on a qutrit mixed state.
+Code relevant for performing measurements on a qubit mixed state.
 """
 
 from collections.abc import Callable
@@ -87,6 +87,7 @@ def calculate_reduced_density_matrix(
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
         readout_errors (List[Callable]): List of channels to apply to each wire being measured
+            to simulate readout errors. These are not applied on this type of measurement.
 
     Returns:
         TensorLike: state or reduced density matrix.
