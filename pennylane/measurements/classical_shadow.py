@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
@@ -226,9 +226,7 @@ class ClassicalShadowMP(MeasurementTransform):
             where the instance has to be identified
     """
 
-    def __init__(
-        self, wires: Optional[Wires] = None, seed: Optional[int] = None, id: Optional[str] = None
-    ):
+    def __init__(self, wires: WiresLike, seed: Optional[int] = None, id: Optional[str] = None):
         self.seed = seed
         super().__init__(wires=wires, id=id)
 
