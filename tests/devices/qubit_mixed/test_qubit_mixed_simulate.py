@@ -274,7 +274,6 @@ class TestBroadcasting:
         assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
 
 
-@flaky(max_runs=5, min_passes=1)
 @pytest.mark.all_interfaces
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
