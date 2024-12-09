@@ -64,6 +64,37 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added a function `qml.trotterize` to generalize the Suzuki-Trotter product to arbitrary quantum functions.
+  [(#6627)](https://github.com/PennyLaneAI/pennylane/pull/6627)
+
+  ```python
+  def my_custom_first_order_expansion(time, theta, phi, wires, flip):
+    "This is the first order expansion (U_1)."
+    qml.RX(time*theta, wires[0])
+    qml.RY(time*phi, wires[1])
+    if flip:
+        qml.CNOT(wires=wires[:2])
+
+  @qml.qnode(qml.device("default.qubit"))
+  def my_circuit(time, angles, num_trotter_steps):
+      TrotterizedQfunc(
+          time,
+          *angles,
+          qfunc=my_custom_first_order_expansion,
+          n=num_trotter_steps,
+          order=2,
+          wires=['a', 'b'],
+          flip=True,
+      )
+      return qml.state()
+  ```
+  ```pycon
+  >>> time = 0.1
+  >>> angles = (0.12, -3.45)
+  >>> print(qml.draw(my_circuit, level=3)(time, angles, num_trotter_steps=1))
+  a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
+  b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
+  ```
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
