@@ -55,7 +55,7 @@ h2s_exp_result = {"h_data": [h1_h2s, h2_h2s, h3_h2s], "energy": energy, "u_mat":
 def test_vscf_calculation(h_data, h2s_result):
     r"""Test that vscf calculation produces correct energy and rotation matrices"""
 
-    vib_energy, rot_matrix = vscf._vscf(h_data, modals=[8, 8, 8], cutoff=1e-8)
+    vib_energy, rot_matrix = vscf._vscf(h_data, modals=[4,4,4], cutoff=1e-8)
     assert np.isclose(vib_energy, h2s_result["energy"])
     assert np.allclose(rot_matrix, h2s_result["u_mat"])
 
