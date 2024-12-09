@@ -18,7 +18,6 @@ from collections.abc import Callable
 from typing import Union, overload
 
 import pennylane as qml
-from pennylane import transform
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
@@ -133,7 +132,28 @@ def processing_fn(res):
     return res[0]
 
 
-@transform
+class MapWires(qml.capture.PlxprInterpreter):
+    """Interpreter that maps wires of operations and measurements."""
+
+    def __init__(self, wire_map: dict) -> None:
+        """Initialize the interpreter."""
+        self.wire_map = wire_map
+
+    def interpret_operation(self, op: Operator) -> Operator:
+        """Interpret an operation."""
+        qml.capture.disable()
+        op = op.map_wires(self.wire_map)
+        qml.capture.enable()
+        return super().interpret_operation(op)
+
+    def interpret_measurement(self, measurement: MeasurementProcess) -> MeasurementProcess:
+        """Interpret a measurement operation."""
+        qml.capture.disable()
+        measurement = measurement.map_wires(self.wire_map)
+        qml.capture.enable()
+        return super().interpret_measurement(measurement)
+
+
 def _map_wires_transform(
     tape: QuantumScript, wire_map=None, queue=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
