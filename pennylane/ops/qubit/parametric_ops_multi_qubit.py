@@ -598,7 +598,7 @@ class PCPhase(Operation):
         hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
         return tuple(self.data), (self.wires, hyperparameter)
 
-    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, dim: int, *, wires: WiresLike, id: Optional[str] = None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
@@ -661,7 +661,7 @@ class PCPhase(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *params: TensorLike, wires: Optional[WiresLike] = None, **hyperparams
+        *params: TensorLike, wires: WiresLike, **hyperparams
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
