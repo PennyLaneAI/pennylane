@@ -1,4 +1,5 @@
 """File that contains the Christiansen Bosonic Operator data generated via functions in vibrant."""
+
 # fmt: off
 # pylint: skip-file
 
