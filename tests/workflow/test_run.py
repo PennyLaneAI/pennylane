@@ -14,60 +14,125 @@
 
 """Unit tests for the `run` helper function in the `qml.workflow` module."""
 
+# pylint: disable=too-few-public-methods
 from dataclasses import replace
 
+import numpy as np
 import pytest
+from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultExecutionConfig, DefaultQubit, ExecutionConfig
+from pennylane.devices import DefaultExecutionConfig, ExecutionConfig
+from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformContainer, TransformProgram
 from pennylane.transforms.optimization import merge_rotations
-from pennylane.workflow import run
+from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 
-# pylint: disable=inconsistent-return-statements
-def convert_to_interface(arr, interface):
-    """Dispatch arrays for different interfaces"""
-    import jax.numpy as jnp
-    import tensorflow as tf
-    import torch
+def atol_for_shots(shots):
+    """Return higher tolerance if finite shots."""
+    return 1e-2 if shots else 1e-6
 
-    if interface == "autograd":
-        return pnp.array(arr)
 
-    if interface == "jax":
-        return jnp.array(arr)
-
-    if interface == "tf":
-        return tf.constant(arr)
-
-    if interface == "torch":
-        return torch.tensor(arr)
+def get_device(device_name, seed):
+    if device_name == "param_shift.qubit":
+        return ParamShiftDerivativesDevice(seed=seed)
+    return qml.device(device_name, seed=seed)
 
 
 # Create the device and execution configurations
-qubit_device_and_config = [
+test_matrix = [
     [
-        DefaultQubit(),
+        "default.qubit",
         replace(
             DefaultExecutionConfig,
             gradient_method=qml.gradients.param_shift,
-            grad_on_execution=False,
-            use_device_gradient=False,
         ),
+        Shots((100000, 100000)),
+    ],
+    [
+        "default.qubit",
+        replace(
+            DefaultExecutionConfig,
+            gradient_method=qml.gradients.param_shift,
+        ),
+        Shots(100000),
+    ],
+    [
+        "default.qubit",
+        replace(
+            DefaultExecutionConfig,
+            gradient_method=qml.gradients.param_shift,
+        ),
+        Shots(None),
+    ],
+    [
+        "default.qubit",
+        replace(
+            DefaultExecutionConfig,
+            gradient_method="backprop",
+        ),
+        Shots(None),
+    ],
+    [
+        "default.qubit",
+        replace(
+            DefaultExecutionConfig,
+            gradient_method="adjoint",
+        ),
+        Shots(None),
+    ],
+    [
+        "default.qubit",
+        replace(
+            DefaultExecutionConfig, gradient_method="adjoint", use_device_jacobian_product=True
+        ),
+        Shots(None),
+    ],
+    [
+        "reference.qubit",
+        replace(
+            DefaultExecutionConfig,
+            gradient_method=qml.gradients.param_shift,
+        ),
+        Shots((100000, 100000)),
+    ],
+    [
+        "reference.qubit",
+        replace(
+            DefaultExecutionConfig,
+            gradient_method=qml.gradients.param_shift,
+        ),
+        Shots(100000),
+    ],
+    [
+        "reference.qubit",
+        replace(
+            DefaultExecutionConfig,
+            gradient_method=qml.gradients.param_shift,
+        ),
+        Shots(None),
+    ],
+    [
+        "param_shift.qubit",
+        replace(
+            DefaultExecutionConfig,
+            gradient_method="device",
+        ),
+        Shots((100000, 100000)),
     ],
 ]
 
 
-class TestNoInterface:
+class TestNoInterfaceRequired:
 
-    def test_numpy_interface(self):
+    def test_numpy_interface(self, seed):
         """Test that tapes are executed correctly with the NumPy interface."""
         container = TransformContainer(merge_rotations)
         inner_tp = TransformProgram((container,))
-        device = qml.device("default.qubit")
+        device = qml.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
                 [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
@@ -84,11 +149,11 @@ class TestNoInterface:
         "interface, gradient_method",
         [("torch", None), ("torch", "backprop")],
     )
-    def test_no_gradient_computation_required(self, interface, gradient_method):
+    def test_no_gradient_computation_required(self, interface, gradient_method, seed):
         """Test that tapes execute without an ML boundary when no gradient computation is required."""
         container = TransformContainer(merge_rotations)
         inner_tp = TransformProgram((container,))
-        device = qml.device("default.qubit")
+        device = qml.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
                 [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
@@ -101,39 +166,199 @@ class TestNoInterface:
         assert qml.math.allclose(results[0], 1.0)
 
 
-# pylint: disable=too-few-public-methods
-@pytest.mark.all_interfaces
-class TestJPCInterface:
-
-    @pytest.mark.parametrize("interface", ["torch", "jax", "tensorflow", "autograd"])
-    @pytest.mark.parametrize("device, config", qubit_device_and_config)
-    def test_run_with_interface(self, interface, device, config):
-        container = TransformContainer(merge_rotations)
-        inner_tp = TransformProgram((container,))
-
-        config = replace(config, interface=interface)
-
-        x = pnp.array(pnp.pi, requires_grad=True)
-        phi = convert_to_interface(x, config.interface.value)
-        assert qml.math.get_deep_interface(phi) == interface
-        tapes = [
-            QuantumScript([qml.RX(phi, wires=0), qml.RX(phi, wires=0)], [qml.expval(qml.PauliZ(0))])
-        ]
-
-        results = run(tapes, device, config, inner_tp)
-        assert qml.math.allclose(results[0], 1.0)
-
-        # TODO: Why is this not autograd?
-        expected_interface = interface
-        if interface == "autograd":
-            expected_interface = "numpy"
-
-        assert qml.math.get_deep_interface(results) == expected_interface
+torch = pytest.importorskip("torch")
 
 
-# pylint: disable=too-few-public-methods
+@pytest.mark.torch
+@pytest.mark.parametrize("device, config, shots", test_matrix)
+class TestTorchRun:
+    def test_run(self, device, config, shots, seed):
+        """Test execution of tapes on 'torch' interface."""
+        device = get_device(device, seed=seed)
+        config = replace(config, interface="torch")
+
+        def cost(a, b):
+            ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
+            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
+
+            ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
+            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
+
+            resolved_config = _resolve_execution_config(
+                config, device, [tape1, tape2], TransformProgram()
+            )
+            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            return run([tape1, tape2], device, resolved_config, inner_tp)
+
+        a = torch.tensor(0.1, requires_grad=True)
+        b = torch.tensor(0.2, requires_grad=False)
+
+        with device.tracker:
+            res = cost(a, b)
+
+        assert len(res) == 2
+
+        if getattr(config, "grad_on_execution", False):
+            assert device.tracker.totals["execute_and_derivate_batches"] == 1
+        else:
+            assert device.tracker.totals["batches"] == 1
+        assert device.tracker.totals["executions"] == 2
+
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
+
+        exp = torch.cos(a) * torch.cos(b)
+        if shots.has_partitioned_shots:
+            for shot in range(2):
+                for wire in range(2):
+                    assert qml.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
+        else:
+            for wire in range(2):
+                assert qml.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
+
+
+@pytest.mark.parametrize("device, config, shots", test_matrix)
+class TestAutogradRun:
+
+    def test_run(self, device, config, shots, seed):
+        """Test execution of tapes on 'autograd' interface."""
+        device = get_device(device, seed=seed)
+        config = replace(config, interface="autograd")
+
+        def cost(a, b):
+            ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
+            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
+
+            ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
+            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
+
+            resolved_config = _resolve_execution_config(
+                config, device, [tape1, tape2], TransformProgram()
+            )
+            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            return run([tape1, tape2], device, resolved_config, inner_tp)
+
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=False)
+
+        with device.tracker:
+            res = cost(a, b)
+
+        assert len(res) == 2
+
+        if getattr(config, "grad_on_execution", False):
+            assert device.tracker.totals["execute_and_derivate_batches"] == 1
+        else:
+            assert device.tracker.totals["batches"] == 1
+        assert device.tracker.totals["executions"] == 2
+
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
+
+        assert qml.math.allclose(res[0], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[1], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
+
+
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+jax.config.update("jax_enable_x64", True)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("device, config, shots", test_matrix)
+class TestJaxRun:
+    def test_run(self, device, config, shots, seed):
+        """Test execution of tapes on 'jax' interface."""
+        device = get_device(device, seed=seed)
+        config = replace(config, interface="jax")
+
+        def cost(a, b):
+            ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
+            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
+
+            ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
+            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
+
+            resolved_config = _resolve_execution_config(
+                config, device, [tape1, tape2], TransformProgram()
+            )
+            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            return run([tape1, tape2], device, resolved_config, inner_tp)
+
+        a = jnp.array(0.1)
+        b = np.array(0.2)
+
+        with device.tracker:
+            res = cost(a, b)
+
+        assert len(res) == 2
+
+        if getattr(config, "diff_method", None) == "adjoint":
+            assert device.tracker.totals.get("execute_and_derivative_batches", 0) == 0
+        else:
+            assert device.tracker.totals["batches"] == 1
+        assert device.tracker.totals["executions"] == 2
+
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
+
+        assert qml.math.allclose(res[0], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[1], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
+
+
+tf = pytest.importorskip("tensorflow")
+
+
 @pytest.mark.tf
-class TestTFAutograph:
+@pytest.mark.parametrize("device, config, shots", test_matrix)
+class TestTensorFlowRun:
+    def test_run(self, device, config, shots, seed):
+        """Test execution of tapes on 'tensorflow' interface."""
+        device = get_device(device, seed=seed)
+        config = replace(config, interface="tensorflow")
+
+        def cost(a, b):
+            ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
+            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
+
+            ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
+            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
+
+            resolved_config = _resolve_execution_config(
+                config, device, [tape1, tape2], TransformProgram()
+            )
+            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            return run([tape1, tape2], device, resolved_config, inner_tp)
+
+        a = tf.Variable(0.1, dtype="float64")
+        b = tf.constant(0.2, dtype="float64")
+
+        with device.tracker:
+            res = cost(a, b)
+
+        assert len(res) == 2
+
+        if getattr(config, "diff_method", None) == "adjoint" and not getattr(
+            config, "use_device_jacobian_product", False
+        ):
+            assert device.tracker.totals["execute_and_derivative_batches"] == 1
+        else:
+            assert device.tracker.totals["batches"] == 1
+        assert device.tracker.totals["executions"] == 2
+
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
+
+        assert qml.math.allclose(res[0], tf.cos(a) * tf.cos(b), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[1], tf.cos(a) * tf.cos(b), atol=atol_for_shots(shots))
+
+
+@pytest.mark.tf
+class TestTFAutographRun:
 
     interface = "tf-autograph"
 
