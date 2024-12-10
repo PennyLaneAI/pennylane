@@ -75,7 +75,7 @@ class ResourceCH(qml.CH, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        return {} if z%2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCY(qml.CY, re.ResourceOperator):
@@ -127,7 +127,7 @@ class ResourceCY(qml.CY, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        return {} if z%2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCZ(qml.CZ, re.ResourceOperator):
@@ -180,7 +180,7 @@ class ResourceCZ(qml.CZ, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        return {} if z%2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
@@ -237,7 +237,7 @@ class ResourceCSWAP(qml.CSWAP, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        return {} if z%2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCCZ(qml.CCZ, re.ResourceOperator):
@@ -286,7 +286,7 @@ class ResourceCCZ(qml.CCZ, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        return {} if z%2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceCNOT(qml.CNOT, re.ResourceOperator):
@@ -327,7 +327,7 @@ class ResourceCNOT(qml.CNOT, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        return {} if z%2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
@@ -423,7 +423,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        return {} if z%2 == 0 else {cls.resource_rep(): 1}
 
 
 class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
@@ -532,7 +532,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     def pow_resource_decomp(
         cls, z, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires): z % 2}
+        return {} if z%2 == 0 else {cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires): 1}
 
 
 class ResourceCRX(qml.CRX, re.ResourceOperator):
@@ -585,7 +585,7 @@ class ResourceCRX(qml.CRX, re.ResourceOperator):
         }
 
     @classmethod
-    def pow_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
         return {cls.resource_rep(): 1}
 
 
@@ -753,6 +753,10 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
                 re.ResourceRot, {}, num_ctrl_wires + 1, num_ctrl_values, num_work_wires
             ): 1
         }
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
 
 class ResourceControlledPhaseShift(qml.ControlledPhaseShift, re.ResourceOperator):
