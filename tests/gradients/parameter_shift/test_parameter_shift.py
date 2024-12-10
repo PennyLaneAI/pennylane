@@ -743,8 +743,8 @@ class TestParamShift:
 
     @pytest.mark.parametrize("broadcast", [True, False])
     def test_all_zero_diff_methods(self, broadcast):
-        """Test that the transform works correctly when the diff method for every parameter is
-        identified to be 0, and that no tapes were generated."""
+        """Test that the transform works correctly when the diff method for every
+        parameter is identified to be 0, and that no tapes were generated."""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
@@ -755,7 +755,7 @@ class TestParamShift:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.param_shift(circuit)(params)
-        assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
+        assert np.allclose(result, np.zeros((4, 3)), atol=0)
 
         tape = qml.workflow.construct_tape(circuit)(params)
         tapes, _ = qml.gradients.param_shift(tape, broadcast=broadcast)

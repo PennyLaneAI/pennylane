@@ -164,7 +164,7 @@ class TestDifferentiability:
     @pytest.mark.parametrize("use_jit", (False, True))
     @pytest.mark.parametrize("shots", (None, 50000))
     def test_qnode_jax(self, shots, use_jit, seed):
-        """Test that the QNode executes and is differentiable with JAX. The shots
+        """Test that the QNode executes and it's differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
 
