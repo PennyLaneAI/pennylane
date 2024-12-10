@@ -73,7 +73,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
         else:
             operations.append(op)
 
-    if phi != 0:
+    if qml.math.is_abstract(phi) or not qml.math.allclose(phi, 0):
         operations.append(qml.GlobalPhase(phi=phi))
 
     new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
