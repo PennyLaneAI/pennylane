@@ -56,6 +56,7 @@
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+  [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 
