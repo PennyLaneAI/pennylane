@@ -84,4 +84,4 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
         """
         return results[0]
 
-    return [new_tape], null_postprocessing
+    return (new_tape,), null_postprocessing
