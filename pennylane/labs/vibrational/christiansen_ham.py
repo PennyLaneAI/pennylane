@@ -31,7 +31,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
         two (array): 6D array with two-body matrix elements
         three (array): 9D array with three-body matrix elements
         cutoff (float): magnitude beneath which terms are not incorporated in final expression
-        ordered (bool): set True if matrix elements are ordered, i.e. two[m,n,::] = 0 for all n >= m and three[m,n,l,::] = 0 for all n >= m and l >= n
+        ordered (bool): Flag for if matrix elements are already ordered. Default is True
 
     Returns:
         BoseSentence: the constructed bosonic operator
@@ -42,7 +42,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     if modals is None:
         imax = np.shape(one)[1]
         modals = imax * np.ones(modes, dtype=int)
-        
+
     idx = {}  # dictionary mapping the tuple (l,n) to an index in the qubit register
     counter = 0
     for l in range(modes):

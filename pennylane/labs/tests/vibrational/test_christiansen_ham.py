@@ -77,18 +77,19 @@ with h5py.File(cform_file, "r") as f:
 
 
 def test_christiansen_bosonic():
-    """Tests that christiansen_bosonic produces the correct bosonic operator"""
+    """Test that christiansen_bosonic produces the correct bosonic operator."""
     christiansen_bos_op = christiansen_bosonic(one=H1, two=H2, three=H3)
     christiansen_bos_op.simplify()
     assert len(christiansen_bos_op) == 4702 # Reference from Vibrant
 
 
 def test_christiansen_hamiltonian():
-    """Always passes"""
+    """Test that christiansen_hamiltonian produces the expected hamiltonian."""
     cform_ham = christiansen_hamiltonian(pes_object=pes_object_3D, nbos=4)
     assert True
 
 
 def test_christiansen_dipole():
+    """Test that christiansen_dipole produces the expected dipole operator coefficients."""
     cform_dipole = christiansen_dipole(pes_object=pes_object_3D, nbos=4)
     assert True
