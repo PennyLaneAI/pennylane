@@ -875,9 +875,8 @@ class TestCatalystMCMs:
     def test_dynamic_one_shot_simple(self, measure_f, meas_obj, seed):
         """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple
         circuit with a mid-circuit measurement."""
-        if measure_f in (qml.counts, qml.probs, qml.sample) and (
-            not isinstance(meas_obj, list) and not meas_obj == "mcm"
-        ):
+
+        if measure_f in (qml.counts, qml.probs, qml.sample) and isinstance(meas_obj, qml.PauliZ):
             pytest.skip("Can't use observables with counts, probs or sample")
 
         if measure_f in (qml.var, qml.expval) and (isinstance(meas_obj, list)):
@@ -885,6 +884,7 @@ class TestCatalystMCMs:
 
         if measure_f == qml.var and (not isinstance(meas_obj, list) and not meas_obj == "mcm"):
             pytest.xfail("isa<UnrealizedConversionCastOp>")
+
         shots = 8000
 
         dq = qml.device("default.qubit", shots=shots, seed=seed)
@@ -925,10 +925,9 @@ class TestCatalystMCMs:
         params = jnp.pi / 4 * jnp.ones(2)
         results0 = ref_func(*params)
         results1 = func(*params)
-        if measure_f == qml.counts and isinstance(meas_obj, list):
-            results1 = {
-                format(int(state), f"0{len(meas_obj)}b"): count for state, count in zip(*results1)
-            }
+        if measure_f == qml.counts:
+            ndim = 2  # both [0] and m0 are on one wire only
+            results1 = {format(int(state), f"0{ndim}b"): count for state, count in zip(*results1)}
         if measure_f == qml.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]
