@@ -213,6 +213,10 @@ such as `shots`, `rng` and `prng_key`.
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
+* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
+  JAX array elements.
+  [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
