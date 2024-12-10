@@ -870,8 +870,15 @@ class TestCatalystSample:
 class TestCatalystMCMs:
     """Test dynamic_one_shot with Catalyst."""
 
-    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6700")
-    @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs])
+    @pytest.mark.parametrize(
+        "measure_f",
+        [
+            # https://github.com/PennyLaneAI/pennylane/issues/6700
+            pytest.param(qml.count, marks=pytest.mark.xfail),
+            qml.expval,
+            qml.probs,
+        ],
+    )
     @pytest.mark.parametrize("meas_obj", [qml.PauliZ(0), [0], "mcm"])
     def test_dynamic_one_shot_simple(self, measure_f, meas_obj, seed):
         """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple
