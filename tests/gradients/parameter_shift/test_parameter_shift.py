@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types."""
-import functools
 
 # pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import pytest
