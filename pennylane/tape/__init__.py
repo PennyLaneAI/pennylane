@@ -22,9 +22,9 @@ from .tape import QuantumTape, QuantumTapeBatch, TapeError, expand_tape_state_pr
 
 try:
     from .plxpr_conversion import plxpr_to_tape
-except ImportError as e:
+except ImportError:  # pragma: no cover
 
     # pragma: no cover
-    def plxpr_to_tape(jaxpr: "jax.core.Jaxpr", consts, *args, shots=None):
+    def plxpr_to_tape(jaxpr: "jax.core.Jaxpr", consts, *args, shots=None):  # pragma: no cover
         """A dummy version of ``plxpr_to_tape`` when jax is not installed on the system."""
-        raise ImportError("plxpr_to_tape requires jax to be installed")
+        raise ImportError("plxpr_to_tape requires jax to be installed")  # pragma: no cover

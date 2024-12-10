@@ -63,7 +63,7 @@ See also:
 .. autosummary::
     :toctree: api
 
-    ~pennylane.tape.plxpr_to_tape
+    ~tape.plxpr_to_tape
 
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
