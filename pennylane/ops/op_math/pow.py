@@ -393,8 +393,6 @@ class Pow(ScalarSymbolicOp):
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
             return op if qml.capture.enabled() else op.simplify()
         except PowUndefinedError:
-            if qml.capture.enabled():
-                return Pow(base.simplify(), z=self.z)
             return Pow(base=base, z=self.z)
 
 

@@ -23,6 +23,7 @@ from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
+from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
 
@@ -234,16 +235,15 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        with qml.queuing.AnnotatedQueue() as queue:
-            qfunc(*args, **kwargs)
+        qscript = make_qscript(qfunc)(*args, **kwargs)
 
         leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
         if lazy:
-            adjoint_ops = [Adjoint(op) for op in reversed(queue)]
+            adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:
-            adjoint_ops = [_single_op_eager(op) for op in reversed(queue)]
+            adjoint_ops = [_single_op_eager(op) for op in reversed(qscript.operations)]
 
         return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 
