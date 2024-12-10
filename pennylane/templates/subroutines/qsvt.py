@@ -525,7 +525,7 @@ class QSVT(Operation):
 
         .. code-block:: pycon
 
-            >>> pcircuit()
+            >>> circuit()
             array([-0.194205  +0.66654551j, -0.097905  +0.35831418j,
                     0.3319832 -0.51047262j, -0.09551437+0.01043668j])
 
@@ -533,7 +533,7 @@ class QSVT(Operation):
         combination of unitaries, e.g., a Hamiltonian, it can be block-encoded with operations
         such as :class:`~.PrepSelPrep` or :class:`~.Qubitization`. Note that both of these operations
         have a proper gate decomposition. The following example applies the polynomial
-        :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to the Hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`,
+        :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to the Hamiltonian :math:`H = 0.1X_2 - 0.7X_2Z_3 - 0.2Z_2`,
         blcok-encoded with :class:`~.PrepSelPrep`.
 
         .. code-block::
