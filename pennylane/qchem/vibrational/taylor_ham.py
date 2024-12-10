@@ -41,7 +41,9 @@ def _remove_harmonic(freqs, onemode_pes):
         onemode_pes (TensorLike[float]): one mode PES
 
     Returns:
-        tuple containing the anharmonic and harmonic part of the PES
+        tuple: A tuple containing the following:
+         - TensorLike[float] : anharmonic part of the PES
+         - TensorLike[float] : harmonic part of the PES
     """
     nmodes, quad_order = np.shape(onemode_pes)
     grid, _ = np.polynomial.hermite.hermgauss(quad_order)
@@ -60,7 +62,7 @@ def _fit_onebody(onemode_op, max_deg, min_deg=3):
     r"""Fits the one-mode operator to get one-body coefficients.
 
     Args:
-        onemode_op (list(list(float))): one-mode operator
+        onemode_op (TensorLike[float]): one-mode operator
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
 
@@ -181,7 +183,7 @@ def _generate_bin_occupations(max_occ, nbins):
         nbins(int): the number of bins to distribute the items into
 
     Returns
-        list(tuples): where each tuple represents a valid combination of item counts for the bins.
+        list(tuple): where each tuple represents a valid combination of item counts for the bins.
     """
     combinations = list(itertools.product(range(max_occ + 1), repeat=nbins))
 
@@ -271,7 +273,7 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
     return coeffs, predicted_3D
 
 
-def taylor_coeffs(pes, max_deg=4, min_deg=3):
+def taylor_coeffs(pes_object, max_deg=4, min_deg=3):
     r"""Compute fitted coefficients for Taylor Hamiltonian. See the details in `Eq. 4 and Eq. 5
     <https://arxiv.org/pdf/1703.09313>`_ for more information about the coefficients.
 
@@ -287,27 +289,27 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     respectively, defined in terms of the third and fourth-order partial derivatives of the PES.
 
     Args:
-        pes (VibrationalPES): object containing the vibrational potential energy surface data
+        pes_object (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
     Returns:
-        list(list(floats)): the coefficients of the one-body, two-body and three-body terms
+        tuple(TensorLike[float]): the coefficients of the one-body, two-body and three-body terms
     """
 
-    anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
+    anh_pes, harmonic_pes = _remove_harmonic(pes_object.freqs, pes_object.pes_onemode)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, max_deg, min_deg=min_deg)
     predicted_1D += harmonic_pes
     coeff_arr = [coeff_1D]
     predicted_arr = [predicted_1D]
 
-    if pes.pes_twomode is not None:
-        coeff_2D, predicted_2D = _fit_twobody(pes.pes_twomode, max_deg, min_deg=min_deg)
+    if pes_object.pes_twomode is not None:
+        coeff_2D, predicted_2D = _fit_twobody(pes_object.pes_twomode, max_deg, min_deg=min_deg)
         coeff_arr.append(coeff_2D)
         predicted_arr.append(predicted_2D)
 
-    if pes.pes_threemode is not None:
-        coeff_3D, predicted_3D = _fit_threebody(pes.pes_threemode, max_deg, min_deg=min_deg)
+    if pes_object.pes_threemode is not None:
+        coeff_3D, predicted_3D = _fit_threebody(pes_object.pes_threemode, max_deg, min_deg=min_deg)
         coeff_arr.append(coeff_3D)
         predicted_arr.append(predicted_3D)
 
@@ -396,7 +398,7 @@ def _position_to_boson(index, op):
         op (str): the position operator, either ``"p"`` or ``"q"``
 
     Returns:
-        BoseSentence: bosonic form of the position operator given
+        BoseSentence: bosonic form of the given position operator
     """
     factor = 1j / np.sqrt(2) if op == "p" else 1 / np.sqrt(2)
     bop = factor * BoseWord({(0, index): "-"})
@@ -420,36 +422,36 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
     taylor_1D = taylor_coeffs_array[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
 
-    Taylor_deg = num_1D_coeffs + start_deg - 1
+    taylor_deg = num_1D_coeffs + start_deg - 1
 
     ordered_dict = BoseSentence({})
 
     # One-mode expansion
     for mode in range(num_modes):
         bosonized_qm = _position_to_boson(mode, "q")
-        for deg_i in range(start_deg, Taylor_deg + 1):
+        for deg_i in range(start_deg, taylor_deg + 1):
             coeff = taylor_1D[mode, deg_i - start_deg]
             qpow = bosonized_qm**deg_i
             ordered_dict += (coeff * qpow).normal_order()
     # Two-mode expansion
     if num_coups > 1:
-        Taylor_2D = taylor_coeffs_array[1]
-        degs_2d = _twobody_degs(Taylor_deg, min_deg=start_deg)
+        taylor_2D = taylor_coeffs_array[1]
+        degs_2d = _twobody_degs(taylor_deg, min_deg=start_deg)
         for m1 in range(num_modes):
             bosonized_qm1 = _position_to_boson(m1, "q")
             for m2 in range(m1):
                 bosonized_qm2 = _position_to_boson(m2, "q")
                 for deg_idx, Qs in enumerate(degs_2d):
                     q1deg, q2deg = Qs[:2]
-                    coeff = Taylor_2D[m1, m2, deg_idx]
+                    coeff = taylor_2D[m1, m2, deg_idx]
                     bosonized_qm1_pow = bosonized_qm1**q1deg
                     bosonized_qm2_pow = bosonized_qm2**q2deg
                     ordered_dict += (coeff * bosonized_qm1_pow * bosonized_qm2_pow).normal_order()
 
     # Three-mode expansion
     if num_coups > 2:
-        degs_3d = _threebody_degs(Taylor_deg, min_deg=start_deg)
-        Taylor_3D = taylor_coeffs_array[2]
+        degs_3d = _threebody_degs(taylor_deg, min_deg=start_deg)
+        taylor_3D = taylor_coeffs_array[2]
         for m1 in range(num_modes):
             bosonized_qm1 = _position_to_boson(m1, "q")
             for m2 in range(m1):
@@ -458,7 +460,7 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
                     bosonized_qm3 = _position_to_boson(m3, "q")
                     for deg_idx, Qs in enumerate(degs_3d):
                         q1deg, q2deg, q3deg = Qs[:3]
-                        coeff = Taylor_3D[m1, m2, m3, deg_idx]
+                        coeff = taylor_3D[m1, m2, m3, deg_idx]
                         bosonized_qm1_pow = bosonized_qm1**q1deg
                         bosonized_qm2_pow = bosonized_qm2**q2deg
                         bosonized_qm3_pow = bosonized_qm3**q3deg
@@ -475,7 +477,7 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the frequencies
-        is_loc (bool): whether or not if localized
+        is_loc (bool): Flag whether the vibrational modes are localized. Default is True.
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
@@ -507,7 +509,7 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
     term of `Eq. 4 and Eq. 7 <https://arxiv.org/pdf/1703.09313>`_.
 
     Args:
-        Taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
+        taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): vibrational frequencies
 
     Returns:
@@ -532,7 +534,7 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the harmonic frequencies in cm^-1
-        is_loc (bool): whether or not if localized
+        is_loc (bool): Flag whether the vibrational modes are localized. Default is True.
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
