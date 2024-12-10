@@ -225,7 +225,7 @@ class Wires(Sequence):
         """
         if jax_available:
             return jax.numpy.array(self._labels)
-        return None
+        raise ModuleNotFoundError("JAX not found")  # pragma: no cover
 
     @property
     def labels(self):
