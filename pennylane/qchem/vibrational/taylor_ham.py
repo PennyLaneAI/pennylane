@@ -62,7 +62,7 @@ def _fit_onebody(onemode_op, max_deg, min_deg=3):
     r"""Fits the one-mode operator to get one-body coefficients.
 
     Args:
-        onemode_op (list(list(float))): one-mode operator
+        onemode_op (TensorLike[float]): one-mode operator
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
 
