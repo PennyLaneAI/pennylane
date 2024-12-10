@@ -297,7 +297,7 @@ Most ``for`` loop constructs will be properly captured and compiled by AutoGraph
 
     @qml.qnode(dev)
     def f():
-        for x in [0, 1, 2]:
+        for x in jnp.array([0, 1, 2]):
             qml.RY(x * jnp.pi / 4, wires=0)
         return qml.expval(qml.PauliZ(0))
 
@@ -363,8 +363,7 @@ or dynamic variable, an error will be raised:
 >>> plxpr = make_plxpr(f)()
 AutoGraphError: Tracing of an AutoGraph converted for loop failed with an exception:
   TracerIntegerConversionError:    The __index__() method was called on traced array with shape int64[]
-    The error occurred while tracing the function functional_for at /Users/lillian.frederiksen/pennylane/pennylane/capture/autograph/ag_primitives.py:176 for jit. This concrete value was not available in Python because it depends on the value of the argument i.
-    See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
+    The error occurred while tracing the function functional_for [...]
 
 To allow AutoGraph conversion to work in this case, simply convert the list to
 a JAX array:
@@ -475,7 +474,7 @@ Break and continue
 ~~~~~~~~~~~~~~~~~~
 
 Within a ``while`` loop, control flow statements ``break`` and ``continue``
-are not currently supported. Usage will result in an error:
+are not currently supported.
 
 
 Updating and assigning variables
