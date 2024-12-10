@@ -183,7 +183,7 @@ def _generate_bin_occupations(max_occ, nbins):
         nbins(int): the number of bins to distribute the items into
 
     Returns
-        list(tuples): where each tuple represents a valid combination of item counts for the bins.
+        list(tuple): where each tuple represents a valid combination of item counts for the bins.
     """
     combinations = list(itertools.product(range(max_occ + 1), repeat=nbins))
 
@@ -509,7 +509,7 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
     term of `Eq. 4 and Eq. 7 <https://arxiv.org/pdf/1703.09313>`_.
 
     Args:
-        Taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
+        taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): vibrational frequencies
 
     Returns:
