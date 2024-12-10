@@ -61,6 +61,9 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added support to build Taylor form Hamiltonians from `VibrationalPES` objects.
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+
 
 <h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
 

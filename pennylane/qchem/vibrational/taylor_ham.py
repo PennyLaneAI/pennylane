@@ -422,36 +422,36 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
     taylor_1D = taylor_coeffs_array[0]
     num_modes, num_1D_coeffs = np.shape(taylor_1D)
 
-    Taylor_deg = num_1D_coeffs + start_deg - 1
+    taylor_deg = num_1D_coeffs + start_deg - 1
 
     ordered_dict = BoseSentence({})
 
     # One-mode expansion
     for mode in range(num_modes):
         bosonized_qm = _position_to_boson(mode, "q")
-        for deg_i in range(start_deg, Taylor_deg + 1):
+        for deg_i in range(start_deg, taylor_deg + 1):
             coeff = taylor_1D[mode, deg_i - start_deg]
             qpow = bosonized_qm**deg_i
             ordered_dict += (coeff * qpow).normal_order()
     # Two-mode expansion
     if num_coups > 1:
-        Taylor_2D = taylor_coeffs_array[1]
-        degs_2d = _twobody_degs(Taylor_deg, min_deg=start_deg)
+        taylor_2D = taylor_coeffs_array[1]
+        degs_2d = _twobody_degs(taylor_deg, min_deg=start_deg)
         for m1 in range(num_modes):
             bosonized_qm1 = _position_to_boson(m1, "q")
             for m2 in range(m1):
                 bosonized_qm2 = _position_to_boson(m2, "q")
                 for deg_idx, Qs in enumerate(degs_2d):
                     q1deg, q2deg = Qs[:2]
-                    coeff = Taylor_2D[m1, m2, deg_idx]
+                    coeff = taylor_2D[m1, m2, deg_idx]
                     bosonized_qm1_pow = bosonized_qm1**q1deg
                     bosonized_qm2_pow = bosonized_qm2**q2deg
                     ordered_dict += (coeff * bosonized_qm1_pow * bosonized_qm2_pow).normal_order()
 
     # Three-mode expansion
     if num_coups > 2:
-        degs_3d = _threebody_degs(Taylor_deg, min_deg=start_deg)
-        Taylor_3D = taylor_coeffs_array[2]
+        degs_3d = _threebody_degs(taylor_deg, min_deg=start_deg)
+        taylor_3D = taylor_coeffs_array[2]
         for m1 in range(num_modes):
             bosonized_qm1 = _position_to_boson(m1, "q")
             for m2 in range(m1):
@@ -460,7 +460,7 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
                     bosonized_qm3 = _position_to_boson(m3, "q")
                     for deg_idx, Qs in enumerate(degs_3d):
                         q1deg, q2deg, q3deg = Qs[:3]
-                        coeff = Taylor_3D[m1, m2, m3, deg_idx]
+                        coeff = taylor_3D[m1, m2, m3, deg_idx]
                         bosonized_qm1_pow = bosonized_qm1**q1deg
                         bosonized_qm2_pow = bosonized_qm2**q2deg
                         bosonized_qm3_pow = bosonized_qm3**q3deg
