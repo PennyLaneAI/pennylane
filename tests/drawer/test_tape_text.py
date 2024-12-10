@@ -31,7 +31,7 @@ from pennylane.drawer.tape_text import (
     _add_op,
     _Config,
 )
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_bit_map = {}

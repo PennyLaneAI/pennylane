@@ -371,7 +371,9 @@ class TestParamShift:
             assert tape.operations[1].data[0] == x[1] + expected[1]
 
         grad = fn(dev.execute(tapes))
-        _expected = np.stack([-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])])
+        _expected = np.stack(
+            [-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])]
+        )
         assert isinstance(grad, tuple)
         assert len(grad) == len(default_shot_vector)
         for g in grad:
