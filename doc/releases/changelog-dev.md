@@ -253,6 +253,7 @@ such as `shots`, `rng` and `prng_key`.
 * The `qml.qsvt` function has been improved to be more user-friendly. Old functionality is moved to `qml.qsvt_legacy`
   and it will be deprecated in release v0.40.
   [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520/)
+  [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
 
 <h4>Other Improvements</h4>
 
