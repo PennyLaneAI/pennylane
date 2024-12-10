@@ -29,7 +29,6 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
-    ~convert_to_tape
     ~create_operator_primitive
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
@@ -61,7 +60,7 @@ See also:
 
 .. currentmodule:: pennylane
 
-..autosummary::
+.. autosummary::
     :toctree: api
 
     ~pennylane.tape.plxpr_to_tape
