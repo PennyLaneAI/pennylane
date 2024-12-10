@@ -21,12 +21,13 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.capture.transforms import MapWires
 from pennylane.transforms.core import transform
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
+# pylint: disable=wrong-import-position
+from pennylane.capture.transforms import MapWires
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
