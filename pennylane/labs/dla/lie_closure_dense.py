@@ -81,9 +81,10 @@ def lie_closure_dense(
         `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
     Args:
-        generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): generating set for which to compute the
+        generators (Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]): generating set for which to compute the
             Lie closure.
         n (int): The number of qubits involved. If ``None`` is provided, it is automatically deduced from the generators.
+            Ignored when the inputs are ``np.ndarray`` instances.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
             calculation. Default is ``False``.
