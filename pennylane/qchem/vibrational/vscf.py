@@ -39,10 +39,7 @@ def _build_Fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
         modal_indices = [*ham_term[1]]
         excitation_indices = [*ham_term[2]]
 
-        if mode in modal_indices:
-            modal_idx = modal_indices.index(mode)
-        else:
-            continue
+        modal_idx = modal_indices.index(mode)
         im = excitation_indices[modal_idx]
         jm = excitation_indices[modal_idx + len(modal_indices)]
         if im < modals[mode] and jm < modals[mode]:
@@ -77,10 +74,7 @@ def _update_h(h_mat, mode, active_ham_terms, mode_rot, ts_act, modals):
         modal_indices = ham_term[1]
         excitation_indices = ham_term[2]
 
-        if mode in modal_indices:
-            modal_idx = modal_indices.index(mode)
-        else:
-            continue
+        modal_idx = modal_indices.index(mode)
         im = excitation_indices[modal_idx]
         jm = excitation_indices[modal_idx + len(modal_indices)]
 
@@ -334,9 +328,6 @@ def _rotate_dipole(dipole_data, mode_rots, modals):
 
     """
     n = len(dipole_data)
-
-    if n > 3:
-        raise ValueError(f"Building n-mode dipole not implemented for {n}=>3!")
 
     nmodes = np.shape(dipole_data[0])[0]
     imax = np.max(modals)
