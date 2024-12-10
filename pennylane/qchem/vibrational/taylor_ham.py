@@ -273,7 +273,7 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
     return coeffs, predicted_3D
 
 
-def taylor_coeffs(pes, max_deg=4, min_deg=3):
+def taylor_coeffs(pes_object, max_deg=4, min_deg=3):
     r"""Compute fitted coefficients for Taylor Hamiltonian. See the details in `Eq. 4 and Eq. 5 
     <https://arxiv.org/pdf/1703.09313>`_ for more information about the coefficients.
 
@@ -289,7 +289,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     respectively, defined in terms of the third and fourth-order partial derivatives of the PES.
 
     Args:
-        pes (VibrationalPES): object containing the vibrational potential energy surface data
+        pes_object (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
@@ -297,19 +297,19 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
         tuple(TensorLike[float]): the coefficients of the one-body, two-body and three-body terms
     """
 
-    anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
+    anh_pes, harmonic_pes = _remove_harmonic(pes_object.freqs, pes_object.pes_onemode)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, max_deg, min_deg=min_deg)
     predicted_1D += harmonic_pes
     coeff_arr = [coeff_1D]
     predicted_arr = [predicted_1D]
 
-    if pes.pes_twomode is not None:
-        coeff_2D, predicted_2D = _fit_twobody(pes.pes_twomode, max_deg, min_deg=min_deg)
+    if pes_object.pes_twomode is not None:
+        coeff_2D, predicted_2D = _fit_twobody(pes_object.pes_twomode, max_deg, min_deg=min_deg)
         coeff_arr.append(coeff_2D)
         predicted_arr.append(predicted_2D)
 
-    if pes.pes_threemode is not None:
-        coeff_3D, predicted_3D = _fit_threebody(pes.pes_threemode, max_deg, min_deg=min_deg)
+    if pes_object.pes_threemode is not None:
+        coeff_3D, predicted_3D = _fit_threebody(pes_object.pes_threemode, max_deg, min_deg=min_deg)
         coeff_arr.append(coeff_3D)
         predicted_arr.append(predicted_3D)
 
@@ -477,7 +477,7 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the frequencies
-        is_loc (bool): whether or not if localized
+        is_loc (bool): Flag whether the vibrational modes are localized. Default is True.
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
@@ -534,7 +534,7 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the harmonic frequencies in cm^-1
-        is_loc (bool): whether or not if localized
+        is_loc (bool): Flag whether the vibrational modes are localized. Default is True.
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
