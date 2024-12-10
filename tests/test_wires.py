@@ -209,13 +209,13 @@ class TestWires:
     def test_jax_array_representation(self):
         """Tests that Wires object has a JAX array representation."""
 
-        if not jax_available:
-            pytest.skip("JAX array representation needs JAX")
-
         wires = Wires([4, 0, 1])
         array = jax.numpy.asarray(wires)
-        for w1, w2 in zip(array, [4, 0, 1]):
-            assert w1 == w2
+        if jax_available:
+            for w1, w2 in zip(array, [4, 0, 1]):
+                assert w1 == w2
+        else:
+            assert array is None
 
     def test_set_of_wires(self):
         """Tests that a set() of wires is formed correctly."""
