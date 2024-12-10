@@ -14,7 +14,6 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
-from functools import partial
 
 import numpy as np
 import pytest

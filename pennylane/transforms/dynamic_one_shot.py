@@ -77,22 +77,22 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
 
     **Example**
 
-        Most devices that support mid-circuit measurements will include this transform in its
-        preprocessing automatically when applicable. When this is the case, any user-applied
-        ``dynamic_one_shot`` transforms will be ignored. The recommended way to use dynamic one
-        shot is to specify ``mcm_method="one-shot"`` in the ``qml.qnode`` decorator.
+    Most devices that support mid-circuit measurements will include this transform in its
+    preprocessing automatically when applicable. When this is the case, any user-applied
+    ``dynamic_one_shot`` transforms will be ignored. The recommended way to use dynamic one
+    shot is to specify ``mcm_method="one-shot"`` in the ``qml.qnode`` decorator.
 
-        ..code-block:: python
+    ..code-block:: python
 
-            dev = qml.device("default.qubit", shots=100)
-            params = np.pi / 4 * np.ones(2)
+        dev = qml.device("default.qubit", shots=100)
+        params = np.pi / 4 * np.ones(2)
 
-            @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
-            def func(x, y):
-                qml.RX(x, wires=0)
-                m0 = qml.measure(0)
-                qml.cond(m0, qml.RY)(y, wires=1)
-                return qml.expval(op=m0)
+        @qml.qnode(dev, mcm_method="one-shot", postselect_mode="fill-shots")
+        def func(x, y):
+            qml.RX(x, wires=0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RY)(y, wires=1)
+            return qml.expval(op=m0)
 
     """
     if not any(is_mcm(o) for o in tape.operations):
