@@ -26,9 +26,8 @@ from pennylane.typing import PostprocessingFn
 def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Combine all ``qml.GlobalPhase`` gates into a single ``qml.GlobalPhase`` operation.
 
-    Circuits passed through this transform will be updated to include the same operations and
-    measurements of the original input other than ``qml.GlobalPhase``.
-    A single ``qml.GlobalPhase`` operation will be added at the end of the new output circuit.
+    This transform returns a new circuit including all the operations and measurements of the original input other than ``qml.GlobalPhase``.
+    A single ``qml.GlobalPhase`` operation is added at the end of the new output circuit.
     The total global phase is computed as the algebraic sum of all the phases in the original circuit.
 
     Args:
