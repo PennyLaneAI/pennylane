@@ -23,7 +23,9 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 jax = pytest.importorskip("jax")
 
 
-from pennylane.tape.plxpr_to_tape import CollectOpsandMeas  # pylint: disable=wrong-import-position
+from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
+    CollectOpsandMeas,
+)
 
 
 class TestCollectOpsandMeas:
@@ -147,11 +149,20 @@ class TestCollectOpsandMeas:
     def test_elif_mcm(self):
         """Test that an elif mcm can be caputured."""
 
+        def rx(*args):
+            qml.RX(*args)
+
+        def ry(*args):
+            qml.RY(*args)
+
+        def rz(*args):
+            qml.RZ(*args)
+
         def f(x):
             m0 = qml.measure(0)
             m1 = qml.measure(1)
 
-            qml.cond(m0, qml.RX, elifs=(m1, qml.RY), false_fn=qml.RZ)(x, 0)
+            qml.cond(m0, rx, elifs=(m1, ry), false_fn=rz)(x, 0)
 
         x = jax.numpy.array(0.5)
 
@@ -212,9 +223,20 @@ class TestCollectOpsandMeas:
             m0 = qml.measure(0)
             qml.cond(m0, true_fn, elifs=(value, elif_fn))(x)
 
-        obj = CollectOpsandMeas()
-        with pytest.raises(ValueError, match="cannot use qml.cond with a combination"):
-            obj(f)(0.5, False)
+        collector = CollectOpsandMeas()
+        with pytest.raises(ValueError, match="Cannot use qml.cond with a combination"):
+            collector(f)(0.5, False)
+
+    def test_cond_fn_no_returns(self):
+        """Test that an error is raised if a cond branch of a measurement value returns something"""
+
+        def f():
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RX, false_fn=qml.RY)(0.5, 0)
+
+        collector = CollectOpsandMeas()
+        with pytest.raises(ValueError, match="Conditional branches of mid circuit measurements"):
+            collector(f)()
 
 
 class TestPlxprToTape:
@@ -339,11 +361,20 @@ class TestPlxprToTape:
     def test_elif_mcm(self):
         """Test that an elif mcm can be caputured."""
 
+        def rx(*args):
+            qml.RX(*args)
+
+        def ry(*args):
+            qml.RY(*args)
+
+        def rz(*args):
+            qml.RZ(*args)
+
         def f(x):
             m0 = qml.measure(0)
             m1 = qml.measure(1)
 
-            qml.cond(m0, qml.RX, elifs=(m1, qml.RY), false_fn=qml.RZ)(x, 0)
+            qml.cond(m0, rx, elifs=(m1, ry), false_fn=rz)(x, 0)
 
         x = jax.numpy.array(0.5)
         jaxpr = jax.make_jaxpr(f)(x)
@@ -362,7 +393,7 @@ class TestPlxprToTape:
         def f(x):
             qml.adjoint(qfunc, lazy=lazy)(x)
 
-        x = 2.1
+        x = jax.numpy.array(2.1)
         jaxpr = jax.make_jaxpr(f)(0.6)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -405,5 +436,5 @@ class TestPlxprToTape:
             qml.cond(m0, true_fn, elifs=(value, elif_fn))(x)
 
         jaxpr = jax.make_jaxpr(f)(0.5, False)
-        with pytest.raises(ValueError, match="cannot use qml.cond with a combination"):
+        with pytest.raises(ValueError, match="Cannot use qml.cond with a combination"):
             qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, False)
