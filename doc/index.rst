@@ -1,4 +1,5 @@
-:og:description: PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network.
+.. meta::
+   :description: Accelerate your adoption of PennyLane! Find clear, concise, accessible, and current information that will help you understand, use, and troubleshoot issues.
 
 PennyLane Documentation
 =======================
