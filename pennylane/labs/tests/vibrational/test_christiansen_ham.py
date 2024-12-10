@@ -77,9 +77,10 @@ with h5py.File(cform_file, "r") as f:
 
 
 def test_christiansen_bosonic():
-    """Always passes"""
+    """Tests that christiansen_bosonic produces the correct bosonic operator"""
     christiansen_bos_op = christiansen_bosonic(one=H1, two=H2, three=H3)
-    assert True
+    christiansen_bos_op.simplify()
+    assert len(christiansen_bos_op) == 4702 # Reference from Vibrant
 
 
 def test_christiansen_hamiltonian():

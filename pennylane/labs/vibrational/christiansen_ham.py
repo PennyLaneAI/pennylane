@@ -42,7 +42,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     if modals is None:
         imax = np.shape(one)[1]
         modals = imax * np.ones(modes, dtype=int)
-
+        
     idx = {}  # dictionary mapping the tuple (l,n) to an index in the qubit register
     counter = 0
     for l in range(modes):
