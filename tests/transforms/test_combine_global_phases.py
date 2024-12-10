@@ -1,5 +1,5 @@
 """
-Tests for the Combine Global Phases transform.
+Tests for the combine_global_phases transform.
 """
 
 import numpy as np
