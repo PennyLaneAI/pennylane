@@ -1,5 +1,5 @@
 .. meta::
-   :description: Accelerate your adoption of PennyLane! Find clear, concise, accessible, and current information that will help you understand, use, and troubleshoot issues.
+  :og:description: Accelerate your adoption of PennyLane! Find clear, concise, accessible, and current information that will help you understand, use, and troubleshoot issues.
 
 PennyLane Documentation
 =======================
