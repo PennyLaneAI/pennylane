@@ -398,7 +398,7 @@ def _position_to_boson(index, op):
         op (str): the position operator, either ``"p"`` or ``"q"``
 
     Returns:
-        BoseSentence: bosonic form of the position operator given
+        BoseSentence: bosonic form of the given position operator
     """
     factor = 1j / np.sqrt(2) if op == "p" else 1 / np.sqrt(2)
     bop = factor * BoseWord({(0, index): "-"})
