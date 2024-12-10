@@ -371,7 +371,7 @@ class TestParamShift:
             assert tape.operations[1].data[0] == x[1] + expected[1]
 
         grad = fn(dev.execute(tapes))
-        exp = np.stack([-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])])
+        _expected = np.stack([-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])])
         assert isinstance(grad, tuple)
         assert len(grad) == len(default_shot_vector)
         for g in grad:
@@ -380,7 +380,7 @@ class TestParamShift:
             for (
                 a,
                 b,
-            ) in zip(g, exp):
+            ) in zip(g, _expected):
                 assert np.allclose(a, b, atol=shot_vec_tol)
 
     @pytest.mark.slow
@@ -414,21 +414,21 @@ class TestParamShift:
         tapes, fn = qml.gradients.param_shift(tape2)
         j2 = fn(dev.execute(tapes))
 
-        exp = -np.sin(1)
+        _expected = -np.sin(1)
 
         assert isinstance(j1, tuple)
         assert len(j1) == len(many_shots_shot_vector)
         for j in j1:
             assert isinstance(j, tuple)
             assert len(j) == len(tape1.trainable_params)
-            assert np.allclose(j[0], exp, atol=shot_vec_tol)
+            assert np.allclose(j[0], _expected, atol=shot_vec_tol)
             assert np.allclose(j[1], 0, atol=shot_vec_tol)
 
         for j in j2:
             assert isinstance(j, tuple)
             assert len(j) == len(tape1.trainable_params)
             assert np.allclose(j[0], 0, atol=shot_vec_tol)
-            assert np.allclose(j[1], exp, atol=shot_vec_tol)
+            assert np.allclose(j[1], _expected, atol=shot_vec_tol)
 
     def test_grad_recipe_parameter_dependent(self):
         """Test that an operation with a gradient recipe that depends on
@@ -1157,14 +1157,14 @@ class TestParameterShiftRule:
             assert len(r[0]) == len(tape.trainable_params)
 
             r_to_check = r[0][0]
-            exp = expval_expected[0]
-            assert np.allclose(r_to_check, exp, atol=shot_vec_tol)
+            _expected = expval_expected[0]
+            assert np.allclose(r_to_check, _expected, atol=shot_vec_tol)
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == ()
 
             r_to_check = r[0][1]
-            exp = expval_expected[1]
-            assert np.allclose(r_to_check, exp, atol=shot_vec_tol)
+            _expected = expval_expected[1]
+            assert np.allclose(r_to_check, _expected, atol=shot_vec_tol)
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == ()
 
@@ -1173,14 +1173,14 @@ class TestParameterShiftRule:
             assert len(r[1]) == len(tape.trainable_params)
 
             r_to_check = r[1][0]
-            exp = probs_expected[:, 0]
-            assert np.allclose(r_to_check, exp, atol=shot_vec_tol)
+            _expected = probs_expected[:, 0]
+            assert np.allclose(r_to_check, _expected, atol=shot_vec_tol)
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == (4,)
 
             r_to_check = r[1][1]
-            exp = probs_expected[:, 1]
-            assert np.allclose(r_to_check, exp, atol=shot_vec_tol)
+            _expected = probs_expected[:, 1]
+            assert np.allclose(r_to_check, _expected, atol=shot_vec_tol)
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == (4,)
 
@@ -2306,8 +2306,8 @@ class TestHamiltonianExpvalGradients:
         expected = self.cost_fn_expected(
             weights.detach().numpy(), coeffs1.detach().numpy(), coeffs2.detach().numpy()
         )
-        for actual, exp in zip(res, expected):
-            for val, exp_val in zip(actual, exp):
+        for actual, _expected in zip(res, expected):
+            for val, exp_val in zip(actual, _expected):
                 assert qml.math.allclose(val.detach(), exp_val, atol=tol, rtol=0)
 
         # TODO: test when Hessians are supported with the new return types
