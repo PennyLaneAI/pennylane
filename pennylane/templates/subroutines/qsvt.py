@@ -523,20 +523,17 @@ class QSVT(Operation):
                 qml.QSVT(block_encode, projectors)
                 return qml.state()
 
-            matrix = qml.matrix(circuit, wire_order=[0, 1])()
-
         .. code-block:: pycon
 
-            >>> print(np.round(matrix[: len(input_matrix), : len(input_matrix)], 4).real)
-            [[-0.1942 -0.0979]
-             [-0.0979  0.0995]]
+            >>> pcircuit()
+            array([-0.194205  +0.66654551j, -0.097905  +0.35831418j,
+                    0.3319832 -0.51047262j, -0.09551437+0.01043668j])
 
         If the initial operator for which we apply the singular value transformation is a linear
         combination of unitaries, e.g., a Hamiltonian, it can be block-encoded with operations
         such as :class:`~.PrepSelPrep` or :class:`~.Qubitization`. Note that both of these operations
         have a proper gate decomposition. The following example applies the polynomial
         :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to the Hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`,
-        In this example it will be applied the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to
         blcok-encoded with :class:`~.PrepSelPrep`.
 
         .. code-block::
@@ -560,15 +557,17 @@ class QSVT(Operation):
                 qml.QSVT(block_encode, projectors)
                 return qml.state()
 
-            matrix = qml.matrix(circuit, wire_order= control_wires + H.wires)()[: 2 ** len(H.wires), : 2 ** len(H.wires)]
-
         .. code-block:: pycon
 
-            >>> print(np.round(matrix, 4).real)
-            [[ 0.144   0.      0.432   0.    ]
-             [ 0.      0.0858  0.     -0.343 ]
-             [ 0.432   0.     -0.144   0.    ]
-             [ 0.     -0.343   0.     -0.0858]]
+            >>> circuit()
+            array([ 1.44000000e-01+1.01511390e-01j,  0.00000000e+00+0.00000000e+00j,
+                    4.32000000e-01+3.04534169e-01j,  0.00000000e+00+0.00000000e+00j,
+                    1.92998954e-17+5.00377363e-17j,  0.00000000e+00+0.00000000e+00j,
+                    5.59003542e-01+9.65699229e-02j,  0.00000000e+00+0.00000000e+00j,
+                    4.22566958e-01+7.30000000e-02j,  0.00000000e+00+0.00000000e+00j,
+                   -3.16925218e-01-5.47500000e-02j,  0.00000000e+00+0.00000000e+00j,
+                   -2.98448441e-17-3.10878188e-17j,  0.00000000e+00+0.00000000e+00j,
+                   -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
     """
 
     num_wires = AnyWires
