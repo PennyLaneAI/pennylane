@@ -906,8 +906,7 @@ class TestCatalystMCMs:
         dev = qml.device("lightning.qubit", wires=2, shots=shots)
 
         @qml.qjit
-        @catalyst.qfunc.dynamic_one_shot
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method="one-shot")
         def func(x, y):
             qml.RX(x, wires=0)
             m0 = catalyst.measure(0)
