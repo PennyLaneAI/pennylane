@@ -98,8 +98,7 @@ def test_postselect_mode_transform(postselect_mode):
     shots = 100
     dev = qml.device("default.qubit", shots=shots)
 
-    @partial(qml.dynamic_one_shot)
-    @qml.qnode(dev, postselect_mode=postselect_mode)
+    @qml.qnode(dev, mcm_method="one-shot", postselect_mode=postselect_mode)
     def f(x):
         qml.RX(x, 0)
         _ = qml.measure(0, postselect=1)

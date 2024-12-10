@@ -15,6 +15,8 @@
 
 """
 
+import warnings
+
 from cachetools import LRUCache
 
 import pennylane as qml
@@ -46,10 +48,20 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
     if type_to_keep == 0:
         return
 
-    dynamic_transform_found = inner_transform.prune_dynamic_transform(type_to_keep)
-    if dynamic_transform_found:
+    inner_contains_one_shot = inner_transform.prune_dynamic_transform(type_to_keep)
+    if inner_contains_one_shot:
         type_to_keep = 0
+    original_len = len(outer_transform)
     outer_transform.prune_dynamic_transform(type_to_keep)
+    outer_contained_one_shot = len(outer_transform) < original_len
+    if inner_contains_one_shot and outer_contained_one_shot:
+        warnings.warn(
+            "A dynamic_one_shot transform already exists in the preprocessing program of the "
+            "device, therefore, the dynamic_one_shot applied on the qnode as a decorator is "
+            "ignored. See https://docs.pennylane.ai/en/latest/code/api/pennylane.dynamic_one_shot.html "
+            "for more information on the recommended way to use dynamic one shot.",
+            UserWarning,
+        )
 
 
 def _setup_transform_program(
