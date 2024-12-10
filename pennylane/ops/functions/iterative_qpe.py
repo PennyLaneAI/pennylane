@@ -19,7 +19,6 @@ This module contains the qml.iterative_qpe function.
 import numpy as np
 
 import pennylane as qml
-from pennylane import compiler
 
 
 def iterative_qpe(base, aux_wire, iters):
@@ -76,36 +75,35 @@ def iterative_qpe(base, aux_wire, iters):
                                                                      ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                       ╚═══════╡ ╰Sample[MCM]
     """
-    active_jit = compiler.active_compiler()
-    if qml.capture.enabled() or active_jit:
+    if qml.capture.enabled():
         measurements = qml.math.zeros(iters, dtype=int, like="jax")
     else:
         measurements = [0] * iters
 
-    @qml.for_loop(iters)
-    def f(i, measurements, target):
+    def measurement_loop(i, measurements, target):
+        # closure: aux_wire, iters, target
 
         qml.Hadamard(wires=aux_wire)
         qml.ctrl(qml.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
 
-        @qml.for_loop(i)
-        def g(j):
+        def conditional_loop(j):
+            # closure: measurements, iters, i, aux_wire
             meas = measurements[iters - i + j]
 
             def cond_func():
-                qml.PhaseShift(-2.0 * np.pi / 2 ** (j + 2), wires=aux_wire)
+                qml.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
 
             qml.cond(meas, cond_func)()
 
-        g()  # pylint: disable=no-value-for-parameter
+        qml.for_loop(i)(conditional_loop)()
 
         qml.Hadamard(wires=aux_wire)
         m = qml.measure(wires=aux_wire, reset=True)
-        if qml.capture.enabled() or active_jit:
+        if qml.capture.enabled():
             measurements = measurements.at[iters - i - 1].set(m)
         else:
             measurements[iters - i - 1] = m
 
         return measurements, target
 
-    return f(measurements, base)[0]  # pylint: disable=no-value-for-parameter
+    return qml.for_loop(iters)(measurement_loop)(measurements, base)[0]
