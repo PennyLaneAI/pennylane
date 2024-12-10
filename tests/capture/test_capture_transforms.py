@@ -850,9 +850,7 @@ class TestMapWiresTransform:
         const = 0.1
 
         @MapWires(wire_map={0: 1, 1: 2, 2: 3, 3: 2})
-        @qml.qnode(
-            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
-        )
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def f(x):
             qml.RZ(x, 0)
             qml.PhaseShift(const, 1)
@@ -862,7 +860,6 @@ class TestMapWiresTransform:
         jaxpr = jax.make_jaxpr(f)(0.1)
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
-        # ensure every operation and measurement is captured
         assert len(inner_jaxpr.eqns) == 6
 
         assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
@@ -877,6 +874,8 @@ class TestMapWiresTransform:
         assert inner_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
         assert inner_jaxpr.eqns[3].invars[-1].val == 2
 
+        assert inner_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+
         assert inner_jaxpr.eqns[5].primitive == qml.measurements.ProbabilityMP._wires_primitive
         assert inner_jaxpr.eqns[5].invars[-1].val == 2
 
@@ -886,9 +885,7 @@ class TestMapWiresTransform:
         const = 0.1
 
         @MapWires(wire_map={0: 1, 1: 2})
-        @qml.qnode(
-            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
-        )
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def transformed_circuit(x):
             qml.RZ(const, 0) + qml.RX(x, 0)
             qml.PhaseShift(const, 1) @ qml.RX(x, 0) @ qml.X(0)
@@ -942,9 +939,7 @@ class TestMapWiresTransform:
         """Test that a qnode with controlled operations is transformed correctly."""
 
         @MapWires(wire_map={0: 1, 1: 2, 2: 3, 3: 2})
-        @qml.qnode(
-            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
-        )
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def f(x):
             qml.CNOT(wires=[0, 1])
             qml.CY(wires=[1, 2])
@@ -997,9 +992,7 @@ class TestMapWiresTransform:
         """Test that a qnode with a for loop is transformed correctly."""
 
         @MapWires(wire_map={0: 1})
-        @qml.qnode(
-            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
-        )
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def f(x):
             @qml.for_loop(3)
             def g(i):
@@ -1021,9 +1014,7 @@ class TestMapWiresTransform:
         """Test that a qnode with a while loop is transformed correctly."""
 
         @MapWires(wire_map={0: 1})
-        @qml.qnode(
-            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
-        )
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def f(x):
             @qml.while_loop(lambda i: i < 3)
             def g(i):
@@ -1046,9 +1037,7 @@ class TestMapWiresTransform:
         """Test that a qnode with a conditional is transformed correctly."""
 
         @MapWires(wire_map={0: 1})
-        @qml.qnode(
-            qml.device("default.qubit", wires=4), diff_method="adjoint", grad_on_execution=False
-        )
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def f(x):
             @qml.cond(x > 0.5)
             def g():
@@ -1065,3 +1054,40 @@ class TestMapWiresTransform:
 
         assert cond_jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert cond_jaxpr.eqns[0].invars[-1].val == 1
+
+    def test_invalid_wire_map_keys(self):
+        """Test that invalid wire mappings raise an error."""
+        with pytest.raises(ValueError, match="Wire map keys must be integer constants"):
+            MapWires(wire_map={"a": 1, 1: 2})
+
+    def test_invalid_wire_map_values(self):
+        """Test that invalid wire mappings raise an error."""
+        with pytest.raises(ValueError, match="Wire map values must be integer constants"):
+            MapWires(wire_map={0: "a", 1: 2})
+
+    def test_qnode_batched_parameters(self):
+        """Test qnode transformation with batched parameters."""
+
+        @MapWires(wire_map={0: 1, 1: 2})
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def f(x):
+            qml.RZ(x, 0)
+            qml.PhaseShift(0.1, 1)
+            return qml.expval(qml.PauliZ(2))
+
+        x = jax.numpy.array([0.1, 0.2, 0.3])
+        jaxpr = jax.make_jaxpr(f)(x)
+        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+
+        assert len(inner_jaxpr.eqns) == 4
+
+        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[0].invars[-1].val == 1
+
+        assert inner_jaxpr.eqns[1].primitive == qml.PhaseShift._primitive
+        assert inner_jaxpr.eqns[1].invars[-1].val == 2
+
+        assert inner_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+        assert inner_jaxpr.eqns[2].invars[-1].val == 2
+
+        assert inner_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive

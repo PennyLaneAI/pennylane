@@ -138,6 +138,14 @@ class MapWires(qml.capture.PlxprInterpreter):
     def __init__(self, wire_map: dict) -> None:
         """Initialize the interpreter."""
         self.wire_map = wire_map
+        self._check_wire_map()
+
+    def _check_wire_map(self) -> None:
+        """Check that the wire map is valid and does not contain dynamic values."""
+        if not all(isinstance(k, int) for k in self.wire_map.keys()):
+            raise ValueError("Wire map keys must be integer constants.")
+        if not all(isinstance(v, int) for v in self.wire_map.values()):
+            raise ValueError("Wire map values must be integer constants.")
 
     def interpret_operation(self, op: Operator) -> Operator:
         """Interpret an operation."""
