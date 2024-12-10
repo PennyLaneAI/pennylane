@@ -62,7 +62,7 @@ Python control flow:
     @qml.qnode(dev)
     def cost(weights, data):
 
-        for w in dev.wires.labels:
+        for w in dev.wires:
             qml.X(w)
 
         for x in weights:
@@ -469,6 +469,70 @@ AutoGraph:
 >>> plxpr = make_plxpr(f)(0.0)
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.1)
 [Array(9., dtype=float64, weak_type=True)]
+
+Indexing within a loop
+~~~~~~~~~~~~~~~~~~~~~~
+
+Indexing arrays within a ``while`` loop will generally work, but care must be taken.
+
+For example, using a ``while`` loop variable to index a JAX array is straightforward:
+
+>>> dev = qml.device("default.qubit", wires=3)
+... @qml.qnode(dev)
+... def f(x):
+...     i = 0
+...     while i < 3:
+...         qml.RX(x[i], wires=i)
+...         i += 1
+...     return qml.expval(qml.PauliZ(0))
+>>> weights = jnp.array([0.1, 0.2, 0.3])
+>>> plxpr = make_plxpr(f)(weights)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights)
+[Array(0.99500417, dtype=float64)]
+
+However, indexing within a ``while`` loop with AutoGraph will require that the object indexed is
+a JAX array:
+
+>>> @qml.qnode(dev)
+... def f():
+...     x = [0.1, 0.2, 0.3]
+...     i = 0
+...     while i < 3:
+...         qml.RX(x[i], wires=i)
+...         i += 1
+...     return qml.expval(qml.PauliZ(0))
+>>> plxpr = make_plxpr(f)()
+TracerIntegerConversionError: The __index__() method was called on traced array with shape int64[].
+The error occurred while tracing the function functional_while at [...]
+
+To allow AutoGraph conversion to work in this case, simply convert the list to a JAX array:
+
+>>> @qml.qnode(dev)
+... def f():
+...     x = jnp.array([0.1, 0.2, 0.3])
+...     i = 0
+...     while i < 3:
+...         qml.RX(x[i], wires=i)
+...         i += 1
+...     return qml.expval(qml.PauliZ(0))
+>>> plxpr = make_plxpr(f)()
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
+[Array(0.99500417, dtype=float64)]
+
+If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this for loop.
+
+If you are updating elements of the array, this must be done using the JAX ``.at`` and ``.set`` syntax.
+
+>>> def f():
+...     my_list = jnp.empty(2, dtype=int)
+...     i = 0
+...     while i < 2:
+...         my_list = my_list.at[i].set(i)  # not my_list[i] = i
+...         i += 1
+...     return my_list
+>>> plxpr = make_plxpr(f)()
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
+Array([0, 1], dtype=int64)
 
 Break and continue
 ~~~~~~~~~~~~~~~~~~
