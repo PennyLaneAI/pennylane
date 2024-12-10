@@ -32,10 +32,10 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     The total global phase is computed as the algebraic sum of all the phases in the original circuit.
 
     Args:
-        tape (QNode or QuantumTape or Callable): the input circuit to be transformed.
+        tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
         the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
