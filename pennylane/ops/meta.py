@@ -23,7 +23,7 @@ from typing import Optional
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires  # pylint: disable=unused-import
+from pennylane.wires import Wires, WiresLike  # pylint: disable=unused-import
 
 
 class Barrier(Operation):
@@ -119,7 +119,7 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires=None, id=None):
+    def __init__(self, *params, wires: WiresLike = None, id=None):
         if wires == []:
             raise ValueError(
                 f"{self.__class__.__name__}: wrong number of wires. "
@@ -128,7 +128,7 @@ class WireCut(Operation):
         super().__init__(*params, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(wires):  # pylint: disable=unused-argument
+    def compute_decomposition(wires: WiresLike):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
