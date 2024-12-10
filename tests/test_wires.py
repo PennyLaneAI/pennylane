@@ -30,7 +30,7 @@ else:
     jax = None
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-many-positional-arguments
 class TestWires:
     """Tests for the ``Wires`` class."""
 
@@ -204,6 +204,17 @@ class TestWires:
         assert isinstance(array, np.ndarray)
         assert array.shape == (3,)
         for w1, w2 in zip(array, np.array([4, 0, 1])):
+            assert w1 == w2
+
+    def test_jax_array_representation(self):
+        """Tests that Wires object has a JAX array representation."""
+
+        if not jax_available:
+            pytest.skip("JAX array representation needs JAX")
+
+        wires = Wires([4, 0, 1])
+        array = jax.numpy.asarray(wires)
+        for w1, w2 in zip(array, [4, 0, 1]):
             assert w1 == w2
 
     def test_set_of_wires(self):
