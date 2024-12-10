@@ -302,7 +302,7 @@ Most ``for`` loop constructs will be properly captured and compiled by AutoGraph
         return qml.expval(qml.PauliZ(0))
 
 >>> plxpr = make_plxpr(f)()
->>> eval_jaxpr(plxpr.jaxpr, jaxpr.consts)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
 [Array(-0.70710678, dtype=float64)]
 
 This includes automatic unpacking and enumeration through JAX arrays:
