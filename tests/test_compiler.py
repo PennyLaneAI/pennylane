@@ -872,7 +872,6 @@ class TestCatalystMCMs:
 
     @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs])
     @pytest.mark.parametrize("meas_obj", [qml.PauliZ(0), [0], "mcm"])
-    # pylint: disable=too-many-arguments
     def test_dynamic_one_shot_simple(self, measure_f, meas_obj, seed):
         """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple
         circuit with a mid-circuit measurement."""
@@ -907,7 +906,7 @@ class TestCatalystMCMs:
         dev = qml.device("lightning.qubit", wires=2, shots=shots)
 
         @qml.qjit
-        @catalyst.dynamic_one_shot
+        @catalyst.qfunc.dynamic_one_shot
         @qml.qnode(dev)
         def func(x, y):
             qml.RX(x, wires=0)
