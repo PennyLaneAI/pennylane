@@ -16,7 +16,7 @@
 Tests for default mixed device preprocessing.
 """
 
-import warnings
+from contextlib import nullcontext
 
 import numpy as np
 import pytest
@@ -349,14 +349,12 @@ class TestPreprocessing:
         device = DefaultMixedNewAPI(wires=3, readout_prob=readout_err)
         program, _ = device.preprocess()
 
-        with warnings.catch_warnings(record=True) as warning:
+        with (
+            pytest.warns(UserWarning, match="Measurement .* is not affected by readout error")
+            if req_warn
+            else nullcontext()
+        ):
             program(tapes)
-            if req_warn:
-                assert len(warning) != 0
-                for warn in warning:
-                    assert "is not affected by readout error" in str(warn.message)
-            else:
-                assert len(warning) == 0
 
     def test_preprocess_linear_combination_observable(self):
         """Test that the device's preprocessing handles linear combinations of observables correctly."""

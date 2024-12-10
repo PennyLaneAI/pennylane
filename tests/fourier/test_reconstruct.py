@@ -14,6 +14,7 @@
 """
 Tests for the Fourier reconstruction transform.
 """
+from contextlib import nullcontext
 from functools import reduce
 
 # pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
@@ -499,7 +500,15 @@ class TestReconstructGen:
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
         # Convert fun to have integer frequencies
-        rec = _reconstruct_gen(Fun, spectrum)
+        with (
+            pytest.warns(
+                UserWarning,
+                match="The condition number of the Fourier transform matrix is very large",
+            )
+            if spectrum[:2] == [0.1712, 20.812]
+            else nullcontext()
+        ):
+            rec = _reconstruct_gen(Fun, spectrum)
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(fun, rec)
 

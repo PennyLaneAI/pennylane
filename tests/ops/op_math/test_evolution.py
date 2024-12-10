@@ -203,8 +203,11 @@ class TestEvolution:
         """Tests that an error is raised if the generator is not hermitian."""
         op = Evolution(qml.RX(np.pi / 3, 0), 1)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="of operation Evolution is not hermitian"
+        with (
+            pytest.raises(
+                qml.QuantumFunctionError, match="of operation Evolution is not hermitian"
+            ),
+            pytest.warns(UserWarning, match=r"The base .+ may not be hermitian"),
         ):
             qml.generator(op)
 
