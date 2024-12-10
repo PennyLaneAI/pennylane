@@ -98,7 +98,7 @@ def test_import_sklearn(monkeypatch):
 
 def test_taylor_anharmonic():
     """Test that taylor_anharmonic produces the correct anharmonic term of the hamiltonian"""
-    
+
     # Expected values generated using vibrant and manually transformed into BoseWords
     expected_anh_ham = [
         (BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "+"}), -1.5818170215014748e-05),

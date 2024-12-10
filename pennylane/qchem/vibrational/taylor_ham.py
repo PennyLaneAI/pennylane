@@ -272,7 +272,7 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 
 
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
-    r"""Compute fitted coefficients for Taylor Hamiltonian. See the details in `Eq. 4 and Eq. 5 
+    r"""Compute fitted coefficients for Taylor Hamiltonian. See the details in `Eq. 4 and Eq. 5
     <https://arxiv.org/pdf/1703.09313>`_ for more information about the coefficients.
 
     The coefficients are defined as (in Eq. 5):
