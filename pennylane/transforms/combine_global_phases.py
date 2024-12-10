@@ -76,7 +76,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     if qml.math.is_abstract(phi) or not qml.math.allclose(phi, 0):
         operations.append(qml.GlobalPhase(phi=phi))
 
-    new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
