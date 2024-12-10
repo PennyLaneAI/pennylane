@@ -17,7 +17,13 @@ from pathlib import Path
 
 import pytest
 import numpy as np
+from pennylane.bose.bosonic import BoseWord
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+from tests.qchem.vibrational.test_ref_files.cform_ops_data import (
+    cform_ham_ref,
+    cform_ops_ref,
+    cform_coeffs_ref,
+)
 
 
 from pennylane.labs.vibrational.christiansen_ham import (
@@ -80,13 +86,26 @@ def test_christiansen_bosonic():
     """Test that christiansen_bosonic produces the correct bosonic operator."""
     christiansen_bos_op = christiansen_bosonic(one=H1, two=H2, three=H3)
     christiansen_bos_op.simplify()
-    assert len(christiansen_bos_op) == 4702 # Reference from Vibrant
+
+    ops, coeffs = zip(*list(christiansen_bos_op.items()))
+
+    for i, ele in enumerate(cform_ops_ref):
+        cform_ops_ref[i] = BoseWord(ele)
+
+    assert list(ops) == cform_ops_ref
+    assert np.allclose(coeffs, cform_coeffs_ref, atol=1e-10)
+    assert len(christiansen_bos_op) == len(cform_ops_ref)
 
 
 def test_christiansen_hamiltonian():
     """Test that christiansen_hamiltonian produces the expected hamiltonian."""
-    cform_ham = christiansen_hamiltonian(pes_object=pes_object_3D, nbos=4)
-    assert True
+    cform_ham = christiansen_hamiltonian(pes_object=pes_object_3D, nbos=4, cubic=True)
+    cform_ham.simplify()
+    assert len(cform_ham.pauli_rep) == len(cform_ham_ref)
+    assert all(
+        np.allclose(abs(cform_ham_ref.pauli_rep[term]), abs(coeff), atol=1e-8)
+        for term, coeff in cform_ham.pauli_rep.items()
+    )
 
 
 def test_christiansen_dipole():
