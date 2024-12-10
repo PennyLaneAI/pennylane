@@ -140,7 +140,8 @@ def non_pauli_obs_processing_fn(results):
     """The expected processing function for non-Pauli observables"""
 
     group0, group1, group2, group3 = results
-    return group0[0], 0.5 * group1[0], group0[0] + group2 + 2.0 * group0[1] + group3, group1[1]
+    res = (group0[0], 0.5 * group1[0], group0[0] + group2 + 2.0 * group0[1] + group3, group1[1])
+    return res
 
 
 @pytest.mark.integration
@@ -192,17 +193,16 @@ class TestSplitNonCommuting:
     ):
         """Tests that precomputed grouping of a single Hamiltonian is used."""
 
-        H._grouping_indices = grouping_indices  # pylint: disable=protected-access
+        H.grouping_indices = grouping_indices  # pylint: disable=protected-access
         initial_tape = qml.tape.QuantumScript([qml.X(0)], [qml.expval(H)], shots=100)
         tapes, fn = split_non_commuting(initial_tape)
         assert len(tapes) == len(grouping_indices)
 
         for group_idx, group in enumerate(grouping_indices):
-            assert tapes[group_idx].measurements == [
-                qml.expval(single_term_obs_list[i])
-                for i in group
-                if not isinstance(single_term_obs_list[i], qml.Identity)
-            ]
+            ob_group = [single_term_obs_list[i] for i in group]
+            obs_no_identity = [obs for obs in ob_group if not isinstance(obs, qml.Identity)]
+            expected_measurements = [qml.expval(obs) for obs in obs_no_identity]
+            assert tapes[group_idx].measurements == expected_measurements
             assert tapes[group_idx].shots.total_shots == 100
             assert tapes[group_idx].operations == [qml.X(0)]
 
@@ -224,11 +224,10 @@ class TestSplitNonCommuting:
         assert H.grouping_indices == ((0, 3, 5), (1, 2, 4))
 
         for group_idx, group in enumerate(H.grouping_indices):
-            assert tapes[group_idx].measurements == [
-                qml.expval(single_term_obs_list[i])
-                for i in group
-                if not isinstance(single_term_obs_list[i], qml.Identity)
-            ]
+            ob_group = [single_term_obs_list[i] for i in group]
+            obs_no_identity = [obs for obs in ob_group if not isinstance(obs, qml.Identity)]
+            expected_measurements = [qml.expval(obs) for obs in obs_no_identity]
+            assert tapes[group_idx].measurements == expected_measurements
             assert tapes[group_idx].shots.total_shots == 100
             assert tapes[group_idx].operations == [qml.X(0)]
 
@@ -409,6 +408,9 @@ class TestSplitNonCommuting:
         initial_tape = qml.tape.QuantumScript(
             [qml.X(0)],
             measurements=[
+                # The observables in the following list of measurements are listed here.
+                # Note that wire-based measurements are assumed to be in the Z-basis, and
+                # therefore is assigned a dummy observable of Z
                 # [Z(0), X(0), Z(0), X(0), Y(1), Z(1), Z(0) @ Z(1), Z(1), Z(0)]
                 qml.expval(qml.Z(0)),
                 qml.expval(qml.Z(0) + qml.X(0)),
@@ -422,6 +424,7 @@ class TestSplitNonCommuting:
             ],
         )
 
+        # The list of observables in the comment above can be placed in two groups:
         # ((0, 2, 5, 6, 7, 8), (1, 3, 4))
         tapes, fn = split_non_commuting(initial_tape, grouping_strategy="qwc")
         assert len(tapes) == 2
@@ -463,11 +466,11 @@ class TestSplitNonCommuting:
             {"0": 2},
         )
         assert len(results) == len(expected)
-        for res, exp in zip(results, expected):
+        for res, _expected in zip(results, expected):
             if isinstance(res, np.ndarray):
-                assert np.allclose(res, exp)
+                assert np.allclose(res, _expected)
             else:
-                assert res == exp
+                assert res == _expected
 
     def test_mix_measurement_types_wires(self):
         """Tests multiple measurement types can be handled by wire-based grouping"""
@@ -525,11 +528,11 @@ class TestSplitNonCommuting:
         )
 
         assert len(results) == len(expected)
-        for res, exp in zip(results, expected):
+        for res, _expected in zip(results, expected):
             if isinstance(res, np.ndarray):
-                assert np.allclose(res, exp)
+                assert np.allclose(res, _expected)
             else:
-                assert res == exp
+                assert res == _expected
 
     @pytest.mark.parametrize("grouping_strategy", ["qwc", "wires"])
     def test_state_measurement_in_separate_tape(self, grouping_strategy):
