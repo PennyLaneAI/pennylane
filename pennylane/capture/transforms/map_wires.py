@@ -27,6 +27,7 @@ class MapWires(PlxprInterpreter):
         """Initialize the interpreter."""
         self.wire_map = wire_map
         self._check_wire_map()
+        super().__init__()
 
     def _check_wire_map(self) -> None:
         """Check that the wire map is valid and does not contain dynamic values."""

@@ -259,7 +259,6 @@ class TestMapWiresTransform:
         jaxpr = jax.make_jaxpr(transformed_circuit)(0.1)
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
-        # ensure every operation and measurement is captured
         assert len(inner_jaxpr.eqns) == 15
 
         assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
