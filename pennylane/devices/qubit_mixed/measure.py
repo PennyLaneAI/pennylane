@@ -264,8 +264,36 @@ def get_measurement_function(
                 return calculate_probability
             if isinstance(measurementprocess, VarianceMP):
                 return calculate_variance
+            return state_diagonalizing_gates
 
     raise NotImplementedError
+
+
+def state_diagonalizing_gates(  # pylint: disable=unused-argument
+    measurementprocess: StateMeasurement,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    readout_errors: list[Callable] = None,
+) -> TensorLike:
+    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
+
+    Args:
+        measurementprocess (StateMeasurement): measurement to apply to the state
+        state (TensorLike): state to apply the measurement to
+        is_state_batched (bool): whether the state is batched or not
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors.
+
+    Returns:
+        TensorLike: the result of the measurement
+    """
+    for op in measurementprocess.diagonalizing_gates():
+        state = apply_operation(op, state, is_state_batched=is_state_batched)
+
+    num_wires = _get_num_wires(state, is_state_batched)
+    wires = Wires(range(num_wires))
+    flattened_state = _reshape_state_as_matrix(state, num_wires)
+    return measurementprocess.process_density_matrix(flattened_state, wires)
 
 
 def measure(
