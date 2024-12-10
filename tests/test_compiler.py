@@ -920,6 +920,8 @@ class TestCatalystMCMs:
             meas_key = "wires" if isinstance(meas_obj, list) else "op"
             meas_value = m0 if isinstance(meas_obj, str) else meas_obj
             kwargs = {meas_key: meas_value}
+            if measure_f == qml.counts:
+                kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
         params = jnp.pi / 4 * jnp.ones(2)
