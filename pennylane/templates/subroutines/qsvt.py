@@ -489,12 +489,12 @@ class QSVT(Operation):
     .. details::
         :title: Usage Details
 
-        The QSVT operation can be used with different blcok encoding methods, depending on the
+        The QSVT operation can be used with different block encoding methods, depending on the
         initial operator for which the singular value transformation is applied and the desired
-        backend device. Eexamples are provided in the following.
+        backend device. Examples are provided in the following.
 
         If the initial operator for which we apply the singular value transformation is a matrix,
-        it can be blcok-encoded with either :class:`~.BlockEncode` or :class:`~.FABLE`
+        it can be block-encoded with either :class:`~.BlockEncode` or :class:`~.FABLE`
         operations. Note that :class:`~.BlockEncode` is more efficient on simulator devices but
         it cannot be used with hardware backends because it currently has no gate decomposition.
         The :class:`~.FABLE` operation is less efficient on simulator devices but is hardware
@@ -510,7 +510,7 @@ class QSVT(Operation):
             angles = qml.poly_to_angles(poly, "QSVT")
             input_matrix = np.array([[0.2, 0.1], [0.1, -0.1]])
 
-            wires = [1, 2]
+            wires = [0, 1]
             block_encode = qml.BlockEncode(input_matrix, wires=wires)
             projectors = [
                 qml.PCPhase(angles[i], dim=len(input_matrix), wires=wires)
@@ -523,7 +523,7 @@ class QSVT(Operation):
                 qml.QSVT(block_encode, projectors)
                 return qml.state()
 
-            matrix = qml.matrix(circuit, wire_order=[0, 1,2])()
+            matrix = qml.matrix(circuit, wire_order=[0, 1])()
 
         .. code-block:: pycon
 
@@ -532,8 +532,8 @@ class QSVT(Operation):
              [-0.0979  0.0995]]
 
         If the initial operator for which we apply the singular value transformation is a linear
-        combination of unitaries, e.g., a Hamiltonian, it can be blcok-encoded with operations
-        such as :class:`~.PrepSelPrep` or :class:`~.Qubitization`. Note that both of these oprations
+        combination of unitaries, e.g., a Hamiltonian, it can be block-encoded with operations
+        such as :class:`~.PrepSelPrep` or :class:`~.Qubitization`. Note that both of these operations
         have a proper gate decomposition. The following example applies the polynomial
         :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to the Hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`,
         In this example it will be applied the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to
@@ -542,9 +542,9 @@ class QSVT(Operation):
         .. code-block::
 
             poly = np.array([0, -1, 0, 0.5, 0, 0.5])
-            H = 0.1 * qml.X(3) - 0.7 * qml.X(3) @ qml.Z(4) - 0.2 * qml.Z(3)
+            H = 0.1 * qml.X(2) - 0.7 * qml.X(2) @ qml.Z(3) - 0.2 * qml.Z(2)
 
-            control_wires = [1, 2]
+            control_wires = [0, 1]
             block_encode = qml.PrepSelPrep(H, control=control_wires)
             angles = qml.poly_to_angles(poly, "QSVT")
 
@@ -560,7 +560,7 @@ class QSVT(Operation):
                 qml.QSVT(block_encode, projectors)
                 return qml.state()
 
-            matrix = qml.matrix(circuit, wire_order=[0] + control_wires + H.wires)()[: 2 ** len(H.wires), : 2 ** len(H.wires)]
+            matrix = qml.matrix(circuit, wire_order= control_wires + H.wires)()[: 2 ** len(H.wires), : 2 ** len(H.wires)]
 
         .. code-block:: pycon
 
