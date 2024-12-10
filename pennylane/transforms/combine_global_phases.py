@@ -47,8 +47,8 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
         @qml.transforms.combine_global_phases
+        @qml.qnode(dev)
         def circuit():
             qml.GlobalPhase(0.3, wires=0)
             qml.PauliY(wires=0)
