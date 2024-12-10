@@ -73,7 +73,8 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
             operations.append(op)
 
     if qml.math.is_abstract(phi) or not qml.math.allclose(phi, 0):
-        operations.append(qml.GlobalPhase(phi=phi))
+        with qml.QueuingManager.stop_recording():
+            operations.append(qml.GlobalPhase(phi=phi))
 
     new_tape = tape.copy(operations=operations)
 
