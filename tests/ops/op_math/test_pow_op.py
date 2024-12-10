@@ -491,7 +491,7 @@ class TestSimplify:
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         pow_op = Pow(qml.sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        final_op = qml.s_prod(9, qml.PauliX(0))
+        final_op = qml.s_prod(9, qml.Identity(0))
         simplified_op = pow_op.simplify()
         qml.assert_equal(simplified_op, final_op)
 
