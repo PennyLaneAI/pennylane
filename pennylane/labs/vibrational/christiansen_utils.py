@@ -130,7 +130,7 @@ def _cform_twomode_kinetic(pes_object, nbos):
 def _cform_onemode(pes_object, nbos):
     """
     Calculates the one-body integrals from the given potential energy surface data for the
-    Christiansen Hamiltonian
+    Christiansen Hamiltonian.
 
     Args:
         pes_object(VibrationalPES): object containing the vibrational potential energy surface data
@@ -166,10 +166,10 @@ def _cform_onemode(pes_object, nbos):
             order_k[ki] = 1.0
             order_h = np.zeros(nbos)
             order_h[hi] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1, 1])(pes_object.gauss_grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1, 1])(pes_object.gauss_grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1, 1])(pes_object.grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1, 1])(pes_object.grid)
             quadrature = np.sum(
-                pes_object.gauss_weights * pes_object.pes_onebody[ii, :] * hermite_ki * hermite_hi
+                pes_object.gauss_weights * pes_object.pes_onemode[ii, :] * hermite_ki * hermite_hi
             )
             full_coeff = sqrt * quadrature  # * 219475 for converting into cm^-1
             ind = nn * len(boscombos_on_rank) + mm
@@ -192,7 +192,7 @@ def _cform_onemode_dipole(pes, nbos):
         the one-body integrals for the Christiansen dipole operator
     """
 
-    nmodes = pes.dipole_onebody.shape[0]
+    nmodes = pes.dipole_onemode.shape[0]
     all_mode_combos = []
     for aa in range(nmodes):
         all_mode_combos.append([aa])
@@ -219,12 +219,12 @@ def _cform_onemode_dipole(pes, nbos):
             order_k[ki] = 1.0
             order_h = np.zeros(nbos)
             order_h[hi] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1, 1])(pes.gauss_grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1, 1])(pes.gauss_grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1, 1])(pes.grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1, 1])(pes.grid)
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.sum(
-                    pes.gauss_weights * pes.dipole_onebody[ii, :, alpha] * hermite_ki * hermite_hi
+                    pes.gauss_weights * pes.dipole_onemode[ii, :, alpha] * hermite_ki * hermite_hi
                 )
                 full_coeff = sqrt * quadrature  # * 219475 for converting into cm^-1
                 local_dipole_cform_onebody[ind, alpha] += full_coeff
@@ -247,7 +247,7 @@ def _cform_twomode(pes_object, nbos):
         the two-body integrals for the Christiansen Hamiltonian
     """
 
-    nmodes = pes_object.pes_twobody.shape[0]
+    nmodes = pes_object.pes_twomode.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -291,17 +291,17 @@ def _cform_twomode(pes_object, nbos):
             order_hi[hi] = 1.0
             order_hj = np.zeros(nbos)
             order_hj[hj] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_object.gauss_grid)
-            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_object.gauss_grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_object.gauss_grid)
-            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_object.gauss_grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_object.grid)
+            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_object.grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_object.grid)
+            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_object.grid)
             quadrature = np.einsum(
                 "a,b,a,b,ab,a,b->",
                 pes_object.gauss_weights,
                 pes_object.gauss_weights,
                 hermite_ki,
                 hermite_kj,
-                pes_object.pes_twobody[ii, jj, :, :],
+                pes_object.pes_twomode[ii, jj, :, :],
                 hermite_hi,
                 hermite_hj,
             )
@@ -326,7 +326,7 @@ def _cform_twomode_dipole(pes_object, nbos):
         the one-body integrals for the Christiansen dipole operator
     """
 
-    nmodes = pes_object.dipole_twobody.shape[0]
+    nmodes = pes_object.dipole_twomode.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -370,10 +370,10 @@ def _cform_twomode_dipole(pes_object, nbos):
             order_hi[hi] = 1.0
             order_hj = np.zeros(nbos)
             order_hj[hj] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_object.gauss_grid)
-            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_object.gauss_grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_object.gauss_grid)
-            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_object.gauss_grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_object.grid)
+            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_object.grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_object.grid)
+            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_object.grid)
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum(
@@ -382,7 +382,7 @@ def _cform_twomode_dipole(pes_object, nbos):
                     pes_object.gauss_weights,
                     hermite_ki,
                     hermite_kj,
-                    pes_object.dipole_twobody[ii, jj, :, :, alpha],
+                    pes_object.dipole_twomode[ii, jj, :, :, alpha],
                     hermite_hi,
                     hermite_hj,
                 )
@@ -406,7 +406,7 @@ def _cform_threemode(pes_object, nbos):
     Returns:
         the three-body integrals for the Christiansen Hamiltonian
     """
-    nmodes = pes_object.pes_threebody.shape[0]
+    nmodes = pes_object.pes_threemode.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -460,12 +460,12 @@ def _cform_threemode(pes_object, nbos):
             order_h2[h2] = 1.0
             order_h3 = np.zeros(nbos)
             order_h3[h3] = 1.0
-            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_object.gauss_grid)
-            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_object.gauss_grid)
-            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_object.gauss_grid)
-            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_object.gauss_grid)
-            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_object.gauss_grid)
-            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_object.gauss_grid)
+            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_object.grid)
+            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_object.grid)
+            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_object.grid)
+            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_object.grid)
+            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_object.grid)
+            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_object.grid)
 
             quadrature = np.einsum(
                 "a,b,c,a,b,c,abc,a,b,c->",
@@ -475,7 +475,7 @@ def _cform_threemode(pes_object, nbos):
                 hermite_k1,
                 hermite_k2,
                 hermite_k3,
-                pes_object.pes_threebody[ii1, ii2, ii3, :, :, :],
+                pes_object.pes_threemode[ii1, ii2, ii3, :, :, :],
                 hermite_h1,
                 hermite_h2,
                 hermite_h3,
@@ -500,7 +500,7 @@ def _cform_threemode_dipole(pes_object, nbos):
     Returns:
         the one-body integrals for the Christiansen dipole operator
     """
-    nmodes = pes_object.dipole_threebody.shape[0]
+    nmodes = pes_object.dipole_threemode.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -553,12 +553,12 @@ def _cform_threemode_dipole(pes_object, nbos):
             order_h2[h2] = 1.0
             order_h3 = np.zeros(nbos)
             order_h3[h3] = 1.0
-            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_object.gauss_grid)
-            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_object.gauss_grid)
-            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_object.gauss_grid)
-            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_object.gauss_grid)
-            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_object.gauss_grid)
-            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_object.gauss_grid)
+            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_object.grid)
+            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_object.grid)
+            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_object.grid)
+            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_object.grid)
+            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_object.grid)
+            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_object.grid)
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum(
@@ -569,7 +569,7 @@ def _cform_threemode_dipole(pes_object, nbos):
                     hermite_k1,
                     hermite_k2,
                     hermite_k3,
-                    pes_object.dipole_threebody[ii1, ii2, ii3, :, :, :, alpha],
+                    pes_object.dipole_threemode[ii1, ii2, ii3, :, :, :, alpha],
                     hermite_h1,
                     hermite_h2,
                     hermite_h3,
@@ -584,7 +584,7 @@ def _cform_threemode_dipole(pes_object, nbos):
 
 def _load_cform_onemode(num_proc, nmodes, quad_order):
     """
-    Loader to collect and combine pes_onebody from multiple processors.
+    Loader to collect and combine pes_onemode from multiple processors.
 
     Args:
         num_proc (int): number of processors
@@ -624,7 +624,7 @@ def _load_cform_onemode(num_proc, nmodes, quad_order):
 
 def _load_cform_twomode(num_proc, nmodes, quad_order):
     """
-    Loader to collect and combine pes_twobody from multiple processors.
+    Loader to collect and combine pes_twomode from multiple processors.
 
     Args:
         num_proc (int): number of processors
@@ -664,7 +664,7 @@ def _load_cform_twomode(num_proc, nmodes, quad_order):
 
 def _load_cform_threemode(num_proc, nmodes, quad_order):
     """
-    Loader to collect and combine pes_threebody from multiple processors.
+    Loader to collect and combine pes_threemode from multiple processors.
 
     Args:
         num_proc (int): number of processors
@@ -714,7 +714,7 @@ def _load_cform_threemode(num_proc, nmodes, quad_order):
 
 def _load_cform_onemode_dipole(num_proc, nmodes, quad_order):
     """
-    Loader to collect and combine dipole_onebody from multiple processors.
+    Loader to collect and combine dipole_onemode from multiple processors.
 
     Args:
         num_proc (int): number of processors
@@ -754,7 +754,7 @@ def _load_cform_onemode_dipole(num_proc, nmodes, quad_order):
 
 def _load_cform_twomode_dipole(num_proc, nmodes, quad_order):
     """
-    Loader to collect and combine dipole_twobody from multiple processors.
+    Loader to collect and combine dipole_twomode from multiple processors.
 
     Args:
         num_proc (int): number of processors
@@ -794,7 +794,7 @@ def _load_cform_twomode_dipole(num_proc, nmodes, quad_order):
 
 def _load_cform_threemode_dipole(num_proc, nmodes, quad_order):
     """
-    Loader to collect and combine dipole_threebody from multiple processors.
+    Loader to collect and combine dipole_threemode from multiple processors.
 
     Args:
         num_proc (int): number of processors
@@ -945,7 +945,7 @@ def christiansen_integrals_dipole(pes, nbos=16, cubic=False):
     comm.Barrier()
     dipole_cform_onebody = comm.bcast(dipole_cform_onebody, root=0)
 
-    if pes.get_anh_dipole is True or pes.get_anh_dipole > 1:
+    if pes.localized is True or pes.dipole_level > 1:
         local_dipole_cform_twobody = _cform_twomode_dipole(pes, nbos)
         comm.Barrier()
 
@@ -962,7 +962,7 @@ def christiansen_integrals_dipole(pes, nbos=16, cubic=False):
         comm.Barrier()
         dipole_cform_twobody = comm.bcast(dipole_cform_twobody, root=0)
 
-    if pes.get_anh_dipole is True or pes.get_anh_dipole > 2:
+    if pes.localized is True or pes.dipole_level > 2:
         local_dipole_cform_threebody = _cform_threemode_dipole(pes, nbos)
         comm.Barrier()
 
