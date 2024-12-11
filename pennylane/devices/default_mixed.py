@@ -853,7 +853,7 @@ class DefaultMixedLegacy(QubitDevice):
         return super().execute(circuit, **kwargs)
 
     @debug_logger
-    def apply(self, operations, rotations=None, **kwargs): # pylint: disable=redefined-outer-name
+    def apply(self, operations, rotations=None, **kwargs):  # pylint: disable=redefined-outer-name
         rotations = rotations or []
 
         # apply the circuit operations
