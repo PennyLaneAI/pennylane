@@ -289,7 +289,7 @@ def taylor_coeffs(pes_object, max_deg=4, min_deg=3):
     respectively, defined in terms of the third and fourth-order partial derivatives of the potential energy surface data.
 
     Args:
-        pes_object (VibrationalPES): object containing the vibrational potential energy surface data
+        pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of taylor form polynomial
         min_deg (int): minimum degree of taylor form polynomial
 
