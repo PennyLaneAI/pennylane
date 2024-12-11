@@ -34,30 +34,26 @@ class TestMapWiresTransform:
         """Test that a single operation is transformed correctly."""
 
         @MapWiresInterpreter(wire_map={0: 1})
-        def quantum_function(x):
-            qml.RZ(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+        def transformed_circuit(x):
+            return qml.RZ(x, wires=0)
 
-        jaxpr = jax.make_jaxpr(quantum_function)(0.1)
+        jaxpr = jax.make_jaxpr(transformed_circuit)(0.1)
 
-        assert len(jaxpr.eqns) == 3
+        assert len(jaxpr.eqns) == 1
 
         assert jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert jaxpr.eqns[0].invars[-1].val == 1
 
-        assert jaxpr.eqns[1].primitive == qml.PauliZ._primitive
-        assert jaxpr.eqns[1].invars[-1].val == 1
-
     def test_quantum_function_simple(self):
-        """Test that a simple quantum function is transformed correctly."""
+        """Test that a simple circuit is transformed correctly."""
 
         @MapWiresInterpreter(wire_map={0: 1, 1: 2})
-        def quantum_function(x):
+        def transformed_circuit(x):
             qml.RZ(x, wires=0)
             qml.PhaseShift(0.1, wires=1)
             return qml.expval(qml.PauliZ(2))
 
-        jaxpr = jax.make_jaxpr(quantum_function)(0.1)
+        jaxpr = jax.make_jaxpr(transformed_circuit)(0.1)
 
         assert len(jaxpr.eqns) == 4
 
@@ -70,8 +66,108 @@ class TestMapWiresTransform:
         assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[2].invars[-1].val == 2
 
+    def test_nested_ops(self):
+        """Test that a circuit with nested operations is transformed correctly."""
+
+        const = jax.numpy.array(0.1)
+
+        @MapWiresInterpreter(wire_map={0: 1, 1: 2})
+        def transformed_circuit(x):
+            qml.RZ(const, 0) + qml.RX(x, 0)
+            qml.PhaseShift(const, 1) @ qml.RX(x, 0) @ qml.X(0)
+            qml.Hadamard(2) @ qml.RX(x, 0) + 4 * qml.RX(const, 0)
+            return qml.state()
+
+        jaxpr = jax.make_jaxpr(transformed_circuit)(0.1)
+
+        assert len(jaxpr.eqns) == 15
+
+        assert jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert jaxpr.eqns[0].invars[-1].val == 1
+
+        assert jaxpr.eqns[1].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].invars[-1].val == 1
+
+        assert jaxpr.eqns[2].primitive == qml.ops.Sum._primitive
+
+        assert jaxpr.eqns[3].primitive == qml.PhaseShift._primitive
+        assert jaxpr.eqns[3].invars[-1].val == 2
+
+        assert jaxpr.eqns[4].primitive == qml.RX._primitive
+        assert jaxpr.eqns[4].invars[-1].val == 1
+
+        assert jaxpr.eqns[5].primitive == qml.ops.Prod._primitive
+
+        assert jaxpr.eqns[6].primitive == qml.X._primitive
+        assert jaxpr.eqns[6].invars[-1].val == 1
+
+        assert jaxpr.eqns[7].primitive == qml.ops.Prod._primitive
+
+        assert jaxpr.eqns[8].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[8].invars[-1].val == 2
+
+        assert jaxpr.eqns[9].primitive == qml.RX._primitive
+        assert jaxpr.eqns[9].invars[-1].val == 1
+
+        assert jaxpr.eqns[10].primitive == qml.ops.Prod._primitive
+
+        assert jaxpr.eqns[11].primitive == qml.RX._primitive
+        assert jaxpr.eqns[11].invars[-1].val == 1
+
+        assert jaxpr.eqns[12].primitive == qml.ops.SProd._primitive
+        assert jaxpr.eqns[13].primitive == qml.ops.Sum._primitive
+
+    def test_controlled_ops(self):
+        """Test that a circuit with controlled operations is transformed correctly."""
+
+        @MapWiresInterpreter(wire_map={0: 1, 1: 2, 2: 3, 3: 2})
+        def f(x):
+            qml.CNOT(wires=[0, 1])
+            qml.CY(wires=[1, 2])
+            qml.CZ(wires=[2, 3])
+            qml.CRX(x, wires=[0, 1])
+            qml.CRY(x, wires=[1, 2])
+            qml.CRZ(x, wires=[2, 3])
+            return qml.var(
+                qml.QubitUnitary(
+                    np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1]
+                )
+            )
+
+        jaxpr = jax.make_jaxpr(f)(0.1)
+
+        assert len(jaxpr.eqns) == 8
+
+        assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
+        assert jaxpr.eqns[0].invars[0].val == 1
+        assert jaxpr.eqns[0].invars[1].val == 2
+
+        assert jaxpr.eqns[1].primitive == qml.CY._primitive
+        assert jaxpr.eqns[1].invars[0].val == 2
+        assert jaxpr.eqns[1].invars[1].val == 3
+
+        assert jaxpr.eqns[2].primitive == qml.CZ._primitive
+        assert jaxpr.eqns[2].invars[0].val == 3
+        assert jaxpr.eqns[2].invars[1].val == 2
+
+        assert jaxpr.eqns[3].primitive == qml.CRX._primitive
+        assert jaxpr.eqns[3].invars[1].val == 1
+        assert jaxpr.eqns[3].invars[2].val == 2
+
+        assert jaxpr.eqns[4].primitive == qml.CRY._primitive
+        assert jaxpr.eqns[4].invars[1].val == 2
+        assert jaxpr.eqns[4].invars[2].val == 3
+
+        assert jaxpr.eqns[5].primitive == qml.CRZ._primitive
+        assert jaxpr.eqns[5].invars[1].val == 3
+        assert jaxpr.eqns[5].invars[2].val == 2
+
+        assert jaxpr.eqns[6].primitive == qml.QubitUnitary._primitive
+        assert jaxpr.eqns[6].invars[1].val == 1
+        assert jaxpr.eqns[6].invars[2].val == 2
+
     def test_qnode_simple(self):
-        """Test that a simple qnode is transformed correctly."""
+        """Test that a qnode is transformed correctly."""
 
         @MapWiresInterpreter(wire_map={0: 1, 1: 2, 2: 3, 3: 2})
         @qml.qnode(qml.device("default.qubit", wires=4))
@@ -99,109 +195,30 @@ class TestMapWiresTransform:
         assert inner_jaxpr.eqns[4].primitive == qml.measurements.ProbabilityMP._wires_primitive
         assert inner_jaxpr.eqns[4].invars[-1].val == 2
 
-    def test_qnode_nested_ops(self):
-        """Test that a qnode with nested operations is transformed correctly."""
-
-        const = jax.numpy.array(0.1)
+    def test_qnode_batched_parameters(self):
+        """Test qnode transformation with batched parameters."""
 
         @MapWiresInterpreter(wire_map={0: 1, 1: 2})
         @qml.qnode(qml.device("default.qubit", wires=4))
-        def transformed_circuit(x):
-            qml.RZ(const, 0) + qml.RX(x, 0)
-            qml.PhaseShift(const, 1) @ qml.RX(x, 0) @ qml.X(0)
-            qml.Hadamard(2) @ qml.RX(x, 0) + 4 * qml.RX(const, 0)
-            return qml.state()
+        def f(x):
+            qml.RZ(x, 0)
+            qml.PhaseShift(0.1, 1)
+            return qml.expval(qml.PauliZ(2))
 
-        jaxpr = jax.make_jaxpr(transformed_circuit)(0.1)
+        x = jax.numpy.array([0.1, 0.2, 0.3])
+        jaxpr = jax.make_jaxpr(f)(x)
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
-        assert len(inner_jaxpr.eqns) == 15
+        assert len(inner_jaxpr.eqns) == 4
 
         assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert inner_jaxpr.eqns[0].invars[-1].val == 1
 
-        assert inner_jaxpr.eqns[1].primitive == qml.RX._primitive
-        assert inner_jaxpr.eqns[1].invars[-1].val == 1
+        assert inner_jaxpr.eqns[1].primitive == qml.PhaseShift._primitive
+        assert inner_jaxpr.eqns[1].invars[-1].val == 2
 
-        assert inner_jaxpr.eqns[2].primitive == qml.ops.Sum._primitive
-
-        assert inner_jaxpr.eqns[3].primitive == qml.PhaseShift._primitive
-        assert inner_jaxpr.eqns[3].invars[-1].val == 2
-
-        assert inner_jaxpr.eqns[4].primitive == qml.RX._primitive
-        assert inner_jaxpr.eqns[4].invars[-1].val == 1
-
-        assert inner_jaxpr.eqns[5].primitive == qml.ops.Prod._primitive
-
-        assert inner_jaxpr.eqns[6].primitive == qml.X._primitive
-        assert inner_jaxpr.eqns[6].invars[-1].val == 1
-
-        assert inner_jaxpr.eqns[7].primitive == qml.ops.Prod._primitive
-
-        assert inner_jaxpr.eqns[8].primitive == qml.Hadamard._primitive
-        assert inner_jaxpr.eqns[8].invars[-1].val == 2
-
-        assert inner_jaxpr.eqns[9].primitive == qml.RX._primitive
-        assert inner_jaxpr.eqns[9].invars[-1].val == 1
-
-        assert inner_jaxpr.eqns[10].primitive == qml.ops.Prod._primitive
-
-        assert inner_jaxpr.eqns[11].primitive == qml.RX._primitive
-        assert inner_jaxpr.eqns[11].invars[-1].val == 1
-
-        assert inner_jaxpr.eqns[12].primitive == qml.ops.SProd._primitive
-        assert inner_jaxpr.eqns[13].primitive == qml.ops.Sum._primitive
-
-    def test_qnode_controlled_ops(self):
-        """Test that a qnode with controlled operations is transformed correctly."""
-
-        @MapWiresInterpreter(wire_map={0: 1, 1: 2, 2: 3, 3: 2})
-        @qml.qnode(qml.device("default.qubit", wires=4))
-        def f(x):
-            qml.CNOT(wires=[0, 1])
-            qml.CY(wires=[1, 2])
-            qml.CZ(wires=[2, 3])
-            qml.CRX(x, wires=[0, 1])
-            qml.CRY(x, wires=[1, 2])
-            qml.CRZ(x, wires=[2, 3])
-            return qml.var(
-                qml.QubitUnitary(
-                    np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1]
-                )
-            )
-
-        jaxpr = jax.make_jaxpr(f)(0.1)
-        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-
-        assert len(inner_jaxpr.eqns) == 8
-
-        assert inner_jaxpr.eqns[0].primitive == qml.CNOT._primitive
-        assert inner_jaxpr.eqns[0].invars[0].val == 1
-        assert inner_jaxpr.eqns[0].invars[1].val == 2
-
-        assert inner_jaxpr.eqns[1].primitive == qml.CY._primitive
-        assert inner_jaxpr.eqns[1].invars[0].val == 2
-        assert inner_jaxpr.eqns[1].invars[1].val == 3
-
-        assert inner_jaxpr.eqns[2].primitive == qml.CZ._primitive
-        assert inner_jaxpr.eqns[2].invars[0].val == 3
-        assert inner_jaxpr.eqns[2].invars[1].val == 2
-
-        assert inner_jaxpr.eqns[3].primitive == qml.CRX._primitive
-        assert inner_jaxpr.eqns[3].invars[1].val == 1
-        assert inner_jaxpr.eqns[3].invars[2].val == 2
-
-        assert inner_jaxpr.eqns[4].primitive == qml.CRY._primitive
-        assert inner_jaxpr.eqns[4].invars[1].val == 2
-        assert inner_jaxpr.eqns[4].invars[2].val == 3
-
-        assert inner_jaxpr.eqns[5].primitive == qml.CRZ._primitive
-        assert inner_jaxpr.eqns[5].invars[1].val == 3
-        assert inner_jaxpr.eqns[5].invars[2].val == 2
-
-        assert inner_jaxpr.eqns[6].primitive == qml.QubitUnitary._primitive
-        assert inner_jaxpr.eqns[6].invars[1].val == 1
-        assert inner_jaxpr.eqns[6].invars[2].val == 2
+        assert inner_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+        assert inner_jaxpr.eqns[2].invars[-1].val == 2
 
     def test_qnode_for_loop(self):
         """Test that a qnode with a for loop is transformed correctly."""
@@ -279,28 +296,3 @@ class TestMapWiresTransform:
         """Test that invalid wire mappings raise an error."""
         with pytest.raises(ValueError, match="Wire map values must be constant positive integers"):
             MapWiresInterpreter(wire_map={0: "a", 1: 2})
-
-    def test_qnode_batched_parameters(self):
-        """Test qnode transformation with batched parameters."""
-
-        @MapWiresInterpreter(wire_map={0: 1, 1: 2})
-        @qml.qnode(qml.device("default.qubit", wires=4))
-        def f(x):
-            qml.RZ(x, 0)
-            qml.PhaseShift(0.1, 1)
-            return qml.expval(qml.PauliZ(2))
-
-        x = jax.numpy.array([0.1, 0.2, 0.3])
-        jaxpr = jax.make_jaxpr(f)(x)
-        inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-
-        assert len(inner_jaxpr.eqns) == 4
-
-        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert inner_jaxpr.eqns[0].invars[-1].val == 1
-
-        assert inner_jaxpr.eqns[1].primitive == qml.PhaseShift._primitive
-        assert inner_jaxpr.eqns[1].invars[-1].val == 2
-
-        assert inner_jaxpr.eqns[2].primitive == qml.PauliZ._primitive
-        assert inner_jaxpr.eqns[2].invars[-1].val == 2
