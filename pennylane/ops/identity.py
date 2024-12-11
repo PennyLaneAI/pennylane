@@ -27,6 +27,7 @@ from pennylane.operation import (
     Operation,
     SparseMatrixUndefinedError,
 )
+from pennylane.wires import WiresLike
 
 
 class Identity(CVObservable, Operation):
@@ -61,15 +62,16 @@ class Identity(CVObservable, Operation):
     ev_order = 1
 
     @classmethod
-    def _primitive_bind_call(cls, wires=None, **kwargs):  # pylint: disable=arguments-differ
-        wires = [] if wires is None else wires
+    def _primitive_bind_call(
+        cls, wires: WiresLike = (), **kwargs
+    ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(wires=wires, **kwargs)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
-    def __init__(self, wires=None, id=None):
-        super().__init__(wires=[] if wires is None else wires, id=id)
+    def __init__(self, wires: WiresLike = (), id=None):
+        super().__init__(wires=wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 
@@ -308,12 +310,13 @@ class GlobalPhase(Operation):
     grad_method = None
 
     @classmethod
-    def _primitive_bind_call(cls, phi, wires=None, **kwargs):  # pylint: disable=arguments-differ
-        wires = [] if wires is None else wires
+    def _primitive_bind_call(
+        cls, phi, wires: WiresLike = (), **kwargs
+    ):  # pylint: disable=arguments-differ
         return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
-    def __init__(self, phi, wires=None, id=None):
-        super().__init__(phi, wires=[] if wires is None else wires, id=id)
+    def __init__(self, phi, wires: WiresLike = (), id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -412,7 +415,9 @@ class GlobalPhase(Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(phi, wires=None):  # pylint:disable=arguments-differ,unused-argument
+    def compute_decomposition(
+        phi, wires: WiresLike = ()
+    ):  # pylint:disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::
