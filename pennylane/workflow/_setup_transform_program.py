@@ -57,7 +57,7 @@ def _prune_dynamic_transform(outer_transform, inner_transform):
     if inner_contains_one_shot and outer_contained_one_shot:
         warnings.warn(
             "A dynamic_one_shot transform already exists in the preprocessing program of the "
-            "device, therefore, the dynamic_one_shot applied on the qnode as a decorator is "
+            "device. Therefore, the dynamic_one_shot applied on the qnode as a decorator is "
             "ignored. See https://docs.pennylane.ai/en/latest/code/api/pennylane.dynamic_one_shot.html "
             "for more information on the recommended way to use dynamic one shot.",
             UserWarning,
