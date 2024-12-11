@@ -525,7 +525,7 @@ class QSVT(Operation):
 
         .. code-block:: pycon
 
-            >>> pcircuit()
+            >>> circuit()
             array([-0.194205  +0.66654551j, -0.097905  +0.35831418j,
                     0.3319832 -0.51047262j, -0.09551437+0.01043668j])
 
