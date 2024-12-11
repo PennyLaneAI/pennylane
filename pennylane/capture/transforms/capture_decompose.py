@@ -94,7 +94,7 @@ class DecomposeInterpreter(qml.capture.PlxprInterpreter):
                     op, self.stopping_condition, max_expansion=self.max_expansion
                 )
             )
-         finally:
+        finally:
             qml.capture.enable()
 
         return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
