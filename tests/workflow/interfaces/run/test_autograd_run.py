@@ -12,35 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the `run` helper function on the 'torch' interface"""
+"""Unit tests for the `run` helper function on the 'autograd' interface"""
 
 # pylint: disable=too-few-public-methods
 from dataclasses import replace
 
+import autograd
+import numpy as np
 import pytest
 from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.transforms.core import TransformProgram
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
-torch = pytest.importorskip("torch")
 
-
-@pytest.mark.torch
+@pytest.mark.autograd
 @pytest.mark.parametrize("device, config, shots", test_matrix)
-class TestTorchRun:
-
-    @pytest.fixture(autouse=True)
-    def run_before_and_after_tests(self):
-        torch.set_default_dtype(torch.float64)
-        yield
-        torch.set_default_dtype(torch.float32)
+class TestAutogradRun:
 
     def test_run(self, device, config, shots, seed):
-        """Test execution of tapes on 'torch' interface."""
+        """Test execution of tapes on 'autograd' interface."""
         device = get_device(device, seed=seed)
-        config = replace(config, interface="torch")
+        config = replace(config, interface="autograd")
 
         def cost(a, b):
             ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
@@ -55,8 +50,8 @@ class TestTorchRun:
             inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
             return run([tape1, tape2], device, resolved_config, inner_tp)
 
-        a = torch.tensor(0.1, requires_grad=True)
-        b = torch.tensor(0.2, requires_grad=False)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=False)
 
         with device.tracker:
             res = cost(a, b)
@@ -73,30 +68,25 @@ class TestTorchRun:
             assert res[0].shape == ()
             assert res[1].shape == ()
 
-        exp = torch.cos(a) * torch.cos(b)
-        if shots.has_partitioned_shots:
-            for shot in range(2):
-                for wire in range(2):
-                    assert qml.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
-        else:
-            for wire in range(2):
-                assert qml.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[0], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
+        assert qml.math.allclose(res[1], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
 
     def test_scalar_jacobian(self, device, config, shots, seed):
         """Test scalar jacobian calculation"""
-        device = get_device(device, seed)
-        config = replace(config, interface="torch")
+        device = get_device(device, seed=seed)
+        config = replace(config, interface="autograd")
 
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
             resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
-            _, inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)
+            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
             return run([tape], device, resolved_config, inner_tp)[0]
 
-        a = torch.tensor(0.1, requires_grad=True)
-        print(cost(a))
-        res = torch.autograd.functional.jacobian(cost, a)
-        if not shots.has_partitioned_shots:
+        a = pnp.array(0.1, requires_grad=True)
+        if shots.has_partitioned_shots:
+            res = qml.jacobian(lambda x: qml.math.hstack(cost(x)))(a)
+        else:
+            res = qml.jacobian(cost)(a)
             assert res.shape == ()  # pylint: disable=no-member
 
         # compare to standard tape jacobian
@@ -106,62 +96,46 @@ class TestTorchRun:
         expected = fn(device.execute(tapes))
 
         assert expected.shape == ()
-        if shots.has_partitioned_shots:
-            for i in range(shots.num_copies):
-                assert torch.allclose(res[i], expected, atol=atol_for_shots(shots), rtol=0)
-                assert torch.allclose(res[i], -torch.sin(a), atol=atol_for_shots(shots))
-        else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
-            assert torch.allclose(res, -torch.sin(a), atol=atol_for_shots(shots))
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        assert np.allclose(res, -np.sin(a), atol=atol_for_shots(shots))
 
     def test_jacobian(self, device, config, shots, seed):
         """Test jacobian calculation"""
-        device = get_device(device, seed)
-        config = replace(config, interface="torch")
+        device = get_device(device, seed=seed)
+        config = replace(config, interface="autograd")
 
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-
             resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
-            _, inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)
-            res = run([tape], device, resolved_config, inner_tp)[0]
+            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            return autograd.numpy.hstack(run([tape], device, resolved_config, inner_tp)[0])
 
-            if shots.has_partitioned_shots:
-                return torch.hstack(res[0] + res[1])
-
-            return torch.hstack(res)
-
-        a = torch.tensor(0.1, requires_grad=True)
-        b = torch.tensor(0.2, requires_grad=True)
-
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=True)
         res = cost(a, b)
-        expected = torch.tensor([torch.cos(a), -torch.cos(a) * torch.sin(b)])
+        expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         if shots.has_partitioned_shots:
-            assert torch.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
-            assert torch.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = torch.autograd.functional.jacobian(cost, (a, b))
+        res = qml.jacobian(cost)(a, b)
         assert isinstance(res, tuple) and len(res) == 2
-
-        expected = (
-            torch.tensor([-torch.sin(a), torch.sin(a) * torch.sin(b)]),
-            torch.tensor([0, -torch.cos(a) * torch.cos(b)]),
-        )
         if shots.has_partitioned_shots:
             assert res[0].shape == (4,)
             assert res[1].shape == (4,)
 
+            expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
             for _r, _e in zip(res, expected):
-                assert torch.allclose(_r[:2], _e, atol=atol_for_shots(shots))
-                assert torch.allclose(_r[2:], _e, atol=atol_for_shots(shots))
-
+                assert np.allclose(_r[:2], _e, atol=atol_for_shots(shots))
+                assert np.allclose(_r[2:], _e, atol=atol_for_shots(shots))
         else:
             assert res[0].shape == (2,)
             assert res[1].shape == (2,)
 
+            expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
             for _r, _e in zip(res, expected):
-                assert torch.allclose(_r, _e, atol=atol_for_shots(shots))
+                assert np.allclose(_r, _e, atol=atol_for_shots(shots))
