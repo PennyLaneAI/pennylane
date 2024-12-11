@@ -163,8 +163,9 @@ class TestSplitNonCommuting:
         """Tests that a tape with no measurements is returned unchanged."""
 
         initial_tape = qml.tape.QuantumScript([qml.Z(0)], [])
-        tapes, _ = split_non_commuting(initial_tape)
+        tapes, fn = split_non_commuting(initial_tape)
         assert tapes == [initial_tape]
+        assert fn([0]) == 0
 
     @pytest.mark.parametrize(
         "H",
@@ -211,8 +212,9 @@ class TestSplitNonCommuting:
     @pytest.mark.parametrize(
         "H",
         [
-            qml.Hamiltonian([0.1, 0.2, 0.3, 0.4, 0.5, 2.5], single_term_obs_list),
-            qml.dot([0.1, 0.2, 0.3, 0.4, 0.5, 2.5], single_term_obs_list),
+            # A duplicate term is added to the tests below to verify that it is handled correctly.
+            qml.Hamiltonian([0.1, 0.2, 0.3, 0.4, 0.5, 2.5, 0.8], single_term_obs_list + [qml.X(0)]),
+            qml.dot([0.1, 0.2, 0.3, 0.4, 0.5, 2.5, 0.8], single_term_obs_list + [qml.X(0)]),
         ],
     )
     @pytest.mark.parametrize("grouping_strategy", ["qwc", "default"])
@@ -221,10 +223,16 @@ class TestSplitNonCommuting:
 
         initial_tape = qml.tape.QuantumScript([qml.X(0)], [qml.expval(H)], shots=100)
         tapes, fn = split_non_commuting(initial_tape, grouping_strategy=grouping_strategy)
-        assert H.grouping_indices == ((0, 3, 5), (1, 2, 4))
+        assert H.grouping_indices is not None  # H.grouping_indices should be computed by now.
 
-        for group_idx, group in enumerate(H.grouping_indices):
-            ob_group = [single_term_obs_list[i] for i in group]
+        groups_without_duplicates = []
+        for group in H.grouping_indices:
+            # The actual groups should not contain the added duplicate item
+            groups_without_duplicates.append([i for i in group if i != 6])
+
+        obs_list = single_term_obs_list + [qml.X(0)]
+        for group_idx, group in enumerate(groups_without_duplicates):
+            ob_group = [obs_list[i] for i in group]
             obs_no_identity = [obs for obs in ob_group if not isinstance(obs, qml.Identity)]
             expected_measurements = [qml.expval(obs) for obs in obs_no_identity]
             assert tapes[group_idx].measurements == expected_measurements
@@ -233,7 +241,7 @@ class TestSplitNonCommuting:
 
         assert (
             fn([[0.6, 0.7], [0.8, 0.9, 1]])
-            == 0.6 * 0.1 + 0.7 * 0.4 + 0.8 * 0.2 + 0.9 * 0.3 + 0.5 + 2.5
+            == 0.6 * 0.1 + 0.7 * 0.4 + 0.8 * 0.2 + 0.9 * 0.3 + 0.5 + 2.5 + 0.8 * 0.6
         )
 
     @pytest.mark.parametrize(
