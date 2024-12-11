@@ -17,41 +17,41 @@
 * Developers of plugin devices now have the option of providing a TOML-formatted configuration file
   to declare the capabilities of the device. See [Device Capabilities](https://docs.pennylane.ai/en/latest/development/plugins.html#device-capabilities) for details.
 
-  * An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
-    data class, as well as functions that load and parse the TOML-formatted configuration files.
-    [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
+* An internal module `pennylane.devices.capabilities` is added that defines a new `DeviceCapabilites`
+  data class, as well as functions that load and parse the TOML-formatted configuration files.
+  [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
-    ```pycon
-      >>> from pennylane.devices.capabilities import DeviceCapabilities
-      >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
-      >>> isinstance(capabilities, DeviceCapabilities)
-      True
-    ```
-
-  * Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
-    that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
-    file if it exists. Otherwise, it is set to `None`.
-    [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
-
-    ```python
-    from pennylane.devices import Device
-
-    class MyDevice(Device):
-
-        config_filepath = "path/to/config.toml"
-
-        ...
-    ```
-    ```pycon
-    >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
+  ```pycon
+    >>> from pennylane.devices.capabilities import DeviceCapabilities
+    >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
+    >>> isinstance(capabilities, DeviceCapabilities)
     True
-    ```
+  ```
 
-  * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms`
-    are added to the device API for devices that provides a TOML configuration file and thus have
-    a `capabilities` property.
-    [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
-    [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
+* Devices that extends `qml.devices.Device` now has an optional class attribute `capabilities`
+  that is an instance of the `DeviceCapabilities` data class, constructed from the configuration
+  file if it exists. Otherwise, it is set to `None`.
+  [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
+
+  ```python
+  from pennylane.devices import Device
+
+  class MyDevice(Device):
+
+      config_filepath = "path/to/config.toml"
+
+      ...
+  ```
+  ```pycon
+  >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
+  True
+  ```
+
+* Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms`
+  are added to the device API for devices that provides a TOML configuration file and thus have
+  a `capabilities` property.
+  [(#6632)](https://github.com/PennyLaneAI/pennylane/pull/6632)
+  [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
 * Support is added for `if`/`else` statements and `for` and `while` loops in circuits executed with `qml.capture.enabled`, via Autograph.
   Autograph conversion is now used by default in `make_plxpr`, but can be skipped with the keyword arg `autograph=False`.
