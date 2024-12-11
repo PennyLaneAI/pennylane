@@ -1362,12 +1362,6 @@ class TestDefaultMixedNewAPIInit:
         with pytest.raises(ValueError, match="This device does not currently support"):
             DefaultMixedNewAPI(wires=24)
 
-    def test_execute(self):
-        """Test that the execute method is defined"""
-        dev = DefaultMixedNewAPI(wires=[0, 1])
-        with pytest.raises(NotImplementedError):
-            dev.execute(qml.tape.QuantumScript())
-
     def test_execute_no_diff_method(self):
         """Test that the execute method is defined"""
         dev = DefaultMixedNewAPI(wires=[0, 1])
