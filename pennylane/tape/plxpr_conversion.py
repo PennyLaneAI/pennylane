@@ -218,6 +218,8 @@ def plxpr_to_tape(jaxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> Quantum
             qml.RX(2*x, 0)
             return qml.probs(wires=0), qml.expval(qml.Z(1))
 
+        qml.capture.enable()
+
         jaxpr = jax.make_jaxpr(f)(0.5)
         tape = qml.capture.convert_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2)
         print(qml.drawer.tape_text(tape, decimals=2))
