@@ -369,9 +369,9 @@ def _equal_pauliword(
             diff12 = set(op1).difference(set(op2))
             diff21 = set(op2).difference(set(op1))
             if diff12:
-                err += " op1 has {diff12} not present in op2."
+                err += f" op1 has {diff12} not present in op2."
             if diff21:
-                err += " op2 has {diff21} not present in op1."
+                err += f" op2 has {diff21} not present in op1."
             return err
         pauli_diff = {}
         for wire in op1:
@@ -395,9 +395,9 @@ def _equal_paulisentence(
         diff12 = set(op1).difference(set(op2))
         diff21 = set(op2).difference(set(op1))
         if diff12:
-            err += " op1 has {diff12} not present in op2."
+            err += f" op1 has {diff12} not present in op2."
         if diff21:
-            err += " op2 has {diff21} not present in op1."
+            err += f" op2 has {diff21} not present in op1."
         return err
     for pw in op1:
         param1 = op1[pw]
