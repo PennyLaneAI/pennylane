@@ -528,13 +528,14 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 
 
 def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
-    """Build Taylor form bosonic observable from provided coefficients, following `Eq. 4 and Eq. 7
-    <https://arxiv.org/pdf/1703.09313>`_.
+    """Return Taylor bosonic vibrational Hamiltonian.
+    
+     The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_.
 
     Args:
-        taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
-        freqs (list(float)): the harmonic frequencies in cm^-1
-        is_loc (bool): Flag whether the vibrational modes are localized. Default is True.
+        taylor_coeffs (list(float)): the coefficients of the Hamiltonian
+        freqs (list(float)): the harmonic frequencies in reciprocal centimetre
+        is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
