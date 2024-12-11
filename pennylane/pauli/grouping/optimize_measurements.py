@@ -18,7 +18,7 @@ corresponding necessary circuit post-rotations for a given list of Pauli words.
 
 from pennylane.pauli.utils import diagonalize_qwc_groupings
 
-from .group_observables import group_observables
+from .group_observables import compute_partition_indices
 
 
 def optimize_measurements(observables, coefficients=None, grouping="qwc", colouring_method="rlf"):
@@ -69,14 +69,14 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
     [[4.21], [1.43, 0.97]]
     """
 
-    if coefficients is None:
-        grouped_obs = group_observables(
-            observables, grouping_type=grouping, method=colouring_method
-        )
-    else:
-        grouped_obs, grouped_coeffs = group_observables(
-            observables, coefficients, grouping_type=grouping, method=colouring_method
-        )
+    partition_indices = compute_partition_indices(
+        observables, grouping_type=grouping, method=colouring_method
+    )
+
+    grouped_obs = [[observables[idx] for idx in group] for group in partition_indices]
+
+    if coefficients is not None:
+        grouped_coeffs = [[coefficients[idx] for idx in group] for group in partition_indices]
 
     if grouping.lower() == "qwc":
         (
