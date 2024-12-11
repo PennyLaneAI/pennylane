@@ -136,7 +136,7 @@
 * Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
-* New API for `default_mixed`: migrate the old `DefaultMixed` to follow our new device API standard. Basically, previous class `qml.devices.default_mixed.DefaultMixed` was refactored. Users will not experience any differences in principle, but for some users who delved deep into PennyLane codebase and happened to use certain deprecated methods or properties of the legacy code this might introduce breaking changes.
+* The `DefaultMixed` device has been refactored to extend the new device API.
   [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
   [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
   [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
