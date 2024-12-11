@@ -288,33 +288,32 @@ def run(
         results = inner_execute(tapes)
         return results
 
-    if config.interface != Interface.TF_AUTOGRAPH:
-        jpc, execute_fn = _construct_ml_execution_pipeline(config, device, inner_transform_program)
-    else:
-        execute_fn, diff_method = _construct_tf_autograph_pipeline(
-            config, device, inner_transform_program
-        )
-
-    if config.interface == Interface.JAX_JIT and config.derivative_order > 1:
-        # no need to use pure callbacks around execute_fn or the jpc when taking
-        # higher order derivatives
-        config = replace(config, interface=Interface.JAX)
-
-    # trainable parameters can only be set on the first pass for jax
-    # not higher order passes for higher order derivatives
-    if config.interface in {Interface.JAX, Interface.JAX_JIT}:
-        for tape in tapes:
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
-
     ml_execute = _get_ml_boundary_execute(
         config,
         differentiable=config.derivative_order > 1,
     )
 
     if config.interface != Interface.TF_AUTOGRAPH:
+        jpc, execute_fn = _construct_ml_execution_pipeline(config, device, inner_transform_program)
+
+        if config.interface == Interface.JAX_JIT and config.derivative_order > 1:
+            # no need to use pure callbacks around execute_fn or the jpc when taking
+            # higher order derivatives
+            config = replace(config, interface=Interface.JAX)
+
+        # trainable parameters can only be set on the first pass for jax
+        # not higher order passes for higher order derivatives
+        if config.interface in {Interface.JAX, Interface.JAX_JIT}:
+            for tape in tapes:
+                params = tape.get_parameters(trainable_only=False)
+                tape.trainable_params = qml.math.get_trainable_indices(params)
+
         results = ml_execute(tapes, execute_fn, jpc, device=device)
+
     else:
+        execute_fn, diff_method = _construct_tf_autograph_pipeline(
+            config, device, inner_transform_program
+        )
         results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
             tapes,
             device,
