@@ -16,7 +16,6 @@ This module contains some useful utility functions for circuit drawing.
 """
 from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
 from pennylane.ops import Conditional, Controlled
-from pennylane.tape import QuantumScript
 
 
 def default_wire_map(tape):
