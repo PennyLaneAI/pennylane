@@ -961,14 +961,14 @@ class PauliSentence(dict):
         ml_interface = qml.math.get_interface(coeff)
         if ml_interface == "torch":
             data0 = qml.math.convert_like(data0, coeff)
-        data = coeff * data0 if np.isscalar(coeff) else np.outer(coeff, data0)
+        data = coeff * data0 if qml.math.ndim(coeff) == 0 else qml.math.outer(coeff, data0)
         for pw in pauli_words[1:]:
             coeff = self[pw]
             csr_data = pw._get_csr_data(wire_order, 1)
             ml_interface = qml.math.get_interface(coeff)
             if ml_interface == "torch":
                 csr_data = qml.math.convert_like(csr_data, coeff)
-            data += coeff * csr_data if np.isscalar(coeff) else np.outer(self[pw], csr_data)
+            data += coeff * csr_data if qml.math.ndim(coeff)==0 else qml.math.outer(coeff, csr_data)
 
         return qml.math.einsum("ij,...i->...ij", base_matrix, data)
 

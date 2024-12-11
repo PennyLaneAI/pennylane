@@ -392,7 +392,7 @@ same information.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
 
 * Fixed a shape error in the .matrix() conversion of products of ops with a pauli_rep, occuring when the parameters are tensor-like.
-  [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
+  [(#6587)](https://github.com/PennyLaneAI/pennylane/pull/6587)
 
 <h3>Contributors ✍️</h3>
 
