@@ -1211,6 +1211,84 @@ class TestEqual:
         assert not qml.equal(op1, op2)
 
 
+equal_pauli_sentences = [
+    (qml.X(0) @ qml.Y(2), 1.0 * qml.Y(2) @ qml.X(0), True),
+    (qml.X(0) @ qml.Y(2), 1.0 * qml.X(2) @ qml.Y(0), False),
+    (qml.X(0) - qml.Y(2), -1.0 * (qml.Y(2) - qml.X(0)), True),
+    (qml.X(0) @ qml.Y(2), qml.Y(2) + qml.X(0), False),
+    (qml.SISWAP([0, "a"]) @ qml.Z("b"), qml.Z("b") @ qml.SISWAP((0, "a")), True),
+    (qml.SWAP([0, "a"]) @ qml.S("b"), qml.S("b") @ qml.SWAP(("a", 0)), True),
+]
+
+
+class TestPauliSentencesEqual:
+    """Tests for qml.equal with PauliSentences."""
+
+    @pytest.mark.parametrize("ps1, ps2, res", equal_pauli_sentences)
+    def test_equality(self, ps1, ps2, res):
+        """Test basic equalities/inequalities."""
+        ps1 = qml.simplify(ps1).pauli_rep
+        ps2 = qml.simplify(ps2).pauli_rep
+
+        assert qml.equal(ps1, ps2) is res
+        assert qml.equal(ps1 * 0.6, ps2 * 0.6) is res
+        assert qml.equal(ps2, ps1) is res
+
+    @pytest.mark.torch
+    def test_trainability_and_interface(self):
+        """Test that trainability and interface is compared correctly."""
+        import torch
+
+        x1 = qml.numpy.array(0.5, requires_grad=True)
+        x2 = qml.numpy.array(0.5, requires_grad=False)
+        x3 = torch.tensor(0.5, requires_grad=True)
+        x4 = torch.tensor(0.5, requires_grad=False)
+        pws = [qml.pauli.PauliWord({1: "X", 39: "Y"}), qml.pauli.PauliWord({0: "Z", 1: "Y"})]
+        ps1 = pws[0] * x1 - 0.7 * pws[1]
+        ps2 = pws[0] * x2 - 0.7 * pws[1]
+        ps3 = pws[0] * x3 - 0.7 * pws[1]
+        ps4 = pws[0] * x4 - 0.7 * pws[1]
+        assert qml.equal(ps1, ps2) is False
+        assert qml.equal(ps1, ps3) is False
+        assert qml.equal(ps1, ps4) is False
+        assert qml.equal(ps2, ps3) is False
+        assert qml.equal(ps2, ps4) is False
+        assert qml.equal(ps3, ps4) is False
+
+        assert qml.equal(ps1, ps2, check_trainability=False) is True
+        assert qml.equal(ps1, ps3, check_trainability=False) is False
+        assert qml.equal(ps1, ps4, check_trainability=False) is False
+        assert qml.equal(ps2, ps3, check_trainability=False) is False
+        assert qml.equal(ps2, ps4, check_trainability=False) is False
+        assert qml.equal(ps3, ps4, check_trainability=False) is True
+
+        assert qml.equal(ps1, ps2, check_interface=False) is False
+        assert qml.equal(ps1, ps3, check_interface=False) is True
+        assert qml.equal(ps1, ps4, check_interface=False) is False
+        assert qml.equal(ps2, ps3, check_interface=False) is False
+        assert qml.equal(ps2, ps4, check_interface=False) is True
+        assert qml.equal(ps3, ps4, check_interface=False) is False
+
+        assert qml.equal(ps1, ps2, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps1, ps3, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps1, ps4, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps2, ps3, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps2, ps4, check_trainability=False, check_interface=False) is True
+        assert qml.equal(ps3, ps4, check_trainability=False, check_interface=False) is True
+
+    @pytest.mark.parametrize(
+        "atol, rtol, res", [(1e-9, 0.0, False), (1e-7, 0.0, True), (0.0, 1e-9, True)]
+    )
+    def test_tolerance(self, atol, rtol, res):
+        """Test that tolerances are taken into account correctly."""
+        x1 = 100
+        x2 = 100 + 1e-8
+        pws = [qml.pauli.PauliWord({1: "X", 39: "Y"}), qml.pauli.PauliWord({0: "Z", 1: "Y"})]
+        ps1 = pws[0] * x1 - 0.7 * pws[1]
+        ps2 = pws[0] * x2 - 0.7 * pws[1]
+        assert qml.equal(ps1, ps2, atol=atol, rtol=rtol) is res
+
+
 class TestMeasurementsEqual:
     @pytest.mark.jax
     def test_observables_different_interfaces(self):
