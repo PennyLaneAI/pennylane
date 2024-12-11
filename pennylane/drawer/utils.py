@@ -217,7 +217,7 @@ def transform_deferred_measurements_tape(tape):
                 new_measurements.append(new_m)
             else:
                 new_measurements.append(m)
-        new_tape = QuantumScript(tape.operations, new_measurements)
+        new_tape = tape.copy(measurements=new_measurements)
         return new_tape
 
     return tape
