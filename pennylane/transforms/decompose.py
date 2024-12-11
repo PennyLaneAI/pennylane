@@ -22,6 +22,7 @@ from collections.abc import Callable, Generator, Iterable
 from typing import Optional
 
 import pennylane as qml
+from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
 from pennylane.transforms.core import transform
 
 
@@ -60,21 +61,26 @@ def _operator_decomposition_gen(
             )
 
 
-class DecomposeInterpreter(qml.capture.PlxprIntepreter):
+class DecomposeInterpreter(qml.capture.PlxprInterpreter):
     """Plxpr Interpreter for applying the ``decompose`` transform to callables or jaxpr
     when program capture is enabled.
     """
 
-    def __init__(self, gate_set, max_expansion=None):
+    def __init__(self, gate_set=None, max_expansion=None):
         self.max_expansion = max_expansion
 
+        if gate_set is None:
+            gate_set = set(qml.ops.__all__)
+
         if isinstance(gate_set, (str, type)):
-            self.gate_set = set([gate_set])
+            gate_set = set([gate_set])
 
         if isinstance(gate_set, Iterable):
             gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
             gate_names = set(gate for gate in gate_set if isinstance(gate, str))
             self.gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
+        else:
+            self.gate_set = gate_set
 
         super().__init__()
 
@@ -99,8 +105,9 @@ class DecomposeInterpreter(qml.capture.PlxprIntepreter):
             return True
         return self.gate_set(op)
 
-    def interpret_operation(self, op: qml.operation.Operator):
-        """Interpret a PennyLane operation instance.
+    def decompose_operation(self, op: qml.operation.Operator):
+        """Decompose a PennyLane operation instance if it does not satisfy the
+        provided gate set.
 
         Args:
             op (Operator): a pennylane operator instance
@@ -111,11 +118,10 @@ class DecomposeInterpreter(qml.capture.PlxprIntepreter):
         This method is only called when the operator's output is a dropped variable,
         so the output will not affect later equations in the circuit.
 
-        See also: :meth:`~.interpret_operation_eqn`.
-
+        See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
         """
         if self.gate_set(op):
-            return super().interpret_operation(op)
+            return self.interpret_operation(op)
 
         qml.capture.disable()
         decomposition = list(
@@ -125,10 +131,33 @@ class DecomposeInterpreter(qml.capture.PlxprIntepreter):
         )
         qml.capture.enable()
 
-        res = []
-        for decomp_op in decomposition:
-            res.append(super().interpret_operation(decomp_op))
-        return res
+        return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
+
+    def interpret_operation_eqn(self, eqn):
+        """Interpret an equation corresponding to an operator.
+
+        Args:
+            eqn (jax.core.JaxprEqn): a jax equation for an operator.
+
+        See also: :meth:`~.interpret_operation`.
+
+        """
+        invals = (self.read(invar) for invar in eqn.invars)
+        with qml.QueuingManager.stop_recording():
+            op = eqn.primitive.impl(*invals, **eqn.params)
+        if eqn.outvars[0].__class__.__name__ == "DropVar":
+            return self.decompose_operation(op)
+        return op
+
+
+@DecomposeInterpreter.register_primitive(ctrl_transform_prim)
+def handle_ctrl_transform(*_, **__):  # pylint: disable=missing-function-docstring
+    raise NotImplementedError
+
+
+@DecomposeInterpreter.register_primitive(adjoint_transform_prim)
+def handle_adjoint_transform(*_, **__):  # pylint: disable=missing-function-docstring
+    raise NotImplementedError
 
 
 @transform
