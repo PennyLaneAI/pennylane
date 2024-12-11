@@ -945,6 +945,15 @@ class TestPauliSentence:
 
         qml.assert_equal(op, id)
 
+    # pylint: disable=W0621
+    @pytest.mark.parametrize("coeff0", [qml.math.array([0.6, 0.2, 4.3])])
+    @pytest.mark.parametrize("coeff1", [qml.math.array([1.2, -0.9, 2.7])])
+    def test_operation_array_input(self, coeff0, coeff1):
+        pw0 = qml.pauli.PauliWord({0: "X", "a": "Y"})
+        pw1 = qml.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
+        ps = qml.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
+        assert ps.operation() is not None
+
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""
         word1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
@@ -994,6 +1003,18 @@ class TestPauliSentence:
                 PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
             }
         )
+
+    # pylint: disable=W0621
+    @pytest.mark.parametrize("coeff0", [[0.6, 0.2, 4.3], -0.7])
+    @pytest.mark.parametrize("coeff1", [[1.2, -0.9, 2.7], -0.7])
+    def test_to_mat_with_broadcasting(self, coeff0, coeff1):
+        wire_order = [0, 1, "a", "b"]
+        pw0 = qml.pauli.PauliWord({0: "X", "a": "Y"})
+        pw1 = qml.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
+        ps = qml.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
+        mat0 = ps.to_mat(wire_order=wire_order)
+        mat1 = qml.matrix(ps.operation(), wire_order=wire_order)
+        assert qml.math.allclose(mat0, mat1)
 
 
 class TestPauliSentenceMatrix:

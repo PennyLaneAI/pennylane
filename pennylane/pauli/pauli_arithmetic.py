@@ -961,16 +961,18 @@ class PauliSentence(dict):
         ml_interface = qml.math.get_interface(coeff)
         if ml_interface == "torch":
             data0 = qml.math.convert_like(data0, coeff)
-        data = coeff * data0
+        data = coeff * data0 if qml.math.ndim(coeff) == 0 else qml.math.outer(coeff, data0)
         for pw in pauli_words[1:]:
             coeff = self[pw]
             csr_data = pw._get_csr_data(wire_order, 1)
             ml_interface = qml.math.get_interface(coeff)
             if ml_interface == "torch":
                 csr_data = qml.math.convert_like(csr_data, coeff)
-            data += self[pw] * csr_data
+            data += (
+                coeff * csr_data if qml.math.ndim(coeff) == 0 else qml.math.outer(coeff, csr_data)
+            )
 
-        return qml.math.einsum("ij,i->ij", base_matrix, data)
+        return qml.math.einsum("ij,...i->...ij", base_matrix, data)
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
@@ -1009,7 +1011,9 @@ class PauliSentence(dict):
         for pw, coeff in self.items():
             pw_op = pw.operation(wire_order=list(wire_order))
             rep = PauliSentence({pw: coeff})
-            summands.append(pw_op if coeff == 1 else SProd(coeff, pw_op, _pauli_rep=rep))
+            summands.append(
+                pw_op if qml.math.all(coeff == 1) else SProd(coeff, pw_op, _pauli_rep=rep)
+            )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def simplify(self, tol=1e-8):
