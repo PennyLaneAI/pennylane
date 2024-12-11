@@ -356,6 +356,74 @@ def _equal_operators(
     return True
 
 
+# pylint: disable=unused-argument
+@_equal_dispatch.register
+def _equal_pauliword(
+    op1: qml.pauli.PauliWord,
+    op2: qml.pauli.PauliWord,
+    **kwargs,
+):
+    if op1 != op2:
+        if set(op1) != set(op2):
+            err = "Different wires in Pauli words."
+            diff12 = set(op1).difference(set(op2))
+            diff21 = set(op2).difference(set(op1))
+            if diff12:
+                err += f" op1 has {diff12} not present in op2."
+            if diff21:
+                err += f" op2 has {diff21} not present in op1."
+            return err
+        pauli_diff = {}
+        for wire in op1:
+            if op1[wire] != op2[wire]:
+                pauli_diff[wire] = f"{op1[wire]} != {op2[wire]}"
+        return f"Pauli words agree on wires but differ in Paulis: {pauli_diff}"
+    return True
+
+
+@_equal_dispatch.register
+def _equal_paulisentence(
+    op1: qml.pauli.PauliSentence,
+    op2: qml.pauli.PauliSentence,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    if set(op1) != set(op2):
+        err = "Different Pauli words in PauliSentences."
+        diff12 = set(op1).difference(set(op2))
+        diff21 = set(op2).difference(set(op1))
+        if diff12:
+            err += f" op1 has {diff12} not present in op2."
+        if diff21:
+            err += f" op2 has {diff21} not present in op1."
+        return err
+    for pw in op1:
+        param1 = op1[pw]
+        param2 = op2[pw]
+        if check_trainability:
+            param1_train = qml.math.requires_grad(param1)
+            param2_train = qml.math.requires_grad(param2)
+            if param1_train != param2_train:
+                return (
+                    "Parameters have different trainability.\n "
+                    f"{param1} trainability is {param1_train} and {param2} trainability is {param2_train}"
+                )
+
+        if check_interface:
+            param1_interface = qml.math.get_interface(param1)
+            param2_interface = qml.math.get_interface(param2)
+            if param1_interface != param2_interface:
+                return (
+                    "Parameters have different interfaces.\n "
+                    f"{param1} interface is {param1_interface} and {param2} interface is {param2_interface}"
+                )
+        if not qml.math.allclose(param1, param2, rtol=rtol, atol=atol):
+            return f"The coefficients of the PauliSentences for {pw} differ: {param1}; {param2}"
+    return True
+
+
 @_equal_dispatch.register
 # pylint: disable=unused-argument, protected-access
 def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
