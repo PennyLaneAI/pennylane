@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The bosonic representation classes and functions."""
+import re
 from copy import copy
 
 import pennylane as qml
@@ -617,3 +618,53 @@ class BoseSentence(dict):
                 bose_sen_ordered += coeff_ord * coeff * bw_ord
 
         return bose_sen_ordered
+
+
+def from_string(bose_string):
+    r"""Return a bosonic operator object from its string representation.
+
+    The string representation is a compact format that uses the orbital index and ``'+'`` or ``'-'``
+    symbols to indicate creation and annihilation operators, respectively. For instance, the string
+    representation for the operator :math:`b^{\dagger}_0 b_1 b^{\dagger}_0 b_1` is
+    ``'0+ 1- 0+ 1-'``. The ``'-'`` symbols can be optionally dropped such that ``'0+ 1 0+ 1'``
+    represents the same operator. The format commonly used in OpenFermion to represent the same
+    operator, ``'0^ 1 0^ 1'`` , is also supported.
+
+    Args:
+        bose_string (str): string representation of the bosonic object
+
+    Returns:
+        BoseWord: the bosonic operator object
+
+    **Example**
+
+    >>> b_string = from_string('0+ 1- 0+ 1-')
+    >>> print(b_string)
+    b⁺(0) b(1) b⁺(0) b(1)
+
+    >>> b_string = from_string('0+ 1 0+ 1')
+    >>> print(b_string)
+    b⁺(0) b(1) b⁺(0) b(1)
+
+    >>> b_string = from_string('0^ 1 0^ 1')
+    >>> print(b_string)
+    b⁺(0) b(1) b⁺(0) b(1)
+
+    >>> op1 = qml.bose.BoseWord({(0,0): "+", (1, 1): "-", (2,2):"+", (3,3): "-"})
+    >>> op2 = from_string('0+ 1- 2+ 3-')
+    >>> op1 == op2
+    True
+    """
+    if bose_string.isspace() or not bose_string:
+        return BoseWord({})
+
+    bose_string = " ".join(bose_string.split())
+
+    if not all(s.isdigit() or s in ["+", "-", "^", " "] for s in bose_string):
+        raise ValueError(f"Invalid character encountered in string {bose_string}.")
+
+    bose_string = re.sub(r"\^", "+", bose_string)
+
+    operators = [i + "-" if i[-1] not in "+-" else i for i in re.split(r"\s", bose_string)]
+
+    return BoseWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
