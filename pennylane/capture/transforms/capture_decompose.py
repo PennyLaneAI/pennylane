@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-A transform for decomposing quantum circuits into user defined gate sets. Offers an alternative to the more device-focused decompose transform.
+A transform for decomposing quantum circuits into user-defined gate sets. Offers an alternative to the more device-focused decompose transform.
 """
 # pylint: disable=protected-access
 # pylint: disable=unnecessary-lambda-assignment
