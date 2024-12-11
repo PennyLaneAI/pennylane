@@ -812,6 +812,33 @@ class TestTensorFlowRun:
             assert np.allclose(_r, _e, atol=atol_for_shots(shots))
 
 
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize(
+    "interface", ["autograd", "jax-jit", "jax", "torch", "tensorflow", "tf-autograph"]
+)
+def test_grad_on_execution_error(interface):
+    """Tests that a ValueError is raised if the config uses grad_on_execution."""
+    inner_tp = TransformProgram()
+    device = qml.device("default.qubit")
+    tapes = [
+        QuantumScript(
+            [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
+        )
+    ]
+    config = ExecutionConfig(
+        interface=interface,
+        gradient_method=qml.gradients.param_shift,
+        grad_on_execution=True,
+        use_device_jacobian_product=False,
+        use_device_gradient=False,
+    )
+
+    with pytest.raises(
+        ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
+    ):
+        run(tapes, device, config, inner_tp)
+
+
 @pytest.mark.tf
 @pytest.mark.parametrize("device, config, shots", test_matrix)
 class TestTFAutographRun:
