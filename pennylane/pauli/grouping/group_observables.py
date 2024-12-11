@@ -395,9 +395,9 @@ def compute_partition_indices(
     Args:
         observables (list[Observable]): A list of Pauli Observables to be partitioned.
         grouping_type (str): The type of binary relation between Pauli observables.
-            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Defaults to ``'qwc'``.
+            It can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Defaults to ``'qwc'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover.
-            Can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
+            It can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
             Defaults to ``'lf'``.
 
     Returns:
@@ -410,6 +410,7 @@ def compute_partition_indices(
 
     **Example**
 
+    >>> from pennylane.pauli import compute_partition_indices
     >>> observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
     >>> compute_partition_indices(observables, grouping_type="qwc", method="lf")
     ((0,), (1, 2))
@@ -481,7 +482,7 @@ def group_observables(
         coefficients (TensorLike): A tensor or list of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
-            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
+            It can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover, which
             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
             ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (IndependentSet). Defaults to ``'lf'``.
@@ -504,6 +505,7 @@ def group_observables(
 
     **Example**
 
+    >>> from pennylane.pauli import group_observables
     >>> obs = [qml.Y(0), qml.X(0) @ qml.X(1), qml.Z(1)]
     >>> coeffs = [1.43, 4.21, 0.97]
     >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
