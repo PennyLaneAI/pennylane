@@ -232,7 +232,7 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
     For higher-order derivatives, this function will delegate to another ML framework execution.
     """
 
-    def inner_execute(tapes: QuantumScriptBatch, **_) -> ResultBatch:
+    def inner_execute(tapes: QuantumScriptBatch) -> ResultBatch:
         """Execution that occurs within a ML framework boundary.
 
         Closure Variables:
