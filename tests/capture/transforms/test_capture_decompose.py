@@ -35,8 +35,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 class TestDecomposeInterpreter:
     """Unit tests for the DecomposeInterpreter class for decomposing plxpr."""
 
-    # pylint: disable=import-outside-toplevel
-
     @pytest.mark.parametrize(
         "gate_set", [["RX"], [qml.RX], lambda op: op.name == "RX", qml.RX, "RX"]
     )
