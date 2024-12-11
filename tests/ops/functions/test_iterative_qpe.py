@@ -269,7 +269,7 @@ def test_capture_execution(seed):
 
     dev = qml.device("default.qubit", wires=3, seed=seed)
 
-    # hack for single branch statistics
+    # hack for single-branch statistics
     samples = qml.math.vstack([dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x) for _ in range(5000)])
     probs_capture = qml.probs(wires=(0, 1, 2)).process_samples(
         samples, wire_order=qml.wires.Wires((0, 1, 2))

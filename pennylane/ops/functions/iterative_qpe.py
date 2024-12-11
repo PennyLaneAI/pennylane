@@ -33,7 +33,7 @@ def iterative_qpe(base, aux_wire, iters):
         iters (int): the number of measurements to be performed
 
     Returns:
-        list[MeasurementValue]: the abstract results of the mid circuit measurements
+        list[MeasurementValue]: the abstract results of the mid-circuit measurements
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`, :func:`~.measure`
 
