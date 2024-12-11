@@ -96,7 +96,7 @@ class TestTorchRun:
             return run([tape], device, resolved_config, inner_tp)[0]
 
         a = torch.tensor(0.1, requires_grad=True)
-        print(cost(a))
+
         res = torch.autograd.functional.jacobian(cost, a)
         if not shots.has_partitioned_shots:
             assert res.shape == ()  # pylint: disable=no-member
