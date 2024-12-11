@@ -58,9 +58,9 @@ def null_postprocessing(results):
 def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
-    This transform enables the ``"one-shot"`` mcm method. The ``"one-shot"`` method prompts the
+    This transform enables the ``"one-shot"`` mid-circuit measurement method. The ``"one-shot"`` method prompts the
     device to perform a series of one-shot executions, where in each execution, the ``qml.measure``
-    operation dynamically measures the wire and collapses the state vector stochastically.
+    operation applies a probabilistic mid-circuit measurement to the circuit.
     This is in contrast with ``qml.defer_measurement``, which instead introduces an extra
     wire for each mid-circuit measurement. The ``"one-shot"`` method is favourable in the few-shots
     and several-mid-circuit-measurements limit, whereas ``qml.defer_measurements`` is favourable in
