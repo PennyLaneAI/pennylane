@@ -9,6 +9,46 @@ import pennylane as qml
 from pennylane.transforms import combine_global_phases
 
 
+def test_no_global_phase_gate():
+    """Test that when the input ``QuantumScript`` has no ``qml.GlobalPhase`` gate, the returned output is exactly the same"""
+    qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)])
+
+    expected_qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)])
+    (transformed_qscript,), _ = combine_global_phases(qscript)
+
+    qml.assert_equal(expected_qscript, transformed_qscript)
+
+
+@pytest.mark.parametrize("phi", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+def test_single_global_phase_gate(phi):
+    """Test that when the input ``QuantumScript`` has a single ``qml.GlobalPhase`` gate, the returned output has an equivalent
+    ``qml.GlobalPhase`` operation appended at the end"""
+    qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.GlobalPhase(phi, 0), qml.RX(0, 0)])
+
+    expected_qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0), qml.GlobalPhase(phi)])
+    (transformed_qscript,), _ = combine_global_phases(qscript)
+
+    qml.assert_equal(expected_qscript, transformed_qscript)
+
+
+@pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+@pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+def test_multiple_global_phase_gates(phi1, phi2):
+    """Test that when the input ``QuantumScript`` has multiple ``qml.GlobalPhase`` gates, the returned output has an equivalent
+    single ``qml.GlobalPhase`` operation appended at the end with a total phase being equal to the sum of each original global phase
+    """
+    qscript = qml.tape.QuantumScript(
+        [qml.GlobalPhase(phi1, 0), qml.Hadamard(0), qml.GlobalPhase(phi2, 0), qml.RX(0, 0)]
+    )
+
+    expected_qscript = qml.tape.QuantumScript(
+        [qml.Hadamard(0), qml.RX(0, 0), qml.GlobalPhase(phi1 + phi2)]
+    )
+    (transformed_qscript,), _ = combine_global_phases(qscript)
+
+    qml.assert_equal(expected_qscript, transformed_qscript)
+
+
 @pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
 @pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
 def test_output_state(phi1, phi2):
