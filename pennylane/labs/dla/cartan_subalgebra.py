@@ -93,9 +93,9 @@ def cartan_subalgebra(
 
     Returns:
         Tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray): A tuple of adjoint vector representations
-            ``(newg, k, mtilde, h, new_adj)``, corresponding to
-            :math:`\mathfrak{g}`, :math:`\mathfrak{k}`, :math:`\tilde{\mathfrak{m}}`, :math:`\mathfrak{h}` and the new adjoint representation.
-            The dimensions are ``(|g|, |g|)``, ``(|k|, |g|)``, ``(|mtilde|, |g|)``, ``(|h|, |g|)`` and ``(|g|, |g|, |g|)``, respectively.
+        ``(newg, k, mtilde, h, new_adj)``, corresponding to
+        :math:`\mathfrak{g}`, :math:`\mathfrak{k}`, :math:`\tilde{\mathfrak{m}}`, :math:`\mathfrak{h}` and the new adjoint representation.
+        The dimensions are ``(|g|, |g|)``, ``(|k|, |g|)``, ``(|mtilde|, |g|)``, ``(|h|, |g|)`` and ``(|g|, |g|, |g|)``, respectively.
 
     **Example**
 
