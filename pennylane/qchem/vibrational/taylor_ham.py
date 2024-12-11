@@ -558,7 +558,7 @@ def taylor_hamiltonian(pes, max_deg=4, min_deg=3):
     """Return Taylor vibrational Hamiltonian.
 
     Args:
-        pes_object (VibrationalPES): object containing the vibrational potential energy surface data
+        pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
 
