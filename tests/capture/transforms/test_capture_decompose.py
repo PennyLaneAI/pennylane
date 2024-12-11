@@ -24,7 +24,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.transforms import DecomposeInterpreter
+from pennylane.capture.transforms import DecomposeInterpreter
 
 jax = pytest.importorskip("jax")
 
