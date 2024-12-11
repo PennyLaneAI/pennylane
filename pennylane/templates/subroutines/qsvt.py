@@ -534,7 +534,7 @@ class QSVT(Operation):
         such as :class:`~.PrepSelPrep` or :class:`~.Qubitization`. Note that both of these operations
         have a proper gate decomposition. The following example applies the polynomial
         :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to the Hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`,
-        blcok-encoded with :class:`~.PrepSelPrep`.
+        block-encoded with :class:`~.PrepSelPrep`.
 
         .. code-block::
 
