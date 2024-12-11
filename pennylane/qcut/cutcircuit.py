@@ -59,9 +59,7 @@ def _cut_circuit_expand(
             )
 
         new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
-        new_tape = type(tape)(
-            tape.operations, [new_meas_op], shots=tape.shots, trainable_params=tape.trainable_params
-        )
+        new_tape = tape.copy(measurements=[new_meas_op])
 
         tapes, tapes_fn = qml.transforms.split_non_commuting(new_tape, grouping_strategy=None)
 

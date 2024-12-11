@@ -106,7 +106,7 @@ def _simplify_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
         new_operations = [op.simplify() for op in tape.operations]
         new_measurements = [m.simplify() for m in tape.measurements]
 
-    new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
 
     def null_processing_fn(res):
         return res[0]

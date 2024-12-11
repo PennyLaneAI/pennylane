@@ -38,7 +38,7 @@ def hamiltonian_grad(tape, idx):
 
     new_measurements[queue_position] = qml.expval(new_obs)
 
-    new_tape = qml.tape.QuantumScript(tape.operations, new_measurements, shots=tape.shots)
+    new_tape = tape.copy(measurements=new_measurements)
 
     if len(tape.measurements) > 1:
 

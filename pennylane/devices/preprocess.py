@@ -426,7 +426,8 @@ def decompose(
             "Reached recursion limit trying to decompose operations. "
             "Operator decomposition may have entered an infinite loop."
         ) from e
-    tape = QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
+
+    tape = tape.copy(operations=prep_op + new_ops)
 
     return (tape,), null_postprocessing
 

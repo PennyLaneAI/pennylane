@@ -199,7 +199,7 @@ def adjoint_state_measurements(
     complex_data = [qml.math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
     new_mp = qml.measurements.StateMP(wires=tape.wires)
-    state_tape = qml.tape.QuantumScript(tape.operations, [new_mp])
+    state_tape = tape.copy(measurements=[new_mp])
     return (state_tape,), partial(
         all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
     )

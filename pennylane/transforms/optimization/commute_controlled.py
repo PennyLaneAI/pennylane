@@ -252,7 +252,7 @@ def commute_controlled(
     else:
         op_list = _commute_controlled_left(tape.operations)
 
-    new_tape = type(tape)(op_list, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=op_list)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
