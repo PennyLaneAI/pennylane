@@ -69,18 +69,18 @@ def _cform_onemode_kinetic(freqs, n_states):
     return local_K_mat
 
 
-def _cform_twomode_kinetic(pes_object, n_states):
+def _cform_twomode_kinetic(pes, n_states):
     """Calculates the kinetic energy part of the two body integrals to correct the integrals
     for localized modes
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
         the kinetic energy part of the two body integrals
     """
-    nmodes = len(pes_object.freqs)
+    nmodes = len(pes.freqs)
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -104,8 +104,8 @@ def _cform_twomode_kinetic(pes_object, n_states):
             nn += 1
             continue
 
-        Usum = np.einsum("i,i->", pes_object.uloc[:, ii], pes_object.uloc[:, jj])
-        m_const = Usum * np.sqrt(pes_object.freqs[ii] * pes_object.freqs[jj]) / 4
+        Usum = np.einsum("i,i->", pes.uloc[:, ii], pes.uloc[:, jj])
+        m_const = Usum * np.sqrt(pes.freqs[ii] * pes.freqs[jj]) / 4
 
         mm = 0
         for [ki, kj, hi, hj] in boscombos_on_rank:
@@ -127,20 +127,20 @@ def _cform_twomode_kinetic(pes_object, n_states):
     return local_kin_cform_twobody
 
 
-def _cform_onemode(pes_object, n_states):
+def _cform_onemode(pes, n_states):
     """
     Calculates the one-body integrals from the given potential energy surface data for the
     Christiansen Hamiltonian.
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
         the one-body integrals for the Christiansen Hamiltonian
     """
 
-    nmodes = len(pes_object.freqs)
+    nmodes = len(pes.freqs)
     all_mode_combos = []
     for aa in range(nmodes):
         all_mode_combos.append([aa])
@@ -166,17 +166,17 @@ def _cform_onemode(pes_object, n_states):
             order_k[ki] = 1.0
             order_h = np.zeros(n_states)
             order_h[hi] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1, 1])(pes_object.grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1, 1])(pes_object.grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1, 1])(pes.grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1, 1])(pes.grid)
             quadrature = np.sum(
-                pes_object.gauss_weights * pes_object.pes_onemode[ii, :] * hermite_ki * hermite_hi
+                pes.gauss_weights * pes.pes_onemode[ii, :] * hermite_ki * hermite_hi
             )
             full_coeff = sqrt * quadrature  # * 219475 for converting into cm^-1
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_onebody[ind] += full_coeff
             mm += 1
         nn += 1
-    return local_ham_cform_onebody + _cform_onemode_kinetic(pes_object.freqs, n_states)
+    return local_ham_cform_onebody + _cform_onemode_kinetic(pes.freqs, n_states)
 
 
 def _cform_onemode_dipole(pes, n_states):
@@ -185,7 +185,7 @@ def _cform_onemode_dipole(pes, n_states):
     Christiansen dipole operator
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
@@ -234,20 +234,20 @@ def _cform_onemode_dipole(pes, n_states):
     return local_dipole_cform_onebody
 
 
-def _cform_twomode(pes_object, n_states):
+def _cform_twomode(pes, n_states):
     """
     Calculates the two-body integrals from the given potential energy surface data for the
     Christiansen Hamiltonian
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
         the two-body integrals for the Christiansen Hamiltonian
     """
 
-    nmodes = pes_object.pes_twomode.shape[0]
+    nmodes = pes.pes_twomode.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -291,17 +291,17 @@ def _cform_twomode(pes_object, n_states):
             order_hi[hi] = 1.0
             order_hj = np.zeros(n_states)
             order_hj[hj] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_object.grid)
-            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_object.grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_object.grid)
-            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_object.grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes.grid)
+            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes.grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes.grid)
+            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes.grid)
             quadrature = np.einsum(
                 "a,b,a,b,ab,a,b->",
-                pes_object.gauss_weights,
-                pes_object.gauss_weights,
+                pes.gauss_weights,
+                pes.gauss_weights,
                 hermite_ki,
                 hermite_kj,
-                pes_object.pes_twomode[ii, jj, :, :],
+                pes.pes_twomode[ii, jj, :, :],
                 hermite_hi,
                 hermite_hj,
             )
@@ -313,20 +313,20 @@ def _cform_twomode(pes_object, n_states):
     return local_ham_cform_twobody
 
 
-def _cform_twomode_dipole(pes_object, n_states):
+def _cform_twomode_dipole(pes, n_states):
     """
     Calculates the one-body integrals from the given potential energy surface data for the
     Christiansen dipole operator
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
         the one-body integrals for the Christiansen dipole operator
     """
 
-    nmodes = pes_object.dipole_twomode.shape[0]
+    nmodes = pes.dipole_twomode.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -370,19 +370,19 @@ def _cform_twomode_dipole(pes_object, n_states):
             order_hi[hi] = 1.0
             order_hj = np.zeros(n_states)
             order_hj[hj] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes_object.grid)
-            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes_object.grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes_object.grid)
-            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes_object.grid)
+            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes.grid)
+            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes.grid)
+            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes.grid)
+            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes.grid)
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum(
                     "a,b,a,b,ab,a,b->",
-                    pes_object.gauss_weights,
-                    pes_object.gauss_weights,
+                    pes.gauss_weights,
+                    pes.gauss_weights,
                     hermite_ki,
                     hermite_kj,
-                    pes_object.dipole_twomode[ii, jj, :, :, alpha],
+                    pes.dipole_twomode[ii, jj, :, :, alpha],
                     hermite_hi,
                     hermite_hj,
                 )
@@ -394,19 +394,19 @@ def _cform_twomode_dipole(pes_object, n_states):
     return local_dipole_cform_twobody
 
 
-def _cform_threemode(pes_object, n_states):
+def _cform_threemode(pes, n_states):
     """
     Calculates the three-body integrals from the given potential energy surface data for the
     Christiansen Hamiltonian
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
         the three-body integrals for the Christiansen Hamiltonian
     """
-    nmodes = pes_object.pes_threemode.shape[0]
+    nmodes = pes.pes_threemode.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -460,22 +460,22 @@ def _cform_threemode(pes_object, n_states):
             order_h2[h2] = 1.0
             order_h3 = np.zeros(n_states)
             order_h3[h3] = 1.0
-            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_object.grid)
-            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_object.grid)
-            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_object.grid)
-            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_object.grid)
-            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_object.grid)
-            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_object.grid)
+            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes.grid)
+            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes.grid)
+            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes.grid)
+            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes.grid)
+            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes.grid)
+            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes.grid)
 
             quadrature = np.einsum(
                 "a,b,c,a,b,c,abc,a,b,c->",
-                pes_object.gauss_weights,
-                pes_object.gauss_weights,
-                pes_object.gauss_weights,
+                pes.gauss_weights,
+                pes.gauss_weights,
+                pes.gauss_weights,
                 hermite_k1,
                 hermite_k2,
                 hermite_k3,
-                pes_object.pes_threemode[ii1, ii2, ii3, :, :, :],
+                pes.pes_threemode[ii1, ii2, ii3, :, :, :],
                 hermite_h1,
                 hermite_h2,
                 hermite_h3,
@@ -488,19 +488,19 @@ def _cform_threemode(pes_object, n_states):
     return local_ham_cform_threebody
 
 
-def _cform_threemode_dipole(pes_object, n_states):
+def _cform_threemode_dipole(pes, n_states):
     """
     Calculates the one-body integrals from the given potential energy surface data for the
     Christiansen dipole operator
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
         the one-body integrals for the Christiansen dipole operator
     """
-    nmodes = pes_object.dipole_threemode.shape[0]
+    nmodes = pes.dipole_threemode.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -553,23 +553,23 @@ def _cform_threemode_dipole(pes_object, n_states):
             order_h2[h2] = 1.0
             order_h3 = np.zeros(n_states)
             order_h3[h3] = 1.0
-            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes_object.grid)
-            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes_object.grid)
-            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes_object.grid)
-            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes_object.grid)
-            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes_object.grid)
-            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes_object.grid)
+            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes.grid)
+            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes.grid)
+            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes.grid)
+            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes.grid)
+            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes.grid)
+            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes.grid)
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum(
                     "a,b,c,a,b,c,abc,a,b,c->",
-                    pes_object.gauss_weights,
-                    pes_object.gauss_weights,
-                    pes_object.gauss_weights,
+                    pes.gauss_weights,
+                    pes.gauss_weights,
+                    pes.gauss_weights,
                     hermite_k1,
                     hermite_k2,
                     hermite_k3,
-                    pes_object.dipole_threemode[ii1, ii2, ii3, :, :, :, alpha],
+                    pes.dipole_threemode[ii1, ii2, ii3, :, :, :, alpha],
                     hermite_h1,
                     hermite_h2,
                     hermite_h3,
@@ -848,7 +848,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False):
     r"""Generates the vibrational Hamiltonian integrals in Christiansen form.
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
 
@@ -920,7 +920,7 @@ def christiansen_integrals_dipole(pes, n_states=16, cubic=False):
     r"""Generates the vibrational dipole integrals in Christiansen form.
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
 

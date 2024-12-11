@@ -133,11 +133,11 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     return obs_sq
 
 
-def christiansen_hamiltonian(pes_object, n_states=16, cubic=False):
+def christiansen_hamiltonian(pes, n_states=16, cubic=False):
     """Compute Christiansen Hamiltonian from given PES data.
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
 
@@ -145,7 +145,7 @@ def christiansen_hamiltonian(pes_object, n_states=16, cubic=False):
         Union[PauliSentence, Operator]: the Christiansen Hamiltonian in the qubit basis
     """
 
-    h_arr = christiansen_integrals(pes_object, n_states=n_states, cubic=cubic)
+    h_arr = christiansen_integrals(pes, n_states=n_states, cubic=cubic)
 
     one = h_arr[0]
     two = h_arr[1]
@@ -156,11 +156,11 @@ def christiansen_hamiltonian(pes_object, n_states=16, cubic=False):
     return cform_qubit
 
 
-def christiansen_dipole(pes_object, n_states=16, cubic=False):
+def christiansen_dipole(pes, n_states=16, cubic=False):
     """Computes the Christiansen integral coefficients for dipole construction.
 
     Args:
-        pes_object(VibrationalPES): object containing the vibrational potential energy surface data
+        pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
 
@@ -171,7 +171,7 @@ def christiansen_dipole(pes_object, n_states=16, cubic=False):
             - list(floats): integral coefficients for z-displacements
     """
 
-    d_arr = christiansen_integrals_dipole(pes_object, n_states=n_states, cubic=cubic)
+    d_arr = christiansen_integrals_dipole(pes, n_states=n_states, cubic=cubic)
 
     one_x = d_arr[0][0, :, :, :]
     two_x = d_arr[1][0, :, :, :, :, :, :] if len(d_arr) > 1 else None
@@ -192,3 +192,4 @@ def christiansen_dipole(pes_object, n_states=16, cubic=False):
     cform_qubit_z = christiansen_mapping(cform_bosonic_z)
 
     return cform_qubit_x, cform_qubit_y, cform_qubit_z
+
