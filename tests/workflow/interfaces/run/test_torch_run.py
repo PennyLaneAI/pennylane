@@ -14,10 +14,11 @@
 
 """Unit tests for the `run` helper function on the 'torch' interface"""
 
-# pylint: disable=too-few-public-methods
 from dataclasses import replace
 
 import pytest
+
+# pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
@@ -30,6 +31,7 @@ torch = pytest.importorskip("torch")
 @pytest.mark.torch
 @pytest.mark.parametrize("device, config, shots", test_matrix)
 class TestTorchRun:
+    """Test the 'torch' interface run function integrates well for both forward and backward execution"""
 
     @pytest.fixture(autouse=True)
     def run_before_and_after_tests(self):

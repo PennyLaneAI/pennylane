@@ -14,11 +14,12 @@
 
 """Unit tests for the `run` helper function on the 'jax' interface"""
 
-# pylint: disable=too-few-public-methods
 from dataclasses import replace
 
 import numpy as np
 import pytest
+
+# pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
@@ -33,6 +34,8 @@ jax.config.update("jax_enable_x64", True)
 @pytest.mark.jax
 @pytest.mark.parametrize("device, config, shots", test_matrix)
 class TestJaxRun:
+    """Test the 'jax' interface run function integrates well for both forward and backward execution"""
+
     def test_run(self, device, config, shots, seed):
         """Test execution of tapes on 'jax' interface."""
         device = get_device(device, seed=seed)

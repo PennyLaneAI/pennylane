@@ -14,11 +14,12 @@
 
 """Unit tests for the `run` helper function on the 'tensorflow' interface"""
 
-# pylint: disable=too-few-public-methods
 from dataclasses import replace
 
 import numpy as np
 import pytest
+
+# pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
@@ -32,6 +33,8 @@ tf = pytest.importorskip("tensorflow")
 @pytest.mark.tf
 @pytest.mark.parametrize("device, config, shots", test_matrix)
 class TestTensorFlowRun:
+    """Test the 'tensorflow' interface run function integrates well for both forward and backward execution"""
+
     def test_run(self, device, config, shots, seed):
         """Test execution of tapes on 'tensorflow' interface."""
         device = get_device(device, seed=seed)
