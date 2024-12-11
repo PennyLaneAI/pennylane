@@ -540,7 +540,7 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
             localized modes
 
     Returns:
-        BoseSentence: Taylor hamiltonian for given coeffs
+        BoseSentence: Taylor bosonic hamiltonian
     """
     if is_loc:
         start_deg = 2
