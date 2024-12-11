@@ -161,7 +161,7 @@ def cartan_subalgebra(
 
         Taking the Heisenberg Lie algebra, we can perform the Cartan decomposition. We take the :func:`~even_odd_involution` as a valid Cartan involution.
         The resulting vertical and horizontal subspaces :math:`\mathfrak{k}` and :math:`\mathfrak{m}` need to fulfill the commutation relations
-        :math:`[\mathfrak{k}, \mathfrak{k}] \subeq \mathfrak{k}`, :math:`[\mathfrak{k}, \mathfrak{m}] \subeq \mathfrak{m}` and :math:`[\mathfrak{m}, \mathfrak{m}] \subeq \mathfrak{k}`,
+        :math:`[\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k}`, :math:`[\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m}` and :math:`[\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k}`,
         which we can check using the helper function :func:`~check_cartan_decomp`.
 
         >>> from pennylane.labs.dla import even_odd_involution, check_cartan_decomp
