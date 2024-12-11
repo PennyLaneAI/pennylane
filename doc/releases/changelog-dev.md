@@ -215,6 +215,11 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.CancelInterpreter`
+  when program capture is enabled. This class cancels operators appearing consecutively that are adjoints of each
+  other, and follows the same API as `qml.transforms.cancel_inverses`.
+  [(#6692)](https://github.com/PennyLaneAI/pennylane/pull/6692)
+
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
   captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
   only works with a reduced feature set.
