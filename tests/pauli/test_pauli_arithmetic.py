@@ -945,6 +945,7 @@ class TestPauliSentence:
 
         qml.assert_equal(op, id)
 
+    # pylint: disable=W0621
     @pytest.mark.parametrize("coeff0", [qml.math.array([0.6, 0.2, 4.3])])
     @pytest.mark.parametrize("coeff1", [qml.math.array([1.2, -0.9, 2.7])])
     def test_operation_array_input(self, coeff0, coeff1):
@@ -1003,6 +1004,7 @@ class TestPauliSentence:
             }
         )
 
+    # pylint: disable=W0621
     @pytest.mark.parametrize("coeff0", [[0.6, 0.2, 4.3], -0.7])
     @pytest.mark.parametrize("coeff1", [[1.2, -0.9, 2.7], -0.7])
     def test_to_mat_with_broadcasting(self, coeff0, coeff1):
