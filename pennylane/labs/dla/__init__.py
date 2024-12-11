@@ -53,7 +53,10 @@ Involutions
 A map :math:`\theta: \mathfrak{g} \rightarrow \mathfrak{g}` from the Lie algebra :math:`\mathfrak{g}` to itself is called an involution
 when it fulfills :math:`\theta(\theta(g)) = g \ \forall g \in \mathfrak{g}` and is compatible with commutators,
 :math:`[\theta(g), \theta(g')]=\theta([g, g']).` Involutions are used to construct a :func:`~cartan_decomp`. There are seven canonical
-Cartan involutions (``AI, AII, AIII, BDI, CI, CII, DIII``), see `Wikipedia <https://en.wikipedia.org/wiki/Symmetric_space#Classification_result>`__.
+Cartan involutions of real simple Lie algebras (``AI, AII, AIII, BDI, CI, CII, DIII``),
+see `Wikipedia <https://en.wikipedia.org/wiki/Symmetric_space#Classification_result>`__.
+In addition, there is a canonical Cartan involution for real semisimple algebras that consist of
+two isomorphic simple components (``ClassB``), see `here <https://en.wikipedia.org/wiki/Symmetric_space#Classification_scheme>`__.
 
 .. currentmodule:: pennylane.labs.dla
 
