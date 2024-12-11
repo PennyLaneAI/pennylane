@@ -1211,6 +1211,27 @@ class TestEqual:
         assert not qml.equal(op1, op2)
 
 
+equal_pauli_words = [
+    ({0: "X", 1: "Y"}, {1: "Y", 0: "X"}, True),
+    ({0: "X", 1: "Y"}, {0: "X"}, False),
+    ({0: "X", 1: "Z"}, {1: "Y", 0: "X"}, False),
+    ({0: "X", 1: "Y"}, {"X": "Y", 0: "X"}, False),
+]
+
+
+# pylint: disable=too-few-public-methods
+class TestPauliWordsEqual:
+    """Tests for qml.equal with PauliSentences."""
+
+    @pytest.mark.parametrize("pw1, pw2, res", equal_pauli_words)
+    def test_equality(self, pw1, pw2, res):
+        """Test basic equalities/inequalities."""
+        pw1 = qml.pauli.PauliWord(pw1)
+        pw2 = qml.pauli.PauliWord(pw2)
+        assert qml.equal(pw1, pw2) is res
+        assert qml.equal(pw2, pw1) is res
+
+
 equal_pauli_sentences = [
     (qml.X(0) @ qml.Y(2), 1.0 * qml.Y(2) @ qml.X(0), True),
     (qml.X(0) @ qml.Y(2), 1.0 * qml.X(2) @ qml.Y(0), False),

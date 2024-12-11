@@ -356,6 +356,31 @@ def _equal_operators(
     return True
 
 
+# pylint: disable=unused-argument
+@_equal_dispatch.register
+def _equal_pauliword(
+    op1: qml.pauli.PauliWord,
+    op2: qml.pauli.PauliWord,
+    **kwargs,
+):
+    if op1 != op2:
+        if set(op1) != set(op2):
+            err = "Different wires in Pauli words."
+            diff12 = set(op1).difference(set(op2))
+            diff21 = set(op2).difference(set(op1))
+            if diff12:
+                err += " op1 has {diff12} not present in op2."
+            if diff21:
+                err += " op2 has {diff21} not present in op1."
+            return err
+        pauli_diff = {}
+        for wire in op1:
+            if op1[wire] != op2[wire]:
+                pauli_diff[wire] = f"{op1[wire]} != {op2[wire]}"
+        return f"Pauli words agree on wires but differ in Paulis: {pauli_diff}"
+    return True
+
+
 @_equal_dispatch.register
 def _equal_paulisentence(
     op1: qml.pauli.PauliSentence,
@@ -366,7 +391,14 @@ def _equal_paulisentence(
     atol=1e-9,
 ):
     if set(op1) != set(op2):
-        return f"The Pauli words in the two PauliSentences differ:\n{set(op1)}\n{set(op2)}"
+        err = "Different Pauli words in PauliSentences."
+        diff12 = set(op1).difference(set(op2))
+        diff21 = set(op2).difference(set(op1))
+        if diff12:
+            err += " op1 has {diff12} not present in op2."
+        if diff21:
+            err += " op2 has {diff21} not present in op1."
+        return err
     for pw in op1:
         param1 = op1[pw]
         param2 = op2[pw]
