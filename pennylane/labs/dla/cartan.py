@@ -50,8 +50,8 @@ def cartan_decomp(
 
     Returns:
         Tuple(List[Union[PauliSentence, Operator]], List[Union[PauliSentence, Operator]]): Tuple ``(k, m)`` containing the even
-            parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}` and the odd
-            parity subspace :math:`\Theta(\mathfrak{m}) = -\mathfrak{m}`.
+        parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}` and the odd
+        parity subspace :math:`\Theta(\mathfrak{m}) = -\mathfrak{m}`.
 
     .. seealso:: :func:`~even_odd_involution`, :func:`~concurrence_involution`, :func:`~check_cartan_decomp`
 
