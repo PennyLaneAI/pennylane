@@ -64,15 +64,17 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     2: ────╰X──GlobalPhase(0.76)─┤
     """
 
+    has_global_phase = False
     phi = 0
     operations = []
     for op in tape.operations:
         if isinstance(op, qml.GlobalPhase):
+            has_global_phase = True
             phi += op.parameters[0]
         else:
             operations.append(op)
 
-    if qml.math.is_abstract(phi) or not qml.math.allclose(phi, 0):
+    if has_global_phase:
         with qml.QueuingManager.stop_recording():
             operations.append(qml.GlobalPhase(phi=phi))
 
