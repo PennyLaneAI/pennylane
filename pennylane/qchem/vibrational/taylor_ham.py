@@ -273,7 +273,7 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
     return coeffs, predicted_3D
 
 
-def taylor_coeffs(pes_object, max_deg=4, min_deg=3):
+def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Compute fitted coefficients for Taylor vibrational Hamiltonian.
 
     The coefficients are defined following Eq. 5 of `arXiv:1703.09313 
