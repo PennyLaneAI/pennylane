@@ -18,6 +18,7 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 import pytest
 import pennylane as qml
 from pennylane.devices import DefaultMixed
+from pennylane.math import Interface
 
 
 class TestDefaultMixedNewAPIInit:

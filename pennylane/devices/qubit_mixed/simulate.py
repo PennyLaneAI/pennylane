@@ -48,9 +48,7 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
         prep = circuit[0]
 
     interface = get_canonical_interface_name(interface)
-    state = create_initial_state(
-        sorted(circuit.op_wires), prep, like=interface.get_like()
-    )
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
