@@ -288,11 +288,6 @@ def run(
         results = inner_execute(tapes)
         return results
 
-    ml_execute = _get_ml_boundary_execute(
-        config,
-        differentiable=config.derivative_order > 1,
-    )
-
     if config.interface != Interface.TF_AUTOGRAPH:
         jpc, execute_fn = _construct_ml_execution_pipeline(config, device, inner_transform_program)
 
@@ -300,6 +295,11 @@ def run(
             # no need to use pure callbacks around execute_fn or the jpc when taking
             # higher order derivatives
             config = replace(config, interface=Interface.JAX)
+
+        ml_execute = _get_ml_boundary_execute(
+            config,
+            differentiable=config.derivative_order > 1,
+        )
 
         # trainable parameters can only be set on the first pass for jax
         # not higher order passes for higher order derivatives
@@ -314,6 +314,12 @@ def run(
         execute_fn, diff_method = _construct_tf_autograph_pipeline(
             config, device, inner_transform_program
         )
+
+        ml_execute = _get_ml_boundary_execute(
+            config,
+            differentiable=config.derivative_order > 1,
+        )
+
         results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
             tapes,
             device,
