@@ -555,7 +555,7 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
 
 
 def taylor_hamiltonian(pes_object, max_deg=4, min_deg=3):
-    """Compute Taylor vibrational Hamiltonian.
+    """Return Taylor vibrational Hamiltonian.
 
     Args:
         pes_object (VibrationalPES): object containing the vibrational potential energy surface data
