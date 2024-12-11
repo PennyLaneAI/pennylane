@@ -946,7 +946,7 @@ class TestShotsIntegration:
         assert qml.math.allclose(res[1][0], np.cos(0.5), rtol=5e-2)
 
         expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
-        assert qml.math.allclose(res[0][1], expected_probs, rtol=5e-2)
+        assert qml.math.allclose(res[0][1], expected_probs, atol=1e-2)
         assert qml.math.allclose(res[1][1][0], expected_probs[0], rtol=5e-2)
         assert qml.math.allclose(res[1][1][1], expected_probs[1], atol=5e-3)
 
