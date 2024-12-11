@@ -408,7 +408,8 @@ class QSVT(Operation):
 
         This template allows users to define hardware-compatible block encoding and
         projector-controlled phase shift circuits. For a QSVT implementation that is
-        tailored for simulators see :func:`~.qsvt` .
+        tailored to work directly with an input matrix and a transformation polynomial
+        see :func:`~.qsvt`.
 
     Given an :class:`~.Operator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
     projector-controlled phase shift operations :math:`\vec{\Pi}_\phi`, this template applies a
