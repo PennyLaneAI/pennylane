@@ -16,7 +16,7 @@
 Public/internal API for the Transforms module.
 """
 
-from .map_wires import MapWires
+from .map_wires import MapWiresInterpreter
 
 
-__all__ = ("MapWires",)
+__all__ = ("MapWiresInterpreter",)

@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the MapWires interpreter."""
+"""This module contains the MapWiresInterpreter transform."""
 
 
 import pennylane as qml
 from pennylane.capture.base_interpreter import PlxprInterpreter
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
 
 
-class MapWires(PlxprInterpreter):
+class MapWiresInterpreter(PlxprInterpreter):
     """Interpreter that maps wires of operations and measurements."""
 
     def __init__(self, wire_map: dict) -> None:
@@ -31,19 +29,19 @@ class MapWires(PlxprInterpreter):
 
     def _check_wire_map(self) -> None:
         """Check that the wire map is valid and does not contain dynamic values."""
-        if not all(isinstance(k, int) for k in self.wire_map.keys()):
-            raise ValueError("Wire map keys must be integer constants.")
-        if not all(isinstance(v, int) for v in self.wire_map.values()):
-            raise ValueError("Wire map values must be integer constants.")
+        if not all(isinstance(k, int) and k >= 0 for k in self.wire_map.keys()):
+            raise ValueError("Wire map keys must be constant positive integers.")
+        if not all(isinstance(v, int) and v >= 0 for v in self.wire_map.values()):
+            raise ValueError("Wire map values must be constant positive integers.")
 
-    def interpret_operation(self, op: Operator) -> Operator:
+    def interpret_operation(self, op: "qml.operation.Operation"):
         """Interpret an operation."""
         qml.capture.disable()
         op = op.map_wires(self.wire_map)
         qml.capture.enable()
         return super().interpret_operation(op)
 
-    def interpret_measurement(self, measurement: MeasurementProcess) -> MeasurementProcess:
+    def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
         """Interpret a measurement operation."""
         qml.capture.disable()
         measurement = measurement.map_wires(self.wire_map)
