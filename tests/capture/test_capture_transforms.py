@@ -25,7 +25,6 @@ from pennylane.transforms.core import transform
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
