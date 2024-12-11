@@ -620,29 +620,16 @@ class TestControlledSimplify:
         )
         simplified_op = controlled_op.simplify()
 
-        # TODO: Use qml.equal when supported for nested operators
-
         assert isinstance(simplified_op, Controlled)
         for s1, s2 in zip(final_op.base.operands, simplified_op.base.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+            qml.assert_equal(s1, s2)
 
     def test_simplify_nested_controlled_ops(self):
         """Test the simplify method with nested control operations on different wires."""
         controlled_op = Controlled(Controlled(qml.Hadamard(0), 1), 2)
         final_op = Controlled(qml.Hadamard(0), [2, 1])
         simplified_op = controlled_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, Controlled)
-        assert isinstance(simplified_op.base, qml.Hadamard)
-        assert simplified_op.name == final_op.name
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
 
 class TestControlledQueuing:
