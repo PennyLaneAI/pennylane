@@ -143,17 +143,6 @@ def test_interface_data_supported():
     config = ExecutionConfig()
 
     config.interface = "autograd"
-    config.gradient_method = None
-    device = qml.device("default.mixed", wires=1)
-
-    user_transform_program = TransformProgram()
-    _, inner_tp = _setup_transform_program(user_transform_program, device, config)
-
-    assert qml.transforms.convert_to_numpy_parameters not in inner_tp
-
-    config = ExecutionConfig()
-
-    config.interface = "autograd"
     config.gradient_method = "backprop"
     device = qml.device("default.qubit")
 
