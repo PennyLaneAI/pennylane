@@ -257,7 +257,7 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
 def run(
     tapes: QuantumScriptBatch,
     device: "qml.devices.Device",
-    resolved_execution_config: "qml.devices.ExecutionConfig",
+    config: "qml.devices.ExecutionConfig",
     inner_transform_program: TransformProgram,
 ) -> ResultBatch:
     """Execute a batch of quantum scripts on a device with optional gradient computation.
@@ -265,7 +265,7 @@ def run(
     Args:
         tapes (qml.tape.QuantumScriptBatch): batch of quantum scripts
         device (qml.devices.Device): a Pennylane device
-        resolved_execution_config (qml.devices.ExecutionConfig): Configuration detailing
+        config (qml.devices.ExecutionConfig): Resolved configuration detailing
             execution and differentiation settings.
         inner_transform_program (TransformProgram): The transformation program to apply
             to the quantum scripts before execution.
@@ -273,12 +273,12 @@ def run(
     Returns:
         ResultBatch: results of the execution
     """
-    inner_execute = _make_inner_execute(device, inner_transform_program, resolved_execution_config)
+    inner_execute = _make_inner_execute(device, inner_transform_program, config)
 
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = (
-        resolved_execution_config.interface == Interface.NUMPY
-        or resolved_execution_config.gradient_method
+        config.interface == Interface.NUMPY
+        or config.gradient_method
         in {
             None,
             "backprop",
@@ -288,36 +288,31 @@ def run(
         results = inner_execute(tapes)
         return results
 
-    if resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
-        jpc, execute_fn = _construct_ml_execution_pipeline(
-            resolved_execution_config, device, inner_transform_program
-        )
+    if config.interface != Interface.TF_AUTOGRAPH:
+        jpc, execute_fn = _construct_ml_execution_pipeline(config, device, inner_transform_program)
     else:
         execute_fn, diff_method = _construct_tf_autograph_pipeline(
-            resolved_execution_config, device, inner_transform_program
+            config, device, inner_transform_program
         )
 
-    if (
-        resolved_execution_config.interface == Interface.JAX_JIT
-        and resolved_execution_config.derivative_order > 1
-    ):
+    if config.interface == Interface.JAX_JIT and config.derivative_order > 1:
         # no need to use pure callbacks around execute_fn or the jpc when taking
         # higher order derivatives
-        resolved_execution_config = replace(resolved_execution_config, interface=Interface.JAX)
+        config = replace(config, interface=Interface.JAX)
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
-    if resolved_execution_config.interface in {Interface.JAX, Interface.JAX_JIT}:
+    if config.interface in {Interface.JAX, Interface.JAX_JIT}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
 
     ml_execute = _get_ml_boundary_execute(
-        resolved_execution_config,
-        differentiable=resolved_execution_config.derivative_order > 1,
+        config,
+        differentiable=config.derivative_order > 1,
     )
 
-    if resolved_execution_config.interface != Interface.TF_AUTOGRAPH:
+    if config.interface != Interface.TF_AUTOGRAPH:
         results = ml_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
@@ -325,9 +320,9 @@ def run(
             device,
             execute_fn,
             diff_method,
-            resolved_execution_config.gradient_keyword_arguments,
+            config.gradient_keyword_arguments,
             _n=1,
-            max_diff=resolved_execution_config.derivative_order,
+            max_diff=config.derivative_order,
         )
 
     return results
