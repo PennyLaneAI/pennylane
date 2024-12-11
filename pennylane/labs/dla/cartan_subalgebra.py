@@ -113,7 +113,7 @@ def cartan_subalgebra(
     >>> newg == k + mtilde + h
     True
     >>> h
-    [(1+0j) * Z(0) @ Z(1), (-1+0j) * Y(0) @ Y(1), (1+0j) * X(0) @ X(1)]
+    [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
 
     We can confirm that these all commute with each other, as the CSA is Abelian (= all operators commute).
 
@@ -132,14 +132,14 @@ def cartan_subalgebra(
     >>> op = sum(v_i * g_i for v_i, g_i in zip(v, g))
     >>> op.simplify()
     >>> op
-    Z(0) @ Z(1)
+    -1.0 * Z(0) @ Z(1)
 
     For convenience, we provide a helper function :func:`~adjvec_to_op` for the collections of adjoint vectors in the returns.
 
     >>> from pennylane.labs.dla import adjvec_to_op
     >>> h = adjvec_to_op(np_h, g)
     >>> h
-    [Z(0) @ Z(1), (-1+0j) * (Y(0) @ X(1)), (-1+0j) * (X(0) @ Y(1))]
+    [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
 
     .. details::
         :title: Usage Details
@@ -152,6 +152,7 @@ def cartan_subalgebra(
         As an example, we take the Lie algebra of the Heisenberg model with generators :math:`\{X_i X_{i+1}, Y_i Y_{i+1}, Z_i Z_{i+1}\}`.
 
         >>> from pennylane.labs.dla import lie_closure_dense, cartan_decomp
+        >>> from pennylane import X, Y, Z
         >>> n = 3
         >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
         >>> gens += [Y(i) @ Y(i+1) for i in range(n-1)]
@@ -171,6 +172,8 @@ def cartan_subalgebra(
         Our life is easier when we use a canonical ordering of the operators. This is why we re-define ``g`` with the new ordering in terms of operators in ``k`` first, and then
         all remaining operators from ``m``.
 
+        >>> import numpy as np
+        >>> from pennylane.labs.dla import structure_constants_dense
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
         >>> adj = structure_constants_dense(g) # compute adjoint representation of g
 
@@ -201,9 +204,7 @@ def cartan_subalgebra(
         >>> h = adjvec_to_op(np_h, g)
         >>> h_op = [qml.pauli_decompose(op).pauli_rep for op in h]
         >>> h_op
-        [0.35355339059327384 * Y(1) @ Y(2),
-         0.3535533905932738 * Y(0) @ Y(2),
-         -0.3535533905932738 * Y(0) @ Y(1)]
+        [-1.0 * Y(1) @ Y(2), -1.0 * Z(1) @ Z(2), 1.0 * X(1) @ X(2)]
 
         In that case we chose a Cartan subalgebra from which we can readily see that it is commuting, but we also provide a small helper function to check that.
 
