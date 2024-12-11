@@ -229,7 +229,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
         @qml.qnode(dev)
         def circuit():
-            qml.qsvt(hamiltonian, poly, encoding_wires=[0])
+            qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep")
             return qml.state()
 
 
@@ -328,9 +328,9 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
 
     if encoding_wires is None or block_encoding is None or "wires" in kwargs.keys():
         warnings.warn(
-            "You may be trying to use the old `qsvt` functionality (now `qml.qsvt_legacy`)."
-            "Make sure you pass a polynomial instead of angles."
-            "Set a value for `block_encoding` to silence this warning.",
+            "You may be trying to use the old `qsvt` functionality (now `qml.qsvt_legacy`).\n"
+            "Make sure you pass a polynomial instead of angles.\n"
+            "Set a value for `block_encoding` to silence this warning.\n",
             qml.PennyLaneDeprecationWarning,
         )
 
@@ -369,7 +369,7 @@ def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
                 "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a matrix block_encoding should take the value 'embedding' or 'fable'. Otherwise, please provide an input with a Pauli decomposition. For more details, see the 'qml.pauli_decompose' function."
             )
 
-        A = qml.math.array(A)
+        A = qml.math.atleast_2d(A)
         max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
 
         if block_encoding == "fable":
