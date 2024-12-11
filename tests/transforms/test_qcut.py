@@ -4574,28 +4574,6 @@ class TestCutCircuitExpansion:
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
 
-    @pytest.mark.skip("Nested tapes are being deprecated")
-    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
-    def test_expansion(self, mocker, cut_transform, measurement):
-        """Test if expansion occurs if WireCut operations are present in a nested tape"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.3, wires=0)
-            with qml.tape.QuantumTape() as _:
-                qml.WireCut(wires=0)
-            qml.RY(0.4, wires=0)
-            qml.apply(measurement)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(qcut.tapes, "_qcut_expand_fn")
-        spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
-        spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
-
-        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
-        cut_transform(tape, device_wires=[0], **kwargs)
-
-        spy.assert_called_once()
-        assert spy_cc.call_count == 1 or spy_mc.call_count == 1
-
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
