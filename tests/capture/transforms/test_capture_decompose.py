@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
-# pylint:disable=protected-access,unused-argument
+# pylint:disable=protected-access,unused-argument, wrong-import-position
 import pytest
 
 import pennylane as qml
+
+jax = pytest.importorskip("jax")
+
 from pennylane.capture.primitives import (
     cond_prim,
     for_loop_prim,
@@ -25,8 +28,6 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.capture.transforms import DecomposeInterpreter
-
-jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
