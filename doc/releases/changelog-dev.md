@@ -215,7 +215,7 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* Implemented a `MapWires` class that can be applied to a `QNode` as a transform with capture enabled.
+* Implemented a `MapWiresInterpreter` class that can be used as a quantum transform with capture enabled.
   [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
 
 * Execution with capture enabled now follows a new execution pipeline and natively passes the

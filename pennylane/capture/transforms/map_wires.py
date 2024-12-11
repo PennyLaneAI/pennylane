@@ -19,7 +19,30 @@ from pennylane.capture.base_interpreter import PlxprInterpreter
 
 
 class MapWiresInterpreter(PlxprInterpreter):
-    """Interpreter that maps wires of operations and measurements."""
+    """Interpreter that maps wires of operations and measurements.
+
+    **Examples:**
+
+    .. code-block:: python
+
+        import jax
+        from pennylane.capture.transforms import MapWiresInterpreter
+
+        @MapWiresInterpreter(wire_map={0: 1})
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> qml.capture.enable()
+    >>> jaxpr = jax.make_jaxpr(circuit)()
+    >>> jaxpr
+    { lambda ; . let
+        _:AbstractOperator() = Hadamard[n_wires=1] 1
+        a:AbstractOperator() = PauliZ[n_wires=1] 1
+        b:AbstractMeasurement(n_wires=None) = expval_obs a
+      in (b,) }
+
+    """
 
     def __init__(self, wire_map: dict) -> None:
         """Initialize the interpreter."""

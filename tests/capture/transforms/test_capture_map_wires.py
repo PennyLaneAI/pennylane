@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``MapWiresInterpreter`` class"""
 
-# pylint:disable=wrong-import-position
+# pylint:disable=wrong-import-position, unused-argument
 import numpy as np
 import pytest
 
