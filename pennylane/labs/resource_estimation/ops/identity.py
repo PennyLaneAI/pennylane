@@ -34,6 +34,20 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
     def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
 
+    @staticmethod
+    def adjoint_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+        return {}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0
+    ) -> Dict[re.CompressedResourceOp, int]:
+        return {}
+
+    @staticmethod
+    def pow_resource_decomp(z) -> Dict[re.CompressedResourceOp, int]:
+        return {}
+
 
 class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     """Resource class for the GlobalPhase gate."""
@@ -48,3 +62,19 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, **kwargs) -> re.CompressedResourceOp:
         return re.CompressedResourceOp(cls, {})
+
+    @staticmethod
+    def adjoint_resource_decomp() -> Dict[re.CompressedResourceOp, int]:
+        return {}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_wires == 1:
+            return {re.ResourcePhaseShift.resource_rep(): 1}
+        raise re.ResourcesNotDefined
+
+    @staticmethod
+    def pow_resource_decomp(z) -> Dict[re.CompressedResourceOp, int]:
+        return {}
