@@ -88,12 +88,14 @@ class DecomposeInterpreter(qml.capture.PlxprInterpreter):
             return self.interpret_operation(op)
 
         qml.capture.disable()
-        decomposition = list(
-            _operator_decomposition_gen(
-                op, self.stopping_condition, max_expansion=self.max_expansion
-            )
-        )
-        qml.capture.enable()
+        try:
+                decomposition = list(
+                    _operator_decomposition_gen(
+                        op, self.stopping_condition, max_expansion=self.max_expansion
+                    )
+                )
+         finally:
+            qml.capture.enable()
 
         return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
 
