@@ -196,7 +196,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     # Create an additional final tape if a return measurement exists
     if tape.measurements:
         snapshot_tags.append("execution_results")
-        new_tapes.append(tape.copy(operations=accumulated_ops, measurements=tape.measurements))
+        new_tapes.append(tape.copy(operations=accumulated_ops))
 
     def postprocessing_fn(results, snapshot_tags):
         return dict(zip(snapshot_tags, results))
