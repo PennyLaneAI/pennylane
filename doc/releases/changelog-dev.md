@@ -60,6 +60,10 @@
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
 
+* New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
+    The functionality `qml.poly_to_angles` has been also extended to support GQSP.
+    [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
 
@@ -69,11 +73,6 @@
 * New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
   to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
-
-* New `qml.GQSP` template has been added to perform Generalized
-  Quantum Signal Processing (GQSP).
-  The functionality `qml.poly_to_angles` has been also extended to support GQSP.
-  [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
 * Added a function `qml.trotterize` to generalize the Suzuki-Trotter product to arbitrary quantum functions.
   [(#6627)](https://github.com/PennyLaneAI/pennylane/pull/6627)
@@ -107,7 +106,7 @@
   b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
   ```
 
-<h4>New `labs` module `dla` for handling dynamical Lie algebras (DLAs)</h4>
+<h4>New `pennylane.labs.dla` module for handling (dynamical) Lie algebras (DLAs)</h4>
 
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
