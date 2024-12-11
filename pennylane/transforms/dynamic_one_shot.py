@@ -82,7 +82,7 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     ``dynamic_one_shot`` transforms will be ignored. The recommended way to use dynamic one
     shot is to specify ``mcm_method="one-shot"`` in the ``qml.qnode`` decorator.
 
-    ..code-block:: python
+    .. code-block:: python
 
         dev = qml.device("default.qubit", shots=100)
         params = np.pi / 4 * np.ones(2)
