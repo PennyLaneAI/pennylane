@@ -45,18 +45,6 @@ def test_caching(diff_method):
     assert cache[qs.hash] == -1.0
 
 
-def test_execute_legacy_device():
-    """Test that qml.execute works when passed a legacy device class."""
-
-    dev = qml.devices.DefaultMixedLegacy(wires=2)
-
-    tape = qml.tape.QuantumScript([qml.RX(0.1, 0)], [qml.expval(qml.Z(0))])
-
-    res = qml.execute((tape,), dev)
-
-    assert qml.math.allclose(res[0], np.cos(0.1))
-
-
 def test_gradient_fn_deprecation():
     """Test that gradient_fn has been renamed to diff_method."""
 
