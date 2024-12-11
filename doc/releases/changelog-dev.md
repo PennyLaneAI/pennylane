@@ -438,7 +438,7 @@ same information.
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
-* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-title` and `meta-description`.
   [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
 
 <h3>Bug fixes 🐛</h3>
