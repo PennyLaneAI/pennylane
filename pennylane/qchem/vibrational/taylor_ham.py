@@ -554,7 +554,7 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
     return ham.normal_order()
 
 
-def taylor_hamiltonian(pes_object, max_deg=4, min_deg=3):
+def taylor_hamiltonian(pes, max_deg=4, min_deg=3):
     """Return Taylor vibrational Hamiltonian.
 
     Args:
