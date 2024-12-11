@@ -111,6 +111,7 @@
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
 
 * Added a dense implementation of computing the structure constants in a new function
   `structure_constants_dense` in `pennylane.labs.dla`.

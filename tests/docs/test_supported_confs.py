@@ -352,7 +352,7 @@ class TestSupportedConfs:
         elif return_type == ObservableReturnTypes.Probability and interface == "tf":
             with pytest.raises(Exception):
                 # tensorflow.python.framework.errors_impl.InvalidArgumentError
-                # TODO: figure out why
+                # TODO: figure out why [sc-52490]
                 compute_gradient(x, interface, circuit, return_type)
         else:
             compute_gradient(x, interface, circuit, return_type)

@@ -163,7 +163,8 @@ def _idx_to_pw(idx, n):
 
 
 def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
-    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+    r"""Decomposes a Hermitian matrix or a batch of matrices into a linear combination
+    of Pauli operators.
 
     Args:
         H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
@@ -235,7 +236,7 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
 
 
 def check_commutation(ops1, ops2, vspace):
-    r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+    r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`.
 
     .. warning:: This function is expensive to compute
 
@@ -277,7 +278,7 @@ def check_commutation(ops1, ops2, vspace):
 
 
 def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
-    r"""Helper function to check if all operators in a set of operators commute
+    r"""Helper function to check if all operators in ``ops`` commute.
 
     .. warning:: This function is expensive to compute
 
@@ -326,7 +327,7 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
 
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
-    r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+    r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}.`
 
     Check whether of not the following properties are fulfilled.
 
@@ -400,20 +401,6 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
         _ = print("[m, m] sub k not fulfilled") if verbose else None
 
     return all([check_kk, check_km, check_mm])
-
-
-def apply_basis_change(change_op, targets):
-    """Helper function for recursive Cartan decompositions"""
-    if single_target := np.ndim(targets) == 2:
-        targets = [targets]
-    if isinstance(targets, list):
-        targets = np.array(targets)
-    # Compute x V^\dagger for all x in ``targets``. ``moveaxis`` brings the batch axis to the front
-    out = np.moveaxis(np.tensordot(change_op, targets, axes=[[1], [1]]), 1, 0)
-    out = np.tensordot(out, change_op.conj().T, axes=[[2], [0]])
-    if single_target:
-        return out[0]
-    return out
 
 
 def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) -> np.ndarray:
@@ -600,7 +587,7 @@ def trace_inner_product(
 
 
 def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
-    r"""Apply the basis change between bases of operators to the adjoint representation.
+    r"""Apply a ``basis_change`` between bases of operators to the adjoint representation ``adj``.
 
     Assume the adjoint repesentation is given in terms of a basis :math:`\{b_j\}`,
     :math:`\text{ad_\mu}_{\alpha \beta} \propto \text{tr}\left(b_\mu \cdot [b_\alpha, b_\beta] \right)`.

@@ -22,7 +22,7 @@ from pennylane import QubitUnitary
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
-from .dense_util import apply_basis_change, check_cartan_decomp
+from .dense_util import check_cartan_decomp
 from .involutions import int_log2
 
 
@@ -185,6 +185,15 @@ def _check_chain(chain, num_wires):
     return names, basis_changes
 
 
+def _apply_basis_change(change_op, targets):
+    """Helper function for recursive Cartan decompositions that applies a basis change matrix
+    ``change_op`` to a batch of matrices ``targets`` (with leading batch dimension)."""
+    # Compute x V^\dagger for all x in ``targets``. ``moveaxis`` brings the batch axis to the front
+    out = np.moveaxis(np.tensordot(change_op, targets, axes=[[1], [1]]), 1, 0)
+    out = np.tensordot(out, change_op.conj().T, axes=[[2], [0]])
+    return out
+
+
 def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     r"""Apply a recursive Cartan decomposition specified by a chain of decomposition types.
     The decompositions will use canonical involutions and hardcoded basis transformations
@@ -331,8 +340,8 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
             print(f"Iteration {i}: {len(g):>4} -{name:-^10}> {len(k):>4},{len(m):>4}")
         decompositions[i] = (k, m)
         if not bc is IDENTITY:
-            k = apply_basis_change(bc, k)
-            m = apply_basis_change(bc, m)
+            k = _apply_basis_change(bc, k)
+            m = _apply_basis_change(bc, m)
         g = k
 
     return decompositions

@@ -118,7 +118,7 @@ def khaneja_glaser_involution(op: Union[np.ndarray, PauliSentence, Operator], wi
 
 
 # Canonical involutions
-# see https://arxiv.org/pdf/2406.04418 appendix C
+# see https://arxiv.org/abs/2406.04418 appendix C
 
 # matrices
 
@@ -600,9 +600,9 @@ def ClassB(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] =
 
 # dispatch to different input types
 def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
-    r"""The Even-Odd involution
+    r"""The Even-Odd involution.
 
-    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__.
+    This is defined in `quant-ph/0701193 <https://arxiv.org/abs/quant-ph/0701193>`__.
     For Pauli words and sentences, it comes down to counting non-trivial Paulis in Pauli words.
 
     Args:
@@ -675,9 +675,9 @@ def _even_odd_involution_op(op: Operator):
 
 # dispatch to different input types
 def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
-    r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
+    r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function.
 
-    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__.
+    This is defined in `quant-ph/0701193 <https://arxiv.org/abs/quant-ph/0701193>`__.
     For Pauli words and sentences, it comes down to counting Pauli-Y operators.
 
     Args:

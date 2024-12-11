@@ -166,7 +166,7 @@ def cartan_subalgebra(
 
         >>> from pennylane.labs.dla import even_odd_involution, check_cartan_decomp
         >>> k, m = cartan_decomp(g, even_odd_involution)
-        >>> check_cartan_decomp(k, m) # check commutation relations to be valid Cartan decomposition
+        >>> check_cartan_decomp(k, m) # check commutation relations of Cartan decomposition
         True
 
         Our life is easier when we use a canonical ordering of the operators. This is why we re-define ``g`` with the new ordering in terms of operators in ``k`` first, and then
@@ -189,7 +189,8 @@ def cartan_subalgebra(
 
         We can also let the function return what we call adjoint representation vectors.
 
-        >>> np_newg, np_k, np_mtilde, np_h, new_adj = cartan_subalgebra(g, k, m, adj, start_idx=3, return_adjvec=True)
+        >>> kwargs = {"start_idx": 3, "return_adjvec": True}
+        >>> np_newg, np_k, np_mtilde, np_h, new_adj = cartan_subalgebra(g, k, m, adj, **kwargs)
         >>> np_newg.shape, np_k.shape, np_mtilde.shape, np_h.shape, new_adj.shape
         ((15, 15), (6, 15), (6, 15), (3, 15), (15, 15, 15))
 
