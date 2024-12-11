@@ -101,6 +101,7 @@
 * Added a dense implementation of computing the Lie closure in a new function
   `lie_closure_dense` in `pennylane.labs.dla`.
   [(#6371)](https://github.com/PennyLaneAI/pennylane/pull/6371)
+  [(#6695)](https://github.com/PennyLaneAI/pennylane/pull/6695)
 
 * New functionality to calculate angles for QSP and QSVT has been added. This includes the function `qml.poly_to_angles`
   to obtain angles directly and the function `qml.transform_angles` to convert angles from one subroutine to another.
