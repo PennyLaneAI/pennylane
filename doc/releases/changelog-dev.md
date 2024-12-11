@@ -64,7 +64,7 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
-* Added support to build Taylor form Hamiltonians from `VibrationalPES` objects.
+* Added support to build the Taylor vibrational Hamiltonian.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
 * Added a function `qml.trotterize` to generalize the Suzuki-Trotter product to arbitrary quantum functions.
