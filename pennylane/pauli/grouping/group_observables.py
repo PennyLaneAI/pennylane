@@ -438,9 +438,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
     """
 
     with qml.QueuingManager.stop_recording():
-        obs_groups = qml.pauli.group_observables(
-            observables, grouping_type=grouping_type, method="rlf"
-        )
+        obs_groups = group_observables(observables, grouping_type=grouping_type, method="rlf")
 
     observables = copy(observables)
 
