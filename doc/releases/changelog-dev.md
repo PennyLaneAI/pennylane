@@ -133,45 +133,19 @@
   [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
 
 
-<h4>New API for Qubit Mixed</h4>
-
-* Added `qml.devices.qubit_mixed` module for mixed-state qubit device support [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379). This module introduces an `apply_operation` helper function that features:
-
-  * Two density matrix contraction methods using `einsum` and `tensordot`
-
-  * Optimized handling of special cases including: Diagonal operators, Identity operators, CX (controlled-X), Multi-controlled X gates, Grover operators
-
-* Added submodule 'initialize_state' featuring a `create_initial_state` function for initializing a density matrix from `qml.StatePrep` operations or `qml.QubitDensityMatrix` operations.
-  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
-  
 * Added support for constructing `BoseWord` and `BoseSentence`, similar to `FermiWord` and `FermiSentence`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
-* Added method `preprocess` to the `QubitMixed` device class to preprocess the quantum circuit before execution. Necessary non-intrusive interfaces changes to class init method were made along the way to the `QubitMixed` device class to support new API feature.
+* New API for `default_mixed`: migrate the old `DefaultMixed` to follow our new device API standard. Basically, previous class `qml.devices.default_mixed.DefaultMixed` was refactored. Users will not experience any differences in principle, but for some users who delved deep into PennyLane codebase and happened to use certain deprecated methods or properties of the legacy code this might introduce breaking changes.
+  [(#6379)](https://github.com/PennyLaneAI/pennylane/pull/6379)
+  [(#6503)](https://github.com/PennyLaneAI/pennylane/pull/6503)
   [(#6601)](https://github.com/PennyLaneAI/pennylane/pull/6601)
-
-* Added a second class `DefaultMixedNewAPI` to the `qml.devices.qubit_mixed` module, which is to be the replacement of legacy `DefaultMixed` which for now to hold the implementations of `preprocess` and `execute` methods.
   [(#6607)](https://github.com/PennyLaneAI/pennylane/pull/6607)
-
-* Added submodule `devices.qubit_mixed.measure` as a necessary step for the new API, featuring a `measure` function for measuring qubits in mixed-state devices.
   [(#6637)](https://github.com/PennyLaneAI/pennylane/pull/6637)
-
-* Added submodule `devices.qubit_mixed.simulate` as a necessary step for the new API,
-featuring a `simulate` function for simulating mixed states in analytic mode.
   [(#6618)](https://github.com/PennyLaneAI/pennylane/pull/6618)
-
-* Added submodule `devices.qubit_mixed.sampling` as a necessary step for the new API, featuring functions `sample_state`, `measure_with_samples` and `sample_probs` for sampling qubits in mixed-state devices.
   [(#6639)](https://github.com/PennyLaneAI/pennylane/pull/6639)
-
-* Added support `qml.Snapshot` operation in `qml.devices.qubit_mixed.apply_operation`.
   [(#6659)](https://github.com/PennyLaneAI/pennylane/pull/6659)
-
-* Implemented the finite-shot branch of `devices.qubit_mixed.simulate`. Now, the 
-new device API of `default_mixed` should be able to take the stochastic arguments
-such as `shots`, `rng` and `prng_key`.
-[(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
-
-* Migrate the old `DefaultMixed` to `DefaultMixedNewAPI`. Basically, previous class `qml.devices.default_mixed.DefaultMixed` was renamed to `DefaultMixedLegacy`, and `DefaultMixedNewAPI` was renamed to `DefaultMixed`. Users will not experience any differences, but for some users who delved deep into PennyLane codebase and happened to use specifically the legacy class, they have to change the classname.
+  [(#6665)](https://github.com/PennyLaneAI/pennylane/pull/6665)
   [(#6684)](https://github.com/PennyLaneAI/pennylane/pull/6684)
 
 * Added `christiansen_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using christiansen mapping.
