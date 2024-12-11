@@ -274,10 +274,10 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 
 
 def taylor_coeffs(pes_object, max_deg=4, min_deg=3):
-    r"""Compute fitted coefficients for Taylor Hamiltonian. See the details in `Eq. 4 and Eq. 5 
-    <https://arxiv.org/pdf/1703.09313>`_ for more information about the coefficients.
+    r"""Compute fitted coefficients for Taylor vibrational Hamiltonian.
 
-    The coefficients are defined as (in Eq. 5):
+    The coefficients are defined following Eq. 5 of `arXiv:1703.09313 
+    <https://arxiv.org/abs/1703.09313>`_ as :
 
     .. math::
 
@@ -286,7 +286,7 @@ def taylor_coeffs(pes_object, max_deg=4, min_deg=3):
         \Phi_{ijkl} = \frac{k_{ijkl}}{\sqrt{\omega_i \omega_j \omega_k \omega_l}}
 
     where :math:`\Phi_{ijk}` and :math:`\Phi_{ijkl}` are the third and fourth-order reduced force constants,
-    respectively, defined in terms of the third and fourth-order partial derivatives of the PES.
+    respectively, defined in terms of the third and fourth-order partial derivatives of the potential energy surface data.
 
     Args:
         pes_object (VibrationalPES): object containing the vibrational potential energy surface data
