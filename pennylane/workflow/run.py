@@ -21,14 +21,26 @@ from typing import Callable
 
 import pennylane as qml
 from pennylane.math import Interface
+from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import ResultBatch
 from pennylane.workflow import _cache_transform
 
-from .jacobian_products import DeviceDerivatives, DeviceJacobianProducts, TransformJacobianProducts
+from .jacobian_products import (
+    DeviceDerivatives,
+    DeviceJacobianProducts,
+    JacobianProductCalculator,
+    TransformJacobianProducts,
+)
+
+ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 
-def _construct_tf_autograph_pipeline(config, device, inner_transform_program):
+def _construct_tf_autograph_pipeline(
+    config: "qml.devices.ExecutionConfig",
+    device: "qml.devices.Device",
+    inner_transform_program: TransformProgram,
+):
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
 
     This function determines the execution function (`execute_fn`) and gradient method specifically
@@ -88,8 +100,12 @@ def _construct_tf_autograph_pipeline(config, device, inner_transform_program):
     return execute_fn, diff_method
 
 
-def _construct_ml_execution_pipeline(config, device, inner_transform_program):
-    """Constructs the ML execution pipeline for all interfaces except TF_AUTOGRAPH.
+def _construct_ml_execution_pipeline(
+    config: "qml.devices.ExecutionConfig",
+    device: "qml.devices.Device",
+    inner_transform_program: TransformProgram,
+) -> tuple[JacobianProductCalculator, ExecuteFn]:
+    """Constructs the ML execution pipeline for all JPC interfaces.
 
     This function determines the execution function (`execute_fn`) and the Jacobian product
     class (`jpc`) required for gradient computations.
@@ -111,43 +127,42 @@ def _construct_ml_execution_pipeline(config, device, inner_transform_program):
     cache = _cache_transform in inner_transform_program
 
     execute_fn = inner_execute
-    jpc = None
 
     if config.use_device_jacobian_product:
-        jpc = DeviceJacobianProducts(device, config)
+        return DeviceJacobianProducts(device, config), execute_fn
 
-    elif config.use_device_gradient:
+    if config.use_device_gradient:
         jpc = DeviceDerivatives(device, config)
         if config.grad_on_execution:
             execute_fn = jpc.execute_and_cache_jacobian
         else:
             execute_fn = inner_execute
+        return jpc, execute_fn
 
-    elif config.grad_on_execution is True:
+    if config.grad_on_execution is True:
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    else:
-        cache_full_jacobian = (config.interface == Interface.AUTOGRAD) and not cache
+    cache_full_jacobian = (config.interface == Interface.AUTOGRAD) and not cache
+    jpc = TransformJacobianProducts(
+        execute_fn,
+        config.gradient_method,
+        config.gradient_keyword_arguments,
+        cache_full_jacobian,
+    )
+    for i in range(1, config.derivative_order):
+        differentiable = i > 1
+        ml_boundary_execute = _get_ml_boundary_execute(config, differentiable=differentiable)
+        execute_fn = partial(
+            ml_boundary_execute,
+            execute_fn=execute_fn,
+            jpc=jpc,
+            device=device,
+        )
         jpc = TransformJacobianProducts(
             execute_fn,
             config.gradient_method,
             config.gradient_keyword_arguments,
-            cache_full_jacobian,
         )
-        for i in range(1, config.derivative_order):
-            differentiable = i > 1
-            ml_boundary_execute = _get_ml_boundary_execute(config, differentiable=differentiable)
-            execute_fn = partial(
-                ml_boundary_execute,
-                execute_fn=execute_fn,
-                jpc=jpc,
-                device=device,
-            )
-            jpc = TransformJacobianProducts(
-                execute_fn,
-                config.gradient_method,
-                config.gradient_keyword_arguments,
-            )
 
     return jpc, execute_fn
 
@@ -217,12 +232,13 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
     For higher-order derivatives, this function will delegate to another ML framework execution.
     """
 
-    def inner_execute(tapes: "qml.tape.QuantumScriptBatch", **_) -> ResultBatch:
+    def inner_execute(tapes: QuantumScriptBatch, **_) -> ResultBatch:
         """Execution that occurs within a ML framework boundary.
 
         Closure Variables:
-            expand_fn (Callable[[QuantumTape], QuantumTape]): A device preprocessing step
-            device (qml.devices.Device)
+            inner_transform(TransformProgram): a transform to apply to a set of tapes
+            expand_fn (Callable[[QuantumScript], QuantumScript]): A device preprocessing step
+            device (qml.devices.Device): a Pennylane device
         """
 
         transformed_tapes, transform_post_processing = inner_transform(tapes)
@@ -239,7 +255,7 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
 
 # pylint: disable=too-many-branches
 def run(
-    tapes: "qml.tape.QuantumScriptBatch",
+    tapes: QuantumScriptBatch,
     device: "qml.devices.Device",
     resolved_execution_config: "qml.devices.ExecutionConfig",
     inner_transform_program: TransformProgram,
