@@ -26,9 +26,9 @@ from pennylane.typing import PostprocessingFn
 def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Combine all ``qml.GlobalPhase`` gates into a single ``qml.GlobalPhase`` operation.
 
-    This transform returns a new circuit including all the operations and measurements of the original input other than ``qml.GlobalPhase``.
-    A single ``qml.GlobalPhase`` operation is added at the end of the new output circuit.
-    The total global phase is computed as the algebraic sum of all the phases in the original circuit.
+    This transform returns a new circuit where all ``qml.GlobalPhase`` gates in the original circuit (if exists)
+    are removed, and a new ``qml.GlobalPhase`` is added at the end of the list of operations with its phase
+    being a total global phase computed as the algebraic sum of all global phases in the original circuit.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
@@ -82,7 +82,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 
