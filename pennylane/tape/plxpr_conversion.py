@@ -59,6 +59,8 @@ class CollectOpsandMeas(PlxprInterpreter):
             qml.RX(2*x, 0)
             return qml.probs(wires=0), qml.expval(qml.Z(1))
 
+    >>> from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+    >>> qml.capture.enable()
     >>> jaxpr = jax.make_jaxpr(f)(0.5)
     >>> collector = CollectOpsandMeas()
     >>> collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.2)
@@ -67,24 +69,24 @@ class CollectOpsandMeas(PlxprInterpreter):
     {'ops': [X(0),
     X(1),
     X(2),
-    Adjoint(S(wires=[0])),
+    Adjoint(S(0)),
     measure(wires=[0]),
     RX(Array(2.4, dtype=float32, weak_type=True), wires=[0])],
     'measurements': [probs(wires=[0]), expval(Z(1))]}
 
-    After an execution, the collected operations and measurements are available in the ``state``
+    After execution, the collected operations and measurements are available in the ``state``
     property.
 
-    Note that if the same instance is used again, the new operations will be appended onto the
+    Note that if the same instance is used again, the new operations will be appended to the
     same state.
 
     >>> collector = CollectOpsandMeas()
     >>> collector(qml.T)(0)
     >>> collector.state['ops']
-    [T(wires=[0])]
+    [T(0)]
     >>> collector(qml.S)(0)
     >>> collector.state['ops']
-    [T(wires=[0]), S(wires=[0])
+    [T(0), S(0)]
 
     """
 
@@ -112,7 +114,7 @@ CollectOpsandMeas._primitive_registrations.update(
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
 def _(self, *invals, jaxpr, lazy, n_consts):
-    """Handle a adjoint transform primitive by collecting the operations in the jaxpr, and
+    """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
     then applying their adjoint in reverse order."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
