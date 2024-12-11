@@ -60,7 +60,7 @@ class TestAutogradRun:
 
         assert len(res) == 2
 
-        if getattr(config, "grad_on_execution", False):
+        if config.grad_on_execution:
             assert device.tracker.totals["execute_and_derivate_batches"] == 1
         else:
             assert device.tracker.totals["batches"] == 1
