@@ -17,6 +17,7 @@ import itertools
 import numpy as np
 
 from pennylane.bose import BoseSentence, BoseWord
+from pennylane.bose.bosonic_mapping import unary_mapping, binary_mapping
 
 # pylint: disable=import-outside-toplevel
 
@@ -276,7 +277,7 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
 def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Compute fitted coefficients for Taylor vibrational Hamiltonian.
 
-    The coefficients are defined following Eq. 5 of `arXiv:1703.09313 
+    The coefficients are defined following Eq. 5 of `arXiv:1703.09313
     <https://arxiv.org/abs/1703.09313>`_ as :
 
     .. math::
@@ -297,19 +298,19 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
         tuple(TensorLike[float]): the coefficients of the one-body, two-body and three-body terms
     """
 
-    anh_pes, harmonic_pes = _remove_harmonic(pes_object.freqs, pes_object.pes_onemode)
+    anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
     coeff_1D, predicted_1D = _fit_onebody(anh_pes, max_deg, min_deg=min_deg)
     predicted_1D += harmonic_pes
     coeff_arr = [coeff_1D]
     predicted_arr = [predicted_1D]
 
-    if pes_object.pes_twomode is not None:
-        coeff_2D, predicted_2D = _fit_twobody(pes_object.pes_twomode, max_deg, min_deg=min_deg)
+    if pes.pes_twomode is not None:
+        coeff_2D, predicted_2D = _fit_twobody(pes.pes_twomode, max_deg, min_deg=min_deg)
         coeff_arr.append(coeff_2D)
         predicted_arr.append(predicted_2D)
 
-    if pes_object.pes_threemode is not None:
-        coeff_3D, predicted_3D = _fit_threebody(pes_object.pes_threemode, max_deg, min_deg=min_deg)
+    if pes.pes_threemode is not None:
+        coeff_3D, predicted_3D = _fit_threebody(pes.pes_threemode, max_deg, min_deg=min_deg)
         coeff_arr.append(coeff_3D)
         predicted_arr.append(predicted_3D)
 
@@ -471,13 +472,13 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
     return BoseSentence(ordered_dict).normal_order()
 
 
-def _taylor_kinetic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
+def _taylor_kinetic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
     """Build kinetic term of Taylor form bosonic observable from provided coefficients
 
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the frequencies
-        is_loc (bool): Flag whether the vibrational modes are localized. Default is True.
+        is_local (bool): Flag whether the vibrational modes are localized. Default is True.
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
@@ -487,7 +488,7 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
     taylor_1D = taylor_coeffs_array[0]
     num_modes, _ = np.shape(taylor_1D)
 
-    if is_loc:
+    if is_local:
         alphas_arr = np.einsum("ij,ik,j,k->jk", uloc, uloc, np.sqrt(freqs), np.sqrt(freqs))
     else:
         alphas_arr = np.zeros((num_modes, num_modes))
@@ -527,46 +528,67 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
     return harm_pot.normal_order()
 
 
-def taylor_bosonic(taylor_coeffs_array, freqs, is_loc=True, uloc=None):
+def taylor_bosonic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
     """Return Taylor bosonic vibrational Hamiltonian.
-    
+
      The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_.
 
     Args:
         taylor_coeffs (list(float)): the coefficients of the Hamiltonian
         freqs (list(float)): the harmonic frequencies in reciprocal centimetre
-        is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
+        is_localal (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (list(float)): localization matrix indicating the relationship between original and
             localized modes
 
     Returns:
         BoseSentence: Taylor bosonic hamiltonian
     """
-    if is_loc:
+    if is_local:
         start_deg = 2
     else:
         start_deg = 3
 
     harm_pot = _taylor_harmonic(taylor_coeffs_array, freqs)
     ham = _taylor_anharmonic(taylor_coeffs_array, start_deg) + harm_pot
-    kin_ham = _taylor_kinetic(taylor_coeffs_array, freqs, is_loc, uloc)
+    kin_ham = _taylor_kinetic(taylor_coeffs_array, freqs, is_local, uloc)
     ham += kin_ham
     return ham.normal_order()
 
 
-def taylor_hamiltonian(pes, max_deg=4, min_deg=3):
+def taylor_hamiltonian(
+    pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, ps=False, wire_map=None, tol=None
+):
     """Return Taylor vibrational Hamiltonian.
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
+        mapping (str): Mapping used to map to qubit basis. Default is `"binary"`.
+        n_states(int): maximum number of allowed bosonic states
+        ps (bool): Whether to return the result as a PauliSentence instead of an
+            operator. Defaults to False.
+        wire_map (dict): A dictionary defining how to map the states of
+            the Bose operator to qubit wires. If None, integers used to
+            label the bosonic states will be used as wire labels. Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
         BoseSentence: the bosonic form of the Taylor Hamiltonian
     """
-    coeffs_arr = taylor_coeffs(pes_object, max_deg, min_deg)
-    ham = taylor_bosonic(
-        coeffs_arr, pes_object.freqs, is_loc=pes_object.localized, uloc=pes_object.uloc
-    )
+    mapping.lower().strip()
+    coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
+    bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)
+    if mapping == "binary":
+        ham = binary_mapping(
+            bose_operator=bose_op, n_states=n_states, ps=ps, wire_map=wire_map, tol=tol
+        )
+    elif mapping == "unary":
+        ham = unary_mapping(
+            bose_operator=bose_op, n_states=n_states, ps=ps, wire_map=wire_map, tol=tol
+        )
+    else:
+        raise ValueError(
+            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
+        )
     return ham

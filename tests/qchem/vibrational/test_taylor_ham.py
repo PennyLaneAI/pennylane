@@ -18,7 +18,7 @@ import sys
 import numpy as np
 import pytest
 
-from pennylane.bose import BoseWord
+from pennylane.bose import BoseWord, binary_mapping, unary_mapping
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational.taylor_ham import (
     _fit_onebody,
@@ -80,6 +80,17 @@ with h5py.File(os.path.join(ref_dir, "H2S_3D_PES.hdf5"), "r") as f:
         dipole_level=f["dipole_level"][()],
     )
 
+    pes_object_2D = VibrationalPES(
+        freqs=np.array(f["freqs"][()]),
+        grid=np.array(f["grid"][()]),
+        uloc=np.array(f["uloc"][()]),
+        gauss_weights=np.array(f["gauss_weights"][()]),
+        pes_data=[pes_onemode, pes_twomode],
+        dipole_data=[dipole_onemode, dipole_twomode],
+        localized=f["localized"][()],
+        dipole_level=2,
+    )
+
 with h5py.File(os.path.join(ref_dir, "H2S_non_loc.hdf5"), "r") as f:
     non_loc_taylor_1D = f["taylor_1D"][()]
     non_loc_taylor_2D = f["taylor_2D"][()]
@@ -98,7 +109,7 @@ def test_import_sklearn(monkeypatch):
 
 def test_taylor_anharmonic():
     """Test that taylor_anharmonic produces the correct anharmonic term of the hamiltonian"""
-    
+
     # Expected values generated using vibrant and manually transformed into BoseWords
     expected_anh_ham = [
         (BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "+"}), -1.5818170215014748e-05),
@@ -332,7 +343,7 @@ def test_taylor_kinetic():
         "taylor_1D_coeffs",
         "taylor_2D_coeffs",
         "ref_freqs",
-        "is_loc",
+        "is_local",
         "ref_uloc",
         "reference_ops",
         "reference_coeffs",
@@ -359,13 +370,19 @@ def test_taylor_kinetic():
     ],
 )
 def test_taylor_bosonic(
-    taylor_1D_coeffs, taylor_2D_coeffs, ref_freqs, is_loc, ref_uloc, reference_ops, reference_coeffs
+    taylor_1D_coeffs,
+    taylor_2D_coeffs,
+    ref_freqs,
+    is_local,
+    ref_uloc,
+    reference_ops,
+    reference_coeffs,
 ):
     """Test that taylor_bosonic produces the correct bosonic hamiltonian"""
     taylor_bos = taylor_bosonic(
-        [taylor_1D_coeffs, taylor_2D_coeffs], ref_freqs, is_loc=is_loc, uloc=ref_uloc
+        [taylor_1D_coeffs, taylor_2D_coeffs], ref_freqs, is_local=is_local, uloc=ref_uloc
     )
-    if is_loc:
+    if is_local:
         sorted_arr = sorted(taylor_bos.items(), key=lambda x: x[1].real)
     else:
         sorted_arr = sorted(taylor_bos.items(), key=lambda x: abs(x[1].real))
@@ -377,17 +394,30 @@ def test_taylor_bosonic(
     assert all(op in reference_ops for op in sorted_ops_arr)
 
 
+@pytest.mark.parametrize(("mapping"), ("binary", "unary"))
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
-def test_taylor_hamiltonian():
+def test_taylor_hamiltonian(mapping):
     """Test that taylor_hamiltonian produces the correct taylor hamiltonian"""
-    taylor_ham = taylor_hamiltonian(pes_object_3D, 4, 2)
-    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D, taylor_3D], freqs, uloc=uloc)
+    taylor_ham = taylor_hamiltonian(pes_object_2D, 4, 2, mapping=mapping)
+    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, uloc=uloc)
 
-    assert len(taylor_ham) == len(taylor_bos)
+    if mapping == "binary":
+        expected_ham = binary_mapping(bose_operator=taylor_bos)
+    elif mapping == "unary":
+        expected_ham = unary_mapping(bose_operator=taylor_bos)
+
+    assert len(expected_ham) == len(taylor_ham)
     assert all(
-        np.allclose(abs(taylor_bos.get(key)), abs(value), atol=1e-5)
-        for key, value in taylor_ham.items()
+        np.allclose(abs(expected_ham.pauli_rep[term]), abs(coeff), atol=1e-8)
+        for term, coeff in taylor_ham.pauli_rep.items()
     )
+
+
+@pytest.mark.usefixtures("skip_if_no_sklearn_support")
+def test_taylor_hamiltonian_error():
+    """Test that taylor_hamiltonian gives the correct error when given an unsupported mapping."""
+    with pytest.raises(ValueError, match="Specified mapping"):
+        taylor_hamiltonian(pes_object_2D, 4, 2, mapping="garbage")
 
 
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
