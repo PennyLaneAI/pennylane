@@ -33,11 +33,11 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
         super().__init__()
         self.previous_ops = {}
 
-    def cleanup(self) -> None:
-        """Perform any final steps after iterating through all equations."""
+    def setup(self) -> None:
+        """Initialize the instance before interpreting equations."""
         self.previous_ops = {}
 
-    def interpret_operation(self, op):
+    def interpret_operation(self, op: qml.operation.Operator):
         """Interpret a PennyLane operation instance.
 
         This method cancels operations that are the adjoint of the previous
@@ -105,6 +105,18 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
             res.append(super().interpret_operation(o))
         return res
 
+    def interpret_all_previous_ops(self) -> None:
+        """Interpret all ops in ``previous_ops``. This is done whenever any
+        operators that haven't been interpreted that are saved to be cancelled
+        no longer need to be saved."""
+        ops_remaining = set(self.previous_ops.values())
+        for op in ops_remaining:
+            super().interpret_operation(op)
+
+        all_wires = tuple(self.previous_ops.keys())
+        for w in all_wires:
+            self.previous_ops.pop(w)
+
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
         """Evaluate a jaxpr.
 
@@ -129,13 +141,21 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
 
             custom_handler = self._primitive_registrations.get(eqn.primitive, None)
             if custom_handler:
+                # Interpret any stored ops so that they are applied before the custom
+                # primitive is handled
+                self.interpret_all_previous_ops()
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = custom_handler(self, *invals, **eqn.params)
             elif isinstance(eqn.outvars[0].aval, qml.capture.AbstractOperator):
                 outvals = self.interpret_operation_eqn(eqn)
             elif isinstance(eqn.outvars[0].aval, qml.capture.AbstractMeasurement):
+                self.interpret_all_previous_ops()
                 outvals = self.interpret_measurement_eqn(eqn)
             else:
+                # Transform primitives don't have custom handlers, so we check for them here
+                # to purge the stored ops in self.previous_ops
+                if eqn.primitive.name.endswith("_transform"):
+                    self.interpret_all_previous_ops
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = eqn.primitive.bind(*invals, **eqn.params)
 
@@ -147,9 +167,7 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
         # The following is needed because any operations inside self.previous_ops have not yet
         # been applied. At this point, we **know** that any operations that should be cancelled
         # have been cancelled, and operations left inside self.previous_ops should be applied
-        ops_remaining = set(self.previous_ops.values())
-        for op in ops_remaining:
-            super().interpret_operation(op)
+        self.interpret_all_previous_ops()
 
         # Read the final result of the Jaxpr from the environment
         outvals = []
