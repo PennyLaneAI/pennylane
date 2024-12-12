@@ -56,7 +56,7 @@ class TestOutAdder:
                 [3, 4, 5],
                 [6, 7, 8],
                 None,
-                None,
+                [],
                 2,
                 3,
                 4,
@@ -146,7 +146,7 @@ class TestOutAdder:
         with pytest.raises(ValueError, match=msg_match):
             qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
 
-    @pytest.mark.parametrize("work_wires", [None, [9], [9, 10, 11]])
+    @pytest.mark.parametrize("work_wires", [[], [9], [9, 10, 11]])
     def test_validation_of_num_work_wires(self, work_wires):
         """Test that when mod is not 2**len(output_wires), validation confirms two
         work wires are present, while any work wires are accepted for mod=2**len(output_wires)"""

@@ -35,7 +35,7 @@ def test_standard_validity_Multiplier():
 def test_mul_out_k_mod():
     """Test the _mul_out_k_mod function."""
 
-    op = _mul_out_k_mod(2, [0, 1], 4, None, [4, 5])
+    op = _mul_out_k_mod(2, [0, 1], 4, (), [4, 5])
     assert op[0].name == "QFT"
     assert op[1].name == "ControlledSequence"
     assert op[2].name == "Adjoint(QFT)"
@@ -113,7 +113,7 @@ class TestMultiplier:
                 3,
                 [0, 1, 2, 3, 4],
                 11,
-                None,
+                (),
                 "Work wires must be specified for Multiplier",
             ),
             (
