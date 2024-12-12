@@ -21,7 +21,7 @@ import warnings
 from collections.abc import Iterable
 
 import pennylane as qml
-from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
+from pennylane.capture.primitives import ctrl_transform_prim
 from pennylane.transforms.decompose import _operator_decomposition_gen
 
 
@@ -118,9 +118,4 @@ class DecomposeInterpreter(qml.capture.PlxprInterpreter):
 
 @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
 def handle_ctrl_transform(*_, **__):  # pylint: disable=missing-function-docstring
-    raise NotImplementedError
-
-
-@DecomposeInterpreter.register_primitive(adjoint_transform_prim)
-def handle_adjoint_transform(*_, **__):  # pylint: disable=missing-function-docstring
     raise NotImplementedError

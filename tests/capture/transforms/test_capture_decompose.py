@@ -20,6 +20,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import (
+    adjoint_transform_prim,
     cond_prim,
     for_loop_prim,
     grad_prim,
@@ -296,20 +297,25 @@ class TestDecomposeInterpreter:
     @pytest.mark.parametrize("lazy", [True, False])
     def test_adjoint_higher_order_primitive_not_implemented(self, lazy):
         """Test that evaluating a ctrl higher order primitive raises a NotImplementedError"""
+        gate_set = [qml.RX, qml.RY, qml.RZ]
 
-        def inner_f(x):
-            qml.X(0)
-            qml.RX(x, 0)
+        @DecomposeInterpreter(gate_set=gate_set)
+        def f(x, y, z):
+            def g(a, b, c):
+                qml.Rot(x, y, z, 0)
 
-        def f(x):
-            qml.adjoint(inner_f, lazy=lazy)(x)
+            qml.adjoint(g, lazy=lazy)(x, y, z)
 
-        args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
-        interpreter = DecomposeInterpreter()
+        jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == adjoint_transform_prim
+        assert jaxpr.eqns[0].params["lazy"] == lazy
 
-        with pytest.raises(NotImplementedError):
-            interpreter.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        assert len(inner_jaxpr.eqns) == 3
+        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[1].primitive == qml.RY._primitive
+        assert inner_jaxpr.eqns[2].primitive == qml.RZ._primitive
 
     def test_cond_higher_order_primitive(self):
         """Test that the cond primitive is correctly interpreted"""
