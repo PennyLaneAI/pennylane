@@ -392,11 +392,11 @@ def vscf_hamiltonian(ham_data, dipole_data=None, modals=None, cutoff=None, cutof
     r"""Generates VSCF rotated integrals for vibrational Hamiltonian.
 
     Args:
-        ham_data (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
-        dipole_data (list[TensorLike[float]]): A list of n-mode expansion of dipole integrals. Default is ``None``.
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode. Defalt to maximum number of modals.
-        cutoff (float): threshold value for including matrix elements into operator.
-        cutoff_ratio (float): Default ratio for zeroing elements which are smaller than this ratio with respect to biggest element in all integrals. Default value is ``1e-6``.
+        ham_data (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals
+        dipole_data (list[TensorLike[float]]): list of n-mode expansion of dipole integrals. Default is ``None``.
+        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode. Default to maximum number of modals.
+        cutoff (float): threshold value for including matrix elements into operator
+        cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals. Default value is ``1e-6``.
 
     Returns:
         List[TensorLike[float]]: List of n-mode expansion of Hamiltonian integrals in VSCF basis.
