@@ -253,7 +253,6 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
     return inner_execute
 
 
-# pylint: disable=too-many-branches
 def run(
     tapes: QuantumScriptBatch,
     device: "qml.devices.Device",
