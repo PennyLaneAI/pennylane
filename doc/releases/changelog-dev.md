@@ -229,6 +229,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* A `qml.tape.plxpr_to_tape` function can now convert plxpr to a tape.
+  [(#6343)](https://github.com/PennyLaneAI/pennylane/pull/6343)
+
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
   captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
   only works with a reduced feature set.
