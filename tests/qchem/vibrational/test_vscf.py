@@ -27,6 +27,9 @@ from pennylane.qchem.vibrational import vscf
 h5py = pytest.importorskip("h5py")
 
 cform_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S.hdf5"
+# Data was generated for H2S molecule with geometry (in Angstrom)
+# [['H', [0.0,-1.0,-1.0]], ['H', [0.0,1.0,-1.0]], ['S', [0.0,0.0,0.0]]],
+# basis=6-31g, quad_order=9 and nbos=4 for localized modes.
 
 with h5py.File(cform_file, "r") as f:
     h1_h2s = f["H1"][()]
@@ -66,7 +69,7 @@ def test_error_vscf_integrals():
     with pytest.raises(
         ValueError, match="Building n-mode Hamiltonian is not implemented for n equal to 4"
     ):
-        vibrational.vscf_integrals(ham_data=[1, 2, 3, 4])
+        vibrational.vscf_integrals(h_integrals=[1, 2, 3, 4])
 
 
 def test_error_vscf_dipole():
@@ -74,7 +77,7 @@ def test_error_vscf_dipole():
     with pytest.raises(
         ValueError, match="Building n-mode dipole is not implemented for n equal to 4"
     ):
-        vibrational.vscf_integrals(ham_data=[1, 2, 3], dipole_data=[1, 2, 3, 4])
+        vibrational.vscf_integrals(h_integrals=[1, 2, 3], d_integrals=[1, 2, 3, 4])
 
 
 @pytest.mark.parametrize(
@@ -90,7 +93,7 @@ def test_modal_error(h_data):
         ValueError,
         match="Number of maximum modals cannot be greater than the modals for unrotated integrals.",
     ):
-        vibrational.vscf_integrals(ham_data=h_data, modals=[5, 5, 5])
+        vibrational.vscf_integrals(h_integrals=h_data, modals=[5, 5, 5])
 
 
 @pytest.mark.parametrize(
