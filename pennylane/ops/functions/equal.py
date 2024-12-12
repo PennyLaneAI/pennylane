@@ -28,6 +28,7 @@ from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Observable, Operator
 from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Pow, SProd
+from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
 from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
@@ -38,8 +39,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript],
-    op2: Union[Operator, MeasurementProcess, QuantumScript],
+    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
+    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -62,8 +63,8 @@ def equal(
         and ``check_trainability``.
 
     Args:
-        op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
-        op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
+        op1 (.Operator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): First object to compare
+        op2 (.Operator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
         rtol (float, optional): Relative tolerance for parameters.
@@ -359,8 +360,8 @@ def _equal_operators(
 # pylint: disable=unused-argument
 @_equal_dispatch.register
 def _equal_pauliword(
-    op1: qml.pauli.PauliWord,
-    op2: qml.pauli.PauliWord,
+    op1: PauliWord,
+    op2: PauliWord,
     **kwargs,
 ):
     if op1 != op2:
@@ -383,8 +384,8 @@ def _equal_pauliword(
 
 @_equal_dispatch.register
 def _equal_paulisentence(
-    op1: qml.pauli.PauliSentence,
-    op2: qml.pauli.PauliSentence,
+    op1: PauliSentence,
+    op2: PauliSentence,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,

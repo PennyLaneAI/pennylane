@@ -1212,10 +1212,10 @@ class TestEqual:
 
 
 equal_pauli_words = [
-    ({0: "X", 1: "Y"}, {1: "Y", 0: "X"}, True),
-    ({0: "X", 1: "Y"}, {0: "X"}, False),
-    ({0: "X", 1: "Z"}, {1: "Y", 0: "X"}, False),
-    ({0: "X", 1: "Y"}, {"X": "Y", 0: "X"}, False),
+    ({0: "X", 1: "Y"}, {1: "Y", 0: "X"}, True, None),
+    ({0: "X", 1: "Y"}, {0: "X"}, False, "Different wires in Pauli words."),
+    ({0: "X", 1: "Z"}, {1: "Y", 0: "X"}, False, "agree on wires but differ in Paulis."),
+    ({0: "X", 1: "Y"}, {"X": "Y", 0: "X"}, False, "Different wires in Pauli words."),
 ]
 
 
@@ -1223,30 +1223,44 @@ equal_pauli_words = [
 class TestPauliWordsEqual:
     """Tests for qml.equal with PauliSentences."""
 
-    @pytest.mark.parametrize("pw1, pw2, res", equal_pauli_words)
-    def test_equality(self, pw1, pw2, res):
+    @pytest.mark.parametrize("pw1, pw2, res, error_match", equal_pauli_words)
+    def test_equality(self, pw1, pw2, res, error_match):
         """Test basic equalities/inequalities."""
         pw1 = qml.pauli.PauliWord(pw1)
         pw2 = qml.pauli.PauliWord(pw2)
         assert qml.equal(pw1, pw2) is res
         assert qml.equal(pw2, pw1) is res
 
+        if res:
+            assert_equal(pw1, pw2)
+            assert_equal(pw2, pw1)
+        else:
+            with pytest.raises(AssertionError, match=error_match):
+                assert_equal(pw1, pw2)
+            with pytest.raises(AssertionError, match=error_match):
+                assert_equal(pw2, pw1)
+
 
 equal_pauli_sentences = [
-    (qml.X(0) @ qml.Y(2), 1.0 * qml.Y(2) @ qml.X(0), True),
-    (qml.X(0) @ qml.Y(2), 1.0 * qml.X(2) @ qml.Y(0), False),
-    (qml.X(0) - qml.Y(2), -1.0 * (qml.Y(2) - qml.X(0)), True),
-    (qml.X(0) @ qml.Y(2), qml.Y(2) + qml.X(0), False),
-    (qml.SISWAP([0, "a"]) @ qml.Z("b"), qml.Z("b") @ qml.SISWAP((0, "a")), True),
-    (qml.SWAP([0, "a"]) @ qml.S("b"), qml.S("b") @ qml.SWAP(("a", 0)), True),
+    (qml.X(0) @ qml.Y(2), 1.0 * qml.Y(2) @ qml.X(0), True, None),
+    (
+        qml.X(0) @ qml.Y(2),
+        1.0 * qml.X(2) @ qml.Y(0),
+        False,
+        "Different Pauli words in PauliSentences",
+    ),
+    (qml.X(0) - qml.Y(2), -1.0 * (qml.Y(2) - qml.X(0)), True, None),
+    (qml.X(0) @ qml.Y(2), qml.Y(2) + qml.X(0), False, "Different Pauli words in PauliSentences"),
+    (qml.SISWAP([0, "a"]) @ qml.Z("b"), qml.Z("b") @ qml.SISWAP((0, "a")), True, None),
+    (qml.SWAP([0, "a"]) @ qml.S("b"), qml.S("b") @ qml.SWAP(("a", 0)), True, None),
 ]
 
 
 class TestPauliSentencesEqual:
     """Tests for qml.equal with PauliSentences."""
 
-    @pytest.mark.parametrize("ps1, ps2, res", equal_pauli_sentences)
-    def test_equality(self, ps1, ps2, res):
+    @pytest.mark.parametrize("ps1, ps2, res, error_match", equal_pauli_sentences)
+    def test_equality(self, ps1, ps2, res, error_match):
         """Test basic equalities/inequalities."""
         ps1 = qml.simplify(ps1).pauli_rep
         ps2 = qml.simplify(ps2).pauli_rep
@@ -1254,6 +1268,15 @@ class TestPauliSentencesEqual:
         assert qml.equal(ps1, ps2) is res
         assert qml.equal(ps1 * 0.6, ps2 * 0.6) is res
         assert qml.equal(ps2, ps1) is res
+
+        if res:
+            assert_equal(ps1, ps2)
+            assert_equal(ps2, ps1)
+        else:
+            with pytest.raises(AssertionError, match=error_match):
+                assert_equal(ps1, ps2)
+            with pytest.raises(AssertionError, match=error_match):
+                assert_equal(ps2, ps1)
 
     @pytest.mark.torch
     def test_trainability_and_interface(self):
@@ -1269,7 +1292,10 @@ class TestPauliSentencesEqual:
         ps2 = pws[0] * x2 - 0.7 * pws[1]
         ps3 = pws[0] * x3 - 0.7 * pws[1]
         ps4 = pws[0] * x4 - 0.7 * pws[1]
+
         assert qml.equal(ps1, ps2) is False
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(ps1, ps2)
         assert qml.equal(ps1, ps3) is False
         assert qml.equal(ps1, ps4) is False
         assert qml.equal(ps2, ps3) is False
@@ -1277,20 +1303,27 @@ class TestPauliSentencesEqual:
         assert qml.equal(ps3, ps4) is False
 
         assert qml.equal(ps1, ps2, check_trainability=False) is True
+        assert_equal(ps1, ps2, check_trainability=False)
         assert qml.equal(ps1, ps3, check_trainability=False) is False
+        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+            assert_equal(ps1, ps3, check_trainability=False)
         assert qml.equal(ps1, ps4, check_trainability=False) is False
         assert qml.equal(ps2, ps3, check_trainability=False) is False
         assert qml.equal(ps2, ps4, check_trainability=False) is False
         assert qml.equal(ps3, ps4, check_trainability=False) is True
 
         assert qml.equal(ps1, ps2, check_interface=False) is False
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(ps1, ps2, check_interface=False)
         assert qml.equal(ps1, ps3, check_interface=False) is True
+        assert_equal(ps1, ps3, check_interface=False)
         assert qml.equal(ps1, ps4, check_interface=False) is False
         assert qml.equal(ps2, ps3, check_interface=False) is False
         assert qml.equal(ps2, ps4, check_interface=False) is True
         assert qml.equal(ps3, ps4, check_interface=False) is False
 
         assert qml.equal(ps1, ps2, check_trainability=False, check_interface=False) is True
+        assert_equal(ps1, ps2, check_trainability=False, check_interface=False)
         assert qml.equal(ps1, ps3, check_trainability=False, check_interface=False) is True
         assert qml.equal(ps1, ps4, check_trainability=False, check_interface=False) is True
         assert qml.equal(ps2, ps3, check_trainability=False, check_interface=False) is True
