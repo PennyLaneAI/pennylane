@@ -37,7 +37,6 @@ quantum-classical programs.
     ~PlxprInterpreter
     ~FlatFn
 
-
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
 It is not available with ``import pennylane``, but the contents can be accessed via manual
@@ -56,6 +55,16 @@ import ``from pennylane.capture.primitives import *``.
     for_loop_prim
     qnode_prim
     while_loop_prim
+
+See also:
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~tape.plxpr_to_tape
+
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
