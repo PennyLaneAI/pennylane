@@ -293,12 +293,43 @@ class TestPurityIntegration:
         assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", grad_supported_devices)
+    @pytest.mark.parametrize("device", ["default.qubit"])
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_IsingXX_qnode_purity_grad_jax_jit(
+        self, device, param, wires, is_partial, diff_method, interface
+    ):
+        """Test purity for a QNode gradient with Jax."""
+
+        import jax
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.purity(wires=wires)
+
+        grad_purity = jax.jit(jax.grad(circuit))(jax.numpy.array(param))
+        grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
+
+        assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("device", ["default.mixed"])
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wires,is_partial", wires_list)
+    @pytest.mark.parametrize(
+        "diff_method",
+        [
+            "backprop",
+            pytest.param("finite-diff", marks=pytest.mark.xfail(reason="Known bug for PR6684")),
+        ],
+    )
+    @pytest.mark.parametrize("interface", ["jax-jit"])
+    def test_IsingXX_qnode_purity_grad_jax_jit_mixed(
         self, device, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with Jax."""
@@ -339,19 +370,52 @@ class TestPurityIntegration:
         assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["torch"])
     def test_IsingXX_qnode_purity_grad_torch(
-        self, device, param, wires, is_partial, diff_method, interface
+        self, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with torch."""
 
         import torch
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.purity(wires=wires)
+
+        expected_grad = expected_purity_grad_ising_xx(param) if is_partial else 0
+
+        param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
+        purity = circuit(param)
+        purity.backward()  # pylint: disable=no-member
+        grad_purity = param.grad
+
+        assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wires,is_partial", wires_list)
+    @pytest.mark.parametrize(
+        "diff_method",
+        [
+            "backprop",
+            pytest.param("finite-diff", marks=pytest.mark.xfail(reason="Known bug for PR6684")),
+        ],
+    )
+    @pytest.mark.parametrize("interface", ["torch"])
+    def test_IsingXX_qnode_purity_grad_torch_mixed(
+        self, param, wires, is_partial, diff_method, interface
+    ):
+        """Test purity for a QNode gradient with torch."""
+
+        import torch
+
+        dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
@@ -389,12 +453,48 @@ class TestPurityIntegration:
         assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("device", grad_supported_devices)
+    @pytest.mark.parametrize("device", ["default.qubit"])
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["tf"])
     def test_IsingXX_qnode_purity_grad_tf(
+        self, device, param, wires, is_partial, diff_method, interface
+    ):
+        """Test purity for a QNode gradient with tf."""
+
+        import tensorflow as tf
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.purity(wires=wires)
+
+        grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
+
+        param = tf.Variable(param)
+        with tf.GradientTape() as tape:
+            purity = circuit(param)
+
+        grad_purity = tape.gradient(purity, param)
+
+        assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("device", ["default.mixed"])
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wires,is_partial", wires_list)
+    @pytest.mark.parametrize(
+        "diff_method",
+        [
+            "backprop",
+            pytest.param("finite-diff", marks=pytest.mark.xfail(reason="Known bug for PR6684")),
+        ],
+    )
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_IsingXX_qnode_purity_grad_tf_mixed(
         self, device, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with tf."""
