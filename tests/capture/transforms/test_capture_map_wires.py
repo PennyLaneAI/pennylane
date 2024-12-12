@@ -128,6 +128,7 @@ class TestMapWiresTransform:
             qml.CRX(x, wires=[0, 1])
             qml.CRY(x, wires=[1, 2])
             qml.CRZ(x, wires=[2, 3])
+            qml.ctrl(qml.RX, (1, 2, 3), control_values=(0, 1, 0))(x, wires=0)
             return qml.var(
                 qml.QubitUnitary(
                     np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1]
@@ -136,7 +137,7 @@ class TestMapWiresTransform:
 
         jaxpr = jax.make_jaxpr(f)(0.1)
 
-        assert len(jaxpr.eqns) == 8
+        assert len(jaxpr.eqns) == 9
 
         assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
         assert jaxpr.eqns[0].invars[0].val == 1
@@ -162,9 +163,29 @@ class TestMapWiresTransform:
         assert jaxpr.eqns[5].invars[1].val == 3
         assert jaxpr.eqns[5].invars[2].val == 2
 
-        assert jaxpr.eqns[6].primitive == qml.QubitUnitary._primitive
-        assert jaxpr.eqns[6].invars[1].val == 1
-        assert jaxpr.eqns[6].invars[2].val == 2
+        assert jaxpr.eqns[6].primitive == qml.capture.primitives.ctrl_transform_prim
+        assert jaxpr.eqns[6].params["jaxpr"].eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[6].params["jaxpr"].eqns[0].invars[-1].val == 1
+
+        assert jaxpr.eqns[7].primitive == qml.QubitUnitary._primitive
+        assert jaxpr.eqns[7].invars[1].val == 1
+        assert jaxpr.eqns[7].invars[2].val == 2
+
+    def test_adjoint(self):
+        """Test that adjoint operations are transformed correctly."""
+
+        @MapWiresInterpreter(wire_map={0: 1})
+        def f(x):
+            qml.adjoint(qml.RX)(x, wires=0)
+            return qml.expval(qml.PauliZ(3))
+
+        jaxpr = jax.make_jaxpr(f)(0.1)
+
+        assert len(jaxpr.eqns) == 3
+
+        assert jaxpr.eqns[0].primitive == qml.capture.primitives.adjoint_transform_prim
+        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[0].params["jaxpr"].eqns[0].invars[-1].val == 1
 
     def test_qnode_simple(self):
         """Test that a qnode is transformed correctly."""
@@ -286,6 +307,38 @@ class TestMapWiresTransform:
 
         assert cond_jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert cond_jaxpr.eqns[0].invars[-1].val == 1
+
+    def test_qnode_grad(self):
+        """Test that the gradient of a qnode is transformed correctly."""
+
+        @MapWiresInterpreter(wire_map={0: 1})
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def f(x):
+            qml.RZ(x, 0)
+            return qml.expval(qml.PauliZ(3))
+
+        grad = qml.grad(f)
+        jaxpr = jax.make_jaxpr(grad)(0.1)
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"].eqns[0].params["qfunc_jaxpr"]
+
+        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[0].invars[-1].val == 1
+
+    def test_qnode_jacobian(self):
+        """Test that the jacobian of a qnode is transformed correctly."""
+
+        @MapWiresInterpreter(wire_map={0: 1})
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def f(x):
+            qml.RZ(x, 0)
+            return qml.expval(qml.PauliZ(3))
+
+        jac = qml.jacobian(f)
+        jaxpr = jax.make_jaxpr(jac)(0.1)
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"].eqns[0].params["qfunc_jaxpr"]
+
+        assert inner_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert inner_jaxpr.eqns[0].invars[-1].val == 1
 
     def test_invalid_wire_map_keys(self):
         """Test that invalid wire mappings raise an error."""
