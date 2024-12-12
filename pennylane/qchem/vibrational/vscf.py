@@ -382,6 +382,7 @@ def _rotate_hamiltonian(ham_data, mode_rots, modals):
 
 def vscf_integrals(ham_data, dipole_data=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
     r"""Generates vibrational self-consistent field rotated integrals for vibrational Hamiltonian.
+    
     This implementation is based on the method described in
     `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
 
