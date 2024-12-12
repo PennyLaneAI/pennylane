@@ -1257,7 +1257,7 @@ class TestPauliSentencesEqual:
 
     @pytest.mark.torch
     def test_trainability_and_interface(self):
-        """Test that trainability and interface is compared correctly."""
+        """Test that trainability and interface are compared correctly."""
         import torch
 
         x1 = qml.numpy.array(0.5, requires_grad=True)
