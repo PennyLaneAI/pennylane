@@ -37,8 +37,14 @@ class TestTFAutographRun:
 
     def test_run(self, device, config, shots, seed):
         """Test execution of tapes on 'tensorflow' interface."""
+        if config.gradient_method == "adjoint":
+            pytest.xfail("Interface `tf-autograph` doesn't work with Adjoint differentiation.")
+
         device = get_device(device, seed=seed)
         config = replace(config, interface="tf-autograph")
+        resolved_config = _resolve_execution_config(
+            config, device, [QuantumScript()], TransformProgram()
+        )
 
         def cost(a, b):
             ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
@@ -61,7 +67,7 @@ class TestTFAutographRun:
 
         assert len(res) == 2
 
-        if config.gradient_method == "adjoint" and not config.use_device_jacobian_product:
+        if config.gradient_method == "adjoint" and not resolved_config.use_device_jacobian_product:
             assert device.tracker.totals["execute_and_derivative_batches"] == 1
         else:
             assert device.tracker.totals["batches"] == 1

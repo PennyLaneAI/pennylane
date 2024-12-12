@@ -77,7 +77,7 @@ test_matrix = [
         replace(
             DefaultExecutionConfig,
             gradient_method="adjoint",
-            # use_device_jacobian_product=True,
+            use_device_jacobian_product=True,
         ),
         Shots(None),
     ],
