@@ -1034,11 +1034,11 @@ class TestDecomposition:
         op = qml.ctrl(qml.RZ(qml.numpy.array(theta), 0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        assert qml.equal(decomp[0], qml.CRZ(qml.numpy.array(theta), [4, 0]))
-        assert qml.equal(decomp[1], qml.MultiControlledX(wires=[1, 2, 3, 0]))
-        assert qml.equal(decomp[2], qml.CRZ(qml.numpy.array(-theta / 2), wires=[4, 0]))
-        assert qml.equal(decomp[3], qml.MultiControlledX(wires=[1, 2, 3, 0]))
-        assert qml.equal(decomp[4], qml.CRZ(qml.numpy.array(-theta / 2), wires=[4, 0]))
+        qml.assert_equal(decomp[0], qml.CRZ(qml.numpy.array(theta), [4, 0]))
+        qml.assert_equal(decomp[1], qml.MultiControlledX(wires=[1, 2, 3, 0]))
+        qml.assert_equal(decomp[2], qml.CRZ(qml.numpy.array(-theta / 2), wires=[4, 0]))
+        qml.assert_equal(decomp[3], qml.MultiControlledX(wires=[1, 2, 3, 0]))
+        qml.assert_equal(decomp[4], qml.CRZ(qml.numpy.array(-theta / 2), wires=[4, 0]))
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
