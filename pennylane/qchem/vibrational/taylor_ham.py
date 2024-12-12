@@ -534,7 +534,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
      The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_.
 
     Args:
-        taylor_coeffs (list(float)): the coefficients of the Hamiltonian
+        coeffs (list(float)): the coefficients of the Hamiltonian
         freqs (list(float)): the harmonic frequencies in reciprocal centimetre
         is_localal (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (list(list(float))): localization matrix indicating the relationship between original
