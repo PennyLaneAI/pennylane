@@ -26,7 +26,6 @@ from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
-from pennylane.tape import make_qscript
 
 
 class ConditionalTransformError(ValueError):
@@ -616,7 +615,7 @@ def cond(
                     QueuingManager.remove(op)
 
             # 1. Apply true_fn conditionally
-            qscript = make_qscript(true_fn)(*args, **kwargs)
+            qscript = qml.tape.make_qscript(true_fn)(*args, **kwargs)
 
             if qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)
@@ -626,7 +625,7 @@ def cond(
 
             if false_fn is not None:
                 # 2. Apply false_fn conditionally
-                else_qscript = make_qscript(false_fn)(*args, **kwargs)
+                else_qscript = qml.tape.make_qscript(false_fn)(*args, **kwargs)
 
                 if else_qscript.measurements:
                     raise ConditionalTransformError(with_meas_err)

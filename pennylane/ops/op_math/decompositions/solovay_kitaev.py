@@ -20,7 +20,6 @@ from scipy.spatial import KDTree
 
 import pennylane as qml
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript
 
 
 def _SU2_transform(matrix):
@@ -334,7 +333,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = qml.transforms.cancel_inverses(
-            QuantumScript(decomposition or [qml.Identity(0)])
+            qml.tape.QuantumScript(decomposition or [qml.Identity(0)])
         )
 
     # Map the wires to that of the operation and queue
