@@ -1,0 +1,154 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Unit tests for the ``DecomposeInterpreter`` class"""
+from functools import partial
+
+# pylint:disable=wrong-import-position
+import pytest
+
+import pennylane as qml
+
+jax = pytest.importorskip("jax")
+
+from pennylane.capture.primitives import (
+    cond_prim,
+    for_loop_prim,
+    grad_prim,
+    jacobian_prim,
+    qnode_prim,
+    while_loop_prim,
+)
+from pennylane.capture.transforms import CancelInversesInterpreter
+
+pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+
+
+@pytest.mark.parametrize("lazy_adjoint", [True, False])
+class TestCancelInversesInterpreter:
+    """Unit tests for the CancelInversesInterpreter for canceling adjacent inverse
+    operations in plxpr."""
+
+    def test_cancel_inverses_simple(self, lazy_adjoint):
+        """Test that inverse ops in a simple circuit are cancelled."""
+
+        @CancelInversesInterpreter()
+        def f():
+            qml.X(0)
+            qml.X(0)
+            qml.S(1)
+            qml.adjoint(qml.S(1), lazy=lazy_adjoint)
+            qml.adjoint(qml.T(2), lazy=lazy_adjoint)
+            qml.Hadamard(1)  # Applied
+            qml.T(2)
+            qml.Z(0)  # Applied
+            qml.IsingXX(1.5, [2, 3])  # Applied
+            qml.IsingXX(2.5, [0, 1])  # Applied
+            qml.SWAP([2, 0])
+            qml.SWAP([0, 2])
+            qml.CNOT([2, 0])  # Applied
+            qml.Z(1)  # Applied
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 6
+
+        # Each of the pairs of primitives being compared below have disjoint wires, so their
+        # order is not relevant to their correctness
+        expected_primitives_first_second = {qml.Hadamard._primitive, qml.PauliZ._primitive}
+        actual_primitives_first_second = {jaxpr.eqns[0].primitive, jaxpr.eqns[1].primitive}
+        assert actual_primitives_first_second == expected_primitives_first_second
+
+        expected_primitives_third_fourth = {qml.IsingXX._primitive, qml.IsingXX._primitive}
+        actual_primitives_third_fourth = {jaxpr.eqns[2].primitive, jaxpr.eqns[3].primitive}
+        assert actual_primitives_third_fourth == expected_primitives_third_fourth
+
+        expected_primitives_fifth_sixth = {qml.CNOT._primitive, qml.PauliZ._primitive}
+        actual_primitives_fifth_sixth = {jaxpr.eqns[4].primitive, jaxpr.eqns[5].primitive}
+        assert actual_primitives_fifth_sixth == expected_primitives_fifth_sixth
+
+    def test_cancel_inverses_true_inverses(self, lazy_adjoint):
+        """Test that operations that are inverses with the same wires are cancelled."""
+
+        @CancelInversesInterpreter()
+        def f():
+            qml.CRX(1.5, [0, 1])
+            qml.adjoint(qml.CRX(1.5, [0, 1]), lazy=lazy_adjoint)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 0
+
+    def test_cancel_inverses_symmetric_wires(self, lazy_adjoint):  # pylint: disable=unused-argument
+        """Test that operations that are inverses regardless of wire order are cancelled."""
+
+        @CancelInversesInterpreter()
+        def f():
+            qml.CCZ([0, 1, 2])
+            qml.CCZ([2, 0, 1])
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 0
+
+    def test_cancel_inverses_symmetric_control_wires(
+        self, lazy_adjoint
+    ):  # pylint: disable=unused-argument
+        """Test that operations that are inverses regardless of control_wire order are cancelled."""
+
+        @CancelInversesInterpreter()
+        def f():
+            qml.Toffoli([0, 1, 2])
+            qml.Toffoli([1, 0, 2])
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 0
+
+    def test_cancel_inverese_nested_ops_on_same_wires(self, lazy_adjoint):
+        """Test that only the innermost adjacent adjoint ops are cancelled when multiple
+        cancellable operators are present."""
+
+        @CancelInversesInterpreter()
+        def f():
+            qml.S(0)
+            qml.adjoint(qml.T(0), lazy=lazy_adjoint)
+            qml.T(0)
+            qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.S._primitive
+        assert jaxpr.eqns[1].primitive == qml.S._primitive
+        assert jaxpr.eqns[2].primitive == qml.ops.Adjoint._primitive
+
+    def test_returned_op_is_not_cancelled(self, lazy_adjoint):
+        """Test that ops that are returned by the function being transformed are not cancelled."""
+
+    def test_ctrl_higher_order_primitive(self, lazy_adjoint):
+        """Test that ctrl higher order primitives are transformed correctly."""
+
+    def test_adjoint_higher_order_primitive(self, lazy_adjoint):
+        """Test that adjoint higher order primitives are transformed correctly."""
+
+    def test_cond_higher_order_primitive(self, lazy_adjoint):
+        """Test that cond higher order primitives are transformed correctly."""
+
+    def test_for_loop_higher_order_primitive(self, lazy_adjoint):
+        """Test that for_loop higher order primitives are transformed correctly."""
+
+    def test_while_loop_higher_order_primitive(self, lazy_adjoint):
+        """Test that while_loop higher order primitives are transformed correctly."""
+
+    def test_qnode_higher_order_primitive(self, lazy_adjoint):
+        """Test that qnode higher order primitives are transformed correctly."""
+
+    @pytest.mark.parametrize("grad_fn", [qml.grad, qml.jacobian])
+    def test_grad_and_jac_higher_order_primitives(self, grad_fn, lazy_adjoint):
+        """Test that grad and jacobian higher order primitives are transformed correctly."""

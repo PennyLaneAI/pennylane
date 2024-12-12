@@ -22,6 +22,11 @@ from pennylane.wires import Wires
 class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
     """Plxpr Interpreter for applying the ``cancel_inverses`` transform to callables or jaxpr
     when program capture is enabled.
+
+    .. note::
+
+        In the process of transforming plxpr, this interpreter may reorder operations that do
+        not share any wires. This will not impact the correctness of the circuit.
     """
 
     def __init__(self):
@@ -35,6 +40,9 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
     def interpret_operation(self, op):
         """Interpret a PennyLane operation instance.
 
+        This method cancels operations that are the adjoint of the previous
+        operation on the same wires, and otherwise, applies it.
+
         Args:
             op (Operator): a pennylane operator instance
 
@@ -47,6 +55,7 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
         See also: :meth:`~.interpret_operation_eqn`.
 
         """
+        # pylint: disable=too-many-branches
         if len(op.wires) == 0:
             return super().interpret_operation(op)
 
@@ -79,6 +88,10 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
                 self.previous_ops.pop(w)
             return []
 
+        # Putting the operations in a set to avoid applying the same op multiple times
+        # Using a set causes order to no longer be guaranteed, so the new order of the
+        # operations might differ from the original order. However, this only impacts
+        # operators without any shared wires, so correctness will not be impacted.
         previous_ops_on_wires = set(self.previous_ops.get(w) for w in op.wires)
         for o in previous_ops_on_wires:
             if o is not None:
@@ -91,3 +104,61 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
         for o in previous_ops_on_wires:
             res.append(super().interpret_operation(o))
         return res
+
+    def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        """Evaluate a jaxpr.
+
+        Args:
+            jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+            consts (list[TensorLike]): the constant variables for the jaxpr
+            *args (tuple[TensorLike]): The arguments for the jaxpr.
+
+        Returns:
+            list[TensorLike]: the results of the execution.
+
+        """
+        self._env = {}
+        self.setup()
+
+        for arg, invar in zip(args, jaxpr.invars, strict=True):
+            self._env[invar] = arg
+        for const, constvar in zip(consts, jaxpr.constvars, strict=True):
+            self._env[constvar] = const
+
+        for eqn in jaxpr.eqns:
+
+            custom_handler = self._primitive_registrations.get(eqn.primitive, None)
+            if custom_handler:
+                invals = [self.read(invar) for invar in eqn.invars]
+                outvals = custom_handler(self, *invals, **eqn.params)
+            elif isinstance(eqn.outvars[0].aval, qml.capture.AbstractOperator):
+                outvals = self.interpret_operation_eqn(eqn)
+            elif isinstance(eqn.outvars[0].aval, qml.capture.AbstractMeasurement):
+                outvals = self.interpret_measurement_eqn(eqn)
+            else:
+                invals = [self.read(invar) for invar in eqn.invars]
+                outvals = eqn.primitive.bind(*invals, **eqn.params)
+
+            if not eqn.primitive.multiple_results:
+                outvals = [outvals]
+            for outvar, outval in zip(eqn.outvars, outvals, strict=True):
+                self._env[outvar] = outval
+
+        # The following is needed because any operations inside self.previous_ops have not yet
+        # been applied. At this point, we **know** that any operations that should be cancelled
+        # have been cancelled, and operations left inside self.previous_ops should be applied
+        ops_remaining = set(self.previous_ops.values())
+        for op in ops_remaining:
+            super().interpret_operation(op)
+
+        # Read the final result of the Jaxpr from the environment
+        outvals = []
+        for var in jaxpr.outvars:
+            outval = self.read(var)
+            if isinstance(outval, qml.operation.Operator):
+                outvals.append(super().interpret_operation(outval))
+            else:
+                outvals.append(outval)
+        self.cleanup()
+        self._env = {}
+        return outvals
