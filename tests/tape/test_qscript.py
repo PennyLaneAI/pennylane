@@ -826,13 +826,13 @@ class TestScriptCopying:
         )
 
         assert tape.num_params == 1
-        assert qml.equal(tape.get_operation(0)[0], qml.RY(2.3, 1))
+        qml.assert_equal(tape.get_operation(0)[0], qml.RY(2.3, 1))
 
         new_tape = tape.copy(trainable_params=None)
 
         assert new_tape.num_params == 2
-        assert qml.equal(new_tape.get_operation(0)[0], qml.RX(1.2, 0))
-        assert qml.equal(new_tape.get_operation(1)[0], qml.RY(2.3, 1))
+        qml.assert_equal(new_tape.get_operation(0)[0], qml.RX(1.2, 0))
+        qml.assert_equal(new_tape.get_operation(1)[0], qml.RY(2.3, 1))
 
     def test_setting_measurements_and_trainable_params(self):
         """Test that when explicitly setting both measurements and trainable params, the

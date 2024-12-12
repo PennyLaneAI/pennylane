@@ -28,8 +28,7 @@ class TestIQPE:
     def test_compare_qpe(self, mcm_method, phi):
         """Test to check that the results obtained are equivalent to those of QuantumPhaseEstimation"""
 
-        # TODO: When we have general statistics on measurements we can calculate it exactly with qml.probs
-        dev = qml.device("default.qubit", shots=10000000)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev, mcm_method=mcm_method)
         def circuit_iterative():
@@ -39,11 +38,9 @@ class TestIQPE:
             # Iterative QPE
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), aux_wire=[1], iters=3)
 
-            return [qml.sample(op=meas) for meas in measurements]
+            return qml.probs(op=measurements)
 
-        sample_list = np.array(circuit_iterative())
-        sample_list = sample_list.T
-        output = qml.probs().process_samples(np.array(sample_list), wire_order=[0, 1, 2])
+        output = circuit_iterative()
 
         @qml.qnode(dev)
         def circuit_qpe():

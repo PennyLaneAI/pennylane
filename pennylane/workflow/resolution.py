@@ -16,14 +16,13 @@
 """
 
 from dataclasses import replace
-from typing import Literal, get_args
+from typing import Literal, Union, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
+from pennylane.math import Interface, get_canonical_interface_name, get_interface
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
-
-from .execution import _get_interface_name
 
 SupportedDiffMethods = Literal[
     None,
@@ -38,8 +37,97 @@ SupportedDiffMethods = Literal[
 ]
 
 
+def _get_jax_interface_name(tapes):
+    """Check all parameters in each tape and output the name of the suitable
+    JAX interface.
+
+    This function checks each tape and determines if any of the gate parameters
+    was transformed by a JAX transform such as ``jax.jit``. If so, it outputs
+    the name of the JAX interface with jit support.
+
+    Note that determining if jit support should be turned on is done by
+    checking if parameters are abstract. Parameters can be abstract not just
+    for ``jax.jit``, but for other JAX transforms (vmap, pmap, etc.) too. The
+    reason is that JAX doesn't have a public API for checking whether or not
+    the execution is within the jit transform.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+
+    Returns:
+        str: name of JAX interface that fits the tape parameters, "jax" or
+        "jax-jit"
+    """
+    for t in tapes:
+        for op in t:
+            # Unwrap the observable from a MeasurementProcess
+            if not isinstance(op, qml.ops.Prod):
+                op = getattr(op, "obs", op)
+            if op is not None:
+                # Some MeasurementProcess objects have op.obs=None
+                if any(qml.math.is_abstract(param) for param in op.data):
+                    return Interface.JAX_JIT
+
+    return Interface.JAX
+
+
+# pylint: disable=import-outside-toplevel
+def _use_tensorflow_autograph():
+    """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
+    try:  # pragma: no cover
+        import tensorflow as tf
+    except ImportError as e:  # pragma: no cover
+        raise qml.QuantumFunctionError(  # pragma: no cover
+            "tensorflow not found. Please install the latest "  # pragma: no cover
+            "version of tensorflow supported by Pennylane "  # pragma: no cover
+            "to enable the 'tensorflow' interface."  # pragma: no cover
+        ) from e  # pragma: no cover
+
+    return not tf.executing_eagerly()
+
+
+def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+    """Helper function to resolve an interface based on a set of tapes.
+
+    Args:
+        interface (str, Interface): Original interface to use as reference.
+        tapes (list[.QuantumScript]): Quantum tapes
+
+    Returns:
+        Interface: resolved interface
+    """
+
+    interface = get_canonical_interface_name(interface)
+
+    if interface == Interface.AUTO:
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = get_interface(*params)
+        if interface != Interface.NUMPY:
+            try:
+                interface = get_canonical_interface_name(interface)
+            except ValueError:
+                interface = Interface.NUMPY
+    if interface == Interface.TF and _use_tensorflow_autograph():
+        interface = Interface.TF_AUTOGRAPH
+    if interface == Interface.JAX:
+        # pylint: disable=unused-import
+        try:  # pragma: no cover
+            import jax
+        except ImportError as e:  # pragma: no cover
+            raise qml.QuantumFunctionError(  # pragma: no cover
+                "jax not found. Please install the latest "  # pragma: no cover
+                "version of jax to enable the 'jax' interface."  # pragma: no cover
+            ) from e  # pragma: no cover
+
+        interface = _get_jax_interface_name(tapes)
+
+    return interface
+
+
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool
+    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
 ) -> "qml.devices.MCMConfig":
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
@@ -55,7 +143,7 @@ def _resolve_mcm_config(
     if mcm_config.mcm_method == "single-branch-statistics":
         raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")
 
-    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
+    if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
         if mcm_config.postselect_mode == "hw-like":
@@ -67,7 +155,7 @@ def _resolve_mcm_config(
 
     if (
         finite_shots
-        and "jax" in interface
+        and interface in {Interface.JAX, Interface.JAX_JIT}
         and mcm_config.mcm_method in (None, "one-shot")
         and mcm_config.postselect_mode in (None, "hw-like")
     ):
@@ -169,10 +257,12 @@ def _resolve_execution_config(
     # Mid-circuit measurement configuration validation
     # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
     # workflow still needs to know if jax-jit is used
-    interface = _get_interface_name(tapes, execution_config.interface)
+    interface = _resolve_interface(execution_config.interface, tapes)
     finite_shots = any(tape.shots for tape in tapes)
     mcm_interface = (
-        _get_interface_name(tapes, "auto") if execution_config.interface is None else interface
+        _resolve_interface(Interface.AUTO, tapes)
+        if execution_config.interface == Interface.NUMPY
+        else interface
     )
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 

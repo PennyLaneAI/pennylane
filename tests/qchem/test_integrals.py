@@ -292,8 +292,8 @@ class TestOverlap:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(qchem.overlap_integral(basis_a, basis_b), argnum=0)(*args)
-        g_coeff = qml.grad(qchem.overlap_integral(basis_a, basis_b), argnum=1)(*args)
+        g_alpha = qml.grad(qchem.overlap_integral(basis_a, basis_b), argnum=[0])(*args)
+        g_coeff = qml.grad(qchem.overlap_integral(basis_a, basis_b), argnum=[1])(*args)
 
         # compute overlap gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -449,8 +449,8 @@ class TestMoment:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=0)(*args)
-        g_coeff = qml.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=1)(*args)
+        g_alpha = qml.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=[0])(*args)
+        g_coeff = qml.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=[1])(*args)
 
         # compute moment gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -598,8 +598,8 @@ class TestKinetic:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=0)(*args)
-        g_coeff = qml.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=1)(*args)
+        g_alpha = qml.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=[0])(*args)
+        g_coeff = qml.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=[1])(*args)
 
         # compute kinetic gradients with respect to alpha, coeff and r using finite diff
         delta = 0.0001
@@ -704,8 +704,8 @@ class TestAttraction:
         args = [mol.alpha, mol.coeff]
         r_nuc = geometry[0]
 
-        g_alpha = qml.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
-        g_coeff = qml.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
+        g_alpha = qml.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=[0])(*args)
+        g_coeff = qml.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=[1])(*args)
 
         # compute attraction gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -835,12 +835,12 @@ class TestRepulsion:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(
-            *args
-        )
-        g_coeff = qml.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(
-            *args
-        )
+        g_alpha = qml.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=[0]
+        )(*args)
+        g_coeff = qml.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=[1]
+        )(*args)
 
         # compute repulsion gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -860,7 +860,6 @@ class TestRepulsion:
                     *[alpha_plus, coeff]
                 )
                 g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
-
                 coeff_minus = coeff.copy()
                 coeff_plus = coeff.copy()
                 coeff_minus[i][j] = coeff_minus[i][j] - delta
@@ -875,3 +874,492 @@ class TestRepulsion:
 
         assert np.allclose(g_alpha, g_ref_alpha)
         assert np.allclose(g_coeff, g_ref_coeff)
+
+
+def generate_symbols_alpha_coeff():
+    """Generates symbols, alpha and coeff arrays to be reused for the molecule"""
+    symbols = ["H", "H"]
+    alpha = qml.math.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]], like="jax"
+    )
+    coeff = qml.math.array(
+        [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]], like="jax"
+    )
+
+    return symbols, alpha, coeff
+
+
+@pytest.mark.jax
+class TestJax:
+    def test_generate_params_jax(self):
+        """Test that _generate_params returns correct basis set parameters for JAX."""
+        alpha = qml.math.array([3.42525091, 0.62391373, 0.1688554], like="jax")
+        coeff = qml.math.array([0.15432897, 0.53532814, 0.44463454], like="jax")
+        r = qml.math.array([0.0, 0.0, 0.0], like="jax")
+
+        params = [alpha, coeff, r]
+        args = [r, coeff, alpha]
+        basis_params = qchem.integrals._generate_params(params, args)
+        assert qml.math.allclose(basis_params, (alpha, coeff, r))
+
+    @pytest.mark.parametrize(
+        ("geometry_values", "r_values", "o_ref_values"),
+        [
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [0.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [1.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [1.0]),
+        ],
+    )
+    def test_overlap_integral_jax(self, geometry_values, r_values, o_ref_values):
+        r"""Test that overlap_integral function returns a correct value for the overlap
+        integral when using jax."""
+        symbols, alpha, coeff = generate_symbols_alpha_coeff()
+        geometry = qml.math.array(geometry_values, like="jax")
+        r = qml.math.array(r_values)
+        o_ref = qml.math.array(o_ref_values)
+
+        mol = qchem.Molecule(symbols, geometry)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [r, coeff, alpha]
+
+        o = qchem.overlap_integral(basis_a, basis_b)(*args)
+        assert qml.math.allclose(o, o_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff"),
+        [
+            (
+                ["H", "H"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+            )
+        ],
+    )
+    def test_gradient_overlap_jax(self, symbols, geometry, alpha, coeff):
+        r"""Test that the overlap gradient computed with respect to the basis parameters is
+        correct for jax."""
+        import jax
+
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, coeff, alpha]
+
+        g_alpha = jax.grad(qchem.overlap_integral(basis_a, basis_b), argnums=[2])(*args)
+        g_coeff = jax.grad(qchem.overlap_integral(basis_a, basis_b), argnums=[1])(*args)
+
+        # compute attraction gradients with respect to alpha and coeff using finite diff
+        delta = 0.0001
+        g_ref_alpha = jax.numpy.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = jax.numpy.zeros(6).reshape(coeff.shape)
+
+        for i in range(len(alpha)):
+            for j in range(len(alpha[0])):
+                alpha_minus = alpha.at[i, j].set(alpha[i, j] - delta)
+                alpha_plus = alpha.at[i, j].set(alpha[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_minus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                a_minus = qchem.overlap_integral(basis_a, basis_b)(*[geometry, coeff, alpha_minus])
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_plus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                a_plus = qchem.overlap_integral(basis_a, basis_b)(*[geometry, coeff, alpha_plus])
+                g_ref_alpha = g_ref_alpha.at[i, j].set((a_plus - a_minus) / (2 * delta))
+
+                coeff_minus = coeff.at[i, j].set(coeff[i, j] - delta)
+                coeff_plus = coeff.at[i, j].set(coeff[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_minus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                a_minus = qchem.overlap_integral(basis_a, basis_b)(*[geometry, coeff_minus, alpha])
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_plus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                a_plus = qchem.overlap_integral(basis_a, basis_b)(*[geometry, coeff_plus, alpha])
+                g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
+
+        assert qml.math.allclose(g_alpha, g_ref_alpha)
+        assert qml.math.allclose(g_coeff, g_ref_coeff)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry_values", "e", "idx", "ref"),
+        [
+            (["H", "Li"], [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], 1, 0, 3.12846324e-01),
+            (["H", "Li"], [[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], 1, 0, 4.82090830e-01),
+            (["N", "N"], [[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], 1, 2, -4.70075530e-02),
+        ],
+    )
+    def test_moment_integral_jax(self, symbols, geometry_values, e, idx, ref):
+        r"""Test that moment_integral function returns a correct value for the moment
+        integral when using jax."""
+        geometry = qml.math.array(geometry_values, like="jax")
+
+        mol = qchem.Molecule(symbols, geometry)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, mol.coeff, mol.alpha]
+        s = qchem.moment_integral(basis_a, basis_b, e, idx, normalize=False)(*args)
+
+        assert qml.math.allclose(s, ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff", "e", "idx"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.1, 0.2, 0.3], [2.0, 0.1, 0.2]], requires_grad=False),
+                np.array(
+                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                    requires_grad=True,
+                ),
+                np.array(
+                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                    requires_grad=True,
+                ),
+                1,
+                0,
+            ),
+        ],
+    )
+    def test_gradient_moment_jax(self, symbols, geometry, alpha, coeff, e, idx):
+        r"""Test that the moment gradient computed with respect to the basis parameters is
+        correct for jax."""
+        import jax
+
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, coeff, alpha]
+
+        g_alpha = jax.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnums=[2])(*args)
+        g_coeff = jax.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnums=[1])(*args)
+
+        # compute attraction gradients with respect to alpha and coeff using finite diff
+        delta = 0.0001
+        g_ref_alpha = jax.numpy.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = jax.numpy.zeros(6).reshape(coeff.shape)
+
+        for i in range(len(alpha)):
+            for j in range(len(alpha[0])):
+                alpha_minus = alpha.at[i, j].set(alpha[i, j] - delta)
+                alpha_plus = alpha.at[i, j].set(alpha[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_minus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+
+                a_minus = qchem.moment_integral(basis_a, basis_b, e, idx)(
+                    *[geometry, coeff, alpha_minus]
+                )
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_plus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+
+                a_plus = qchem.moment_integral(basis_a, basis_b, e, idx)(
+                    *[geometry, coeff, alpha_plus]
+                )
+                g_ref_alpha = g_ref_alpha.at[i, j].set((a_plus - a_minus) / (2 * delta))
+
+                coeff_minus = coeff.at[i, j].set(coeff[i, j] - delta)
+                coeff_plus = coeff.at[i, j].set(coeff[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_minus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+
+                a_minus = qchem.moment_integral(basis_a, basis_b, e, idx)(
+                    *[geometry, coeff_minus, alpha]
+                )
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_plus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+
+                a_plus = qchem.moment_integral(basis_a, basis_b, e, idx)(
+                    *[geometry, coeff_plus, alpha]
+                )
+                g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
+
+        assert qml.math.allclose(g_alpha, g_ref_alpha)
+        assert qml.math.allclose(g_coeff, g_ref_coeff)
+
+    @pytest.mark.parametrize(
+        ("geometry_values", "t_ref_values"),
+        [
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [0.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], [0.38325384]),
+        ],
+    )
+    def test_kinetic_integral_jax(self, geometry_values, t_ref_values):
+        r"""Test that kinetic_integral function returns a correct value for the kinetic
+        integral when using jax."""
+        symbols, alpha, coeff = generate_symbols_alpha_coeff()
+        geometry = qml.math.array(geometry_values, like="jax")
+        t_ref = qml.math.array(t_ref_values, like="jax")
+
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, mol.coeff, mol.alpha]
+
+        t = qchem.kinetic_integral(basis_a, basis_b)(*args)
+        assert qml.math.allclose(t, t_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff"),
+        [
+            (
+                ["H", "H"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+            )
+        ],
+    )
+    def test_gradient_kinetic_jax(self, symbols, geometry, alpha, coeff):
+        r"""Test that the kinetic gradient computed with respect to the basis parameters is
+        correct for jax."""
+        import jax
+
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, coeff, alpha]
+
+        g_alpha = jax.grad(qchem.kinetic_integral(basis_a, basis_b), argnums=[2])(*args)
+        g_coeff = jax.grad(qchem.kinetic_integral(basis_a, basis_b), argnums=[1])(*args)
+
+        # compute attraction gradients with respect to alpha and coeff using finite diff
+        delta = 0.0001
+        g_ref_alpha = jax.numpy.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = jax.numpy.zeros(6).reshape(coeff.shape)
+
+        for i in range(len(alpha)):
+            for j in range(len(alpha[0])):
+                alpha_minus = alpha.at[i, j].set(alpha[i, j] - delta)
+                alpha_plus = alpha.at[i, j].set(alpha[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_minus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                a_minus = qchem.kinetic_integral(basis_a, basis_b)(*[geometry, coeff, alpha_minus])
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_plus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                a_plus = qchem.kinetic_integral(basis_a, basis_b)(*[geometry, coeff, alpha_plus])
+                g_ref_alpha = g_ref_alpha.at[i, j].set((a_plus - a_minus) / (2 * delta))
+
+                coeff_minus = coeff.at[i, j].set(coeff[i, j] - delta)
+                coeff_plus = coeff.at[i, j].set(coeff[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_minus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                a_minus = qchem.kinetic_integral(basis_a, basis_b)(*[geometry, coeff_minus, alpha])
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_plus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                a_plus = qchem.kinetic_integral(basis_a, basis_b)(*[geometry, coeff_plus, alpha])
+                g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
+
+        assert qml.math.allclose(g_alpha, g_ref_alpha)
+        assert qml.math.allclose(g_coeff, g_ref_coeff)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff"),
+        [
+            (
+                ["H", "H"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+            )
+        ],
+    )
+    def test_gradient_attraction_jax(self, symbols, geometry, alpha, coeff):
+        r"""Test that the attraction gradient computed with respect to the basis parameters is
+        correct for jax."""
+        import jax
+
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, coeff, alpha]
+        r_nuc = geometry[0]
+
+        g_alpha = jax.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnums=[2])(*args)
+        g_coeff = jax.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnums=[1])(*args)
+
+        # compute attraction gradients with respect to alpha and coeff using finite diff
+        delta = 0.0001
+        g_ref_alpha = jax.numpy.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = jax.numpy.zeros(6).reshape(coeff.shape)
+
+        for i in range(len(alpha)):
+            for j in range(len(alpha[0])):
+                alpha_minus = alpha.at[i, j].set(alpha[i, j] - delta)
+                alpha_plus = alpha.at[i, j].set(alpha[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_minus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                r_nuc = geometry[0]
+                a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(
+                    *[geometry, coeff, alpha_minus]
+                )
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_plus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                r_nuc = geometry[0]
+                a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(
+                    *[geometry, coeff, alpha_plus]
+                )
+                g_ref_alpha = g_ref_alpha.at[i, j].set((a_plus - a_minus) / (2 * delta))
+
+                coeff_minus = coeff.at[i, j].set(coeff[i, j] - delta)
+                coeff_plus = coeff.at[i, j].set(coeff[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_minus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                r_nuc = geometry[0]
+                a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(
+                    *[geometry, coeff_minus, alpha]
+                )
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_plus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                r_nuc = geometry[0]
+                a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(
+                    *[geometry, coeff_plus, alpha]
+                )
+                g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
+
+        assert qml.math.allclose(g_alpha, g_ref_alpha)
+        assert qml.math.allclose(g_coeff, g_ref_coeff)
+
+    @pytest.mark.parametrize(
+        ("geometry", "e_ref"),
+        [
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [0.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], [0.45590169]),
+        ],
+    )
+    def test_repulsion_integral_jax(self, geometry, e_ref):
+        r"""Test that repulsion_integral function returns a correct value for the repulsion
+        integral when using jax."""
+        symbols = ["H", "H"]
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(
+            [
+                [3.42525091, 0.62391373, 0.1688554],
+                [3.42525091, 0.62391373, 0.1688554],
+                [3.42525091, 0.62391373, 0.1688554],
+                [3.42525091, 0.62391373, 0.1688554],
+            ],
+            like="jax",
+        )
+        coeff = qml.math.array(
+            [
+                [0.15432897, 0.53532814, 0.44463454],
+                [0.15432897, 0.53532814, 0.44463454],
+                [0.15432897, 0.53532814, 0.44463454],
+                [0.15432897, 0.53532814, 0.44463454],
+            ],
+            like="jax",
+        )
+        e_ref = qml.math.array(e_ref)
+
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, mol.coeff, mol.alpha]
+
+        a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
+
+        assert qml.math.allclose(a, e_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff"),
+        [
+            (
+                ["H", "H"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                ],
+                [
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                ],
+            ),
+        ],
+    )
+    def test_gradient_repulsion_jax(self, symbols, geometry, alpha, coeff):
+        r"""Test that the repulsion gradient computed with respect to the basis parameters is
+        correct with jax."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, coeff, alpha]
+
+        g_alpha = jax.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnums=[2]
+        )(*args)
+        g_coeff = jax.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnums=[1]
+        )(*args)
+
+        assert qml.math.allclose(
+            g_alpha,
+            jax.numpy.array(
+                [
+                    [-0.00110959, -0.0066617, 0.06292986],
+                    [-0.00110959, -0.0066617, 0.06292986],
+                    [-0.00110959, -0.0066617, 0.06292986],
+                    [-0.00110959, -0.0066617, 0.06292986],
+                ]
+            ),
+        )
+        assert qml.math.allclose(
+            g_coeff,
+            jax.numpy.array(
+                [
+                    [-0.03518772, 0.0140035, -0.00464647],
+                    [-0.03518772, 0.0140035, -0.00464647],
+                    [-0.03518772, 0.0140035, -0.00464647],
+                    [-0.03518772, 0.0140035, -0.00464647],
+                ],
+            ),
+        )
