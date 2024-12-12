@@ -206,14 +206,14 @@ class TestWires:
         for w1, w2 in zip(array, np.array([4, 0, 1])):
             assert w1 == w2
 
+    @pytest.mark.jax
     def test_jax_array_representation(self):
         """Tests that Wires object has a JAX array representation."""
 
-        if not jax_available:
-            pytest.skip("Getting JAX array requires JAX")
 
         wires = Wires([4, 0, 1])
         array = jax.numpy.asarray(wires)
+        assert isinstance(array, jax.numpy.ndarray)
         for w1, w2 in zip(array, [4, 0, 1]):
             assert w1 == w2
 
