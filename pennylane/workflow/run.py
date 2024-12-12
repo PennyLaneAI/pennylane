@@ -287,7 +287,7 @@ def run(
         results = inner_execute(tapes)
         return results
 
-    # TODO: Prune once supported for tf-autograph is dropped
+    # TODO: Prune once support for tf-autograph is dropped
     if config.interface == Interface.TF_AUTOGRAPH:
 
         execute_fn, diff_method = _construct_tf_autograph_pipeline(
