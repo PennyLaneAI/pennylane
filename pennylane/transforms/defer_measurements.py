@@ -372,7 +372,7 @@ def defer_measurements(
             new_mp = mp
         new_measurements.append(new_mp)
 
-    new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
 
     if is_postselecting and new_tape.batch_size is not None:
         # Split tapes if broadcasting with postselection

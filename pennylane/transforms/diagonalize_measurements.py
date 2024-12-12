@@ -192,12 +192,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     new_operations = tape.operations + diagonalizing_gates
 
-    new_tape = type(tape)(
-        ops=new_operations,
-        measurements=new_measurements,
-        shots=tape.shots,
-        trainable_params=tape.trainable_params,
-    )
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
 
     return (new_tape,), null_postprocessing
 

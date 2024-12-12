@@ -121,7 +121,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
         with QueuingManager.stop_recording():
             new_operations.insert(0, AmplitudeEmbedding(final_vector, wires=final_wires))
 
-    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

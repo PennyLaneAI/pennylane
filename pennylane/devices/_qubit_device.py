@@ -256,12 +256,7 @@ class QubitDevice(Device):
         has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
         if has_mcm and "mid_measurements" not in kwargs:
             results = []
-            aux_circ = qml.tape.QuantumScript(
-                circuit.operations,
-                circuit.measurements,
-                shots=[1],
-                trainable_params=circuit.trainable_params,
-            )
+            aux_circ = circuit.copy(shots=[1])
             # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`,
             # and hence we update `self.shots` temporarily for this loop
             shots_copy = self.shots

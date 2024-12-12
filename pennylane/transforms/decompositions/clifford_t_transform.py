@@ -454,7 +454,7 @@ def clifford_t_decomposition(
             decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
-    new_tape = type(tape)(decomp_ops, compiled_tape.measurements, shots=tape.shots)
+    new_tape = compiled_tape.copy(operations=decomp_ops)
 
     # Perform a final attempt of simplification before return
     [new_tape], _ = cancel_inverses(new_tape)

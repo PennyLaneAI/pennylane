@@ -200,12 +200,7 @@ def compile(
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
             for transf in pipeline:
-                tapes, _ = transf(expanded_tape)
-                expanded_tape = tapes[0]
-
-    new_tape = type(tape)(
-        expanded_tape.operations, expanded_tape.measurements, shots=expanded_tape.shots
-    )
+                [expanded_tape], _ = transf(expanded_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -213,4 +208,4 @@ def compile(
         """
         return results[0]
 
-    return [new_tape], null_postprocessing
+    return [expanded_tape], null_postprocessing
