@@ -389,7 +389,7 @@ def vscf_integrals(ham_data, dipole_data=None, modals=None, cutoff=None, cutoff_
     Args:
         ham_data (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals
         dipole_data (list[TensorLike[float]]): list of n-mode expansion of dipole integrals. Default is ``None``.
-        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode. Default to maximum number of modals.
+        modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode. Default value is the maximum number of modals.
         cutoff (float): threshold value for including matrix elements into operator
         cutoff_ratio (float): ratio for discarding elements with respect to biggest element in the integrals. Default value is ``1e-6``.
 
