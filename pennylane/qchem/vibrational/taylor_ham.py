@@ -566,7 +566,7 @@ def taylor_hamiltonian(
         min_deg (int): minimum degree of Taylor form polynomial
         mapping (str): Mapping used to map to qubit basis. Default is `"binary"`.
         n_states(int): maximum number of allowed bosonic states
-        ps (bool): Whether to return the result as a PauliSentence instead of an
+        ps (bool): Flag to return the result as a PauliSentence instead of an
             operator. Defaults to False.
         wire_map (dict): A dictionary defining how to map the states of
             the Bose operator to qubit wires. If None, integers used to
