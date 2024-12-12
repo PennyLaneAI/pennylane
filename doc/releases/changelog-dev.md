@@ -308,6 +308,9 @@ such as `shots`, `rng` and `prng_key`.
 * Fix the string representation of `Resources` instances to match the attribute names.
   [(#6581)](https://github.com/PennyLaneAI/pennylane/pull/6581)
 
+* Improved documentation for the `dynamic_one_shot` transform, and a warning is raised when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in a device's preprocessing transform program.
+  [(#6701)](https://github.com/PennyLaneAI/pennylane/pull/6701)
+
 <h3>Labs 🧪</h3>
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
