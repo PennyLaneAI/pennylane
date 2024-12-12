@@ -58,7 +58,6 @@ for i, ele in enumerate(reference_taylor_bosonic_ops_non_loc):
     reference_taylor_bosonic_ops_non_loc[i] = BoseWord(ele)
 
 h5py = pytest.importorskip("h5py")
-
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 with h5py.File(os.path.join(ref_dir, "H2S_3D_PES.hdf5"), "r") as f:

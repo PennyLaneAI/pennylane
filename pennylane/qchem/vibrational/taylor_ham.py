@@ -296,6 +296,30 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     Returns:
         tuple(TensorLike[float]): the coefficients of the one-body, two-body and three-body terms
+
+    **Example**
+
+    from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+
+    >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
+    >>> pes_twomode = np.zeros((1, 1, 9, 9))
+    >>> dipole_onemode = np.zeros((1, 9, 3))
+    >>> gauss_weights=np.array([3.96e-05, 4.94e-03, 8.85e-02,
+                        4.33e-01, 7.20e-01, 4.33e-01,
+                        8.85e-02, 4.94e-03, 3.96e-05])
+    >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
+    >>> pes_object = VibrationalPES(
+            freqs=np.array([0.025]),
+            grid=grid
+            uloc=np.array([[1.0]]),
+            gauss_weights=gauss_weights,
+            pes_data=[pes_onemode, pes_twomode],
+            dipole_data=[dipole_onemode],
+            localized=True,
+            dipole_level=1,
+        )
+    >>> qml.qchem.taylor_coeffs(pes_object, 4, 2)
+    [array([[-0.00088528, -0.00361425,  0.00068143]]), array([[[0., 0., 0., 0., 0., 0.]]])]
     """
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
@@ -536,7 +560,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     Args:
         coeffs (list(float)): the coefficients of the Hamiltonian
         freqs (list(float)): the harmonic frequencies in reciprocal centimetre
-        is_localal (bool): Flag whether the vibrational modes are localized. Default is ``True``.
+        is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (list(list(float))): localization matrix indicating the relationship between original
             and localized modes
 
@@ -548,9 +572,9 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     else:
         start_deg = 3
 
-    harm_pot = _taylor_harmonic(taylor_coeffs_array, freqs)
-    ham = _taylor_anharmonic(taylor_coeffs_array, start_deg) + harm_pot
-    kin_ham = _taylor_kinetic(taylor_coeffs_array, freqs, is_local, uloc)
+    harm_pot = _taylor_harmonic(coeffs, freqs)
+    ham = _taylor_anharmonic(coeffs, start_deg) + harm_pot
+    kin_ham = _taylor_kinetic(coeffs, freqs, is_local, uloc)
     ham += kin_ham
     return ham.normal_order()
 
@@ -576,6 +600,32 @@ def taylor_hamiltonian(
 
     Returns:
         BoseSentence: the bosonic form of the Taylor Hamiltonian
+
+    **Example**
+
+    from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+
+    >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
+    >>> pes_twomode = np.zeros((1, 1, 9, 9))
+    >>> dipole_onemode = np.zeros((1, 9, 3))
+    >>> gauss_weights=np.array([3.96e-05, 4.94e-03, 8.85e-02,
+                        4.33e-01, 7.20e-01, 4.33e-01,
+                        8.85e-02, 4.94e-03, 3.96e-05])
+    >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
+    >>> pes_object = VibrationalPES(
+            freqs=np.array([0.025]),
+            grid=grid
+            uloc=np.array([[1.0]]),
+            gauss_weights=gauss_weights,
+            pes_data=[pes_onemode, pes_twomode],
+            dipole_data=[dipole_onemode],
+            localized=True,
+            dipole_level=1,
+        )
+    >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
+    -0.003833496032473659 * X(0)
+    + (0.0256479442871582+0j) * I(0)
+    + (-0.013079509779221888+0j) * Z(0)
     """
     mapping.lower().strip()
     coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
