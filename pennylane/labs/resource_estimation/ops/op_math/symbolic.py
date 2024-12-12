@@ -16,7 +16,6 @@ from collections import defaultdict
 from typing import Dict
 
 import pennylane.labs.resource_estimation as re
-from pennylane.labs.resource_estimation.resource_container import _combine_dict, _scale_dict
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import PowOperation

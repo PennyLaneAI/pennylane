@@ -40,7 +40,7 @@ class ResourceIdentity(qml.Identity, re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0
+        num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
         return {}
 
@@ -69,9 +69,9 @@ class ResourceGlobalPhase(qml.GlobalPhase, re.ResourceOperator):
 
     @staticmethod
     def controlled_resource_decomp(
-        num_ctrl_wires=1, num_ctrl_values=0, num_work_wires=0
+        num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        if num_ctrl_wires == 1:
+        if num_ctrl_values == 0:
             return {re.ResourcePhaseShift.resource_rep(): 1}
         raise re.ResourcesNotDefined
 

@@ -186,11 +186,10 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
 
     @staticmethod
     def _resource_decomp(**kwargs) -> Dict[re.CompressedResourceOp, int]:
-        rx = ResourceRX.resource_rep()
         ry = ResourceRY.resource_rep()
         rz = ResourceRZ.resource_rep()
 
-        gate_types = {rx: 1, ry: 1, rz: 1}
+        gate_types = {ry: 1, rz: 2}
         return gate_types
 
     def resource_params(self):
@@ -212,3 +211,7 @@ class ResourceRot(qml.Rot, re.ResourceOperator):
             return {re.ResourceCRot.resource_rep(): 1}
 
         raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
