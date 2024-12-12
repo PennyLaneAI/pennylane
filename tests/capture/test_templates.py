@@ -703,7 +703,7 @@ class TestModifiedTemplates:
             "bitstrings": ["0", "1"],
             "control_wires": [0],
             "target_wires": [1],
-            "work_wires": None,
+            "work_wires": (),
         }
 
         def qfunc():
@@ -737,7 +737,7 @@ class TestModifiedTemplates:
             "k": 3,
             "x_wires": [0, 1],
             "mod": None,
-            "work_wire": None,
+            "work_wire": (),
         }
 
         def qfunc():
@@ -771,7 +771,7 @@ class TestModifiedTemplates:
             "k": 3,
             "x_wires": [0, 1],
             "mod": None,
-            "work_wires": None,
+            "work_wires": (),
         }
 
         def qfunc():
@@ -840,7 +840,7 @@ class TestModifiedTemplates:
             "y_wires": [2, 3],
             "output_wires": [4, 5],
             "mod": None,
-            "work_wires": None,
+            "work_wires": (),
         }
 
         def qfunc():
@@ -875,7 +875,7 @@ class TestModifiedTemplates:
             "y_wires": [2, 3],
             "output_wires": [4, 5],
             "mod": None,
-            "work_wires": None,
+            "work_wires": (),
         }
 
         def qfunc():
