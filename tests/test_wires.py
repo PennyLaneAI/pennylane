@@ -36,7 +36,7 @@ class TestWires:
 
     def test_error_if_wires_none(self):
         """Tests that a ValueError is raised if None is given as wires."""
-        with pytest.raises(ValueError, match="Must specify a set of wires."):
+        with pytest.raises(TypeError, match="Must specify a set of wires."):
             Wires(None)
 
     @pytest.mark.parametrize("iterable", [np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)])
