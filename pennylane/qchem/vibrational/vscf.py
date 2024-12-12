@@ -141,7 +141,7 @@ def _find_active_terms(ham_data, modals, cutoff):
 
 
 def _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots):
-    r"""Calculates vibrational energy
+    r"""Calculates vibrational energy.
 
     Args:
         h_mat (Array[Array[float]]): the Hamiltonian matrix
