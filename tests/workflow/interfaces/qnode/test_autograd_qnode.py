@@ -27,13 +27,6 @@ from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
 
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
-
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
     [qml.device("default.qubit"), "finite-diff", False, False],
