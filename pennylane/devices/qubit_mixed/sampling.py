@@ -21,14 +21,12 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.devices.qubit.sampling import _group_measurements, jax_random_split, sample_probs
-from pennylane.measurements import (
-    CountsMP,
-    ExpectationMP,
-    SampleMeasurement,
-    Shots,
-)
-from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP
+from pennylane.devices.qubit.sampling import (_group_measurements,
+                                              jax_random_split, sample_probs)
+from pennylane.measurements import (CountsMP, ExpectationMP, SampleMeasurement,
+                                    Shots)
+from pennylane.measurements.classical_shadow import (ClassicalShadowMP,
+                                                     ShadowExpvalMP)
 from pennylane.ops import LinearCombination, Sum
 from pennylane.typing import TensorLike
 
