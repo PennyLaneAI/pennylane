@@ -1,12 +1,14 @@
 """Base classes for Vibronic Hamiltonians"""
+
 from __future__ import annotations
+
 from typing import Dict, Tuple
 
 import numpy as np
 
 
-class VibronicWord():
-    """Representation of the operators inside the matrix representation of the Vibronic 
+class VibronicWord:
+    """Representation of the operators inside the matrix representation of the Vibronic
     Hamiltonian"""
 
     def __init__(self, operator: dict = None):
@@ -36,7 +38,7 @@ class VibronicWord():
         return VibronicWord(operator=new_operator)
 
     def __sub__(self, other: VibronicWord) -> VibronicWord:
-        return self + (-1)*other
+        return self + (-1) * other
 
     def __mul__(self, scalar) -> VibronicWord:
         if not isinstance(scalar, (complex, int, float)):
@@ -77,6 +79,7 @@ class VibronicWord():
         """Add an operator to the word"""
         self.operator[operator] = coeffs
 
+
 class VibronicBlockMatrix:
     """Representation of a block matrix made of position/momentum operators"""
 
@@ -91,7 +94,7 @@ class VibronicBlockMatrix:
         """Get the word inside the (row, col) block"""
         return self.blocks.get((row, col), VibronicWord({}))
 
-    def set_block(self, row: int, col:int, word: VibronicWord) -> None:
+    def set_block(self, row: int, col: int, word: VibronicWord) -> None:
         """Set the word inside the (row, col) block"""
         self.blocks[(row, col)] = word
 
@@ -100,14 +103,16 @@ class VibronicBlockMatrix:
 
     def __add__(self, other: VibronicBlockMatrix) -> VibronicBlockMatrix:
         if self.dim != other.dim:
-            raise ValueError(f"Cannot add VibronicBlockMatrix of shape ({self.dim}, {self.dim}) with shape ({other.dim}, {other.dim}).")
+            raise ValueError(
+                f"Cannot add VibronicBlockMatrix of shape ({self.dim}, {self.dim}) with shape ({other.dim}, {other.dim})."
+            )
 
         new_blocks = _add_dicts(self.blocks, other.blocks)
 
         return VibronicBlockMatrix(dim=self.dim, blocks=new_blocks)
 
     def __sub__(self, other: VibronicBlockMatrix) -> VibronicBlockMatrix:
-        return self + (-1)*other
+        return self + (-1) * other
 
     def __mul__(self, scalar) -> VibronicBlockMatrix:
         if not isinstance(scalar, (complex, int, float)):
@@ -123,15 +128,19 @@ class VibronicBlockMatrix:
 
     def __matmul__(self, other: VibronicBlockMatrix) -> VibronicBlockMatrix:
         if self.dim != other.dim:
-            raise ValueError(f"Cannot multiply VibronicBlockMatrix of shape ({self.dim}, {self.dim}) with shape ({other.dim}, {other.dim}).")
+            raise ValueError(
+                f"Cannot multiply VibronicBlockMatrix of shape ({self.dim}, {self.dim}) with shape ({other.dim}, {other.dim})."
+            )
 
         new_blocks = {}
         for i in range(self.dim):
             for j in range(self.dim):
-                block_products = [self.get_block(i,k)@other.get_block(k,j) for k in range(self.dim)]
+                block_products = [
+                    self.get_block(i, k) @ other.get_block(k, j) for k in range(self.dim)
+                ]
                 block_sum = sum(block_products, VibronicWord({}))
                 if block_sum:
-                    new_blocks[(i,j)] = block_sum
+                    new_blocks[(i, j)] = block_sum
 
         return VibronicBlockMatrix(dim=self.dim, blocks=new_blocks)
 
@@ -151,11 +160,11 @@ class VibronicHamiltonian:
     """Class representation of the Vibronic Hamiltonian"""
 
     def __init__(self, states, modes, alphas, betas, lambdas, omegas):
-        if alphas.shape != (states,states,modes):
+        if alphas.shape != (states, states, modes):
             raise TypeError
-        if betas.shape != (states,states,modes,modes):
+        if betas.shape != (states, states, modes, modes):
             raise TypeError
-        if lambdas.shape != (states,states):
+        if lambdas.shape != (states, states):
             raise TypeError
         if omegas.shape != (modes,):
             raise TypeError
@@ -170,7 +179,7 @@ class VibronicHamiltonian:
     def fragment(self, index) -> VibronicBlockMatrix:
         """Get the fragment at the specified index"""
 
-        if index not in range(self.states+1):
+        if index not in range(self.states + 1):
             raise ValueError("Index out of range")
 
         if index == self.states:
@@ -180,6 +189,10 @@ class VibronicHamiltonian:
 
     def v_matrix(self, i: int, j: int) -> VibronicWord:
         """Get V_ij"""
+        if i > self.states or j > self.states:
+            raise ValueError(
+                f"Dimension out of bounds. Got ({i}, {j}) but V is dimension ({self.states}, {self.states})."
+            )
         word = VibronicWord()
         word.add_op(("I",), self.lambdas[i, j])
         word.add_op(("Q",), self.alphas[i, j])
@@ -189,8 +202,8 @@ class VibronicHamiltonian:
     def _fragment(self, i) -> VibronicBlockMatrix:
         fragment = VibronicBlockMatrix(dim=self.states)
         for j in range(self.states):
-            word = self.v_matrix(j, i^j)
-            fragment.set_block(j, i^j, word)
+            word = self.v_matrix(j, i ^ j)
+            fragment.set_block(j, i ^ j, word)
 
         return fragment
 
@@ -211,16 +224,18 @@ class VibronicHamiltonian:
     def epsilon(self, delta: float) -> VibronicBlockMatrix:
         """Return the error matrix"""
 
-        scalar = -(delta**2)/24
+        scalar = -(delta**2) / 24
         epsilon = VibronicBlockMatrix(dim=self.states)
 
         for i in range(self.states):
-            for j in range(i+1, self.states+1):
+            for j in range(i + 1, self.states + 1):
                 epsilon += self.commute_fragments(i, i, j)
-                for k in range(i+1, self.states+1):
-                    epsilon += 2*self.commute_fragments(k, i, j) #pylint: disable=arguments-out-of-order
+                for k in range(i + 1, self.states + 1):
+                    epsilon += 2 * self.commute_fragments(
+                        k, i, j
+                    )  # pylint: disable=arguments-out-of-order
 
-        return scalar*epsilon
+        return scalar * epsilon
 
     def commute_fragments(self, i, j, k):
         """Returns [H_i, [H_j, H_k]]"""
@@ -233,14 +248,16 @@ class VibronicHamiltonian:
         """Special case for [H_N, [H_m, H_N]] where N = self.states and m < self.states"""
         block_matrix = VibronicBlockMatrix(dim=self.states)
         for j in range(self.states):
-            coeffs = self.betas[j, m^j] * np.multiply.outer(self.omegas, self.omegas)
+            coeffs = self.betas[j, m ^ j] * np.multiply.outer(self.omegas, self.omegas)
             operator = VibronicWord({("PP"): coeffs})
-            block_matrix.set_block(j, m^j, operator)
+            block_matrix.set_block(j, m ^ j, operator)
 
-        return 2*block_matrix
+        return 2 * block_matrix
+
 
 def commutator(a: VibronicBlockMatrix, b: VibronicBlockMatrix) -> VibronicBlockMatrix:
-    return a@b - b@a
+    return a @ b - b @ a
+
 
 def _add_dicts(d1: dict, d2: dict):
     new_dict = {}
@@ -256,11 +273,13 @@ def _add_dicts(d1: dict, d2: dict):
 
     return new_dict
 
+
 def _add_coeffs(d: dict, key: Tuple[str], coeffs: np.ndarray) -> None:
     try:
         d[key] += coeffs
     except KeyError:
         d[key] = coeffs
+
 
 def _simplify_word(word: str) -> str:
     if set(word) == {"I"}:
