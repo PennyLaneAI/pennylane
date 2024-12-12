@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qubit mixed state device."""
+from typing import Optional
+
 # pylint: disable=protected-access
 from numpy.random import default_rng
-from typing import Optional
 
 import pennylane as qml
 from pennylane.devices.qubit.sampling import jax_random_split

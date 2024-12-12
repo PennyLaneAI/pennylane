@@ -15,7 +15,6 @@
 Submodule for sampling a qubit mixed state.
 """
 # pylint: disable=too-many-positional-arguments, too-many-arguments
-import functools
 from typing import Callable, Union
 
 import numpy as np
@@ -27,9 +26,7 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     SampleMeasurement,
-    SampleMP,
     Shots,
-    VarianceMP,
 )
 from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.ops import LinearCombination, Sum
@@ -361,7 +358,13 @@ def measure_with_samples(
         prng_key, key = jax_random_split(prng_key)
         all_res.extend(
             measure_fn(
-                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=key
+                group,
+                state,
+                shots,
+                is_state_batched=is_state_batched,
+                rng=rng,
+                prng_key=key,
+                readout_errors=readout_errors,
             )
         )
 
