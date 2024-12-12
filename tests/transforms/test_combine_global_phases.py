@@ -9,6 +9,27 @@ import pennylane as qml
 from pennylane.transforms import combine_global_phases
 
 
+def original_qfunc(phi1, phi2):
+    qml.Hadamard(wires=1)
+    qml.GlobalPhase(phi1, wires=[0, 1])
+    qml.PauliY(wires=0)
+    qml.PauliX(wires=2)
+    qml.CNOT(wires=[1, 2])
+    qml.GlobalPhase(phi2, wires=1)
+    qml.CNOT(wires=[2, 0])
+    return qml.state()
+
+
+def expected_qfunc(phi1, phi2):
+    qml.Hadamard(wires=1)
+    qml.PauliY(wires=0)
+    qml.PauliX(wires=2)
+    qml.CNOT(wires=[1, 2])
+    qml.CNOT(wires=[2, 0])
+    qml.GlobalPhase(phi1 + phi2)
+    return qml.state()
+
+
 def test_no_global_phase_gate():
     """Test that when the input ``QuantumScript`` has no ``qml.GlobalPhase`` gate, the returned output is exactly the same"""
     qscript = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)])
@@ -51,24 +72,22 @@ def test_multiple_global_phase_gates(phi1, phi2):
 
 @pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
 @pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-def test_output_state(phi1, phi2):
-    """Test if the statevector returned by the transformed circuit is equivalent to the statevector returned by the original circuit"""
+def test_combine_global_phases(phi1, phi2):
+    """Test that the transform works in the autograd interface"""
+    transformed_qfunc = combine_global_phases(original_qfunc)
 
     dev = qml.device("default.qubit", wires=3)
+    original_qnode = qml.QNode(original_qfunc, device=dev)
+    transformed_qnode = qml.QNode(transformed_qfunc, device=dev)
 
-    @qml.qnode(device=dev)
-    def original_circuit():
-        qml.Hadamard(wires=1)
-        qml.GlobalPhase(phi1, wires=[0, 1])
-        qml.PauliY(wires=0)
-        qml.PauliX(wires=2)
-        qml.CNOT(wires=[1, 2])
-        qml.GlobalPhase(phi2, wires=1)
-        qml.CNOT(wires=[2, 0])
-        return qml.state()
+    expected_qscript = qml.tape.make_qscript(expected_qfunc)(phi1, phi2)
+    transformed_qscript = qml.tape.make_qscript(transformed_qfunc)(phi1, phi2)
 
-    transformed_circuit = combine_global_phases(original_circuit)
+    original_state = original_qnode(phi1, phi2)
+    transformed_state = transformed_qnode(phi1, phi2)
 
-    original_state = original_circuit()
-    transformed_state = transformed_circuit()
+    # check the equivalence between expected and transformed quantum scripts
+    qml.assert_equal(expected_qscript, transformed_qscript)
+
+    # check the equivalence between statevectors before and after the transform
     assert np.allclose(original_state, transformed_state)
