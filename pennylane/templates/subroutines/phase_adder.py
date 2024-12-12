@@ -127,6 +127,7 @@ class PhaseAdder(Operation):
         self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
+        work_wire = work_wire or ()
         work_wire = qml.wires.Wires(work_wire)
         x_wires = qml.wires.Wires(x_wires)
 

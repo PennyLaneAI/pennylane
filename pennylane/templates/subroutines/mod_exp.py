@@ -117,6 +117,7 @@ class ModExp(Operation):
     ):  # pylint: disable=too-many-arguments
 
         output_wires = qml.wires.Wires(output_wires)
+        work_wires = work_wires or ()
         work_wires = qml.wires.Wires(work_wires)
         if len(work_wires) == 0:
             raise ValueError("Work wires must be specified for ModExp")

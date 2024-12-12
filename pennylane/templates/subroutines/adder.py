@@ -105,6 +105,7 @@ class Adder(Operation):
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
+        work_wires = work_wires or ()
         work_wires = qml.wires.Wires(work_wires)
 
         num_works_wires = len(work_wires)
@@ -115,7 +116,7 @@ class Adder(Operation):
             raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
-        if work_wires is not None:
+        if num_works_wires != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
         if mod > 2 ** len(x_wires):

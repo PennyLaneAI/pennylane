@@ -152,6 +152,7 @@ class OutMultiplier(Operation):
         x_wires = qml.wires.Wires(x_wires)
         y_wires = qml.wires.Wires(y_wires)
         output_wires = qml.wires.Wires(output_wires)
+        work_wires = work_wires or ()
         work_wires = qml.wires.Wires(work_wires)
 
         num_work_wires = len(work_wires)
