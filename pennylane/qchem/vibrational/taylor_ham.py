@@ -79,7 +79,8 @@ def _fit_onebody(onemode_op, max_deg, min_deg=3):
 
     if max_deg < min_deg:
         raise ValueError(
-            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than min_deg."
+            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than
+            min_deg."
         )
 
     nmodes, quad_order = np.shape(onemode_op)
@@ -142,7 +143,8 @@ def _fit_twobody(twomode_op, max_deg, min_deg=3):
 
     if max_deg < min_deg:
         raise ValueError(
-            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than min_deg."
+            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than
+            min_deg."
         )
 
     fit_degs = _twobody_degs(max_deg, min_deg)
@@ -286,8 +288,9 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
         \quad \text{and} \quad
         \Phi_{ijkl} = \frac{k_{ijkl}}{\sqrt{\omega_i \omega_j \omega_k \omega_l}}
 
-    where :math:`\Phi_{ijk}` and :math:`\Phi_{ijkl}` are the third and fourth-order reduced force constants,
-    respectively, defined in terms of the third and fourth-order partial derivatives of the potential energy surface data.
+    where :math:`\Phi_{ijk}` and :math:`\Phi_{ijkl}` are the third and fourth-order reduced force
+    constants, respectively, defined in terms of the third and fourth-order partial derivatives
+    of the potential energy surface data.
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
@@ -479,8 +482,8 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the frequencies
         is_local (bool): Flag whether the vibrational modes are localized. Default is True.
-        uloc (list(list(float))): localization matrix indicating the relationship between original and
-            localized modes
+        uloc (list(list(float))): localization matrix indicating the relationship between original
+            and localized modes
 
     Returns:
         BoseSentence: kinetic term of the Taylor hamiltonian for given coeffs
@@ -537,8 +540,8 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
         taylor_coeffs (list(float)): the coefficients of the Hamiltonian
         freqs (list(float)): the harmonic frequencies in reciprocal centimetre
         is_localal (bool): Flag whether the vibrational modes are localized. Default is ``True``.
-        uloc (list(list(float))): localization matrix indicating the relationship between original and
-            localized modes
+        uloc (list(list(float))): localization matrix indicating the relationship between original
+            and localized modes
 
     Returns:
         BoseSentence: Taylor bosonic hamiltonian
@@ -564,8 +567,8 @@ def taylor_hamiltonian(
         pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
-        mapping (str): Mapping used to map to qubit basis. Options are `"binary"` or `"unary"`. Default is
-            `"binary"`.
+        mapping (str): Mapping used to map to qubit basis. Options are `"binary"` or `"unary"`.
+            Default is `"binary"`.
         n_states(int): maximum number of allowed bosonic states
         ps (bool): Flag to return the result as a PauliSentence instead of an
             operator. Defaults to False.
@@ -583,7 +586,8 @@ def taylor_hamiltonian(
 
     if mapping not in ["binary", "unary"]:
         raise ValueError(
-            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
+            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary'
+            mapping."
         )
 
     if mapping == "binary":
