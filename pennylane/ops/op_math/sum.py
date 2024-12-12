@@ -31,7 +31,7 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp, handle_recursion_error
 
 
-def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
+def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -221,7 +221,7 @@ class Sum(CompositeOp):
         self,
         *operands: Operator,
         grouping_type=None,
-        method="rlf",
+        method="lf",
         id=None,
         _grouping_indices=None,
         _pauli_rep=None,

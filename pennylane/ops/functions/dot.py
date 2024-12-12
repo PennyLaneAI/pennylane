@@ -31,7 +31,7 @@ def dot(
     ops: Sequence[Union[Operator, PauliWord, PauliSentence]],
     pauli=False,
     grouping_type=None,
-    method="rlf",
+    method="lf",
 ) -> Union[Operator, ParametrizedHamiltonian, PauliSentence]:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
