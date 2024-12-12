@@ -447,7 +447,7 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
-* The `Wires` object throws a `ValueError` if `wires=None`. 
+* The `Wires` object throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
