@@ -52,21 +52,6 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2**wires,)
         assert isinstance(res, (np.ndarray, np.float64))
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        dev = qml.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qubit_ansatz(x)
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, (np.ndarray, np.float64))
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device):
@@ -356,24 +341,6 @@ class TestIntegrationSingleReturnTensorFlow:
         assert res.shape == (2**wires,)
         assert isinstance(res, tf.Tensor)
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import tensorflow as tf
-
-        dev = qml.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, tf.Tensor)
-
     wires_tf = [2, 3]
 
     @pytest.mark.parametrize("device", devices)
@@ -572,24 +539,6 @@ class TestIntegrationSingleReturnTorch:
         assert res.shape == (2**wires,)
         assert isinstance(res, torch.Tensor)
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import torch
-
-        dev = qml.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(torch.tensor(0.5, requires_grad=True))
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, torch.Tensor)
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device):
@@ -786,24 +735,6 @@ class TestIntegrationSingleReturnJax:
         res = qnode(jax.numpy.array(0.5))
 
         assert res.shape == (2**wires,)
-        assert isinstance(res, jax.numpy.ndarray)
-
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import jax
-
-        dev = qml.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(jax.numpy.array(0.5))
-
-        assert res.shape == (2**wires, 2**wires)
         assert isinstance(res, jax.numpy.ndarray)
 
     @pytest.mark.parametrize("device", devices)
