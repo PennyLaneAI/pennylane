@@ -210,7 +210,6 @@ class TestWires:
     def test_jax_array_representation(self):
         """Tests that Wires object has a JAX array representation."""
 
-
         wires = Wires([4, 0, 1])
         array = jax.numpy.asarray(wires)
         assert isinstance(array, jax.numpy.ndarray)
