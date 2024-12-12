@@ -21,7 +21,7 @@ from pennylane.pauli.utils import diagonalize_qwc_groupings
 from .group_observables import compute_partition_indices
 
 
-def optimize_measurements(observables, coefficients=None, grouping="qwc", colouring_method="rlf"):
+def optimize_measurements(observables, coefficients=None, grouping="qwc", colouring_method="lf"):
     """Partitions then diagonalizes a list of Pauli words, facilitating simultaneous measurement of
     all observables within a partition.
 
