@@ -578,59 +578,53 @@ Implementation of the QSP (Quantum Signal Processing) algorithm proposed in http
 
 import scipy
 
-# @qjit
 def cheby_pol(degree, x):
     """cos(degree*arcos(x))"""
-    # if np.abs(x) > 1:
-    #     raise ValueError()
-    return qml.numpy.cos(degree * qml.numpy.arccos(x))
+    if np.abs(x) > 1:
+        raise ValueError()
+    return qml.math.cos(degree * qml.math.arccos(x))
 
-# @qjit
 def poly_func(
     coeffs, degree, parity, x):
     """\sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(karccos(x))"""
     if parity == 0:
         assert degree == 2 * len(coeffs) - 2
-        return np.sum(
-            np.array([coeffs[i] * cheby_pol(2 * i, x) for i in range(len(coeffs))])
+        return qml.math.sum(
+            qml.math.array([coeffs[i] * cheby_pol(2 * i, x) for i in range(len(coeffs))])
         )
     if parity == 1:
         assert degree == 2 * len(coeffs) - 1
-        return np.sum(
-            np.array([coeffs[i] * cheby_pol(2 * i + 1, x) for i in range(len(coeffs))])
+        return qml.math.sum(
+            qml.math.array([coeffs[i] * cheby_pol(2 * i + 1, x) for i in range(len(coeffs))])
         )
     assert degree == 2 * len(coeffs) - 2 + parity
-    return qml.numpy.sum(
-        qml.numpy.array([coeffs[i] * cheby_pol(2 * i + parity, x) for i in range(len(coeffs))])
+    return qml.math.sum(
+        qml.math.array([coeffs[i] * cheby_pol(2 * i + parity, x) for i in range(len(coeffs))])
     )
 
-# @qjit
 def z_rotation(phi):
-    return qml.numpy.array([[qml.numpy.exp(1j * phi), 0.0], [0.0, qml.numpy.exp(-1j * phi)]])
+    return qml.math.array([[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]])
 
-# @qjit
 def W_of_x(x):
     """W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
-    return qml.numpy.array(
+    return qml.math.array(
         [
-            [cheby_pol(1, x), 1j * qml.numpy.sqrt(1 - cheby_pol(1, x) ** 2)],
-            [1j * qml.numpy.sqrt(1 - cheby_pol(1, x) ** 2), cheby_pol(1, x)],
+            [cheby_pol(1, x), 1j * qml.math.sqrt(1 - cheby_pol(1, x) ** 2)],
+            [1j * qml.math.sqrt(1 - cheby_pol(1, x) ** 2), cheby_pol(1, x)],
         ]
     )
 
-# @qjit
 def qsp_iterate(phi, x):
     """defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
     return W_of_x(x) @ z_rotation(phi)
 
 from functools import reduce
 
-# @qjit
 def qsp_iterates(phis, x):
     """Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)"""
     mtx = qml.math.eye(2)
     for phi in phis[::-1][:-1]:
-        mtx = qml.numpy.dot(qsp_iterate(phi, x), mtx)
+        mtx = qml.math.dot(qsp_iterate(phi, x), mtx)
     mtx = z_rotation(phis[0]) @ mtx
 
     return mtx
@@ -638,7 +632,7 @@ def qsp_iterates(phis, x):
 def grid_pts(degree):
     """x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) Grid over which the polynomials are evaluated and the optimization is carried defined in page 8"""
     d = int(qml.math.ceil((degree + 1) / 2))
-    return qml.numpy.array([qml.math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)], requires_grad=True)
+    return qml.math.array([qml.math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)])
 
 def qsp_optimization(degree, coeffs_target_func, opt_method="Newton-CG"):
     """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid"""
@@ -646,7 +640,7 @@ def qsp_optimization(degree, coeffs_target_func, opt_method="Newton-CG"):
 
     grid_points = grid_pts(degree)
     initial_guess = [qml.numpy.pi / 4] + [0.0] * (degree - 1) + [qml.numpy.pi / 4]
-    initial_guess = qml.numpy.array(initial_guess, requires_grad=True)
+    initial_guess = qml.math.array(initial_guess)
     targets = [poly_func(coeffs_target_func, degree, parity, x) for x in grid_points]
 
     def obj_function(phi):
@@ -655,7 +649,7 @@ def qsp_optimization(degree, coeffs_target_func, opt_method="Newton-CG"):
 
         for i,x in enumerate(grid_points):
             obj_func += (
-                qml.numpy.real(qsp_iterates(phi, x)[0, 0])
+                qml.math.real(qsp_iterates(phi, x)[0, 0])
                 - targets[i]
             ) ** 2
 
@@ -686,9 +680,9 @@ def _compute_qsp_angles_iteratively(polynomial_coeffs_in_cano_basis, opt_method=
     coeffs_even = polynomial_coeffs_in_cheby_basis[0::2]
 
     if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
-        coeffs_target_func = qml.numpy.array(coeffs_even)
+        coeffs_target_func = qml.math.array(coeffs_even)
     elif np.allclose(coeffs_even, np.zeros_like(coeffs_even)):
-        coeffs_target_func = qml.numpy.array(coeffs_odd)
+        coeffs_target_func = qml.math.array(coeffs_odd)
     else:
         raise ValueError()
 
