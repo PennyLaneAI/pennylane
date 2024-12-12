@@ -657,7 +657,7 @@ def apply_snapshot(
             snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
         else:
             snapshot = qml.devices.qubit_mixed.measure_with_samples(
-                measurement,
+                [measurement],
                 state,
                 shots,
                 is_state_batched,

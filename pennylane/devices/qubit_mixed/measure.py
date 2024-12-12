@@ -22,10 +22,12 @@ from scipy.sparse import csr_matrix
 
 from pennylane import math
 from pennylane.measurements import (
+    DensityMatrixMP,
     ExpectationMP,
     MeasurementProcess,
     MeasurementValue,
     StateMeasurement,
+    StateMP,
 )
 from pennylane.ops import LinearCombination, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
@@ -82,7 +84,12 @@ def state_diagonalizing_gates(  # pylint: disable=unused-argument
     num_wires = _get_num_wires(state, is_state_batched)
     wires = Wires(range(num_wires))
     flattened_state = _reshape_state_as_matrix(state, num_wires)
+    is_StateMP = isinstance(measurementprocess, StateMP)
+    is_DensityMatrixMP = isinstance(measurementprocess, DensityMatrixMP)
+    if is_StateMP and not is_DensityMatrixMP:
+        measurementprocess = DensityMatrixMP(wires)
     res = measurementprocess.process_density_matrix(flattened_state, wires)
+
     return math.convert_like(res, state)
 
 
