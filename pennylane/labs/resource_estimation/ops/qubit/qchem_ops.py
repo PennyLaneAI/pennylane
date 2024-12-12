@@ -32,7 +32,7 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         t_dag = re.ResourceAdjoint.resource_rep(re.ResourceT, {})
         h = re.ResourceHadamard.resource_rep()
         s = re.ResourceS.resource_rep()
@@ -58,7 +58,7 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -210,7 +210,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
         ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
@@ -228,7 +228,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -246,7 +246,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
         ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
@@ -264,7 +264,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -294,7 +294,7 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
