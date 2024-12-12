@@ -210,30 +210,28 @@ Different branches of an ``if`` statement must always assign variables with the 
 if those variables are used in the outer scope (external variables). The type must be the same in the sense
 that the *structure* of the variable should not change across branches, and the dtypes must match.
 
-In particular, this requires that if an external variable is assigned an array in one
-branch, other branches must also assign arrays of the same shape. Consider this function, which has the
-same return shape regardless of branch, but differs in the shape of ``y`` in different logic branches:
+Consider this function, which differs in the type of the elements in ``y`` in different logic branches:
 
 >>> def f(x):
 ...     if x > 1:
-...         y = jnp.array([0.1, 0.2])
+...         y = jnp.array([1.0, 2.0, 3.0])
 ...     else:
-...         y = jnp.array([0.4, 0.5, -0.1])
+...         y = jnp.array([4, 5, 6])
 ...     return jnp.sum(y)
 >>> make_plxpr(f)(0.5)
-ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(float64[3]) vs ShapedArray(float64[2])s
+ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(int64[3]) vs ShapedArray(float64[3])
 
-Instead, all possible outcomes for ``y`` at the end of the if/else block need to have the same shape:
+Instead, all possible outcomes for ``y`` at the end of the if/else block need to have the same shape, type, etc:
 
 >>> def f(x):
 ...     if x > 1:
-...         y = jnp.array([0.1, 0.2, 0.3])
+...         y = jnp.array([1.0, 2.0, 3.0])
 ...     else:
-...         y = jnp.array([0.4, 0.5, -0.1])
+...         y = jnp.array([4.0, 5.0, 6.0])
 ...     return jnp.sum(y)
 >>> plxpr = make_plxpr(f)(0.5)
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
-[Array(0.8, dtype=float64)]
+[Array(15., dtype=float64)]
 
 More generally, this also applies to common container classes such as
 ``dict``, ``list``, and ``tuple``. If one branch assigns an external variable,
