@@ -1266,7 +1266,7 @@ class TestExecution:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.mixed", wires=2)
+        dev_1 = qml.device("default.mixed.legacy", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1282,7 +1282,7 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.mixed", wires=2)
+        dev_2 = qml.device("default.mixed.legacy", wires=2)
 
         def circuit_2(x):
             qml.RX(x, wires=[0])
@@ -1327,7 +1327,7 @@ class TestExecutionBroadcasted:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.mixed", wires=2)
+        dev_1 = qml.device("default.mixed.legacy", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1343,7 +1343,7 @@ class TestExecutionBroadcasted:
         assert dev_1.num_executions == num_evals_1 * 3
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.mixed", wires=2)
+        dev_2 = qml.device("default.mixed.legacy", wires=2)
 
         assert dev_2.num_executions == 0
 
@@ -1588,7 +1588,7 @@ class TestSamplesToCounts:
         """Test that the counts function disregards failed measurements (samples including
         NaN values) when totalling counts"""
         # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
-        device = qml.device("default.mixed", wires=2, shots=1000)
+        device = qml.device("default.mixed.legacy", wires=2, shots=1000)
         sv = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
         device.target_device._state = np.outer(sv, sv)
         device.target_device._samples = device.generate_samples()
@@ -1617,7 +1617,7 @@ class TestSamplesToCounts:
         # generate 1000 samples for 10 wires, randomly distributed between 0 and 1
         n_wires = 10
         shots = 100
-        device = qml.device("default.mixed", wires=n_wires, shots=shots)
+        device = qml.device("default.mixed.legacy", wires=n_wires, shots=shots)
 
         sv = np.random.rand(*([2] * n_wires))
         state = sv / np.linalg.norm(sv)

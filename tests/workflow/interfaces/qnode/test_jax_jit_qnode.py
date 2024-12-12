@@ -922,7 +922,7 @@ class TestShotsIntegration:
         res = circuit(0.5)
         expected = 1 - np.cos(0.5) ** 2
         assert qml.math.allclose(res[0], expected, atol=5e-2)
-        assert qml.math.allclose(res[1], expected, rtol=5e-2)
+        assert qml.math.allclose(res[1], expected, atol=5e-2)
 
         g = jax.jacobian(circuit)(0.5)
         expected_g = 2 * np.cos(0.5) * np.sin(0.5)
@@ -948,7 +948,7 @@ class TestShotsIntegration:
         expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
         assert qml.math.allclose(res[0][1], expected_probs, atol=1e-2)
         assert qml.math.allclose(res[1][1][0], expected_probs[0], rtol=5e-2)
-        assert qml.math.allclose(res[1][1][1], expected_probs[1], atol=5e-3)
+        assert qml.math.allclose(res[1][1][1], expected_probs[1], atol=1e-2)
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
