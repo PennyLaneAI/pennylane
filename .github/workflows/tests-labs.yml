@@ -61,9 +61,11 @@ jobs:
       job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ github.ref }}
       coverage_artifact_name: labs-coverage
+      additional_os_packages: openmpi-bin openmpi-doc libopenmpi-dev      
       pytest_additional_args: --import-mode=importlib
       pytest_coverage_flags:  --cov-config=pennylane/labs/.coveragerc --cov=pennylane/labs --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
       python_version: '3.10'
       pytest_test_directory: pennylane/labs/tests
       additional_pip_packages: |
+        geometric mpi4py
         ${{ needs.default-dependency-versions.outputs.jax-version }}

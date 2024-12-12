@@ -130,7 +130,7 @@ class TestGQSP:
         ]
 
         for op1, op2 in zip(decomposition, expected):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.jax
     def test_gqsp_jax(self):
