@@ -91,3 +91,54 @@ def test_combine_global_phases(phi1, phi2):
 
     # check the equivalence between statevectors before and after the transform
     assert np.allclose(original_state, transformed_state)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+@pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+def test_combine_global_phases_jax(phi1, phi2):
+    """Test that the transform works in the JAX interface"""
+    dev = qml.device("default.qubit", wires=3)
+
+    original_qnode = qml.QNode(original_qfunc, device=dev, interface="jax")
+    transformed_qnode = combine_global_phases(original_qnode)
+
+    original_state = original_qnode(phi1, phi2)
+    transformed_state = transformed_qnode(phi1, phi2)
+
+    # check the equivalence between statevectors before and after the transform
+    assert np.allclose(original_state, transformed_state)
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+@pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+def test_combine_global_phases_torch(phi1, phi2):
+    """Test that the transform works in the Torch interface"""
+    dev = qml.device("default.qubit", wires=3)
+
+    original_qnode = qml.QNode(original_qfunc, device=dev, interface="torch")
+    transformed_qnode = combine_global_phases(original_qnode)
+
+    original_state = original_qnode(phi1, phi2)
+    transformed_state = transformed_qnode(phi1, phi2)
+
+    # check the equivalence between statevectors before and after the transform
+    assert np.allclose(original_state, transformed_state)
+
+
+@pytest.mark.tf
+@pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+@pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
+def test_combine_global_phases_tf(phi1, phi2):
+    """Test that the transform works in the TensorFlow interface"""
+    dev = qml.device("default.qubit", wires=3)
+
+    original_qnode = qml.QNode(original_qfunc, device=dev, interface="tensorflow")
+    transformed_qnode = combine_global_phases(original_qnode)
+
+    original_state = original_qnode(phi1, phi2)
+    transformed_state = transformed_qnode(phi1, phi2)
+
+    # check the equivalence between statevectors before and after the transform
+    assert np.allclose(original_state, transformed_state)
