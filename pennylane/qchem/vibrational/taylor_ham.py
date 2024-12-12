@@ -528,7 +528,7 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
     return harm_pot.normal_order()
 
 
-def taylor_bosonic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
+def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     """Return Taylor bosonic vibrational Hamiltonian.
 
      The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_.
