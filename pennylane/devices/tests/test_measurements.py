@@ -1775,7 +1775,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return 1
 
-            def process_density_matrix(self, state, wire_order):
+            def process_density_matrix(self, density_matrix, wire_order):
                 return 1
 
         @qml.qnode(dev)
@@ -1799,7 +1799,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return 1
 
-            def process_density_matrix(self, state, wire_order):
+            def process_density_matrix(self, density_matrix, wire_order):
                 return 1
 
         @qml.qnode(dev)
