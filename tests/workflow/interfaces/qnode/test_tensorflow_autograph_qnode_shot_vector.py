@@ -410,7 +410,7 @@ class TestReturnShotVectorHessian:
 
         if interface == "tf" and diff_method == "spsa":
             # TODO: Find out why.
-            pytest.skip("SPSA gradient does not support this particular test case")
+            pytest.skip("SPSA gradient does not support this particular test case [sc-33150]")
 
         par_0 = tf.Variable(1.5, dtype=tf.float64)
         par_1 = tf.Variable(0.7, dtype=tf.float64)
