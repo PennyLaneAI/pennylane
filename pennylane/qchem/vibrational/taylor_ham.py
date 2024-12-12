@@ -16,8 +16,7 @@ import itertools
 
 import numpy as np
 
-from pennylane.bose import BoseSentence, BoseWord
-from pennylane.bose.bosonic_mapping import unary_mapping, binary_mapping
+from pennylane.bose import BoseSentence, BoseWord, unary_mapping, binary_mapping
 
 # pylint: disable=import-outside-toplevel
 
