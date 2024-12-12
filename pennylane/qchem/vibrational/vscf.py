@@ -388,7 +388,7 @@ def _rotate_hamiltonian(ham_data, mode_rots, modals):
     return h_data
 
 
-def vscf_hamiltonian(ham_data, dipole_data=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
+def vscf_integrals(ham_data, dipole_data=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
     r"""Generates VSCF rotated integrals for vibrational Hamiltonian.
 
     Args:
