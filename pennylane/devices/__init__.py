@@ -136,7 +136,7 @@ Qubit Simulation Tools
 
 
 Qubit Mixed-State Simulation Tools
-----------------------
+-----------------------------------
 
 .. currentmodule:: pennylane.devices.qubit_mixed
 .. automodule:: pennylane.devices.qubit_mixed

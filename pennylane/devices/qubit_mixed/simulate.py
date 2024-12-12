@@ -155,29 +155,30 @@ def simulate(
     state_cache: Optional[dict] = None,
     **execution_kwargs,
 ) -> Result:
-    """Simulate a single quantum script.
+    r"""
+    Simulate a single quantum script.
 
-        This is an internal function that will be called by ``default.mixed``.
+    This is an internal function that will be called by ``default.mixed``.
 
-        Args:
-            circuit (QuantumScript): The single circuit to simulate
-            rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]): A
-                seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-                If no value is provided, a default RNG will be used.
-            prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-                the key to the JAX pseudo random number generator. If None, a random key will be
-                generated. Only for simulation using JAX.
-            debugger (_Debugger): The debugger to use
-            interface (str): The machine learning interface to create the initial state with
-            readout_errors (List[Callable]): List of channels to apply to each wire being measured
-            to simulate readout errors.
+    Args:
+        circuit (QuantumScript): The single circuit to simulate
+        rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
+        debugger (_Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors.
 
-        Returns:
-            tuple(TensorLike): The results of the simulation
+    Returns:
+        tuple(TensorLike): The results of the simulation
 
-        Note that this function can return measurements for non-commuting observables simultaneously.
+    Note that this function can return measurements for non-commuting observables simultaneously.
 
-        This function assumes that all operations provide matrices.
+    This function assumes that all operations provide matrices.
 
     >>> qs = qml.tape.QuantumScript(
     ...     [qml.RX(1.2, wires=0)],
@@ -186,8 +187,8 @@ def simulate(
     >>> simulate(qs)
     (0.0, array([0.68117888, 0.        , 0.31882112, 0.        ]))
 
-
     """
+
     prng_key = execution_kwargs.pop("prng_key", None)
     circuit = circuit.map_to_standard_wires()
 

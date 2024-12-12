@@ -146,6 +146,7 @@ def _phase_shift(state, axis, phase_factor=-1, debugger=None, **_):
         - The phase shift operator U for single-qubit case is:
           U = [[1, 0],
                [0, phase_factor]]
+
     """
     n_dim = math.ndim(state)
     sl_0 = _get_slice(0, axis, n_dim)
