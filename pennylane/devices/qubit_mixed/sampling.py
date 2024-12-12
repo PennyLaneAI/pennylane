@@ -16,12 +16,13 @@ Submodule for sampling a qubit mixed state.
 """
 # pylint: disable=too-many-positional-arguments, too-many-arguments
 import functools
-from typing import Callable
+from typing import Callable, Union
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
+from pennylane.devices.qubit.sampling import jax_random_split, sample_probs
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -30,6 +31,7 @@ from pennylane.measurements import (
     Shots,
     VarianceMP,
 )
+from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.ops import Sum
 from pennylane.typing import TensorLike
 
@@ -127,6 +129,12 @@ def _measure_with_samples_diagonalizing_gates(
 
     def _process_single_shot_copy(samples):
         samples_processed = _process_samples(mp, samples, wires)
+        
+        
+        if not isinstance(mp, CountsMP):
+            res = math.squeeze(samples_processed)
+        return res[0]
+    
         if isinstance(mp, SampleMP):
             return math.squeeze(samples_processed)
         if isinstance(mp, CountsMP):
@@ -178,8 +186,81 @@ def _measure_with_samples_diagonalizing_gates(
     return _process_single_shot_copy(samples)
 
 
+def _measure_classical_shadow(
+    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
+    state: np.ndarray,
+    shots: Shots,
+    is_state_batched: bool = False,
+    rng=None,
+    prng_key=None,
+    readout_errors=None,
+):
+    """
+    Returns the result of a classical shadow measurement on the given state.
+
+    A classical shadow measurement doesn't fit neatly into the current measurement API
+    since different diagonalizing gates are used for each shot. Here it's treated as a
+    state measurement with shots instead of a sample measurement.
+
+    Args:
+        mp (~.measurements.SampleMeasurement): The sample measurement to perform
+        state (np.ndarray[complex]): The state vector to sample from
+        shots (~.measurements.Shots): The number of samples to take
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+
+    Returns:
+        TensorLike[Any]: Sample measurement results
+    """
+    # pylint: disable=unused-argument
+
+    # the list contains only one element based on how we group measurements
+    mp = mp[0]
+
+    wires = qml.wires.Wires(range(len(state.shape)))
+
+    if shots.has_partitioned_shots:
+        return [tuple(mp.process_state_with_shots(state, wires, s, rng=rng) for s in shots)]
+
+    return [mp.process_state_with_shots(state, wires, shots.total_shots, rng=rng)]
+
+
+def _measure_hamiltonian_with_samples(
+    mp: list[SampleMeasurement],
+    state: np.ndarray,
+    shots: Shots,
+    is_state_batched: bool = False,
+    rng=None,
+    prng_key=None,
+    readout_errors=None,
+):
+    # the list contains only one element based on how we group measurements
+    mp = mp[0]
+
+    # if the measurement process involves a Hamiltonian, measure each
+    # of the terms separately and sum
+    def _sum_for_single_shot(s, prng_key=None):
+        results = measure_with_samples(
+            [ExpectationMP(t) for t in mp.obs.terms()[1]],
+            state,
+            s,
+            is_state_batched=is_state_batched,
+            rng=rng,
+            prng_key=prng_key,
+            readout_errors=readout_errors,
+        )
+        return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
+
+    keys = jax_random_split(prng_key, num=shots.num_copies)
+    unsqueezed_results = tuple(
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
+    )
+    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
+
+
 def _measure_sum_with_samples(
-    mp: SampleMeasurement,
+    mp: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -188,28 +269,25 @@ def _measure_sum_with_samples(
     readout_errors: list[Callable] = None,
 ):
     """Compute expectation values of Sum Observables"""
+    mp = mp[0]
 
-    def _sum_for_single_shot(s):
-        results = []
-        for term in mp.obs:
-            results.append(
-                measure_with_samples(
-                    ExpectationMP(term),
-                    state,
-                    s,
-                    is_state_batched=is_state_batched,
-                    rng=rng,
-                    prng_key=prng_key,
-                    readout_errors=readout_errors,
-                )
-            )
-
+    def _sum_for_single_shot(s, prng_key=None):
+        results = measure_with_samples(
+            [ExpectationMP(t) for t in mp.obs],
+            state,
+            s,
+            is_state_batched=is_state_batched,
+            rng=rng,
+            prng_key=prng_key,
+            readout_errors=readout_errors,
+        )
         return sum(results)
 
-    if shots.has_partitioned_shots:
-        return tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
-
-    return _sum_for_single_shot(shots)
+    keys = jax_random_split(prng_key, num=shots.num_copies)
+    unsqueezed_results = tuple(
+        _sum_for_single_shot(type(shots)(s), key) for s, key in zip(shots, keys)
+    )
+    return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
 def sample_state(
@@ -251,7 +329,7 @@ def sample_state(
 
     # After getting the correct probs, there's no difference between mixed states and pure states.
     # Therefore, we directly re-use the sample_probs from the module qubit.
-    return qml.devices.qubit.sampling.sample_probs(
+    return sample_probs(
         probs, shots, num_wires, is_state_batched, rng, prng_key=prng_key
     )
 
