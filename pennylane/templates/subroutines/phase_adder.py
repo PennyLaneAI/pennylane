@@ -19,9 +19,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
-def _add_k_fourier(k, wires):
+def _add_k_fourier(k, wires: WiresLike):
     """Adds k in the Fourier basis"""
     op_list = []
     for j, wire in enumerate(wires):
@@ -123,13 +124,12 @@ class PhaseAdder(Operation):
     grad_method = None
 
     def __init__(
-        self, k, x_wires, mod=None, work_wire=None, id=None
+        self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
-        work_wire = qml.wires.Wires(work_wire) if work_wire is not None else work_wire
         x_wires = qml.wires.Wires(x_wires)
 
-        num_work_wires = 0 if work_wire is None else len(work_wire)
+        num_work_wires = len(work_wire)
 
         if not qml.math.is_abstract(mod):
             if mod is None:
@@ -201,7 +201,9 @@ class PhaseAdder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        k, x_wires: WiresLike, mod, work_wire: WiresLike
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:

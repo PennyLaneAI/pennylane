@@ -17,6 +17,7 @@ Contains the Adder template.
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 class Adder(Operation):
@@ -100,12 +101,12 @@ class Adder(Operation):
     grad_method = None
 
     def __init__(
-        self, k, x_wires, mod=None, work_wires=None, id=None
+        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
 
-        num_works_wires = 0 if work_wires is None else len(work_wires)
+        num_works_wires = len(work_wires)
 
         if mod is None:
             mod = 2 ** len(x_wires)
@@ -169,7 +170,9 @@ class Adder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        k, x_wires: WiresLike, mod, work_wires: WiresLike
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -194,7 +197,7 @@ class Adder(Operation):
         op_list = []
         if mod == 2 ** len(x_wires):
             qft_wires = x_wires
-            work_wire = None
+            work_wire = ()
         else:
             qft_wires = work_wires[:1] + x_wires
             work_wire = work_wires[1:]
