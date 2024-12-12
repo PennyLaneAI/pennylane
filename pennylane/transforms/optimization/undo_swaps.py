@@ -110,5 +110,6 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
     gates.reverse()
 
     new_tape = tape.copy(operations=gates)
+    new_tape.trainable_params = tape.trainable_params
 
     return [new_tape], null_postprocessing
