@@ -109,7 +109,7 @@ jobs:
         with:
           version: ${{ inputs.uv_version }}
           enable-cache: true
-          cache-dependency-glob: 'requirements**.txt'
+          cache-dependency-glob: 'requirements-*.txt'
       
       - name: Setup Python
         uses: actions/setup-python@v5
