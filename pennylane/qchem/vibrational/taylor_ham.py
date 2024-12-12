@@ -78,8 +78,7 @@ def _fit_onebody(onemode_op, max_deg, min_deg=3):
 
     if max_deg < min_deg:
         raise ValueError(
-            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than
-            min_deg."
+            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than min_deg."
         )
 
     nmodes, quad_order = np.shape(onemode_op)
@@ -142,8 +141,7 @@ def _fit_twobody(twomode_op, max_deg, min_deg=3):
 
     if max_deg < min_deg:
         raise ValueError(
-            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than
-            min_deg."
+            f"Taylor expansion degree is {max_deg}<{min_deg}, please set max_deg greater than min_deg."
         )
 
     fit_degs = _twobody_degs(max_deg, min_deg)
@@ -585,8 +583,7 @@ def taylor_hamiltonian(
 
     if mapping not in ["binary", "unary"]:
         raise ValueError(
-            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary'
-            mapping."
+            f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
         )
 
     if mapping == "binary":
