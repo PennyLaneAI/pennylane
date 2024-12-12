@@ -63,7 +63,7 @@ class TestJaxJitRun:
         b = jnp.array(0.2)
 
         with device.tracker:
-            res = cost(a, b)
+            res = jax.jit(cost)(a, b)
 
         assert len(res) == 2
 
