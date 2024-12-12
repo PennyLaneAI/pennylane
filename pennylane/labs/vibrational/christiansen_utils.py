@@ -86,7 +86,9 @@ def _cform_twomode_kinetic(pes, n_states):
     for aa in range(nmodes):
         for bb in range(nmodes):
             all_mode_combos.append([aa, bb])
-    all_bos_combos = list(itertools.product(range(n_states), range(n_states), range(n_states), range(n_states)))
+    all_bos_combos = list(
+        itertools.product(range(n_states), range(n_states), range(n_states), range(n_states))
+    )
 
     rank = comm.Get_rank()
     size = comm.Get_size()
@@ -253,7 +255,9 @@ def _cform_twomode(pes, n_states):
     for aa in range(nmodes):
         for bb in range(nmodes):
             all_mode_combos.append([aa, bb])
-    all_bos_combos = list(itertools.product(range(n_states), range(n_states), range(n_states), range(n_states)))
+    all_bos_combos = list(
+        itertools.product(range(n_states), range(n_states), range(n_states), range(n_states))
+    )
 
     rank = comm.Get_rank()
     size = comm.Get_size()
@@ -332,7 +336,9 @@ def _cform_twomode_dipole(pes, n_states):
     for aa in range(nmodes):
         for bb in range(nmodes):
             all_mode_combos.append([aa, bb])
-    all_bos_combos = list(itertools.product(range(n_states), range(n_states), range(n_states), range(n_states)))
+    all_bos_combos = list(
+        itertools.product(range(n_states), range(n_states), range(n_states), range(n_states))
+    )
 
     rank = comm.Get_rank()
     size = comm.Get_size()
@@ -416,7 +422,12 @@ def _cform_threemode(pes, n_states):
 
     all_bos_combos = list(
         itertools.product(
-            range(n_states), range(n_states), range(n_states), range(n_states), range(n_states), range(n_states)
+            range(n_states),
+            range(n_states),
+            range(n_states),
+            range(n_states),
+            range(n_states),
+            range(n_states),
         )
     )
     rank = comm.Get_rank()
@@ -509,7 +520,12 @@ def _cform_threemode_dipole(pes, n_states):
                 all_mode_combos.append([aa, bb, cc])
     all_bos_combos = list(
         itertools.product(
-            range(n_states), range(n_states), range(n_states), range(n_states), range(n_states), range(n_states)
+            range(n_states),
+            range(n_states),
+            range(n_states),
+            range(n_states),
+            range(n_states),
+            range(n_states),
         )
     )
     rank = comm.Get_rank()

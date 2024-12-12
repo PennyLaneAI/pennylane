@@ -157,7 +157,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False):
 
 
 def christiansen_dipole(pes, n_states=16, cubic=False):
-    """Computes the Christiansen integral coefficients for dipole construction.
+    """Computes the Christiansen form dipole operators in the qubit basis.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
@@ -166,9 +166,9 @@ def christiansen_dipole(pes, n_states=16, cubic=False):
 
     Returns:
         tuple: a tuple containing:
-            - list(floats): integral coefficients for x-displacements
-            - list(floats): integral coefficients for y-displacements
-            - list(floats): integral coefficients for z-displacements
+            - Operator: the Christiansen dipole operator in the qubit basis for x-displacements
+            - Operator: the Christiansen dipole operator in the qubit basis for y-displacements
+            - Operator: the Christiansen dipole operator in the qubit basis for z-displacements
     """
 
     d_arr = christiansen_integrals_dipole(pes, n_states=n_states, cubic=cubic)
@@ -192,4 +192,3 @@ def christiansen_dipole(pes, n_states=16, cubic=False):
     cform_qubit_z = christiansen_mapping(cform_bosonic_z)
 
     return cform_qubit_x, cform_qubit_y, cform_qubit_z
-
