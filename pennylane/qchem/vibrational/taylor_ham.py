@@ -42,8 +42,8 @@ def _remove_harmonic(freqs, onemode_pes):
 
     Returns:
         tuple: A tuple containing the following:
-         - TensorLike[float] : anharmonic part of the PES
-         - TensorLike[float] : harmonic part of the PES
+            - TensorLike[float] : anharmonic part of the PES
+            - TensorLike[float] : harmonic part of the PES
     """
     nmodes, quad_order = np.shape(onemode_pes)
     grid, _ = np.polynomial.hermite.hermgauss(quad_order)
