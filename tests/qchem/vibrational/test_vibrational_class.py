@@ -344,7 +344,6 @@ def test_error_mode_localization():
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
     mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
-
     freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)
     with pytest.raises(ValueError, match="The `bins` list cannot be empty."):
         vibrational.localize_normal_modes(freqs, vecs, bins=[])
