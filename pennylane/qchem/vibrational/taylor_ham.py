@@ -568,7 +568,7 @@ def taylor_hamiltonian(
             Default is `"binary"`.
         n_states(int): maximum number of allowed bosonic states
         ps (bool): Flag to return the result as a PauliSentence instead of an
-            operator. Defaults to False.
+            operator. Defaults to ``False``.
         wire_map (dict): A dictionary defining how to map the states of
             the Bose operator to qubit wires. If None, integers used to
             label the bosonic states will be used as wire labels. Defaults to None.
