@@ -44,7 +44,7 @@ def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[Measurement
 
 
 class CollectOpsandMeas(PlxprInterpreter):
-    """Collect the dropped operations and measurements in a jaxpr. Used by ``convert_to_tape``.
+    """Collect the dropped operations and measurements in a plxpr. Used by ``convert_to_tape``.
 
     .. code-block:: python
 
@@ -61,9 +61,9 @@ class CollectOpsandMeas(PlxprInterpreter):
 
     >>> from pennylane.tape.plxpr_conversion import CollectOpsandMeas
     >>> qml.capture.enable()
-    >>> jaxpr = jax.make_jaxpr(f)(0.5)
+    >>> plxpr = jax.make_plxpr(f)(0.5)
     >>> collector = CollectOpsandMeas()
-    >>> collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.2)
+    >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
     >>> collector.state
     {'ops': [X(0),
@@ -193,13 +193,13 @@ def _(self, wires, reset, postselect):
     return m0
 
 
-def plxpr_to_tape(jaxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
-    """Convert a jaxpr into a tape.
+def plxpr_to_tape(plxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
+    """Convert a plxpr into a tape.
 
     Args:
-        jaxpr (jax.core.Jaxpr): a pennylane variant jaxpr
+        plxpr (jax.core.Jaxpr): a pennylane variant jaxpr
         consts (list): the consts for the jaxpr
-        *args : the arguments to execute the jaxpr with
+        *args : the arguments to execute the plxpr with
 
     Keyword Args:
         shots (None, int, Sequence[int], Shots): the shots for the tape.
@@ -222,8 +222,8 @@ def plxpr_to_tape(jaxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> Quantum
 
         qml.capture.enable()
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
-        tape = qml.capture.convert_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2)
+        plxpr = jax.make_jaxpr(f)(0.5)
+        tape = qml.capture.convert_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
         print(qml.drawer.tape_text(tape, decimals=2))
 
     .. code-block::
@@ -235,6 +235,6 @@ def plxpr_to_tape(jaxpr: "jax.core.Jaxpr", consts, *args, shots=None) -> Quantum
     """
 
     collector = CollectOpsandMeas()
-    collector.eval(jaxpr, consts, *args)
+    collector.eval(plxpr, consts, *args)
     assert collector.state
     return QuantumScript(collector.state["ops"], collector.state["measurements"], shots=shots)
