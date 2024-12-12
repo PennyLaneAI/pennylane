@@ -479,7 +479,7 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the frequencies
         is_local (bool): Flag whether the vibrational modes are localized. Default is True.
-        uloc (list(float)): localization matrix indicating the relationship between original and
+        uloc (list(list(float))): localization matrix indicating the relationship between original and
             localized modes
 
     Returns:
@@ -537,7 +537,7 @@ def taylor_bosonic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
         taylor_coeffs (list(float)): the coefficients of the Hamiltonian
         freqs (list(float)): the harmonic frequencies in reciprocal centimetre
         is_localal (bool): Flag whether the vibrational modes are localized. Default is ``True``.
-        uloc (list(float)): localization matrix indicating the relationship between original and
+        uloc (list(list(float))): localization matrix indicating the relationship between original and
             localized modes
 
     Returns:
@@ -564,7 +564,8 @@ def taylor_hamiltonian(
         pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
-        mapping (str): Mapping used to map to qubit basis. Default is `"binary"`.
+        mapping (str): Mapping used to map to qubit basis. Options are `"binary"` or `"unary"`. Default is
+            `"binary"`.
         n_states(int): maximum number of allowed bosonic states
         ps (bool): Flag to return the result as a PauliSentence instead of an
             operator. Defaults to False.
@@ -579,9 +580,9 @@ def taylor_hamiltonian(
     mapping.lower().strip()
     coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
     bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)
-    
+
     if mapping not in ["binary", "unary"]:
-                raise ValueError(
+        raise ValueError(
             f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
         )
 
