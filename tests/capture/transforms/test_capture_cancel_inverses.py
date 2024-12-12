@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
-from functools import partial
 
-# pylint:disable=wrong-import-position
+# pylint:disable=wrong-import-position,protected-access
 import pytest
 
 import pennylane as qml
@@ -130,7 +129,7 @@ class TestCancelInversesInterpreter:
         assert jaxpr.eqns[1].primitive == qml.S._primitive
         assert jaxpr.eqns[2].primitive == qml.ops.Adjoint._primitive
 
-    def test_returned_op_is_not_cancelled(self, lazy_adjoint):
+    def test_returned_op_is_not_cancelled(self, lazy_adjoint):  # pylint: disable=unused-argument
         """Test that ops that are returned by the function being transformed are not cancelled."""
 
         @CancelInversesInterpreter()
@@ -200,11 +199,119 @@ class TestCancelInversesInterpreter:
     def test_cond_higher_order_primitive(self, lazy_adjoint):
         """Test that cond higher order primitives are transformed correctly."""
 
+        @CancelInversesInterpreter()
+        def f(x):
+            qml.RX(x, 0)
+
+            @qml.cond(x > 2)
+            def cond_fn():
+                qml.Hadamard(0)
+                qml.Hadamard(0)
+                return qml.S(0)
+
+            @cond_fn.else_if(x > 1)
+            def _():
+                qml.S(0)
+                qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+                return qml.T(0)
+
+            @cond_fn.otherwise
+            def _():
+                qml.adjoint(qml.T(0), lazy=lazy_adjoint)
+                qml.T(0)
+                return qml.Hadamard(0)
+
+            return cond_fn()
+
+        jaxpr = jax.make_jaxpr(f)(1.5)
+        # 2 primitives for true and elif branch conditions of the conditional
+        assert len(jaxpr.eqns) == 4
+        assert jaxpr.eqns[2].primitive == qml.RX._primitive
+        assert jaxpr.eqns[3].primitive == cond_prim
+
+        # true branch
+        branch = jaxpr.eqns[3].params["jaxpr_branches"][0]
+        assert len(branch.eqns) == 1
+        assert branch.eqns[0].primitive == qml.S._primitive
+        assert branch.outvars[0] == branch.eqns[0].outvars[0]
+
+        # elif branch
+        branch = jaxpr.eqns[3].params["jaxpr_branches"][1]
+        assert len(branch.eqns) == 1
+        assert branch.eqns[0].primitive == qml.T._primitive
+        assert branch.outvars[0] == branch.eqns[0].outvars[0]
+
+        # true branch
+        branch = jaxpr.eqns[3].params["jaxpr_branches"][2]
+        assert len(branch.eqns) == 1
+        assert branch.eqns[0].primitive == qml.Hadamard._primitive
+        assert branch.outvars[0] == branch.eqns[0].outvars[0]
+
     def test_for_loop_higher_order_primitive(self, lazy_adjoint):
         """Test that for_loop higher order primitives are transformed correctly."""
 
+        @CancelInversesInterpreter()
+        def f(x, n):
+            qml.RX(x, 0)
+
+            @qml.for_loop(n)
+            def loop_fn(i):  # pylint: disable=unused-argument
+                qml.S(0)
+                qml.Hadamard(1)
+                qml.Hadamard(1)
+                qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+                qml.RX(x, 0)
+
+            loop_fn()
+            qml.RY(x, 1)
+
+        jaxpr = jax.make_jaxpr(f)(1.5, 4)
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == for_loop_prim
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+
+        inner_jaxpr = jaxpr.eqns[1].params["jaxpr_body_fn"]
+        assert len(inner_jaxpr.eqns) == 1
+        assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
+
     def test_while_loop_higher_order_primitive(self, lazy_adjoint):
         """Test that while_loop higher order primitives are transformed correctly."""
+
+        @CancelInversesInterpreter()
+        def f(x, n):
+            qml.RX(x, 0)
+
+            @qml.while_loop(lambda i: i < 2 * n)
+            def loop_fn(i):
+                qml.S(0)
+                qml.Hadamard(1)
+                qml.Hadamard(1)
+                qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+                qml.RX(x, 0)
+                return i + 1
+
+            loop_fn(x)
+            qml.RY(x, 1)
+
+        jaxpr = jax.make_jaxpr(f)(1.5, 4)
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == while_loop_prim
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+
+        inner_jaxpr = jaxpr.eqns[1].params["jaxpr_body_fn"]
+        assert len(inner_jaxpr.eqns) == 2
+        # The i + 1 primitive and the RX may get reordered, but the outcome will not be impacted
+        assert any(eqn.primitive == qml.RX._primitive for eqn in inner_jaxpr.eqns)
+
+        # Check that the output of the i + 1 is returned
+        if inner_jaxpr.eqns[0].primitive == qml.RX._primitive:
+            add_eqn = inner_jaxpr.eqns[1]
+        else:
+            add_eqn = inner_jaxpr.eqns[0]
+        assert add_eqn.primitive.name == "add"
+        assert inner_jaxpr.outvars[0] == add_eqn.outvars[0]
 
     def test_qnode_higher_order_primitive(self, lazy_adjoint):
         """Test that qnode higher order primitives are transformed correctly."""
@@ -240,3 +347,33 @@ class TestCancelInversesInterpreter:
     @pytest.mark.parametrize("grad_fn", [qml.grad, qml.jacobian])
     def test_grad_and_jac_higher_order_primitives(self, grad_fn, lazy_adjoint):
         """Test that grad and jacobian higher order primitives are transformed correctly."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(y):
+            qml.S(0)
+            qml.Hadamard(1)
+            qml.Hadamard(1)
+            qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+            qml.RX(y, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        @CancelInversesInterpreter()
+        def f(x):
+            qml.RX(x, 0)
+            out = grad_fn(circuit)(x)
+            qml.RY(x, 1)
+            return out
+
+        jaxpr = jax.make_jaxpr(f)(1.5)
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == grad_prim if grad_fn == qml.grad else jacobian_prim
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+
+        inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]
+        assert len(inner_jaxpr.eqns) == 1
+        qfunc_jaxpr = inner_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert qfunc_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
