@@ -150,7 +150,7 @@ class TestPhaseAdder:
                 1,
                 [0, 1, 2],
                 9,
-                (),
+                None,
                 (r"If mod is not"),
             ),
             (
@@ -169,7 +169,7 @@ class TestPhaseAdder:
         with pytest.raises(ValueError, match=msg_match):
             qml.PhaseAdder(k, x_wires, mod, work_wire)
 
-    @pytest.mark.parametrize("work_wire", [[], [3, 4]])
+    @pytest.mark.parametrize("work_wire", [None, [], [3, 4]])
     def test_validation_of_num_work_wires(self, work_wire):
         """Test that when mod is not 2**len(x_wires), validation confirms two
         work wires are present, while any work wires are accepted for mod=2**len(x_wires)"""

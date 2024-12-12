@@ -85,7 +85,7 @@ class TestModExp:
                 [3, 4, 5],
                 8,
                 5,
-                (),
+                None,
                 "Work wires must be specified for ModExp",
             ),
             (
