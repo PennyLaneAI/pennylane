@@ -138,7 +138,7 @@ def run_autograph(fn):
     .. note::
 
         There are some limitations and sharp bits regarding AutoGraph; to better understand
-        supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
+        supported behaviour and limitations, see :doc:`/development/autograph`.
 
     .. warning::
 
