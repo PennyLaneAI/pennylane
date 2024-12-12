@@ -14,20 +14,18 @@
 """
 Code relevant for performing measurements on a qubit mixed state.
 """
+# pylint:disable=too-many-branches, import-outside-toplevel, unused-argument
 
 from collections.abc import Callable
 
 from scipy.sparse import csr_matrix
 
-from pennylane import math, queuing
+from pennylane import math
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementValue,
-    ProbabilityMP,
     StateMeasurement,
-    StateMP,
-    VarianceMP,
 )
 from pennylane.ops import LinearCombination, Sum
 from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence

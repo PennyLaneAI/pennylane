@@ -143,24 +143,6 @@ def _measure_with_samples_diagonalizing_gates(
 
         return tuple(processed)
 
-        if isinstance(mp, SampleMP):
-            return math.squeeze(samples_processed)
-        if isinstance(mp, CountsMP):
-            process_func = functools.partial(mp.process_samples, wire_order=wires)
-        elif isinstance(mp, ExpectationMP):
-            process_func = _process_expval_samples
-        elif isinstance(mp, VarianceMP):
-            process_func = _process_variance_samples
-        else:
-            raise NotImplementedError
-
-        if is_state_batched:
-            ret = []
-            for processed_sample in samples_processed:
-                ret.append(process_func(processed_sample))
-            return math.squeeze(ret)
-        return process_func(samples_processed)
-
     try:
         prng_key, _ = jax_random_split(prng_key)
         samples = sample_state(
@@ -186,38 +168,6 @@ def _measure_with_samples_diagonalizing_gates(
         return tuple(zip(*processed_samples))
 
     return processed_samples[0]
-
-    # if there is a shot vector, build a list containing results for each shot entry
-    if shots.has_partitioned_shots:
-        processed_samples = []
-        for s in shots:
-            # Like default.qubit currently calling sample_state for each shot entry,
-            # but it may be better to call sample_state just once with total_shots,
-            # then use the shot_range keyword argument
-            samples = sample_state(
-                state,
-                shots=s,
-                is_state_batched=is_state_batched,
-                wires=wires,
-                rng=rng,
-                prng_key=prng_key,
-                readout_errors=readout_errors,
-            )
-            processed_samples.append(_process_single_shot_copy(samples))
-
-        return tuple(processed_samples)
-
-    samples = sample_state(
-        state,
-        shots=shots.total_shots,
-        is_state_batched=is_state_batched,
-        wires=wires,
-        rng=rng,
-        prng_key=prng_key,
-        readout_errors=readout_errors,
-    )
-
-    return _process_single_shot_copy(samples)
 
 
 def _measure_classical_shadow(

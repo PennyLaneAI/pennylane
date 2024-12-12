@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.devices.qubit_mixed import apply_operation, create_initial_state, measure
-from pennylane.devices.qubit_mixed.measure import get_measurement_function
 
 ml_frameworks_list = [
     "numpy",
