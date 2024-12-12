@@ -216,12 +216,28 @@ class VibronicHamiltonian:
 
         for i in range(self.states):
             for j in range(i+1, self.states+1):
-                sum_k = sum([self.fragment(k) for k in range(i+1, self.states+1)], VibronicBlockMatrix(dim=self.states))
-                com_ij = commutator(self.fragment(i), self.fragment(j))
-                epsilon += commutator(self.fragment(i) + 2*sum_k, com_ij)
+                epsilon += self.commute_fragments(i, i, j)
+                for k in range(i+1, self.states+1):
+                    epsilon += 2*self.commute_fragments(k, i, j) #pylint: disable=arguments-out-of-order
 
         return scalar*epsilon
 
+    def commute_fragments(self, i, j, k):
+        """Returns [H_i, [H_j, H_k]]"""
+        if i == self.states and j < self.states and k == self.states:
+            return self._commute_hn_hm_hn(j)
+
+        return commutator(self.fragment(i), commutator(self.fragment(j), self.fragment(k)))
+
+    def _commute_hn_hm_hn(self, m):
+        """Special case for [H_N, [H_m, H_N]] where N = self.states and m < self.states"""
+        block_matrix = VibronicBlockMatrix(dim=self.states)
+        for j in range(self.states):
+            coeffs = self.betas[j, m^j] * np.multiply.outer(self.omegas, self.omegas)
+            operator = VibronicWord({("PP"): coeffs})
+            block_matrix.set_block(j, m^j, operator)
+
+        return 2*block_matrix
 
 def commutator(a: VibronicBlockMatrix, b: VibronicBlockMatrix) -> VibronicBlockMatrix:
     return a@b - b@a
@@ -251,16 +267,3 @@ def _simplify_word(word: str) -> str:
         return "I"
 
     return word.replace("I", "")
-
-if __name__ == "__main__":
-    n = 3
-    m = 4
-    alphas = np.random.random((n, n, m))
-    betas = np.random.random((n, n, m, m))
-    lambdas = np.random.random((n, n))
-    omegas = np.random.random((m,))
-
-    vham = VibronicHamiltonian(n, m, alphas, betas, lambdas, omegas)
-    frag1 = vham.fragment(2)
-    frag2 = vham.fragment(3)
-    print(commutator(frag1, frag2))

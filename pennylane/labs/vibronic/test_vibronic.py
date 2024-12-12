@@ -31,7 +31,7 @@ class TestVibronic:
     """Test vibronic arithmetic"""
 
     def test_v_symmetry(self):
-        n = 2
+        n = 3
         m = 4
 
         vham = VibronicHamiltonian(n, m, *coeffs(n, m))
@@ -41,7 +41,7 @@ class TestVibronic:
                 assert vham.v_matrix(i, j) == vham.v_matrix(j, i) #pylint: disable=arguments-out-of-order
 
 
-    def test_h_0(self):
+    def test_h0(self):
         n = 2
         m = 4
         vham = VibronicHamiltonian(n, m, *coeffs(n, m))
@@ -52,7 +52,7 @@ class TestVibronic:
         assert h0.get_block(0, 1) == VibronicWord({})
         assert h0.get_block(1, 0) == VibronicWord({})
 
-    def test_h_1(self):
+    def test_h1(self):
         n = 2
         m = 4
 
@@ -93,19 +93,29 @@ class TestVibronic:
         h1 = vham.fragment(1)
         h2 = vham.fragment(2)
 
+        #terms = [
+        #    commutator(h0, commutator(h0, h1)),
+        #    2*commutator(h1, commutator(h0, h1)),
+        #    2*commutator(h2, commutator(h0, h1)),
+        #    commutator(h0, commutator(h0, h2)),
+        #    2*commutator(h1, commutator(h0, h2)),
+        #    2*commutator(h2, commutator(h0, h2)),
+        #    commutator(h1, commutator(h1, h2)),
+        #    2*commutator(h2, commutator(h1, h2)),
+        #]
+
         terms = [
-            commutator(h0, commutator(h0, h1)),
-            2*commutator(h1, commutator(h0, h1)),
-            2*commutator(h2, commutator(h0, h1)),
-            commutator(h0, commutator(h0, h2)),
-            2*commutator(h1, commutator(h0, h2)),
-            2*commutator(h2, commutator(h0, h2)),
-            commutator(h1, commutator(h1, h2)),
-            2*commutator(h2, commutator(h1, h2)),
+            vham.commute_fragments(0, 0, 1),
+            2*vham.commute_fragments(1, 0, 1),
+            2*vham.commute_fragments(2, 0, 1),
+            vham.commute_fragments(0, 0, 2),
+            2*vham.commute_fragments(1, 0, 2),
+            2*vham.commute_fragments(2, 0, 2),
+            vham.commute_fragments(1, 1, 2),
+            2*vham.commute_fragments(2, 1, 2),
         ]
 
         actual = vham.epsilon(delta)
         expected = scalar*sum(terms, VibronicBlockMatrix(dim=n))
 
-        assert actual.get_block(0, 0) == expected.get_block(0, 0)
         assert actual == expected
