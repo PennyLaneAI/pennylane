@@ -53,7 +53,7 @@ def _build_Fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
 
 
 def _update_h(h_mat, mode, active_ham_terms, mode_rot, ts_act, modals):
-    r"""Updates value of h matrix for a mode after other modes have been rotated.
+    r"""Updates value of Hamiltonian matrix for a mode after other modes have been rotated.
 
     Args:
         h_mat (Array[Array[float]]): the hamiltonian matrix
@@ -85,7 +85,9 @@ def _update_h(h_mat, mode, active_ham_terms, mode_rot, ts_act, modals):
 
 
 def _find_active_terms(ham_data, modals, cutoff):
-    r"""Identifies the active terms in the Hamiltonian
+    r"""Identifies the active terms in the Hamiltonian, following the equations 20-22
+    in `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
+    The equation suggests that if mode m is not contained in a Hamiltonian term, it evaluates to zero.
 
     Args:
         ham_data (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
@@ -104,39 +106,29 @@ def _find_active_terms(ham_data, modals, cutoff):
     nmodes = np.shape(ham_data[0])[0]
 
     for n, ham_n in enumerate(ham_data):
-        ham_n = ham_data[n]
         for idx, h_val in np.ndenumerate(ham_n):
             if np.abs(h_val) < cutoff:
                 continue
 
-            M_arr = idx[: n + 1]
+            modal_indices = idx[: n + 1]
 
-            right_order = True
-            for i in range(n):
-                if M_arr[i] <= M_arr[i + 1]:
-                    right_order = False
-                    break
-
-            if right_order:
-                exc_arr = idx[n + 1 :]
+            if all(modal_indices[i] > modal_indices[i + 1] for i in range(n)):
+                excitation_indices = idx[n + 1 :]
                 exc_in_modals = True
-                for m_idx, m in enumerate(M_arr):
-                    im = exc_arr[m_idx]
-                    jm = exc_arr[m_idx + len(M_arr)]
+                for m_idx, m in enumerate(modal_indices):
+                    im = excitation_indices[m_idx]
+                    jm = excitation_indices[m_idx + len(modal_indices)]
                     if im >= modals[m] or jm >= modals[m]:
                         exc_in_modals = False
                         break
                 if exc_in_modals:
-                    active_ham_terms[active_num] = [h_val, M_arr, exc_arr]
+                    active_ham_terms[active_num] = [h_val, modal_indices, excitation_indices]
                     active_num += 1
 
-    active_mode_terms = {}
-    for m in range(nmodes):
-        ts_for_m_arr = []
-        for t in range(active_num):
-            if m in active_ham_terms[t][1]:
-                ts_for_m_arr.append(t)
-        active_mode_terms[m] = ts_for_m_arr
+    active_mode_terms = {
+        m: [t for t in range(active_num) if m in active_ham_terms[t][1]] for m in range(nmodes)
+    }
+
     return active_ham_terms, active_mode_terms, active_num
 
 
@@ -389,7 +381,8 @@ def _rotate_hamiltonian(ham_data, mode_rots, modals):
 
 
 def vscf_integrals(ham_data, dipole_data=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
-    r"""Generates VSCF rotated integrals for vibrational Hamiltonian.
+    r"""Generates vibrational self-consistent field rotated integrals for vibrational Hamiltonian.
+    This implementation is based on `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
 
     Args:
         ham_data (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals

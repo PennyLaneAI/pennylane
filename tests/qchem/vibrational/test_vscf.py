@@ -49,21 +49,24 @@ with h5py.File(result_file, "r") as f:
     d3_h2s = f["D3_rot"][()]
     energy = f["energy"][()]
     u_mat = f["u_mat"][()]
+    h1_full = f["H1_full"][()]
+    h2_full = f["H2_full"][()]
 
 h2s_exp_result = {
     "h_data": [h1_h2s, h2_h2s, h3_h2s],
+    "h_full": [h1_full, h2_full],
     "dip_data": [d1_h2s, d2_h2s, d3_h2s],
     "energy": energy,
     "u_mat": u_mat,
 }
 
 
-def test_error_vscf_hamiltonian():
+def test_error_vscf_integrals():
     r"""Test that an error is raised if wrong shape is provided for Hamiltonian"""
     with pytest.raises(
         ValueError, match="Building n-mode Hamiltonian is not implemented for n equal to 4"
     ):
-        vibrational.vscf_hamiltonian(ham_data=[1, 2, 3, 4])
+        vibrational.vscf_integrals(ham_data=[1, 2, 3, 4])
 
 
 def test_error_vscf_dipole():
@@ -71,7 +74,7 @@ def test_error_vscf_dipole():
     with pytest.raises(
         ValueError, match="Building n-mode dipole is not implemented for n equal to 4"
     ):
-        vibrational.vscf_hamiltonian(ham_data=[1, 2, 3], dipole_data=[1, 2, 3, 4])
+        vibrational.vscf_integrals(ham_data=[1, 2, 3], dipole_data=[1, 2, 3, 4])
 
 
 @pytest.mark.parametrize(
@@ -87,7 +90,7 @@ def test_modal_error(h_data):
         ValueError,
         match="Number of maximum modals cannot be greater than the modals for unrotated integrals.",
     ):
-        vibrational.vscf_hamiltonian(ham_data=h_data, modals=[5, 5, 5])
+        vibrational.vscf_integrals(ham_data=h_data, modals=[5, 5, 5])
 
 
 @pytest.mark.parametrize(
@@ -99,7 +102,7 @@ def test_modal_error(h_data):
 def test_vscf_calculation(h_data, h2s_result):
     r"""Test that vscf calculation produces correct energy and rotation matrices"""
 
-    vib_energy, rot_matrix = vscf._vscf(h_data, modals=[4, 4, 4], cutoff=1e-8)
+    vib_energy, rot_matrix = vscf._vscf(h_data, modals=[3, 3, 3], cutoff=1e-8)
     assert np.isclose(vib_energy, h2s_result["energy"])
     assert np.allclose(rot_matrix, h2s_result["u_mat"])
 
@@ -110,9 +113,9 @@ def test_vscf_calculation(h_data, h2s_result):
         (h_data_h2s, dip_data_h2s, h2s_exp_result),
     ],
 )
-def test_vscf_hamiltonian_dipole(h_data, dip_data, h2s_result):
+def test_vscf_integrals_dipole(h_data, dip_data, h2s_result):
     r"""Test that correct rotated Hamiltonian and dipole is produced."""
-    result_h, result_dip = vscf.vscf_hamiltonian(h_data, dip_data, modals=[3, 3, 3], cutoff=1e-8)
+    result_h, result_dip = vscf.vscf_integrals(h_data, dip_data, modals=[3, 3, 3], cutoff=1e-8)
 
     expected_h = h2s_result["h_data"]
     expected_dip = h2s_result["dip_data"]
@@ -125,19 +128,17 @@ def test_vscf_hamiltonian_dipole(h_data, dip_data, h2s_result):
 
 
 @pytest.mark.parametrize(
-    ("h_data", "h2s_result"),
+    ("h_data", "h2s_result", "modals", "cutoff"),
     [
-        (h_data_h2s, h2s_exp_result),
+        (h_data_h2s, h2s_exp_result["h_data"], [3, 3, 3], 1e-8),
+        (h_data_h2s[0:2], h2s_exp_result["h_full"], None, None),
     ],
 )
-def test_vscf_hamiltonian(h_data, h2s_result):
+def test_vscf_integrals(h_data, h2s_result, modals, cutoff):
     r"""Test that correct rotated Hamiltonian is produced."""
-    result_h, result_dip = vscf.vscf_hamiltonian(h_data, modals=[3, 3, 3], cutoff=1e-8)
+    result_h, result_dip = vscf.vscf_integrals(h_data, modals=modals, cutoff=cutoff)
 
-    expected_h = h2s_result["h_data"]
-
-    assert np.allclose(result_h[0], expected_h[0])
-    assert np.allclose(result_h[1], expected_h[1])
-    assert np.allclose(result_h[2], expected_h[2])
+    for idx, h in enumerate(result_h):
+        assert np.allclose(h, h2s_result[idx])
 
     assert result_dip is None
