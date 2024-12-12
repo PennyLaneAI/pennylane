@@ -105,6 +105,7 @@ class Adder(Operation):
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
+        work_wires = qml.wires.Wires(work_wires)
 
         num_works_wires = len(work_wires)
 
