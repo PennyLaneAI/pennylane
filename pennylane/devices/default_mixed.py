@@ -175,6 +175,7 @@ def warn_readout_error_state(
 
     return (tape,), null_postprocessing
 
+
 @simulator_tracking
 @single_tape_support
 class DefaultMixed(Device):
