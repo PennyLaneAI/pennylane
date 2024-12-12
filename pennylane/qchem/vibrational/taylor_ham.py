@@ -480,7 +480,7 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
         freqs (list(float)): the frequencies
-        is_local (bool): Flag whether the vibrational modes are localized. Default is True.
+        is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (list(list(float))): localization matrix indicating the relationship between original
             and localized modes
 
