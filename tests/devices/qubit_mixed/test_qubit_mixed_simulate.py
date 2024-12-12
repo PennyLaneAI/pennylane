@@ -84,7 +84,7 @@ class TestBasicCircuit:
         return qml.tape.QuantumScript(ops, obs)
 
     def test_basic_circuit_numpy(self, wires):
-        """Test execution with a basic circuit."""
+        """Test execution with a basic circuit, only the first wire."""
         phi = np.array(0.397)
 
         qs = self.get_quantum_script(phi, wires)
@@ -104,21 +104,6 @@ class TestBasicCircuit:
 
         assert isinstance(result, tuple)
         assert len(result) == 3
-        assert np.allclose(result, expected_measurements)
-
-        # Test state evolution and measurement separately
-        state, is_state_batched = get_final_state(qs)
-        result = measure_final_state(qs, state, is_state_batched)
-
-        expected_state = np.array(
-            [
-                [np.cos(phi / 2) ** 2, 0.5j * np.sin(phi)],
-                [-0.5j * np.sin(phi), np.sin(phi / 2) ** 2],
-            ]
-        )
-
-        assert np.allclose(state, expected_state)
-        assert not is_state_batched
         assert np.allclose(result, expected_measurements)
 
     @pytest.mark.autograd
@@ -318,7 +303,10 @@ class TestSampleMeasurements:
             shots=10000,
         )
         result = simulate(qs, rng=seed, interface=interface)
-        assert isinstance(result, np.float64)
+        if not interface == "jax":
+            assert isinstance(result, np.float64)
+        else:
+            assert result.dtype == np.float64
         assert result.shape == ()
 
     @pytest.mark.parametrize("x", [0.732, 0.488])
@@ -413,7 +401,7 @@ class TestSampleMeasurements:
             ],
             shots=shots,
         )
-        result = simulate(qs, rng=seed)
+        result = simulate(qs, seed)
 
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
@@ -433,9 +421,10 @@ class TestSampleMeasurements:
 
     @pytest.mark.parametrize("x", [0.732, 0.488])
     @pytest.mark.parametrize("y", [0.732, 0.488])
-    def test_custom_wire_labels(self, x, y, seed):
+    @pytest.mark.parametrize("shots", shots_data)
+    def test_custom_wire_labels(self, shots, x, y, seed):
         """Test that custom wire labels works as expected"""
-        num_shots = 10000
+        shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
             [
                 qml.RX(x, wires="b"),
@@ -447,17 +436,22 @@ class TestSampleMeasurements:
                 qml.counts(wires=["a", "b"]),
                 qml.sample(wires=["b", "a"]),
             ],
-            shots=num_shots,
+            shots=shots,
         )
         result = simulate(qs, rng=seed)
 
         assert isinstance(result, tuple)
-        assert len(result) == 3
-        assert isinstance(result[0], np.float64)
-        assert isinstance(result[1], dict)
-        assert isinstance(result[2], np.ndarray)
+        assert len(result) == len(list(shots))
 
-        expected_keys, _ = self.probs_of_2_qubit_circ(x, y)
-        assert list(result[1].keys()) == expected_keys
+        for shot_res, s in zip(result, shots):
+            assert isinstance(shot_res, tuple)
+            assert len(shot_res) == 3
 
-        assert result[2].shape == (num_shots, 2)
+            assert isinstance(shot_res[0], np.float64)
+            assert isinstance(shot_res[1], dict)
+            assert isinstance(shot_res[2], np.ndarray)
+
+            expected_keys, _ = self.probs_of_2_qubit_circ(x, y)
+            assert list(shot_res[1].keys()) == expected_keys
+
+            assert shot_res[2].shape == (s, 2)

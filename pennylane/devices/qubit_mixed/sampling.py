@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.devices.qubit.sampling import jax_random_split, sample_probs
+from pennylane.devices.qubit.sampling import _group_measurements, jax_random_split, sample_probs
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -32,7 +32,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP
-from pennylane.ops import Sum
+from pennylane.ops import LinearCombination, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import _get_num_wires, apply_operation
@@ -40,12 +40,17 @@ from .measure import measure
 
 
 def _apply_diagonalizing_gates(
-    mp: SampleMeasurement, state: np.ndarray, is_state_batched: bool = False
+    mps: list[SampleMeasurement], state: np.ndarray, is_state_batched: bool = False
 ):
-    """Applies diagonalizing gates when necessary"""
-    if mp.obs:
-        for op in mp.diagonalizing_gates():
-            state = apply_operation(op, state, is_state_batched=is_state_batched)
+    if len(mps) == 1:
+        diagonalizing_gates = mps[0].diagonalizing_gates()
+    elif all(mp.obs for mp in mps):
+        diagonalizing_gates = qml.pauli.diagonalize_qwc_pauli_words([mp.obs for mp in mps])[0]
+    else:
+        diagonalizing_gates = []
+
+    for op in diagonalizing_gates:
+        state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     return state
 
@@ -93,7 +98,7 @@ def _process_variance_samples(processed_sample):
 
 # pylint:disable = too-many-arguments
 def _measure_with_samples_diagonalizing_gates(
-    mp: SampleMeasurement,
+    mps: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -122,19 +127,22 @@ def _measure_with_samples_diagonalizing_gates(
         TensorLike[Any]: Sample measurement results
     """
     # apply diagonalizing gates
-    state = _apply_diagonalizing_gates(mp, state, is_state_batched)
+    state = _apply_diagonalizing_gates(mps, state, is_state_batched)
 
     total_indices = _get_num_wires(state, is_state_batched)
     wires = qml.wires.Wires(range(total_indices))
 
-    def _process_single_shot_copy(samples):
-        samples_processed = _process_samples(mp, samples, wires)
-        
-        
-        if not isinstance(mp, CountsMP):
-            res = math.squeeze(samples_processed)
-        return res[0]
-    
+    def _process_single_shot(samples):
+        processed = []
+        for mp in mps:
+            res = mp.process_samples(samples, wires)
+            if not isinstance(mp, CountsMP):
+                res = qml.math.squeeze(res)
+
+            processed.append(res)
+
+        return tuple(processed)
+
         if isinstance(mp, SampleMP):
             return math.squeeze(samples_processed)
         if isinstance(mp, CountsMP):
@@ -152,6 +160,32 @@ def _measure_with_samples_diagonalizing_gates(
                 ret.append(process_func(processed_sample))
             return math.squeeze(ret)
         return process_func(samples_processed)
+
+    try:
+        prng_key, _ = jax_random_split(prng_key)
+        samples = sample_state(
+            state,
+            shots=shots.total_shots,
+            is_state_batched=is_state_batched,
+            wires=wires,
+            rng=rng,
+            prng_key=prng_key,
+            readout_errors=readout_errors,
+        )
+    except ValueError as e:
+        if str(e) != "probabilities contain NaN":
+            raise e
+        samples = qml.math.full((shots.total_shots, len(wires)), 0)
+
+    processed_samples = []
+    for lower, upper in shots.bins():
+        shot = _process_single_shot(samples[..., lower:upper, :])
+        processed_samples.append(shot)
+
+    if shots.has_partitioned_shots:
+        return tuple(zip(*processed_samples))
+
+    return processed_samples[0]
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
@@ -329,13 +363,11 @@ def sample_state(
 
     # After getting the correct probs, there's no difference between mixed states and pure states.
     # Therefore, we directly re-use the sample_probs from the module qubit.
-    return sample_probs(
-        probs, shots, num_wires, is_state_batched, rng, prng_key=prng_key
-    )
+    return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=prng_key)
 
 
 def measure_with_samples(
-    mp: SampleMeasurement,
+    measurements: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -363,19 +395,35 @@ def measure_with_samples(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
+    groups, indices = _group_measurements(measurements)
+    all_res = []
+    for group in groups:
+        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, LinearCombination):
+            measure_fn = _measure_hamiltonian_with_samples
+        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
+            measure_fn = _measure_sum_with_samples
+        elif isinstance(group[0], (ClassicalShadowMP, ShadowExpvalMP)):
+            measure_fn = _measure_classical_shadow
+        else:
+            # measure with the usual method (rotate into the measurement basis)
+            measure_fn = _measure_with_samples_diagonalizing_gates
 
-    if isinstance(mp, ExpectationMP) and isinstance(mp.obs, Sum):
-        measure_fn = _measure_sum_with_samples
-    else:
-        # measure with the usual method (rotate into the measurement basis)
-        measure_fn = _measure_with_samples_diagonalizing_gates
+        prng_key, key = jax_random_split(prng_key)
+        all_res.extend(
+            measure_fn(
+                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=key
+            )
+        )
 
-    return measure_fn(
-        mp,
-        state,
-        shots,
-        is_state_batched=is_state_batched,
-        rng=rng,
-        prng_key=prng_key,
-        readout_errors=readout_errors,
+    flat_indices = [_i for i in indices for _i in i]
+
+    # reorder results
+    sorted_res = tuple(
+        res for _, res in sorted(list(enumerate(all_res)), key=lambda r: flat_indices[r[0]])
     )
+
+    # put the shot vector axis before the measurement axis
+    if shots.has_partitioned_shots:
+        sorted_res = tuple(zip(*sorted_res))
+
+    return sorted_res
