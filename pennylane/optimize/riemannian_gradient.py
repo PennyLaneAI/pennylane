@@ -379,12 +379,16 @@ class RiemannianGradientOptimizer:
             array: array of omegas for each direction in the Lie algebra.
         """
 
-        obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
+        # obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
+
+        partition_indices = qml.pauli.compute_partition_indices(self.observables)
+        grouped_obs = [[self.observables[idx] for idx in group] for group in partition_indices]
         # get all circuits we need to calculate the coefficients
+
         tape = qml.workflow.construct_tape(self.circuit)()
         circuits = algebra_commutator(
             tape,
-            obs_groupings,
+            grouped_obs,
             self.lie_algebra_basis_names,
             self.nqubits,
         )
