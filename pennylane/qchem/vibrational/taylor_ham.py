@@ -277,7 +277,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     r"""Compute fitted coefficients for Taylor vibrational Hamiltonian.
 
     The coefficients are defined following Eq. 5 of `arXiv:1703.09313
-    <https://arxiv.org/abs/1703.09313>`_ as :
+    <https://arxiv.org/abs/1703.09313>`_ as:
 
     .. math::
 
