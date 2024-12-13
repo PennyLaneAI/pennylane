@@ -370,7 +370,7 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
                                     [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
                                     [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
                                     [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]])
-
+    >>>
     >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
                                  uloc = None, pes_data=[pes_onebody, pes_twobody],
                                  dipole_data=[dipole_onebody], localized=False)
