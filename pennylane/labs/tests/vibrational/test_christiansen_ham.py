@@ -15,33 +15,31 @@
 
 from pathlib import Path
 
-import pytest
 import numpy as np
+import pytest
+
 from pennylane.bose.bosonic import BoseWord
-from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-from tests.qchem.vibrational.test_ref_files.cform_ops_data import (
-    cform_ham_ref,
-    cform_ops_ref,
-    cform_coeffs_ref,
-    cform_dipole_ref_x,
-)
-
-
 from pennylane.labs.vibrational.christiansen_ham import (
     christiansen_bosonic,
-    christiansen_hamiltonian,
     christiansen_dipole,
+    christiansen_hamiltonian,
 )
-
 from pennylane.labs.vibrational.christiansen_utils import (
-    christiansen_integrals,
-    christiansen_integrals_dipole,
     _cform_onemode,
     _cform_onemode_dipole,
     _cform_threemode,
     _cform_threemode_dipole,
     _cform_twomode,
     _cform_twomode_dipole,
+    christiansen_integrals,
+    christiansen_integrals_dipole,
+)
+from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+from tests.qchem.vibrational.test_ref_files.cform_ops_data import (
+    cform_coeffs_ref,
+    cform_dipole_ref_x,
+    cform_ham_ref,
+    cform_ops_ref,
 )
 
 # Path is pennylane/tests/qchem/vibrational/test_ref_files/H2S.hdf5

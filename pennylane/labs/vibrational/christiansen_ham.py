@@ -15,16 +15,18 @@
 
 import numpy as np
 
+from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
+
+from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
+
 # pylint: disable = too-many-branches, too-many-positional-arguments
 
-from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
-from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
 
 
 def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ordered=True):
     r"""Build the bosonic operators in the Christiansen form.
 
-    The construction of the second-quantized Hamiltonian is based on Eqs. 19-21 of 
+    The construction of the second-quantized Hamiltonian is based on Eqs. 19-21 of
     `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
 
     Args:
@@ -140,8 +142,8 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
 def christiansen_hamiltonian(pes, n_states=16, cubic=False):
     """Compute Christiansen vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 19-21 of 
-    `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_. 
+    The construction of the Hamiltonian is based on Eqs. 19-21 of
+    `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
 
     where the bosonic creation and annihilation operators are mapped to the Pauli operators as
 

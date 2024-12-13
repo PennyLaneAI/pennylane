@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions related to the construction of the taylor form Hamiltonian."""
-import numpy as np
-import h5py
-from scipy.special import factorial
 import itertools
 import subprocess
+
+import h5py
+import numpy as np
 from mpi4py import MPI
+from scipy.special import factorial
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
