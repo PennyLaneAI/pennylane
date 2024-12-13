@@ -139,7 +139,7 @@ def test_christiansen_hamiltonian():
 
 def test_christiansen_dipole():
     """Test that christiansen_dipole produces the expected dipole operator coefficients."""
-    cform_dipole_x, _, _ = christiansen_dipole(pes=pes_object_2D, n_states=4, cubic=False)
+    cform_dipole_x, _, _ = christiansen_dipole(pes=pes_object_2D, n_states=4)
     assert len(cform_dipole_x.pauli_rep) == len(cform_dipole_ref_x)
     assert all(
         np.allclose(abs(cform_dipole_ref_x.pauli_rep[term]), abs(coeff), atol=1e-8)
@@ -155,7 +155,7 @@ def test_christiansen_integrals():
 
 
 def test_christiansen_integrals_dipole():
-    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4, cubic=True)
+    one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4)
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
     assert np.allclose(abs(three), abs(D3), atol=1e-8)

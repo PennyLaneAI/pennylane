@@ -48,8 +48,6 @@ def _cform_onemode_kinetic(freqs, n_states):
     chunksize = len(boscombos_on_rank)
 
     local_K_mat = np.zeros(len(all_mode_combos) * chunksize)
-
-    nn = 0
     for nn, [ii] in enumerate(all_mode_combos):
         ii = int(ii)
         m_const = freqs[ii] / 4
@@ -148,14 +146,10 @@ def _cform_onemode(pes, n_states):
 
     local_ham_cform_onebody = np.zeros(len(all_mode_combos) * chunksize)
 
-    nn = 0
-    for [ii] in all_mode_combos:
-
+    for nn, (ii,) in enumerate(all_mode_combos):
         ii = int(ii)
 
-        mm = 0
-        for [ki, hi] in boscombos_on_rank:
-
+        for mm, (ki, hi) in enumerate(boscombos_on_rank):
             sqrt = (2 ** (ki + hi) * factorial(ki) * factorial(hi) * np.pi) ** (-0.5)
             order_k = np.zeros(n_states)
             order_k[ki] = 1.0
@@ -166,11 +160,10 @@ def _cform_onemode(pes, n_states):
             quadrature = np.sum(
                 pes.gauss_weights * pes.pes_onemode[ii, :] * hermite_ki * hermite_hi
             )
-            full_coeff = sqrt * quadrature  # * 219475 for converting into cm^-1
+            full_coeff = sqrt * quadrature
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_onebody[ind] += full_coeff
-            mm += 1
-        nn += 1
+
     return local_ham_cform_onebody + _cform_onemode_kinetic(pes.freqs, n_states)
 
 
@@ -200,14 +193,10 @@ def _cform_onemode_dipole(pes, n_states):
 
     local_dipole_cform_onebody = np.zeros((len(all_mode_combos) * chunksize, 3))
 
-    nn = 0
-    for [ii] in all_mode_combos:
-
+    for nn, (ii,) in enumerate(all_mode_combos):
         ii = int(ii)
 
-        mm = 0
-        for [ki, hi] in boscombos_on_rank:
-
+        for mm, (ki, hi) in enumerate(boscombos_on_rank):
             ki, hi = int(ki), int(hi)
             sqrt = (2 ** (ki + hi) * factorial(ki) * factorial(hi) * np.pi) ** (-0.5)
             order_k = np.zeros(n_states)
@@ -223,8 +212,6 @@ def _cform_onemode_dipole(pes, n_states):
                 )
                 full_coeff = sqrt * quadrature  # * 219475 for converting into cm^-1
                 local_dipole_cform_onebody[ind, alpha] += full_coeff
-            mm += 1
-        nn += 1
 
     return local_dipole_cform_onebody
 
@@ -258,19 +245,12 @@ def _cform_twomode(pes, n_states):
     chunksize = len(boscombos_on_rank)
 
     local_ham_cform_twobody = np.zeros(len(all_mode_combos) * chunksize)
-
-    nn = 0
-    for [ii, jj] in all_mode_combos:
-
+    for nn, (ii, jj) in enumerate(all_mode_combos):
         ii, jj = int(ii), int(jj)
-        # skip through the things that are not needed
         if jj >= ii:
-            nn += 1
             continue
 
-        mm = 0
-        for [ki, kj, hi, hj] in boscombos_on_rank:
-
+        for mm, (ki, kj, hi, hj) in enumerate(boscombos_on_rank):
             ki, kj, hi, hj = int(ki), int(kj), int(hi), int(hj)
 
             sqrt = (
@@ -280,33 +260,30 @@ def _cform_twomode(pes, n_states):
                 * factorial(hi)
                 * factorial(hj)
             ) ** (-0.5) / np.pi
-            order_ki = np.zeros(n_states)
-            order_ki[ki] = 1.0
-            order_kj = np.zeros(n_states)
-            order_kj[kj] = 1.0
-            order_hi = np.zeros(n_states)
-            order_hi[hi] = 1.0
-            order_hj = np.zeros(n_states)
-            order_hj[hj] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes.grid)
-            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes.grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes.grid)
-            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes.grid)
+
+            orders = [np.zeros(n_states) for _ in range(4)]
+            orders[0][ki] = 1.0
+            orders[1][kj] = 1.0
+            orders[2][hi] = 1.0
+            orders[3][hj] = 1.0
+            hermite_polys = [
+                np.polynomial.hermite.Hermite(order, [-1, 1])(pes.grid) for order in orders
+            ]
+
             quadrature = np.einsum(
                 "a,b,a,b,ab,a,b->",
                 pes.gauss_weights,
                 pes.gauss_weights,
-                hermite_ki,
-                hermite_kj,
+                hermite_polys[0],
+                hermite_polys[1],
                 pes.pes_twomode[ii, jj, :, :],
-                hermite_hi,
-                hermite_hj,
+                hermite_polys[2],
+                hermite_polys[3],
             )
-            full_coeff = sqrt * quadrature  # * 219475 to get cm^-1
+            full_coeff = sqrt * quadrature  # * 219475 for cm^-1 conversion
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_twobody[ind] += full_coeff
-            mm += 1
-        nn += 1
+
     return local_ham_cform_twobody
 
 
@@ -340,20 +317,12 @@ def _cform_twomode_dipole(pes, n_states):
 
     local_dipole_cform_twobody = np.zeros((len(all_mode_combos) * chunksize, 3))
 
-    nn = 0
-    for [ii, jj] in all_mode_combos:
-
+    for nn, (ii, jj) in enumerate(all_mode_combos):
         ii, jj = int(ii), int(jj)
-        # skip through the things that are not needed
         if jj >= ii:
-            nn += 1
             continue
-
-        mm = 0
-        for [ki, kj, hi, hj] in boscombos_on_rank:
-
+        for mm, (ki, kj, hi, hj) in enumerate(boscombos_on_rank):
             ki, kj, hi, hj = int(ki), int(kj), int(hi), int(hj)
-
             sqrt = (
                 2 ** (ki + kj + hi + hj)
                 * factorial(ki)
@@ -361,34 +330,26 @@ def _cform_twomode_dipole(pes, n_states):
                 * factorial(hi)
                 * factorial(hj)
             ) ** (-0.5) / np.pi
-            order_ki = np.zeros(n_states)
-            order_ki[ki] = 1.0
-            order_kj = np.zeros(n_states)
-            order_kj[kj] = 1.0
-            order_hi = np.zeros(n_states)
-            order_hi[hi] = 1.0
-            order_hj = np.zeros(n_states)
-            order_hj[hj] = 1.0
-            hermite_ki = np.polynomial.hermite.Hermite(order_ki, [-1, 1])(pes.grid)
-            hermite_kj = np.polynomial.hermite.Hermite(order_kj, [-1, 1])(pes.grid)
-            hermite_hi = np.polynomial.hermite.Hermite(order_hi, [-1, 1])(pes.grid)
-            hermite_hj = np.polynomial.hermite.Hermite(order_hj, [-1, 1])(pes.grid)
+            orders = [np.zeros(n_states) for _ in range(4)]
+            orders[0][ki], orders[1][kj], orders[2][hi], orders[3][hj] = 1.0, 1.0, 1.0, 1.0
+            hermite_polys = [
+                np.polynomial.hermite.Hermite(order, [-1, 1])(pes.grid) for order in orders
+            ]
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum(
                     "a,b,a,b,ab,a,b->",
                     pes.gauss_weights,
                     pes.gauss_weights,
-                    hermite_ki,
-                    hermite_kj,
+                    hermite_polys[0],
+                    hermite_polys[1],
                     pes.dipole_twomode[ii, jj, :, :, alpha],
-                    hermite_hi,
-                    hermite_hj,
+                    hermite_polys[2],
+                    hermite_polys[3],
                 )
-                full_coeff = sqrt * quadrature  # * 219475 to get cm^-1
+                full_coeff = sqrt * quadrature
                 local_dipole_cform_twobody[ind, alpha] += full_coeff
-            mm += 1
-        nn += 1
+
 
     return local_dipole_cform_twobody
 
@@ -429,19 +390,11 @@ def _cform_threemode(pes, n_states):
     chunksize = len(boscombos_on_rank)
 
     local_ham_cform_threebody = np.zeros(len(all_mode_combos) * chunksize)
-
-    nn = 0
-    for [ii1, ii2, ii3] in all_mode_combos:
-
+    for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
         ii1, ii2, ii3 = int(ii1), int(ii2), int(ii3)
-        # skip the objects that are not needed
         if ii2 >= ii1 or ii3 >= ii2:
-            nn += 1
             continue
-
-        mm = 0
-        for [k1, k2, k3, h1, h2, h3] in boscombos_on_rank:
-
+        for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):
             k1, k2, k3, h1, h2, h3 = int(k1), int(k2), int(k3), int(h1), int(h2), int(h3)
             sqrt = (
                 2 ** (k1 + k2 + k3 + h1 + h2 + h3)
@@ -452,43 +405,29 @@ def _cform_threemode(pes, n_states):
                 * factorial(h2)
                 * factorial(h3)
             ) ** (-0.5) / (np.pi**1.5)
-            order_k1 = np.zeros(n_states)
-            order_k1[k1] = 1.0
-            order_k2 = np.zeros(n_states)
-            order_k2[k2] = 1.0
-            order_k3 = np.zeros(n_states)
-            order_k3[k3] = 1.0
-            order_h1 = np.zeros(n_states)
-            order_h1[h1] = 1.0
-            order_h2 = np.zeros(n_states)
-            order_h2[h2] = 1.0
-            order_h3 = np.zeros(n_states)
-            order_h3[h3] = 1.0
-            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes.grid)
-            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes.grid)
-            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes.grid)
-            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes.grid)
-            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes.grid)
-            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes.grid)
-
+            orders = [np.zeros(n_states) for _ in range(6)]
+            orders[0][k1], orders[1][k2], orders[2][k3] = 1.0, 1.0, 1.0
+            orders[3][h1], orders[4][h2], orders[5][h3] = 1.0, 1.0, 1.0
+            hermite_polys = [
+                np.polynomial.hermite.Hermite(order, [-1, 1])(pes.grid) for order in orders
+            ]
             quadrature = np.einsum(
                 "a,b,c,a,b,c,abc,a,b,c->",
                 pes.gauss_weights,
                 pes.gauss_weights,
                 pes.gauss_weights,
-                hermite_k1,
-                hermite_k2,
-                hermite_k3,
+                hermite_polys[0],
+                hermite_polys[1],
+                hermite_polys[2],
                 pes.pes_threemode[ii1, ii2, ii3, :, :, :],
-                hermite_h1,
-                hermite_h2,
-                hermite_h3,
+                hermite_polys[3],
+                hermite_polys[4],
+                hermite_polys[5],
             )
-            full_coeff = sqrt * quadrature  # * 219475 to get cm^-1
+            full_coeff = sqrt * quadrature
             ind = nn * len(boscombos_on_rank) + mm
             local_ham_cform_threebody[ind] = full_coeff
-            mm += 1
-        nn += 1
+
     return local_ham_cform_threebody
 
 
@@ -528,18 +467,11 @@ def _cform_threemode_dipole(pes, n_states):
 
     local_dipole_cform_threebody = np.zeros((len(all_mode_combos) * chunksize, 3))
 
-    nn = 0
-    for [ii1, ii2, ii3] in all_mode_combos:
-
+    for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
         ii1, ii2, ii3 = int(ii1), int(ii2), int(ii3)
-        # skip the objects that are not needed
         if ii2 >= ii1 or ii3 >= ii2:
-            nn += 1
             continue
-
-        mm = 0
-        for [k1, k2, k3, h1, h2, h3] in boscombos_on_rank:
-
+        for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):
             k1, k2, k3, h1, h2, h3 = int(k1), int(k2), int(k3), int(h1), int(h2), int(h3)
             sqrt = (
                 2 ** (k1 + k2 + k3 + h1 + h2 + h3)
@@ -550,24 +482,12 @@ def _cform_threemode_dipole(pes, n_states):
                 * factorial(h2)
                 * factorial(h3)
             ) ** (-0.5) / (np.pi**1.5)
-            order_k1 = np.zeros(n_states)
-            order_k1[k1] = 1.0
-            order_k2 = np.zeros(n_states)
-            order_k2[k2] = 1.0
-            order_k3 = np.zeros(n_states)
-            order_k3[k3] = 1.0
-            order_h1 = np.zeros(n_states)
-            order_h1[h1] = 1.0
-            order_h2 = np.zeros(n_states)
-            order_h2[h2] = 1.0
-            order_h3 = np.zeros(n_states)
-            order_h3[h3] = 1.0
-            hermite_k1 = np.polynomial.hermite.Hermite(order_k1, [-1, 1])(pes.grid)
-            hermite_k2 = np.polynomial.hermite.Hermite(order_k2, [-1, 1])(pes.grid)
-            hermite_k3 = np.polynomial.hermite.Hermite(order_k3, [-1, 1])(pes.grid)
-            hermite_h1 = np.polynomial.hermite.Hermite(order_h1, [-1, 1])(pes.grid)
-            hermite_h2 = np.polynomial.hermite.Hermite(order_h2, [-1, 1])(pes.grid)
-            hermite_h3 = np.polynomial.hermite.Hermite(order_h3, [-1, 1])(pes.grid)
+            orders = [np.zeros(n_states) for _ in range(6)]
+            orders[0][k1], orders[1][k2], orders[2][k3] = 1.0, 1.0, 1.0
+            orders[3][h1], orders[4][h2], orders[5][h3] = 1.0, 1.0, 1.0
+            hermite_polys = [
+                np.polynomial.hermite.Hermite(order, [-1, 1])(pes.grid) for order in orders
+            ]
             ind = nn * len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum(
@@ -575,18 +495,16 @@ def _cform_threemode_dipole(pes, n_states):
                     pes.gauss_weights,
                     pes.gauss_weights,
                     pes.gauss_weights,
-                    hermite_k1,
-                    hermite_k2,
-                    hermite_k3,
+                    hermite_polys[0],
+                    hermite_polys[1],
+                    hermite_polys[2],
                     pes.dipole_threemode[ii1, ii2, ii3, :, :, :, alpha],
-                    hermite_h1,
-                    hermite_h2,
-                    hermite_h3,
+                    hermite_polys[3],
+                    hermite_polys[4],
+                    hermite_polys[5],
                 )
-                full_coeff = sqrt * quadrature  # * 219475 to get cm^-1
+                full_coeff = sqrt * quadrature
                 local_dipole_cform_threebody[ind, alpha] = full_coeff
-            mm += 1
-        nn += 1
 
     return local_dipole_cform_threebody
 
@@ -877,7 +795,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False):
     if rank == 0:
         ham_cform_onebody = _load_cform_onemode(size, len(pes.freqs), n_states)
         process = subprocess.Popen("rm " + "cform_H1data*", stdout=subprocess.PIPE, shell=True)
-        output, error = process.communicate()
+        _, _ = process.communicate()
 
     comm.Barrier()
     ham_cform_onebody = comm.bcast(ham_cform_onebody, root=0)
@@ -896,7 +814,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False):
     if rank == 0:
         ham_cform_twobody = _load_cform_twomode(size, len(pes.freqs), n_states)
         process = subprocess.Popen("rm " + "cform_H2data*", stdout=subprocess.PIPE, shell=True)
-        output, error = process.communicate()
+        _, _ = process.communicate()
 
     comm.Barrier()
     ham_cform_twobody = comm.bcast(ham_cform_twobody, root=0)
@@ -913,7 +831,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False):
         if rank == 0:
             ham_cform_threebody = _load_cform_threemode(size, len(pes.freqs), n_states)
             process = subprocess.Popen("rm " + "cform_H3data*", stdout=subprocess.PIPE, shell=True)
-            output, error = process.communicate()
+            _, _ = process.communicate()
 
         comm.Barrier()
         ham_cform_threebody = comm.bcast(ham_cform_threebody, root=0)
@@ -925,13 +843,12 @@ def christiansen_integrals(pes, n_states=16, cubic=False):
     return H_arr
 
 
-def christiansen_integrals_dipole(pes, n_states=16, cubic=False):
+def christiansen_integrals_dipole(pes, n_states=16):
     r"""Generates the vibrational dipole integrals in Christiansen form.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        cubic(bool): Flag to include three-mode couplings. Default is ``False``.
 
     Returns:
         TensorLike[float]: the integrals for the Christiansen dipole operator
@@ -949,7 +866,7 @@ def christiansen_integrals_dipole(pes, n_states=16, cubic=False):
     if rank == 0:
         dipole_cform_onebody = _load_cform_onemode_dipole(size, len(pes.freqs), n_states)
         process = subprocess.Popen("rm " + "cform_D1data*", stdout=subprocess.PIPE, shell=True)
-        output, error = process.communicate()
+        _, _ = process.communicate()
 
     comm.Barrier()
     dipole_cform_onebody = comm.bcast(dipole_cform_onebody, root=0)
@@ -967,7 +884,7 @@ def christiansen_integrals_dipole(pes, n_states=16, cubic=False):
         if rank == 0:
             dipole_cform_twobody = _load_cform_twomode_dipole(size, len(pes.freqs), n_states)
             process = subprocess.Popen("rm " + "cform_D2data*", stdout=subprocess.PIPE, shell=True)
-            output, error = process.communicate()
+            _, _ = process.communicate()
         comm.Barrier()
         dipole_cform_twobody = comm.bcast(dipole_cform_twobody, root=0)
 
@@ -983,7 +900,7 @@ def christiansen_integrals_dipole(pes, n_states=16, cubic=False):
         if rank == 0:
             dipole_cform_threebody = _load_cform_threemode_dipole(size, len(pes.freqs), n_states)
             process = subprocess.Popen("rm " + "cform_D3data*", stdout=subprocess.PIPE, shell=True)
-            output, error = process.communicate()
+            _, _ = process.communicate()
         comm.Barrier()
 
         dipole_cform_threebody = comm.bcast(dipole_cform_threebody, root=0)

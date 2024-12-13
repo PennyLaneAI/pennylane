@@ -157,13 +157,12 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False):
     return cform_qubit
 
 
-def christiansen_dipole(pes, n_states=16, cubic=False):
+def christiansen_dipole(pes, n_states=16):
     """Computes the Christiansen form dipole operators in the qubit basis.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
-        cubic(bool): Flag to include three-mode couplings. Default is ``False``.
 
     Returns:
         tuple: a tuple containing:
@@ -172,7 +171,7 @@ def christiansen_dipole(pes, n_states=16, cubic=False):
             - Operator: the Christiansen dipole operator in the qubit basis for z-displacements
     """
 
-    d_arr = christiansen_integrals_dipole(pes, n_states=n_states, cubic=cubic)
+    d_arr = christiansen_integrals_dipole(pes, n_states=n_states)
 
     one_x = d_arr[0][0, :, :, :]
     two_x = d_arr[1][0, :, :, :, :, :, :] if len(d_arr) > 1 else None
