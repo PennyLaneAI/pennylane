@@ -65,7 +65,7 @@ class PhaseAdder(Operation):
             value for `mod`.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wire (Sequence[int] or int): the auxiliary wire to use for the addition. Optional
-            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to ``None``.
+            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to empty set.
 
     **Example**
 
@@ -113,7 +113,7 @@ class PhaseAdder(Operation):
 
         The second set of wires is ``work_wire`` which consist of the auxiliary qubit used to perform the modular phase addition operation.
 
-        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wire``, hence ``work_wire=None``. This is the case by default.
+        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wire``, hence ``work_wire=()``. This is the case by default.
 
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, one ``work_wire`` has to be provided.
 
@@ -147,7 +147,7 @@ class PhaseAdder(Operation):
                     "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
                     f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
                 )
-            if work_wire is not None:
+            if num_work_wires != 0:
                 if any(wire in work_wire for wire in x_wires):
                     raise ValueError(
                         "None of the wires in work_wire should be included in x_wires."
@@ -212,13 +212,13 @@ class PhaseAdder(Operation):
                 value for `mod`.
             mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
             work_wire (Sequence[int]): the auxiliary wire to use for the addition. Optional
-                when `mod` is :math:`2^{len(x\_wires)}`. Defaults to ``None``.
+                when `mod` is :math:`2^{len(x\_wires)}`.
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = None)
+        >>> qml.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
         [PhaseShift(6.283185307179586, wires=[1]),
         PhaseShift(3.141592653589793, wires=[2]),
         PhaseShift(1.5707963267948966, wires=[3])]
