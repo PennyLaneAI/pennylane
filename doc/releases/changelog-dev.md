@@ -272,7 +272,10 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
-* Standardize supported interfaces to an internal Enum object. 
+* Add developer focused `run` function to `qml.workflow` module.
+  [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
+
+* Standardize supported interfaces to an internal `Enum` object. 
   [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
@@ -453,6 +456,9 @@ same information.
   [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `Wires` object throws a `TypeError` if `wires=None`. 
+  [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
