@@ -164,17 +164,9 @@ class TestDifferentiability:
     @pytest.mark.parametrize("use_jit", (False, True))
     @pytest.mark.parametrize("shots", (None, 50000))
     def test_qnode_jax(self, shots, use_jit, seed):
-        """ "Test that the QNode executes and is differentiable with JAX. The shots
+        """Test that the QNode executes and it's differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
-
-        # TODO: Allow the following cases once their underlying issues are fixed:
-        #  (True, 50000): jax.jit on jax.grad does not work with AmplitudeEmbedding currently
-        #  (False, 50000): Since #5774, the decomposition of AmplitudeEmbedding triggered by
-        #                  param-shift includes a GlobalPhase always. GlobalPhase will only be
-        #                  param-shift-compatible again once #5620 is merged in.
-        if shots is not None:
-            pytest.xfail()
 
         jax.config.update("jax_enable_x64", True)
 
@@ -201,10 +193,6 @@ class TestDifferentiability:
         """ "Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
-
-        # TODO: finite shots fails because Prod is not currently differentiable.
-        if shots is not None:
-            pytest.xfail()
 
         dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"

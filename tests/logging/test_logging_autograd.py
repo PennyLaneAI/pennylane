@@ -69,7 +69,7 @@ class TestLogging:
                 return qml.expval(qml.PauliZ(0))
 
             circuit(params)
-        assert len(caplog.records) == 9
+        assert len(caplog.records) == 10
         log_records_expected = [
             (
                 "pennylane.workflow.qnode",
@@ -80,8 +80,12 @@ class TestLogging:
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
-                "pennylane.workflow._resolve_diff_method",
+                "pennylane.workflow.resolution",
                 ["Calling <_resolve_diff_method("],
+            ),
+            (
+                "pennylane.devices.default_qubit",
+                ["Calling <preprocess(self=<default.qubit device (wires=2)"],
             ),
             (
                 "pennylane.devices.default_qubit",
@@ -96,14 +100,14 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:4]):
+        for expected, actual in zip(log_records_expected, caplog.records[:5]):
             print(expected)
             print(actual, "\n")
             assert expected[0] in actual.name
             assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 23), ("backprop", 14), ("adjoint", 18)]
+        "diff_method,num_records", [("parameter-shift", 24), ("backprop", 15), ("adjoint", 19)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parametrized gradients"
@@ -129,7 +133,7 @@ class TestLogging:
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<default.qubit device (wires=2)",
-                    f"interface=auto, diff_method={diff_method}, grad_on_execution=best,",
+                    f"interface=Interface.AUTO, diff_method={diff_method}, grad_on_execution=best,",
                 ],
             ),
             (
@@ -166,7 +170,7 @@ class TestLogging:
 
             circuit(params)
 
-        assert len(caplog.records) == 7
+        assert len(caplog.records) == 8
 
         log_records_expected = [
             (

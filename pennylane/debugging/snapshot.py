@@ -189,19 +189,14 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
         if isinstance(op, qml.Snapshot):
             snapshot_tags.append(op.tag or len(new_tapes))
             meas_op = op.hyperparameters["measurement"]
-
-            new_tapes.append(
-                type(tape)(ops=accumulated_ops, measurements=[meas_op], shots=tape.shots)
-            )
+            new_tapes.append(tape.copy(operations=accumulated_ops, measurements=[meas_op]))
         else:
             accumulated_ops.append(op)
 
     # Create an additional final tape if a return measurement exists
     if tape.measurements:
         snapshot_tags.append("execution_results")
-        new_tapes.append(
-            type(tape)(ops=accumulated_ops, measurements=tape.measurements, shots=tape.shots)
-        )
+        new_tapes.append(tape.copy(operations=accumulated_ops))
 
     def postprocessing_fn(results, snapshot_tags):
         return dict(zip(snapshot_tags, results))

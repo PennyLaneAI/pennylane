@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 
 
-@pytest.mark.xfail  # to be fixed by shortcut story 49160
+@pytest.mark.xfail  # to be fixed by [sc-51603]
 def test_standard_validity():
     """Run standard tests of operation validity."""
     weights = np.array(
