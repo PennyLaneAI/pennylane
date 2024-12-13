@@ -87,12 +87,12 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
             Also includes ``n_epochs``, ``lr``, ``b1``, ``b2``, ``verbose``, ``interrupt_tol``, see :func:`~run_opt`
 
     Returns:
-        Tuple(np.ndarray, np.ndarray): ``(adjvec_a, theta_opt)``. The adjoint vector representation
+        Tuple(np.ndarray, np.ndarray): ``(adjvec_a, theta_opt)``: The adjoint vector representation
         ``adjvec_a`` of dimension ``(dim_mtilde + dim_h,)``, with respect to the basis of
         :math:`\mathfrak{m} = \tilde{\mathfrak{m}} + \mathfrak{h}` of the CSA element
-        :math:`a \in \mathfrak{a}` s.t. :math:`H = K^\dagger a K`.
+        :math:`a \in \mathfrak{a}` s.t. :math:`H = K a K^\dagger`.
         The second return value, ``theta_opt``, are the optimal coefficients :math:`\theta` of the
-        decomposition :math:`K = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}` for the basis :math:`k_j \in \mathfrak{k}`.
+        decomposition :math:`K = \prod_{j=|\mathfrak{k}|}^{1} e^{-i \theta_j k_j}` for the basis :math:`k_j \in \mathfrak{k}`.
 
 
     **Example**
