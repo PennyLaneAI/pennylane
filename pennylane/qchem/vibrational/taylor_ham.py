@@ -183,7 +183,7 @@ def _generate_bin_occupations(max_occ, nbins):
         nbins(int): the number of bins to distribute the items into
 
     Returns
-        list(tuple): where each tuple represents a valid combination of item counts for the bins.
+        list(tuple): A list of tuples, where each tuple represents a valid combination of item counts for the bins.
     """
     combinations = list(itertools.product(range(max_occ + 1), repeat=nbins))
 
