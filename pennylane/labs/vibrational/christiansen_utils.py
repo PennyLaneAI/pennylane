@@ -34,7 +34,7 @@ def _cform_onemode_kinetic(freqs, n_states):
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
-        the kinetic energy part of the one body integrals
+        TensorLike[float]: the kinetic energy part of the one body integrals
     """
     # action of kinetic energy operator for m=1,...,M modes with frequencies freqs[m]
     nmodes = len(freqs)
@@ -72,7 +72,7 @@ def _cform_twomode_kinetic(pes, n_states):
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
-        the kinetic energy part of the two body integrals
+        TensorLike[float]: the kinetic energy part of the two body integrals
     """
     nmodes = len(pes.freqs)
 
@@ -126,7 +126,7 @@ def _cform_onemode(pes, n_states):
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
-        the one-body integrals for the Christiansen Hamiltonian
+        TensorLike[float]: the one-body integrals for the Christiansen Hamiltonian
     """
 
     nmodes = len(pes.freqs)
@@ -171,7 +171,7 @@ def _cform_onemode_dipole(pes, n_states):
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
-        the one-body integrals for the Christiansen dipole operator
+        TensorLike[float]: the one-body integrals for the Christiansen dipole operator
     """
 
     nmodes = pes.dipole_onemode.shape[0]
@@ -217,7 +217,7 @@ def _cform_twomode(pes, n_states):
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
-        the two-body integrals for the Christiansen Hamiltonian
+        TensorLike[float]: the two-body integrals for the Christiansen Hamiltonian
     """
 
     nmodes = pes.pes_twomode.shape[0]
@@ -284,7 +284,7 @@ def _cform_twomode_dipole(pes, n_states):
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
-        the one-body integrals for the Christiansen dipole operator
+        TensorLike[float]: the one-body integrals for the Christiansen dipole operator
     """
 
     nmodes = pes.dipole_twomode.shape[0]
@@ -346,7 +346,7 @@ def _cform_threemode(pes, n_states):
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
-        the three-body integrals for the Christiansen Hamiltonian
+        TensorLike[float]: the three-body integrals for the Christiansen Hamiltonian
     """
     nmodes = pes.pes_threemode.shape[0]
 
@@ -418,7 +418,7 @@ def _cform_threemode_dipole(pes, n_states):
         n_states(int): maximum number of bosonic states per mode
 
     Returns:
-        the one-body integrals for the Christiansen dipole operator
+        TensorLike[float]: the one-body integrals for the Christiansen dipole operator
     """
     nmodes = pes.dipole_threemode.shape[0]
 
