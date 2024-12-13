@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Plxpr compatible transforms
+Public/internal API for the pennylane.capture.transforms module.
 """
 from .capture_cancel_inverses import CancelInversesInterpreter
+from .capture_decompose import DecomposeInterpreter
+from .map_wires import MapWiresInterpreter
 
-__all__ = ("CancelInversesInterpreter",)
+__all__ = (
+    "CancelInversesInterpreter",
+    "DecomposeInterpreter",
+    "MapWiresInterpreter",
+)
