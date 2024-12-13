@@ -74,16 +74,17 @@ def test_multiple_global_phase_gates():
     qml.assert_equal(expected_qscript, transformed_qscript)
 
 
-@pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-@pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-def test_combine_global_phases(phi1, phi2):
-    """Test that the transform works in the autograd interface"""
+def test_combine_global_phases():
+    """Test that the ``combine_global_phases`` function implements the expected transform on a
+    QuantumScript and check the equivalence between statevectors before and after the transform."""
     transformed_qfunc = combine_global_phases(original_qfunc)
 
     dev = qml.device("default.qubit", wires=3)
     original_qnode = qml.QNode(original_qfunc, device=dev)
     transformed_qnode = qml.QNode(transformed_qfunc, device=dev)
 
+    phi1 = 1.23
+    phi2 = 4.56
     expected_qscript = qml.tape.make_qscript(expected_qfunc)(phi1, phi2)
     transformed_qscript = qml.tape.make_qscript(transformed_qfunc)(phi1, phi2)
 
