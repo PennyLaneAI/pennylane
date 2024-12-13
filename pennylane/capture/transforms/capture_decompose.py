@@ -19,10 +19,40 @@ A transform for decomposing quantum circuits into user-defined gate sets. Offers
 
 import warnings
 from collections.abc import Iterable
+from typing import Callable, Generator, Optional
 
 import pennylane as qml
 from pennylane.capture.primitives import ctrl_transform_prim
-from pennylane.transforms.decompose import _operator_decomposition_gen
+
+# from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
+
+
+def _operator_decomposition_gen(
+    op: qml.operation.Operator,
+    acceptance_function: Callable[[qml.operation.Operator], bool],
+    max_expansion: Optional[int] = None,
+    current_depth=0,
+) -> Generator[qml.operation.Operator, None, None]:
+    """A generator that yields the next operation that is accepted."""
+
+    max_depth_reached = False
+
+    if max_expansion is not None and max_expansion <= current_depth:
+        max_depth_reached = True
+
+    if acceptance_function(op) or max_depth_reached:
+        yield op
+    else:
+        decomp = op.decomposition()
+        current_depth += 1
+
+        for sub_op in decomp:
+            yield from _operator_decomposition_gen(
+                sub_op,
+                acceptance_function,
+                max_expansion=max_expansion,
+                current_depth=current_depth,
+            )
 
 
 class DecomposeInterpreter(qml.capture.PlxprInterpreter):
@@ -119,3 +149,17 @@ class DecomposeInterpreter(qml.capture.PlxprInterpreter):
 @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
 def handle_ctrl_transform(*_, **__):  # pylint: disable=missing-function-docstring
     raise NotImplementedError
+
+
+def decompose_jaxpr_to_jaxpr(jaxpr, consts, *args, gate_set=None, max_expansion=None):
+    from jax import make_jaxpr
+
+    decomposer = DecomposeInterpreter(gate_set=gate_set, max_expansion=max_expansion)
+
+    def wrapper(*inner_args):
+        return decomposer.eval(jaxpr, consts, *inner_args)
+
+    return make_jaxpr(wrapper)(*args)
+
+
+# qml.transforms.decompose.register_plxpr_transform(decompose_jaxpr_to_jaxpr)

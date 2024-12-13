@@ -29,11 +29,20 @@ class TransformError(Exception):
     """Raised when there is an error with the transform logic."""
 
 
-def _default_plxpr_transform(transform_name):  # pylint: disable=missing-function-docstring
-    def wrapper(*_, **__):
-        raise TransformError(f"{transform_name} cannot be used to transform PLxPR.")
+def register_primitive_for_expansion(primitive, plxpr_transform):
+    from pennylane.capture.transforms import ExpandTransformsInterpreter
 
-    return wrapper
+    @ExpandTransformsInterpreter.register_primitive(primitive)
+    def _(self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs):
+        if plxpr_transform is None:
+            raise NotImplementedError
+
+        inner_args = invals[args_slice]
+        inner_consts = invals[consts_slice]
+        targs = invals[targs_slice]
+
+        new_jaxpr = plxpr_transform(inner_jaxpr, inner_consts, targs, tkwargs, *inner_args)
+        return copy.copy(self).eval(new_jaxpr.jaxpr, inner_consts, *inner_args)
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
@@ -87,13 +96,14 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
-        self._plxpr_transform = plxpr_transform or _default_plxpr_transform(
-            self._transform.__name__
-        )
 
         self._use_argnum_in_expand = use_argnum_in_expand
-        self._primitive = _create_transform_primitive(self._transform.__name__)
         functools.update_wrapper(self, transform)
+
+        self._plxpr_transform = plxpr_transform
+        self._primitive = _create_transform_primitive(self._transform.__name__)
+        if self._plxpr_transform is not None:
+            register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     def __call__(
         self, *targs, **tkwargs
@@ -169,6 +179,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
     def __repr__(self):
         return f"<transform: {self._transform.__name__}>"
+
+    def register_plxpr_transform(self, plxpr_transform):
+        self._plxpr_transform = plxpr_transform
+        register_primitive_for_expansion(self._primitive, self._plxpr_transform)
 
     @property
     def transform(self):
