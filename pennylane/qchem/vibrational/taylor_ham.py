@@ -627,7 +627,11 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
 
 def taylor_hamiltonian(
-    pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, ps=False, wire_map=None, tol=None
+    pes,
+    max_deg=4,
+    min_deg=3,
+    mapping="binary",
+    n_states=2,
 ):
     """Return Taylor vibrational Hamiltonian.
 
@@ -638,15 +642,9 @@ def taylor_hamiltonian(
         mapping (str): Mapping used to map to qubit basis. Input values can be ``"binary"`` or ``"unary"``.
             Default is `"binary"`.
         n_states(int): maximum number of allowed bosonic states
-        ps (bool): Flag to return the result as a PauliSentence instead of an
-            operator. Defaults to ``False``.
-        wire_map (dict): A dictionary defining how to map the states of
-            the Bose operator to qubit wires. If ``None``, integers used to
-            label the bosonic states will be used as wire labels. Defaults to ``None``.
-        tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
-        BoseSentence: the bosonic form of the Taylor Hamiltonian
+        Operator: the Taylor Hamiltonian
 
     **Example**
 
@@ -675,21 +673,15 @@ def taylor_hamiltonian(
     )
     """
     mapping.lower().strip()
-    coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
-    bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)
-
     if mapping not in ["binary", "unary"]:
         raise ValueError(
             f"Specified mapping {mapping}, is not found. Please use either 'binary' or 'unary' mapping."
         )
-
+    coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
+    bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)
     if mapping == "binary":
-        ham = binary_mapping(
-            bose_operator=bose_op, n_states=n_states, ps=ps, wire_map=wire_map, tol=tol
-        )
+        ham = binary_mapping(bose_operator=bose_op, n_states=n_states)
     elif mapping == "unary":
-        ham = unary_mapping(
-            bose_operator=bose_op, n_states=n_states, ps=ps, wire_map=wire_map, tol=tol
-        )
+        ham = unary_mapping(bose_operator=bose_op, n_states=n_states)
 
     return ham
