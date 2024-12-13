@@ -173,7 +173,6 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
         Operator: the Christiansen Hamiltonian in the qubit basis
     """
 
-
     h_arr = christiansen_integrals(pes, n_states=n_states, cubic=cubic)
 
     one = h_arr[0]
