@@ -14,21 +14,13 @@
 """
 This module contains a class for executing plxpr using default qubit tools.
 """
-from copy import copy
 
 import jax
 import numpy as np
 
 from pennylane.capture import disable, enable
-from pennylane.capture.base_interpreter import PlxprInterpreter
-from pennylane.capture.primitives import (
-    adjoint_transform_prim,
-    cond_prim,
-    ctrl_transform_prim,
-    for_loop_prim,
-    measure_prim,
-    while_loop_prim,
-)
+from pennylane.capture.base_interpreter import FlattenedHigherOrderPrimitives, PlxprInterpreter
+from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
 from pennylane.measurements import MidMeasureMP, Shots
 
 from .apply_operation import apply_operation
@@ -152,6 +144,10 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         return output
 
 
+# pylint: disable=protected-access
+DefaultQubitInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
+
+
 @DefaultQubitInterpreter.register_primitive(measure_prim)
 def _(self, *invals, reset, postselect):
     mp = MidMeasureMP(invals, reset=reset, postselect=postselect)
@@ -176,43 +172,3 @@ def _(self, *invals, jaxpr, n_consts, lazy=True):
 def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     # TODO: requires jaxpr -> list of ops first
     raise NotImplementedError
-
-
-# pylint: disable=too-many-arguments
-@DefaultQubitInterpreter.register_primitive(for_loop_prim)
-def _(self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice):
-    consts = invals[consts_slice]
-    init_state = invals[args_slice]
-
-    res = init_state
-    for i in range(start, stop, step):
-        res = copy(self).eval(jaxpr_body_fn, consts, i, *res)
-
-    return res
-
-
-# pylint: disable=too-many-arguments
-@DefaultQubitInterpreter.register_primitive(while_loop_prim)
-def _(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, body_slice, cond_slice, args_slice):
-    consts_body = invals[body_slice]
-    consts_cond = invals[cond_slice]
-    init_state = invals[args_slice]
-
-    fn_res = init_state
-    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
-        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
-
-    return fn_res
-
-
-@DefaultQubitInterpreter.register_primitive(cond_prim)
-def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
-    n_branches = len(jaxpr_branches)
-    conditions = invals[:n_branches]
-    args = invals[args_slice]
-
-    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = invals[const_slice]
-        if pred and jaxpr is not None:
-            return copy(self).eval(jaxpr, consts, *args)
-    return ()
