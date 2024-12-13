@@ -460,7 +460,7 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
         start_deg (int): the starting degree
 
     Returns:
-        BoseSentence: anharmonic term of the Taylor hamiltonian for given coeffs
+        BoseSentence: anharmonic part of the Taylor hamiltonian for given coeffs
     """
     num_coups = len(taylor_coeffs_array)
 
