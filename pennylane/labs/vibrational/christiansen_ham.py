@@ -139,7 +139,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
 
 
 def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1e-12):
-    """Compute Christiansen vibrational Hamiltonian.
+    r"""Compute Christiansen vibrational Hamiltonian.
 
     The construction of the Hamiltonian is based on Eqs. 19-21 of
     `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
@@ -148,15 +148,15 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
 
     .. math::
 
-        b^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
-        b^{\dagger}_n = \frac{X_n - iY_n}{2},
+        b^\dagger_0 = \left(\frac{X_0 - iY_0}{2}\right), \:\: \text{...,} \:\:
+        b^\dagger_n = \left(\frac{X_n - iY_n}{2}\right),
 
     and
 
     .. math::
 
-        b_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
-        b_n = \frac{X_n + iY_n}{2},
+        b_0 = \left(\frac{X_0 + iY_0}{2}\right), \:\: \text{...,} \:\:
+        b_n = \left(\frac{X_n + iY_n}{2}\right),
 
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
 
@@ -172,6 +172,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
     Returns:
         Operator: the Christiansen Hamiltonian in the qubit basis
     """
+
 
     h_arr = christiansen_integrals(pes, n_states=n_states, cubic=cubic)
 
