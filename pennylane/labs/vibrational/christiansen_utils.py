@@ -91,7 +91,7 @@ def _cform_twomode_kinetic(pes, n_states):
     for nn, (ii, jj) in enumerate(all_mode_combos):
         ii, jj = int(ii), int(jj)
 
-        # Skip unnecessary combinations
+        # TODO: Skip unnecessary combinations
         if jj >= ii:
             continue
 
@@ -234,6 +234,7 @@ def _cform_twomode(pes, n_states):
 
     local_ham_cform_twobody = np.zeros(len(all_mode_combos) * chunksize)
     for nn, (ii, jj) in enumerate(all_mode_combos):
+        # TODO: Skip unnecessary combinations
         if jj >= ii:
             continue
 
@@ -302,6 +303,7 @@ def _cform_twomode_dipole(pes, n_states):
     local_dipole_cform_twobody = np.zeros((len(all_mode_combos) * chunksize, 3))
 
     for nn, (ii, jj) in enumerate(all_mode_combos):
+        # TODO: Skip unnecessary combinations
         if jj >= ii:
             continue
         for mm, (ki, kj, hi, hj) in enumerate(boscombos_on_rank):
@@ -369,6 +371,7 @@ def _cform_threemode(pes, n_states):
 
     local_ham_cform_threebody = np.zeros(len(all_mode_combos) * chunksize)
     for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
+        # TODO: Skip unnecessary combinations
         if ii2 >= ii1 or ii3 >= ii2:
             continue
         for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):
@@ -446,6 +449,7 @@ def _cform_threemode_dipole(pes, n_states):
 
     for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
         ii1, ii2, ii3 = int(ii1), int(ii2), int(ii3)
+        # TODO: Skip unnecessary combinations
         if ii2 >= ii1 or ii3 >= ii2:
             continue
         for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):
