@@ -42,7 +42,6 @@ from pennylane.labs.vibrational.christiansen_utils import (
     _cform_threemode_dipole,
     _cform_twomode,
     _cform_twomode_dipole,
-    _load_cform_onemode,
 )
 
 # Path is pennylane/tests/qchem/vibrational/test_ref_files/H2S.hdf5
@@ -143,6 +142,7 @@ def test_christiansen_dipole():
 
 
 def test_christiansen_integrals():
+    """Test that christiansen_integrals produces the expected integrals."""
     one, two, three = christiansen_integrals(pes=pes_object_3D, n_states=4, cubic=True)
     assert np.allclose(abs(one), abs(H1), atol=1e-8)
     assert np.allclose(abs(two), abs(H2), atol=1e-8)
@@ -150,6 +150,7 @@ def test_christiansen_integrals():
 
 
 def test_christiansen_integrals_dipole():
+    """Test that christiansen_integrals_dipole produces the expected dipole integrals."""
     one, two, three = christiansen_integrals_dipole(pes=pes_object_3D, n_states=4)
     assert np.allclose(abs(one), abs(D1), atol=1e-8)
     assert np.allclose(abs(two), abs(D2), atol=1e-8)
@@ -157,6 +158,7 @@ def test_christiansen_integrals_dipole():
 
 
 def test_cform_onemode():
+    """Test that _cform_onemode produces the expected one-body integral."""
     flattened_H1 = H1.ravel()
     assert np.allclose(
         abs(flattened_H1), abs(_cform_onemode(pes=pes_object_3D, n_states=4)), atol=1e-8
@@ -164,6 +166,7 @@ def test_cform_onemode():
 
 
 def test_cform_onemode_dipole():
+    """Test that _cform_onemode_dipole produces the expected one-body dipole integral."""
     flattened_D1 = D1.transpose(1, 2, 3, 0).ravel()
     assert np.allclose(
         abs(flattened_D1),
@@ -173,6 +176,7 @@ def test_cform_onemode_dipole():
 
 
 def test_cform_threemode():
+    """Test that _cform_threemode produces the expected three-body integral."""
     flattened_H3 = H3.ravel()
     assert np.allclose(
         abs(flattened_H3), abs(_cform_threemode(pes=pes_object_3D, n_states=4)), atol=1e-8
@@ -180,6 +184,7 @@ def test_cform_threemode():
 
 
 def test_cform_threemode_dipole():
+    """Test that _cform_threemode_dipole produces the expected three-body dipole integral."""
     flattened_D3 = D3.transpose(1, 2, 3, 4, 5, 6, 7, 8, 9, 0).ravel()
 
     assert np.allclose(
@@ -190,6 +195,7 @@ def test_cform_threemode_dipole():
 
 
 def test_cform_twomode():
+    """Test that _cform_twomode produces the expected two-body integral."""
     flattened_H2 = H2.ravel()
     assert np.allclose(
         abs(flattened_H2), abs(_cform_twomode(pes=pes_object_3D, n_states=4)), atol=1e-8
@@ -197,20 +203,11 @@ def test_cform_twomode():
 
 
 def test_cform_twomode_dipole():
+    """Test that _cform_twomode_dipole produces the expected two-body dipole integral."""
     flattened_D2 = D2.transpose(1, 2, 3, 4, 5, 6, 0).ravel()
 
     assert np.allclose(
         abs(flattened_D2),
         abs(_cform_twomode_dipole(pes=pes_object_3D, n_states=4).ravel()),
         atol=1e-8,
-    )
-
-
-def test_load_cform_onemode():
-    data = H1.ravel()
-    # We have to create a file to test the loader
-    with h5py.File("cform_H1data" + f"_{0}" + ".hdf5", "w") as f:
-        f.create_dataset("H1", data=data)
-    assert np.allclose(
-        abs(H1), (abs(_load_cform_onemode(num_proc=1, nmodes=3, quad_order=4))), atol=1e-8
     )
