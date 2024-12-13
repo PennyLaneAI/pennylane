@@ -126,7 +126,7 @@ class QROM(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["clean"] = clean
 
-        if work_wires:
+        if len(work_wires) != 0:
             if any(wire in work_wires for wire in control_wires):
                 raise ValueError("Control wires should be different from work wires.")
 
