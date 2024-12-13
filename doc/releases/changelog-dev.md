@@ -451,6 +451,10 @@ same information.
 
 <h3>Documentation 📝</h3>
 
+* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to include a 
+  note that says that they are not compatible with qjit or jit.  
+  [(#6702)](https://github.com/PennyLaneAI/pennylane/pull/6702)
+
 * Updated the documentation of `TrotterProduct` to include the impact of the operands in the
   Hamiltonian on the strucutre of the created circuit. Included an illustrative example on this.
   [(#6629)](https://github.com/PennyLaneAI/pennylane/pull/6629)
@@ -460,6 +464,9 @@ same information.
 
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
+
+* Updated the documentation of `QSVT` to include examples for different block encodings.
+  [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
 
 <h3>Bug fixes 🐛</h3>
 
