@@ -280,19 +280,19 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
         isinstance(op, np.ndarray) for op in k
     )
 
-    vec_h, theta_opt = kak_res
-    [h_elem] = adjvec_to_op([vec_h], g[len(k) :])  # sum(c * op for c, op in zip(vec_h, m))
+    vec_a, theta_opt = kak_res
+    [a_elem] = adjvec_to_op([vec_a], g[len(k) :])  # sum(c * op for c, op in zip(vec_h, m))
 
-    if isinstance(h_elem, Operator):
-        h_elem_m = qml.matrix(h_elem, wire_order=range(n))
-    elif isinstance(h_elem, PauliSentence):
-        h_elem_m = h_elem.to_mat(wire_order=range(n))
+    if isinstance(a_elem, Operator):
+        a_elem_m = qml.matrix(a_elem, wire_order=range(n))
+    elif isinstance(a_elem, PauliSentence):
+        a_elem_m = a_elem.to_mat(wire_order=range(n))
     else:
-        h_elem_m = h_elem
+        a_elem_m = a_elem
 
-    assert np.allclose(h_elem_m, h_elem_m.conj().T), "CSA element h not Hermitian"
+    assert np.allclose(a_elem_m, a_elem_m.conj().T), "CSA element a not Hermitian"
 
-    # validate K_c^† h K_c reproduces H
+    # validate K_c a K_c^† reproduces H
     # Compute the ansatz K_c = K(theta_c) = K_1(theta_1) .. K_|k|(theta_|k|)
     Km = jnp.eye(2**n)
     assert len(theta_opt) == len(k)
@@ -302,8 +302,8 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
 
     assert np.allclose(Km @ Km.conj().T, np.eye(2**n))
 
-    # Compute K_c^† h K_c
-    H_reconstructed = Km.conj().T @ h_elem_m @ Km
+    # Compute K_c^† a K_c
+    H_reconstructed = Km.conj().T @ a_elem_m @ Km
 
     H_m = qml.matrix(H, wire_order=range(len(H.wires)))
 
