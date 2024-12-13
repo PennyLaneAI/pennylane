@@ -29,16 +29,16 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
 
     Args:
-        one (TensorLike(float)): one-body matrix elements
+        one (TensorLike[float]): one-body matrix elements
         modes (int): number of vibrational modes. If ``None``, it is obtained from the length of ``one``.
         modals (list(int)): number of allowed vibrational modals for each mode. If ``None``, it is obtained from the shape of ``one``.
-        two (TensorLike(float)): two-body matrix elements
-        three (TensorLike(float)): three-body matrix elements
+        two (TensorLike[float]): two-body matrix elements
+        three (TensorLike[float]): three-body matrix elements
         cutoff (float): tolerance for discarding the negligible coefficients
         ordered (bool): indicates if matrix elements are already ordered. Default is ``True``.
 
     Returns:
-        BoseSentence: the constructed bosonic operator
+        pennylane.bose.BoseSentence: the constructed bosonic operator
     """
     if modes is None:
         modes = np.shape(one)[0]

@@ -1,4 +1,4 @@
-#pylint: skip-file
+# pylint: skip-file
 """File that contains the Christiansen Bosonic Operator data generated via functions in vibrant."""
 # fmt: off
 
