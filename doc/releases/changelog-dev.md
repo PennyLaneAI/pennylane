@@ -340,7 +340,7 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
-* Added support to build the Christiansen vibrational Hamiltonian.
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Breaking changes 💔</h3>
