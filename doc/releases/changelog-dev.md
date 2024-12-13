@@ -229,6 +229,15 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
+  when program capture is enabled. This class decomposes pennylane operators following the same API as
+  `qml.transforms.decompose`.
+  [(#6691)](https://github.com/PennyLaneAI/pennylane/pull/6691)
+
+* Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
+  operator and measurement wires with capture enabled.
+  [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
+
 * A `qml.tape.plxpr_to_tape` function can now convert plxpr to a tape.
   [(#6343)](https://github.com/PennyLaneAI/pennylane/pull/6343)
 
@@ -268,7 +277,10 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
-* Standardize supported interfaces to an internal Enum object. 
+* Add developer focused `run` function to `qml.workflow` module.
+  [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
+
+* Standardize supported interfaces to an internal `Enum` object. 
   [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
@@ -446,6 +458,9 @@ same information.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `Wires` object throws a `TypeError` if `wires=None`. 
+  [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
