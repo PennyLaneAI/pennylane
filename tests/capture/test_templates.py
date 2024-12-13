@@ -1085,8 +1085,8 @@ class TestModifiedTemplates:
         """Test the primitive bind call of Superposition."""
 
         coeffs = [0.5, 0.5, -0.5, -0.5]
-        basis = [[0, 0, 0, 0], [0, 1, 0, 1], [1, 0, 1, 0], [0, 0, 1, 1]]
-        kwargs = {"coeffs": coeffs, "basis": basis, "wires": [0, 1, 2, 3], "work_wire": 4}
+        bases = [[0, 0, 0, 0], [0, 1, 0, 1], [1, 0, 1, 0], [0, 0, 1, 1]]
+        kwargs = {"coeffs": coeffs, "bases": bases, "wires": [0, 1, 2, 3], "work_wire": 4}
 
         def qfunc():
             qml.Superposition(**kwargs)
