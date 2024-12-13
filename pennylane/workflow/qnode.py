@@ -841,7 +841,7 @@ class QNode:
     qtape = tape  # for backwards compatibility
 
     @debug_logger
-    def construct(self, args, kwargs):
+    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
 
@@ -857,17 +857,19 @@ class QNode:
             with qml.queuing.AnnotatedQueue() as q:
                 self._qfunc_output = self.func(*args, **kwargs)
 
-        self._tape = QuantumScript.from_queue(q, shots)
+        tape = QuantumScript.from_queue(q, shots)
 
-        params = self._tape.get_parameters(trainable_only=False)
-        self._tape.trainable_params = qml.math.get_trainable_indices(params)
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        _validate_qfunc_output(self._qfunc_output, self._tape.measurements)
+        _validate_qfunc_output(self._qfunc_output, tape.measurements)
+        self._tape = tape
+        return tape
 
     def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
 
         # construct the tape
-        self.construct(args, kwargs)
+        tape = self.construct(args, kwargs)
 
         if self.interface == "auto":
             interface = qml.math.get_interface(*args, *list(kwargs.values()))
@@ -880,9 +882,8 @@ class QNode:
         # Calculate the classical jacobians if necessary
         self._transform_program.set_classical_component(self, args, kwargs)
 
-        assert self._tape
         res = qml.execute(
-            (self._tape,),
+            (tape,),
             device=self.device,
             diff_method=self.diff_method,
             interface=interface,
@@ -895,14 +896,12 @@ class QNode:
         # convert result to the interface in case the qfunc has no parameters
 
         if (
-            len(self._tape.get_parameters(trainable_only=False)) == 0
+            len(tape.get_parameters(trainable_only=False)) == 0
             and not self._transform_program.is_informative
         ):
             res = _convert_to_interface(res, qml.math.get_canonical_interface_name(self.interface))
 
-        return _to_qfunc_output_type(
-            res, self._qfunc_output, self._tape.shots.has_partitioned_shots
-        )
+        return _to_qfunc_output_type(res, self._qfunc_output, tape.shots.has_partitioned_shots)
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         if qml.capture.enabled():
