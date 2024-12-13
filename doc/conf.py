@@ -57,7 +57,7 @@ ogp_social_cards = {
     "site_url": "https://docs.pennylane.ai/",
     "line_color": "#03b2ff",
 }
-ogp_image = "_static/header-tall.png"
+ogp_image = "_static/opengraph.png"
 
 
 # The base URL with a proper language and version.

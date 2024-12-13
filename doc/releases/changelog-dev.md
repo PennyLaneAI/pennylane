@@ -467,6 +467,9 @@ same information.
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
+* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+  [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
+
 * Updated the documentation of `QSVT` to include examples for different block encodings.
   [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
 
@@ -516,6 +519,7 @@ Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+Alan Martin,
 William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
