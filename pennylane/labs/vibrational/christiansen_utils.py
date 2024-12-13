@@ -185,8 +185,7 @@ def _cform_onemode_dipole(pes, n_states):
 
     local_dipole_cform_onebody = np.zeros((len(all_mode_combos) * chunksize, 3))
 
-    for nn, (ii,) in enumerate(all_mode_combos):
-        ii = int(ii)
+    for nn, ii in enumerate(all_mode_combos):
 
         for mm, (ki, hi) in enumerate(boscombos_on_rank):
             ki, hi = int(ki), int(hi)
