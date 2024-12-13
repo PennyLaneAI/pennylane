@@ -188,6 +188,7 @@ such as `shots`, `rng` and `prng_key`.
     and normal-mode localization.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
     [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
+    [(#6717)](https://github.com/PennyLaneAI/pennylane/pull/6717)
   * Implemented helper functions for calculating one-mode PES, two-mode PES, and
     three-mode PES.
     [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)

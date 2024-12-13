@@ -60,7 +60,7 @@ class VibrationalPES:
                                  uloc = None, pes_data=[pes_onebody, pes_twobody],
                                  dipole_data=[dipole_onebody], localized=False)
     >>> vib_obj.freqs
-    [0.01885397]
+    array([0.01885397])
 
     """
 
@@ -180,8 +180,8 @@ def optimize_geometry(molecule, method="rhf"):
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> eq_geom = qml.qchem.optimize_geometry(mol)
     >>> eq_geom
-    [[0.0, 0.0, -0.40277116],
-     [0.0, 0.0,  1.40277116]]
+    array([[0.0, 0.0, -0.40277116],
+           [0.0, 0.0,  1.40277116]])
 
     """
     pyscf = _import_pyscf()
