@@ -9,7 +9,7 @@ import pennylane as qml
 from pennylane.transforms import combine_global_phases
 
 
-def original_qfunc(phi1, phi2):
+def original_qfunc(phi1, phi2, return_state=False):
     qml.Hadamard(wires=1)
     qml.GlobalPhase(phi1, wires=[0, 1])
     qml.PauliY(wires=0)
@@ -17,17 +17,21 @@ def original_qfunc(phi1, phi2):
     qml.CNOT(wires=[1, 2])
     qml.GlobalPhase(phi2, wires=1)
     qml.CNOT(wires=[2, 0])
-    return qml.state()
+    if return_state:
+        return qml.state()
+    return qml.expval(qml.Z(0) @ qml.X(1))
 
 
-def expected_qfunc(phi1, phi2):
+def expected_qfunc(phi1, phi2, return_state=False):
     qml.Hadamard(wires=1)
     qml.PauliY(wires=0)
     qml.PauliX(wires=2)
     qml.CNOT(wires=[1, 2])
     qml.CNOT(wires=[2, 0])
     qml.GlobalPhase(phi1 + phi2)
-    return qml.state()
+    if return_state:
+        return qml.state()
+    return qml.expval(qml.Z(0) @ qml.X(1))
 
 
 def test_no_global_phase_gate():
@@ -83,8 +87,8 @@ def test_combine_global_phases(phi1, phi2):
     expected_qscript = qml.tape.make_qscript(expected_qfunc)(phi1, phi2)
     transformed_qscript = qml.tape.make_qscript(transformed_qfunc)(phi1, phi2)
 
-    original_state = original_qnode(phi1, phi2)
-    transformed_state = transformed_qnode(phi1, phi2)
+    original_state = original_qnode(phi1, phi2, return_state=True)
+    transformed_state = transformed_qnode(phi1, phi2, return_state=True)
 
     # check the equivalence between expected and transformed quantum scripts
     qml.assert_equal(expected_qscript, transformed_qscript)
@@ -93,52 +97,77 @@ def test_combine_global_phases(phi1, phi2):
     assert np.allclose(original_state, transformed_state)
 
 
-@pytest.mark.jax
-@pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-@pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-def test_combine_global_phases_jax(phi1, phi2):
-    """Test that the transform works in the JAX interface"""
-    dev = qml.device("default.qubit", wires=3)
+@pytest.mark.autograd
+def test_differentiability_autograd():
+    """Test that the output of the ``combine_global_phases`` transform is differentiable with autograd"""
+    import pennylane.numpy as pnp
 
-    original_qnode = qml.QNode(original_qfunc, device=dev, interface="jax")
+    dev = qml.device("default.qubit", wires=3)
+    original_qnode = qml.QNode(original_qfunc, device=dev)
     transformed_qnode = combine_global_phases(original_qnode)
 
-    original_state = original_qnode(phi1, phi2)
-    transformed_state = transformed_qnode(phi1, phi2)
+    phi1 = pnp.array(0.25)
+    phi2 = pnp.array(-0.6)
+    grad1, grad2 = qml.jacobian(transformed_qnode)(phi1, phi2)
 
-    # check the equivalence between statevectors before and after the transform
-    assert np.allclose(original_state, transformed_state)
+    assert qml.math.isclose(grad1, 0.0)
+    assert qml.math.isclose(grad2, 0.0)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("use_jit", [False, True])
+def test_differentiability_jax(use_jit):
+    """Test that the output of the ``combine_global_phases`` transform is differentiable with JAX"""
+    import jax
+    import jax.numpy as jnp
+
+    dev = qml.device("default.qubit", wires=3)
+    original_qnode = qml.QNode(original_qfunc, device=dev)
+    transformed_qnode = combine_global_phases(original_qnode)
+
+    if use_jit:
+        transformed_qnode = jax.jit(transformed_qnode)
+
+    phi1 = jnp.array(0.25)
+    phi2 = jnp.array(-0.6)
+    grad1, grad2 = jax.jacobian(transformed_qnode, argnums=[0, 1])(phi1, phi2)
+
+    assert qml.math.isclose(grad1, 0.0)
+    assert qml.math.isclose(grad2, 0.0)
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-@pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-def test_combine_global_phases_torch(phi1, phi2):
-    """Test that the transform works in the Torch interface"""
-    dev = qml.device("default.qubit", wires=3)
+def test_differentiability_torch():
+    """ "Test that the output of the ``combine_global_phases`` transform is differentiable with Torch"""
+    import torch
+    from torch.autograd.functional import jacobian
 
-    original_qnode = qml.QNode(original_qfunc, device=dev, interface="torch")
+    dev = qml.device("default.qubit", wires=3)
+    original_qnode = qml.QNode(original_qfunc, device=dev)
     transformed_qnode = combine_global_phases(original_qnode)
 
-    original_state = original_qnode(phi1, phi2)
-    transformed_state = transformed_qnode(phi1, phi2)
+    phi1 = torch.tensor(0.25)
+    phi2 = torch.tensor(-0.6)
+    grad1, grad2 = jacobian(transformed_qnode, (phi1, phi2))
 
-    # check the equivalence between statevectors before and after the transform
-    assert np.allclose(original_state, transformed_state)
+    zero = torch.tensor(0.0)
+    assert qml.math.isclose(grad1, zero)
+    assert qml.math.isclose(grad2, zero)
 
 
 @pytest.mark.tf
-@pytest.mark.parametrize("phi1", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-@pytest.mark.parametrize("phi2", [-2 * np.pi, -np.pi, -1, 0, 1, np.pi, 2 * np.pi])
-def test_combine_global_phases_tf(phi1, phi2):
-    """Test that the transform works in the TensorFlow interface"""
+def test_differentiability_tensorflow():
+    """Test that the output of the ``combine_global_phases`` transform is differentiable with TensorFlow"""
+    import tensorflow as tf
+
     dev = qml.device("default.qubit", wires=3)
+    original_qnode = qml.QNode(original_qfunc, device=dev)
 
-    original_qnode = qml.QNode(original_qfunc, device=dev, interface="tensorflow")
-    transformed_qnode = combine_global_phases(original_qnode)
+    phi1 = tf.Variable(0.25)
+    phi2 = tf.Variable(-0.6)
+    with tf.GradientTape() as tape:
+        transformed_qnode = combine_global_phases(original_qnode)(phi1, phi2)
+    grad1, grad2 = tape.jacobian(transformed_qnode, (phi1, phi2))
 
-    original_state = original_qnode(phi1, phi2)
-    transformed_state = transformed_qnode(phi1, phi2)
-
-    # check the equivalence between statevectors before and after the transform
-    assert np.allclose(original_state, transformed_state)
+    assert qml.math.isclose(grad1, 0.0)
+    assert qml.math.isclose(grad2, 0.0)
