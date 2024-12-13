@@ -218,6 +218,7 @@ such as `shots`, `rng` and `prng_key`.
 
 * Added JAX support for the differentiable Hartree-Fock workflow.
   [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
+  [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
 
 * Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
