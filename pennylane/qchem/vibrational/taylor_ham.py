@@ -464,7 +464,7 @@ def _taylor_anharmonic(taylor_coeffs_array, start_deg=2):
         start_deg (int): the starting degree
 
     Returns:
-        BoseSentence: anharmonic part of the Taylor hamiltonian for given coeffs
+        pennylane.bose.BoseSentence: anharmonic part of the Taylor hamiltonian for given coeffs
     """
     num_coups = len(taylor_coeffs_array)
 
@@ -531,7 +531,7 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
             and localized modes
 
     Returns:
-        BoseSentence: kinetic term of the Taylor hamiltonian for given coeffs
+        pennylane.bose.BoseSentence: kinetic term of the Taylor hamiltonian for given coeffs
     """
     taylor_1D = taylor_coeffs_array[0]
     num_modes, _ = np.shape(taylor_1D)
@@ -562,7 +562,7 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
         freqs (list(float)): the harmonic frequencies in atomic units
 
     Returns:
-        BoseSentence: harmonic term of the Taylor hamiltonian for given coeffs
+        pennylane.bose.BoseSentence: harmonic term of the Taylor hamiltonian for given coeffs
     """
     taylor_1D = taylor_coeffs_array[0]
     num_modes, _ = np.shape(taylor_1D)
@@ -589,7 +589,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
             and localized modes
 
     Returns:
-        BoseSentence: Taylor bosonic hamiltonian
+        pennylane.bose.BoseSentence: Taylor bosonic hamiltonian
 
     **Example**
 
