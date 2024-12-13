@@ -825,7 +825,7 @@ def christiansen_integrals(pes, n_states=16, cubic=False):
 
 
 def christiansen_integrals_dipole(pes, n_states=16):
-    r"""Generates the vibrational dipole integrals in Christiansen form.
+    r"""Compute Christiansen vibrational dipole integrals.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
