@@ -19,6 +19,12 @@ import numpy as np
 import pytest
 
 from pennylane.bose.bosonic import BoseWord
+from pennylane.labs.tests.vibrational.test_ref_files.cform_ops_data import (
+    cform_coeffs_ref,
+    cform_dipole_ref_x,
+    cform_ham_ref,
+    cform_ops_ref,
+)
 from pennylane.labs.vibrational.christiansen_ham import (
     christiansen_bosonic,
     christiansen_dipole,
@@ -35,12 +41,6 @@ from pennylane.labs.vibrational.christiansen_utils import (
     christiansen_integrals_dipole,
 )
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-from pennylane.labs.tests.vibrational.test_ref_files.cform_ops_data import (
-    cform_coeffs_ref,
-    cform_dipole_ref_x,
-    cform_ham_ref,
-    cform_ops_ref,
-)
 
 # Path is pennylane/labs/tests/vibrational/test_ref_files/H2S.hdf5
 cform_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S.hdf5"
