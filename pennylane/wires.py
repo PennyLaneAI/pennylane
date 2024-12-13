@@ -32,9 +32,12 @@ else:
     jax_available = False
     jax = None
 
-if jax_available:
-    # pylint: disable=unnecessary-lambda
-    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
+try:
+    if jax_available:
+        # pylint: disable=unnecessary-lambda
+        setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
+except AttributeError:
+    pass
 
 
 class WireError(Exception):

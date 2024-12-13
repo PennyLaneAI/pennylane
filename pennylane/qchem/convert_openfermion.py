@@ -20,7 +20,6 @@ from typing import Union
 
 # pylint: disable= import-outside-toplevel,no-member,unused-import
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 from pennylane.ops import LinearCombination, Sum
 from pennylane.qchem.convert import _openfermion_to_pennylane, _pennylane_to_openfermion
@@ -155,7 +154,9 @@ def _to_openfermion_dispatch(pl_op, wires=None, tol=1.0e-16):
 @_to_openfermion_dispatch.register
 def _(pl_op: Sum, wires=None, tol=1.0e-16):
     coeffs, ops = pl_op.terms()
-    return _pennylane_to_openfermion(np.array(coeffs), ops, wires=wires, tol=tol)
+    return _pennylane_to_openfermion(
+        qml.math.asarray(coeffs, like="autograd"), ops, wires=wires, tol=tol
+    )
 
 
 # pylint: disable=unused-argument, protected-access
@@ -178,7 +179,7 @@ def _(pl_op: FermiSentence, wires=None, tol=1.0e-16):
 
     fermion_op = openfermion.ops.FermionOperator()
     for fermi_word in pl_op:
-        if np.abs(pl_op[fermi_word].imag) < tol:
+        if qml.math.abs(pl_op[fermi_word].imag) < tol:
             fermion_op += pl_op[fermi_word].real * to_openfermion(fermi_word)
         else:
             fermion_op += pl_op[fermi_word] * to_openfermion(fermi_word)

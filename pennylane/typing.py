@@ -20,9 +20,8 @@ from collections.abc import Callable, Sequence
 from typing import TypeVar, Union
 
 import numpy as np
-from autograd.numpy.numpy_boxes import ArrayBox
 
-_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
+_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, np.generic]
 
 
 class TensorLikeMETA(type):
@@ -45,6 +44,7 @@ class TensorLikeMETA(type):
         """Dunder method that checks if a class is a subclass of ``TensorLike``."""
         return (
             issubclass(other, _TensorLike)
+            or _is_autograd(other, subclass=True)
             or _is_jax(other, subclass=True)
             or _is_torch(other, subclass=True)
             or _is_tensorflow(other, subclass=True)
@@ -70,6 +70,17 @@ class TensorLike(metaclass=TensorLikeMETA):
     >>> issubclass(jax.Array, TensorLike)
     True
     """
+
+
+def _is_autograd(other, subclass=False):
+    """Check if other is an instance or a subclass of a jax tensor."""
+    # pylint: disable=c-extension-no-member
+    if "autograd" in sys.modules:
+        with contextlib.suppress(ImportError):
+            from autograd.numpy.numpy_boxes import ArrayBox
+
+            return check(other, ArrayBox)
+    return False
 
 
 def _is_jax(other, subclass=False):

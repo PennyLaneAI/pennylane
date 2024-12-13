@@ -15,9 +15,10 @@
 import functools
 from string import ascii_letters as alphabet
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
 
 alphabet_array = np.array(list(alphabet))
 QUDIT_DIM = 3  # specifies qudit dimension

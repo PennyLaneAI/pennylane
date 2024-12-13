@@ -16,8 +16,9 @@
 from collections.abc import Iterable
 from typing import Union
 
+import numpy as np
+
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane import math
 
 
@@ -53,7 +54,7 @@ def create_initial_state(
 
     else:
         pure_state = prep_operation.state_vector(wire_order=list(wires))
-        density_matrix = np.outer(pure_state, np.conj(pure_state))
+        density_matrix = math.outer(pure_state, math.conj(pure_state))
     return _post_process(density_matrix, num_axes, like)
 
 

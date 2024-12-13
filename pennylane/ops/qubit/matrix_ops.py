@@ -24,7 +24,6 @@ import numpy as np
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
-from pennylane import numpy as pnp
 from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
 from pennylane.typing import TensorLike
@@ -546,8 +545,8 @@ class BlockEncode(Operation):
                 shape_a = qml.math.shape(A)
 
             normalization = qml.math.maximum(
-                norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
-                norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
+                norm(A @ qml.math.transpose(qml.math.conj(A)), ord=np.inf),
+                norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=np.inf),
             )
             subspace = (*shape_a, 2 ** len(wires))
 

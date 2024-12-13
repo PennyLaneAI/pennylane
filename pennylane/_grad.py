@@ -17,19 +17,11 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 import warnings
 from functools import partial, wraps
 
-from autograd import jacobian as _jacobian
-from autograd.core import make_vjp as _make_vjp
-from autograd.extend import vspace
-from autograd.numpy.numpy_boxes import ArrayBox
-from autograd.wrap_util import unary_to_nary
-
 from pennylane.capture import enabled
 from pennylane.capture.capture_diff import _get_grad_prim, _get_jacobian_prim
 from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
-
-make_vjp = unary_to_nary(_make_vjp)
 
 
 def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
@@ -234,21 +226,30 @@ class grad:
         return self._forward
 
     @staticmethod
-    @unary_to_nary
     def _grad_with_forward(fun, x):
         """This function is a replica of ``autograd.grad``, with the only
         difference being that it returns both the gradient *and* the forward pass
         value."""
-        vjp, ans = _make_vjp(fun, x)  # pylint: disable=redefined-outer-name
+        from autograd.core import make_vjp as _make_vjp
+        from autograd.extend import vspace
+        from autograd.numpy.numpy_boxes import ArrayBox
+        from autograd.wrap_util import unary_to_nary
 
-        if vspace(ans).size != 1:
-            raise TypeError(
-                "Grad only applies to real scalar-output functions. "
-                "Try jacobian, elementwise_grad or holomorphic_grad."
-            )
+        def inner(_func, _x):
+            make_vjp = unary_to_nary(_make_vjp)
 
-        grad_value = vjp(vspace(ans).ones())
-        return grad_value, ans
+            vjp, ans = _make_vjp(fun, x)  # pylint: disable=redefined-outer-name
+
+            if vspace(ans).size != 1:
+                raise TypeError(
+                    "Grad only applies to real scalar-output functions. "
+                    "Try jacobian, elementwise_grad or holomorphic_grad."
+                )
+
+            grad_value = vjp(vspace(ans).ones())
+            return grad_value, ans
+
+        return unary_to_nary(inner)(func, x)
 
 
 def jacobian(func, argnum=None, method=None, h=None):
@@ -514,6 +515,8 @@ def jacobian(func, argnum=None, method=None, h=None):
                 "If this is unintended, please add trainable parameters via the "
                 "'requires_grad' attribute or 'argnum' keyword."
             )
+        from autograd import jacobian as _jacobian
+
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 
         return jac[0] if unpack else jac
