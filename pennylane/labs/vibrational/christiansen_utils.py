@@ -24,6 +24,8 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
+# pylint: disable = redefined-outer-name,
+
 
 def _cform_onemode_kinetic(freqs, n_states):
     """Calculates the kinetic energy part of the one body integrals to correct the integrals
@@ -351,7 +353,9 @@ def _cform_threemode(pes, n_states):
     """
     nmodes = pes.pes_threemode.shape[0]
 
-    all_mode_combos = [[aa, bb, cc] for aa in range(nmodes) for bb in range(nmodes) for cc in range(nmodes)]
+    all_mode_combos = [
+        [aa, bb, cc] for aa in range(nmodes) for bb in range(nmodes) for cc in range(nmodes)
+    ]
 
     all_bos_combos = list(
         itertools.product(
@@ -424,7 +428,9 @@ def _cform_threemode_dipole(pes, n_states):
     """
     nmodes = pes.dipole_threemode.shape[0]
 
-    all_mode_combos = [[aa, bb, cc] for aa in range(nmodes) for bb in range(nmodes) for cc in range(nmodes)]
+    all_mode_combos = [
+        [aa, bb, cc] for aa in range(nmodes) for bb in range(nmodes) for cc in range(nmodes)
+    ]
     all_bos_combos = list(
         itertools.product(
             range(n_states),

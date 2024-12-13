@@ -19,8 +19,7 @@ from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
 
-# pylint: disable = too-many-branches, too-many-positional-arguments
-
+# pylint: disable = too-many-branches, too-many-positional-arguments, too-many-arguments, too-many-nested-blocks,
 
 
 def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ordered=True):
@@ -98,12 +97,12 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     # three-body terms
     if not three is None:
         for l in range(modes):
-            if ordered is False:
+            if not ordered:
                 m_range = [p for p in range(modes) if p != l]
             else:
                 m_range = range(l)
             for m in m_range:
-                if ordered is False:
+                if not ordered:
                     n_range = [p for p in range(modes) if p != l and p != m]
                 else:
                     n_range = range(m)
@@ -139,7 +138,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     return obs_sq
 
 
-def christiansen_hamiltonian(pes, n_states=16, cubic=False):
+def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1e-12):
     """Compute Christiansen vibrational Hamiltonian.
 
     The construction of the Hamiltonian is based on Eqs. 19-21 of
@@ -165,6 +164,10 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False):
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
+        wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
+            wires. If None, integers used to label the bosonic states will be used as wire labels.
+            Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
         Operator: the Christiansen Hamiltonian in the qubit basis
@@ -176,7 +179,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False):
     two = h_arr[1]
     three = h_arr[2] if len(h_arr) == 3 else None
     cform_bosonic = christiansen_bosonic(one=one, two=two, three=three)
-    cform_qubit = christiansen_mapping(cform_bosonic)
+    cform_qubit = christiansen_mapping(bose_operator=cform_bosonic, wire_map=wire_map, tol=tol)
 
     return cform_qubit
 
