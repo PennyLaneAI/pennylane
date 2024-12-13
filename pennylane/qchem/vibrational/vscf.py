@@ -438,7 +438,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
         where ``n`` is the number of vibrational modes in the molecule and ``m`` represents the number
         of modals.
 
-        Required dimensions of d_integral tensors are as follows:
+        The ``d_integral`` tensor must have one of these dimensions:
 
         - 1-mode coupled integrals: `(3, n, m)`
         - 2-mode coupled integrals: `(3, n, n, m, m, m, m)`
