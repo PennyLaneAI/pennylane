@@ -175,9 +175,7 @@ def _cform_onemode_dipole(pes, n_states):
     """
 
     nmodes = pes.dipole_onemode.shape[0]
-    all_mode_combos = []
-    for aa in range(nmodes):
-        all_mode_combos.append([aa])
+    all_mode_combos = [[aa] for aa in range(nmodes)]
     all_bos_combos = list(itertools.product(range(n_states), range(n_states)))
 
     rank = comm.Get_rank()
