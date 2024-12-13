@@ -38,9 +38,7 @@ def _cform_onemode_kinetic(freqs, n_states):
     """
     # action of kinetic energy operator for m=1,...,M modes with frequencies freqs[m]
     nmodes = len(freqs)
-    all_mode_combos = []
-    for aa in range(nmodes):
-        all_mode_combos.append([aa])
+    all_mode_combos = [[aa] for aa in range(nmodes)]
     all_bos_combos = list(itertools.product(range(n_states), range(n_states)))
 
     rank = comm.Get_rank()
