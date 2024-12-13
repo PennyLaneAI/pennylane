@@ -317,7 +317,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
             dipole_level=1,
         )
     >>> qml.qchem.taylor_coeffs(pes_object, 4, 2)
-    [array([[-0.00088528, -0.00361425,  0.00068143]]), array([[[0., 0., 0., 0., 0., 0.]]])]
+    [[-0.00088528 -0.00361425  0.00068143]]
     """
 
     anh_pes, harmonic_pes = _remove_harmonic(pes.freqs, pes.pes_onemode)
