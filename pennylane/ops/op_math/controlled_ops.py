@@ -131,10 +131,8 @@ class ControlledQubitUnitary(ControlledOp):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        wires = () if wires is None else wires
-        work_wires = () if work_wires is None else work_wires
-        wires = Wires(wires)
-        work_wires = Wires(work_wires)
+        wires = () if wires is None else Wires(wires)
+        work_wires = () if work_wires is None else Wires(work_wires)
 
         if getattr(base, "wires", False) and len(wires) != 0:
             warnings.warn(
@@ -144,7 +142,7 @@ class ControlledQubitUnitary(ControlledOp):
 
         all_wires = control_wires + wires
         return cls._primitive.bind(
-            base, all_wires, control_values=control_values, work_wires=work_wires
+            base, *all_wires, control_values=control_values, work_wires=work_wires
         )
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -157,10 +155,8 @@ class ControlledQubitUnitary(ControlledOp):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        wires = () if wires is None else wires
-        work_wires = () if work_wires is None else work_wires
-        wires = Wires(wires)
-        work_wires = Wires(work_wires)
+        wires = () if wires is None else Wires(wires)
+        work_wires = () if work_wires is None else Wires(work_wires)
 
         if getattr(base, "wires", False) and len(wires) != 0:
             warnings.warn(
