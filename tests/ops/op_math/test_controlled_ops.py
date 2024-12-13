@@ -49,8 +49,42 @@ X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
 
 
+# pylint: disable=too-many-public-methods
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "control_wires, wires",
+        [(0, 1), ([0, 1], [2])],
+    )
+    def test_consistency_with_capture(self, control_wires, wires):
+        base_op = [[0, 1], [1, 0]]
+
+        op = qml.ControlledQubitUnitary(base_op, control_wires=control_wires, wires=wires)
+        assert op.base.wires == Wires(wires)
+        assert op.control_wires == Wires(control_wires)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "control_wires_1, wires_1, control_wires_2, wires_2",
+        [
+            ([0, 1], [2], [0, 1, 2], ()),  # Pair of configurations to compare
+        ],
+    )
+    def test_pairwise_consistency_with_capture(
+        self, control_wires_1, wires_1, control_wires_2, wires_2
+    ):
+        base_op = [[0, 1], [1, 0]]
+
+        op_1 = qml.ControlledQubitUnitary(base_op, control_wires=control_wires_1, wires=wires_1)
+        op_2 = qml.ControlledQubitUnitary(base_op, control_wires=control_wires_2, wires=wires_2)
+
+        assert op_1.base.wires == Wires(2)
+        assert op_2.base.wires == Wires(2)
+
+        assert op_1.control_wires == Wires([0, 1])
+        assert op_2.control_wires == Wires([0, 1])
 
     def test_initialization_from_matrix_and_operator(self):
         base_op = QubitUnitary(X, wires=1)
