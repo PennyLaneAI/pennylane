@@ -291,8 +291,8 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
-        max_deg (int): maximum degree of taylor form polynomial
-        min_deg (int): minimum degree of taylor form polynomial
+        max_deg (int): maximum degree of Taylor form polynomial
+        min_deg (int): minimum degree of Taylor form polynomial
 
     Returns:
         tuple(TensorLike[float]): the coefficients of the one-body, two-body and three-body terms
