@@ -555,7 +555,7 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
-        freqs (list(float)): vibrational frequencies
+        freqs (list(float)): vibrational frequencies in atomic units
 
     Returns:
         BoseSentence: harmonic term of the Taylor hamiltonian for given coeffs
