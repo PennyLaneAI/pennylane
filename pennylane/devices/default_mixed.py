@@ -25,6 +25,7 @@ import logging
 import numpy as np
 
 import pennylane as qml
+from pennylane.math import get_canonical_interface_name
 from pennylane.logging import debug_logger, debug_logger_init
 
 # We deliberately separate the imports to avoid confusion with the legacy device
@@ -306,6 +307,7 @@ class DefaultMixed(Device):
         updated_values["grad_on_execution"] = False
         if not execution_config.gradient_method in {"best", "backprop", None}:
             execution_config.interface = None
+        execution_config.interface = get_canonical_interface_name(execution_config.interface)
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
