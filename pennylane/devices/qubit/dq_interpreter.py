@@ -114,6 +114,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         self.state = apply_operation(op, self.state, is_state_batched=self.is_state_batched)
         if op.batch_size:
             self.is_state_batched = True
+        return op
 
     def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
         if "mcm" in eqn.primitive.name:
