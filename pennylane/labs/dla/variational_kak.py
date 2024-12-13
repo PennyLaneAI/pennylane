@@ -47,12 +47,13 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
     .. math:: H = K_c^\dagger a K_c
 
-    The result is provided in terms of the adjoint representation vector of :math:`a` (see :func:`adjvec_to_op`) and
+    The result is provided in terms of the adjoint representation vector of :math:`a in \mathfrak{a}`
+    (see :func:`adjvec_to_op`), i.e. the ordered coefficients :math:`c_j^{\mathfrak{a}}` in :math:`a = \sum_j c_j^{\mathfrak{a}} a_j` and
     the optimal parameters :math:`\theta` such that
 
     .. math:: K_c = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}
 
-    for the ordered basis of :math:`\mathfrak{k}` given by the first ``dim_k`` elements of ``g``.
+    for the ordered basis of :math:`\mathfrak{k}` given by the first :math:`|\mathfrak{k}|` elements of ``g``.
 
     Internally, this function performs a modified version of `2104.00728 <https://arxiv.org/abs/2104.00728>`__,
     in particular minimizing the cost function eq. (6) therein. Instead of relying on having Pauli words, we use the adjoint representation
@@ -72,10 +73,12 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
             Also includes ``n_epochs``, ``lr``, ``b1``, ``b2``, ``verbose``, ``interrupt_tol``, see :func:`~run_opt`
 
     Returns:
-        np.ndarray: The adjoint vector representation ``adjvec_h`` of dimension ``(dim_mtilde + dim_h,)``, with respect to the basis of
-            :math:`\mathfrak{m} = \tilde{\mathfrak{m}} + \mathfrak{h}` of the CSA element
-            :math:`h \in \mathfrak{h}` s.t. :math:`H = K h K^\dagger`
-        np.ndarray: The optimal coefficients :math:`\theta` of the decomposition :math:`K = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}` for the basis :math:`k_j \in`
+        Tuple(np.ndarray, np.ndarray): ``(adjvec_a, theta_opt)``. The adjoint vector representation
+        ``adjvec_a`` of dimension ``(dim_mtilde + dim_h,)``, with respect to the basis of
+        :math:`\mathfrak{m} = \tilde{\mathfrak{m}} + \mathfrak{h}` of the CSA element
+        :math:`a \in \mathfrak{a}` s.t. :math:`H = K^\dagger a K`.
+        The second return value, ``theta_opt``, are the optimal coefficients :math:`\theta` of the
+        decomposition :math:`K = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}` for the basis :math:`k_j \in \mathfrak{k}`.
 
 
     **Example**
@@ -180,7 +183,6 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     Instead of performing these checks by hand, we can use the helper function :func:`~validat_kak`.
 
     >>> assert validate_kak(H, g, k, (adjvec_a, theta_opt), n, 1e-6)
-
 
     """
 
