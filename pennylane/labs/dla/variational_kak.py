@@ -37,17 +37,17 @@ except ImportError:
     has_jax = False
 
 
-def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=False):
+def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=False):
     r"""
-    Variational KaK decomposition of Hermitian ``H``
+    Variational KaK decomposition of Hermitian ``H`` using the adjoint representation.
 
-    Given a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \tilde{\mathfrak{m}} \oplus \mathfrak{a}`
+    Given a Cartan decomposition (:func:`~cartan_decomp`) :math:`\mathfrak{g} = \mathfrak{k} \oplus (\tilde{\mathfrak{m}} \oplus \mathfrak{a})`
     and a Hermitian operator :math:`H \in \tilde{\mathfrak{m}} \oplus \mathfrak{a}`, this function computes
     :math:`a \in \mathfrak{a}` and :math:`K_c \in e^{i\mathfrak{k}}` such that
 
     .. math:: H = K_c^\dagger a K_c
 
-    The result is provided in terms of the adjoint representation vector of :math:`a in \mathfrak{a}`
+    The result is provided in terms of the adjoint vector representation of :math:`a in \mathfrak{a}`
     (see :func:`adjvec_to_op`), i.e. the ordered coefficients :math:`c_j^{\mathfrak{a}}` in :math:`a = \sum_j c_j^{\mathfrak{a}} a_j` and
     the optimal parameters :math:`\theta` such that
 
@@ -56,7 +56,12 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     for the ordered basis of :math:`\mathfrak{k}` given by the first :math:`|\mathfrak{k}|` elements of ``g``.
 
     Internally, this function performs a modified version of `2104.00728 <https://arxiv.org/abs/2104.00728>`__,
-    in particular minimizing the cost function eq. (6) therein. Instead of relying on having Pauli words, we use the adjoint representation
+    in particular minimizing the cost function
+
+    .. math:: f(\theta) = \langle H, K(\theta)^\dagger e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta) \rangle,
+
+    see eq. (6) therein and our `demo <https://pennylane.ai/qml/demos/tutorial_fdhs>`__ for more details.
+    Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
     .. seealso:: `Theory demo on KAK theorem <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__, `demo on KAK decomposition in practise <https://pennylane.ai/qml/demos/tutorial_fdhs>`__,
@@ -102,7 +107,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
             check_cartan_decomp,
             concurrence_involution,
             validate_kak,
-            variational_kak,
+            variational_kak_adj,
             adjvec_to_op,
         )
 
@@ -126,7 +131,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
         g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
 
-    Due to the canonical ordering of all constituents, it suffices to tell ``variational_kak`` the dimensions of ``dims = (len(k), len(mtilde), len(a))``,
+    Due to the canonical ordering of all constituents, it suffices to tell ``variational_kak_adj`` the dimensions of ``dims = (len(k), len(mtilde), len(a))``,
     alongside the Hamiltonian ``H``, the Lie algebra ``g`` and its adjoint representation ``adj``. Internally, the function is performing a variational
     optimization to find a local extremum of a suitably constructed loss function that finds as its extremum the decomposition
 
@@ -138,7 +143,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
 
     >>> dims = (len(k), len(mtilde), len(a))
-    >>> adjvec_a, theta_opt = variational_kak(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
+    >>> adjvec_a, theta_opt = variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
 
     As a result, we are provided the adjoint representation vector of the CSA element
     :math:`a \in \mathfrak{a}` with respect to the basis ``mtilde+a`` and the optimal parameters of dimension :math:`|\mathfrak{k}|`
@@ -188,7 +193,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
     if not has_jax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for variational_kak. You can install them with pip install jax jaxlib optax."
+            "jax and optax are required for variational_kak_adj. You can install them with pip install jax jaxlib optax."
         )  # pragma: no cover
 
     if opt_kwargs is None:

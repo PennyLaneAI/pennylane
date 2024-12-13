@@ -28,7 +28,7 @@ from pennylane.labs.dla import (
     orthonormalize,
     structure_constants_dense,
     validate_kak,
-    variational_kak,
+    variational_kak_adj,
 )
 
 
@@ -62,7 +62,7 @@ def test_kak_Ising(n, dense):
     g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
-    khk_res = variational_kak(H, g, dims, adj, verbose=False)
+    khk_res = variational_kak_adj(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
     assert khk_res[0].shape == (len(mtilde) + len(h),)
     assert khk_res[0].dtype == np.float64
@@ -104,7 +104,7 @@ def test_kak_Heisenberg(n, dense):
     g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
-    khk_res = variational_kak(H, g, dims, adj, verbose=False)
+    khk_res = variational_kak_adj(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
     assert khk_res[0].shape == (len(mtilde) + len(h),)
     assert khk_res[0].dtype == np.float64
@@ -148,7 +148,7 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
     )
 
     dims = (len(k), len(mtilde), len(h))
-    khk_res = variational_kak(H, g, dims, adj, verbose=False)
+    khk_res = variational_kak_adj(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
     assert khk_res[0].shape == (len(mtilde) + len(h),)
     assert khk_res[0].dtype == np.float64
