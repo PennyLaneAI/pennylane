@@ -57,6 +57,9 @@ class Hadamard(Observable, Operation):
 
     _queue_category = "_ops"
 
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
+
     def label(
         self,
         decimals: Optional[int] = None,
