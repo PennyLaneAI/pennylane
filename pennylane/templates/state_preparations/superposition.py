@@ -131,9 +131,9 @@ class Superposition(Operation):
     See the Details section for more information about the decomposition.
 
     Args:
-        coeffs (List[float]): list of coefficients :math:`c_i` normalized
-        basis (List[List[int]]): list of basis states :math:`|b_i\rangle` with the same length
-        wires (Sequence[int]): list of wires that the operator acts on
+        coeffs (List[float]): normalized coefficients of the superposition
+        basis (List[List[int]]): basis states of the superposition
+        wires (Sequence[int]): wires that the operator acts on
         work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
 
     **Example**
@@ -172,15 +172,14 @@ class Superposition(Operation):
         :class:`~.StatePrep` template in the fisrt :math:`\lceil \log_2 m \rceil` qubits. Note that the number of qubits depends on the number of terms in the superposition, which helps to reduce the complexity of the operation.
 
         The second step permutes the basis states prepared previously to
-        the target basis states.
+        the target basis states:
 
         .. math::
 
             |i\rangle \rightarrow |b_i\rangle.
 
         This block maps the elements one by one using an auxiliary qubit.
-        This process can be done in three separate operations. Let's assume
-        we want to map :math:`|i\rangle` to :math:`|b_i\rangle`:
+        This can be done in three separate steps:
 
         1. By using a multi-controlled NOT gate, check if the input state is :math:`|i\rangle` and
         store the information in the auxiliary qubit. If the state is :math:`|i\rangle` the auxiliary
@@ -199,7 +198,7 @@ class Superposition(Operation):
             |\phi\rangle = \sum_i^m c_i |b_i\rangle.
 
         The decomposition has a complexity that grows linearly with the number of terms in the superposition,
-        unlike other methods such as :class:`~.MottonenStatePreparation`, that grows exponentially
+        unlike other methods such as :class:`~.MottonenStatePreparation` that grows exponentially
         with the number of qubits.
     """
 
