@@ -38,20 +38,14 @@ from pennylane.labs.vibrational.christiansen_utils import (
     christiansen_integrals_dipole,
     _cform_onemode,
     _cform_onemode_dipole,
-    _cform_onemode_kinetic,
     _cform_threemode,
     _cform_threemode_dipole,
     _cform_twomode,
     _cform_twomode_dipole,
-    _cform_twomode_kinetic,
     _load_cform_onemode,
-    _load_cform_onemode_dipole,
-    _load_cform_threemode,
-    _load_cform_threemode_dipole,
-    _load_cform_twomode,
-    _load_cform_twomode_dipole,
 )
 
+# Path is pennylane/tests/qchem/vibrational/test_ref_files/H2S.hdf5
 cform_file = (
     Path(__file__).resolve().parent.parent.parent.parent.parent
     / "tests"
@@ -61,6 +55,7 @@ cform_file = (
     / "H2S.hdf5"
 )
 
+# Path is pennylane/tests/qchem/vibrational/test_ref_files/H2S_3D_PES.hdf5
 pes_file = (
     Path(__file__).resolve().parent.parent.parent.parent.parent
     / "tests"
@@ -176,11 +171,6 @@ def test_cform_onemode_dipole():
         atol=1e-8,
     )
 
-
-def test_cform_onemode_kinetic():
-    pass
-
-
 def test_cform_threemode():
     flattened_H3 = H3.ravel()
     assert np.allclose(
@@ -214,11 +204,6 @@ def test_cform_twomode_dipole():
         atol=1e-8,
     )
 
-
-def test_cform_twomode_kinetic():
-    pass
-
-
 def test_load_cform_onemode():
     data = H1.ravel()
     # We have to create a file to test the loader
@@ -227,23 +212,3 @@ def test_load_cform_onemode():
     assert np.allclose(
         abs(H1), (abs(_load_cform_onemode(num_proc=1, nmodes=3, quad_order=4))), atol=1e-8
     )
-
-
-def test_load_cform_onemode_dipole():
-    pass
-
-
-def test_load_cform_twomode():
-    pass
-
-
-def test_load_cform_twomode_dipole():
-    pass
-
-
-def test_load_cform_threemode():
-    pass
-
-
-def test_load_cform_threemode_dipole():
-    pass
