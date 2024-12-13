@@ -140,8 +140,8 @@ class Superposition(Operation):
 
     .. code-block::
 
-        coeffs = jnp.sqrt(jnp.array([1/3, 1/3, 1/3]))
-        bases = jnp.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]])
+        coeffs = np.sqrt(np.array([1/3, 1/3, 1/3]))
+        bases = np.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]])
         wires = [0, 1, 2]
         work_wire = 3
 
