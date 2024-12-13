@@ -38,7 +38,7 @@ class Molecule:
     The molecule object can be passed to functions that perform a Hartree-Fock calculation.
 
     .. note::
-        :class:`~.qchem.Molecule` is not currently compatible with :func:`~.qjit` and ``jit``.
+        :class:`~.qchem.Molecule` is not currently compatible with :func:`~.qjit` and ``jax.jit``.
 
     Args:
         symbols (list[str]): Symbols of the atomic species in the molecule. Currently, atoms with
