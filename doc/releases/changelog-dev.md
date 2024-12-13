@@ -229,6 +229,10 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
+  operator and measurement wires with capture enabled.
+  [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
+
 * A `qml.tape.plxpr_to_tape` function can now convert plxpr to a tape.
   [(#6343)](https://github.com/PennyLaneAI/pennylane/pull/6343)
 
@@ -446,6 +450,9 @@ same information.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `Wires` object throws a `TypeError` if `wires=None`. 
+  [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
