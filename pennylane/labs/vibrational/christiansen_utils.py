@@ -140,8 +140,7 @@ def _cform_onemode(pes, n_states):
 
     local_ham_cform_onebody = np.zeros(len(all_mode_combos) * chunksize)
 
-    for nn, (ii,) in enumerate(all_mode_combos):
-        ii = int(ii)
+    for nn, ii in enumerate(all_mode_combos):
 
         for mm, (ki, hi) in enumerate(boscombos_on_rank):
             sqrt = (2 ** (ki + hi) * factorial(ki) * factorial(hi) * np.pi) ** (-0.5)
