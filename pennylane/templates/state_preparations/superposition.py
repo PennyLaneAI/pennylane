@@ -131,8 +131,8 @@ class Superposition(Operation):
     See the Details section for more information about the decomposition.
 
     Args:
-        coeffs (List[float]): normalized coefficients of the superposition
-        basis (List[List[int]]): basis states of the superposition
+        coeffs (tensor-like[float]): normalized coefficients of the superposition
+        bases (tensor-like[int]): basis states of the superposition
         wires (Sequence[int]): wires that the operator acts on
         work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
 
@@ -140,15 +140,15 @@ class Superposition(Operation):
 
     .. code-block::
 
-        coeffs = np.sqrt([1/3, 1/3, 1/3])
-        basis = [[1, 1, 1], [0, 1, 0], [0, 0, 0]]
+        coeffs = jnp.sqrt(jnp.array([1/3, 1/3, 1/3]))
+        bases = jnp.array([[1, 1, 1], [0, 1, 0], [0, 0, 0]])
         wires = [0, 1, 2]
         work_wire = 3
 
         dev = qml.device('default.qubit')
         @qml.qnode(dev)
         def circuit():
-            qml.Superposition(coeffs, basis, wires, work_wire)
+            qml.Superposition(coeffs, bases, wires, work_wire)
             return qml.probs(wires)
 
     .. code-block:: pycon
@@ -207,15 +207,15 @@ class Superposition(Operation):
     ndim_params = (1,)
 
     def __init__(
-        self, coeffs, basis, wires, work_wire, id=None
+        self, coeffs, bases, wires, work_wire, id=None
     ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
         if not all(
-            all(qml.math.isclose(i, 0.0) or qml.math.isclose(i, 1.0) for i in b) for b in basis
+            all(qml.math.isclose(i, 0.0) or qml.math.isclose(i, 1.0) for i in b) for b in bases
         ):
             raise ValueError("The elements of the basis states must be either 0 or 1.")
 
-        basis_lengths = {len(b) for b in basis}
+        basis_lengths = {len(b) for b in bases}
         if len(basis_lengths) > 1:
             raise ValueError("All basis states must have the same length.")
 
@@ -224,12 +224,12 @@ class Superposition(Operation):
             if not qml.math.allclose(coeffs_norm, qml.math.array(1.0)):
                 raise ValueError("The input superposition must be normalized.")
 
-        unique_basis = qml.math.unique(qml.math.array([tuple(b) for b in basis]), axis=0)
+        unique_basis = qml.math.unique(qml.math.array([tuple(b) for b in bases]), axis=0)
 
-        if len(unique_basis) != len(basis):
+        if len(unique_basis) != len(bases):
             raise ValueError("The basis states must be unique.")
 
-        self.hyperparameters["basis"] = tuple(tuple(int(i) for i in b) for b in basis)
+        self.hyperparameters["bases"] = tuple(tuple(int(i) for i in b) for b in bases)
         self.hyperparameters["target_wires"] = qml.wires.Wires(wires)
         self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
 
@@ -259,19 +259,19 @@ class Superposition(Operation):
     def decomposition(self):  # pylint: disable=arguments-differ
         return self.compute_decomposition(
             *self.parameters,
-            basis=self.hyperparameters["basis"],
+            bases=self.hyperparameters["bases"],
             wires=self.hyperparameters["target_wires"],
             work_wire=self.hyperparameters["work_wire"],
         )
 
     @staticmethod
-    def compute_decomposition(coefs, basis, wires, work_wire):  # pylint: disable=arguments-differ
+    def compute_decomposition(coefs, bases, wires, work_wire):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
-            coefs (List[float]): list of coefficients :math:`c_i`
-            basis (List[List[int]]): list of basis states :math:`|b_i\rangle`
-            wires (Sequence[int]): list of wires that the operator acts on
+            coeffs (tensor-like[float]): normalized coefficients of the superposition
+            bases (tensor-like[int]): basis states of the superposition
+            wires (Sequence[int]): wires that the operator acts on
             work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
 
         Returns:
@@ -289,8 +289,8 @@ class Superposition(Operation):
 
         """
 
-        dic_state = dict(zip(basis, coefs))
-        perms = _assign_states(basis)
+        dic_state = dict(zip(bases, coefs))
+        perms = _assign_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
         sorted_coefficients = [
@@ -316,9 +316,9 @@ class Superposition(Operation):
         return op_list
 
     @property
-    def basis(self):
+    def bases(self):
         r"""List of basis states :math:`|b_i\rangle`."""
-        return self.hyperparameters["basis"]
+        return self.hyperparameters["bases"]
 
     @property
     def work_wire(self):
@@ -338,7 +338,7 @@ class Superposition(Operation):
 
         return Superposition(
             self.coeffs,
-            basis=self.basis,
+            bases=self.bases,
             wires=new_dict["target_wires"],
             work_wire=new_dict["work_wire"],
         )

@@ -28,11 +28,11 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
     coeffs = np.array([0.5, 0.5, -0.5, -0.5])
-    basis = np.array(
+    bases = np.array(
         [[0, 0, 0, 0, 0], [0, 1, 0, 1, 1], [0, 0, 0, 0, 1], [0, 0, 0, 1, 0], [1, 1, 0, 1, 1]]
     )
 
-    op = qml.Superposition(coeffs, basis=basis, wires=range(5), work_wire=5)
+    op = qml.Superposition(coeffs, bases=bases, wires=range(5), work_wire=5)
     qml.ops.functions.assert_valid(op)
 
 
@@ -40,7 +40,7 @@ class TestSuperposition:
     """Test the Superposition template."""
 
     @pytest.mark.parametrize(
-        "probs, basis",
+        "probs, bases",
         [
             (
                 [0.1, 0.2, 0.3, 0.2, 0.2],
@@ -74,7 +74,7 @@ class TestSuperposition:
             ([0.1, 0.9], [[0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 1, 1, 1, 1]]),
         ],
     )
-    def test_correct_output(self, probs, basis):
+    def test_correct_output(self, probs, bases):
         """Test the correct output of the Superposition template."""
 
         dev = qml.device("default.qubit")
@@ -82,12 +82,12 @@ class TestSuperposition:
         @qml.qnode(dev)
         def circuit():
             qml.Superposition(
-                np.sqrt(probs), basis=basis, wires=range(len(basis[0])), work_wire=len(basis[0])
+                np.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(basis[0])))
+            return qml.probs(range(len(bases[0])))
 
         output = circuit()
-        for i, base in enumerate(basis):
+        for i, base in enumerate(bases):
             dec = int("".join(map(str, base)), 2)
             assert np.isclose(output[dec], probs[i])
 
@@ -108,7 +108,7 @@ class TestSuperposition:
             assert qml.equal(op1, op2)
 
     @pytest.mark.parametrize(
-        ("coeffs", "basis", "msg_match"),
+        ("coeffs", "bases", "msg_match"),
         [
             (
                 np.sqrt([0.1, 0.2, 0.3, 0.4]),
@@ -132,12 +132,12 @@ class TestSuperposition:
             ),
         ],
     )
-    def test_raise_error(self, coeffs, basis, msg_match):
-        """Test that the Superposition template raises an error if a basis state is repeated."""
+    def test_raise_error(self, coeffs, bases, msg_match):
+        """Test that the Superposition template raises an error if a bases state is repeated."""
 
         with pytest.raises(ValueError, match=msg_match):
-            n_wires = len(basis[0])
-            qml.Superposition(coeffs, basis, wires=range(n_wires), work_wire=n_wires)
+            n_wires = len(bases[0])
+            qml.Superposition(coeffs, bases, wires=range(n_wires), work_wire=n_wires)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -153,7 +153,7 @@ class TestSuperposition:
 
         @qml.qnode(dev)
         def circuit(state_vector):
-            qml.Superposition(state_vector, basis=[[1], [0]], wires=range(1), work_wire=1)
+            qml.Superposition(state_vector, bases=[[1], [0]], wires=range(1), work_wire=1)
             return qml.expval(qml.PauliZ(0))
 
         qml.grad(circuit)(state_vector)
@@ -165,7 +165,7 @@ class TestSuperposition:
 
 
 @pytest.mark.parametrize(
-    "probs, basis",
+    "probs, bases",
     [
         (
             [0.1, 0.2, 0.3, 0.2, 0.2],
@@ -195,7 +195,7 @@ class TestInterfaces:
     interfaces"""
 
     @pytest.mark.jax
-    def test_jax(self, probs, basis):
+    def test_jax(self, probs, bases):
         """Test that Superposition can be correctly used with the JAX interface."""
         from jax import numpy as jnp
 
@@ -206,17 +206,17 @@ class TestInterfaces:
         @qml.qnode(dev)
         def circuit():
             qml.Superposition(
-                jnp.sqrt(probs), basis=basis, wires=range(len(basis[0])), work_wire=len(basis[0])
+                jnp.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(basis[0])))
+            return qml.probs(range(len(bases[0])))
 
         output = circuit()
-        for i, base in enumerate(basis):
+        for i, base in enumerate(bases):
             dec = int("".join(map(str, base)), 2)
             assert jnp.isclose(output[dec], probs[i])
 
     @pytest.mark.jax
-    def test_jax_jit(self, probs, basis):
+    def test_jax_jit(self, probs, bases):
         """Test that Superposition can be correctly used with the JAX-JIT interface."""
         import jax
         from jax import numpy as jnp
@@ -229,17 +229,17 @@ class TestInterfaces:
         @qml.qnode(dev)
         def circuit():
             qml.Superposition(
-                jnp.sqrt(probs), basis=basis, wires=range(len(basis[0])), work_wire=len(basis[0])
+                jnp.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(basis[0])))
+            return qml.probs(range(len(bases[0])))
 
         output = circuit()
-        for i, base in enumerate(basis):
+        for i, base in enumerate(bases):
             dec = int("".join(map(str, base)), 2)
             assert jnp.isclose(output[dec], probs[i])
 
     @pytest.mark.tf
-    def test_tensorflow(self, probs, basis):
+    def test_tensorflow(self, probs, bases):
         """Test that Superposition can be correctly used with the TensorFlow interface."""
         import tensorflow as tf
 
@@ -249,17 +249,17 @@ class TestInterfaces:
         @qml.qnode(dev)
         def circuit():
             qml.Superposition(
-                tf.sqrt(probs), basis=basis, wires=range(len(basis[0])), work_wire=len(basis[0])
+                tf.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(basis[0])))
+            return qml.probs(range(len(bases[0])))
 
         output = circuit()
-        for i, base in enumerate(basis):
+        for i, base in enumerate(bases):
             dec = int("".join(map(str, base)), 2)
             assert np.isclose(output[dec], probs[i])
 
     @pytest.mark.torch
-    def test_torch(self, probs, basis):
+    def test_torch(self, probs, bases):
         """Test that Superposition can be correctly used with the Torch interface."""
         import torch
 
@@ -270,11 +270,11 @@ class TestInterfaces:
         @qml.qnode(dev)
         def circuit():
             qml.Superposition(
-                torch.sqrt(probs), basis=basis, wires=range(len(basis[0])), work_wire=len(basis[0])
+                torch.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(basis[0])))
+            return qml.probs(range(len(bases[0])))
 
         output = circuit()
-        for i, base in enumerate(basis):
+        for i, base in enumerate(bases):
             dec = int("".join(map(str, base)), 2)
             assert qml.math.isclose(output[dec], probs[i])
