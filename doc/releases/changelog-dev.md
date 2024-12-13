@@ -64,6 +64,9 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added support to build a vibrational Hamiltonian in Taylor form.
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
 
@@ -446,6 +449,10 @@ same information.
   [(#6549)](https://github.com/PennyLaneAI/pennylane/pull/6549)
 
 <h3>Documentation 📝</h3>
+
+* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to include a 
+  note that says that they are not compatible with qjit or jit.  
+  [(#6702)](https://github.com/PennyLaneAI/pennylane/pull/6702)
 
 * Updated the documentation of `TrotterProduct` to include the impact of the operands in the
   Hamiltonian on the strucutre of the created circuit. Included an illustrative example on this.
