@@ -29,14 +29,13 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
     `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
 
     Args:
-        one (TensorLike(float)): 3D array with one-body matrix elements
-        modes (int): number of vibrational modes, detects from 'one' if none is provided
-        modals (list(int)): 1D array with the number of allowed vibrational modals for each mode.
-        uses the shape of ``one`` if ``None``.
-        two (TensorLike(float)): 6D array with two-body matrix elements
-        three (TensorLike(float)): 9D array with three-body matrix elements
-        cutoff (float): magnitude beneath which terms are not incorporated in final expression
-        ordered (bool): Flag for if matrix elements are already ordered. Default is True.
+        one (TensorLike(float)): one-body matrix elements
+        modes (int): number of vibrational modes. If ``None``, it is obtained from the length of ``one``.
+        modals (list(int)): number of allowed vibrational modals for each mode. If ``None``, it is obtained from the shape of ``one``.
+        two (TensorLike(float)): two-body matrix elements
+        three (TensorLike(float)): three-body matrix elements
+        cutoff (float): tolerance for discarding the negligible coefficients
+        ordered (bool): indicates if matrix elements are already ordered. Default is ``True``.
 
     Returns:
         BoseSentence: the constructed bosonic operator
