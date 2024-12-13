@@ -419,7 +419,7 @@ class ResourceToffoli(qml.Toffoli, re.ResourceOperator):
     ) -> Dict[re.CompressedResourceOp, int]:
         return {
             re.ResourceMultiControlledX.resource_rep(
-                num_ctrl_wires + 2, num_ctrl_values + 2, num_work_wires
+                num_ctrl_wires + 2, num_ctrl_values, num_work_wires
             ): 1
         }
 
