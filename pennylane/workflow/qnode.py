@@ -877,35 +877,18 @@ class QNode:
 
         """
 
-        execute_kwargs = copy.copy(self.execute_kwargs)
-        mcm_config = copy.copy(execute_kwargs["mcm_config"])
-
-        config = _make_execution_config(self, self.diff_method, mcm_config=mcm_config)
-        config = _resolve_execution_config(
-            config, self.device, (self._tape,), self.transform_program
-        )
-
-        outer_transform_program, inner_transform_program = _setup_transform_program(
-            self.transform_program,
-            self.device,
-            config,
-            execute_kwargs["cache"],
-            execute_kwargs["cachesize"],
-        )
-
         # Calculate the classical jacobians if necessary
-        outer_transform_program.set_classical_component(self, args, kwargs)
+        self._transform_program.set_classical_component(self, args, kwargs)
 
+        assert self._tape
         res = qml.execute(
             (self._tape,),
             device=self.device,
-            diff_method=config.gradient_method,
-            interface=config.interface,
-            transform_program=outer_transform_program,
-            inner_transform=inner_transform_program,
-            config=config,
-            gradient_kwargs=config.gradient_keyword_arguments,
-            **execute_kwargs,
+            diff_method=self.diff_method,
+            interface=self.interface,
+            transform_program=self.transform_program,
+            gradient_kwargs=self.gradient_kwargs,
+            **self.execute_kwargs,
         )
         res = res[0]
 
@@ -915,7 +898,7 @@ class QNode:
             len(self._tape.get_parameters(trainable_only=False)) == 0
             and not self.transform_program.is_informative
         ):
-            res = _convert_to_interface(res, config.interface)
+            res = _convert_to_interface(res, qml.math.get_canonical_interface_name(self.interface))
 
         return _to_qfunc_output_type(
             res, self._qfunc_output, self._tape.shots.has_partitioned_shots

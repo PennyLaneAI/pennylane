@@ -14,6 +14,7 @@
 """
 This module contains the ``TransformProgram`` class.
 """
+from collections import namedtuple
 from collections.abc import Sequence
 from functools import partial
 from typing import Optional, overload
@@ -23,6 +24,8 @@ from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
+
+CotransfromCache = namedtuple("CotransformCache", ("qnode", "args", "kwargs"))
 
 
 def _numpy_jac(*_, **__) -> qml.typing.TensorLike:
@@ -132,7 +135,7 @@ def _batch_postprocessing(
 
     Keyword Args:
         individual_fns (List[Callable]): postprocessing functions converting a batch of results into a single result
-           corresponding to only a single :class:`~.QuantumTape`.
+            corresponding to only a single :class:`~.QuantumTape`.
         slices (List[slice]): the indices for the results that correspond to each individual post processing function.
 
     >>> results = (1.0, 2.0, 3.0, 4.0)
@@ -243,10 +246,13 @@ class TransformProgram:
 
     """
 
-    def __init__(self, initial_program: Optional[Sequence] = None):
+    def __init__(
+        self,
+        initial_program: Optional[Sequence] = None,
+        cotransform_cache: Optional[CotransfromCache] = None,
+    ):
         self._transform_program = list(initial_program) if initial_program else []
-        self._classical_jacobians = None
-        self._argnums = None
+        self.cotransform_cache = None
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
@@ -270,7 +276,7 @@ class TransformProgram:
     def __bool__(self) -> bool:
         return bool(self._transform_program)
 
-    def __add__(self, other):
+    def __add__(self, other: "TransformProgram") -> "TransformProgram":
         if self.has_final_transform and other.has_final_transform:
             raise TransformError("The transform program already has a terminal transform.")
 
@@ -278,7 +284,15 @@ class TransformProgram:
         if self.has_final_transform:
             transforms.append(transforms.pop(len(self) - 1))
 
-        return TransformProgram(transforms)
+        cotransform_cache = None
+        if self.cotransform_cache:
+            if other.cotransform_cache:
+                raise ValueError("Cannot add two transforms with cotransform caches.")
+            cotransform_cache = self.cotransform_cache
+        elif other.cotransform_cache:
+            cotransform_cache = other.cotransform_cache
+
+        return TransformProgram(transforms, cotransform_cache=cotransform_cache)
 
     def __repr__(self):
         """The string representation of the transform program class."""
@@ -444,17 +458,8 @@ class TransformProgram:
 
     def set_classical_component(self, qnode, args, kwargs):
         """Set the classical jacobians and argnums if the transform is hybrid with a classical cotransform."""
-        if not self.has_classical_cotransform():
-            return
-        hybrid = self[-1].kwargs.pop("hybrid", True)  # pylint: disable=no-member
-
-        if hybrid:
-            argnums = self[-1].kwargs.pop("argnums", None)  # pylint: disable=no-member
-            self._classical_jacobians = [
-                self._get_classical_jacobian(index, qnode, args, kwargs, argnums)
-                for index, _ in enumerate(self)
-            ]
-            self._set_all_argnums(qnode, args, kwargs, argnums)
+        if self.has_classical_cotransform() and self[-1].kwargs.get("hybrid", True):
+            self.cotransform_cache = CotransfromCache(qnode, args, kwargs)
 
     def prune_dynamic_transform(self, type_to_keep=1):
         """Ensures that only one or none ``dynamic_one_shot`` is applied.
@@ -484,9 +489,11 @@ class TransformProgram:
         return found
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
-    def _get_classical_jacobian(self, index: int, qnode, args, kwargs, argnums):
-        if not self[index].classical_cotransform:
+    def _get_classical_jacobian(self, index: int):
+        if self.cotransform_cache is None or not self[index].classical_cotransform:
             return None
+        argnums = self[-1].kwargs.get("argnums", None)
+        qnode, args, kwargs = self.cotransform_cache
         if qnode.interface == "jax" and "argnum" in self[index].kwargs:
             raise qml.QuantumFunctionError(
                 "argnum does not work with the Jax interface. You should use argnums instead."
@@ -504,22 +511,21 @@ class TransformProgram:
             classical_jacobian = [classical_jacobian]
         return classical_jacobian
 
-    def _set_all_argnums(self, qnode, args, kwargs, argnums):
+    def _get_argnums(self, index):
         """It can be used inside the QNode to set all argnums (tape level) using argnums from the argnums at the QNode
         level.
         """
-
-        argnums_list = []
-        for index, transform in enumerate(self):
-            argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
-            # pylint: disable=protected-access
-            if (transform._use_argnum or transform.classical_cotransform) and argnums:
-                params = _jax_argnums_to_tape_trainable(qnode, argnums, self[:index], args, kwargs)
-                argnums_list.append([qml.math.get_trainable_indices(param) for param in params])
-            else:
-                argnums_list.append(None)
-
-        self._argnums = argnums_list
+        if self.cotransform_cache is None:
+            return None
+        qnode, args, kwargs = self.cotransform_cache
+        transform = self[index]
+        argnums = self[-1].kwargs.get("argnums", None)
+        argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
+        # pylint: disable=protected-access
+        if (transform._use_argnum or transform.classical_cotransform) and argnums:
+            params = _jax_argnums_to_tape_trainable(qnode, argnums, self[:index], args, kwargs)
+            return [qml.math.get_trainable_indices(param) for param in params]
+        return None
 
     def __call__(
         self, tapes: QuantumScriptBatch
@@ -531,7 +537,7 @@ class TransformProgram:
 
         for i, transform_container in enumerate(self):
             transform, targs, tkwargs, cotransform, _, _, _ = transform_container
-
+            tkwargs = {key: value for key, value in tkwargs.items() if key != "argnums"}
             execution_tapes = []
             fns = []
             slices = []
@@ -541,9 +547,12 @@ class TransformProgram:
 
             start = 0
             start_classical = 0
+            classical_jacobians = self._get_classical_jacobian(i)
+            argnums = self._get_argnums(i)
             for j, tape in enumerate(tapes):
-                if self._argnums is not None and self._argnums[i] is not None:
-                    tape.trainable_params = self._argnums[i][j]
+                print(argnums)
+                if argnums is not None:
+                    tape.trainable_params = argnums[j]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 
@@ -552,14 +561,14 @@ class TransformProgram:
                 slices.append(slice(start, end))
                 start = end
 
-                if cotransform and self._classical_jacobians:
+                if cotransform and classical_jacobians:
                     classical_fns.append(
-                        partial(cotransform, cjac=self._classical_jacobians[i][j], tape=tape)
+                        partial(cotransform, cjac=classical_jacobians[j], tape=tape)
                     )
                     slices_classical.append(slice(start_classical, start_classical + 1))
                     start_classical += 1
 
-            if cotransform and self._classical_jacobians:
+            if cotransform and classical_jacobians:
                 batch_postprocessing_classical = partial(
                     _batch_postprocessing, individual_fns=classical_fns, slices=slices_classical
                 )
@@ -581,5 +590,4 @@ class TransformProgram:
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
         # Reset classical jacobians
-        self._classical_jacobians = []
         return tuple(tapes), postprocessing_fn
