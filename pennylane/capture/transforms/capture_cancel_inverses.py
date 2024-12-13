@@ -129,6 +129,7 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
             list[TensorLike]: the results of the execution.
 
         """
+        # pylint: disable=too-many-branches,attribute-defined-outside-init
         self._env = {}
         self.setup()
 
@@ -146,16 +147,20 @@ class CancelInversesInterpreter(qml.capture.PlxprInterpreter):
                 self.interpret_all_previous_ops()
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = custom_handler(self, *invals, **eqn.params)
-            elif isinstance(eqn.outvars[0].aval, qml.capture.AbstractOperator):
+            elif len(eqn.outvars) > 0 and isinstance(
+                eqn.outvars[0].aval, qml.capture.AbstractOperator
+            ):
                 outvals = self.interpret_operation_eqn(eqn)
-            elif isinstance(eqn.outvars[0].aval, qml.capture.AbstractMeasurement):
+            elif len(eqn.outvars) > 0 and isinstance(
+                eqn.outvars[0].aval, qml.capture.AbstractMeasurement
+            ):
                 self.interpret_all_previous_ops()
                 outvals = self.interpret_measurement_eqn(eqn)
             else:
                 # Transform primitives don't have custom handlers, so we check for them here
                 # to purge the stored ops in self.previous_ops
                 if eqn.primitive.name.endswith("_transform"):
-                    self.interpret_all_previous_ops
+                    self.interpret_all_previous_ops()
                 invals = [self.read(invar) for invar in eqn.invars]
                 outvals = eqn.primitive.bind(*invals, **eqn.params)
 

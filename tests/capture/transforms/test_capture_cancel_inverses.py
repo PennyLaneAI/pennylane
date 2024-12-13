@@ -35,12 +35,11 @@ from pennylane.capture.transforms import CancelInversesInterpreter
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
 
-@pytest.mark.parametrize("lazy_adjoint", [True, False])
 class TestCancelInversesInterpreter:
     """Unit tests for the CancelInversesInterpreter for canceling adjacent inverse
     operations in plxpr."""
 
-    def test_cancel_inverses_simple(self, lazy_adjoint):
+    def test_cancel_inverses_simple(self):
         """Test that inverse ops in a simple circuit are cancelled."""
 
         @CancelInversesInterpreter()
@@ -48,8 +47,8 @@ class TestCancelInversesInterpreter:
             qml.X(0)
             qml.X(0)
             qml.S(1)
-            qml.adjoint(qml.S(1), lazy=lazy_adjoint)
-            qml.adjoint(qml.T(2), lazy=lazy_adjoint)
+            qml.adjoint(qml.S(1))
+            qml.adjoint(qml.T(2))
             qml.Hadamard(1)  # Applied
             qml.T(2)
             qml.Z(0)  # Applied
@@ -77,18 +76,18 @@ class TestCancelInversesInterpreter:
         actual_primitives_fifth_sixth = {jaxpr.eqns[4].primitive, jaxpr.eqns[5].primitive}
         assert actual_primitives_fifth_sixth == expected_primitives_fifth_sixth
 
-    def test_cancel_inverses_true_inverses(self, lazy_adjoint):
+    def test_cancel_inverses_true_inverses(self):
         """Test that operations that are inverses with the same wires are cancelled."""
 
         @CancelInversesInterpreter()
         def f():
             qml.CRX(1.5, [0, 1])
-            qml.adjoint(qml.CRX(1.5, [0, 1]), lazy=lazy_adjoint)
+            qml.adjoint(qml.CRX(1.5, [0, 1]))
 
         jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 0
 
-    def test_cancel_inverses_symmetric_wires(self, lazy_adjoint):  # pylint: disable=unused-argument
+    def test_cancel_inverses_symmetric_wires(self):
         """Test that operations that are inverses regardless of wire order are cancelled."""
 
         @CancelInversesInterpreter()
@@ -99,9 +98,7 @@ class TestCancelInversesInterpreter:
         jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 0
 
-    def test_cancel_inverses_symmetric_control_wires(
-        self, lazy_adjoint
-    ):  # pylint: disable=unused-argument
+    def test_cancel_inverses_symmetric_control_wires(self):
         """Test that operations that are inverses regardless of control_wire order are cancelled."""
 
         @CancelInversesInterpreter()
@@ -112,16 +109,16 @@ class TestCancelInversesInterpreter:
         jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 0
 
-    def test_cancel_inverese_nested_ops_on_same_wires(self, lazy_adjoint):
+    def test_cancel_inverese_nested_ops_on_same_wires(self):
         """Test that only the innermost adjacent adjoint ops are cancelled when multiple
         cancellable operators are present."""
 
         @CancelInversesInterpreter()
         def f():
             qml.S(0)
-            qml.adjoint(qml.T(0), lazy=lazy_adjoint)
+            qml.adjoint(qml.T(0))
             qml.T(0)
-            qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+            qml.adjoint(qml.S(0))
 
         jaxpr = jax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 3
@@ -129,7 +126,7 @@ class TestCancelInversesInterpreter:
         assert jaxpr.eqns[1].primitive == qml.S._primitive
         assert jaxpr.eqns[2].primitive == qml.ops.Adjoint._primitive
 
-    def test_returned_op_is_not_cancelled(self, lazy_adjoint):  # pylint: disable=unused-argument
+    def test_returned_op_is_not_cancelled(self):
         """Test that ops that are returned by the function being transformed are not cancelled."""
 
         @CancelInversesInterpreter()
@@ -143,14 +140,61 @@ class TestCancelInversesInterpreter:
         assert jaxpr.eqns[1].primitive == qml.PauliX._primitive
         assert jaxpr.jaxpr.outvars[0] == jaxpr.eqns[1].outvars[0]
 
-    def test_ctrl_higher_order_primitive(self, lazy_adjoint):
+    def test_no_wire_ops_not_cancelled(self):
+        """Test that inverse operations with no wires do not get cancelled."""
+
+        @CancelInversesInterpreter()
+        def f():
+            qml.Identity()
+            qml.Identity()
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 4
+        assert jaxpr.eqns[0].primitive == qml.Identity._primitive
+        assert jaxpr.eqns[1].primitive == qml.Identity._primitive
+        assert jaxpr.eqns[2].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    def test_transform_higher_order_primitive(self):
+        """Test that the inner_jaxpr of transform primitives is not transformed."""
+
+        @qml.transform
+        def dummy_transform(tape):
+            """Dummy transform"""
+            return [tape], lambda res: res[0]
+
+        @CancelInversesInterpreter()
+        def f(x):
+            @dummy_transform
+            def g():
+                qml.S(0)
+                qml.adjoint(qml.S(0))
+
+            qml.RX(x, 0)
+            g()
+            qml.RY(x, 0)
+
+        jaxpr = jax.make_jaxpr(f)(1.5)
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.eqns[0].primitive == qml.RX._primitive
+        assert jaxpr.eqns[1].primitive == dummy_transform._primitive
+        assert jaxpr.eqns[2].primitive == qml.RY._primitive
+
+        inner_jaxpr = jaxpr.eqns[1].params["inner_jaxpr"]
+        assert len(inner_jaxpr.eqns) == 3
+        assert inner_jaxpr.eqns[0].primitive == qml.S._primitive
+        assert inner_jaxpr.eqns[1].primitive == qml.S._primitive
+        assert inner_jaxpr.eqns[2].primitive == qml.ops.Adjoint._primitive
+
+    def test_ctrl_higher_order_primitive(self):
         """Test that ctrl higher order primitives are transformed correctly."""
 
         def ctrl_fn(y):
             qml.S(0)
             qml.Hadamard(1)
             qml.Hadamard(1)
-            qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+            qml.adjoint(qml.S(0))
             qml.RX(y, 0)
 
         @CancelInversesInterpreter()
@@ -169,34 +213,35 @@ class TestCancelInversesInterpreter:
         assert len(inner_jaxpr.eqns) == 1
         assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
 
-    def test_adjoint_higher_order_primitive(self, lazy_adjoint):
+    @pytest.mark.parametrize("lazy", [True, False])
+    def test_adjoint_higher_order_primitive(self, lazy):
         """Test that adjoint higher order primitives are transformed correctly."""
 
         def adjoint_fn(y):
             qml.S(0)
             qml.Hadamard(1)
             qml.Hadamard(1)
-            qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+            qml.adjoint(qml.S(0))
             qml.RX(y, 0)
 
         @CancelInversesInterpreter()
         def f(x):
             qml.RX(x, 0)
-            qml.adjoint(adjoint_fn, lazy=lazy_adjoint)(x)
+            qml.adjoint(adjoint_fn, lazy=lazy)(x)
             qml.RY(x, 1)
 
         jaxpr = jax.make_jaxpr(f)(1.5)
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
         assert jaxpr.eqns[1].primitive == adjoint_transform_prim
-        assert jaxpr.eqns[1].params["lazy"] == lazy_adjoint
+        assert jaxpr.eqns[1].params["lazy"] == lazy
         assert jaxpr.eqns[2].primitive == qml.RY._primitive
 
         inner_jaxpr = jaxpr.eqns[1].params["jaxpr"]
         assert len(inner_jaxpr.eqns) == 1
         assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
 
-    def test_cond_higher_order_primitive(self, lazy_adjoint):
+    def test_cond_higher_order_primitive(self):
         """Test that cond higher order primitives are transformed correctly."""
 
         @CancelInversesInterpreter()
@@ -212,12 +257,12 @@ class TestCancelInversesInterpreter:
             @cond_fn.else_if(x > 1)
             def _():
                 qml.S(0)
-                qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+                qml.adjoint(qml.S(0))
                 return qml.T(0)
 
             @cond_fn.otherwise
             def _():
-                qml.adjoint(qml.T(0), lazy=lazy_adjoint)
+                qml.adjoint(qml.T(0))
                 qml.T(0)
                 return qml.Hadamard(0)
 
@@ -247,7 +292,7 @@ class TestCancelInversesInterpreter:
         assert branch.eqns[0].primitive == qml.Hadamard._primitive
         assert branch.outvars[0] == branch.eqns[0].outvars[0]
 
-    def test_for_loop_higher_order_primitive(self, lazy_adjoint):
+    def test_for_loop_higher_order_primitive(self):
         """Test that for_loop higher order primitives are transformed correctly."""
 
         @CancelInversesInterpreter()
@@ -259,7 +304,7 @@ class TestCancelInversesInterpreter:
                 qml.S(0)
                 qml.Hadamard(1)
                 qml.Hadamard(1)
-                qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+                qml.adjoint(qml.S(0))
                 qml.RX(x, 0)
 
             loop_fn()
@@ -275,7 +320,7 @@ class TestCancelInversesInterpreter:
         assert len(inner_jaxpr.eqns) == 1
         assert inner_jaxpr.eqns[0].primitive == qml.RX._primitive
 
-    def test_while_loop_higher_order_primitive(self, lazy_adjoint):
+    def test_while_loop_higher_order_primitive(self):
         """Test that while_loop higher order primitives are transformed correctly."""
 
         @CancelInversesInterpreter()
@@ -287,7 +332,7 @@ class TestCancelInversesInterpreter:
                 qml.S(0)
                 qml.Hadamard(1)
                 qml.Hadamard(1)
-                qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+                qml.adjoint(qml.S(0))
                 qml.RX(x, 0)
                 return i + 1
 
@@ -313,7 +358,7 @@ class TestCancelInversesInterpreter:
         assert add_eqn.primitive.name == "add"
         assert inner_jaxpr.outvars[0] == add_eqn.outvars[0]
 
-    def test_qnode_higher_order_primitive(self, lazy_adjoint):
+    def test_qnode_higher_order_primitive(self):
         """Test that qnode higher order primitives are transformed correctly."""
         dev = qml.device("default.qubit", wires=4)
 
@@ -322,7 +367,7 @@ class TestCancelInversesInterpreter:
             qml.S(0)
             qml.Hadamard(1)
             qml.Hadamard(1)
-            qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+            qml.adjoint(qml.S(0))
             qml.RX(y, 0)
             return qml.expval(qml.PauliZ(0))
 
@@ -345,7 +390,7 @@ class TestCancelInversesInterpreter:
         assert inner_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.parametrize("grad_fn", [qml.grad, qml.jacobian])
-    def test_grad_and_jac_higher_order_primitives(self, grad_fn, lazy_adjoint):
+    def test_grad_and_jac_higher_order_primitives(self, grad_fn):
         """Test that grad and jacobian higher order primitives are transformed correctly."""
         dev = qml.device("default.qubit", wires=4)
 
@@ -354,7 +399,7 @@ class TestCancelInversesInterpreter:
             qml.S(0)
             qml.Hadamard(1)
             qml.Hadamard(1)
-            qml.adjoint(qml.S(0), lazy=lazy_adjoint)
+            qml.adjoint(qml.S(0))
             qml.RX(y, 0)
             return qml.expval(qml.PauliZ(0))
 
