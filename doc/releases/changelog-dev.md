@@ -234,6 +234,11 @@ such as `shots`, `rng` and `prng_key`.
   other, and follows the same API as `qml.transforms.cancel_inverses`.
   [(#6692)](https://github.com/PennyLaneAI/pennylane/pull/6692)
 
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
+  when program capture is enabled. This class decomposes pennylane operators following the same API as
+  `qml.transforms.decompose`.
+  [(#6691)](https://github.com/PennyLaneAI/pennylane/pull/6691)
+
 * Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
   operator and measurement wires with capture enabled.
   [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
