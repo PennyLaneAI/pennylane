@@ -275,7 +275,10 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Other Improvements</h4>
 
-* Standardize supported interfaces to an internal Enum object. 
+* Add developer focused `run` function to `qml.workflow` module.
+  [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
+
+* Standardize supported interfaces to an internal `Enum` object. 
   [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
