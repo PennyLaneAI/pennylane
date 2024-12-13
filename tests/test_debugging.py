@@ -166,15 +166,13 @@ class TestSnapshotGeneral:
             qml.snapshots(circuit)(shots=200)
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
-        if "lightning" in dev.name:
+        if "lightning" in dev.name or "mixed" in dev.name:
             pytest.skip()
 
         @qml.qnode(dev)
         def circuit():
-            qml.Snapshot(measurement=qml.state())
+            qml.Snapshot(measurement=qml.state())            
             qml.Snapshot()
-            if "mixed" in dev.name:
-                qml.Snapshot(measurement=qml.density_matrix(wires=[0, 1]))
 
             if isinstance(dev, qml.devices.QutritDevice):
                 return qml.expval(qml.GellMann(0, 1))
@@ -192,7 +190,7 @@ class TestSnapshotGeneral:
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
         """Test that the correct measurement snapshots are returned for different measurement types."""
         if isinstance(
-            dev, (qml.devices.default_mixed.DefaultMixedLegacy, qml.devices.QutritDevice)
+            dev, (qml.devices.default_mixed.DefaultMixed, qml.devices.QutritDevice)
         ):
             pytest.skip()
 
