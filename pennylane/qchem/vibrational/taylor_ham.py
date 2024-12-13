@@ -286,7 +286,7 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
         \Phi_{ijkl} = \frac{k_{ijkl}}{\sqrt{\omega_i \omega_j \omega_k \omega_l}},
 
     where :math:`\Phi_{ijk}` and :math:`\Phi_{ijkl}` are the third- and fourth-order reduced force
-    constants, respectively, defined in terms of the third and fourth-order partial derivatives
+    constants, respectively, defined in terms of the third- and fourth-order partial derivatives
     of the potential energy surface data.
 
     Args:
