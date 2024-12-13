@@ -579,7 +579,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
     Args:
         coeffs (list(float)): the coefficients of the Hamiltonian
-        freqs (list(float)): the harmonic frequencies in reciprocal centimetre
+        freqs (list(float)): the harmonic frequencies in atomic units
         is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (list(list(float))): localization matrix indicating the relationship between original
             and localized modes
