@@ -24,13 +24,6 @@ from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
 
-@pytest.fixture(autouse=True)
-def suppress_tape_property_deprecation_warning():
-    warnings.filterwarnings(
-        "ignore", "The tape/qtape property is deprecated", category=qml.PennyLaneDeprecationWarning
-    )
-
-
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
 
