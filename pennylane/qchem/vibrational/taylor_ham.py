@@ -303,8 +303,8 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
     >>> pes_twomode = np.zeros((1, 1, 9, 9))
     >>> dipole_onemode = np.zeros((1, 9, 3))
     >>> gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-                                                            4.33e-01, 7.20e-01, 4.33e-01,
-                                                            8.85e-02, 4.94e-03, 3.96e-05])
+                                  4.33e-01, 7.20e-01, 4.33e-01,
+                                  8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
     >>> pes_object = qml.qchem.VibrationalPES(
             freqs=np.array([0.025]),
