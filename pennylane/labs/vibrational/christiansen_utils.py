@@ -50,22 +50,19 @@ def _cform_onemode_kinetic(freqs, n_states):
     local_K_mat = np.zeros(len(all_mode_combos) * chunksize)
 
     nn = 0
-    for [ii] in all_mode_combos:
-
+    for nn, [ii] in enumerate(all_mode_combos):
         ii = int(ii)
+        m_const = freqs[ii] / 4
 
-        mm = 0
-        for [ki, hi] in boscombos_on_rank:
-            m_const = freqs[ii] / 4
+        for mm, [ki, hi] in enumerate(boscombos_on_rank):
             ind = nn * len(boscombos_on_rank) + mm
+
             if ki == hi:
                 local_K_mat[ind] += m_const * (2 * ki + 1)
-            if ki == hi + 2:
+            elif ki == hi + 2:
                 local_K_mat[ind] -= m_const * np.sqrt((hi + 2) * (hi + 1))
-            if ki == hi - 2:
+            elif ki == hi - 2:
                 local_K_mat[ind] -= m_const * np.sqrt((hi - 1) * hi)
-            mm += 1
-        nn += 1
     return local_K_mat
 
 
@@ -97,34 +94,30 @@ def _cform_twomode_kinetic(pes, n_states):
 
     local_kin_cform_twobody = np.zeros(len(all_mode_combos) * chunksize)
 
-    nn = 0
-    for [ii, jj] in all_mode_combos:
-
+    for nn, (ii, jj) in enumerate(all_mode_combos):
         ii, jj = int(ii), int(jj)
-        # skip through the things that are not needed
+
+        # Skip unnecessary combinations
         if jj >= ii:
-            nn += 1
             continue
 
         Usum = np.einsum("i,i->", pes.uloc[:, ii], pes.uloc[:, jj])
         m_const = Usum * np.sqrt(pes.freqs[ii] * pes.freqs[jj]) / 4
 
-        mm = 0
-        for [ki, kj, hi, hj] in boscombos_on_rank:
+        for mm, (ki, kj, hi, hj) in enumerate(boscombos_on_rank):
             ind = nn * len(boscombos_on_rank) + mm
             ki, kj, hi, hj = int(ki), int(kj), int(hi), int(hj)
 
-            if ki == hi + 1 and kj == hj + 1:
-                local_kin_cform_twobody[ind] -= m_const * np.sqrt((hi + 1) * (hj + 1))
-            if ki == hi + 1 and kj == hj - 1:
-                local_kin_cform_twobody[ind] += m_const * np.sqrt((hi + 1) * hj)
-            if ki == hi - 1 and kj == hj + 1:
-                local_kin_cform_twobody[ind] += m_const * np.sqrt(hi * (hj + 1))
-            if ki == hi - 1 and kj == hj - 1:
-                local_kin_cform_twobody[ind] -= m_const * np.sqrt(hi * hj)
+            conditions = {
+                (ki == hi + 1 and kj == hj + 1): -m_const * np.sqrt((hi + 1) * (hj + 1)),
+                (ki == hi + 1 and kj == hj - 1): +m_const * np.sqrt((hi + 1) * hj),
+                (ki == hi - 1 and kj == hj + 1): +m_const * np.sqrt(hi * (hj + 1)),
+                (ki == hi - 1 and kj == hj - 1): -m_const * np.sqrt(hi * hj),
+            }
 
-            mm += 1
-        nn += 1
+            for condition, value in conditions.items():
+                if condition:
+                    local_kin_cform_twobody[ind] += value
 
     return local_kin_cform_twobody
 
