@@ -305,8 +305,6 @@ class DefaultMixed(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
-        if not execution_config.gradient_method in {"best", "backprop", None}:
-            execution_config.interface = None
         execution_config.interface = get_canonical_interface_name(execution_config.interface)
 
         # Add device options
