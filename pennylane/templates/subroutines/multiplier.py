@@ -19,9 +19,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
-def _mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux):
+def _mul_out_k_mod(k, x_wires: WiresLike, mod, work_wire_aux: WiresLike, wires_aux: WiresLike):
     """Performs :math:`x \times k` in the registers wires wires_aux"""
     op_list = []
 
@@ -117,13 +118,14 @@ class Multiplier(Operation):
     grad_method = None
 
     def __init__(
-        self, k, x_wires, mod=None, work_wires=None, id=None
+        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
-        if work_wires is None:
-            raise ValueError("Work wires must be specified for Multiplier")
 
         x_wires = qml.wires.Wires(x_wires)
+        work_wires = work_wires or ()
         work_wires = qml.wires.Wires(work_wires)
+        if len(work_wires) == 0:
+            raise ValueError("Work wires must be specified for Multiplier")
 
         if any(wire in work_wires for wire in x_wires):
             raise ValueError("None of the wire in work_wires should be included in x_wires.")
@@ -190,7 +192,9 @@ class Multiplier(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        k, x_wires: WiresLike, mod, work_wires: WiresLike
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -221,7 +225,7 @@ class Multiplier(Operation):
             wires_aux = work_wires[1:]
             wires_aux_swap = wires_aux[1:]
         else:
-            work_wire_aux = None
+            work_wire_aux = ()
             wires_aux = work_wires[: len(x_wires)]
             wires_aux_swap = wires_aux
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
