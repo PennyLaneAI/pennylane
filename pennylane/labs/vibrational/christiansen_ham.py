@@ -24,6 +24,9 @@ from .christiansen_utils import christiansen_integrals, christiansen_integrals_d
 def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ordered=True):
     r"""Build the bosonic operators in the Christiansen form.
 
+    The construction of the second-quantized Hamiltonian is based on Eqs. 19-21 of 
+    `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
+
     Args:
         one (TensorLike(float)): 3D array with one-body matrix elements
         modes (int): number of vibrational modes, detects from 'one' if none is provided
@@ -137,13 +140,32 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
 def christiansen_hamiltonian(pes, n_states=16, cubic=False):
     """Compute Christiansen vibrational Hamiltonian.
 
+    The construction of the Hamiltonian is based on Eqs. 19-21 of 
+    `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_. 
+
+    where the bosonic creation and annihilation operators are mapped to the Pauli operators as
+
+    .. math::
+
+        b^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        b^{\dagger}_n = \frac{X_n - iY_n}{2},
+
+    and
+
+    .. math::
+
+        b_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        b_n = \frac{X_n + iY_n}{2},
+
+    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
+
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
 
     Returns:
-        Union[PauliSentence, Operator]: the Christiansen Hamiltonian in the qubit basis
+        Operator: the Christiansen Hamiltonian in the qubit basis
     """
 
     h_arr = christiansen_integrals(pes, n_states=n_states, cubic=cubic)
