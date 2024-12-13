@@ -311,7 +311,6 @@ def _cform_twomode_dipole(pes, n_states):
     local_dipole_cform_twobody = np.zeros((len(all_mode_combos) * chunksize, 3))
 
     for nn, (ii, jj) in enumerate(all_mode_combos):
-        ii, jj = int(ii), int(jj)
         if jj >= ii:
             continue
         for mm, (ki, kj, hi, hj) in enumerate(boscombos_on_rank):
