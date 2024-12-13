@@ -370,11 +370,11 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
                                     [-4.52407941e-17,  1.38406311e-16,  7.60888733e-02],
                                     [-4.63820104e-16,  5.42928787e-17,  1.17726042e-01],
                                     [ 1.19224372e-16,  9.12491386e-17,  1.64013197e-01]]])
-    
+
     >>> vib_obj = qml.qchem.VibrationalPES(freqs=freqs, grid=grid, gauss_weights=weights,
                                  uloc = None, pes_data=[pes_onebody, pes_twobody],
                                  dipole_data=[dipole_onebody], localized=False)
-    
+
     >>> x, y, z = qml.qchem.taylor_dipole_coeffs(vib_obj, 4, 2)
     >>> print(z)
     [array([[ 1.64124324e-03,  5.39120159e-03, -4.80053702e-05]])]
@@ -612,7 +612,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     + 0.0006814299999999998 * b⁺(0) b⁺(0) b⁺(0) b(0)
     + 0.0010221449999999997 * b⁺(0) b⁺(0) b(0) b(0)
     + 0.0006814299999999998 * b⁺(0) b(0) b(0) b(0)
-    + 0.00017035749999999995 * b(0) b(0) b(0) b(0)    
+    + 0.00017035749999999995 * b(0) b(0) b(0) b(0)
     """
     if is_local:
         start_deg = 2
