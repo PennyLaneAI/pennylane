@@ -45,20 +45,29 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     and a Hermitian operator :math:`H \in \tilde{\mathfrak{m}} \oplus \mathfrak{a}`, this function computes
     :math:`a \in \mathfrak{a}` and :math:`K_c \in e^{i\mathfrak{k}}` such that
 
-    .. math:: H = K_c^\dagger a K_c
+    .. math:: H = K_c a K_c^\dagger
 
     The result is provided in terms of the adjoint vector representation of :math:`a in \mathfrak{a}`
     (see :func:`adjvec_to_op`), i.e. the ordered coefficients :math:`c_j^{\mathfrak{a}}` in :math:`a = \sum_j c_j^{\mathfrak{a}} a_j` and
     the optimal parameters :math:`\theta` such that
 
-    .. math:: K_c = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}
+    .. math:: K_c = \prod_{j=|\mathfrak{k}|}^{1} e^{-i \theta_j k_j}
 
     for the ordered basis of :math:`\mathfrak{k}` given by the first :math:`|\mathfrak{k}|` elements of ``g``.
+    Note that we define :math:`K_c` mathematically with the descending order of basis elements :math:`k_j in \mathfrak{k}` such that
+    the resulting circuit has the canonical ascending order. In particular a PennyLane quantum function that describes the circuit given
+    the optimal parameters ``theta_opt`` and the basis ``k`` containing the operators, is given by the following.
+
+    .. code-block::
+        def Kc(theta_opt: Iterable[float], k: Iterable[Operator]):
+            assert len(theta_opt) == len(k)
+            for theta_j, k_j in zip(theta_opt, k):
+                qml.exp(-1j * theta_j * k_j)
 
     Internally, this function performs a modified version of `2104.00728 <https://arxiv.org/abs/2104.00728>`__,
     in particular minimizing the cost function
 
-    .. math:: f(\theta) = \langle H, K(\theta)^\dagger e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta) \rangle,
+    .. math:: f(\theta) = \langle H, K(\theta) e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta^\dagger) \rangle,
 
     see eq. (6) therein and our `demo <https://pennylane.ai/qml/demos/tutorial_fdhs>`__ for more details.
     Instead of relying on having Pauli words, we use the adjoint representation
@@ -145,11 +154,12 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     >>> dims = (len(k), len(mtilde), len(a))
     >>> adjvec_a, theta_opt = variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
 
-    As a result, we are provided the adjoint representation vector of the CSA element
+    As a result, we are provided with the adjoint vector representation of the CSA element
     :math:`a \in \mathfrak{a}` with respect to the basis ``mtilde+a`` and the optimal parameters of dimension :math:`|\mathfrak{k}|`
 
     Let us perform some sanity checks to better understand the resulting outputs.
     We can turn that element back to an operator using :func:`adjvec_to_op` and from that to a matrix for which we can check Hermiticity.
+
     .. code-block:: python
 
         m = mtilde + a
@@ -158,22 +168,22 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         assert np.allclose(a_m, a_m.conj().T)
 
     Let us now confirm that we get back the original Hamiltonian from the resulting :math:`K_c` and :math:`a`.
-    In particular, we want to confirm :math:`H = K_c^\dagger a K_c` for :math:`K_c = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}`.
+    In particular, we want to confirm :math:`H = K_c a K_c^\dagger` for :math:`K_c = \prod_{j=1}^{|\mathfrak{k}|} e^{-i \theta_j k_j}`.
 
     .. code-block:: python
 
         assert len(theta_opt) == len(k)
-        def Kc():
-            # note the reverse order of the multiplication because this is a circuit
-            for th, op in zip(theta_opt[::-1], k[::-1]):
+
+        def Kc(theta_opt):
+            for th, op in zip(theta_opt, k):
                 qml.exp(-1j * th * op.operation())
 
-        Kc_m = qml.matrix(Kc, wire_order=range(n))()
+        Kc_m = qml.matrix(Kc, wire_order=range(n))(theta_opt)
 
         # check Unitary property of Kc
         assert np.allclose(Kc_m.conj().T @ Kc_m, np.eye(2**n))
 
-        H_reconstructed = Kc_m.conj().T @ a_m @ Kc_m
+        H_reconstructed = Kc_m @ a_m @ Kc_m.conj().T
 
         H_m = qml.matrix(H, wire_order=range(len(H.wires)))
 
