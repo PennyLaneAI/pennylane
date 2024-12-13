@@ -64,6 +64,9 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added support to build a vibrational Hamiltonian in Taylor form.
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
 
@@ -228,6 +231,11 @@ such as `shots`, `rng` and `prng_key`.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
+  when program capture is enabled. This class decomposes pennylane operators following the same API as
+  `qml.transforms.decompose`.
+  [(#6691)](https://github.com/PennyLaneAI/pennylane/pull/6691)
 
 * Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
   operator and measurement wires with capture enabled.
