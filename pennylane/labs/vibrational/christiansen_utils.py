@@ -359,11 +359,7 @@ def _cform_threemode(pes, n_states):
     """
     nmodes = pes.pes_threemode.shape[0]
 
-    all_mode_combos = []
-    for aa in range(nmodes):
-        for bb in range(nmodes):
-            for cc in range(nmodes):
-                all_mode_combos.append([aa, bb, cc])
+    all_mode_combos = [[aa, bb, cc] for aa in range(nmodes) for bb in range(nmodes) for cc in range(nmodes)]
 
     all_bos_combos = list(
         itertools.product(
