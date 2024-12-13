@@ -21,6 +21,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import WiresLike
 
 
 def _multi_swap(wires1, wires2):
@@ -104,13 +105,20 @@ class QROM(Operation):
     """
 
     def __init__(
-        self, bitstrings, control_wires, target_wires, work_wires, clean=True, id=None
+        self,
+        bitstrings,
+        control_wires: WiresLike,
+        target_wires: WiresLike,
+        work_wires: WiresLike,
+        clean=True,
+        id=None,
     ):  # pylint: disable=too-many-arguments
 
         control_wires = qml.wires.Wires(control_wires)
         target_wires = qml.wires.Wires(target_wires)
 
-        work_wires = qml.wires.Wires(work_wires) if work_wires else qml.wires.Wires([])
+        work_wires = work_wires or ()
+        work_wires = qml.wires.Wires(work_wires)
 
         self.hyperparameters["bitstrings"] = tuple(bitstrings)
         self.hyperparameters["control_wires"] = control_wires
@@ -118,7 +126,7 @@ class QROM(Operation):
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["clean"] = clean
 
-        if work_wires:
+        if len(work_wires) != 0:
             if any(wire in work_wires for wire in control_wires):
                 raise ValueError("Control wires should be different from work wires.")
 
