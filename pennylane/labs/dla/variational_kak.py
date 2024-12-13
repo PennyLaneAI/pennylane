@@ -67,7 +67,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     Internally, this function performs a modified version of `2104.00728 <https://arxiv.org/abs/2104.00728>`__,
     in particular minimizing the cost function
 
-    .. math:: f(\theta) = \langle H, K(\theta) e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta^\dagger) \rangle,
+    .. math:: f(\theta) = \langle H, K(\theta) e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta)^\dagger \rangle,
 
     see eq. (6) therein and our `demo <https://pennylane.ai/qml/demos/tutorial_fdhs>`__ for more details.
     Instead of relying on having Pauli words, we use the adjoint representation
