@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import X, Y, Z
 from pennylane.labs.dla import (
-    cartan_decomposition,
+    cartan_decomp,
     cartan_subalgebra,
     check_cartan_decomp,
     concurrence_involution,
@@ -49,7 +49,7 @@ def test_kak_Ising(n, dense):
     involution = concurrence_involution
 
     assert not involution(H)
-    k, m = cartan_decomposition(g, involution=involution)
+    k, m = cartan_decomp(g, involution=involution)
     assert check_cartan_decomp(k, m)
 
     if not dense:
@@ -91,7 +91,7 @@ def test_kak_Heisenberg(n, dense):
     involution = concurrence_involution
 
     assert not involution(H)
-    k, m = cartan_decomposition(g, involution=involution)
+    k, m = cartan_decomp(g, involution=involution)
     assert check_cartan_decomp(k, m)
 
     if not dense:
@@ -133,7 +133,7 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
     involution = concurrence_involution
 
     assert not involution(H)
-    k, m = cartan_decomposition(g, involution=involution)
+    k, m = cartan_decomp(g, involution=involution)
     assert check_cartan_decomp(k, m)
 
     if not dense:

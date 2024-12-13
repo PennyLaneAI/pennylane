@@ -92,7 +92,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
         from pennylane import X, Z
         from pennylane.labs.dla import (
-            cartan_decomposition,
+            cartan_decomp,
             cartan_subalgebra,
             check_cartan_decomp,
             concurrence_involution,
@@ -113,7 +113,7 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
         involution = concurrence_involution
 
         assert not involution(H)
-        k, m = cartan_decomposition(g, involution=involution)
+        k, m = cartan_decomp(g, involution=involution)
         assert check_cartan_decomp(k, m)
 
         g = k + m
