@@ -107,13 +107,37 @@ class TestSuperposition:
         for op1, op2 in zip(decomposition, expected):
             assert qml.equal(op1, op2)
 
-    def test_raise_error(self):
+    @pytest.mark.parametrize(
+        ("coeffs", "basis", "msg_match"),
+        [
+            (
+                np.sqrt([0.1, 0.2, 0.3, 0.4]),
+                [[2, 0, 0, 0], [1, 0, 1, 0], [0, 1, 1, 0], [1, 1, 1, 1]],
+                "The elements of the basis states must be either 0 or 1",
+            ),
+            (
+                np.sqrt([0.3, 0.2, 0.3, 0.4]),
+                [[0, 0, 0, 0], [1, 0, 1, 0], [0, 1, 1, 0], [1, 1, 1, 1]],
+                "The input superposition must be normalized",
+            ),
+            (
+                np.sqrt([0.1, 0.2, 0.3, 0.4]),
+                [[0, 0, 0, 0], [1, 1, 1, 1], [0, 1, 1, 0], [1, 1, 1, 1]],
+                "The basis states must be unique",
+            ),
+            (
+                np.sqrt([0.1, 0.2, 0.3, 0.4]),
+                [[0, 0, 0, 0, 0], [0, 1, 1, 1], [0, 1, 1, 0], [1, 1, 1, 1]],
+                "All basis states must have the same length",
+            ),
+        ],
+    )
+    def test_raise_error(self, coeffs, basis, msg_match):
         """Test that the Superposition template raises an error if a basis state is repeated."""
 
-        with pytest.raises(ValueError, match="The basis states must be unique."):
-            qml.Superposition(
-                [0.5, 0.5, 0.5, 0.5], [[0, 1], [0, 0], [1, 1], [0, 0]], wires=range(2), work_wire=2
-            )
+        with pytest.raises(ValueError, match=msg_match):
+            n_wires = len(basis[0])
+            qml.Superposition(coeffs, basis, wires=range(n_wires), work_wire=n_wires)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -136,7 +160,7 @@ class TestSuperposition:
 
     def test_access_work_wire(self):
         """Test that the work_wire can be accessed."""
-        op = qml.Superposition([0.5, 0.5], [[0, 0], [1, 1]], wires=range(2), work_wire=2)
+        op = qml.Superposition(np.sqrt([0.5, 0.5]), [[0, 0], [1, 1]], wires=range(2), work_wire=2)
         assert op.work_wire == qml.wires.Wires(2)
 
 

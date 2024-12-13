@@ -22,11 +22,11 @@ from pennylane.operation import AnyWires, Operation
 def _assign_states(basis_list):
     r"""
     This function maps a given list of :math:`m` basis states to the first :math:`m` basis states in the
-    computational basis. 
-    
+    computational basis.
+
     For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis
     state of length :math:`4` will be mapped as :math:`{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots}`.
-    
+
     Note that if a state in ``basis_list`` is one of the first :math:`m` basis states,
     this state will be mapped to itself.
 
@@ -211,14 +211,26 @@ class Superposition(Operation):
         self, coeffs, basis, wires, work_wire, id=None
     ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
-        unique_basis = qml.math.unique(
-            qml.math.array([tuple(sub_array) for sub_array in basis]), axis=0
-        )
+        if not all(
+            all(qml.math.isclose(i, 0.0) or qml.math.isclose(i, 1.0) for i in b) for b in basis
+        ):
+            raise ValueError("The elements of the basis states must be either 0 or 1.")
+
+        basis_lengths = {len(b) for b in basis}
+        if len(basis_lengths) > 1:
+            raise ValueError("All basis states must have the same length.")
+
+        if not qml.math.is_abstract(coeffs):
+            coeffs_norm = qml.math.linalg.norm(coeffs)
+            if not qml.math.allclose(coeffs_norm, qml.math.array(1.0)):
+                raise ValueError("The input superposition must be normalized.")
+
+        unique_basis = qml.math.unique(qml.math.array([tuple(b) for b in basis]), axis=0)
 
         if len(unique_basis) != len(basis):
             raise ValueError("The basis states must be unique.")
 
-        self.hyperparameters["basis"] = tuple(tuple(b) for b in basis)
+        self.hyperparameters["basis"] = tuple(tuple(int(i) for i in b) for b in basis)
         self.hyperparameters["target_wires"] = qml.wires.Wires(wires)
         self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
 
