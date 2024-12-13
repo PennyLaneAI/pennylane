@@ -58,6 +58,8 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
     in particular minimizing the cost function eq. (6) therein. Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
+    .. seealso:: `Theory demo on KAK theorem <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__, `demo on KAK decomposition in practise <https://pennylane.ai/qml/demos/tutorial_fdhs>`__,
+
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
         g (List[Union[Operator, PauliSentence, np.ndarray]]): DLA of the Hamiltonian
