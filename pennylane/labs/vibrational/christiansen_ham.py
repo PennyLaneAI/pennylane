@@ -165,8 +165,8 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
         n_states(int): maximum number of bosonic states per mode
         cubic(bool): Flag to include three-mode couplings. Default is ``False``.
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
-            wires. If None, integers used to label the bosonic states will be used as wire labels.
-            Defaults to None.
+            wires. If ``None``, integers used to label the bosonic states will be used as wire labels.
+            Defaults to ``None``.
         tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
