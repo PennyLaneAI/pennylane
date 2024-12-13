@@ -626,12 +626,9 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     return ham.normal_order()
 
 
+# pylint: disable=too-many-positional-arguments, too-many-arguments
 def taylor_hamiltonian(
-    pes,
-    max_deg=4,
-    min_deg=3,
-    mapping="binary",
-    n_states=2,
+    pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
 ):
     """Return Taylor vibrational Hamiltonian.
 
@@ -639,9 +636,13 @@ def taylor_hamiltonian(
         pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
-        mapping (str): Mapping used to map to qubit basis. Input values can be ``"binary"`` or ``"unary"``.
-            Default is `"binary"`.
+        mapping (str): Mapping used to map to qubit basis. Input values can be ``"binary"``
+            or ``"unary"``. Default is `"binary"`.
         n_states(int): maximum number of allowed bosonic states
+        wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
+            wires. If None, integers used to label the bosonic states will be used as wire labels.
+            Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
         Operator: the Taylor Hamiltonian
@@ -680,8 +681,8 @@ def taylor_hamiltonian(
     coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
     bose_op = taylor_bosonic(coeffs_arr, pes.freqs, is_local=pes.localized, uloc=pes.uloc)
     if mapping == "binary":
-        ham = binary_mapping(bose_operator=bose_op, n_states=n_states)
+        ham = binary_mapping(bose_operator=bose_op, n_states=n_states, wire_map=wire_map, tol=tol)
     elif mapping == "unary":
-        ham = unary_mapping(bose_operator=bose_op, n_states=n_states)
+        ham = unary_mapping(bose_operator=bose_op, n_states=n_states, wire_map=wire_map, tol=tol)
 
     return ham
