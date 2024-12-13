@@ -171,6 +171,7 @@ def test_cform_onemode_dipole():
         atol=1e-8,
     )
 
+
 def test_cform_threemode():
     flattened_H3 = H3.ravel()
     assert np.allclose(
@@ -203,6 +204,7 @@ def test_cform_twomode_dipole():
         abs(_cform_twomode_dipole(pes=pes_object_3D, n_states=4).ravel()),
         atol=1e-8,
     )
+
 
 def test_load_cform_onemode():
     data = H1.ravel()

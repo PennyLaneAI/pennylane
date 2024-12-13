@@ -350,7 +350,6 @@ def _cform_twomode_dipole(pes, n_states):
                 full_coeff = sqrt * quadrature
                 local_dipole_cform_twobody[ind, alpha] += full_coeff
 
-
     return local_dipole_cform_twobody
 
 
