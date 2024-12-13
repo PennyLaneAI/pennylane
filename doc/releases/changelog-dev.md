@@ -456,7 +456,7 @@ same information.
 
 * The `Wires` object throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
-  [(#)]()
+  [(#6720)](https://github.com/PennyLaneAI/pennylane/pull/6720)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
