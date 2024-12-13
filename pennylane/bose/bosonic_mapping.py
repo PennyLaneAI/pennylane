@@ -334,6 +334,15 @@ def christiansen_mapping(
 
     Returns:
         Union[PauliSentence, Operator]: A linear combination of qubit operators.
+
+    **Example**
+
+    >>> w = qml.bose.BoseWord({(0,0):"+", (1,1): "-"})
+    >>> qml.christiansen_mapping(w)
+    0.25 * (X(0) @ X(1))
+    + 0.25j * (X(0) @ Y(1))
+    + -0.25j * (Y(0) @ X(1))
+    + (0.25+0j) * (Y(0) @ Y(1))
     """
 
     qubit_operator = _christiansen_mapping_dispatch(bose_operator, tol)
