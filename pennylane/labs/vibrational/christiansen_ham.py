@@ -103,7 +103,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
                 m_range = range(l)
             for m in m_range:
                 if not ordered:
-                    n_range = [p for p in range(modes) if p != l and p != m]
+                    n_range = [p for p in range(modes) if p not in (l, m)]
                 else:
                     n_range = range(m)
                 for n in n_range:
