@@ -510,7 +510,7 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
     def adjoint_resource_decomp(
         cls, num_ctrl_wires, num_ctrl_values, num_work_wires
     ) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources(num_ctrl_wires, num_ctrl_values, num_work_wires)
+        return {cls.resource_rep(num_ctrl_wires, num_ctrl_values, num_work_wires): 1}
 
     @classmethod
     def controlled_resource_decomp(
@@ -522,13 +522,11 @@ class ResourceMultiControlledX(qml.MultiControlledX, re.ResourceOperator):
         num_ctrl_values,
         num_work_wires,
     ) -> Dict[re.CompressedResourceOp, int]:
-        return {
-            cls.resource_rep(
-                outer_num_ctrl_wires + num_ctrl_wires,
-                outer_num_ctrl_values + num_ctrl_values,
-                outer_num_work_wires + num_work_wires,
-            ): 1
-        }
+        return cls.resources(
+            outer_num_ctrl_wires + num_ctrl_wires,
+            outer_num_ctrl_values + num_ctrl_values,
+            outer_num_work_wires + num_work_wires,
+        )
 
     @classmethod
     def pow_resource_decomp(
@@ -748,7 +746,7 @@ class ResourceCRot(qml.CRot, re.ResourceOperator):
 
     @classmethod
     def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
-        return cls.resources()
+        return {cls.resource_rep(): 1}
 
     @staticmethod
     def controlled_resource_decomp(
