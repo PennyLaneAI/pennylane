@@ -230,6 +230,10 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
+  operator and measurement wires with capture enabled.
+  [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
+
 * A `qml.tape.plxpr_to_tape` function can now convert plxpr to a tape.
   [(#6343)](https://github.com/PennyLaneAI/pennylane/pull/6343)
 
