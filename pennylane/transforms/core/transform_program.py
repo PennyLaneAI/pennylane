@@ -252,7 +252,7 @@ class TransformProgram:
         cotransform_cache: Optional[CotransfromCache] = None,
     ):
         self._transform_program = list(initial_program) if initial_program else []
-        self.cotransform_cache = None
+        self.cotransform_cache = cotransform_cache
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
@@ -291,7 +291,6 @@ class TransformProgram:
             cotransform_cache = self.cotransform_cache
         elif other.cotransform_cache:
             cotransform_cache = other.cotransform_cache
-
         return TransformProgram(transforms, cotransform_cache=cotransform_cache)
 
     def __repr__(self):
@@ -550,7 +549,6 @@ class TransformProgram:
             classical_jacobians = self._get_classical_jacobian(i)
             argnums = self._get_argnums(i)
             for j, tape in enumerate(tapes):
-                print(argnums)
                 if argnums is not None:
                     tape.trainable_params = argnums[j]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)

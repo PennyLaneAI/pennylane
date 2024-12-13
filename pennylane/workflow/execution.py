@@ -187,6 +187,9 @@ def execute(
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
+    if not tapes:
+        return ()
+
     ### Specifying and preprocessing variables ####
 
     interface = _resolve_interface(interface, tapes)
@@ -226,6 +229,7 @@ def execute(
     )
 
     if transform_program is None or inner_transform is None:
+        transform_program = transform_program or qml.transforms.core.TransformProgram()
         transform_program, inner_transform = _setup_transform_program(
             transform_program, device, config, cache, cachesize
         )
