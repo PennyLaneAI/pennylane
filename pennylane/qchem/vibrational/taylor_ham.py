@@ -638,7 +638,7 @@ def taylor_hamiltonian(
         pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
-        mapping (str): Mapping used to map to qubit basis. Input values can be ``"binary"``
+        mapping (str): method used to map to qubit basis. Input values can be ``"binary"``
             or ``"unary"``. Default is ``"binary"``.
         n_states(int): maximum number of allowed bosonic states
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
