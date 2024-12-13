@@ -249,7 +249,7 @@ class VibronicHamiltonian:
         block_matrix = VibronicBlockMatrix(dim=self.states)
         for j in range(self.states):
             coeffs = self.betas[j, m ^ j] * np.multiply.outer(self.omegas, self.omegas)
-            operator = VibronicWord({("PP"): coeffs})
+            operator = VibronicWord({("PP",): coeffs})
             block_matrix.set_block(j, m ^ j, operator)
 
         return 2 * block_matrix

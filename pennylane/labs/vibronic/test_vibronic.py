@@ -1,3 +1,4 @@
+"""Tests for the VibronicHamiltonian class"""
 from itertools import product
 
 import numpy as np
