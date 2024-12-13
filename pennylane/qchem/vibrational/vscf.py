@@ -383,7 +383,7 @@ def _rotate_hamiltonian(h_integrals, mode_rots, modals):
 
 
 def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
-    r"""Generates vibrational self-consistent field rotated integrals for vibrational Hamiltonian.
+    r"""Generates vibrational self-consistent field rotated integrals.
 
     This function converts the Christiansen vibrational Hamiltonian integrals obtained in the harmonic
     oscillator basis to integrals in the vibrational self-consistent field (VSCF) basis.
