@@ -385,12 +385,16 @@ def _rotate_hamiltonian(h_integrals, mode_rots, modals):
 def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cutoff_ratio=1e-6):
     r"""Generates vibrational self-consistent field rotated integrals for vibrational Hamiltonian.
 
-    This function converts the Christiansen vibrational Hamiltonian integrals obtained in the harmonic oscillator basis to integrals in the vibrational self-consistent field (VSCF) basis. The implementation is based on the method described in
+    This function converts the Christiansen vibrational Hamiltonian integrals obtained in the harmonic
+    oscillator basis to integrals in the vibrational self-consistent field (VSCF) basis.
+    The implementation is based on the method described in
     `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
 
     Args:
-        h_integrals (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals
-        d_integrals (list[TensorLike[float]]): list of n-mode expansion of dipole integrals. Default is ``None``.
+        h_integrals (list[TensorLike[float]]): List of Hamiltonian integrals for up to 3-coupled vibrational modes.
+            Look at the `Usage Details` for more details on dimensions of tensors.
+        d_integrals (list[TensorLike[float]]): List of dipole integrals for up to 3-coupled vibrational modes.
+            Look at the `Usage Details` for more details on dimensions of tensors.
         modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
             Default value is the maximum number of modals.
         cutoff (float): threshold value for including matrix elements into operator
@@ -406,15 +410,43 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
     **Example**
 
     >>> h1 = np.array([[[0.00968289, 0.00233724, 0.0007408,  0.00199125],
-    ...   [0.00233724, 0.02958449, 0.00675431, 0.0021936],
-    ...   [0.0007408,  0.00675431, 0.0506012,  0.01280986],
-    ...   [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
-    >>> qml.qchem.vcf_integrals(h_integrals=[h1], modals=[4,4,4])
-    ([[[ 9.36124041e-03,  3.63798208e-19, -3.42019607e-19, -3.83743044e-19],
-       [ 9.59982270e-19,  2.77803512e-02,  5.18290259e-18, -4.82000376e-18],
-       [-2.73826508e-19,  4.88583546e-18,  4.63297357e-02, -2.87022759e-18],
-       [-1.94549340e-19, -5.48544743e-18, -1.41379640e-18, 7.92203227e-02]]],
-    None)
+                        [0.00233724, 0.02958449, 0.00675431, 0.0021936],
+                        [0.0007408,  0.00675431, 0.0506012,  0.01280986],
+                        [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
+    >>> qml.qchem.vscf_integrals(h_integrals=[h1], modals=[4,4,4])
+    (
+       [array([[[ 9.36124041e-03,  3.63798208e-19, -3.42019607e-19,
+         -3.83743044e-19],
+        [ 9.59982270e-19,  2.77803512e-02,  5.18290259e-18,
+         -4.82000376e-18],
+        [-2.73826508e-19,  4.88583546e-18,  4.63297357e-02,
+         -2.87022759e-18],
+        [-1.94549340e-19, -5.48544743e-18, -1.41379640e-18,
+          7.92203227e-02]]])], None
+    )
+
+
+    .. details::
+        :title: Usage Details
+
+        Required dimensions of h_integral tensors are as follows:
+
+        - 1-mode coupled integrals: `(n, m)`
+        - 2-mode coupled integrals: `(n, n, m, m, m, m)`
+        - 3-mode coupled integrals: `(n, n, n, m, m, m, m, m, m)`
+
+        where ``n`` is the number of vibrational modes in the molecule and ``m`` represents the number
+        of modals.
+
+        Required dimensions of d_integral tensors are as follows:
+
+        - 1-mode coupled integrals: `(3, n, m)`
+        - 2-mode coupled integrals: `(3, n, n, m, m, m, m)`
+        - 3-mode coupled integrals: `(3, n, n, n, m, m, m, m, m, m)`
+
+        where ``n`` is the number of vibrational modes in the molecule, ``m`` represents the number
+        of modals and the first axis represents the ``x, y, z`` component of the dipole. Default is ``None``.
+
     """
 
     if len(h_integrals) > 3:
