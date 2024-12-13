@@ -593,9 +593,10 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
     **Example**
 
-    >>> one_mode, two_mode = [np.array([[-0.00088528, -0.00361425,  0.00068143]]), np.array([[[0., 0., 0., 0., 0., 0.]]])]
-    >>> freqs=np.array([0.025])
-    >>> uloc=np.array([[1.0]])
+    >>> one_mode = np.array([[-0.00088528, -0.00361425,  0.00068143]])
+    >>> two_mode = np.array([[[0., 0., 0., 0., 0., 0.]]])
+    >>> freqs = np.array([0.025])
+    >>> uloc = np.array([[1.0]])
     >>> ham = qml.qchem.taylor_bosonic(coeffs=[one_mode, two_mode], freqs=freqs, uloc=uloc)
     >>> print(ham)
     -0.0012778303419517393 * b⁺(0) b⁺(0) b⁺(0)
