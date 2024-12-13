@@ -130,9 +130,7 @@ def _cform_onemode(pes, n_states):
     """
 
     nmodes = len(pes.freqs)
-    all_mode_combos = []
-    for aa in range(nmodes):
-        all_mode_combos.append([aa])
+    all_mode_combos = [[aa] for aa in range(nmodes)]
     all_bos_combos = list(itertools.product(range(n_states), range(n_states)))
 
     rank = comm.Get_rank()
