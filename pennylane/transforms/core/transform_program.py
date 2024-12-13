@@ -28,6 +28,18 @@ from .transform_dispatcher import TransformContainer, TransformDispatcher, Trans
 CotransfromCache = namedtuple("CotransformCache", ("qnode", "args", "kwargs"))
 
 
+def _get_interface(qnode, args, kwargs):
+    if qnode.interface == "auto":
+        interface = qml.math.get_interface(*args, *list(kwargs.values()))
+        try:
+            interface = qml.math.get_canonical_interface_name(interface).value
+        except ValueError:
+            interface = "numpy"
+    else:
+        interface = qnode.interface
+    return interface
+
+
 def _numpy_jac(*_, **__) -> qml.typing.TensorLike:
     raise qml.QuantumFunctionError("No trainable parameters.")
 
@@ -493,13 +505,15 @@ class TransformProgram:
             return None
         argnums = self[-1].kwargs.get("argnums", None)
         qnode, args, kwargs = self.cotransform_cache
-        if qnode.interface == "jax" and "argnum" in self[index].kwargs:
+
+        interface = _get_interface(qnode, args, kwargs)
+        if interface == "jax" and "argnum" in self[index].kwargs:
             raise qml.QuantumFunctionError(
                 "argnum does not work with the Jax interface. You should use argnums instead."
             )
 
         f = partial(_classical_preprocessing, qnode, self[:index])
-        classical_jacobian = _jac_map[qnode.interface](f, argnums, *args, **kwargs)
+        classical_jacobian = _jac_map[interface](f, argnums, *args, **kwargs)
 
         # autograd and tf cant handle pytrees, so need to unsqueeze the squeezing
         # done in _classical_preprocessing
@@ -517,9 +531,10 @@ class TransformProgram:
         if self.cotransform_cache is None:
             return None
         qnode, args, kwargs = self.cotransform_cache
+        interface = _get_interface(qnode, args, kwargs)
         transform = self[index]
         argnums = self[-1].kwargs.get("argnums", None)
-        argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
+        argnums = [0] if interface in ["jax", "jax-jit"] and argnums is None else argnums
         # pylint: disable=protected-access
         if (transform._use_argnum or transform.classical_cotransform) and argnums:
             params = _jax_argnums_to_tape_trainable(qnode, argnums, self[:index], args, kwargs)

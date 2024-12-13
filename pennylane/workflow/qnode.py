@@ -870,11 +870,7 @@ class QNode:
         self.construct(args, kwargs)
 
         if self.interface == "auto":
-            interface = (
-                Interface.JAX
-                if qml.capture.enabled()
-                else qml.math.get_interface(*args, *list(kwargs.values()))
-            )
+            interface = qml.math.get_interface(*args, *list(kwargs.values()))
             try:
                 interface = get_canonical_interface_name(interface)
             except ValueError:
