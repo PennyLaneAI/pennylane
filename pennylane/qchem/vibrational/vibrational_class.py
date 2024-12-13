@@ -176,12 +176,12 @@ def optimize_geometry(molecule, method="rhf"):
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
-                            [0.0, 0.0,  1.0]])
+                             [0.0, 0.0,  1.0]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> eq_geom = qml.qchem.optimize_geometry(mol)
     >>> eq_geom
-    array([[0.0, 0.0, -0.40277116],
-           [0.0, 0.0,  1.40277116]])
+    array([[ 0.        ,  0.        , -0.40277116],
+           [ 0.        ,  0.        ,  1.40277116]])
 
     """
     pyscf = _import_pyscf()
