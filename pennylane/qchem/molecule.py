@@ -37,9 +37,6 @@ class Molecule:
 
     The molecule object can be passed to functions that perform a Hartree-Fock calculation.
 
-    .. note::
-        :class:`~.qchem.Molecule` is not currently compatible with :func:`~.qjit` and ``jax.jit``.
-
     Args:
         symbols (list[str]): Symbols of the atomic species in the molecule. Currently, atoms with
             atomic numbers 1-10 are supported.
@@ -59,6 +56,9 @@ class Molecule:
         r (array[float]): positions of the Gaussian functions
         normalize (bool): if True, the basis functions get normalized
         unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
+
+    .. note::
+        :class:`~.qchem.Molecule` is not currently compatible with :func:`~.qjit` and ``jax.jit``.
 
     **Example**
 
