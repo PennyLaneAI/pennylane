@@ -35,19 +35,16 @@ from pennylane.labs.vibrational.christiansen_utils import (
     christiansen_integrals_dipole,
 )
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-from tests.qchem.vibrational.test_ref_files.cform_ops_data import (
+from pennylane.labs.tests.vibrational.test_ref_files.cform_ops_data import (
     cform_coeffs_ref,
     cform_dipole_ref_x,
     cform_ham_ref,
     cform_ops_ref,
 )
 
-# Path is pennylane/tests/qchem/vibrational/test_ref_files/H2S.hdf5
+# Path is pennylane/labs/tests/vibrational/test_ref_files/H2S.hdf5
 cform_file = (
-    Path(__file__).resolve().parent.parent.parent.parent.parent
-    / "tests"
-    / "qchem"
-    / "vibrational"
+    Path(__file__).resolve().parent
     / "test_ref_files"
     / "H2S.hdf5"
 )
