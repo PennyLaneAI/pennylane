@@ -131,8 +131,8 @@ class Superposition(Operation):
     See the Details section for more information about the decomposition.
 
     Args:
-        coeffs (List[float]): list of coefficients :math:`c_i`
-        basis (List[List[int]]): list of basis states :math:`|b_i\rangle`
+        coeffs (List[float]): list of coefficients :math:`c_i` normalized
+        basis (List[List[int]]): list of basis states :math:`|b_i\rangle` with the same length
         wires (Sequence[int]): list of wires that the operator acts on
         work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
 
