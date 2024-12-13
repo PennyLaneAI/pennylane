@@ -273,8 +273,7 @@ class OutPoly(Operation):
 
         registers_wires = [*input_registers, output_wires]
 
-        work_wires = work_wires or ()
-        work_wires = qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(()) if work_wires is None else qml.wires.Wires(work_wires)
         num_work_wires = len(work_wires)
         if mod is None:
             mod = 2 ** len(registers_wires[-1])
