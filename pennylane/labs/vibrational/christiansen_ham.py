@@ -184,7 +184,7 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
 
 
 def christiansen_dipole(pes, n_states=16):
-    """Computes the Christiansen form dipole operators in the qubit basis.
+    """Return Christiansen dipole operator.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
