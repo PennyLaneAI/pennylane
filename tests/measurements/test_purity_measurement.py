@@ -325,7 +325,7 @@ class TestPurityIntegration:
         "diff_method",
         [
             "backprop",
-            pytest.param("finite-diff", marks=pytest.mark.xfail(reason="Known bug for PR6684")),
+            "finite-diff",
         ],
     )
     @pytest.mark.parametrize("interface", ["jax-jit"])
@@ -404,7 +404,7 @@ class TestPurityIntegration:
         "diff_method",
         [
             "backprop",
-            pytest.param("finite-diff", marks=pytest.mark.xfail(reason="Known bug for PR6684")),
+            "finite-diff",
         ],
     )
     @pytest.mark.parametrize("interface", ["torch"])
@@ -490,7 +490,7 @@ class TestPurityIntegration:
         "diff_method",
         [
             "backprop",
-            pytest.param("finite-diff", marks=pytest.mark.xfail(reason="Known bug for PR6684")),
+            "finite-diff",
         ],
     )
     @pytest.mark.parametrize("interface", ["tf"])
