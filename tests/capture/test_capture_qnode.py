@@ -65,8 +65,9 @@ def test_error_if_shot_vector():
         circuit()
 
     jax.make_jaxpr(partial(circuit, shots=50))()  # should run fine
-    res = circuit(shots=50)
-    assert qml.math.allclose(res, jax.numpy.zeros((50,)))
+    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+        res = circuit(shots=50)
+        assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
 
 def test_error_if_overridden_shot_vector():
@@ -98,12 +99,8 @@ def test_error_if_no_device_wires():
         circuit()
 
 
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_simple_qnode(x64_mode):
+def test_simple_qnode():
     """Test capturing a qnode for a simple use."""
-
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     dev = qml.device("default.qubit", wires=4)
 
@@ -120,7 +117,7 @@ def test_simple_qnode(x64_mode):
     assert len(jaxpr.eqns) == 1
     eqn0 = jaxpr.eqns[0]
 
-    fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+    fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
     assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
 
@@ -148,14 +145,9 @@ def test_simple_qnode(x64_mode):
     output = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
     assert qml.math.allclose(output[0], jax.numpy.cos(0.5))
 
-    jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_overriding_shots(x64_mode):
+def test_overriding_shots():
     """Test that the number of shots can be overridden on call."""
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     dev = qml.device("default.qubit", wires=1)
 
@@ -175,13 +167,12 @@ def test_overriding_shots(x64_mode):
     )
 
     assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (50,), jax.numpy.int64 if x64_mode else jax.numpy.int32
+        (50,), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
     )
 
-    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-    assert qml.math.allclose(res, jax.numpy.zeros((50,)))
-
-    jax.config.update("jax_enable_x64", initial_mode)
+    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qml.math.allclose(res, jax.numpy.zeros((50,)))
 
 
 def test_providing_keyword_argument():
@@ -209,11 +200,8 @@ def test_providing_keyword_argument():
     assert qml.math.allclose(res2, jax.numpy.array([1, 0]))
 
 
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_multiple_measurements(x64_mode):
+def test_multiple_measurements():
     """Test that the qnode can return multiple measurements."""
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     @qml.qnode(qml.device("default.qubit", wires=3, shots=50))
     def circuit():
@@ -229,13 +217,13 @@ def test_multiple_measurements(x64_mode):
     assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (50, 3), jax.numpy.int64 if x64_mode else jax.numpy.int32
+        (50, 3), jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
     )
     assert jaxpr.out_avals[1] == jax.core.ShapedArray(
-        (4,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        (4,), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
     )
     assert jaxpr.out_avals[2] == jax.core.ShapedArray(
-        (), jax.numpy.float64 if x64_mode else jax.numpy.float32
+        (), jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
     )
 
     res1, res2, res3 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
@@ -248,15 +236,9 @@ def test_multiple_measurements(x64_mode):
     assert qml.math.allclose(res2, jax.numpy.array([1, 0, 0, 0]))
     assert qml.math.allclose(res3, 1.0)
 
-    jax.config.update("jax_enable_x64", initial_mode)
 
-
-@pytest.mark.parametrize("x64_mode", (True, False))
-def test_complex_return_types(x64_mode):
+def test_complex_return_types():
     """Test returning measurements with complex values."""
-
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", x64_mode)
 
     @qml.qnode(qml.device("default.qubit", wires=3))
     def circuit():
@@ -270,13 +252,11 @@ def test_complex_return_types(x64_mode):
     assert qfunc_jaxpr.eqns[1].primitive == qml.measurements.DensityMatrixMP._wires_primitive
 
     assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (8,), jax.numpy.complex128 if x64_mode else jax.numpy.complex64
+        (8,), jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
     )
     assert jaxpr.out_avals[1] == jax.core.ShapedArray(
-        (4, 4), jax.numpy.complex128 if x64_mode else jax.numpy.complex64
+        (4, 4), jax.numpy.complex128 if jax.config.jax_enable_x64 else jax.numpy.complex64
     )
-
-    jax.config.update("jax_enable_x64", initial_mode)
 
 
 def test_capture_qnode_kwargs():
@@ -373,6 +353,19 @@ def test_qnode_jvp():
     assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
 
+def test_qnode_jit():
+    """Test that executions on default qubit can be jitted."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    x = jax.numpy.array(-0.5)
+    res = jax.jit(circuit)(0.5)
+    assert qml.math.allclose(res, jax.numpy.cos(x))
+
+
 # pylint: disable=too-many-public-methods
 class TestQNodeVmapIntegration:
     """Tests for integrating JAX vmap with the QNode primitive."""
@@ -380,9 +373,9 @@ class TestQNodeVmapIntegration:
     @pytest.mark.parametrize(
         "input, expected_shape",
         [
-            (jax.numpy.array([0.1]), (1,)),
-            (jax.numpy.array([0.1, 0.2]), (2,)),
-            (jax.numpy.array([0.1, 0.2, 0.3]), (3,)),
+            (jax.numpy.array([0.1], dtype=jax.numpy.float32), (1,)),
+            (jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float32), (2,)),
+            (jax.numpy.array([0.1, 0.2, 0.3], dtype=jax.numpy.float32), (3,)),
         ],
     )
     def test_qnode_vmap(self, input, expected_shape):
@@ -402,13 +395,10 @@ class TestQNodeVmapIntegration:
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, input)
         assert qml.math.allclose(res, jax.numpy.cos(input))
 
-    @pytest.mark.parametrize("x64_mode", (True, False))
-    def test_qnode_vmap_x64_mode(self, x64_mode):
+    def test_qnode_vmap_x64_mode(self):
         """Test that JAX can vmap over the QNode primitive with x64 mode enabled/disabled."""
 
-        initial_mode = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", x64_mode)
-        dtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+        dtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
@@ -425,8 +415,6 @@ class TestQNodeVmapIntegration:
 
         res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(res, jax.numpy.cos(x))
-
-        jax.config.update("jax_enable_x64", initial_mode)
 
     def test_vmap_mixed_arguments(self):
         """Test vmap with a mix of batched and non-batched arguments."""
@@ -536,7 +524,8 @@ class TestQNodeVmapIntegration:
         x = jax.numpy.array([1.0, 2.0, 3.0])
 
         jaxpr = jax.make_jaxpr(jax.vmap(partial(circuit, shots=50), in_axes=0))(x)
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]
@@ -551,8 +540,9 @@ class TestQNodeVmapIntegration:
 
         assert eqn0.outvars[0].aval.shape == (3, 50)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qml.math.allclose(res, jax.numpy.zeros((3, 50)))
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+            assert qml.math.allclose(res, jax.numpy.zeros((3, 50)))
 
     def test_vmap_error_indexing(self):
         """Test that an IndexError is raised when indexing a batched parameter."""
@@ -859,6 +849,8 @@ class TestQNodeVmapIntegration:
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
         expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
+        # note! Any failures here my be a result of a side effect from a different test
+        # fails when testing tests/capture, passes with tests/capture/test_capture_qnode
         assert jax.numpy.allclose(result[0], expected)
         assert jax.numpy.allclose(result[1], expected)
         assert jax.numpy.allclose(result[2], expected)
@@ -909,7 +901,7 @@ class TestQNodeVmapIntegration:
             assert len(eqn.outvars) == 1
             assert eqn.outvars[0].aval.shape == (3,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["arr"], y, 1)
         expected = jax.numpy.array([0.93005586, 0.00498127, -0.88789978]) * y
         assert jax.numpy.allclose(result[0], expected)
         assert jax.numpy.allclose(result[1], expected)

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/dla/lie_closure_dense.py functionality"""
+"""Tests for pennylane/labs/dla/lie_closure_dense.py functionality"""
 # pylint: disable=too-few-public-methods, protected-access, no-self-use
 import pytest
 
@@ -106,6 +106,21 @@ class TestLieClosureDense:
             Z(1),
             qml.sum(qml.prod(Y(0), X(1)), qml.s_prod(-1.0, qml.prod(X(0), Y(1)))),
         ]
+        gen11 = dla[:-1]
+        res11 = lie_closure_dense(gen11)
+
+        res11 = [qml.pauli_decompose(op) for op in res11]  # back to pauli_rep for easier comparison
+        assert PauliVSpace(res11) == PauliVSpace(dla11)
+
+    def test_lie_closure_dense_with_ndarrays(self):
+        """Test that lie_closure_dense works properly with ndarray inputs"""
+        dla = [
+            qml.sum(qml.prod(X(0), X(1)), qml.prod(Y(0), Y(1))),
+            Z(0),
+            Z(1),
+            qml.sum(qml.prod(Y(0), X(1)), qml.s_prod(-1.0, qml.prod(X(0), Y(1)))),
+        ]
+        dla = [qml.matrix(op, wire_order=range(2)) for op in dla]
         gen11 = dla[:-1]
         res11 = lie_closure_dense(gen11)
 

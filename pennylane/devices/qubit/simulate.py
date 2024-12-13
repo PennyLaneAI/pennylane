@@ -24,6 +24,7 @@ from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.logging import debug_logger
+from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -43,26 +44,6 @@ from .sampling import jax_random_split, measure_with_samples
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-INTERFACE_TO_LIKE = {
-    # map interfaces known by autoray to themselves
-    None: None,
-    "numpy": "numpy",
-    "autograd": "autograd",
-    "jax": "jax",
-    "torch": "torch",
-    "tensorflow": "tensorflow",
-    # map non-standard interfaces to those known by autoray
-    "auto": None,
-    "scipy": "numpy",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "pytorch": "torch",
-    "tf": "tensorflow",
-    "tensorflow-autograph": "tensorflow",
-    "tf-autograph": "tensorflow",
-}
 
 
 class TreeTraversalStack:
@@ -196,7 +177,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+    interface = get_canonical_interface_name(interface)
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -349,11 +331,7 @@ def simulate(
             return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
 
         results = []
-        aux_circ = qml.tape.QuantumScript(
-            circuit.operations,
-            circuit.measurements,
-            shots=[1],
-        )
+        aux_circ = circuit.copy(shots=[1])
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if qml.math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
             # pylint: disable=import-outside-toplevel
@@ -426,11 +404,7 @@ def simulate_tree_mcm(
         keys = jax_random_split(prng_key, num=circuit.shots.num_copies)
         results = []
         for k, s in zip(keys, circuit.shots):
-            aux_circuit = qml.tape.QuantumScript(
-                circuit.operations,
-                circuit.measurements,
-                shots=s,
-            )
+            aux_circuit = circuit.copy(shots=s)
             results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
         return tuple(results)
 
@@ -563,11 +537,7 @@ def simulate_tree_mcm(
                 initial_state = stack.states[0]
             else:
                 initial_state = branch_state(stack.states[depth], mcm_current[depth], mcms[depth])
-            circtmp = qml.tape.QuantumScript(
-                circuits[depth].operations,
-                circuits[depth].measurements,
-                qml.measurements.shots.Shots(shots),
-            )
+            circtmp = circuits[depth].copy(shots=qml.measurements.shots.Shots(shots))
             circtmp = prepend_state_prep(circtmp, initial_state, interface, circuit.wires)
             state, is_state_batched = get_final_state(
                 circtmp,
@@ -654,9 +624,7 @@ def split_circuit_at_mcms(circuit):
         new_measurements = (
             [qml.sample(wires=op.wires)] if circuit.shots else [qml.probs(wires=op.wires)]
         )
-        circuits.append(
-            qml.tape.QuantumScript(new_operations, new_measurements, shots=circuit.shots)
-        )
+        circuits.append(circuit.copy(operations=new_operations, measurements=new_measurements))
         first = last + 1
 
     last_circuit_operations = circuit.operations[first:]
@@ -683,17 +651,13 @@ def prepend_state_prep(circuit, state, interface, wires):
     of the original circuit (which included all wires)."""
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
-    state = (
-        create_initial_state(wires, None, like=INTERFACE_TO_LIKE[interface])
-        if state is None
-        else state
-    )
-    return qml.tape.QuantumScript(
-        [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
-        + circuit.operations,
-        circuit.measurements,
-        shots=circuit.shots,
-    )
+
+    interface = get_canonical_interface_name(interface)
+    state = create_initial_state(wires, None, like=interface.get_like()) if state is None else state
+    new_ops = [
+        qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)
+    ] + circuit.operations
+    return circuit.copy(operations=new_ops)
 
 
 def insert_mcms(circuit, results, mid_measurements):
