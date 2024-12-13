@@ -138,7 +138,7 @@ def christiansen_bosonic(one, modes=None, modals=None, two=None, three=None, ord
 
 
 def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1e-12):
-    r"""Compute Christiansen vibrational Hamiltonian.
+    r"""Return Christiansen vibrational Hamiltonian.
 
     The construction of the Hamiltonian is based on Eqs. 19-21 of
     `J. Chem. Theory Comput. 2023, 19, 24, 9329–9343 <https://pubs.acs.org/doi/10.1021/acs.jctc.3c00902?ref=PDF>`_.
