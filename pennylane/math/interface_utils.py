@@ -51,7 +51,7 @@ INTERFACE_MAP = {
     None: Interface.NUMPY,
     "auto": Interface.AUTO,
     "autograd": Interface.AUTOGRAD,
-    "numpy": Interface.NUMPY,
+    "numpy": Interface.AUTOGRAD,
     "scipy": Interface.NUMPY,
     "jax": Interface.JAX,
     "jax-jit": Interface.JAX_JIT,
