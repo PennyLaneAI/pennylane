@@ -492,18 +492,17 @@ class QSVT(Operation):
 
         The QSVT operation can be used with different block encoding methods, depending on the
         initial operator for which the singular value transformation is applied and the desired
-        backend device. Examples are provided in the following.
+        backend device. Examples are provided below.
 
-        If the initial operator for which we apply the singular value transformation is a matrix,
-        it can be block-encoded with either :class:`~.BlockEncode` or :class:`~.FABLE`
+        If we want to transform the singular values of a matrix,
+        the matrix can be block-encoded with either the :class:`~.BlockEncode` or :class:`~.FABLE`
         operations. Note that :class:`~.BlockEncode` is more efficient on simulator devices but
         it cannot be used with hardware backends because it currently has no gate decomposition.
         The :class:`~.FABLE` operation is less efficient on simulator devices but is hardware
         compatible.
 
         The following example applies the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to an
-        arbitrary hermitian matrix using :class:`~.BlockEncode` for block encoding. Note that we
-        can simply use :class:`~.FABLE` for block encoding as well.
+        arbitrary hermitian matrix using :class:`~.BlockEncode` for block encoding.
 
         .. code-block::
 
@@ -530,10 +529,10 @@ class QSVT(Operation):
             array([-0.194205  +0.66654551j, -0.097905  +0.35831418j,
                     0.3319832 -0.51047262j, -0.09551437+0.01043668j])
 
-        If the initial operator for which we apply the singular value transformation is a linear
+        If we want to transform the singular values of a linear
         combination of unitaries, e.g., a Hamiltonian, it can be block-encoded with operations
         such as :class:`~.PrepSelPrep` or :class:`~.Qubitization`. Note that both of these operations
-        have a proper gate decomposition. The following example applies the polynomial
+        have a gate decomposition and can be implemented on hardware. The following example applies the polynomial
         :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to the Hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`,
         block-encoded with :class:`~.PrepSelPrep`.
 
