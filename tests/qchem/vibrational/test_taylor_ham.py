@@ -18,7 +18,7 @@ import sys
 import numpy as np
 import pytest
 
-from pennylane.bose import BoseWord
+from pennylane.bose import BoseWord, binary_mapping, unary_mapping
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational.taylor_ham import (
     _fit_onebody,
@@ -58,7 +58,6 @@ for i, ele in enumerate(reference_taylor_bosonic_ops_non_loc):
     reference_taylor_bosonic_ops_non_loc[i] = BoseWord(ele)
 
 h5py = pytest.importorskip("h5py")
-
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 with h5py.File(os.path.join(ref_dir, "H2S_3D_PES.hdf5"), "r") as f:
@@ -78,6 +77,17 @@ with h5py.File(os.path.join(ref_dir, "H2S_3D_PES.hdf5"), "r") as f:
         dipole_data=[dipole_onemode, dipole_twomode, dipole_threemode],
         localized=f["localized"][()],
         dipole_level=f["dipole_level"][()],
+    )
+
+    pes_object_2D = VibrationalPES(
+        freqs=np.array(f["freqs"][()]),
+        grid=np.array(f["grid"][()]),
+        uloc=np.array(f["uloc"][()]),
+        gauss_weights=np.array(f["gauss_weights"][()]),
+        pes_data=[pes_onemode, pes_twomode],
+        dipole_data=[dipole_onemode, dipole_twomode],
+        localized=f["localized"][()],
+        dipole_level=2,
     )
 
 with h5py.File(os.path.join(ref_dir, "H2S_non_loc.hdf5"), "r") as f:
@@ -144,10 +154,10 @@ def test_taylor_anharmonic():
         (BoseWord({(0, 2): "+", (1, 2): "+", (2, 2): "-", (3, 2): "-"}), 0.0002767067264999999),
         (BoseWord({(0, 2): "+", (1, 2): "-", (2, 2): "-", (3, 2): "-"}), 0.00018447115099999996),
         (BoseWord({(0, 2): "-", (1, 2): "-", (2, 2): "-", (3, 2): "-"}), 4.611778774999999e-05),
-        (BoseWord({(0, 0): "+", (1, 1): "+"}), -3.1160963125e-05),
-        (BoseWord({(0, 1): "+", (1, 0): "-"}), -3.1160963125e-05),
-        (BoseWord({(0, 0): "+", (1, 1): "-"}), -3.1160963125e-05),
-        (BoseWord({(0, 0): "-", (1, 1): "-"}), -3.1160963125e-05),
+        (BoseWord({(0, 0): "+", (1, 1): "+"}), -3.5561320399999996e-05),
+        (BoseWord({(0, 1): "+", (1, 0): "-"}), -3.5561320399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 1): "-"}), -3.5561320399999996e-05),
+        (BoseWord({(0, 0): "-", (1, 1): "-"}), -3.5561320399999996e-05),
         (BoseWord({(0, 0): "+", (1, 1): "+", (2, 1): "+"}), 4.461690665313647e-05),
         (BoseWord({(0, 1): "+", (1, 1): "+", (2, 0): "-"}), 4.461690665313647e-05),
         (BoseWord({(0, 0): "+", (1, 1): "+", (2, 1): "-"}), 8.923381330627295e-05),
@@ -185,10 +195,10 @@ def test_taylor_anharmonic():
         (BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "-", (3, 1): "-"}), 1.9350550949999994e-05),
         (BoseWord({(0, 0): "+", (1, 0): "-", (2, 0): "-", (3, 1): "-"}), 1.9350550949999994e-05),
         (BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "-", (3, 1): "-"}), 6.450183649999998e-06),
-        (BoseWord({(0, 0): "+", (1, 2): "+"}), -3.1161011174999994e-05),
-        (BoseWord({(0, 2): "+", (1, 0): "-"}), -3.1161011174999994e-05),
-        (BoseWord({(0, 0): "+", (1, 2): "-"}), -3.1161011174999994e-05),
-        (BoseWord({(0, 0): "-", (1, 2): "-"}), -3.1161011174999994e-05),
+        (BoseWord({(0, 0): "+", (1, 2): "+"}), -3.556136862499999e-05),
+        (BoseWord({(0, 2): "+", (1, 0): "-"}), -3.556136862499999e-05),
+        (BoseWord({(0, 0): "+", (1, 2): "-"}), -3.556136862499999e-05),
+        (BoseWord({(0, 0): "-", (1, 2): "-"}), -3.556136862499999e-05),
         (BoseWord({(0, 0): "+", (1, 2): "+", (2, 2): "+"}), 4.461692008816532e-05),
         (BoseWord({(0, 2): "+", (1, 2): "+", (2, 0): "-"}), 4.461692008816532e-05),
         (BoseWord({(0, 0): "+", (1, 2): "+", (2, 2): "-"}), 8.923384017633064e-05),
@@ -226,10 +236,10 @@ def test_taylor_anharmonic():
         (BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "-", (3, 2): "-"}), 1.935055372499999e-05),
         (BoseWord({(0, 0): "+", (1, 0): "-", (2, 0): "-", (3, 2): "-"}), 1.935055372499999e-05),
         (BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "-", (3, 2): "-"}), 6.450184574999998e-06),
-        (BoseWord({(0, 1): "+", (1, 2): "+"}), -6.646252578249999e-05),
-        (BoseWord({(0, 2): "+", (1, 1): "-"}), -6.646252578249999e-05),
-        (BoseWord({(0, 1): "+", (1, 2): "-"}), -6.646252578249999e-05),
-        (BoseWord({(0, 1): "-", (1, 2): "-"}), -6.646252578249999e-05),
+        (BoseWord({(0, 1): "+", (1, 2): "+"}), -5.6340588382499995e-05),
+        (BoseWord({(0, 2): "+", (1, 1): "-"}), -5.6340588382499995e-05),
+        (BoseWord({(0, 1): "+", (1, 2): "-"}), -5.6340588382499995e-05),
+        (BoseWord({(0, 1): "-", (1, 2): "-"}), -5.6340588382499995e-05),
         (BoseWord({(0, 1): "+", (1, 2): "+", (2, 2): "+"}), 4.012677010732053e-06),
         (BoseWord({(0, 2): "+", (1, 2): "+", (2, 1): "-"}), 4.012677010732053e-06),
         (BoseWord({(0, 1): "+", (1, 2): "+", (2, 2): "-"}), 8.025354021464107e-06),
@@ -267,9 +277,52 @@ def test_taylor_anharmonic():
         (BoseWord({(0, 1): "+", (1, 1): "+", (2, 1): "-", (3, 2): "-"}), -1.4138961599999995e-06),
         (BoseWord({(0, 1): "+", (1, 1): "-", (2, 1): "-", (3, 2): "-"}), -1.4138961599999995e-06),
         (BoseWord({(0, 1): "-", (1, 1): "-", (2, 1): "-", (3, 2): "-"}), -4.7129871999999985e-07),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 2): "+"}), -6.777272651746377e-05),
+        (BoseWord({(0, 1): "+", (1, 2): "+", (2, 0): "-"}), -6.777272651746377e-05),
+        (BoseWord({(0, 0): "+", (1, 2): "+", (2, 1): "-"}), -6.777272651746377e-05),
+        (BoseWord({(0, 2): "+", (1, 0): "-", (2, 1): "-"}), -6.777272651746377e-05),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 2): "-"}), -6.777272651746377e-05),
+        (BoseWord({(0, 1): "+", (1, 0): "-", (2, 2): "-"}), -6.777272651746377e-05),
+        (BoseWord({(0, 0): "+", (1, 1): "-", (2, 2): "-"}), -6.777272651746377e-05),
+        (BoseWord({(0, 0): "-", (1, 1): "-", (2, 2): "-"}), -6.777272651746377e-05),
+        (BoseWord({(0, 0): "+", (1, 0): "+", (2, 1): "+", (3, 2): "+"}), 1.0121937399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 2): "+", (3, 0): "-"}), 2.0243874799999993e-05),
+        (BoseWord({(0, 1): "+", (1, 2): "+", (2, 0): "-", (3, 0): "-"}), 1.0121937399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 0): "+", (2, 2): "+", (3, 1): "-"}), 1.0121937399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 2): "+", (2, 0): "-", (3, 1): "-"}), 2.0243874799999993e-05),
+        (BoseWord({(0, 2): "+", (1, 0): "-", (2, 0): "-", (3, 1): "-"}), 1.0121937399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 0): "+", (2, 1): "+", (3, 2): "-"}), 1.0121937399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 0): "-", (3, 2): "-"}), 2.0243874799999993e-05),
+        (BoseWord({(0, 1): "+", (1, 0): "-", (2, 0): "-", (3, 2): "-"}), 1.0121937399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 0): "+", (2, 1): "-", (3, 2): "-"}), 1.0121937399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 0): "-", (2, 1): "-", (3, 2): "-"}), 2.0243874799999993e-05),
+        (BoseWord({(0, 0): "-", (1, 0): "-", (2, 1): "-", (3, 2): "-"}), 1.0121937399999996e-05),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 1): "+", (3, 2): "+"}), -4.400357449999998e-06),
+        (BoseWord({(0, 1): "+", (1, 1): "+", (2, 2): "+", (3, 0): "-"}), -4.400357449999998e-06),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 2): "+", (3, 1): "-"}), -8.800714899999996e-06),
+        (BoseWord({(0, 1): "+", (1, 2): "+", (2, 0): "-", (3, 1): "-"}), -8.800714899999996e-06),
+        (BoseWord({(0, 0): "+", (1, 2): "+", (2, 1): "-", (3, 1): "-"}), -4.400357449999998e-06),
+        (BoseWord({(0, 2): "+", (1, 0): "-", (2, 1): "-", (3, 1): "-"}), -4.400357449999998e-06),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 1): "+", (3, 2): "-"}), -4.400357449999998e-06),
+        (BoseWord({(0, 1): "+", (1, 1): "+", (2, 0): "-", (3, 2): "-"}), -4.400357449999998e-06),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 1): "-", (3, 2): "-"}), -8.800714899999996e-06),
+        (BoseWord({(0, 1): "+", (1, 0): "-", (2, 1): "-", (3, 2): "-"}), -8.800714899999996e-06),
+        (BoseWord({(0, 0): "+", (1, 1): "-", (2, 1): "-", (3, 2): "-"}), -4.400357449999998e-06),
+        (BoseWord({(0, 0): "-", (1, 1): "-", (2, 1): "-", (3, 2): "-"}), -4.400357449999998e-06),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 2): "+", (3, 2): "+"}), -4.400357274999999e-06),
+        (BoseWord({(0, 1): "+", (1, 2): "+", (2, 2): "+", (3, 0): "-"}), -4.400357274999999e-06),
+        (BoseWord({(0, 0): "+", (1, 2): "+", (2, 2): "+", (3, 1): "-"}), -4.400357274999999e-06),
+        (BoseWord({(0, 2): "+", (1, 2): "+", (2, 0): "-", (3, 1): "-"}), -4.400357274999999e-06),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 2): "+", (3, 2): "-"}), -8.800714549999997e-06),
+        (BoseWord({(0, 1): "+", (1, 2): "+", (2, 0): "-", (3, 2): "-"}), -8.800714549999997e-06),
+        (BoseWord({(0, 0): "+", (1, 2): "+", (2, 1): "-", (3, 2): "-"}), -8.800714549999997e-06),
+        (BoseWord({(0, 2): "+", (1, 0): "-", (2, 1): "-", (3, 2): "-"}), -8.800714549999997e-06),
+        (BoseWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 2): "-"}), -4.400357274999999e-06),
+        (BoseWord({(0, 1): "+", (1, 0): "-", (2, 2): "-", (3, 2): "-"}), -4.400357274999999e-06),
+        (BoseWord({(0, 0): "+", (1, 1): "-", (2, 2): "-", (3, 2): "-"}), -4.400357274999999e-06),
+        (BoseWord({(0, 0): "-", (1, 1): "-", (2, 2): "-", (3, 2): "-"}), -4.400357274999999e-06),
     ]
-    anh_ham = _taylor_anharmonic([taylor_1D, taylor_2D])
-
+    anh_ham = _taylor_anharmonic([taylor_1D, taylor_2D, taylor_3D])
     assert expected_anh_ham == list(anh_ham.items())
 
 
@@ -332,7 +385,7 @@ def test_taylor_kinetic():
         "taylor_1D_coeffs",
         "taylor_2D_coeffs",
         "ref_freqs",
-        "is_loc",
+        "is_local",
         "ref_uloc",
         "reference_ops",
         "reference_coeffs",
@@ -359,13 +412,19 @@ def test_taylor_kinetic():
     ],
 )
 def test_taylor_bosonic(
-    taylor_1D_coeffs, taylor_2D_coeffs, ref_freqs, is_loc, ref_uloc, reference_ops, reference_coeffs
+    taylor_1D_coeffs,
+    taylor_2D_coeffs,
+    ref_freqs,
+    is_local,
+    ref_uloc,
+    reference_ops,
+    reference_coeffs,
 ):
     """Test that taylor_bosonic produces the correct bosonic hamiltonian"""
     taylor_bos = taylor_bosonic(
-        [taylor_1D_coeffs, taylor_2D_coeffs], ref_freqs, is_loc=is_loc, uloc=ref_uloc
+        [taylor_1D_coeffs, taylor_2D_coeffs], ref_freqs, is_local=is_local, uloc=ref_uloc
     )
-    if is_loc:
+    if is_local:
         sorted_arr = sorted(taylor_bos.items(), key=lambda x: x[1].real)
     else:
         sorted_arr = sorted(taylor_bos.items(), key=lambda x: abs(x[1].real))
@@ -377,17 +436,30 @@ def test_taylor_bosonic(
     assert all(op in reference_ops for op in sorted_ops_arr)
 
 
+@pytest.mark.parametrize(("mapping"), ("binary", "unary"))
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
-def test_taylor_hamiltonian():
+def test_taylor_hamiltonian(mapping):
     """Test that taylor_hamiltonian produces the correct taylor hamiltonian"""
-    taylor_ham = taylor_hamiltonian(pes_object_3D, 4, 2)
-    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D, taylor_3D], freqs, uloc=uloc)
+    taylor_ham = taylor_hamiltonian(pes_object_2D, 4, 2, mapping=mapping)
+    taylor_bos = taylor_bosonic([taylor_1D, taylor_2D], freqs, uloc=uloc)
 
-    assert len(taylor_ham) == len(taylor_bos)
+    if mapping == "binary":
+        expected_ham = binary_mapping(bose_operator=taylor_bos)
+    elif mapping == "unary":
+        expected_ham = unary_mapping(bose_operator=taylor_bos)
+
+    assert len(expected_ham) == len(taylor_ham)
     assert all(
-        np.allclose(abs(taylor_bos.get(key)), abs(value), atol=1e-5)
-        for key, value in taylor_ham.items()
+        np.allclose(abs(expected_ham.pauli_rep[term]), abs(coeff), atol=1e-8)
+        for term, coeff in taylor_ham.pauli_rep.items()
     )
+
+
+@pytest.mark.usefixtures("skip_if_no_sklearn_support")
+def test_taylor_hamiltonian_error():
+    """Test that taylor_hamiltonian gives the correct error when given an unsupported mapping."""
+    with pytest.raises(ValueError, match="Specified mapping"):
+        taylor_hamiltonian(pes_object_2D, 4, 2, mapping="garbage")
 
 
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")

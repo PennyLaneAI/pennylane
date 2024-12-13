@@ -151,7 +151,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         else:
             operations.append(op)
 
-    new_tape = type(tape)(operations, measurements=tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
