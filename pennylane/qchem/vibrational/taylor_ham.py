@@ -350,9 +350,9 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
 
     Returns:
         tuple: a tuple containing:
-            - list(floats): coefficients for x-displacements
-            - list(floats): coefficients for y-displacements
-            - list(floats): coefficients for z-displacements
+            - list(array(floats)): coefficients for x-displacements
+            - list(array(floats)): coefficients for y-displacements
+            - list(array(floats)): coefficients for z-displacements
 
     **Example**
 
@@ -633,12 +633,14 @@ def taylor_hamiltonian(
 ):
     """Return Taylor vibrational Hamiltonian.
 
-    The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_. The Hamiltonian is then converted to a qubit operator with a selected ``mapping`` method.
+    The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_. 
+    The Hamiltonian is then converted to a qubit operator with a selected ``mapping`` method.
+    
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
         min_deg (int): minimum degree of Taylor form polynomial
-        mapping (str): method used to map to qubit basis. Input values can be ``"binary"``
+        mapping (str): Method used to map to qubit basis. Input values can be ``"binary"``
             or ``"unary"``. Default is ``"binary"``.
         n_states(int): maximum number of allowed bosonic states
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
