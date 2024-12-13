@@ -190,7 +190,7 @@ function in this scenario, we include a function that simply returns the first a
     def remove_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
         operations = filter(lambda op: op.name != "RX", tape.operations)
-        new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+        new_tape = tape.copy(operations=operations)
 
         def null_postprocessing(results):
             return results[0]
@@ -218,7 +218,7 @@ function into a quantum transform.
     def sum_circuit_and_adjoint(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
         operations = [qml.adjoint(op) for op in tape.operation]
-        new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+        new_tape = tape.copy(operations=operations)
 
         def sum_postprocessing(results):
             return qml.sum(results)
