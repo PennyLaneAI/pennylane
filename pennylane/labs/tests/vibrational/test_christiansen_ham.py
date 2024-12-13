@@ -43,11 +43,7 @@ from pennylane.labs.tests.vibrational.test_ref_files.cform_ops_data import (
 )
 
 # Path is pennylane/labs/tests/vibrational/test_ref_files/H2S.hdf5
-cform_file = (
-    Path(__file__).resolve().parent
-    / "test_ref_files"
-    / "H2S.hdf5"
-)
+cform_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S.hdf5"
 
 # Path is pennylane/tests/qchem/vibrational/test_ref_files/H2S_3D_PES.hdf5
 pes_file = (
