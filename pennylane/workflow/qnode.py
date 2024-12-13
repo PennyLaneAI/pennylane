@@ -33,8 +33,7 @@ from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from ._capture_qnode import capture_qnode
-from ._setup_transform_program import _setup_transform_program
-from .resolution import SupportedDiffMethods, _resolve_execution_config
+from .resolution import SupportedDiffMethods
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -865,52 +864,12 @@ class QNode:
 
         _validate_qfunc_output(self._qfunc_output, self._tape.measurements)
 
-    def _execution_component(self, args: tuple, kwargs: dict) -> qml.typing.Result:
-        """Construct the transform program and execute the tapes. Helper function for ``__call__``
-
-        Args:
-            args (tuple): the arguments the QNode is called with
-            kwargs (dict): the keyword arguments the QNode is called with
-
-        Returns:
-            Result
-
-        """
-
-        # Calculate the classical jacobians if necessary
-        self._transform_program.set_classical_component(self, args, kwargs)
-
-        assert self._tape
-        res = qml.execute(
-            (self._tape,),
-            device=self.device,
-            diff_method=self.diff_method,
-            interface=self.interface,
-            transform_program=self.transform_program,
-            gradient_kwargs=self.gradient_kwargs,
-            **self.execute_kwargs,
-        )
-        res = res[0]
-
-        # convert result to the interface in case the qfunc has no parameters
-
-        if (
-            len(self._tape.get_parameters(trainable_only=False)) == 0
-            and not self.transform_program.is_informative
-        ):
-            res = _convert_to_interface(res, qml.math.get_canonical_interface_name(self.interface))
-
-        return _to_qfunc_output_type(
-            res, self._qfunc_output, self._tape.shots.has_partitioned_shots
-        )
-
     def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
 
         # construct the tape
         self.construct(args, kwargs)
 
-        old_interface = self.interface
-        if old_interface == "auto":
+        if self.interface == "auto":
             interface = (
                 Interface.JAX
                 if qml.capture.enabled()
@@ -920,15 +879,34 @@ class QNode:
                 interface = get_canonical_interface_name(interface)
             except ValueError:
                 interface = Interface.NUMPY
-            self._interface = interface
+        else:
+            interface = self.interface
+        # Calculate the classical jacobians if necessary
+        self._transform_program.set_classical_component(self, args, kwargs)
 
-        try:
-            res = self._execution_component(args, kwargs)
-        finally:
-            if old_interface == "auto":
-                self._interface = Interface.AUTO
+        assert self._tape
+        res = qml.execute(
+            (self._tape,),
+            device=self.device,
+            diff_method=self.diff_method,
+            interface=interface,
+            transform_program=self._transform_program,
+            gradient_kwargs=self.gradient_kwargs,
+            **self.execute_kwargs,
+        )
+        res = res[0]
 
-        return res
+        # convert result to the interface in case the qfunc has no parameters
+
+        if (
+            len(self._tape.get_parameters(trainable_only=False)) == 0
+            and not self._transform_program.is_informative
+        ):
+            res = _convert_to_interface(res, qml.math.get_canonical_interface_name(self.interface))
+
+        return _to_qfunc_output_type(
+            res, self._qfunc_output, self._tape.shots.has_partitioned_shots
+        )
 
     def __call__(self, *args, **kwargs) -> qml.typing.Result:
         if qml.capture.enabled():
