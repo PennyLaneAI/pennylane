@@ -25,6 +25,7 @@ from scipy.linalg import block_diag
 import pennylane as qml
 from pennylane.operation import AnyWires, Wires
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
+from pennylane.wires import WiresLike
 
 from .controlled import ControlledOp
 from .controlled_decompositions import decompose_mcx
@@ -119,22 +120,64 @@ class ControlledQubitUnitary(ControlledOp):
             data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
         )
 
+    # pylint: disable=arguments-differ, too-many-arguments, unused-argument
+    @classmethod
+    def _primitive_bind_call(
+        cls,
+        base,
+        control_wires: WiresLike,
+        wires: WiresLike = (),
+        control_values=None,
+        unitary_check=False,
+        work_wires: WiresLike = (),
+    ):
+        wires = () if wires is None else wires
+        work_wires = () if work_wires is None else work_wires
+        wires = Wires(wires)
+        work_wires = Wires(work_wires)
+
+        if getattr(base, "wires", False) and len(wires) != 0:
+            warnings.warn(
+                "base operator already has wires; values specified through wires kwarg will be ignored."
+            )
+            wires = Wires(())
+
+        all_wires = control_wires + wires
+        return cls._primitive.bind(
+            base, all_wires, control_values=control_values, work_wires=work_wires
+        )
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         base,
-        control_wires,
-        wires=None,
+        control_wires: WiresLike,
+        wires: WiresLike = (),
         control_values=None,
         unitary_check=False,
-        work_wires=None,
+        work_wires: WiresLike = (),
     ):
-        if getattr(base, "wires", False) and wires is not None:
+        wires = () if wires is None else wires
+        work_wires = () if work_wires is None else work_wires
+        wires = Wires(wires)
+        work_wires = Wires(work_wires)
+
+        if getattr(base, "wires", False) and len(wires) != 0:
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
+            wires = Wires(())
 
         if isinstance(base, Iterable):
+            if len(wires) == 0:
+                if len(Wires(control_wires)) > 1:
+                    num_base_wires = int(qml.math.log2(qml.math.shape(base)[-1]))
+                    wires = Wires(control_wires)[-num_base_wires:]
+                    control_wires = Wires(control_wires)[:-num_base_wires]
+                else:
+                    raise TypeError(
+                        "Must specify a set of wires. None is not a valid `wires` label."
+                    )
             # We use type.__call__ instead of calling the class directly so that we don't bind the
             # operator primitive when new program capture is enabled
             base = type.__call__(qml.QubitUnitary, base, wires=wires, unitary_check=unitary_check)

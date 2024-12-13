@@ -88,7 +88,7 @@ class TestControlledQubitUnitary:
         with pytest.raises(ValueError, match=r"Input unitary must be of shape \(2, 2\)"):
             qml.ControlledQubitUnitary(np.eye(4), control_wires=[0, 1], wires=2).matrix()
 
-    @pytest.mark.parametrize("target_wire", range(3))
+    @pytest.mark.parametrize("target_wire", list(range(3)))
     def test_toffoli(self, target_wire):
         """Test if ControlledQubitUnitary acts like a Toffoli gate when the input unitary is a
         single-qubit X. This test allows the target wire to be any of the three wires."""
