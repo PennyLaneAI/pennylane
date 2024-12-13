@@ -378,7 +378,6 @@ def _cform_threemode(pes, n_states):
 
     local_ham_cform_threebody = np.zeros(len(all_mode_combos) * chunksize)
     for nn, (ii1, ii2, ii3) in enumerate(all_mode_combos):
-        ii1, ii2, ii3 = int(ii1), int(ii2), int(ii3)
         if ii2 >= ii1 or ii3 >= ii2:
             continue
         for mm, (k1, k2, k3, h1, h2, h3) in enumerate(boscombos_on_rank):
