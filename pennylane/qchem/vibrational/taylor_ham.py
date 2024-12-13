@@ -633,6 +633,7 @@ def taylor_hamiltonian(
 ):
     """Return Taylor vibrational Hamiltonian.
 
+    The construction of the Hamiltonian is based on Eqs. 4-7 of `arXiv:1703.09313 <https://arxiv.org/abs/1703.09313>`_. The Hamiltonian is then converted to a qubit operator with a selected ``mapping`` method.
     Args:
         pes (VibrationalPES): object containing the vibrational potential energy surface data
         max_deg (int): maximum degree of Taylor form polynomial
