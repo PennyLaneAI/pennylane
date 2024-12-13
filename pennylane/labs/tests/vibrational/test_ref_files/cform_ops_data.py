@@ -1,7 +1,7 @@
 """File that contains the Christiansen Bosonic Operator data generated via functions in vibrant."""
 
-# fmt: off
 # pylint: skip-file
+# fmt: off
 
 # Reference generated from vibrant
 # mol = H2S
