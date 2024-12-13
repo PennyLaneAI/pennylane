@@ -349,7 +349,7 @@ such as `shots`, `rng` and `prng_key`.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
 * Added support to build a vibrational Hamiltonian in the Christiansen form.
-  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Breaking changes 💔</h3>
 
