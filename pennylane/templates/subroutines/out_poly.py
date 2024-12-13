@@ -159,7 +159,7 @@ class OutPoly(Operation):
                              to :math:`2^{n}`, where :math:`n` is the number of qubits in the output register.
         work_wires (Union[Wires, Sequence[int]], optional): The auxiliary wires to use for performing the polynomial operation. The
                     work wires are not needed if :math:`mod=2^{\text{length(output_wires)}}`, otherwise two work wires
-                    should be provided. Default is ``None``.
+                    should be provided. Default is empty set.
 
     Raises:
         ValueError: If `mod` is not :math:`2^{\text{length(output_wires)}}` and insufficient number of work wires are provided.
