@@ -643,10 +643,13 @@ def taylor_hamiltonian(
         mapping (str): Method used to map to qubit basis. Input values can be ``"binary"``
             or ``"unary"``. Default is ``"binary"``.
         n_states(int): maximum number of allowed bosonic states
+<<<<<<< HEAD
         wire_map (dict): A dictionary defining how to map the states of the Bose operator to qubit
             wires. If ``None``, integers used to label the bosonic states will be used as wire labels.
             Defaults to ``None``.
         tol (float): tolerance for discarding the imaginary part of the coefficients
+=======
+>>>>>>> 1c6de335d (address comments)
 
     Returns:
         Operator: the Taylor Hamiltonian
