@@ -391,10 +391,10 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
     `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
 
     Args:
-        h_integrals (list[TensorLike[float]]): List of Hamiltonian integrals for up to 3-coupled vibrational modes.
-            Look at the `Usage Details` for more details on dimensions of tensors.
-        d_integrals (list[TensorLike[float]]): List of dipole integrals for up to 3-coupled vibrational modes.
-            Look at the `Usage Details` for more details on dimensions of tensors.
+        h_integrals (list[TensorLike[float]]): list of Hamiltonian integrals for up to 3 coupled vibrational modes.
+            Look at the Usage Details for more information.
+        d_integrals (list[TensorLike[float]]): list of dipole integrals for up to 3 coupled vibrational modes.
+            Look at the Usage Details for more information.
         modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
             Default value is the maximum number of modals.
         cutoff (float): threshold value for including matrix elements into operator
