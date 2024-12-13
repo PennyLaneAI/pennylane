@@ -17,11 +17,8 @@ import warnings
 from datetime import datetime
 from functools import partial
 
-import jax
-import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
-import optax
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -29,7 +26,15 @@ from pennylane.pauli import PauliSentence
 
 from .cartan_subalgebra import adjvec_to_op, op_to_adjvec
 
-jax.config.update("jax_enable_x64", True)
+has_jax = True
+try:
+    import jax
+    import jax.numpy as jnp
+    import optax
+
+    jax.config.update("jax_enable_x64", True)
+except ImportError:
+    has_jax = False
 
 
 def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=False):
@@ -176,6 +181,12 @@ def variational_kak(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=Fa
 
 
     """
+
+    if not has_jax:  # pragma: no cover
+        raise ImportError(
+            "jax and optax are required for variational_kak. You can install them with pip install jax jaxlib optax."
+        )  # pragma: no cover
+
     if opt_kwargs is None:
         opt_kwargs = {}
     if not isinstance(H, PauliSentence):
@@ -312,6 +323,12 @@ def run_opt(
     interrupt_tol=None,
 ):
     """Boilerplate jax optimization"""
+
+    if not has_jax:  # pragma: no cover
+        raise ImportError(
+            "jax and optax are required for run_opt. You can install them with pip install jax jaxlib optax."
+        )  # pragma: no cover
+
     optimizer = optax.adam(learning_rate=lr, b1=b1, b2=b2)
     opt_state = optimizer.init(theta)
 
