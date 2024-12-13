@@ -35,7 +35,7 @@ class TestWires:
     """Tests for the ``Wires`` class."""
 
     def test_error_if_wires_none(self):
-        """Tests that a ValueError is raised if None is given as wires."""
+        """Tests that a TypeError is raised if None is given as wires."""
         with pytest.raises(TypeError, match="Must specify a set of wires."):
             Wires(None)
 
