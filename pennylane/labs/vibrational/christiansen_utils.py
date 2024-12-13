@@ -76,10 +76,7 @@ def _cform_twomode_kinetic(pes, n_states):
     """
     nmodes = len(pes.freqs)
 
-    all_mode_combos = []
-    for aa in range(nmodes):
-        for bb in range(nmodes):
-            all_mode_combos.append([aa, bb])
+    all_mode_combos = [[aa, bb] for aa in range(nmodes) for bb in range(nmodes)]
     all_bos_combos = list(
         itertools.product(range(n_states), range(n_states), range(n_states), range(n_states))
     )
