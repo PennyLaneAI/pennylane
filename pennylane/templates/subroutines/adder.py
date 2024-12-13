@@ -14,6 +14,7 @@
 """
 Contains the Adder template.
 """
+import warnings
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -111,28 +112,33 @@ class Adder(Operation):
 
         if mod is None:
             mod = 2 ** len(x_wires)
-        elif mod != 2 ** len(x_wires) and num_works_wires != 2:
-            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
-        if not isinstance(k, int) or not isinstance(mod, int):
-            raise ValueError("Both k and mod must be integers")
         if num_works_wires != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
-        if mod > 2 ** len(x_wires):
+
+        if not isinstance(k, int) or not isinstance(mod, int):
+            raise ValueError("Both k and mod must be integers")
+
+        if mod != 2 ** len(x_wires) and num_works_wires != 2:
+            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
+
+        if mod == 2 ** len(x_wires) and num_works_wires != 0:
+            warnings.warn(
+                f"mod is 2^{len(x_wires)}, no work wires are required; values specified through work_wires kwarg will be ignored.",
+                UserWarning,
+            )
+            work_wires = qml.wires.Wires(())
+        elif mod > 2 ** len(x_wires):
             raise ValueError(
                 "Adder must have enough x_wires to represent mod. The maximum mod "
                 f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
             )
 
-        all_wires = (
-            qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
-            if work_wires
-            else qml.wires.Wires(x_wires)
-        )
+        all_wires = x_wires + work_wires
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+        self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["x_wires"] = x_wires
 
         super().__init__(wires=all_wires, id=id)

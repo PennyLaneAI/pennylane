@@ -37,12 +37,12 @@ class TestAdder:
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "x"),
         [
-            (6, [0, 1, 2], 8, [4, 5], 1),
+            (6, [0, 1, 2], 8, [], 1),
             (
                 6,
                 ["a", "b", "c"],
                 8,
-                ["d", "e"],
+                [],
                 2,
             ),
             (
@@ -98,7 +98,7 @@ class TestAdder:
                 6,
                 [0, 1, 2, 3],
                 None,
-                [4, 5],
+                [],
                 3,
             ),
         ],
@@ -149,13 +149,17 @@ class TestAdder:
         with pytest.raises(ValueError, match=msg_match):
             qml.Adder(k, x_wires, mod, work_wires)
 
-    @pytest.mark.parametrize("work_wires", [None, [3], [3, 4, 5]])
+    @pytest.mark.parametrize("work_wires", [None, [], [3], [3, 4, 5]])
     def test_validation_of_num_work_wires(self, work_wires):
         """Test that when mod is not 2**len(x_wires), validation confirms two
         work wires are present, while any work wires are accepted for mod=2**len(x_wires)"""
 
-        # if mod=2**len(x_wires), anything goes
-        qml.Adder(1, [0, 1, 2], mod=8, work_wires=work_wires)
+        # if mod=2**len(x_wires), no work wires are required.
+        if len(work_wires or ()) != 0:
+            with pytest.warns(UserWarning, match="no work wires are required"):
+                qml.Adder(1, [0, 1, 2], mod=8, work_wires=work_wires)
+        else:
+            qml.Adder(1, [0, 1, 2], mod=8, work_wires=work_wires)
 
         with pytest.raises(ValueError, match="two work wires should be provided"):
             qml.Adder(1, [0, 1, 2], mod=9, work_wires=work_wires)
