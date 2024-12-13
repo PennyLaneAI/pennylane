@@ -354,6 +354,30 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
             - list(floats): coefficients for x-displacements
             - list(floats): coefficients for y-displacements
             - list(floats): coefficients for z-displacements
+
+    **Example**
+
+    from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+
+    >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
+    >>> pes_twomode = np.zeros((1, 1, 9, 9))
+    >>> dipole_onemode = np.zeros((1, 9, 3))
+    >>> gauss_weights=np.array([3.96e-05, 4.94e-03, 8.85e-02,
+                        4.33e-01, 7.20e-01, 4.33e-01,
+                        8.85e-02, 4.94e-03, 3.96e-05])
+    >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
+    >>> pes_object = VibrationalPES(
+            freqs=np.array([0.025]),
+            grid=grid
+            uloc=np.array([[1.0]]),
+            gauss_weights=gauss_weights,
+            pes_data=[pes_onemode, pes_twomode],
+            dipole_data=[dipole_onemode],
+            localized=True,
+            dipole_level=1,
+        )
+    >>> qml.qchem.taylor_dipole_coeffs(pes_object, 4, 2)
+    ([array([[0., 0., 0.]])], [array([[0., 0., 0.]])], [array([[0., 0., 0.]])])
     """
     coeffs_x_1D, predicted_x_1D = _fit_onebody(
         pes.dipole_onemode[:, :, 0], max_deg, min_deg=min_deg
@@ -566,6 +590,44 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
     Returns:
         BoseSentence: Taylor bosonic hamiltonian
+
+    **Example**
+
+    from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+
+    >>> one_mode, two_mode = [np.array([[-0.00088528, -0.00361425,  0.00068143]]), np.array([[[0., 0., 0., 0., 0., 0.]]])]
+    >>> freqs=np.array([0.025])
+    >>> uloc=np.array([[1.0]])
+    >>> qml.qchem.taylor_bosonic(coeffs=[one_mode, two_mode], freqs=freqs, uloc=uloc)
+        BoseSentence(
+            {
+                BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "+"}): -0.0012778303419517393,
+                BoseWord({(0, 0): "+", (1, 0): "+", (2, 0): "-"}): -0.0038334910258552178,
+                BoseWord({(0, 0): "+"}): -0.0038334910258552178,
+                BoseWord({(0, 0): "+", (1, 0): "-", (2, 0): "-"}): -0.0038334910258552178,
+                BoseWord({(0, 0): "-"}): -0.0038334910258552178,
+                BoseWord({(0, 0): "-", (1, 0): "-", (2, 0): "-"}): -0.0012778303419517393,
+                BoseWord({(0, 0): "+", (1, 0): "+"}): (0.0005795050000000001 + 0j),
+                BoseWord({(0, 0): "+", (1, 0): "-"}): (0.026159009999999996 + 0j),
+                BoseWord({}): (0.012568432499999997 + 0j),
+                BoseWord({(0, 0): "-", (1, 0): "-"}): (0.0005795050000000001 + 0j),
+                BoseWord(
+                    {(0, 0): "+", (1, 0): "+", (2, 0): "+", (3, 0): "+"}
+                ): 0.00017035749999999995,
+                BoseWord(
+                    {(0, 0): "+", (1, 0): "+", (2, 0): "+", (3, 0): "-"}
+                ): 0.0006814299999999998,
+                BoseWord(
+                    {(0, 0): "+", (1, 0): "+", (2, 0): "-", (3, 0): "-"}
+                ): 0.0010221449999999997,
+                BoseWord(
+                    {(0, 0): "+", (1, 0): "-", (2, 0): "-", (3, 0): "-"}
+                ): 0.0006814299999999998,
+                BoseWord(
+                    {(0, 0): "-", (1, 0): "-", (2, 0): "-", (3, 0): "-"}
+                ): 0.00017035749999999995,
+            }
+        )
     """
     if is_local:
         start_deg = 2
@@ -623,9 +685,11 @@ def taylor_hamiltonian(
             dipole_level=1,
         )
     >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
-    -0.003833496032473659 * X(0)
-    + (0.0256479442871582+0j) * I(0)
-    + (-0.013079509779221888+0j) * Z(0)
+    (
+        -0.003833496032473659 * X(0)
+        + (0.0256479442871582+0j) * I(0)
+        + (-0.013079509779221888+0j) * Z(0)
+    )
     """
     mapping.lower().strip()
     coeffs_arr = taylor_coeffs(pes, max_deg, min_deg)
