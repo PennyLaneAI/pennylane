@@ -194,17 +194,6 @@ def execute(
 
     interface = _resolve_interface(interface, tapes)
     # Only need to calculate derivatives with jax when we know it will be executed later.
-    if interface in {Interface.JAX, Interface.JAX_JIT}:
-        grad_on_execution = grad_on_execution if isinstance(diff_method, Callable) else False
-
-    if (
-        device_vjp
-        and isinstance(device, qml.devices.LegacyDeviceFacade)
-        and "lightning" not in getattr(device, "short_name", "").lower()
-    ):
-        raise qml.QuantumFunctionError(
-            "device provided jacobian products are not compatible with the old device interface."
-        )
 
     gradient_kwargs = gradient_kwargs or {}
     mcm_config = mcm_config or {}
