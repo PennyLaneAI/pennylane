@@ -234,7 +234,6 @@ def _cform_twomode(pes, n_states):
 
     local_ham_cform_twobody = np.zeros(len(all_mode_combos) * chunksize)
     for nn, (ii, jj) in enumerate(all_mode_combos):
-        ii, jj = int(ii), int(jj)
         if jj >= ii:
             continue
 
