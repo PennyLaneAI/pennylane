@@ -467,6 +467,9 @@ same information.
 * Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
   [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
 
+* Updated the documentation of `QSVT` to include examples for different block encodings.
+  [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
+
 <h3>Bug fixes 🐛</h3>
 
 * The `Wires` object throws a `TypeError` if `wires=None`. 
