@@ -299,8 +299,6 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     **Example**
 
-    from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-
     >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
     >>> pes_twomode = np.zeros((1, 1, 9, 9))
     >>> dipole_onemode = np.zeros((1, 9, 3))
@@ -308,9 +306,9 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
                         4.33e-01, 7.20e-01, 4.33e-01,
                         8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-    >>> pes_object = VibrationalPES(
+    >>> pes_object = qml.qchem.VibrationalPES(
             freqs=np.array([0.025]),
-            grid=grid
+            grid=grid,
             uloc=np.array([[1.0]]),
             gauss_weights=gauss_weights,
             pes_data=[pes_onemode, pes_twomode],
@@ -357,8 +355,6 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
 
     **Example**
 
-    from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-
     >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
     >>> pes_twomode = np.zeros((1, 1, 9, 9))
     >>> dipole_onemode = np.zeros((1, 9, 3))
@@ -366,9 +362,9 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
                         4.33e-01, 7.20e-01, 4.33e-01,
                         8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-    >>> pes_object = VibrationalPES(
+    >>> pes_object = qml.qchem.VibrationalPES(
             freqs=np.array([0.025]),
-            grid=grid
+            grid=grid,
             uloc=np.array([[1.0]]),
             gauss_weights=gauss_weights,
             pes_data=[pes_onemode, pes_twomode],
@@ -593,8 +589,6 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
 
     **Example**
 
-    from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-
     >>> one_mode, two_mode = [np.array([[-0.00088528, -0.00361425,  0.00068143]]), np.array([[[0., 0., 0., 0., 0., 0.]]])]
     >>> freqs=np.array([0.025])
     >>> uloc=np.array([[1.0]])
@@ -665,8 +659,6 @@ def taylor_hamiltonian(
 
     **Example**
 
-    from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-
     >>> pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
     >>> pes_twomode = np.zeros((1, 1, 9, 9))
     >>> dipole_onemode = np.zeros((1, 9, 3))
@@ -674,9 +666,9 @@ def taylor_hamiltonian(
                         4.33e-01, 7.20e-01, 4.33e-01,
                         8.85e-02, 4.94e-03, 3.96e-05])
     >>> grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-    >>> pes_object = VibrationalPES(
+    >>> pes_object = qml.qchem.VibrationalPES(
             freqs=np.array([0.025]),
-            grid=grid
+            grid=grid,
             uloc=np.array([[1.0]]),
             gauss_weights=gauss_weights,
             pes_data=[pes_onemode, pes_twomode],
