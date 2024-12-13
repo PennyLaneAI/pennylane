@@ -210,7 +210,7 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     >>> freqs_loc, vecs_loc, uloc = qml.qchem.localize_normal_modes(freqs, vectors)
     >>> freqs_loc
     [1332.62021421, 2296.73451756, 2296.73457617]
-    
+
     """
     if not bins:
         raise ValueError("The `bins` list cannot be empty.")
