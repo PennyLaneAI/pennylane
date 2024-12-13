@@ -16,7 +16,7 @@
 """
 from collections.abc import Callable
 from dataclasses import replace
-from typing import Literal, Union, get_args
+from typing import Literal, Optional, Union, get_args
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -228,7 +228,7 @@ def _resolve_execution_config(
     execution_config: "qml.devices.ExecutionConfig",
     device: "qml.devices.Device",
     tapes: QuantumScriptBatch,
-    transform_program: TransformProgram,
+    transform_program: Optional[TransformProgram] = None,
 ) -> "qml.devices.ExecutionConfig":
     """Resolves the execution configuration for non-device specific properties.
 
@@ -258,12 +258,12 @@ def _resolve_execution_config(
 
     if (
         "lightning" in device.name
-        and qml.metric_tensor in transform_program
+        and (transform_program and qml.metric_tensor in transform_program)
         and execution_config.gradient_method == "best"
     ):
         execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
-    else:
-        execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+
+    execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.gradient_method is qml.gradients.param_shift_cv:
         updated_values["gradient_keyword_arguments"]["dev"] = device

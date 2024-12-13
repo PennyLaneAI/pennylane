@@ -551,7 +551,9 @@ class TransformProgram:
 
         for i, transform_container in enumerate(self):
             transform, targs, tkwargs, cotransform, _, _, _ = transform_container
-            tkwargs = {key: value for key, value in tkwargs.items() if key != "argnums"}
+            tkwargs = {
+                key: value for key, value in tkwargs.items() if key not in {"argnums", "hybrid"}
+            }
             execution_tapes = []
             fns = []
             slices = []
