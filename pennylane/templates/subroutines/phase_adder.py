@@ -127,7 +127,7 @@ class PhaseAdder(Operation):
         self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
-        work_wires = qml.wires.Wires(()) if work_wires is None else qml.wires.Wires(work_wires)
+        work_wire = qml.wires.Wires(()) if work_wire is None else qml.wires.Wires(work_wire)
         x_wires = qml.wires.Wires(x_wires)
 
         num_work_wires = len(work_wire)
