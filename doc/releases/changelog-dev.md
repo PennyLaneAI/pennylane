@@ -464,6 +464,9 @@ same information.
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
+* Updated the documentation of `QSVT` to include examples for different block encodings.
+  [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
+
 <h3>Bug fixes 🐛</h3>
 
 * The `Wires` object throws a `TypeError` if `wires=None`. 
