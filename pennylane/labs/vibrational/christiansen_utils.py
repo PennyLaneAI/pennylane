@@ -753,7 +753,7 @@ def _load_cform_threemode_dipole(num_proc, nmodes, quad_order):
 
 
 def christiansen_integrals(pes, n_states=16, cubic=False):
-    r"""Generates the vibrational Hamiltonian integrals in Christiansen form.
+    r"""Compute Christiansen vibrational Hamiltonian integrals.
 
     Args:
         pes(VibrationalPES): object containing the vibrational potential energy surface data
