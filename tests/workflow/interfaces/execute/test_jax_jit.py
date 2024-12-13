@@ -401,7 +401,7 @@ class TestJaxExecuteIntegration:
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
-        res = cost(a, b)
+        res = jax.jit(cost)(a, b)
 
         assert len(res) == 2
         assert res[0].shape == ()

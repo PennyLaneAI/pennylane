@@ -55,3 +55,4 @@ from .resolution import (
 )
 from ._cache_transform import _cache_transform
 from ._setup_transform_program import _setup_transform_program
+from .run import run
