@@ -37,7 +37,7 @@ def _remove_harmonic(freqs, onemode_pes):
     """Removes the harmonic part from the PES.
 
     Args:
-        freqs (list(float)): normal mode frequencies
+        freqs (list(float)): the harmonic frequencies in atomic units
         onemode_pes (TensorLike[float]): one mode PES
 
     Returns:
@@ -521,7 +521,7 @@ def _taylor_kinetic(taylor_coeffs_array, freqs, is_local=True, uloc=None):
 
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
-        freqs (list(float)): the frequencies
+        freqs (list(float)): the harmonic frequencies in atomic units
         is_local (bool): Flag whether the vibrational modes are localized. Default is ``True``.
         uloc (list(list(float))): localization matrix indicating the relationship between original
             and localized modes
@@ -555,7 +555,7 @@ def _taylor_harmonic(taylor_coeffs_array, freqs):
 
     Args:
         taylor_coeffs_array (list(float)): the coeffs of the Taylor expansion
-        freqs (list(float)): vibrational frequencies in atomic units
+        freqs (list(float)): the harmonic frequencies in atomic units
 
     Returns:
         BoseSentence: harmonic term of the Taylor hamiltonian for given coeffs
