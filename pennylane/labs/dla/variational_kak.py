@@ -78,17 +78,17 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
         g (List[Union[Operator, PauliSentence, np.ndarray]]): DLA of the Hamiltonian
-        dims (Tuple[int]): Tuple of dimensions ``(dim_k, dim_mtilde, dim_h)`` of
-            Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} + \tilde{\mathfrak{m}} + \mathfrak{h}`
+        dims (Tuple[int]): Tuple of dimensions ``(dim_k, dim_mtilde, dim_a)`` of
+            Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus (\tilde{\mathfrak{m}} \oplus \mathfrak{a})`
         adj (np.ndarray): Adjoint representation of dimension ``(dim_g, dim_g, dim_g)``,
-            with the implicit ordering ``(k, mtilde, h)``.
+            with the implicit ordering ``(k, mtilde, a)``.
         verbose (bool): Plot the optimization
         opt_kwargs (dict): Keyword arguments for the optimization like initial starting values for :math:`\theta` of dimension ``(dim_k,)``.
             Also includes ``n_epochs``, ``lr``, ``b1``, ``b2``, ``verbose``, ``interrupt_tol``, see :func:`~run_opt`
 
     Returns:
         Tuple(np.ndarray, np.ndarray): ``(adjvec_a, theta_opt)``: The adjoint vector representation
-        ``adjvec_a`` of dimension ``(dim_mtilde + dim_h,)``, with respect to the basis of
+        ``adjvec_a`` of dimension ``(dim_mtilde + dim_a,)``, with respect to the basis of
         :math:`\mathfrak{m} = \tilde{\mathfrak{m}} + \mathfrak{h}` of the CSA element
         :math:`a \in \mathfrak{a}` s.t. :math:`H = K a K^\dagger`.
         The second return value, ``theta_opt``, are the optimal coefficients :math:`\theta` of the
