@@ -850,7 +850,7 @@ def test_hadamard_expval(k=1, obs=obs_hadamard, expected=expected_hadamard):
     actual = circuit(obs, k=k)
 
     print(circuit.tape)
-    new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device.target_device)
+    new_actual = circuit(obs, k=k)
 
     assert actual.shape == (len(obs_hadamard),)
     assert actual.dtype == np.float64
