@@ -47,7 +47,7 @@ class Adder(Operation):
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
             work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
-            should be provided. Defaults to ``None``.
+            should be provided. Defaults to empty set.
 
     **Example**
 
@@ -90,7 +90,7 @@ class Adder(Operation):
 
         The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular addition operation.
 
-        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=None``. This is the case by default.
+        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=()``. This is the case by default.
 
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, two ``work_wires`` have to be provided.
 
@@ -185,7 +185,7 @@ class Adder(Operation):
             mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
             work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
                 work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
-                should be provided. Defaults to ``None``.
+                should be provided.
         Returns:
             list[.Operator]: Decomposition of the operator
 
