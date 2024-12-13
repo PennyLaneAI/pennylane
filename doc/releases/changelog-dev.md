@@ -234,6 +234,13 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
+  operator and measurement wires with capture enabled.
+  [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
+
+* A `qml.tape.plxpr_to_tape` function can now convert plxpr to a tape.
+  [(#6343)](https://github.com/PennyLaneAI/pennylane/pull/6343)
+
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
   captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
   only works with a reduced feature set.
@@ -309,6 +316,9 @@ such as `shots`, `rng` and `prng_key`.
 
 * Fix the string representation of `Resources` instances to match the attribute names.
   [(#6581)](https://github.com/PennyLaneAI/pennylane/pull/6581)
+
+* Improved documentation for the `dynamic_one_shot` transform, and a warning is raised when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in a device's preprocessing transform program.
+  [(#6701)](https://github.com/PennyLaneAI/pennylane/pull/6701)
 
 <h3>Labs 🧪</h3>
 
