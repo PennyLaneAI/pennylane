@@ -48,7 +48,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     .. math:: H = K_c a K_c^\dagger
 
     The result is provided in terms of the adjoint vector representation of :math:`a \in \mathfrak{a}`
-    (see :func:`adjvec_to_op`), i.e. the ordered coefficients :math:`c_j^{\mathfrak{a}}` in :math:`a = \sum_j c_j^{\mathfrak{a}} a_j` and
+    (see :func:`adjvec_to_op`), i.e. the ordered coefficients :math:`c_j` in :math:`a = \sum_j c_j m_j` with the basis elements :math:`m_j \in (\tilde{\mathfrak{m}} \oplus \mathfrak{a})` and
     the optimal parameters :math:`\theta` such that
 
     .. math:: K_c = \prod_{j=|\mathfrak{k}|}^{1} e^{-i \theta_j k_j}
