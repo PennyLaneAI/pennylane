@@ -19,14 +19,14 @@ from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from .einsum_manpulation import get_einsum_mapping
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = pnp.array(list(alphabet))
 
 TENSORDOT_STATE_NDIM_PERF_THRESHOLD = 9
 
@@ -358,7 +358,6 @@ def apply_operation(
     return _apply_operation_default(op, state, is_state_batched, debugger, **_)
 
 
-
 def _apply_operation_default(op, state, is_state_batched, debugger, **_):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches.
@@ -436,11 +435,11 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
 
     # First, flip the left side
     axis = op.wires[0] + is_state_batched
-    state = _phase_shift(state, axis, phase_factor=math.exp(0.25j * np.pi))
+    state = _phase_shift(state, axis, phase_factor=math.exp(0.25j * pnp.pi))
 
     # Second, flip the right side
     axis = op.wires[0] + is_state_batched + num_wires
-    state = _phase_shift(state, axis, phase_factor=math.exp(-0.25j * np.pi))
+    state = _phase_shift(state, axis, phase_factor=math.exp(-0.25j * pnp.pi))
 
     return state
 
@@ -626,7 +625,7 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     # Basically, we want to do, lambda_a rho_ab lambda_b
     einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
-    return math.einsum(einsum_indices, eigvals, state, eigvals.conj())
+    return math.einsum(einsum_indices, eigvals, state, math.conj(eigvals))
 
 
 @apply_operation.register
