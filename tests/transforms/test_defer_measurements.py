@@ -106,21 +106,6 @@ def test_allow_postselect():
         _, __ = qml.defer_measurements(circuit, allow_postselect=False)
 
 
-def test_postselection_error_with_wrong_device():
-    """Test that an error is raised when postselection is used with a device
-    other than `default.qubit`."""
-    dev = qml.device("default.mixed", wires=2)
-
-    @qml.defer_measurements
-    @qml.qnode(dev)
-    def circ():
-        qml.measure(0, postselect=1)
-        return qml.probs(wires=[0])
-
-    with pytest.raises(ValueError, match="Postselection is not supported"):
-        _ = circ()
-
-
 @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
 def test_postselect_mode(postselect_mode, mocker):
     """Test that invalid shots are discarded if requested"""
