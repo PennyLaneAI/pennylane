@@ -741,3 +741,12 @@ def apply_density_matrix(
 
     # Return the updated state
     return state
+
+def apply_parametrized_evolution_einsum(
+    op: qml.pulse.ParametrizedEvolution,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
+):
+    return _apply_operation_default(op, state, is_state_batched,debugger)
