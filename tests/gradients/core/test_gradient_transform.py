@@ -17,7 +17,7 @@ import inspect
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.gradients.gradient_transform import (
     SUPPORTED_GRADIENT_KWARGS,
     _find_gradient_methods,
@@ -75,7 +75,7 @@ class TestGradAnalysis:
     def test_non_differentiable(self):
         """Test that a non-differentiable parameter is correctly marked"""
 
-        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+        psi = pnp.array([1, 0, 1, 0]) / pnp.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(psi, wires=[0, 1])
@@ -129,7 +129,7 @@ class TestGradAnalysis:
 
         monkeypatch.setattr(qml.RX, "grad_method", "F")
 
-        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+        psi = pnp.array([1, 0, 1, 0]) / pnp.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(psi, wires=[0, 1])
@@ -157,8 +157,8 @@ class TestGradMethodValidation:
         """Test that trainable parameters without grad_method
         are detected correctly, raising an exception."""
         with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(np.array(0.1, requires_grad=True), wires=0)
-            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.RX(pnp.array(0.1, requires_grad=True), wires=0)
+            qml.RX(pnp.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
         tape = qml.tape.QuantumScript.from_queue(q)
         diff_methods = {0: "A", 1: None}
@@ -169,8 +169,8 @@ class TestGradMethodValidation:
         """Test that trainable parameters with numerical grad_method ``"F"``
         together with ``method="analytic"`` raises an exception."""
         with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(np.array(0.1, requires_grad=True), wires=0)
-            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.RX(pnp.array(0.1, requires_grad=True), wires=0)
+            qml.RX(pnp.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
         tape = qml.tape.QuantumScript.from_queue(q)
         diff_methods = {
@@ -238,17 +238,17 @@ class TestGradientTransformIntegration:
 
         grad_fn = qml.gradients.param_shift(circuit)
 
-        w = np.array([0.543] if slicing else 0.543, requires_grad=True)
+        w = pnp.array([0.543] if slicing else 0.543, requires_grad=True)
         res = grad_fn(w)
         assert circuit.interface == "auto"
 
         # Need to multiply 0 with w to get the right output shape for non-scalar w
-        expected = (-prefactor * np.sin(prefactor * w), w * 0)
+        expected = (-prefactor * pnp.sin(prefactor * w), w * 0)
 
         if isinstance(shots, list):
-            assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
+            assert all(pnp.allclose(r, expected, atol=atol, rtol=0) for r in res)
         else:
-            assert np.allclose(res, expected, atol=atol, rtol=0)
+            assert pnp.allclose(res, expected, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 2e-1), ([1000, 1500], 2e-1)])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
@@ -266,24 +266,24 @@ class TestGradientTransformIntegration:
 
         grad_fn = qml.gradients.param_shift(circuit)
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = pnp.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
         assert circuit.interface == "auto"
         x, y = w
         y *= prefactor
-        expected = np.array(
+        expected = pnp.array(
             [
-                [-np.sin(x), 0],
+                [-pnp.sin(x), 0],
                 [
-                    2 * np.cos(x) * np.sin(x) * np.cos(y) ** 2,
-                    2 * prefactor * np.cos(y) * np.sin(y) * np.cos(x) ** 2,
+                    2 * pnp.cos(x) * pnp.sin(x) * pnp.cos(y) ** 2,
+                    2 * prefactor * pnp.cos(y) * pnp.sin(y) * pnp.cos(x) ** 2,
                 ],
             ]
         )
         if isinstance(shots, list):
-            assert all(np.allclose(r, expected, atol=atol) for r in res)
+            assert all(pnp.allclose(r, expected, atol=atol) for r in res)
         else:
-            assert np.allclose(res, expected, atol=atol)
+            assert pnp.allclose(res, expected, atol=atol)
 
     @pytest.mark.xfail(reason="Gradient transforms are not compatible with shots and mixed shapes")
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
@@ -301,19 +301,19 @@ class TestGradientTransformIntegration:
 
         grad_fn = qml.gradients.param_shift(circuit)
 
-        w = [np.array(0.543, requires_grad=True), np.array([-0.654], requires_grad=True)]
+        w = [pnp.array(0.543, requires_grad=True), pnp.array([-0.654], requires_grad=True)]
         res = grad_fn(*w)
         assert circuit.interface == "auto"
         x, (y,) = w
-        expected = (np.array([-np.sin(x), 0]), np.array([[0], [-2 * np.cos(y) * np.sin(y)]]))
+        expected = (pnp.array([-pnp.sin(x), 0]), pnp.array([[0], [-2 * pnp.cos(y) * pnp.sin(y)]]))
         if isinstance(shots, list):
             assert isinstance(res, tuple) and len(res) == len(shots)
             for _res in res:
                 assert isinstance(_res, tuple) and len(_res) == 2
-                assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(_res, expected))
+                assert all(pnp.allclose(r, e, atol=atol, rtol=0) for r, e in zip(_res, expected))
         else:
             assert isinstance(res, tuple) and len(res) == 2
-            assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected))
+            assert all(pnp.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected))
 
     def test_decorator(self, tol):
         """Test that a gradient transform decorating a QNode
@@ -328,12 +328,12 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = pnp.array([0.543, -0.654], requires_grad=True)
         res = circuit(w)
 
         x, y = w
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = pnp.array([[-pnp.sin(x), 0], [0, -2 * pnp.cos(y) * pnp.sin(y)]])
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_passing_arguments(self, mocker, tol):
         """Test that a gradient transform correctly
@@ -348,15 +348,15 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        shifts = [(np.pi / 4,), (np.pi / 3,)]
+        shifts = [(pnp.pi / 4,), (pnp.pi / 3,)]
         grad_fn = qml.gradients.param_shift(circuit, shifts=shifts)
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = pnp.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
 
         x, y = w
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = pnp.array([[-pnp.sin(x), 0], [0, -2 * pnp.cos(y) * pnp.sin(y)]])
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         assert spy.call_args[0][2] == shifts
 
@@ -387,12 +387,12 @@ class TestGradientTransformIntegration:
 
         grad_fn = qml.gradients.param_shift(circuit)
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = pnp.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
 
         x, y = w
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = pnp.array([[-pnp.sin(x), 0], [0, -2 * pnp.cos(y) * pnp.sin(y)]])
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
         assert spy.call_args[0][0].operations[0].name == "RX"
 
     def test_permuted_arguments(self, tol):
@@ -410,11 +410,11 @@ class TestGradientTransformIntegration:
         def cost(w):
             return qml.math.stack(circuit(w))
 
-        w = np.array([-0.654, 0.543], requires_grad=True)
+        w = pnp.array([-0.654, 0.543], requires_grad=True)
         res = qml.gradients.param_shift(circuit)(w)
 
         expected = qml.jacobian(cost)(w)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_tensor_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -428,14 +428,14 @@ class TestGradientTransformIntegration:
             qml.RZ(x[1, 0], wires=0)
             return qml.probs(wires=[0, 1])
 
-        x = np.array([[0.1, 0.3], [0.2, -0.1]], requires_grad=True)
-        y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
+        x = pnp.array([[0.1, 0.3], [0.2, -0.1]], requires_grad=True)
+        y = pnp.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x, y)
         # pylint:disable=unexpected-keyword-arg
         res = qml.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
+        assert all(pnp.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -449,13 +449,13 @@ class TestGradientTransformIntegration:
             qml.RZ(x[1, 0], wires=0)
             return qml.probs(wires=[0, 1])
 
-        x = np.array([[0.1], [0.2]], requires_grad=True)
-        y = np.array([[0.2], [0.3]], requires_grad=True)
+        x = pnp.array([[0.1], [0.2]], requires_grad=True)
+        y = pnp.array([[0.2], [0.3]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x, y)
         res = qml.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
+        assert all(pnp.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_high_dimensional_single_parameter_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
@@ -468,11 +468,11 @@ class TestGradientTransformIntegration:
             qml.RX(x[0, 0] / 2, wires=0)
             return qml.probs(wires=[0, 1])
 
-        x = np.array([[0.1, 0.1], [0.1, 0.1]], requires_grad=True)
+        x = pnp.array([[0.1, 0.1], [0.1, 0.1]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x)
         res = qml.gradients.param_shift(circuit)(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
@@ -484,11 +484,11 @@ class TestGradientTransformIntegration:
             qml.RX(x[0, 0], wires=0)
             return qml.probs(wires=[0, 1])
 
-        x = np.array([[0.1]], requires_grad=True)
+        x = pnp.array([[0.1]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x)
         res = qml.gradients.param_shift(circuit)(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
@@ -500,11 +500,11 @@ class TestGradientTransformIntegration:
             qml.RX(x[0], wires=0)
             return qml.probs(wires=[0, 1])
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = pnp.array([0.1, 0.2], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x)
         res = qml.gradients.param_shift(circuit)(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_first_non_trainable_argument(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -520,13 +520,13 @@ class TestGradientTransformIntegration:
             qml.RZ(y[1], wires=0)
             return qml.probs(wires=[0, 1])
 
-        x = np.array([0.1], requires_grad=False)
-        y = np.array([0.2, 0.3], requires_grad=True)
+        x = pnp.array([0.1], requires_grad=False)
+        y = pnp.array([0.2, 0.3], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x, y)
         res = qml.gradients.param_shift(circuit)(x, y)
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -540,12 +540,12 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = pnp.array([0.543, -0.654], requires_grad=True)
         res = qml.gradients.param_shift(circuit)(w)
 
         x, _ = w
-        expected = [-2 * x * np.sin(x**2), 0]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = [-2 * x * pnp.sin(x**2), 0]
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing_multiple_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -554,32 +554,32 @@ class TestGradientTransformIntegration:
 
         @qml.qnode(dev)
         def circuit(data, weights):
-            qml.RY(np.cos(data), wires=0)
+            qml.RY(pnp.cos(data), wires=0)
             qml.RX(weights[0] ** 2, wires=[0])
             qml.RY(weights[1], wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         # set d as non-differentiable
-        d = np.array(0.56, requires_grad=False)
-        w = np.array([0.543, -0.654], requires_grad=True)
+        d = pnp.array(0.56, requires_grad=False)
+        w = pnp.array([0.543, -0.654], requires_grad=True)
         x, _ = w
 
         res = qml.gradients.param_shift(circuit)(d, w)
 
-        expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = pnp.array([-2 * x * pnp.cos(pnp.cos(d)) * pnp.sin(x**2), 0])
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         # set d as differentiable
-        d = np.array(0.56, requires_grad=True)
-        w = np.array([0.543, -0.654], requires_grad=True)
+        d = pnp.array(0.56, requires_grad=True)
+        w = pnp.array([0.543, -0.654], requires_grad=True)
 
         res = qml.gradients.param_shift(circuit)(d, w)
 
-        expected_dd = np.cos(x**2) * np.sin(d) * np.sin(np.cos(d))
-        expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
-        assert np.allclose(res[0], expected_dd, atol=tol, rtol=0)
-        assert np.allclose(res[1], expected_dw, atol=tol, rtol=0)
+        expected_dd = pnp.cos(x**2) * pnp.sin(d) * pnp.sin(pnp.cos(d))
+        expected_dw = pnp.array([-2 * x * pnp.cos(pnp.cos(d)) * pnp.sin(x**2), 0])
+        assert pnp.allclose(res[0], expected_dd, atol=tol, rtol=0)
+        assert pnp.allclose(res[1], expected_dw, atol=tol, rtol=0)
 
     def test_advanced_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -594,12 +594,12 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        w = np.array([[0.543, -0.654], [0.0, 0.0]], requires_grad=True)
+        w = pnp.array([[0.543, -0.654], [0.0, 0.0]], requires_grad=True)
         res = qml.gradients.param_shift(circuit)(w)
         assert res.shape == (4, 2, 2)
 
         expected = qml.jacobian(circuit)(w)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         @qml.qnode(dev)
         def circuit1(weights):
@@ -608,11 +608,11 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        w = np.array([0.543**2, -0.654], requires_grad=True)
+        w = pnp.array([0.543**2, -0.654], requires_grad=True)
         expected = qml.jacobian(circuit1)(w)
 
-        assert np.allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
-        assert np.allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
+        assert pnp.allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
+        assert pnp.allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
 
     def test_template_integration(self, tol):
         """Test that the gradient transform acts on QNodes
@@ -624,12 +624,12 @@ class TestGradientTransformIntegration:
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qml.probs(wires=[0, 1])
 
-        weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
+        weights = pnp.ones([2, 3, 3], dtype=pnp.float64, requires_grad=True)
         res = qml.gradients.param_shift(circuit)(weights)
         assert res.shape == (4, 2, 3, 3)
 
         expected = qml.jacobian(circuit)(weights)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     # pylint: disable=unexpected-keyword-arg
     def test_setting_shots(self):
@@ -643,7 +643,7 @@ class TestGradientTransformIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = np.array(0.543, requires_grad=True)
+        x = pnp.array(0.543, requires_grad=True)
 
         # the gradient function can be called with different shot values
         grad_fn = qml.gradients.param_shift(circuit)
@@ -672,15 +672,15 @@ class TestInterfaceIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliX(1))
 
-        x = np.array(-0.654, requires_grad=True)
+        x = pnp.array(-0.654, requires_grad=True)
 
         res = circuit(x)
-        expected = -4 * x * np.cos(x**2) * np.sin(x**2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -4 * x * pnp.cos(x**2) * pnp.sin(x**2)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.grad(circuit)(x)
-        expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -2 * (4 * x**2 * pnp.cos(2 * x**2) + pnp.sin(2 * x**2))
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -703,12 +703,12 @@ class TestInterfaceIntegration:
         with tf.GradientTape() as tape:
             res = circuit(x)
 
-        expected = -4 * x_ * np.cos(x_**2) * np.sin(x_**2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -4 * x_ * pnp.cos(x_**2) * pnp.sin(x_**2)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         res = tape.gradient(res, x)
-        expected = -2 * (4 * x_**2 * np.cos(2 * x_**2) + np.sin(2 * x_**2))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -2 * (4 * x_**2 * pnp.cos(2 * x_**2) + pnp.sin(2 * x_**2))
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):
@@ -729,12 +729,12 @@ class TestInterfaceIntegration:
         x = torch.tensor(x_, dtype=torch.float64, requires_grad=True)
         res = circuit(x)
 
-        expected = -2 * np.cos(x_) * np.sin(x_)
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        expected = -2 * pnp.cos(x_) * pnp.sin(x_)
+        assert pnp.allclose(res.detach(), expected, atol=tol, rtol=0)
 
         res.backward()
-        expected = -2 * np.cos(2 * x_)
-        assert np.allclose(x.grad.detach(), expected, atol=tol, rtol=0)
+        expected = -2 * pnp.cos(2 * x_)
+        assert pnp.allclose(x.grad.detach(), expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, tol):
@@ -755,9 +755,9 @@ class TestInterfaceIntegration:
         x = jnp.array(-0.654)
 
         res = circuit(x)
-        expected = -4 * x * np.cos(x**2) * np.sin(x**2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -4 * x * pnp.cos(x**2) * pnp.sin(x**2)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         res = jax.grad(circuit)(x)
-        expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -2 * (4 * x**2 * pnp.cos(2 * x**2) + pnp.sin(2 * x**2))
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)

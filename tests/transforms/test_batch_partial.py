@@ -20,7 +20,7 @@ import re
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def test_partial_evaluation():
@@ -37,10 +37,10 @@ def test_partial_evaluation():
     batch_size = 4
 
     # the partial argument to construct a new circuit with
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
 
     # the batched argument to the new partial circuit
-    x = np.random.uniform(size=batch_size)
+    x = pnp.random.uniform(size=batch_size)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
     res = batched_partial_circuit(x)
@@ -50,7 +50,7 @@ def test_partial_evaluation():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y))
 
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 def test_partial_evaluation_kwargs():
@@ -68,10 +68,10 @@ def test_partial_evaluation_kwargs():
     batch_size = 4
 
     # the partial argument to construct a new circuit with
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
 
     # the batched argument to the new partial circuit
-    x = np.random.uniform(size=batch_size)
+    x = pnp.random.uniform(size=batch_size)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
     res = batched_partial_circuit(x=x)
@@ -81,7 +81,7 @@ def test_partial_evaluation_kwargs():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y))
 
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 def test_partial_evaluation_multi_args():
@@ -100,11 +100,11 @@ def test_partial_evaluation_multi_args():
     batch_size = 4
 
     # the partial arguments to construct a new circuit with
-    y = np.random.uniform(size=2)
-    z = np.random.uniform(size=())
+    y = pnp.random.uniform(size=2)
+    z = pnp.random.uniform(size=())
 
     # the batched argument to the new partial circuit
-    x = np.random.uniform(size=batch_size)
+    x = pnp.random.uniform(size=batch_size)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y, z=z)
     res = batched_partial_circuit(x)
@@ -114,7 +114,7 @@ def test_partial_evaluation_multi_args():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, z))
 
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 def test_partial_evaluation_nonnumeric1():
@@ -132,11 +132,11 @@ def test_partial_evaluation_nonnumeric1():
     batch_size = 4
 
     # the partial arguments to construct a new circuit with
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
     measurement = qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
     # the batched argument to the new partial circuit
-    x = np.random.uniform(size=batch_size)
+    x = pnp.random.uniform(size=batch_size)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y, measurement=measurement)
     res = batched_partial_circuit(x)
@@ -146,7 +146,7 @@ def test_partial_evaluation_nonnumeric1():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, measurement))
 
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 def test_partial_evaluation_nonnumeric2():
@@ -164,11 +164,11 @@ def test_partial_evaluation_nonnumeric2():
     batch_size = 4
 
     # the partial arguments to construct a new circuit with
-    y = np.random.uniform(size=2)
-    func = np.cos
+    y = pnp.random.uniform(size=2)
+    func = pnp.cos
 
     # the batched argument to the new partial circuit
-    x = np.random.uniform(size=batch_size)
+    x = pnp.random.uniform(size=batch_size)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y, func=func)
     res = batched_partial_circuit(x)
@@ -178,7 +178,7 @@ def test_partial_evaluation_nonnumeric2():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, func))
 
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 def test_partial_evaluation_nonnumeric3():
@@ -196,11 +196,11 @@ def test_partial_evaluation_nonnumeric3():
     batch_size = 4
 
     # the partial arguments to construct a new circuit with
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
     op = qml.RX
 
     # the batched argument to the new partial circuit
-    x = np.random.uniform(size=batch_size)
+    x = pnp.random.uniform(size=batch_size)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y, op=op)
     res = batched_partial_circuit(x)
@@ -210,7 +210,7 @@ def test_partial_evaluation_nonnumeric3():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, op))
 
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 @pytest.mark.autograd
@@ -230,23 +230,23 @@ def test_partial_evaluation_autograd(diff_method):
     batch_size = 4
 
     # the partial argument to construct a new circuit with
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
 
     # the batched argument to the new partial circuit
-    x = np.random.uniform(size=batch_size, requires_grad=True)
+    x = pnp.random.uniform(size=batch_size, requires_grad=True)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
 
     # we could also sum over the batch dimension and use the regular
     # gradient instead of the jacobian, but either works
-    grad = np.diagonal(qml.jacobian(batched_partial_circuit)(x))
+    grad = pnp.diagonal(qml.jacobian(batched_partial_circuit)(x))
 
     # check the results against individually executed circuits
     indiv_grad = []
     for x_indiv in x:
         indiv_grad.append(qml.grad(circuit, argnum=0)(x_indiv, y))
 
-    assert np.allclose(grad, indiv_grad)
+    assert pnp.allclose(grad, indiv_grad)
 
 
 @pytest.mark.jax
@@ -269,10 +269,10 @@ def test_partial_evaluation_jax(diff_method):
     batch_size = 4
 
     # the partial argument to construct a new circuit with
-    y = jnp.asarray(np.random.uniform(size=2))
+    y = jnp.asarray(pnp.random.uniform(size=2))
 
     # the batched argument to the new partial circuit
-    x = jnp.asarray(np.random.uniform(size=batch_size))
+    x = jnp.asarray(pnp.random.uniform(size=batch_size))
 
     batched_partial_circuit = qml.batch_partial(circuit, all_operations=True, y=y)
 
@@ -285,7 +285,7 @@ def test_partial_evaluation_jax(diff_method):
     for x_indiv in x:
         indiv_grad.append(jax.grad(circuit, argnums=0)(x_indiv, y))
 
-    assert np.allclose(grad, indiv_grad)
+    assert pnp.allclose(grad, indiv_grad)
 
 
 @pytest.mark.tf
@@ -307,10 +307,10 @@ def test_partial_evaluation_tf(diff_method):
     batch_size = 4
 
     # the partial argument to construct a new circuit with
-    y = tf.Variable(np.random.uniform(size=2), trainable=True)
+    y = tf.Variable(pnp.random.uniform(size=2), trainable=True)
 
     # the batched argument to the new partial circuit
-    x = tf.Variable(np.random.uniform(size=batch_size), trainable=True)
+    x = tf.Variable(pnp.random.uniform(size=batch_size), trainable=True)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
 
@@ -332,7 +332,7 @@ def test_partial_evaluation_tf(diff_method):
             out_indiv = circuit(x_indiv, y)
         indiv_grad.append(tape.gradient(out_indiv, x_indiv))
 
-    assert np.allclose(grad, indiv_grad)
+    assert pnp.allclose(grad, indiv_grad)
 
 
 @pytest.mark.torch
@@ -355,10 +355,10 @@ def test_partial_evaluation_torch(diff_method):
     batch_size = 4
 
     # the partial argument to construct a new circuit with
-    y = torch.tensor(np.random.uniform(size=2), requires_grad=True)
+    y = torch.tensor(pnp.random.uniform(size=2), requires_grad=True)
 
     # the batched argument to the new partial circuit
-    x = torch.tensor(np.random.uniform(size=batch_size), requires_grad=True)
+    x = torch.tensor(pnp.random.uniform(size=batch_size), requires_grad=True)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
 
@@ -378,7 +378,7 @@ def test_partial_evaluation_torch(diff_method):
 
         indiv_grad.append(x_indiv.grad)
 
-    assert np.allclose(grad, indiv_grad)
+    assert pnp.allclose(grad, indiv_grad)
 
 
 def test_lambda_evaluation():
@@ -395,16 +395,16 @@ def test_lambda_evaluation():
     batch_size = 4
 
     # the first partial argument
-    x = np.random.uniform(size=())
+    x = pnp.random.uniform(size=())
 
     # the base value of the second partial argument
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
 
     # the second partial argument as a function of the inputs
-    fn = lambda y0: y + y0 * np.ones(2)
+    fn = lambda y0: y + y0 * pnp.ones(2)
 
     # values for the second argument
-    y0 = np.random.uniform(size=batch_size)
+    y0 = pnp.random.uniform(size=batch_size)
 
     batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
     res = batched_partial_circuit(y0)
@@ -412,9 +412,9 @@ def test_lambda_evaluation():
     # check the results against individually executed circuits
     indiv_res = []
     for y0_indiv in y0:
-        indiv_res.append(circuit(x, y + y0_indiv * np.ones(2)))
+        indiv_res.append(circuit(x, y + y0_indiv * pnp.ones(2)))
 
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 @pytest.mark.autograd
@@ -434,16 +434,16 @@ def test_lambda_evaluation_autograd(diff_method):
     batch_size = 4
 
     # the first partial argument
-    x = np.random.uniform(size=())
+    x = pnp.random.uniform(size=())
 
     # the base value of the second partial argument
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
 
     # the second partial argument as a function of the inputs
-    fn = lambda y0: y + y0 * np.ones(2)
+    fn = lambda y0: y + y0 * pnp.ones(2)
 
     # values for the second argument
-    y0 = np.random.uniform(size=batch_size, requires_grad=True)
+    y0 = pnp.random.uniform(size=batch_size, requires_grad=True)
 
     batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
 
@@ -454,11 +454,11 @@ def test_lambda_evaluation_autograd(diff_method):
     # check the results against individually executed circuits
     indiv_grad = []
     for y0_indiv in y0:
-        grad_wrt_second_arg = qml.grad(circuit, argnum=1)(x, y + y0_indiv * np.ones(2))
+        grad_wrt_second_arg = qml.grad(circuit, argnum=1)(x, y + y0_indiv * pnp.ones(2))
         grad_wrt_y0 = qml.math.sum(grad_wrt_second_arg)
         indiv_grad.append(grad_wrt_y0)
 
-    assert np.allclose(grad, indiv_grad)
+    assert pnp.allclose(grad, indiv_grad)
 
 
 @pytest.mark.jax
@@ -481,16 +481,16 @@ def test_lambda_evaluation_jax(diff_method):
     batch_size = 4
 
     # the first partial argument
-    x = jnp.asarray(np.random.uniform(size=()))
+    x = jnp.asarray(pnp.random.uniform(size=()))
 
     # the base value of the second partial argument
-    y = jnp.asarray(np.random.uniform(size=2))
+    y = jnp.asarray(pnp.random.uniform(size=2))
 
     # the second partial argument as a function of the inputs
     fn = lambda y0: y + y0 * jnp.ones(2)
 
     # values for the second argument
-    y0 = jnp.asarray(np.random.uniform(size=batch_size))
+    y0 = jnp.asarray(pnp.random.uniform(size=batch_size))
 
     batched_partial_circuit = qml.batch_partial(
         circuit, all_operations=True, x=x, preprocess={"y": fn}
@@ -503,11 +503,11 @@ def test_lambda_evaluation_jax(diff_method):
     # check the results against individually executed circuits
     indiv_grad = []
     for y0_indiv in y0:
-        grad_wrt_second_arg = jax.grad(circuit, argnums=1)(x, y + y0_indiv * np.ones(2))
+        grad_wrt_second_arg = jax.grad(circuit, argnums=1)(x, y + y0_indiv * pnp.ones(2))
         grad_wrt_y0 = jnp.sum(grad_wrt_second_arg)
         indiv_grad.append(grad_wrt_y0)
 
-    assert np.allclose(grad, indiv_grad)
+    assert pnp.allclose(grad, indiv_grad)
 
 
 @pytest.mark.tf
@@ -529,16 +529,16 @@ def test_lambda_evaluation_tf(diff_method):
     batch_size = 4
 
     # the first partial argument
-    x = tf.Variable(np.random.uniform(size=()))
+    x = tf.Variable(pnp.random.uniform(size=()))
 
     # the base value of the second partial argument
-    y = tf.Variable(np.random.uniform(size=2))
+    y = tf.Variable(pnp.random.uniform(size=2))
 
     # the second partial argument as a function of the inputs
     fn = lambda y0: y + y0 * tf.ones(2, dtype=tf.float64)
 
     # values for the second argument
-    y0 = tf.Variable(np.random.uniform(size=batch_size), trainable=True)
+    y0 = tf.Variable(pnp.random.uniform(size=batch_size), trainable=True)
 
     batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
 
@@ -561,7 +561,7 @@ def test_lambda_evaluation_tf(diff_method):
 
         indiv_grad.append(tape.gradient(out_indiv, y0_indiv))
 
-    assert np.allclose(grad, indiv_grad)
+    assert pnp.allclose(grad, indiv_grad)
 
 
 @pytest.mark.torch
@@ -584,16 +584,16 @@ def test_lambda_evaluation_torch(diff_method):
     batch_size = 4
 
     # the first partial argument
-    x = torch.tensor(np.random.uniform(size=()), requires_grad=True)
+    x = torch.tensor(pnp.random.uniform(size=()), requires_grad=True)
 
     # the base value of the second partial argument
-    y = torch.tensor(np.random.uniform(size=2), requires_grad=True)
+    y = torch.tensor(pnp.random.uniform(size=2), requires_grad=True)
 
     # the second partial argument as a function of the inputs
     fn = lambda y0: y + y0 * torch.ones(2)
 
     # values for the second argument
-    y0 = torch.tensor(np.random.uniform(size=batch_size), requires_grad=True)
+    y0 = torch.tensor(pnp.random.uniform(size=batch_size), requires_grad=True)
 
     batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
 
@@ -613,7 +613,7 @@ def test_lambda_evaluation_torch(diff_method):
 
         indiv_grad.append(y0_indiv.grad)
 
-    assert np.allclose(grad, indiv_grad)
+    assert pnp.allclose(grad, indiv_grad)
 
 
 def test_full_evaluation_error():
@@ -629,8 +629,8 @@ def test_full_evaluation_error():
         return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
     # the partial arguments
-    x = np.random.uniform(size=())
-    y = np.random.uniform(size=2)
+    x = pnp.random.uniform(size=())
+    y = pnp.random.uniform(size=2)
 
     with pytest.raises(
         ValueError, match="Partial evaluation must leave at least one unevaluated parameter"
@@ -651,8 +651,8 @@ def test_incomplete_evaluation_error():
         return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
     # the second partial argument as a function of the inputs
-    y = np.random.uniform(size=2)
-    fn = lambda y0: y + y0 * np.ones(2)
+    y = pnp.random.uniform(size=2)
+    fn = lambda y0: y + y0 * pnp.ones(2)
 
     with pytest.raises(
         ValueError, match="Callable argument requires all other arguments to QNode be provided"
@@ -675,11 +675,11 @@ def test_kwargs_callable_error():
     batch_size = 4
 
     # the partial arguments
-    x = np.random.uniform(size=())
+    x = pnp.random.uniform(size=())
 
-    y = np.random.uniform(size=2)
-    fn = lambda y0: y + y0 * np.ones(2)
-    y0 = np.random.uniform(size=batch_size)
+    y = pnp.random.uniform(size=2)
+    fn = lambda y0: y + y0 * pnp.ones(2)
+    y0 = pnp.random.uniform(size=batch_size)
 
     batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
 
@@ -709,10 +709,10 @@ def test_no_batchdim_error():
         return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
     # the second partial argument
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
 
     # the incorrectly batched argument to the new partial circuit
-    x = np.random.uniform(size=())
+    x = pnp.random.uniform(size=())
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
 
@@ -746,11 +746,11 @@ def test_different_batchdim_error():
     batch_size1, batch_size2 = 5, 4
 
     # the second partial argument
-    y = np.random.uniform(size=2)
+    y = pnp.random.uniform(size=2)
 
     # the batched arguments to the new partial circuit
-    x = np.random.uniform(size=batch_size1)
-    z = np.random.uniform(size=batch_size2)
+    x = pnp.random.uniform(size=batch_size1)
+    z = pnp.random.uniform(size=batch_size2)
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
 

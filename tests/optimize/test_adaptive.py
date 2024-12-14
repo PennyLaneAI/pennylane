@@ -20,7 +20,7 @@ import warnings
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 @pytest.fixture(autouse=True)
@@ -31,13 +31,13 @@ def suppress_tape_property_deprecation_warning():
 
 
 symbols = ["H", "H", "H"]
-geometry = np.array(
+geometry = pnp.array(
     [[0.01076341, 0.04449877, 0.0], [0.98729513, 1.63059094, 0.0], [1.87262415, -0.00815842, 0.0]],
     requires_grad=False,
 )
 H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge=1)
 
-hf_state = np.array([1, 1, 0, 0, 0, 0])
+hf_state = pnp.array([1, 1, 0, 0, 0, 0])
 dev = qml.device("default.qubit", wires=qubits)
 
 energy_h3p_hf = -1.2465499384199534
@@ -56,7 +56,7 @@ def initial_circuit():
     [
         (
             initial_circuit,
-            np.array([0.0]),
+            pnp.array([0.0]),
             [qml.DoubleExcitation(0.0, [0, 1, 2, 3])],
             energy_h3p_hf,
         ),
@@ -67,18 +67,18 @@ def test_private_circuit(circuit, params, gates, energy_ref):
     # pylint: disable=protected-access
     qnode = qml.QNode(qml.AdaptiveOptimizer._circuit, dev)
     energy = qnode(params, gates, circuit.func)
-    assert np.allclose(energy, energy_ref)
+    assert pnp.allclose(energy, energy_ref)
 
 
 pool_exc = [
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
-    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
-    qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
-    qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
-    qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
-    qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
+    qml.DoubleExcitation(pnp.array(0.0), wires=[0, 1, 2, 3]),
+    qml.DoubleExcitation(pnp.array(0.0), wires=[0, 1, 2, 5]),
+    qml.DoubleExcitation(pnp.array(0.0), wires=[0, 1, 3, 4]),
+    qml.DoubleExcitation(pnp.array(0.0), wires=[0, 1, 4, 5]),
+    qml.SingleExcitation(pnp.array(0.0), wires=[0, 2]),
+    qml.SingleExcitation(pnp.array(0.0), wires=[0, 4]),
+    qml.SingleExcitation(pnp.array(0.0), wires=[1, 3]),
+    qml.SingleExcitation(pnp.array(0.0), wires=[1, 5]),
 ]
 
 
@@ -93,7 +93,7 @@ def test_step(circuit, energy_ref, pool):
     opt = qml.AdaptiveOptimizer()
     circuit = opt.step(circuit, pool)
     energy = circuit()
-    assert np.allclose(energy, energy_ref)
+    assert pnp.allclose(energy, energy_ref)
 
 
 @pytest.mark.slow
@@ -112,7 +112,7 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
     _ = circuit()
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
 
-    assert np.allclose(energy, energy_ref)
+    assert pnp.allclose(energy, energy_ref)
     # assert that the operator pool is drained, no repeated gates in the circuit
     assert len(set(selected_excitations)) == len(selected_excitations)
 
@@ -133,7 +133,7 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     circuit()
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
 
-    assert np.allclose(energy, energy_ref, rtol=1e-4)
+    assert pnp.allclose(energy, energy_ref, rtol=1e-4)
     # assert that the operator pool is not drained, there are repeated gates in the circuit
     assert len(set(selected_excitations)) < len(selected_excitations)
 
@@ -159,8 +159,8 @@ def test_largest_gradient(circuit):
 def test_append_gate(circuit):
     """Test that append_gate properly adds a gate to a circuit."""
 
-    param = np.array([0.0])
-    gate = qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3])
+    param = pnp.array([0.0])
+    gate = qml.DoubleExcitation(pnp.array(0.0), wires=[0, 1, 2, 3])
 
     final_circuit = qml.optimize.adaptive.append_gate(circuit.func, param, [gate])
     qnode = qml.QNode(final_circuit, dev)
@@ -185,14 +185,14 @@ def qubit_rotation_circuit():
 def test_qubit_rotation(circuit):
     """Test that step function returns correct results for a qubit rotation circuit."""
 
-    pool = [qml.RX(np.array([1.0]), wires=0), qml.RZ(np.array([1.0]), wires=0)]
+    pool = [qml.RX(pnp.array([1.0]), wires=0), qml.RZ(pnp.array([1.0]), wires=0)]
     opt = qml.AdaptiveOptimizer(param_steps=20)
     circuit = opt.step(circuit, pool, params_zero=False)
     expval = circuit()
 
     #  rotation around X with np.pi gives expval(Z) = -1
-    assert np.allclose(expval, -1)
-    qml.assert_equal(circuit.tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
+    assert pnp.allclose(expval, -1)
+    qml.assert_equal(circuit.tape.operations[-1], qml.RX(pnp.array([pnp.pi]), wires=0))
 
 
 @pytest.mark.parametrize(
@@ -206,7 +206,7 @@ def test_circuit_args(interface, diff_method):
 
     @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit():
-        qml.BasisState(np.array([1, 1, 0, 0]), wires=range(4))
+        qml.BasisState(pnp.array([1, 1, 0, 0]), wires=range(4))
         return qml.expval(qml.PauliZ(0))
 
     opt = qml.AdaptiveOptimizer()

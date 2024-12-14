@@ -20,11 +20,11 @@ import warnings
 from unittest.mock import patch
 
 import mcm_utils
-import numpy as np
+import numpy as pnp
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.compiler.compiler import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
@@ -418,8 +418,8 @@ class TestCatalystControlFlow:
             loop_fn()
             return qml.state()
 
-        expected = np.zeros(2**6)
-        expected[[0, 2**6 - 1]] = 1 / np.sqrt(2)
+        expected = pnp.zeros(2**6)
+        expected[[0, 2**6 - 1]] = 1 / pnp.sqrt(2)
 
         assert jnp.allclose(circuit(6), expected)
 
@@ -442,7 +442,7 @@ class TestCatalystControlFlow:
 
                 @qml.for_loop(i + 1, n, 1)
                 def inner(j):
-                    qml.ControlledPhaseShift(np.pi / 2 ** (n - j + 1), [i, j])
+                    qml.ControlledPhaseShift(pnp.pi / 2 ** (n - j + 1), [i, j])
 
                 inner()
 
@@ -631,9 +631,9 @@ class TestCatalystControlFlow:
 
             return conditional()
 
-        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
-        assert np.allclose(f(-0.5), -(-0.5 + 1))
-        assert np.allclose(f(-2.5), (-2.5 + 1))
+        assert pnp.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert pnp.allclose(f(-0.5), -(-0.5 + 1))
+        assert pnp.allclose(f(-2.5), (-2.5 + 1))
 
 
 class TestCatalystGrad:
@@ -744,7 +744,7 @@ class TestCatalystGrad:
             g = qml.jacobian(circuit)
             return g(x)
 
-        reference = workflow(np.array([2.0, 1.0]))
+        reference = workflow(pnp.array([2.0, 1.0]))
         result = qml.qjit(workflow)(jnp.array([2.0, 1.0]))
 
         assert jnp.allclose(result, reference)
@@ -756,22 +756,22 @@ class TestCatalystGrad:
         def workflow(x):
             @qml.qnode(dev)
             def circuit(x):
-                qml.RX(np.pi * x[0], wires=0)
+                qml.RX(pnp.pi * x[0], wires=0)
                 qml.RY(x[1], wires=0)
                 return qml.probs()
 
             g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
-        result = qml.qjit(workflow)(np.array([2.0, 1.0]))
-        reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
+        result = qml.qjit(workflow)(pnp.array([2.0, 1.0]))
+        reference = pnp.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
         assert jnp.allclose(result, reference)
 
         with pytest.raises(
             ValueError,
             match="Invalid values 'method='fd'' and 'h=0.3' without QJIT",
         ):
-            workflow(np.array([2.0, 1.0]))
+            workflow(pnp.array([2.0, 1.0]))
 
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""

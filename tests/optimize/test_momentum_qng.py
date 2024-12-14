@@ -17,7 +17,7 @@ import pytest
 import scipy as sp
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 class TestBasics:
@@ -59,7 +59,7 @@ class TestOptimize:
             qml.RY(params[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        var = np.array([0.11, 0.412])
+        var = pnp.array([0.11, 0.412])
         stepsize = 0.01
         # Create two optimizers so that the opt.accumulation state does not
         # interact between tests for step_and_cost and for step.
@@ -67,19 +67,19 @@ class TestOptimize:
         opt2 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=rho)
 
         var1 = var2 = var
-        accum = np.zeros_like(var)
+        accum = pnp.zeros_like(var)
 
         for _ in range(4):
             var1, res = opt1.step_and_cost(circuit, var1)
             var2 = opt2.step(circuit, var2)
             # Analytic expressions
-            mt = np.array([0.25, (np.cos(2 * var[0]) + 1) / 8])
-            assert np.allclose(circuit(var), res)
-            assert np.allclose(opt1.metric_tensor, np.diag(mt))
-            assert np.allclose(opt2.metric_tensor, np.diag(mt))
+            mt = pnp.array([0.25, (pnp.cos(2 * var[0]) + 1) / 8])
+            assert pnp.allclose(circuit(var), res)
+            assert pnp.allclose(opt1.metric_tensor, pnp.diag(mt))
+            assert pnp.allclose(opt2.metric_tensor, pnp.diag(mt))
             accum = rho * accum + stepsize * qml.grad(circuit)(var) / mt
             var -= accum
-            assert np.allclose([var1, var2], var)
+            assert pnp.allclose([var1, var2], var)
 
     def test_step_and_cost_autograd_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned after 8 optimization steps via the
@@ -94,7 +94,7 @@ class TestOptimize:
             qml.RY(params[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        var = np.array([0.311, -0.52])
+        var = pnp.array([0.311, -0.52])
         stepsize = 0.05
         momentum = 0.7
         # Create two optimizers so that the opt.accumulation state does not
@@ -103,19 +103,19 @@ class TestOptimize:
         opt2 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
 
         var1 = var2 = var
-        accum = np.zeros_like(var)
-        expected_mt = np.array([1 / 16, 1 / 4])
+        accum = pnp.zeros_like(var)
+        expected_mt = pnp.array([1 / 16, 1 / 4])
 
         for _ in range(4):
             var1, res = opt1.step_and_cost(circuit, var1)
             var2 = opt2.step(circuit, var2)
             # Analytic expressions
-            assert np.allclose(circuit(var), res)
-            assert np.allclose(opt1.metric_tensor, np.diag(expected_mt))
-            assert np.allclose(opt2.metric_tensor, np.diag(expected_mt))
+            assert pnp.allclose(circuit(var), res)
+            assert pnp.allclose(opt1.metric_tensor, pnp.diag(expected_mt))
+            assert pnp.allclose(opt2.metric_tensor, pnp.diag(expected_mt))
             accum = momentum * accum + stepsize * qml.grad(circuit)(var) / expected_mt
             var -= accum
-            assert np.allclose([var1, var2], var)
+            assert pnp.allclose([var1, var2], var)
 
     @pytest.mark.parametrize("split_input", [False, True])
     def test_step_and_cost_with_grad_fn_grouped_and_split(self, split_input):
@@ -125,8 +125,8 @@ class TestOptimize:
         dev = qml.device("default.qubit", wires=1)
 
         # Flat variables used for split_input=True and False
-        var = np.array([0.911, 0.512])
-        accum = np.zeros_like(var)
+        var = pnp.array([0.911, 0.512])
+        accum = pnp.zeros_like(var)
 
         if split_input:
 
@@ -172,14 +172,14 @@ class TestOptimize:
 
         # With more custom gradient function, forward has to be computed explicitly.
         def grad_fn2(*args):
-            return np.array(qml.grad(circuit)(*args))
+            return pnp.array(qml.grad(circuit)(*args))
 
         for _ in range(4):
             args3, cost2 = opt3.step_and_cost(circuit, *args3, grad_fn=grad_fn2)
             args4 = opt4.step(circuit, *args4, grad_fn=grad_fn2)
 
             # Compute expected metric tensor, update step etc
-            expected_mt_diag = np.array([0.25, (np.cos(var[0]) ** 2) / 4])
+            expected_mt_diag = pnp.array([0.25, (pnp.cos(var[0]) ** 2) / 4])
             accum = momentum * accum + stepsize * grad_fn2(*args) / expected_mt_diag
             expected_cost = circuit(*args)
             # Update var and args
@@ -192,16 +192,16 @@ class TestOptimize:
         mt3 = opt3.metric_tensor
         mt4 = opt4.metric_tensor
 
-        expected_mt = np.diag(expected_mt_diag)
+        expected_mt = pnp.diag(expected_mt_diag)
         if split_input:
             expected_mt = (expected_mt[:1, :1], expected_mt[1:, 1:])
 
         for a in [args1, args2, args3, args4]:
-            assert np.allclose(a, args)
+            assert pnp.allclose(a, args)
         for mt in [mt1, mt2, mt3, mt4]:
-            assert np.allclose(mt, expected_mt)
-        assert np.isclose(cost1, expected_cost)
-        assert np.isclose(cost2, expected_cost)
+            assert pnp.allclose(mt, expected_mt)
+        assert pnp.isclose(cost1, expected_cost)
+        assert pnp.isclose(cost2, expected_cost)
 
     @pytest.mark.parametrize("trainable_idx", [0, 1])
     def test_step_and_cost_split_input_one_trainable(self, trainable_idx):
@@ -220,7 +220,7 @@ class TestOptimize:
 
         grad_fn = qml.grad(circuit)
 
-        params = np.array(0.2, requires_grad=False), np.array(-0.8, requires_grad=False)
+        params = pnp.array(0.2, requires_grad=False), pnp.array(-0.8, requires_grad=False)
         params[trainable_idx].requires_grad = True
         opt = qml.MomentumQNGOptimizer(stepsize=0.01, momentum=0.9)
 
@@ -234,12 +234,12 @@ class TestOptimize:
         for _ in range(4):
             params2 = opt.step(circuit, *params2)
 
-        accum = np.zeros_like(params[0]), np.zeros_like(params[1])
+        accum = pnp.zeros_like(params[0]), pnp.zeros_like(params[1])
 
         # Expectations
         def mt_inv(tr_idx, par):
             if tr_idx == 1:
-                mt_i = 1 / (np.cos(2 * par[0]) + 1) * 8
+                mt_i = 1 / (pnp.cos(2 * par[0]) + 1) * 8
             else:
                 mt_i = 4
             return mt_i
@@ -255,8 +255,8 @@ class TestOptimize:
                 params3 = (params3[0], params3[1] - accum[1])
 
         for p in [params1, params2]:
-            assert np.allclose(params3, p)
-        assert np.isclose(cost1, expected_cost)
+            assert pnp.allclose(params3, p)
+        assert pnp.isclose(cost1, expected_cost)
 
     def test_qubit_rotation(self, tol):
         """Test qubit rotation has the correct Momentum-QNG value
@@ -272,36 +272,36 @@ class TestOptimize:
 
         def gradient(params):
             """Returns the gradient of the above circuit"""
-            da = -np.sin(params[0]) * np.cos(params[1])
-            db = -np.cos(params[0]) * np.sin(params[1])
-            return np.array([da, db])
+            da = -pnp.sin(params[0]) * pnp.cos(params[1])
+            db = -pnp.cos(params[0]) * pnp.sin(params[1])
+            return pnp.array([da, db])
 
         eta = 0.05
         rho = 0.9
-        init_params = np.array([0.011, 0.012])
+        init_params = pnp.array([0.011, 0.012])
         num_steps = 80
 
         opt = qml.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
         theta = init_params
-        dtheta = np.zeros_like(init_params)
+        dtheta = pnp.zeros_like(init_params)
 
         for _ in range(num_steps):
             theta_new = opt.step(circuit, theta)
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(theta[0]) ** 2) / 4])
-            assert np.allclose(res, exp, atol=tol, rtol=0)
+            exp = pnp.diag([0.25, (pnp.cos(theta[0]) ** 2) / 4])
+            assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update
             dtheta *= rho
             dtheta += eta * sp.linalg.pinvh(exp) @ gradient(theta)
-            assert np.allclose(dtheta, theta - theta_new, atol=tol, rtol=0)
+            assert pnp.allclose(dtheta, theta - theta_new, atol=tol, rtol=0)
 
             theta = theta_new
 
         # check final cost
-        assert np.allclose(circuit(theta), -1, atol=1e-4)
+        assert pnp.allclose(circuit(theta), -1, atol=1e-4)
 
     def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
@@ -321,37 +321,37 @@ class TestOptimize:
 
         eta = 0.02
         rho = 0.7
-        x = np.array(0.011, requires_grad=True)
-        y = np.array(0.022, requires_grad=True)
+        x = pnp.array(0.011, requires_grad=True)
+        y = pnp.array(0.022, requires_grad=True)
 
         def gradient(params):
             """Returns the gradient"""
-            da = -np.sin(params[0]) * (np.cos(params[1]) + np.sin(params[1]))
-            db = np.cos(params[0]) * (np.cos(params[1]) - np.sin(params[1]))
-            return np.array([da, db])
+            da = -pnp.sin(params[0]) * (pnp.cos(params[1]) + pnp.sin(params[1]))
+            db = pnp.cos(params[0]) * (pnp.cos(params[1]) - pnp.sin(params[1]))
+            return pnp.array([da, db])
 
         num_steps = 30
 
         opt = qml.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
 
-        theta = np.array([x, y])
-        dtheta = np.zeros_like(theta)
+        theta = pnp.array([x, y])
+        dtheta = pnp.zeros_like(theta)
 
         for _ in range(num_steps):
-            theta = np.array([x, y])
+            theta = pnp.array([x, y])
             x, y = opt.step(circuit, x, y)
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = (np.array([[0.25]]), np.array([[(np.cos(2 * theta[0]) + 1) / 8]]))
-            assert np.allclose(res, exp)
+            exp = (pnp.array([[0.25]]), pnp.array([[(pnp.cos(2 * theta[0]) + 1) / 8]]))
+            assert pnp.allclose(res, exp)
 
             # check parameter update
             theta_new = (x, y)
             grad = gradient(theta)
             dtheta *= rho
             dtheta += tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
-            assert np.allclose(dtheta, theta - theta_new)
+            assert pnp.allclose(dtheta, theta - theta_new)
 
         # check final cost
-        assert np.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)
+        assert pnp.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)

@@ -17,29 +17,29 @@ Unit tests for the ``GradientDescentOptimizer``.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.optimize import GradientDescentOptimizer
 
 univariate = [
-    (np.sin, np.cos),
-    (lambda x: np.exp(x / 10.0), lambda x: np.exp(x / 10.0) / 10.0),
+    (pnp.sin, pnp.cos),
+    (lambda x: pnp.exp(x / 10.0), lambda x: pnp.exp(x / 10.0) / 10.0),
     (lambda x: x**2, lambda x: 2 * x),
 ]
 
 multivariate = [
-    (lambda x: np.sin(x[0]) + np.cos(x[1]), lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),)),
+    (lambda x: pnp.sin(x[0]) + pnp.cos(x[1]), lambda x: (pnp.array([pnp.cos(x[0]), -pnp.sin(x[1])]),)),
     (
-        lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
+        lambda x: pnp.exp(x[0] / 3) * pnp.tanh(x[1]),
         lambda x: (
-            np.array(
+            pnp.array(
                 [
-                    np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                    np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+                    pnp.exp(x[0] / 3) / 3 * pnp.tanh(x[1]),
+                    pnp.exp(x[0] / 3) * (1 - pnp.tanh(x[1]) ** 2),
                 ]
             ),
         ),
     ),
-    (lambda x: np.sum([x_**2 for x_ in x]), lambda x: (np.array([2 * x_ for x_ in x]),)),
+    (lambda x: pnp.sum([x_**2 for x_ in x]), lambda x: (pnp.array([2 * x_ for x_ in x]),)),
 ]
 
 
@@ -60,11 +60,11 @@ class TestGradientDescentOptimizer:
         """
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
-        grad, args = np.array(grad), np.array(args, requires_grad=True)
+        grad, args = pnp.array(grad), pnp.array(args, requires_grad=True)
 
         res = sgd_opt.apply_grad(grad, args)
         expected = args - stepsize * grad
-        assert np.allclose(res, expected, atol=tol)
+        assert pnp.allclose(res, expected, atol=tol)
 
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f, df", univariate)
@@ -75,7 +75,7 @@ class TestGradientDescentOptimizer:
 
         _, res = sgd_opt.step_and_cost(f, args, grad_fn=df)
         expected = f(args)
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
     def test_step_and_cost_autograd_sgd_multiple_inputs(self):
         """Test that the correct cost is returned via the step_and_cost method for the
@@ -91,22 +91,22 @@ class TestGradientDescentOptimizer:
             return qml.expval(qml.PauliZ(0))
 
         inputs = [
-            np.array((0.2, 0.3), requires_grad=True),
-            np.array([0.4, 0.2, 0.4], requires_grad=False),
-            np.array(0.1, requires_grad=True),
+            pnp.array((0.2, 0.3), requires_grad=True),
+            pnp.array([0.4, 0.2, 0.4], requires_grad=False),
+            pnp.array(0.1, requires_grad=True),
         ]
 
         _, res = sgd_opt.step_and_cost(quant_fun, *inputs)
         expected = quant_fun(*inputs)
 
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
     def test_step_and_cost_autograd_sgd_single_multid_input(self):
         """Test that the correct cost is returned via the step_and_cost method for the
         gradient-descent optimizer"""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
-        multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
+        multid_array = pnp.array([[0.1, 0.2], [-0.1, -0.4]])
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def quant_fun_mdarr(var):
@@ -118,9 +118,9 @@ class TestGradientDescentOptimizer:
         _, res = sgd_opt.step_and_cost(quant_fun_mdarr, multid_array)
         expected = quant_fun_mdarr(multid_array)
 
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
-    @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
+    @pytest.mark.parametrize("x_start", pnp.linspace(-10, 10, 16, endpoint=False))
     @pytest.mark.parametrize("f, df", univariate)
     def test_gradient_descent_optimizer_univar(self, x_start, f, df, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
@@ -130,7 +130,7 @@ class TestGradientDescentOptimizer:
 
         x_new = sgd_opt.step(f, x_start)
         x_correct = x_start - df(x_start) * stepsize
-        assert np.allclose(x_new, x_correct, atol=tol)
+        assert pnp.allclose(x_new, x_correct, atol=tol)
 
     @pytest.mark.parametrize("f, df", multivariate)
     def test_gradient_descent_optimizer_multivar(self, f, df, tol):
@@ -139,13 +139,13 @@ class TestGradientDescentOptimizer:
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
 
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = pnp.linspace(-10, 10, 16, endpoint=False)
 
         for jdx in range(len(x_vals[:-1])):
             x_vec = x_vals[jdx : jdx + 2]
             x_new = sgd_opt.step(f, x_vec)
             x_correct = x_vec - df(x_vec)[0] * stepsize
-            assert np.allclose(x_new, x_correct, atol=tol)
+            assert pnp.allclose(x_new, x_correct, atol=tol)
 
     def test_gradient_descent_optimizer_multivar_multidim(self, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
@@ -154,39 +154,39 @@ class TestGradientDescentOptimizer:
         sgd_opt = GradientDescentOptimizer(stepsize)
 
         mvar_mdim_funcs = [
-            lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0]) - np.sin(x[0, 1]) + x[1, 1],
-            lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[0, 1]),
-            lambda x: np.sum([x_[0] ** 2 for x_ in x]),
+            lambda x: pnp.sin(x[0, 0]) + pnp.cos(x[1, 0]) - pnp.sin(x[0, 1]) + x[1, 1],
+            lambda x: pnp.exp(x[0, 0] / 3) * pnp.tanh(x[0, 1]),
+            lambda x: pnp.sum([x_[0] ** 2 for x_ in x]),
         ]
         grad_mvar_mdim_funcs = [
-            lambda x: (np.array([[np.cos(x[0, 0]), -np.cos(x[0, 1])], [-np.sin(x[1, 0]), 1.0]]),),
+            lambda x: (pnp.array([[pnp.cos(x[0, 0]), -pnp.cos(x[0, 1])], [-pnp.sin(x[1, 0]), 1.0]]),),
             lambda x: (
-                np.array(
+                pnp.array(
                     [
                         [
-                            np.exp(x[0, 0] / 3) / 3 * np.tanh(x[0, 1]),
-                            np.exp(x[0, 0] / 3) * (1 - np.tanh(x[0, 1]) ** 2),
+                            pnp.exp(x[0, 0] / 3) / 3 * pnp.tanh(x[0, 1]),
+                            pnp.exp(x[0, 0] / 3) * (1 - pnp.tanh(x[0, 1]) ** 2),
                         ],
                         [0.0, 0.0],
                     ]
                 ),
             ),
-            lambda x: (np.array([[2 * x_[0], 0.0] for x_ in x]),),
+            lambda x: (pnp.array([[2 * x_[0], 0.0] for x_ in x]),),
         ]
 
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = pnp.linspace(-10, 10, 16, endpoint=False)
 
         for gradf, f in zip(grad_mvar_mdim_funcs, mvar_mdim_funcs):
             for jdx in range(len(x_vals[:-3])):
                 x_vec = x_vals[jdx : jdx + 4]
-                x_vec_multidim = np.reshape(x_vec, (2, 2))
+                x_vec_multidim = pnp.reshape(x_vec, (2, 2))
                 x_new = sgd_opt.step(f, x_vec_multidim)
                 x_correct = x_vec_multidim - gradf(x_vec_multidim)[0] * stepsize
                 x_new_flat = x_new.flatten()
                 x_correct_flat = x_correct.flatten()
-                assert np.allclose(x_new_flat, x_correct_flat, atol=tol)
+                assert pnp.allclose(x_new_flat, x_correct_flat, atol=tol)
 
-    @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
+    @pytest.mark.parametrize("x_start", pnp.linspace(-10, 10, 16, endpoint=False))
     @pytest.mark.parametrize("f, df", univariate)
     def test_gradient_descent_optimizer_usergrad(self, x_start, f, df, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
@@ -196,4 +196,4 @@ class TestGradientDescentOptimizer:
 
         x_new = sgd_opt.step(f, x_start, grad_fn=df)
         x_correct = x_start - df(x_start) * stepsize
-        assert np.allclose(x_new, x_correct, atol=tol)
+        assert pnp.allclose(x_new, x_correct, atol=tol)

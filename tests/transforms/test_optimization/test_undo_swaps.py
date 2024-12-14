@@ -20,7 +20,7 @@ import pytest
 from utils import compare_operation_lists
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms.optimization import undo_swaps
 from pennylane.wires import Wires
 
@@ -75,7 +75,7 @@ class TestUndoSwaps:
         tape = qml.tape.make_qscript(transformed_qfunc)()
         res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
-        assert np.allclose(res[0], 0.5)
+        assert pnp.allclose(res[0], 0.5)
 
     def test_one_qubit_gates_transform_qnode(self):
         """Test that a single-qubit gate changes correctly with a SWAP."""
@@ -89,7 +89,7 @@ class TestUndoSwaps:
 
         transformed_qnode = undo_swaps(circuit)
         res = transformed_qnode()
-        assert np.allclose(res[0], 0.5)
+        assert pnp.allclose(res[0], 0.5)
 
     def test_two_qubits_gates_transform(self):
         """Test that a two-qubit gate changes correctly with a SWAP."""
@@ -105,7 +105,7 @@ class TestUndoSwaps:
         tape = qml.tape.make_qscript(transformed_qfunc)()
         res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
-        assert np.allclose(res[2], 1.0)
+        assert pnp.allclose(res[2], 1.0)
 
     def test_templates_transform(self):
         """Test that a template changes correctly with a SWAP."""
@@ -131,7 +131,7 @@ class TestUndoSwaps:
         tape2 = qml.tape.make_qscript(qfunc2)()
         res2 = qml.device("default.qubit", wires=3).execute(tape2)
 
-        assert np.allclose(res1, res2)
+        assert pnp.allclose(res1, res2)
 
     def test_multi_swaps(self):
         """Test that transform works with several SWAPs."""
@@ -158,7 +158,7 @@ class TestUndoSwaps:
         tape2 = qml.tape.make_qscript(qfunc2)()
         res2 = qml.device("default.qubit", wires=3).execute(tape2)
 
-        assert np.allclose(res1, res2)
+        assert pnp.allclose(res1, res2)
 
     def test_decorator(self, mocker):
         """Test that the decorator works on a QNode."""
@@ -175,7 +175,7 @@ class TestUndoSwaps:
             qml.PauliY(wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(qfunc(), -1)
+        assert pnp.allclose(qfunc(), -1)
         [[tape]], _ = spy.call_args
         assert tape.operations == [qml.Hadamard(1), qml.PauliX(2), qml.PauliY(0)]
 
@@ -214,7 +214,7 @@ class TestUndoSwapsInterfaces:
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
-        input = np.array([0.1, 0.2], requires_grad=True)
+        input = pnp.array([0.1, 0.2], requires_grad=True)
 
         # Check that the numerical output is the same
         assert qml.math.allclose(original_qnode(input), transformed_qnode(input))

@@ -28,7 +28,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import QuantumFunctionError
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.measurements import Expectation, MutualInfo, Probability, Sample, Variance, VnEntropy
 from pennylane.measurements.measurements import ObservableReturnTypes
 
@@ -129,11 +129,11 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
         if return_type == "Hermitian":
             return qml.expval(
                 qml.Hermitian(
-                    np.array([[1.0, 0.0], [0.0, -1.0]], requires_grad=False), wires=single_meas_wire
+                    pnp.array([[1.0, 0.0], [0.0, -1.0]], requires_grad=False), wires=single_meas_wire
                 )
             )
         if return_type == "Projector":
-            return qml.expval(qml.Projector(np.array([1]), wires=single_meas_wire))
+            return qml.expval(qml.Projector(pnp.array([1]), wires=single_meas_wire))
         if return_type == Variance:
             return qml.var(qml.PauliZ(wires=single_meas_wire))
         if return_type == VnEntropy:
@@ -151,12 +151,12 @@ def get_variable(interface, wire_specs, complex=False):
     num_wires = len(wire_specs[1])
 
     if interface is None:
-        return np.array([0.1] * num_wires)
+        return pnp.array([0.1] * num_wires)
     if interface == "autograd":
-        return np.array([0.1] * num_wires, requires_grad=True)
+        return pnp.array([0.1] * num_wires, requires_grad=True)
     if interface == "jax":
         # complex dtype is required for JAX when holomorphic gradient is used
-        return jnp.array([0.1] * num_wires, dtype=np.complex128 if complex else None)
+        return jnp.array([0.1] * num_wires, dtype=pnp.complex128 if complex else None)
     if interface == "tf":
         # complex dtype is required for TF when the gradients have non-zero
         # imaginary parts, otherwise they will be ignored

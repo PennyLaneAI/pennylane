@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 # ===== Factories for circuits using arbitrary wire labels and numbers
 
@@ -65,4 +65,4 @@ class TestWiresIntegration:
         circuit1 = circuit_factory(dev1, wires1)
         circuit2 = circuit_factory(dev2, wires2)
 
-        assert np.allclose(circuit1(), circuit2(), atol=tol(dev1.shots))
+        assert pnp.allclose(circuit1(), circuit2(), atol=tol(dev1.shots))

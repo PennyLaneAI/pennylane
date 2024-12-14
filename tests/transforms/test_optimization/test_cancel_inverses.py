@@ -20,7 +20,7 @@ import pytest
 from utils import compare_operation_lists
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms.optimization import cancel_inverses
 from pennylane.wires import Wires
 
@@ -239,7 +239,7 @@ class TestCancelInversesInterfaces:
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
-        input = np.array([0.1, 0.2], requires_grad=True)
+        input = pnp.array([0.1, 0.2], requires_grad=True)
 
         # Check that the numerical output is the same
         assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
@@ -419,7 +419,7 @@ class TestTransformDispatch:
         params = [0.1, 0.2]
         res = transformed_qnode(params)
         expected = qnode_circuit(params)
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.jax
     def test_qnode_diff_jax(self):

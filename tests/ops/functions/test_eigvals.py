@@ -22,7 +22,7 @@ import scipy
 from gate_data import CNOT, H, I, S, X, Y, Z
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms import TransformError
 
 one_qubit_no_parameter = [
@@ -55,7 +55,7 @@ class TestSingleOperation:
         op = op_class(wires=0)
         res = qml.eigvals(op)
         expected = op.eigvals()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_gates_qfunc(self, op_class):
@@ -63,7 +63,7 @@ class TestSingleOperation:
         when provided as a qfunc"""
         res = qml.eigvals(op_class)(wires=0)
         expected = op_class(wires=0).eigvals()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_gates_qnode(self, op_class):
@@ -73,7 +73,7 @@ class TestSingleOperation:
         qnode = qml.QNode(lambda: op_class(wires=0) and qml.probs(wires=0), dev)
         res = qml.eigvals(qnode)()
         expected = op_class(wires=0).eigvals()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_parametric_gates_instantiated(self, op_class):
@@ -82,7 +82,7 @@ class TestSingleOperation:
         op = op_class(0.54, wires=0)
         res = qml.eigvals(op)
         expected = op.eigvals()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_parametric_gates_qfunc(self, op_class):
@@ -90,7 +90,7 @@ class TestSingleOperation:
         when provided as a qfunc"""
         res = qml.eigvals(op_class)(0.54, wires=0)
         expected = op_class(0.54, wires=0).eigvals()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_parametric_gates_qnode(self, op_class):
@@ -100,7 +100,7 @@ class TestSingleOperation:
         qnode = qml.QNode(lambda x: op_class(x, wires=0) and qml.probs(wires=0), dev)
         res = qml.eigvals(qnode)(0.54)
         expected = op_class(0.54, wires=0).eigvals()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_adjoint(self, op_class):
@@ -108,21 +108,21 @@ class TestSingleOperation:
         rounding_precision = 6
         res = qml.eigvals(qml.adjoint(op_class))(0.54, wires=0)
         expected = op_class(-0.54, wires=0).eigvals()
-        assert set(np.around(res, rounding_precision)) == set(
-            np.around(expected, rounding_precision)
+        assert set(pnp.around(res, rounding_precision)) == set(
+            pnp.around(expected, rounding_precision)
         )
 
     def test_ctrl(self):
         """Test that the ctrl is correctly taken into account"""
         res = qml.eigvals(qml.ctrl(qml.PauliX, 0))(wires=1)
-        expected = np.linalg.eigvals(qml.matrix(qml.CNOT(wires=[0, 1])))
-        assert np.allclose(np.sort(res), np.sort(expected))
+        expected = pnp.linalg.eigvals(qml.matrix(qml.CNOT(wires=[0, 1])))
+        assert pnp.allclose(pnp.sort(res), pnp.sort(expected))
 
     def test_tensor_product(self):
         """Test a tensor product"""
         res = qml.eigvals(qml.prod(qml.PauliX(0), qml.Identity(1), qml.PauliZ(1), lazy=False))
         expected = [1.0, -1.0, -1.0, 1.0]
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     def test_hamiltonian(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
@@ -130,8 +130,8 @@ class TestSingleOperation:
 
         res = qml.eigvals(ham)
 
-        expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
-        assert np.allclose(res, expected)
+        expected = pnp.linalg.eigvalsh(reduce(pnp.kron, [Z, Y]) - 0.5 * reduce(pnp.kron, [I, X]))
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.xfail(
         reason="This test will fail because Hamiltonians are not queued to tapes yet!"
@@ -147,8 +147,8 @@ class TestSingleOperation:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(ansatz)(x)
 
-        expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
-        assert np.allclose(res, expected)
+        expected = pnp.linalg.eigvalsh(reduce(pnp.kron, [Z, Y]) - 0.5 * reduce(pnp.kron, [I, X]))
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize(
         ("row", "col", "dat"),
@@ -156,9 +156,9 @@ class TestSingleOperation:
             (
                 # coordinates and values of a sparse Hamiltonian computed for H2
                 # with geometry: np.array([[0.0, 0.0, 0.3674625962], [0.0, 0.0, -0.3674625962]])
-                np.array([0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15]),
-                np.array([0, 1, 2, 3, 12, 4, 5, 6, 9, 7, 8, 6, 9, 10, 11, 3, 12, 13, 14, 15]),
-                np.array(
+                pnp.array([0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15]),
+                pnp.array([0, 1, 2, 3, 12, 4, 5, 6, 9, 7, 8, 6, 9, 10, 11, 3, 12, 13, 14, 15]),
+                pnp.array(
                     [
                         0.72004228 + 0.0j,
                         0.2481941 + 0.0j,
@@ -192,19 +192,19 @@ class TestSingleOperation:
         h_sparse = qml.SparseHamiltonian(h_mat, wires=range(4))
 
         dense_mat = h_mat.todense()
-        dense_eigvals = np.sort(np.linalg.eigvals(dense_mat))
+        dense_eigvals = pnp.sort(pnp.linalg.eigvals(dense_mat))
 
         # k = 1  (< N-1) scipy.sparse.linalg is used:
         val_groundstate = qml.eigvals(h_sparse, k=1)
-        assert np.allclose(val_groundstate, dense_eigvals[0])
+        assert pnp.allclose(val_groundstate, dense_eigvals[0])
 
         # k = 14  (< N-1) scipy.sparse.linalg is used:
-        val_n_sparse = np.sort(qml.eigvals(h_sparse, k=14))
-        assert np.allclose(val_n_sparse, dense_eigvals[0:-2])
+        val_n_sparse = pnp.sort(qml.eigvals(h_sparse, k=14))
+        assert pnp.allclose(val_n_sparse, dense_eigvals[0:-2])
 
         # k = 16 (> N-1) qml.math.linalg is used:
-        val_all = np.sort(qml.eigvals(h_sparse, k=16))
-        assert np.allclose(val_all, dense_eigvals)
+        val_all = pnp.sort(qml.eigvals(h_sparse, k=16))
+        assert pnp.allclose(val_all, dense_eigvals)
 
 
 class TestMultipleOperations:
@@ -219,10 +219,10 @@ class TestMultipleOperations:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = qml.eigvals(tape)
-        expected = np.linalg.eigvals(np.kron(X, np.kron(S, H)))
+        expected = pnp.linalg.eigvals(pnp.kron(X, pnp.kron(S, H)))
 
-        assert np.allclose(np.sort(res.real), np.sort(expected.real))
-        assert np.allclose(np.sort(res.imag), np.sort(expected.imag))
+        assert pnp.allclose(pnp.sort(res.real), pnp.sort(expected.real))
+        assert pnp.allclose(pnp.sort(res.imag), pnp.sort(expected.imag))
 
     def test_multiple_operations_tape(self):
         """Check the eigenvalues for a tape containing multiple gates"""
@@ -237,8 +237,8 @@ class TestMultipleOperations:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(tape)
 
-        expected = np.linalg.eigvals(np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)))
-        assert np.allclose(res, expected)
+        expected = pnp.linalg.eigvals(pnp.kron(I, CNOT) @ pnp.kron(X, pnp.kron(S, H)))
+        assert pnp.allclose(res, expected)
 
     def test_multiple_operations_qfunc(self):
         """Check the eigenvalues for a qfunc containing multiple gates"""
@@ -252,8 +252,8 @@ class TestMultipleOperations:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(testcircuit)()
 
-        expected = np.linalg.eigvals(np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)))
-        assert np.allclose(res, expected)
+        expected = pnp.linalg.eigvals(pnp.kron(I, CNOT) @ pnp.kron(X, pnp.kron(S, H)))
+        assert pnp.allclose(res, expected)
 
     def test_multiple_operations_qnode(self):
         """Check the eigenvalues for a QNode containing multiple gates"""
@@ -270,8 +270,8 @@ class TestMultipleOperations:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(testcircuit)()
 
-        expected = np.linalg.eigvals(np.kron(I, CNOT) @ np.kron(X, np.kron(np.linalg.inv(S), H)))
-        assert np.allclose(res, expected)
+        expected = pnp.linalg.eigvals(pnp.kron(I, CNOT) @ pnp.kron(X, pnp.kron(pnp.linalg.inv(S), H)))
+        assert pnp.allclose(res, expected)
 
 
 class TestCompositeOperations:
@@ -283,10 +283,10 @@ class TestCompositeOperations:
         sum_op = qml.sum(qml.s_prod(1j, qml.PauliZ(wires=0)), qml.Identity(wires=0))
         sum_eigvals = qml.eigvals(sum_op)
 
-        mat_rep = np.array([[1 + 1j, 0], [0, 1 - 1j]])
-        mat_eigvals = np.linalg.eig(mat_rep)[0]
+        mat_rep = pnp.array([[1 + 1j, 0], [0, 1 - 1j]])
+        mat_eigvals = pnp.linalg.eig(mat_rep)[0]
 
-        assert np.allclose(mat_eigvals, sum_eigvals)
+        assert pnp.allclose(mat_eigvals, sum_eigvals)
 
     def test_prod_eigvals(self):
         """Test that a prod op returns the correct eigvals."""
@@ -294,10 +294,10 @@ class TestCompositeOperations:
         prod_op = qml.prod(qml.s_prod(1j, qml.PauliZ(wires=0)), qml.Identity(wires=1))
         prod_eigvals = qml.eigvals(prod_op)
 
-        mat_rep = np.array([[1j, 0, 0, 0], [0, 1j, 0, 0], [0, 0, -1j, 0], [0, 0, 0, -1j]])
-        mat_eigvals = np.linalg.eig(mat_rep)[0]
+        mat_rep = pnp.array([[1j, 0, 0, 0], [0, 1j, 0, 0], [0, 0, -1j, 0], [0, 0, 0, -1j]])
+        mat_eigvals = pnp.linalg.eig(mat_rep)[0]
 
-        assert np.allclose(mat_eigvals, prod_eigvals)
+        assert pnp.allclose(mat_eigvals, prod_eigvals)
 
     def test_composite_eigvals(self):
         """Test that an arithmetic op with non-hermitian base ops produces the correct eigen-values."""
@@ -306,10 +306,10 @@ class TestCompositeOperations:
         imag_op = -0.5j * (op - op_adj)
         op_eigvals = qml.eigvals(imag_op)
 
-        mat_rep = np.array([[1.0, 0.0], [0.0, -1.0]])
-        mat_eigvals = np.linalg.eig(mat_rep)[0]
+        mat_rep = pnp.array([[1.0, 0.0], [0.0, -1.0]])
+        mat_eigvals = pnp.linalg.eig(mat_rep)[0]
 
-        assert np.allclose(mat_eigvals, op_eigvals)
+        assert pnp.allclose(mat_eigvals, op_eigvals)
 
 
 class TestTemplates:
@@ -318,7 +318,7 @@ class TestTemplates:
 
     def test_instantiated(self):
         """Test an instantiated template"""
-        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        weights = pnp.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
@@ -331,7 +331,7 @@ class TestTemplates:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             expected = qml.eigvals(tape)
 
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     def test_qfunc(self):
         """Test a template used within a qfunc"""
@@ -340,7 +340,7 @@ class TestTemplates:
             qml.StronglyEntanglingLayers(weights, wires=[0, 1])
             qml.RX(x, wires=0)
 
-        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        weights = pnp.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
@@ -356,7 +356,7 @@ class TestTemplates:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             expected = qml.eigvals(tape)
 
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     def test_nested_instantiated(self):
         """Test an operation that must be decomposed twice"""
@@ -369,7 +369,7 @@ class TestTemplates:
             def compute_decomposition(weights, wires):
                 return [qml.StronglyEntanglingLayers(weights, wires=wires)]
 
-        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        weights = pnp.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         op = CustomOp(weights, wires=[0, 1])
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
@@ -383,7 +383,7 @@ class TestTemplates:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             expected = qml.eigvals(tape)
 
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     def test_nested_qfunc(self):
         """Test an operation that must be decomposed twice"""
@@ -400,7 +400,7 @@ class TestTemplates:
             CustomOp(weights, wires=[0, 1])
             qml.RX(x, wires=0)
 
-        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        weights = pnp.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
@@ -416,14 +416,14 @@ class TestTemplates:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             expected = qml.eigvals(tape)
 
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
 
 class TestDifferentiation:
     """Differentiation tests"""
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+    @pytest.mark.parametrize("v", pnp.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
         """Test that differentiation works correctly when using JAX"""
 
@@ -445,11 +445,11 @@ class TestDifferentiation:
             dl = jax.grad(loss)(x)
 
         assert isinstance(l, jax.numpy.ndarray)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
+        assert pnp.allclose(l, 2 * pnp.cos(v / 2))
+        assert pnp.allclose(dl, -pnp.sin(v / 2))
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+    @pytest.mark.parametrize("v", pnp.linspace(0.2, 1.6, 8))
     def test_torch(self, v):
         """Test that differentiation works correctly when using Torch"""
 
@@ -473,11 +473,11 @@ class TestDifferentiation:
         dl = x.grad
 
         assert isinstance(l, torch.Tensor)
-        assert np.allclose(l.detach(), 2 * np.cos(v / 2))
-        assert np.allclose(dl.detach(), -np.sin(v / 2))
+        assert pnp.allclose(l.detach(), 2 * pnp.cos(v / 2))
+        assert pnp.allclose(dl.detach(), -pnp.sin(v / 2))
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+    @pytest.mark.parametrize("v", pnp.linspace(0.2, 1.6, 8))
     def test_tensorflow(self, v):
         """Test that differentiation works correctly when using TF"""
         import tensorflow as tf
@@ -498,12 +498,12 @@ class TestDifferentiation:
         dl = tape.gradient(l, x)
 
         assert isinstance(l, tf.Tensor)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
+        assert pnp.allclose(l, 2 * pnp.cos(v / 2))
+        assert pnp.allclose(dl, -pnp.sin(v / 2))
 
     @pytest.mark.autograd
     @pytest.mark.xfail(reason="np.linalg.eigvals not differentiable using Autograd")
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+    @pytest.mark.parametrize("v", pnp.linspace(0.2, 1.6, 8))
     def test_autograd(self, v):
         """Test that differentiation works correctly when using Autograd"""
 
@@ -516,12 +516,12 @@ class TestDifferentiation:
             U = qml.eigvals(circuit)(theta)
             return qml.math.sum(qml.math.real(U))
 
-        x = np.array(v, requires_grad=True)
+        x = pnp.array(v, requires_grad=True)
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             l = loss(x)
             dl = qml.grad(loss)(x)
 
         assert isinstance(l, qml.numpy.tensor)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
+        assert pnp.allclose(l, 2 * pnp.cos(v / 2))
+        assert pnp.allclose(dl, -pnp.sin(v / 2))

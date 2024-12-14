@@ -20,7 +20,7 @@ import numpy as onp
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.optimize import RotoselectOptimizer
 
 
@@ -61,7 +61,7 @@ class TestRotoselectOptimizer:
         _, _, res = rotoselect_opt.step_and_cost(cost_fn, params, generators)
         expected = cost_fn(params, generators)
 
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
     @pytest.mark.slow
     @pytest.mark.parametrize("x_start", [[1.2, 0.2], [-0.62, -2.1], [0.05, 0.8]])
@@ -112,7 +112,7 @@ class TestRotoselectOptimizer:
             x_start, generators = rotoselect_opt.step(cost_fn, x_start, generators)
             optimal_x_start = self.rotosolve_step(f_best_gen, optimal_x_start)
 
-        assert np.allclose(x_start, optimal_x_start, atol=tol)
+        assert pnp.allclose(x_start, optimal_x_start, atol=tol)
         assert generators == optimal_generators
 
     def test_rotoselect_optimizer_raises(self):
@@ -161,15 +161,15 @@ class TestRotoselectOptimizer:
             cost_fn, x_start, generators, shift=1.0
         )
 
-        assert not np.allclose(params_new, params_new2, atol=tol)
-        assert np.allclose(res_new2, cost_fn(x_start, generators, shift=1.0), atol=tol)
+        assert not pnp.allclose(params_new, params_new2, atol=tol)
+        assert pnp.allclose(res_new2, cost_fn(x_start, generators, shift=1.0), atol=tol)
 
     @staticmethod
     def rotosolve_step(f, x):
         """Helper function to test the Rotosolve and Rotoselect optimizers"""
         # make sure that x is an array
-        if np.ndim(x) == 0:
-            x = np.array([x])
+        if pnp.ndim(x) == 0:
+            x = pnp.array([x])
 
         # helper function for x[d] = theta
         def insert(xf, d, theta):
@@ -178,12 +178,12 @@ class TestRotoselectOptimizer:
 
         for d, _ in enumerate(x):
             H_0 = float(f(insert(x, d, 0)))
-            H_p = float(f(insert(x, d, np.pi / 2)))
-            H_m = float(f(insert(x, d, -np.pi / 2)))
+            H_p = float(f(insert(x, d, pnp.pi / 2)))
+            H_m = float(f(insert(x, d, -pnp.pi / 2)))
             a = onp.arctan2(2 * H_0 - H_p - H_m, H_p - H_m)
 
-            x[d] = -np.pi / 2 - a
+            x[d] = -pnp.pi / 2 - a
 
-            if x[d] <= -np.pi:
-                x[d] += 2 * np.pi
+            if x[d] <= -pnp.pi:
+                x[d] += 2 * pnp.pi
         return x

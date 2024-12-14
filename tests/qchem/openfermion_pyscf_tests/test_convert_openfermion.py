@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import fermi
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 openfermion = pytest.importorskip("openfermion")
 
@@ -112,10 +112,10 @@ class TestFromOpenFermion:
         )
 
         pl_op = qml.from_openfermion(q_op, tol=1e-6)
-        assert not np.any(pl_op.coeffs.imag)
+        assert not pnp.any(pl_op.coeffs.imag)
 
         pl_op = qml.from_openfermion(q_op, tol=1e-10)
-        assert np.any(pl_op.coeffs.imag)
+        assert pnp.any(pl_op.coeffs.imag)
 
     def test_type_qubit(self):
         """Test that from_openfermion yields a ``LinearCombination`` object."""
@@ -288,12 +288,12 @@ class TestToOpenFermion:
     def test_tol(self, pl_op):
         """Test whether the to_openfermion function removes the imaginary parts if they are all smaller than tol."""
         q_op = qml.to_openfermion(pl_op, tol=1e-6)
-        coeffs = np.array(list(q_op.terms.values()))
-        assert not np.any(coeffs.imag)
+        coeffs = pnp.array(list(q_op.terms.values()))
+        assert not pnp.any(coeffs.imag)
 
         q_op = qml.to_openfermion(pl_op, tol=1e-10)
-        coeffs = np.array(list(q_op.terms.values()))
-        assert np.any(coeffs.imag)
+        coeffs = pnp.array(list(q_op.terms.values()))
+        assert pnp.any(coeffs.imag)
 
     MAPPED_OPS = (
         (
@@ -321,7 +321,7 @@ class TestToOpenFermion:
         _match = "Expected a Pennylane operator with a valid Pauli word representation,"
 
         pl_op = qml.ops.LinearCombination(
-            np.array([0.1 + 0.0j, 0.0]), [qml.prod(qml.PauliX(0)), op]
+            pnp.array([0.1 + 0.0j, 0.0]), [qml.prod(qml.PauliX(0)), op]
         )
         with pytest.raises(ValueError, match=_match):
             qml.to_openfermion(qml.to_openfermion(pl_op))

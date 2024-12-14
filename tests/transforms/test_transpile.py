@@ -8,7 +8,7 @@ from math import isclose
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms.transpile import transpile
 
 
@@ -135,7 +135,7 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_expectation = transpiled_qnode(0.1, 0.2, 0.3)
 
-        assert isclose(original_expectation, transpiled_expectation, abs_tol=np.finfo(float).eps)
+        assert isclose(original_expectation, transpiled_expectation, abs_tol=pnp.finfo(float).eps)
 
     def test_transpile_qfunc_transpiled_mmt_probs(self):
         """test that transpile does not alter output for probs measurement"""
@@ -152,7 +152,7 @@ class TestTranspile:
         transpiled_probs = transpiled_qnode(0.1, 0.2, 0.3)
 
         assert all(
-            isclose(po, pt, abs_tol=np.finfo(float).eps)
+            isclose(po, pt, abs_tol=pnp.finfo(float).eps)
             for po, pt in zip(original_probs, transpiled_probs)
         )
 
@@ -170,7 +170,7 @@ class TestTranspile:
 
         transpiled_circ = transpile(circuit, coupling_map=[(0, 1), (1, 2)])
         transpiled_qnode = qml.QNode(transpiled_circ, dev)
-        params = np.array([0.5, 0.1, 0.2], requires_grad=True)
+        params = pnp.array([0.5, 0.1, 0.2], requires_grad=True)
         qml.gradients.param_shift(transpiled_qnode)(params)
 
     def test_more_than_2_qubits_raises_anywires(self):
@@ -247,7 +247,7 @@ class TestTranspile:
         assert transpiled_ops[4].wires == qml.wires.Wires([0, 2])
 
         assert qml.math.allclose(
-            original_expectation, transpiled_expectation, atol=np.finfo(float).eps
+            original_expectation, transpiled_expectation, atol=pnp.finfo(float).eps
         )
 
     def test_transpile_ops_anywires_1_qubit(self):
@@ -290,7 +290,7 @@ class TestTranspile:
         assert transpiled_ops[4].wires == qml.wires.Wires([0, 2])
 
         assert qml.math.allclose(
-            original_expectation, transpiled_expectation, atol=np.finfo(float).eps
+            original_expectation, transpiled_expectation, atol=pnp.finfo(float).eps
         )
 
     def test_transpile_mcm(self):
@@ -327,7 +327,7 @@ class TestTranspile:
         transpiled_expectation = transpiled_qnode(param)
 
         assert qml.math.allclose(
-            original_expectation, transpiled_expectation, atol=np.finfo(float).eps
+            original_expectation, transpiled_expectation, atol=pnp.finfo(float).eps
         )
 
     def test_transpile_state(self):
@@ -353,9 +353,9 @@ class TestTranspile:
         tape = qml.tape.QuantumScript([qml.PauliX(0), qml.CNOT(wires=(0, 2))], [qml.state()])
         batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)], device=dev)
 
-        original_mat = np.arange(8)
+        original_mat = pnp.arange(8)
         new_mat = fn((original_mat,))
-        expected_new_mat = np.swapaxes(np.reshape(original_mat, [2, 2, 2]), 1, 2).flatten()
+        expected_new_mat = pnp.swapaxes(pnp.reshape(original_mat, [2, 2, 2]), 1, 2).flatten()
         assert qml.math.allclose(new_mat, expected_new_mat)
 
         assert batch[0][0] == qml.PauliX(0)
@@ -378,9 +378,9 @@ class TestTranspile:
         )
         batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)], device=dev)
 
-        original_mat = np.arange(8)
+        original_mat = pnp.arange(8)
         new_mat, _ = fn(((original_mat, 2.0),))
-        expected_new_mat = np.swapaxes(np.reshape(original_mat, [2, 2, 2]), 1, 2).flatten()
+        expected_new_mat = pnp.swapaxes(pnp.reshape(original_mat, [2, 2, 2]), 1, 2).flatten()
         assert qml.math.allclose(new_mat, expected_new_mat)
 
         assert batch[0][0] == qml.PauliX(0)

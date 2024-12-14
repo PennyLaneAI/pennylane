@@ -18,7 +18,7 @@ import warnings
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.shadows.transforms import _replace_obs
 
 
@@ -60,7 +60,7 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     """Quantum Fourier Transform circuit"""
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
-    one_state = np.zeros(wires)
+    one_state = pnp.zeros(wires)
     one_state[-1] = 1
 
     @qml.qnode(dev, interface=interface)
@@ -124,7 +124,7 @@ class TestReplaceObs:
         circuit = _replace_obs(circuit, qml.probs, wires=[0, 1])
         res = circuit()
 
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, pnp.ndarray)
         assert res.shape == (4,)
 
 
@@ -141,7 +141,7 @@ class TestStateForward:
         circuit = qml.shadows.shadow_state(circuit, wires=range(wires), diffable=diffable)
 
         actual = circuit()
-        expected = np.ones((2**wires, 2**wires)) / (2**wires)
+        expected = pnp.ones((2**wires, 2**wires)) / (2**wires)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -153,8 +153,8 @@ class TestStateForward:
         circuit = qml.shadows.shadow_state(circuit, wires=range(wires), diffable=diffable)
 
         actual = circuit()
-        expected = np.zeros((2**wires, 2**wires))
-        expected[np.array([0, 0, -1, -1]), np.array([0, -1, 0, -1])] = 0.5
+        expected = pnp.zeros((2**wires, 2**wires))
+        expected[pnp.array([0, 0, -1, -1]), pnp.array([0, -1, 0, -1])] = 0.5
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -170,8 +170,8 @@ class TestStateForward:
         actual = circuit()
 
         expected = [
-            np.array([[0.5, 0], [0, 0.5]]),
-            np.array([[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]),
+            pnp.array([[0.5, 0], [0, 0.5]]),
+            pnp.array([[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]),
         ]
 
         assert qml.math.allclose(actual[0], expected[0], atol=1e-1)
@@ -223,8 +223,8 @@ class TestStateForwardInterfaces:
         circuit = qml.shadows.shadow_state(circuit, wires=[0, 1, 2], diffable=diffable)
 
         actual = circuit()
-        expected = np.exp(np.arange(8) * 2j * np.pi / 8) / np.sqrt(8)
-        expected = np.outer(expected, np.conj(expected))
+        expected = pnp.exp(pnp.arange(8) * 2j * pnp.pi / 8) / pnp.sqrt(8)
+        expected = pnp.outer(expected, pnp.conj(expected))
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -233,7 +233,7 @@ class TestStateBackward:
     """Test that the gradient of the state reconstruction is correct"""
 
     # make rotations close to pi / 2 to ensure gradients are not too small
-    x = np.random.uniform(
+    x = pnp.random.uniform(
         0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)
     ).tolist()
 
@@ -246,7 +246,7 @@ class TestStateBackward:
         sub_wires = [[0, 1], [1, 2]]
         shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
 
-        x = np.array(self.x, requires_grad=True)
+        x = pnp.array(self.x, requires_grad=True)
 
         # for autograd in particular, take only the real part since it doesn't
         # support complex differentiation

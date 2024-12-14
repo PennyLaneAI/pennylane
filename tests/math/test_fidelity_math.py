@@ -18,7 +18,7 @@ import numpy as onp
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -34,7 +34,7 @@ class TestFidelityMath:
     state_vectors = [
         ([1, 0], [0, 1], 0),
         ([0, 1], [0, 1], 1.0),
-        ([1, 0], [1, 1] / np.sqrt(2), 0.5),
+        ([1, 0], [1, 1] / pnp.sqrt(2), 0.5),
     ]
 
     density_mats = [
@@ -47,7 +47,7 @@ class TestFidelityMath:
     array_funcs = [
         lambda x: x,
         onp.array,
-        np.array,
+        pnp.array,
         jnp.array,
         torch.tensor,
         tf.Variable,
@@ -151,7 +151,7 @@ class TestFidelityMath:
 
     def test_same_number_wires_dm(self):
         """Test that the two states must act on the same number of wires"""
-        state0 = np.diag([0, 1, 0, 0])
+        state0 = pnp.diag([0, 1, 0, 0])
         state1 = [[1, 0], [0, 0]]
         with pytest.raises(
             qml.QuantumFunctionError, match="The two states must have the same number of wires"
@@ -163,7 +163,7 @@ class TestFidelityMath:
     def test_broadcast_sv_sv(self, check_state, func):
         """Test broadcasting works for fidelity and state vectors"""
         state0 = func([[1, 0], [0, 1], [1, 0]])
-        state1 = func([[0, 1], [0, 1], [1, 1] / np.sqrt(2)])
+        state1 = func([[0, 1], [0, 1], [1, 1] / pnp.sqrt(2)])
         expected = [0, 1, 0.5]
 
         fidelity = qml.math.fidelity_statevector(state0, state1, check_state)
@@ -174,7 +174,7 @@ class TestFidelityMath:
     def test_broadcast_sv_sv_unbatched(self, check_state, func):
         """Test broadcasting works for fidelity and state vectors when one input is unbatched"""
         state0 = func([1, 0])
-        state1 = func([[0, 1], [1, 0], [1, 1] / np.sqrt(2)])
+        state1 = func([[0, 1], [1, 0], [1, 1] / pnp.sqrt(2)])
         expected = [0, 1, 0.5]
 
         fidelity = qml.math.fidelity_statevector(state0, state1, check_state)
@@ -254,9 +254,9 @@ def cost_fn_multi1(x):
 
 
 def cost_fn_multi2(x):
-    first_term = qml.math.convert_like(np.ones((4, 4)) / 4, x)
-    second_term = np.zeros((4, 4))
-    second_term[1:3, 1:3] = np.array([[1, -1], [-1, 1]]) / 2
+    first_term = qml.math.convert_like(pnp.ones((4, 4)) / 4, x)
+    second_term = pnp.zeros((4, 4))
+    second_term[1:3, 1:3] = pnp.array([[1, -1], [-1, 1]]) / 2
     second_term = qml.math.convert_like(second_term, x)
 
     x = qml.math.cast_like(x, first_term)
@@ -309,11 +309,11 @@ class TestGradient:
     ]
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_grad_autograd(self, x, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for autograd"""
-        x = np.array(x)
+        x = pnp.array(x)
         res = cost_fn(x)
         grad = qml.grad(cost_fn)(x)
 
@@ -321,7 +321,7 @@ class TestGradient:
         assert qml.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_grad_jax(self, x, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for jax"""
@@ -333,7 +333,7 @@ class TestGradient:
         assert qml.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_grad_jax_jit(self, x, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for jax-jit"""
@@ -347,11 +347,11 @@ class TestGradient:
         assert qml.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_grad_torch(self, x, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for torch"""
-        x = torch.from_numpy(np.array(x)).requires_grad_()
+        x = torch.from_numpy(pnp.array(x)).requires_grad_()
         res = cost_fn(x)
         res.backward()
         grad = x.grad
@@ -360,7 +360,7 @@ class TestGradient:
         assert qml.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+    @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_grad_tf(self, x, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for tf"""
@@ -378,7 +378,7 @@ class TestGradient:
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_broadcast_autograd(self, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for a broadcasted input for autograd"""
-        x = np.array([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+        x = pnp.array([0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
         res = cost_fn(x)
         grad = qml.math.diag(qml.jacobian(cost_fn)(x))
 
@@ -389,7 +389,7 @@ class TestGradient:
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_broadcast_jax(self, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for a broadcasted input for jax"""
-        x = jnp.array([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+        x = jnp.array([0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
         res = cost_fn(x)
         grad = qml.math.diag(jax.jacobian(cost_fn)(x))
 
@@ -400,7 +400,7 @@ class TestGradient:
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_broadcast_jax_jit(self, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for a broadcasted input for jax-jit"""
-        x = jnp.array([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+        x = jnp.array([0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
 
         jitted_cost = jax.jit(cost_fn)
         res = jitted_cost(x)
@@ -414,7 +414,7 @@ class TestGradient:
     def test_broadcast_torch(self, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for a broadcasted input for torch"""
         x = torch.from_numpy(
-            np.array([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
+            pnp.array([0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2])
         ).requires_grad_()
 
         res = cost_fn(x)
@@ -428,7 +428,7 @@ class TestGradient:
     def test_broadcast_tf(self, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for a broadcasted input for tf"""
         x = tf.Variable(
-            [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2], trainable=True, dtype="float64"
+            [0.0, 1e-7, 0.456, pnp.pi / 2 - 1e-7, pnp.pi / 2], trainable=True, dtype="float64"
         )
 
         with tf.GradientTape() as tape:

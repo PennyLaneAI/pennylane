@@ -18,7 +18,7 @@ import pytest
 from flaky import flaky
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def test_integration():
@@ -32,15 +32,15 @@ def test_integration():
         qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
         return qml.expval(qml.PauliZ(0))
 
-    weights = np.random.random(
+    weights = pnp.random.random(
         qml.templates.StronglyEntanglingLayers.shape(layers, wires), requires_grad=True
     )
 
     qn_l = qml.QNode(circuit, dev_l)
     qn_d = qml.QNode(circuit, dev_d)
 
-    assert np.allclose(qn_l(weights), qn_d(weights))
-    assert np.allclose(qml.grad(qn_l)(weights), qml.grad(qn_d)(weights))
+    assert pnp.allclose(qn_l(weights), qn_d(weights))
+    assert pnp.allclose(qml.grad(qn_l)(weights), qml.grad(qn_d)(weights))
 
 
 def test_no_backprop_auto_interface():
@@ -78,14 +78,14 @@ def test_finite_shots():
     dq = qml.device("default.qubit", shots=50000)
 
     def circuit():
-        qml.RX(np.pi / 4, 0)
-        qml.RY(-np.pi / 4, 1)
+        qml.RX(pnp.pi / 4, 0)
+        qml.RY(-pnp.pi / 4, 1)
         return qml.expval(qml.PauliY(0))
 
     circ0 = qml.QNode(circuit, dev, diff_method=None)
     circ1 = qml.QNode(circuit, dq, diff_method=None)
 
-    assert np.allclose(circ0(), circ1(), rtol=0.01)
+    assert pnp.allclose(circ0(), circ1(), rtol=0.01)
 
 
 class TestDtypePreserved:
@@ -97,8 +97,8 @@ class TestDtypePreserved:
     @pytest.mark.parametrize(
         "c_dtype",
         [
-            np.complex64,
-            np.complex128,
+            pnp.complex64,
+            pnp.complex128,
         ],
     )
     @pytest.mark.parametrize(
@@ -129,8 +129,8 @@ class TestDtypePreserved:
         if isinstance(measurement, (qml.measurements.StateMP, qml.measurements.DensityMatrixMP)):
             expected_dtype = c_dtype
         else:
-            expected_dtype = np.float64 if c_dtype == np.complex128 else np.float32
-        if isinstance(res, np.ndarray):
+            expected_dtype = pnp.float64 if c_dtype == pnp.complex128 else pnp.float32
+        if isinstance(res, pnp.ndarray):
             assert res.dtype == expected_dtype
         else:
             assert isinstance(res, float)

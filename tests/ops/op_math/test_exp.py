@@ -19,7 +19,7 @@ import warnings
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.operation import (
     AllWires,
     AnyWires,
@@ -63,7 +63,7 @@ class TestInitialization:
     def test_provided_coeff(self, constructor):
         """Test initialization with a provided coefficient and a Tensor base."""
         base = qml.PauliZ("b") @ qml.PauliZ("c")
-        coeff = np.array(1.234)
+        coeff = pnp.array(1.234)
 
         op = constructor(base, coeff)
 
@@ -82,7 +82,7 @@ class TestInitialization:
 
         base_coeff = 1.23
         base = qml.RX(base_coeff, wires=5)
-        coeff = np.array(-2.0)
+        coeff = pnp.array(-2.0)
 
         op = constructor(base, coeff)
 
@@ -120,16 +120,16 @@ class TestProperties:
     def test_data(self):
         """Test intializaing and accessing the data property."""
 
-        phi = np.array(1.234)
-        coeff = np.array(2.345)
+        phi = pnp.array(1.234)
+        coeff = pnp.array(2.345)
 
         base = qml.RX(phi, wires=0)
         op = Exp(base, coeff)
 
         assert op.data == (coeff, phi)
 
-        new_phi = np.array(0.1234)
-        new_coeff = np.array(3.456)
+        new_phi = pnp.array(0.1234)
+        new_coeff = pnp.array(3.456)
         op.data = (new_coeff, new_phi)
 
         assert op.data == (new_coeff, new_phi)
@@ -157,24 +157,24 @@ class TestProperties:
         """Test the batching properties and methods."""
 
         # base is batched
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        base = qml.RX(pnp.array([1.2, 2.3, 3.4]), 0)
         op = Exp(base)
         assert op.batch_size == 3
 
         # coeff is batched
         base = qml.RX(1, 0)
-        op = Exp(base, coeff=np.array([1.2, 2.3, 3.4]))
+        op = Exp(base, coeff=pnp.array([1.2, 2.3, 3.4]))
         assert op.batch_size == 3
 
         # both are batched
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = Exp(base, coeff=np.array([1.2, 2.3, 3.4]))
+        base = qml.RX(pnp.array([1.2, 2.3, 3.4]), 0)
+        op = Exp(base, coeff=pnp.array([1.2, 2.3, 3.4]))
         assert op.batch_size == 3
 
     def test_different_batch_sizes_raises_error(self):
         """Test that using different batch sizes for base and scalar raises an error."""
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = Exp(base, np.array([0.1, 1.2, 2.3, 3.4]))
+        base = qml.RX(pnp.array([1.2, 2.3, 3.4]), 0)
+        op = Exp(base, pnp.array([0.1, 1.2, 2.3, 3.4]))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
@@ -186,7 +186,7 @@ class TestMatrix:
 
     def test_base_batching_support(self):
         """Test that Exp matrix has base batching support."""
-        x = np.array([-1, -2, -3])
+        x = pnp.array([-1, -2, -3])
         op = Exp(qml.RX(x, 0), 3)
         mat = op.matrix()
         true_mat = qml.math.stack([Exp(qml.RX(i, 0), 3).matrix() for i in x])
@@ -195,7 +195,7 @@ class TestMatrix:
 
     def test_coeff_batching_support(self):
         """Test that Exp matrix has coeff batching support."""
-        x = np.array([-1, -2, -3])
+        x = pnp.array([-1, -2, -3])
         op = Exp(qml.PauliX(0), x)
         mat = op.matrix()
         true_mat = qml.math.stack([Exp(qml.PauliX(0), i).matrix() for i in x])
@@ -204,8 +204,8 @@ class TestMatrix:
 
     def test_base_and_coeff_batching_support(self):
         """Test that Exp matrix has base and coeff batching support."""
-        x = np.array([-1, -2, -3])
-        y = np.array([1, 2, 3])
+        x = pnp.array([-1, -2, -3])
+        y = pnp.array([1, 2, 3])
         op = Exp(qml.RX(x, 0), y)
         mat = op.matrix()
         true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
@@ -276,7 +276,7 @@ class TestMatrix:
     @pytest.mark.parametrize("requires_grad", (True, False))
     def test_matrix_autograd_rx(self, requires_grad):
         """Test the matrix comparing to the rx gate."""
-        phi = np.array(1.234, requires_grad=requires_grad)
+        phi = pnp.array(1.234, requires_grad=requires_grad)
         exp_rx = Exp(qml.PauliX(0), -0.5j * phi)
         rx = qml.RX(phi, 0)
 
@@ -287,7 +287,7 @@ class TestMatrix:
     def test_matrix_autograd_rz(self, requires_grad):
         """Test the matrix comparing to the rz gate. This is a gate with an
         autograd coefficient but empty diagonalizing gates."""
-        phi = np.array(1.234, requires_grad=requires_grad)
+        phi = pnp.array(1.234, requires_grad=requires_grad)
         exp_rz = Exp(qml.PauliZ(0), -0.5j * phi)
         rz = qml.RZ(phi, 0)
 
@@ -308,7 +308,7 @@ class TestMatrix:
     @pytest.mark.autograd
     def test_base_no_diagonalizing_gates_autograd_coeff(self):
         """Test the matrix when the base matrix doesn't define the diagonalizing gates."""
-        coeff = np.array(0.4)
+        coeff = pnp.array(0.4)
         base = qml.RX(2.0, wires=0)
         op = Exp(base, coeff)
 
@@ -370,7 +370,7 @@ class TestMatrix:
         """Test the sparse matrix function."""
         from scipy.sparse import csr_matrix
 
-        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = pnp.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
         H = csr_matrix(H)
         base = qml.SparseHamiltonian(H, wires=0)
 
@@ -388,7 +388,7 @@ class TestMatrix:
         """Test that sparse_matrix raises an error if wire_order provided."""
         from scipy.sparse import csr_matrix
 
-        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = pnp.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
         H = csr_matrix(H)
         base = qml.SparseHamiltonian(H, wires=0)
 
@@ -506,7 +506,7 @@ class TestDecomposition:
         elif op_class is qml.GlobalPhase:
             # exp(qml.GlobalPhase.generator(), phi) decomposes to PauliRot
             # cannot compare GlobalPhase and PauliRot with qml.equal
-            assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
+            assert pnp.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         else:
             qml.assert_equal(op, dec[0])
 
@@ -792,9 +792,9 @@ class TestIntegration:
             return qml.expval(qml.Z(0))
 
         res = func(phi)
-        assert qml.math.allclose(res, np.cos(phi))
+        assert qml.math.allclose(res, pnp.cos(phi))
         grad = qml.grad(func)(phi)
-        assert qml.math.allclose(grad, -np.sin(phi))
+        assert qml.math.allclose(grad, -pnp.sin(phi))
 
     @pytest.mark.jax
     def test_jax_jit_qnode(self):
@@ -910,11 +910,11 @@ class TestIntegration:
             return qml.expval(Exp(qml.PauliZ(0), x))
 
         res = circuit(x)
-        expected = 0.5 * (np.exp(x) + np.exp(-x))
+        expected = 0.5 * (pnp.exp(x) + pnp.exp(-x))
         assert qml.math.allclose(res, expected)
 
         grad = qml.grad(circuit)(x)
-        expected_grad = 0.5 * (np.exp(x) - np.exp(-x))
+        expected_grad = 0.5 * (pnp.exp(x) - pnp.exp(-x))
         assert qml.math.allclose(grad, expected_grad)
 
     @pytest.mark.torch
@@ -1007,7 +1007,7 @@ class TestIntegration:
         x = qml.numpy.array([1.234, 2.34, 3.456])
         res = circuit(x)
 
-        expected = np.sin(x)
+        expected = pnp.sin(x)
         assert qml.math.allclose(res, expected)
 
 
@@ -1088,5 +1088,5 @@ class TestDifferentiation:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(UserWarning):
-            circuit(np.array(2.0), np.array(0.5))
+            circuit(pnp.array(2.0), pnp.array(0.5))
         assert circuit.tape.trainable_params == [0, 1]

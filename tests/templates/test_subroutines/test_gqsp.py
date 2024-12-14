@@ -20,7 +20,7 @@ import pytest
 from numpy.linalg import matrix_power
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 class TestGQSP:
@@ -29,7 +29,7 @@ class TestGQSP:
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
 
-        angles = np.ones([3, 5])
+        angles = pnp.ones([3, 5])
 
         @qml.prod
         def unitary(wires):
@@ -65,7 +65,7 @@ class TestGQSP:
         )
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
 
-        assert np.allclose(expected_output, generated_output)
+        assert pnp.allclose(expected_output, generated_output)
 
     @pytest.mark.parametrize(
         ("unitary"),
@@ -80,9 +80,9 @@ class TestGQSP:
 
         # Precalucated angles for polynomial p(x) = 0.1 + 0.2x + 0.3x^2
         angles = [
-            np.array([0.10798862, 0.22107159, 1.25635543]),
-            np.array([-3.14159265, 0.0, 0.0]),
-            np.array([3.14159265, 0.0, 0.0]),
+            pnp.array([0.10798862, 0.22107159, 1.25635543]),
+            pnp.array([-3.14159265, 0.0, 0.0]),
+            pnp.array([3.14159265, 0.0, 0.0]),
         ]
 
         dev = qml.device("default.qubit")
@@ -98,20 +98,20 @@ class TestGQSP:
         )
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
 
-        assert np.allclose(expected_output, generated_output)
+        assert pnp.allclose(expected_output, generated_output)
 
     def test_queueing(self):
         """Test that no additional gates are being queued"""
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.GQSP(qml.Z(1), np.ones([3, 3]), control=0)
+            qml.GQSP(qml.Z(1), pnp.ones([3, 3]), control=0)
 
         assert len(q.queue) == 1
         assert q.queue[0].name == "GQSP"
 
     def test_decomposition(self):
 
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        angles = pnp.array([[1, 2], [3, 4], [5, 6]])
 
         qml.GQSP(qml.Z(1), angles, control=0)
 
@@ -138,7 +138,7 @@ class TestGQSP:
 
         import jax.numpy as jnp
 
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        angles = pnp.array([[1, 2], [3, 4], [5, 6]])
 
         dev = qml.device("default.qubit")
 
@@ -150,7 +150,7 @@ class TestGQSP:
         expected_output = jnp.array(qml.matrix(circuit, wire_order=[0, 1])(angles))
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(jnp.array(angles))
 
-        assert np.allclose(expected_output, generated_output)
+        assert pnp.allclose(expected_output, generated_output)
         assert qml.math.get_interface(generated_output) == "jax"
 
     @pytest.mark.torch
@@ -159,7 +159,7 @@ class TestGQSP:
 
         import torch
 
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        angles = pnp.array([[1, 2], [3, 4], [5, 6]])
 
         dev = qml.device("default.qubit")
 
@@ -171,7 +171,7 @@ class TestGQSP:
         expected_output = torch.tensor(qml.matrix(circuit, wire_order=[0, 1])(angles))
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(torch.tensor(angles))
 
-        assert np.allclose(expected_output, generated_output)
+        assert pnp.allclose(expected_output, generated_output)
         assert qml.math.get_interface(generated_output) == "torch"
 
     @pytest.mark.tf
@@ -180,7 +180,7 @@ class TestGQSP:
 
         import tensorflow as tf
 
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        angles = pnp.array([[1, 2], [3, 4], [5, 6]])
 
         dev = qml.device("default.qubit")
 
@@ -192,7 +192,7 @@ class TestGQSP:
         expected_output = tf.Variable(qml.matrix(circuit, wire_order=[0, 1])(angles))
         generated_output = qml.matrix(circuit, wire_order=[0, 1])(tf.Variable(angles))
 
-        assert np.allclose(expected_output, generated_output)
+        assert pnp.allclose(expected_output, generated_output)
         assert qml.math.get_interface(generated_output) == "tensorflow"
 
     @pytest.mark.jax
@@ -216,5 +216,5 @@ class TestGQSP:
         jit_circuit = jax.jit(circuit)
         generated_output = jit_circuit(angles)
 
-        assert np.allclose(expected_output, generated_output)
+        assert pnp.allclose(expected_output, generated_output)
         assert qml.math.get_interface(generated_output) == "jax"

@@ -19,7 +19,7 @@ import pytest
 from scipy.linalg import expm
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
@@ -61,7 +61,7 @@ def test_adjoint():
     res2, state2 = adjoint_evolution_circuit(-0.13)
 
     assert res1 == res2
-    assert all(np.isclose(state1, state2))
+    assert all(pnp.isclose(state1, state2))
 
 
 def test_queuing():
@@ -123,8 +123,8 @@ def test_forward_execution():
 
     t = 1.0
     res = circuit(t)
-    expected = -np.cos(4)
-    assert np.allclose(res, expected)
+    expected = -pnp.cos(4)
+    assert pnp.allclose(res, expected)
 
 
 @pytest.mark.jax
@@ -157,7 +157,7 @@ class TestInputs:
     def test_invalid_hamiltonian(self):
         """Tests TypeError is raised if `hamiltonian` does not have a pauli rep."""
 
-        invalid_operator = qml.Hermitian(np.eye(2), 0)
+        invalid_operator = qml.Hermitian(pnp.eye(2), 0)
         assert pytest.raises(TypeError, qml.CommutingEvolution, invalid_operator, 1)
 
 
@@ -210,13 +210,13 @@ class TestGradients:
             qml.CommutingEvolution(hamiltonian, time, frequencies)
             return qml.expval(qml.PauliZ(0))
 
-        x_vals = np.linspace(-np.pi, np.pi, num=10)
+        x_vals = pnp.linspace(-pnp.pi, pnp.pi, num=10)
 
         # pylint: disable=not-callable
         grads_finite_diff = [qml.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qml.gradients.param_shift(circuit)(x) for x in x_vals]
 
-        assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
+        assert all(pnp.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
     # pylint: disable=not-callable
     def test_four_term_case(self):
@@ -237,12 +237,12 @@ class TestGradients:
             qml.CommutingEvolution(hamiltonian, time, frequencies)
             return qml.expval(qml.PauliZ(0))
 
-        x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]
+        x_vals = [pnp.array(x, requires_grad=True) for x in pnp.linspace(-pnp.pi, pnp.pi, num=10)]
 
         grads_finite_diff = [qml.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qml.gradients.param_shift(circuit)(x) for x in x_vals]
 
-        assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
+        assert all(pnp.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
     # pylint: disable=not-callable
     def test_differentiable_hamiltonian(self):
@@ -251,7 +251,7 @@ class TestGradients:
         n_wires = 2
         dev = qml.device("default.qubit", wires=n_wires)
         obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
-        diff_coeffs = np.array([1.0, -1.0], requires_grad=True)
+        diff_coeffs = pnp.array([1.0, -1.0], requires_grad=True)
         frequencies = (2, 4)
 
         def parametrized_hamiltonian(coeffs):
@@ -263,13 +263,13 @@ class TestGradients:
             qml.CommutingEvolution(parametrized_hamiltonian(coeffs), time, frequencies)
             return qml.expval(qml.PauliZ(0))
 
-        x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]
+        x_vals = [pnp.array(x, requires_grad=True) for x in pnp.linspace(-pnp.pi, pnp.pi, num=10)]
 
         grads_finite_diff = [
-            np.hstack(qml.gradients.finite_diff(circuit)(x, diff_coeffs)) for x in x_vals
+            pnp.hstack(qml.gradients.finite_diff(circuit)(x, diff_coeffs)) for x in x_vals
         ]
         grads_param_shift = [
-            np.hstack(qml.gradients.param_shift(circuit)(x, diff_coeffs)) for x in x_vals
+            pnp.hstack(qml.gradients.param_shift(circuit)(x, diff_coeffs)) for x in x_vals
         ]
 
-        assert np.isclose(grads_finite_diff, grads_param_shift, atol=1e-6).all()
+        assert pnp.isclose(grads_finite_diff, grads_param_shift, atol=1e-6).all()

@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem, simplify
 
 
@@ -108,11 +108,11 @@ def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
     :math:`\hat{s}_1 \cdot \hat{s}_2` implemented by the function `'_spin2_matrix_elements'`"""
     # pylint: disable=protected-access
 
-    sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
+    sz = pnp.where(pnp.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
     s2_me_result = qchem.spin._spin2_matrix_elements(sz)
 
-    assert np.allclose(s2_me_result, matrix_ref)
+    assert pnp.allclose(s2_me_result, matrix_ref)
 
 
 @pytest.mark.parametrize(
@@ -121,7 +121,7 @@ def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
         (  # computed with PL-QChem using OpenFermion
             2,
             4,
-            np.array(
+            pnp.array(
                 [
                     0.75,
                     0.375,
@@ -179,7 +179,7 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     assert isinstance(s2, qml.ops.Sum)
 
     wire_order = s2_ref.wires
-    assert np.allclose(
+    assert pnp.allclose(
         qml.matrix(s2, wire_order=wire_order),
         qml.matrix(s2_ref, wire_order=wire_order),
     )
@@ -207,12 +207,12 @@ def test_exception_spin2(electrons, orbitals, msg_match):
     [
         (  # computed with PL-QChem using OpenFermion
             4,
-            np.array([-0.25, 0.25, -0.25, 0.25]),
+            pnp.array([-0.25, 0.25, -0.25, 0.25]),
             [PauliZ(wires=[0]), PauliZ(wires=[1]), PauliZ(wires=[2]), PauliZ(wires=[3])],
         ),
         (
             6,
-            np.array([-0.25, 0.25, -0.25, 0.25, -0.25, 0.25]),
+            pnp.array([-0.25, 0.25, -0.25, 0.25, -0.25, 0.25]),
             [
                 PauliZ(wires=[0]),
                 PauliZ(wires=[1]),
@@ -234,7 +234,7 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     assert isinstance(sz, qml.ops.Sum)
 
     wire_order = sz_ref.wires
-    assert np.allclose(
+    assert pnp.allclose(
         qml.matrix(sz, wire_order=wire_order),
         qml.matrix(sz_ref, wire_order=wire_order),
     )

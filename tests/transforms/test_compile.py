@@ -21,7 +21,7 @@ import pytest
 from test_optimization.utils import compare_operation_lists
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms import unitary_to_rot
 from pennylane.transforms.compile import compile
 from pennylane.transforms.optimization import (
@@ -147,7 +147,7 @@ class TestCompileIntegration:
 
         original_result = qnode(0.3, 0.4, 0.5)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert np.allclose(original_result, transformed_result)
+        assert pnp.allclose(original_result, transformed_result)
 
         names_expected = [op.name for op in qnode.qtape.operations]
         wires_expected = [op.wires for op in qnode.qtape.operations]
@@ -168,7 +168,7 @@ class TestCompileIntegration:
 
         original_result = qnode(0.3, 0.4, 0.5)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert np.allclose(original_result, transformed_result)
+        assert pnp.allclose(original_result, transformed_result)
 
         names_expected = ["Hadamard", "CNOT", "RX", "CY", "PauliY"]
         wires_expected = [
@@ -197,7 +197,7 @@ class TestCompileIntegration:
         qfun_res = transformed_qnode(0.1, 0.2, 0.3)
         qnode_res = transformed_qnode_direct(0.1, 0.2, 0.3)
 
-        assert np.allclose(qfun_res, qnode_res)
+        assert pnp.allclose(qfun_res, qnode_res)
 
     def test_compile_default_pipeline_removes_barrier(self):
         """Test that the default pipeline removes Barriers."""
@@ -226,7 +226,7 @@ class TestCompileIntegration:
 
         original_result = qnode(0.3, 0.4, 0.5)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert np.allclose(original_result, transformed_result)
+        assert pnp.allclose(original_result, transformed_result)
 
         names_expected = ["Hadamard", "CNOT", "RX", "PauliY", "CY"]
         wires_expected = [
@@ -276,7 +276,7 @@ class TestCompileIntegration:
 
         original_result = qnode(0.3, 0.4, 0.5)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert np.allclose(original_result, transformed_result)
+        assert pnp.allclose(original_result, transformed_result)
 
         names_expected = ["Hadamard", "CNOT", "RX", "PauliY", "CY"]
         wires_expected = [
@@ -307,7 +307,7 @@ class TestCompileIntegration:
 
         original_result = qnode(0.3, 0.4, 0.5)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert np.allclose(original_result, transformed_result)
+        assert pnp.allclose(original_result, transformed_result)
 
         names_expected = [
             "RZ",
@@ -366,12 +366,12 @@ class TestCompileIntegration:
         transformed_qfunc = compile(qfunc, pipeline=pipeline)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
-        x = np.array([0.1, 0.2, 0.3])
-        params = np.ones((2, 3))
+        x = pnp.array([0.1, 0.2, 0.3])
+        params = pnp.ones((2, 3))
 
         original_result = qnode(x, params)
         transformed_result = transformed_qnode(x, params)
-        assert np.allclose(original_result, transformed_result)
+        assert pnp.allclose(original_result, transformed_result)
 
         names_expected = ["RX", "CNOT"] * 12
         wires_expected = [
@@ -427,8 +427,8 @@ class TestCompileInterfaces:
         original_qnode = qml.QNode(qfunc_emb, dev_3wires, diff_method=diff_method)
         transformed_qnode = qml.QNode(transformed_qfunc_emb, dev_3wires, diff_method=diff_method)
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=False)
-        params = np.ones((2, 3))
+        x = pnp.array([0.1, 0.2, 0.3], requires_grad=False)
+        params = pnp.ones((2, 3))
 
         # Check that the numerical output is the same
         assert qml.math.allclose(original_qnode(x, params), transformed_qnode(x, params))

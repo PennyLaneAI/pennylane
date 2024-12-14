@@ -15,118 +15,118 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.gradients import param_shift
 from pennylane.measurements.shots import Shots
 
-_x = np.arange(12).reshape((2, 3, 2))
+_x = pnp.arange(12).reshape((2, 3, 2))
 
 tests_compute_jvp_single = [
     # Single scalar parameter, scalar output
-    (np.array(2), np.array([4]), np.array(8)),
-    (np.array(2), [np.array(4)], np.array(8)),
-    (np.array(2), (np.array(4),), np.array(8)),
+    (pnp.array(2), pnp.array([4]), pnp.array(8)),
+    (pnp.array(2), [pnp.array(4)], pnp.array(8)),
+    (pnp.array(2), (pnp.array(4),), pnp.array(8)),
     # Single scalar parameter, tensor output
-    (np.array([1, 2, 3]), np.array([4]), np.array([4, 8, 12])),
-    (np.array([1, 2, 3]), [np.array(4)], np.array([4, 8, 12])),
-    (np.array([1, 2, 3]), (np.array(4),), np.array([4, 8, 12])),
-    (_x.reshape((4, 3)), np.array([4]), 4 * _x.reshape((4, 3))),
-    (_x.reshape((4, 3)), [np.array(4)], 4 * _x.reshape((4, 3))),
-    (_x.reshape((4, 3)), (np.array(4),), 4 * _x.reshape((4, 3))),
-    (_x, np.array([4]), _x * 4),
-    (_x, [np.array(4)], _x * 4),
-    (_x, (np.array(4),), _x * 4),
+    (pnp.array([1, 2, 3]), pnp.array([4]), pnp.array([4, 8, 12])),
+    (pnp.array([1, 2, 3]), [pnp.array(4)], pnp.array([4, 8, 12])),
+    (pnp.array([1, 2, 3]), (pnp.array(4),), pnp.array([4, 8, 12])),
+    (_x.reshape((4, 3)), pnp.array([4]), 4 * _x.reshape((4, 3))),
+    (_x.reshape((4, 3)), [pnp.array(4)], 4 * _x.reshape((4, 3))),
+    (_x.reshape((4, 3)), (pnp.array(4),), 4 * _x.reshape((4, 3))),
+    (_x, pnp.array([4]), _x * 4),
+    (_x, [pnp.array(4)], _x * 4),
+    (_x, (pnp.array(4),), _x * 4),
     # Single tensor parameter, scalar output
-    (np.array([5, -2]), [np.array([4, 9])], np.array(2)),
-    (np.array([[5, -2]]), [np.array([[4, 9]])], np.array(2)),
-    (np.array([[4, 3], [5, -2]]), [np.array([[-1, 2], [4, 9]])], np.array(4)),
+    (pnp.array([5, -2]), [pnp.array([4, 9])], pnp.array(2)),
+    (pnp.array([[5, -2]]), [pnp.array([[4, 9]])], pnp.array(2)),
+    (pnp.array([[4, 3], [5, -2]]), [pnp.array([[-1, 2], [4, 9]])], pnp.array(4)),
     # Single tensor parameter, tensor output
-    (np.outer([-1, 3], [5, -2]), [np.array([4, 9])], np.array([-2, 6])),
-    (np.array([[[3, 2]], [[5, -2]]]), [np.array([[4, 9]])], np.array([30, 2])),
+    (pnp.outer([-1, 3], [5, -2]), [pnp.array([4, 9])], pnp.array([-2, 6])),
+    (pnp.array([[[3, 2]], [[5, -2]]]), [pnp.array([[4, 9]])], pnp.array([30, 2])),
     (
-        np.tensordot(_x.reshape((4, 3)), [[4, 3], [5, -2]], axes=0),
-        [np.array([[-1, 2], [4, 9]])],
+        pnp.tensordot(_x.reshape((4, 3)), [[4, 3], [5, -2]], axes=0),
+        [pnp.array([[-1, 2], [4, 9]])],
         4 * _x.reshape((4, 3)),
     ),
     # Multiple scalar parameters, scalar output
-    (tuple(np.array(x) for x in [2, 1, -9]), np.array([4, -3, 2]), np.array(-13)),
-    (tuple(np.array(x) for x in [2, 1, -9]), [np.array(x) for x in [4, -3, 2]], np.array(-13)),
-    (tuple(np.array(x) for x in [2, 1, -9]), tuple(np.array(x) for x in [4, -3, 2]), np.array(-13)),
+    (tuple(pnp.array(x) for x in [2, 1, -9]), pnp.array([4, -3, 2]), pnp.array(-13)),
+    (tuple(pnp.array(x) for x in [2, 1, -9]), [pnp.array(x) for x in [4, -3, 2]], pnp.array(-13)),
+    (tuple(pnp.array(x) for x in [2, 1, -9]), tuple(pnp.array(x) for x in [4, -3, 2]), pnp.array(-13)),
     # Multiple scalar parameters, tensor output
     (
-        tuple(np.array([1, 3, -2]) * x for x in [2, 1, -9]),
-        np.array([4, -3, 2]),
-        np.array([-13, -39, 26]),
+        tuple(pnp.array([1, 3, -2]) * x for x in [2, 1, -9]),
+        pnp.array([4, -3, 2]),
+        pnp.array([-13, -39, 26]),
     ),
     (
-        tuple(np.array([1, 3, -2]) * x for x in [2, 1, -9]),
-        [np.array(x) for x in [4, -3, 2]],
-        np.array([-13, -39, 26]),
+        tuple(pnp.array([1, 3, -2]) * x for x in [2, 1, -9]),
+        [pnp.array(x) for x in [4, -3, 2]],
+        pnp.array([-13, -39, 26]),
     ),
     (
-        tuple(np.array([1, 3, -2]) * x for x in [2, 1, -9]),
-        tuple(np.array(x) for x in [4, -3, 2]),
-        np.array([-13, -39, 26]),
+        tuple(pnp.array([1, 3, -2]) * x for x in [2, 1, -9]),
+        tuple(pnp.array(x) for x in [4, -3, 2]),
+        pnp.array([-13, -39, 26]),
     ),
     (
-        tuple(np.array([[1, 3, -2], [0, -4, 2]]) * x for x in [2, 1, -9]),
-        np.array([4, -3, 2]),
-        np.array([[-13, -39, 26], [0, 52, -26]]),
+        tuple(pnp.array([[1, 3, -2], [0, -4, 2]]) * x for x in [2, 1, -9]),
+        pnp.array([4, -3, 2]),
+        pnp.array([[-13, -39, 26], [0, 52, -26]]),
     ),
     (
-        tuple(np.array([[1, 3, -2], [0, -4, 2]]) * x for x in [2, 1, -9]),
-        [np.array(x) for x in [4, -3, 2]],
-        np.array([[-13, -39, 26], [0, 52, -26]]),
+        tuple(pnp.array([[1, 3, -2], [0, -4, 2]]) * x for x in [2, 1, -9]),
+        [pnp.array(x) for x in [4, -3, 2]],
+        pnp.array([[-13, -39, 26], [0, 52, -26]]),
     ),
     (
-        tuple(np.array([[1, 3, -2], [0, -4, 2]]) * x for x in [2, 1, -9]),
-        tuple(np.array(x) for x in [4, -3, 2]),
-        np.array([[-13, -39, 26], [0, 52, -26]]),
+        tuple(pnp.array([[1, 3, -2], [0, -4, 2]]) * x for x in [2, 1, -9]),
+        tuple(pnp.array(x) for x in [4, -3, 2]),
+        pnp.array([[-13, -39, 26], [0, 52, -26]]),
     ),
-    (tuple(_x * x for x in [2, 1, -9]), np.array([4, -3, 2]), -13 * _x),
-    (tuple(_x * x for x in [2, 1, -9]), [np.array(x) for x in [4, -3, 2]], -13 * _x),
-    (tuple(_x * x for x in [2, 1, -9]), tuple(np.array(x) for x in [4, -3, 2]), -13 * _x),
+    (tuple(_x * x for x in [2, 1, -9]), pnp.array([4, -3, 2]), -13 * _x),
+    (tuple(_x * x for x in [2, 1, -9]), [pnp.array(x) for x in [4, -3, 2]], -13 * _x),
+    (tuple(_x * x for x in [2, 1, -9]), tuple(pnp.array(x) for x in [4, -3, 2]), -13 * _x),
     # Multiple same-shape tensor parameters, scalar output
-    (tuple(np.array([1, 2, 3]) * x for x in [2, 1, -9]), [np.array([4, -3, 2])] * 3, np.array(-24)),
+    (tuple(pnp.array([1, 2, 3]) * x for x in [2, 1, -9]), [pnp.array([4, -3, 2])] * 3, pnp.array(-24)),
     (
-        tuple(np.array([[1, 2, 3], [-2, 1, 2]]) * x for x in [2, 1, -9]),
-        [np.array([[4, -3, 2], [0, 2, 1]])] * 3,
-        np.array(-48),
+        tuple(pnp.array([[1, 2, 3], [-2, 1, 2]]) * x for x in [2, 1, -9]),
+        [pnp.array([[4, -3, 2], [0, 2, 1]])] * 3,
+        pnp.array(-48),
     ),
-    (tuple(_x * x for x in [2, 1, -9]), [_x] * 3, -6 * np.sum(_x**2)),
+    (tuple(_x * x for x in [2, 1, -9]), [_x] * 3, -6 * pnp.sum(_x**2)),
     # Multiple mixed parameters, scalar output
     (
-        (np.array([1, 3]), np.array(2), np.array([[0, 5, 2, 1]])),
-        [np.array([2, -1]), np.array(-5), np.array([[1, 2, 3, -2]])],
-        np.array(3),
+        (pnp.array([1, 3]), pnp.array(2), pnp.array([[0, 5, 2, 1]])),
+        [pnp.array([2, -1]), pnp.array(-5), pnp.array([[1, 2, 3, -2]])],
+        pnp.array(3),
     ),
-    ((np.array(2), np.array(2), _x), [np.array(-1), np.array(5), _x], 8 + np.sum(_x**2)),
+    ((pnp.array(2), pnp.array(2), _x), [pnp.array(-1), pnp.array(5), _x], 8 + pnp.sum(_x**2)),
     # Multiple same-shape tensor parameters, tensor output
     (
-        tuple(np.outer([-4, 5, 2], [1, 2, 3]) * x for x in [2, 1, -9]),
-        [np.array([4, -3, 2])] * 3,
-        -24 * np.array([-4, 5, 2]),
+        tuple(pnp.outer([-4, 5, 2], [1, 2, 3]) * x for x in [2, 1, -9]),
+        [pnp.array([4, -3, 2])] * 3,
+        -24 * pnp.array([-4, 5, 2]),
     ),
     (
-        tuple(np.tensordot([-4, 5, 2], [[1, 2, 3], [-2, 1, 2]], axes=0) * x for x in [2, 1, -9]),
-        [np.array([[4, -3, 2], [0, 2, 1]])] * 3,
-        -48 * np.array([-4, 5, 2]),
+        tuple(pnp.tensordot([-4, 5, 2], [[1, 2, 3], [-2, 1, 2]], axes=0) * x for x in [2, 1, -9]),
+        [pnp.array([[4, -3, 2], [0, 2, 1]])] * 3,
+        -48 * pnp.array([-4, 5, 2]),
     ),
     (
-        tuple(np.tensordot([[-4, 5, 2], [1, 3, -2]], _x, axes=0) * x for x in [2, 1, -9]),
+        tuple(pnp.tensordot([[-4, 5, 2], [1, 3, -2]], _x, axes=0) * x for x in [2, 1, -9]),
         [_x] * 3,
-        -6 * np.sum(_x**2) * np.array([[-4, 5, 2], [1, 3, -2]]),
+        -6 * pnp.sum(_x**2) * pnp.array([[-4, 5, 2], [1, 3, -2]]),
     ),
     # Multiple mixed parameters, tensor output
     (
-        tuple(np.tensordot([-4, 5, 2], v, axes=0) for v in ([1, 3], 2, [[0, 5, 2, 1]])),
-        [np.array([2, -1]), np.array(-5), np.array([[1, 2, 3, -2]])],
-        3 * np.array([-4, 5, 2]),
+        tuple(pnp.tensordot([-4, 5, 2], v, axes=0) for v in ([1, 3], 2, [[0, 5, 2, 1]])),
+        [pnp.array([2, -1]), pnp.array(-5), pnp.array([[1, 2, 3, -2]])],
+        3 * pnp.array([-4, 5, 2]),
     ),
     (
-        tuple(np.tensordot([[-4, 5, 2], [1, 3, -2]], v, axes=0) for v in [2, 2, _x]),
-        [np.array(-1), np.array(5), _x],
-        (8 + np.sum(_x**2)) * np.array([[-4, 5, 2], [1, 3, -2]]),
+        tuple(pnp.tensordot([[-4, 5, 2], [1, 3, -2]], v, axes=0) for v in [2, 2, _x]),
+        [pnp.array(-1), pnp.array(5), _x],
+        (8 + pnp.sum(_x**2)) * pnp.array([[-4, 5, 2], [1, 3, -2]]),
     ),
 ]
 
@@ -210,21 +210,21 @@ class TestComputeJVPSingle:
     def test_compute_jvp_single(self, jac, tangent, exp):
         """Unit test for compute_jvp_single."""
         jvp = qml.gradients.compute_jvp_single(tangent, jac)
-        assert isinstance(jvp, np.ndarray)
-        assert np.array_equal(jvp, exp)
+        assert isinstance(jvp, pnp.ndarray)
+        assert pnp.array_equal(jvp, exp)
 
     @pytest.mark.parametrize("jac, tangent, exp", tests_compute_jvp_multi)
     def test_compute_jvp_multi(self, jac, tangent, exp):
         """Unit test for compute_jvp_multi."""
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
         assert isinstance(jvp, tuple)
-        assert all(isinstance(_jvp, np.ndarray) for _jvp in jvp)
-        assert all(np.array_equal(_jvp, _exp) for _jvp, _exp in zip(jvp, exp))
+        assert all(isinstance(_jvp, pnp.ndarray) for _jvp in jvp)
+        assert all(pnp.array_equal(_jvp, _exp) for _jvp, _exp in zip(jvp, exp))
 
     def test_jacobian_is_none_single(self):
         """A None Jacobian returns a None JVP"""
 
-        tangent = np.array([[1.0, 2.0], [3.0, 4.0]])
+        tangent = pnp.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
 
         jvp = qml.gradients.compute_jvp_single(tangent, jac)
@@ -233,7 +233,7 @@ class TestComputeJVPSingle:
     def test_jacobian_is_none_multi(self):
         """A None Jacobian returns a None JVP"""
 
-        tangent = np.array([[1.0, 2.0], [3.0, 4.0]])
+        tangent = pnp.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
 
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
@@ -247,36 +247,36 @@ class TestComputeJVPSingle:
 
     def test_zero_tangent_single_measurement_single_params(self):
         """A zero dy vector will return a zero matrix"""
-        tangent = np.zeros([1])
-        jac = np.array(0.1)
+        tangent = pnp.zeros([1])
+        jac = pnp.array(0.1)
 
         jvp = qml.gradients.compute_jvp_single(tangent, jac)
-        assert np.all(jvp == np.zeros([1]))
+        assert pnp.all(jvp == pnp.zeros([1]))
 
     def test_zero_tangent_single_measurement_multi_params(self):
         """A zero tangent vector will return a zero matrix"""
-        tangent = np.zeros([2])
-        jac = tuple([np.array(0.1), np.array(0.2)])
+        tangent = pnp.zeros([2])
+        jac = tuple([pnp.array(0.1), pnp.array(0.2)])
 
         jvp = qml.gradients.compute_jvp_single(tangent, jac)
 
-        assert np.all(jvp == np.zeros([2]))
+        assert pnp.all(jvp == pnp.zeros([2]))
 
     def test_zero_dy_multi(self):
         """A zero tangent vector will return a zero matrix"""
-        tangent = np.array([0.0, 0.0, 0.0])
+        tangent = pnp.array([0.0, 0.0, 0.0])
         jac = tuple(
             [
-                tuple([np.array(0.1), np.array(0.1), np.array(0.1)]),
-                tuple([np.array([0.1, 0.2]), np.array([0.1, 0.2]), np.array([0.1, 0.2])]),
+                tuple([pnp.array(0.1), pnp.array(0.1), pnp.array(0.1)]),
+                tuple([pnp.array([0.1, 0.2]), pnp.array([0.1, 0.2]), pnp.array([0.1, 0.2])]),
             ]
         )
 
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
 
         assert isinstance(jvp, tuple)
-        assert np.all(jvp[0] == np.zeros([1]))
-        assert np.all(jvp[1] == np.zeros([2]))
+        assert pnp.all(jvp[0] == pnp.zeros([1]))
+        assert pnp.all(jvp[1] == pnp.zeros([2]))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -296,15 +296,15 @@ class TestComputeJVPSingle:
 
     def test_no_trainable_params_adjoint_single(self):
         """An empty jacobian return empty array."""
-        tangent = np.array([1.0, 2.0])
+        tangent = pnp.array([1.0, 2.0])
         jac = tuple()
 
         jvp = qml.gradients.compute_jvp_single(tangent, jac)
-        assert np.allclose(jvp, qml.math.zeros(0))
+        assert pnp.allclose(jvp, qml.math.zeros(0))
 
     def test_no_trainable_params_adjoint_multi_measurement(self):
         """An empty jacobian return an empty tuple."""
-        tangent = np.array([1.0, 2.0])
+        tangent = pnp.array([1.0, 2.0])
         jac = tuple()
 
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
@@ -313,22 +313,22 @@ class TestComputeJVPSingle:
 
     def test_no_trainable_params_gradient_transform_single(self):
         """An empty jacobian return empty array."""
-        tangent = np.array([1.0, 2.0])
+        tangent = pnp.array([1.0, 2.0])
         jac = qml.math.zeros(0)
 
         jvp = qml.gradients.compute_jvp_single(tangent, jac)
-        assert np.allclose(jvp, qml.math.zeros(0))
+        assert pnp.allclose(jvp, qml.math.zeros(0))
 
     def test_no_trainable_params_gradient_transform_multi_measurement(self):
         """An empty jacobian return an empty tuple."""
-        tangent = np.array([1.0, 2.0])
+        tangent = pnp.array([1.0, 2.0])
         jac = tuple([qml.math.zeros(0), qml.math.zeros(0)])
 
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
         assert isinstance(jvp, tuple)
         assert len(jvp) == 2
         for j in jvp:
-            assert np.allclose(j, qml.math.zeros(0))
+            assert pnp.allclose(j, qml.math.zeros(0))
 
 
 @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -337,7 +337,7 @@ class TestJVP:
 
     def test_no_trainable_parameters(self, batch_dim):
         """A tape with no trainable parameters will simply return None"""
-        x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
+        x = 0.4 if batch_dim is None else 0.4 * pnp.arange(1, 1 + batch_dim)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
@@ -346,16 +346,16 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {}
-        tangent = np.array([1.0])
+        tangent = pnp.array([1.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == tuple()
-        assert qml.math.allclose(fn(tapes), np.array(0.0))
+        assert qml.math.allclose(fn(tapes), pnp.array(0.0))
 
     def test_zero_tangent_single_measurement_single_param(self, batch_dim):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
+        x = 0.4 if batch_dim is None else 0.4 * pnp.arange(1, 1 + batch_dim)
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -363,16 +363,16 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
-        tangent = np.array([0.0])
+        tangent = pnp.array([0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == []
-        assert np.all(fn(tapes) == np.zeros([1]))
+        assert pnp.all(fn(tapes) == pnp.zeros([1]))
 
     def test_zero_tangent_single_measurement_multiple_param(self, batch_dim):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
+        x = 0.4 if batch_dim is None else 0.4 * pnp.arange(1, 1 + batch_dim)
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RX(0.6, wires=0)
@@ -381,16 +381,16 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
-        tangent = np.array([0.0, 0.0])
+        tangent = pnp.array([0.0, 0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == []
-        assert np.all(fn(tapes) == np.zeros([1]))
+        assert pnp.all(fn(tapes) == pnp.zeros([1]))
 
     def test_zero_tangent_single_measurement_probs_multiple_param(self, batch_dim):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        x = 0.6 if batch_dim is None else 0.6 * np.arange(1, 1 + batch_dim)
+        x = 0.6 if batch_dim is None else 0.6 * pnp.arange(1, 1 + batch_dim)
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.RX(x, wires=0)
@@ -399,16 +399,16 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
-        tangent = np.array([0.0, 0.0])
+        tangent = pnp.array([0.0, 0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == []
-        assert np.all(fn(tapes) == np.zeros([4]))
+        assert pnp.all(fn(tapes) == pnp.zeros([4]))
 
     def test_zero_tangent_multiple_measurement_single_param(self, batch_dim):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
+        x = 0.4 if batch_dim is None else 0.4 * pnp.arange(1, 1 + batch_dim)
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -417,7 +417,7 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
-        tangent = np.array([0.0])
+        tangent = pnp.array([0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         res = fn(tapes)
 
@@ -426,16 +426,16 @@ class TestJVP:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], np.ndarray)
-        assert np.allclose(res[0], 0)
+        assert isinstance(res[0], pnp.ndarray)
+        assert pnp.allclose(res[0], 0)
 
-        assert isinstance(res[1], np.ndarray)
-        assert np.allclose(res[1], [0, 0])
+        assert isinstance(res[1], pnp.ndarray)
+        assert pnp.allclose(res[1], [0, 0])
 
     def test_zero_tangent_multiple_measurement_multiple_param(self, batch_dim):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
+        x = 0.4 if batch_dim is None else 0.4 * pnp.arange(1, 1 + batch_dim)
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RX(0.6, wires=0)
@@ -445,7 +445,7 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
-        tangent = np.array([0.0, 0.0])
+        tangent = pnp.array([0.0, 0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         res = fn(tapes)
 
@@ -454,11 +454,11 @@ class TestJVP:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert isinstance(res[0], np.ndarray)
-        assert np.allclose(res[0], 0)
+        assert isinstance(res[0], pnp.ndarray)
+        assert pnp.allclose(res[0], 0)
 
-        assert isinstance(res[1], np.ndarray)
-        assert np.allclose(res[1], [0, 0])
+        assert isinstance(res[1], pnp.ndarray)
+        assert pnp.allclose(res[1], [0, 0])
 
     # Unskip batch_dim!=None cases once #4462 is resolved
     def test_single_expectation_value(self, tol, batch_dim):
@@ -467,7 +467,7 @@ class TestJVP:
         if batch_dim is not None:
             pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
-        x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
+        x = 0.543 if batch_dim is None else 0.543 * pnp.arange(1, 1 + batch_dim)
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -478,7 +478,7 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
-        tangent = np.array([1.0, 1.0])
+        tangent = pnp.array([1.0, 1.0])
 
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
@@ -486,8 +486,8 @@ class TestJVP:
         res = fn(dev.execute(tapes))
         assert res.shape == () if batch_dim is None else (batch_dim,)
 
-        exp = np.sum(np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]), axis=0)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        exp = pnp.sum(pnp.array([-pnp.sin(y) * pnp.sin(x), pnp.cos(y) * pnp.cos(x)]), axis=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
     # Unskip batch_dim!=None cases once #4462 is resolved
     def test_multiple_expectation_values(self, tol, batch_dim):
@@ -496,7 +496,7 @@ class TestJVP:
         if batch_dim is not None:
             pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
-        x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
+        x = 0.543 if batch_dim is None else 0.543 * pnp.arange(1, 1 + batch_dim)
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -508,7 +508,7 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
-        tangent = np.array([1.0, 2.0])
+        tangent = pnp.array([1.0, 2.0])
 
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
@@ -518,10 +518,10 @@ class TestJVP:
         assert len(res) == 2
         assert all(r.shape == () if batch_dim is None else (batch_dim,) for r in res)
 
-        exp = [-np.sin(x), 2 * np.cos(y)]
+        exp = [-pnp.sin(x), 2 * pnp.cos(y)]
         if batch_dim is not None:
-            exp[1] = np.tensordot(np.ones(batch_dim), exp[1], axes=0)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+            exp[1] = pnp.tensordot(pnp.ones(batch_dim), exp[1], axes=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
     # Unskip batch_dim!=None cases once #4462 is resolved
     def test_prob_expval_single_param(self, tol, batch_dim):
@@ -530,7 +530,7 @@ class TestJVP:
         if batch_dim is not None:
             pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
-        x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
+        x = 0.543 if batch_dim is None else 0.543 * pnp.arange(1, 1 + batch_dim)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
@@ -540,7 +540,7 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
-        tangent = np.array([1.0])
+        tangent = pnp.array([1.0])
 
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 2
@@ -551,12 +551,12 @@ class TestJVP:
         assert res[0].shape == () if batch_dim is None else (batch_dim,)
         assert res[1].shape == (2,) if batch_dim is None else (batch_dim, 2)
 
-        expected_0 = -np.sin(x)
-        assert np.allclose(res[0], expected_0, atol=tol, rtol=0)
+        expected_0 = -pnp.sin(x)
+        assert pnp.allclose(res[0], expected_0, atol=tol, rtol=0)
 
         # Transpose for batch-dimension to be first if present
-        expected_1 = np.array([-np.sin(x) / 2, np.sin(x) / 2]).T
-        assert np.allclose(res[1], expected_1, atol=tol, rtol=0)
+        expected_1 = pnp.array([-pnp.sin(x) / 2, pnp.sin(x) / 2]).T
+        assert pnp.allclose(res[1], expected_1, atol=tol, rtol=0)
 
     # Unskip batch_dim!=None cases once #4462 is resolved
     def test_prob_expval_multi_param(self, tol, batch_dim):
@@ -565,7 +565,7 @@ class TestJVP:
         if batch_dim is not None:
             pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
         dev = qml.device("default.qubit", wires=2)
-        x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
+        x = 0.543 if batch_dim is None else 0.543 * pnp.arange(1, 1 + batch_dim)
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -577,7 +577,7 @@ class TestJVP:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
-        tangent = np.array([1.0, 1.0])
+        tangent = pnp.array([1.0, 1.0])
 
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
@@ -587,34 +587,34 @@ class TestJVP:
         assert len(res) == 2
 
         exp = [
-            -1 * np.sin(x),
-            np.array(
+            -1 * pnp.sin(x),
+            pnp.array(
                 [
-                    -(np.cos(y / 2) ** 2 * np.sin(x)) - (np.cos(x / 2) ** 2 * np.sin(y)),
-                    -(np.sin(x) * np.sin(y / 2) ** 2) + (np.cos(x / 2) ** 2 * np.sin(y)),
-                    (np.sin(x) * np.sin(y / 2) ** 2) + (np.sin(x / 2) ** 2 * np.sin(y)),
-                    (np.cos(y / 2) ** 2 * np.sin(x)) - (np.sin(x / 2) ** 2 * np.sin(y)),
+                    -(pnp.cos(y / 2) ** 2 * pnp.sin(x)) - (pnp.cos(x / 2) ** 2 * pnp.sin(y)),
+                    -(pnp.sin(x) * pnp.sin(y / 2) ** 2) + (pnp.cos(x / 2) ** 2 * pnp.sin(y)),
+                    (pnp.sin(x) * pnp.sin(y / 2) ** 2) + (pnp.sin(x / 2) ** 2 * pnp.sin(y)),
+                    (pnp.cos(y / 2) ** 2 * pnp.sin(x)) - (pnp.sin(x / 2) ** 2 * pnp.sin(y)),
                 ]
             ).T
             / 2,
         ]
 
-        assert np.allclose(res[0], exp[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], exp[1], atol=tol, rtol=0)
+        assert pnp.allclose(res[0], exp[0], atol=tol, rtol=0)
+        assert pnp.allclose(res[1], exp[1], atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize("dtype", [pnp.float32, pnp.float64])
     def test_dtype_matches_tangent(self, dtype, batch_dim):
         """Tests that the jvp function matches the dtype of tangent when tangent is
         zero-like."""
-        x = np.array([0.1], dtype=np.float64)
-        x = x if batch_dim is None else np.outer(x, np.arange(1, 1 + batch_dim))
+        x = pnp.array([0.1], dtype=pnp.float64)
+        x = x if batch_dim is None else pnp.outer(x, pnp.arange(1, 1 + batch_dim))
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x[0], wires=0)
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        dy = np.zeros(1, dtype=dtype)
+        dy = pnp.zeros(1, dtype=dtype)
         _, func = qml.gradients.jvp(tape, dy, qml.gradients.param_shift)
 
         assert func([]).dtype == dtype
@@ -623,10 +623,10 @@ class TestJVP:
 def expected_probs(params):
     """Expected result of the below circuit ansatz."""
     x, y = params[..., 0], params[..., 1]
-    c_x, s_x = np.cos(x / 2), np.sin(x / 2)
-    c_y, s_y = np.cos(y / 2), np.sin(y / 2)
+    c_x, s_x = pnp.cos(x / 2), pnp.sin(x / 2)
+    c_y, s_y = pnp.cos(y / 2), pnp.sin(y / 2)
     # Transpose to put potential broadcasting axis first
-    return np.array([c_x * c_y, c_x * s_y, s_x * s_y, s_x * c_y]).T ** 2
+    return pnp.array([c_x * c_y, c_x * s_y, s_x * s_y, s_x * c_y]).T ** 2
 
 
 def expected_jvp(params, tangent):
@@ -635,9 +635,9 @@ def expected_jvp(params, tangent):
     if qml.math.ndim(params) > 1:
         # If there is broadcasting, take the diagonal over
         # the two axes corresponding to broadcasting
-        j = np.stack([j[i, :, i, :] for i in range(len(j))])
+        j = pnp.stack([j[i, :, i, :] for i in range(len(j))])
 
-    return np.tensordot(j, tangent, axes=1)
+    return pnp.tensordot(j, tangent, axes=1)
 
 
 def ansatz(x, y):
@@ -658,10 +658,10 @@ class TestJVPGradients:
         """Tests that the output of the JVP transform
         can be differentiated using autograd."""
         dev = qml.device("default.qubit", wires=2)
-        params = np.array([0.543, -0.654], requires_grad=True)
+        params = pnp.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
-            params = np.outer(np.arange(1, 1 + batch_dim), params, requires_grad=True)
-        tangent = np.array([1.0, 0.3], requires_grad=False)
+            params = pnp.outer(pnp.arange(1, 1 + batch_dim), params, requires_grad=True)
+        tangent = pnp.array([1.0, 0.3], requires_grad=False)
 
         def cost_fn(params, tangent):
             with qml.queuing.AnnotatedQueue() as q:
@@ -674,11 +674,11 @@ class TestJVPGradients:
 
         res = cost_fn(params, tangent)
         exp = expected_jvp(params, tangent)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
         res = qml.jacobian(cost_fn)(params, tangent)
         exp = qml.jacobian(expected_jvp)(params, tangent)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
     # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.torch
@@ -690,10 +690,10 @@ class TestJVPGradients:
 
         dev = qml.device("default.qubit", wires=2)
 
-        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params_np = pnp.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
-            params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
-        tangent_np = np.array([1.2, -0.3], requires_grad=False)
+            params_np = pnp.outer(pnp.arange(1, 1 + batch_dim), params_np, requires_grad=True)
+        tangent_np = pnp.array([1.2, -0.3], requires_grad=False)
         params = torch.tensor(params_np, requires_grad=True, dtype=torch.float64)
         tangent = torch.tensor(tangent_np, requires_grad=False, dtype=torch.float64)
 
@@ -708,11 +708,11 @@ class TestJVPGradients:
 
         res = cost_fn(params, tangent)
         exp = expected_jvp(params_np, tangent_np)
-        assert np.allclose(res.detach(), exp, atol=tol, rtol=0)
+        assert pnp.allclose(res.detach(), exp, atol=tol, rtol=0)
 
         res = torch.autograd.functional.jacobian(cost_fn, (params, tangent))[0]
         exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
     # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.tf
@@ -724,10 +724,10 @@ class TestJVPGradients:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
-        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params_np = pnp.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
-            params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
-        tangent_np = np.array([1.2, -0.3], requires_grad=False)
+            params_np = pnp.outer(pnp.arange(1, 1 + batch_dim), params_np, requires_grad=True)
+        tangent_np = pnp.array([1.2, -0.3], requires_grad=False)
         params = tf.Variable(params_np, dtype=tf.float64)
         tangent = tf.constant(tangent_np, dtype=tf.float64)
 
@@ -744,11 +744,11 @@ class TestJVPGradients:
             res = cost_fn(params, tangent)
 
         exp = expected_jvp(params_np, tangent_np)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
         res = t.jacobian(res, params)
         exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
     # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.jax
@@ -760,10 +760,10 @@ class TestJVPGradients:
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit")
-        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params_np = pnp.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
-            params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
-        tangent_np = np.array([1.2, -0.3], requires_grad=False)
+            params_np = pnp.outer(pnp.arange(1, 1 + batch_dim), params_np, requires_grad=True)
+        tangent_np = pnp.array([1.2, -0.3], requires_grad=False)
         params = jnp.array(params_np)
         tangent = jnp.array(tangent_np)
 
@@ -778,11 +778,11 @@ class TestJVPGradients:
 
         res = cost_fn(params, tangent)
         exp = expected_jvp(params_np, tangent_np)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
         res = jax.jacobian(cost_fn)(params, tangent)
         exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        assert pnp.allclose(res, exp, atol=tol, rtol=0)
 
 
 class TestBatchJVP:
@@ -810,7 +810,7 @@ class TestBatchJVP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        tangents = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
+        tangents = [pnp.array([1.0, 1.0]), pnp.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
 
@@ -819,7 +819,7 @@ class TestBatchJVP:
         assert len(v_tapes) == 4
         res = fn(dev.execute(v_tapes))
 
-        assert qml.math.allclose(res[0], np.array(0.0))
+        assert qml.math.allclose(res[0], pnp.array(0.0))
         assert res[1] is not None
 
     @pytest.mark.parametrize("shots", [Shots(None), Shots(10), Shots([20, 10])])
@@ -843,13 +843,13 @@ class TestBatchJVP:
         tape2.trainable_params = set()
 
         tapes = [tape1, tape2]
-        tangents = [np.array([1.0, 0.0]), np.array([1.0, 0.0])]
+        tangents = [pnp.array([1.0, 0.0]), pnp.array([1.0, 0.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
 
         assert v_tapes == []
-        assert qml.math.allclose(fn([])[0], np.array(0.0))
-        assert qml.math.allclose(fn([])[1], np.array(0.0))
+        assert qml.math.allclose(fn([])[0], pnp.array(0.0))
+        assert qml.math.allclose(fn([])[1], pnp.array(0.0))
 
     def test_zero_tangent(self):
         """A zero dy vector will return no tapes and a zero matrix"""
@@ -872,7 +872,7 @@ class TestBatchJVP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        tangents = [np.array([0.0]), np.array([1.0, 1.0])]
+        tangents = [pnp.array([0.0]), pnp.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
         res = fn(dev.execute(v_tapes))
@@ -881,7 +881,7 @@ class TestBatchJVP:
         # to the JVP, so only 2*2=4 quantum evals
 
         assert len(v_tapes) == 4
-        assert np.allclose(res[0], 0)
+        assert pnp.allclose(res[0], 0)
 
     def test_reduction_append(self):
         """Test the 'append' reduction strategy"""
@@ -904,7 +904,7 @@ class TestBatchJVP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        tangents = [np.array([1.0]), np.array([1.0, 1.0])]
+        tangents = [pnp.array([1.0]), pnp.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="append")
         res = fn(dev.execute(v_tapes))
@@ -912,7 +912,7 @@ class TestBatchJVP:
         # Returned JVPs will be appended to a list, one JVP per tape
 
         assert len(res) == 2
-        assert all(isinstance(r, np.ndarray) for r in res)
+        assert all(isinstance(r, pnp.ndarray) for r in res)
         assert res[0].shape == ()
         assert res[1].shape == ()
 
@@ -937,7 +937,7 @@ class TestBatchJVP:
         tape2.trainable_params = {1}
 
         tapes = [tape1, tape2]
-        tangents = [np.array([1.0]), np.array([1.0])]
+        tangents = [pnp.array([1.0]), pnp.array([1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="extend")
         res = fn(dev.execute(v_tapes))
@@ -965,7 +965,7 @@ class TestBatchJVP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        tangents = [np.array([1.0]), np.array([1.0, 1.0])]
+        tangents = [pnp.array([1.0]), pnp.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(
             tapes,
@@ -1003,7 +1003,7 @@ class TestBatchJVP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        tangents = [np.array([1.0]), np.array([1.0, 1.0])]
+        tangents = [pnp.array([1.0]), pnp.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(
             tapes, tangents, param_shift, reduction=lambda jvps, x: jvps.append(x)

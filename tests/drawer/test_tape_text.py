@@ -19,7 +19,7 @@ Unit tests for the `pennylane.draw_text` function.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.drawer import tape_text
 from pennylane.drawer.tape_text import (
     _add_cond_grouping_symbols,
@@ -256,7 +256,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     def test_add_measurements_cache(self):
         """Test private _add_measurement function with a matrix cache."""
         cache = {"matrices": []}
-        op = qml.expval(qml.Hermitian(np.eye(2), wires=0))
+        op = qml.expval(qml.Hermitian(pnp.eye(2), wires=0))
         assert _add_measurement(
             op, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
         ) == [
@@ -264,9 +264,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
             "",
         ]
 
-        assert qml.math.allclose(cache["matrices"][0], np.eye(2))
+        assert qml.math.allclose(cache["matrices"][0], pnp.eye(2))
 
-        op2 = qml.expval(qml.Hermitian(np.eye(2), wires=1))
+        op2 = qml.expval(qml.Hermitian(pnp.eye(2), wires=1))
         # new op with same matrix, should have same M0 designation
         assert _add_measurement(
             op2, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
@@ -377,13 +377,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     def test_add_op_cache(self):
         """Test private _add_op method functions with a matrix cache."""
         cache = {"matrices": []}
-        op1 = qml.QubitUnitary(np.eye(2), wires=0)
+        op1 = qml.QubitUnitary(pnp.eye(2), wires=0)
         assert _add_op(
             op1, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
         ) == ["U(M0)", ""]
 
-        assert qml.math.allclose(cache["matrices"][0], np.eye(2))
-        op2 = qml.QubitUnitary(np.eye(2), wires=1)
+        assert qml.math.allclose(cache["matrices"][0], pnp.eye(2))
+        op2 = qml.QubitUnitary(pnp.eye(2), wires=1)
         assert _add_op(
             op2, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
         ) == ["", "U(M0)"]
@@ -667,8 +667,8 @@ class TestLayering:
 
 
 tape_matrices = qml.tape.QuantumScript(
-    ops=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1)), qml.QubitUnitary(np.eye(2), wires=0)],
-    measurements=[qml.expval(qml.Hermitian(np.eye(2), wires=0))],
+    ops=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1)), qml.QubitUnitary(pnp.eye(2), wires=0)],
+    measurements=[qml.expval(qml.Hermitian(pnp.eye(2), wires=0))],
 )
 
 
@@ -697,7 +697,7 @@ class TestShowMatrices:
         """Providing an existing matrix cache determines numbering order of matrices.
         All matrices printed out regardless of use."""
 
-        cache = {"matrices": [np.eye(2), -np.eye(3)]}
+        cache = {"matrices": [pnp.eye(2), -pnp.eye(3)]}
 
         expected = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"

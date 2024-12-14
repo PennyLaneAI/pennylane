@@ -16,7 +16,7 @@ Unit tests for the ``RMSPropOptimizer``.
 """
 import pytest
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.optimize import RMSPropOptimizer
 
 
@@ -38,48 +38,48 @@ class TestRMSPropOptimizer:
         """
         stepsize, gamma, eps = 0.1, 0.5, 1e-8
         sgd_opt = RMSPropOptimizer(stepsize, decay=gamma, eps=eps)
-        grad, args = np.array(grad), np.array(args, requires_grad=True)
+        grad, args = pnp.array(grad), pnp.array(args, requires_grad=True)
 
         a1 = (1 - gamma) * grad**2
-        expected = args - stepsize / np.sqrt(a1 + eps) * grad
+        expected = args - stepsize / pnp.sqrt(a1 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
-        assert np.allclose(res, expected, atol=tol)
+        assert pnp.allclose(res, expected, atol=tol)
 
         # Simulate a new step
         grad = grad + args
         args = expected
 
         a2 = gamma * a1 + (1 - gamma) * grad**2
-        expected = args - stepsize / np.sqrt(a2 + eps) * grad
+        expected = args - stepsize / pnp.sqrt(a2 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
-        assert np.allclose(res, expected, atol=tol)
+        assert pnp.allclose(res, expected, atol=tol)
 
-    @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
+    @pytest.mark.parametrize("x_start", pnp.linspace(-10, 10, 16, endpoint=False))
     def test_rmsprop_optimizer_univar(self, x_start, tol):
         """Tests that rmsprop optimizer takes one and two steps correctly
         for univariate functions."""
         stepsize, gamma = 0.1, 0.5
         rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [np.cos, lambda x: np.exp(x / 10.0) / 10.0, lambda x: 2 * x]
+        univariate_funcs = [pnp.sin, lambda x: pnp.exp(x / 10.0), lambda x: x**2]
+        grad_uni_fns = [pnp.cos, lambda x: pnp.exp(x / 10.0) / 10.0, lambda x: 2 * x]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
             rms_opt.reset()
 
             x_onestep = rms_opt.step(f, x_start)
             past_grads = (1 - gamma) * gradf(x_start) * gradf(x_start)
-            adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
+            adapt_stepsize = stepsize / pnp.sqrt(past_grads + 1e-8)
             x_onestep_target = x_start - gradf(x_start) * adapt_stepsize
-            assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+            assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = rms_opt.step(f, x_onestep)
             past_grads = (1 - gamma) * gamma * gradf(x_start) * gradf(x_start) + (
                 1 - gamma
             ) * gradf(x_onestep) * gradf(x_onestep)
-            adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
+            adapt_stepsize = stepsize / pnp.sqrt(past_grads + 1e-8)
             x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
-            assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+            assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
     def test_rmsprop_optimizer_multivar(self, tol):
         """Tests that rmsprop optimizer takes one and two steps correctly
@@ -88,24 +88,24 @@ class TestRMSPropOptimizer:
         rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
 
         multivariate_funcs = [
-            lambda x: np.sin(x[0]) + np.cos(x[1]),
-            lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_**2 for x_ in x]),
+            lambda x: pnp.sin(x[0]) + pnp.cos(x[1]),
+            lambda x: pnp.exp(x[0] / 3) * pnp.tanh(x[1]),
+            lambda x: pnp.sum([x_**2 for x_ in x]),
         ]
         grad_multi_funcs = [
-            lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
+            lambda x: (pnp.array([pnp.cos(x[0]), -pnp.sin(x[1])]),),
             lambda x: (
-                np.array(
+                pnp.array(
                     [
-                        np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+                        pnp.exp(x[0] / 3) / 3 * pnp.tanh(x[1]),
+                        pnp.exp(x[0] / 3) * (1 - pnp.tanh(x[1]) ** 2),
                     ]
                 ),
             ),
-            lambda x: (np.array([2 * x_ for x_ in x]),),
+            lambda x: (pnp.array([2 * x_ for x_ in x]),),
         ]
 
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = pnp.linspace(-10, 10, 16, endpoint=False)
 
         for gradf, f in zip(grad_multi_funcs, multivariate_funcs):
             for jdx in range(len(x_vals[:-1])):
@@ -114,14 +114,14 @@ class TestRMSPropOptimizer:
                 x_vec = x_vals[jdx : jdx + 2]
                 x_onestep = rms_opt.step(f, x_vec)
                 past_grads = (1 - gamma) * gradf(x_vec)[0] * gradf(x_vec)[0]
-                adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
+                adapt_stepsize = stepsize / pnp.sqrt(past_grads + 1e-8)
                 x_onestep_target = x_vec - gradf(x_vec)[0] * adapt_stepsize
-                assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+                assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
                 x_twosteps = rms_opt.step(f, x_onestep)
                 past_grads = (1 - gamma) * gamma * gradf(x_vec)[0] * gradf(x_vec)[0] + (
                     1 - gamma
                 ) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
-                adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
+                adapt_stepsize = stepsize / pnp.sqrt(past_grads + 1e-8)
                 x_twosteps_target = x_onestep - gradf(x_onestep)[0] * adapt_stepsize
-                assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+                assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)

@@ -19,14 +19,14 @@ from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from .einsum_manpulation import get_einsum_mapping
 
-alphabet_array = np.array(list(alphabet))
+alphabet_array = pnp.array(list(alphabet))
 
 TENSORDOT_STATE_NDIM_PERF_THRESHOLD = 9
 
@@ -440,11 +440,11 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
 
     # First, flip the left side
     axis = op.wires[0] + is_state_batched
-    state = _phase_shift(state, axis, phase_factor=math.exp(0.25j * np.pi))
+    state = _phase_shift(state, axis, phase_factor=math.exp(0.25j * pnp.pi))
 
     # Second, flip the right side
     axis = op.wires[0] + is_state_batched + num_wires
-    state = _phase_shift(state, axis, phase_factor=math.exp(-0.25j * np.pi))
+    state = _phase_shift(state, axis, phase_factor=math.exp(-0.25j * pnp.pi))
 
     return state
 

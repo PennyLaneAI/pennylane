@@ -18,11 +18,11 @@ Unit tests for functions needed for resource estimation with the double factoriz
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
-one_h2 = np.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
+one_h2 = pnp.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
 
-two_h2 = np.array(  # in chemist notation
+two_h2 = pnp.array(  # in chemist notation
     [
         [
             [[6.74755872e-01, -4.00346423e-13], [-4.00290912e-13, 6.63711349e-01]],
@@ -35,7 +35,7 @@ two_h2 = np.array(  # in chemist notation
     ]
 )
 
-two_h2_ph = np.array(  # in physicist notation
+two_h2_ph = pnp.array(  # in physicist notation
     [
         [
             [[6.74755872e-01, 8.45989945e-14], [8.47655279e-14, 1.81210478e-01]],
@@ -58,14 +58,14 @@ two_h2_ph = np.array(  # in physicist notation
 def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
     r"""Test that the DoubleFactorization class initiates correct parameters."""
     est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
-    assert np.allclose(est.one_electron, one)
-    assert np.allclose(est.two_electron, two)
-    assert np.allclose(est.error, error)
-    assert np.allclose(est.tol_factor, tol_factor)
-    assert np.allclose(est.tol_eigval, tol_eigval)
-    assert np.allclose(est.br, br)
-    assert np.allclose(est.alpha, alpha)
-    assert np.allclose(est.beta, beta)
+    assert pnp.allclose(est.one_electron, one)
+    assert pnp.allclose(est.two_electron, two)
+    assert pnp.allclose(est.error, error)
+    assert pnp.allclose(est.tol_factor, tol_factor)
+    assert pnp.allclose(est.tol_eigval, tol_eigval)
+    assert pnp.allclose(est.br, br)
+    assert pnp.allclose(est.alpha, alpha)
+    assert pnp.allclose(est.beta, beta)
 
 
 @pytest.mark.parametrize(
@@ -77,7 +77,7 @@ def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
 def test_df_notation_conversion(one, two_phys, two_chem):
     r"""Test that the DoubleFactorization class initiates correct two-electron integrals."""
     est = qml.resource.DoubleFactorization(one, two_phys, chemist_notation=False)
-    assert np.allclose(est.two_electron, two_chem)
+    assert pnp.allclose(est.two_electron, two_chem)
 
 
 @pytest.mark.parametrize(
@@ -87,7 +87,7 @@ def test_df_notation_conversion(one, two_phys, two_chem):
             one_h2,
             two_h2,
             4,
-            np.array(
+            pnp.array(
                 [
                     [[1.06723431e-01, 3.28955607e-15], [3.34805476e-15, -1.04898524e-01]],
                     [[-7.89837537e-14, -4.25688240e-01], [-4.25688240e-01, -1.07150807e-13]],
@@ -95,14 +95,14 @@ def test_df_notation_conversion(one, two_phys, two_chem):
                 ]
             ),
             [
-                np.array([-0.10489852, 0.10672343]),
-                np.array([-0.42568824, 0.42568824]),
-                np.array([-0.82864211, -0.81447282]),
+                pnp.array([-0.10489852, 0.10672343]),
+                pnp.array([-0.42568824, 0.42568824]),
+                pnp.array([-0.82864211, -0.81447282]),
             ],
             [
-                np.array([[1.58209235e-14, -1.00000000e00], [-1.00000000e00, -1.58209235e-14]]),
-                np.array([[0.70710678, -0.70710678], [0.70710678, 0.70710678]]),
-                np.array([[-1.26896915e-11, -1.00000000e00], [1.00000000e00, -1.26896915e-11]]),
+                pnp.array([[1.58209235e-14, -1.00000000e00], [-1.00000000e00, -1.58209235e-14]]),
+                pnp.array([[0.70710678, -0.70710678], [0.70710678, 0.70710678]]),
+                pnp.array([[-1.26896915e-11, -1.00000000e00], [1.00000000e00, -1.26896915e-11]]),
             ],
             3,
             2,
@@ -114,13 +114,13 @@ def test_df_factorization(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m
     r"""Test that DoubleFactorization class returns correct factorization values."""
     est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
 
-    assert np.allclose(est.n, n)
-    assert np.allclose(est.factors, factors)
-    assert np.allclose(np.array(est.eigvals), np.array(eigvals))
-    assert np.allclose(np.array(est.eigvecs), np.array(eigvecs))
-    assert np.allclose(est.rank_r, rank_r)
-    assert np.allclose(est.rank_m, rank_m)
-    assert np.allclose(est.rank_max, rank_max)
+    assert pnp.allclose(est.n, n)
+    assert pnp.allclose(est.factors, factors)
+    assert pnp.allclose(pnp.array(est.eigvals), pnp.array(eigvals))
+    assert pnp.allclose(pnp.array(est.eigvecs), pnp.array(eigvecs))
+    assert pnp.allclose(est.rank_r, rank_r)
+    assert pnp.allclose(est.rank_m, rank_m)
+    assert pnp.allclose(est.rank_max, rank_max)
 
 
 @pytest.mark.parametrize(("one", "two", "lamb"), [(one_h2, two_h2_ph, 1.6570518796336895)])
@@ -128,7 +128,7 @@ def test_df_lamb(one, two, lamb):
     r"""Test that DoubleFactorization class returns a correct norm."""
     est = qml.resource.DoubleFactorization(one, two)
 
-    assert np.allclose(est.lamb, lamb)
+    assert pnp.allclose(est.lamb, lamb)
 
 
 @pytest.mark.parametrize(("one", "two", "g_cost", "q_cost"), [(one_h2, two_h2, 876953, 113)])
@@ -136,8 +136,8 @@ def test_df_costs(one, two, g_cost, q_cost):
     r"""Test that DoubleFactorization class returns correct costs."""
     est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
 
-    assert np.allclose(est.gates, g_cost)
-    assert np.allclose(est.qubits, q_cost)
+    assert pnp.allclose(est.gates, g_cost)
+    assert pnp.allclose(est.qubits, q_cost)
 
 
 # cost_ref is computed manually
@@ -335,7 +335,7 @@ def test_qubit_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, b
             one_h2,
             # two-electron integral is arranged in chemist notation
             two_h2,
-            np.tensor(
+            pnp.tensor(
                 [[-0.10489852, 0.10672343], [-0.42568824, 0.42568824], [-0.82864211, -0.81447282]]
             ),
             1.6570518796336895,  # lambda value obtained from openfermion
@@ -346,4 +346,4 @@ def test_df_norm(one, two, eigvals, lamb_ref):
     r"""Test that the norm function returns the correct 1-norm."""
     lamb = qml.resource.DoubleFactorization.norm(one, two, eigvals)
 
-    assert np.allclose(lamb, lamb_ref)
+    assert pnp.allclose(lamb, lamb_ref)

@@ -22,7 +22,7 @@ import pytest
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.ops import Prod, SProd, Sum
 
 ###################################################################
@@ -135,7 +135,7 @@ class SumOpSameAbsCoeff(CustomOp):
 class HermitianOp(CustomOp):
     """Returns the generator as a Hermitian observable"""
 
-    H = np.array([[1.0, 2.0], [2.0, 3.0]])
+    H = pnp.array([[1.0, 2.0], [2.0, 3.0]])
 
     def generator(self):
         return qml.Hermitian(self.H, wires=self.wires[0])
@@ -144,7 +144,7 @@ class HermitianOp(CustomOp):
 class SparseOp(CustomOp):
     """Returns the generator as a SparseHamiltonian observable"""
 
-    H = sparse.csr_matrix(np.array([[1.0, 2.0], [2.0, 3.0]]))
+    H = sparse.csr_matrix(pnp.array([[1.0, 2.0], [2.0, 3.0]]))
 
     def generator(self):
         return qml.SparseHamiltonian(self.H, wires=self.wires[0])
@@ -221,7 +221,7 @@ class TestBackwardsCompatibility:
         continues to work but also raises a deprecation warning."""
 
         class DeprecatedClassOp(CustomOp):
-            generator = [np.diag([0, 1]), -0.6]
+            generator = [pnp.diag([0, 1]), -0.6]
 
         op = DeprecatedClassOp(0.5, wires="a")
 
@@ -326,7 +326,7 @@ class TestPrefactorReturn:
         gen, prefactor = qml.generator(HermitianOp, format="prefactor")(0.5, wires=0)
         assert prefactor == 1.0
         assert gen.name == "Hermitian"
-        assert np.all(gen.parameters[0] == HermitianOp.H)
+        assert pnp.all(gen.parameters[0] == HermitianOp.H)
 
     def test_sparse_hamiltonian(self):
         """Test a generator that returns a SparseHamiltonian observable
@@ -334,7 +334,7 @@ class TestPrefactorReturn:
         gen, prefactor = qml.generator(SparseOp, format="prefactor")(0.5, wires=0)
         assert prefactor == 1.0
         assert gen.name == "SparseHamiltonian"
-        assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
+        assert pnp.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
 
 class TestObservableReturn:
@@ -364,14 +364,14 @@ class TestObservableReturn:
         is correct"""
         gen = qml.generator(HermitianOp, format="observable")(0.5, wires=0)
         assert gen.name == "Hermitian"
-        assert np.all(gen.parameters[0] == HermitianOp.H)
+        assert pnp.all(gen.parameters[0] == HermitianOp.H)
 
     def test_sparse_hamiltonian(self):
         """Test a generator that returns a SparseHamiltonian observable
         is correct"""
         gen = qml.generator(SparseOp, format="observable")(0.5, wires=0)
         assert gen.name == "SparseHamiltonian"
-        assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
+        assert pnp.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
 
 class TestHamiltonianReturn:
@@ -438,7 +438,7 @@ class TestArithmeticReturn:
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""
         gen = qml.generator(qml.PhaseShift, format="arithmetic")(0.5, wires=0)
-        qml.assert_equal(gen, qml.Projector(np.array([1]), wires=0))
+        qml.assert_equal(gen, qml.Projector(pnp.array([1]), wires=0))
 
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
@@ -451,7 +451,7 @@ class TestArithmeticReturn:
         result = qml.s_prod(0.5, qml.PauliX(0) @ qml.PauliY(1))
 
         assert not isinstance(gen, qml.Hamiltonian)
-        assert np.allclose(
+        assert pnp.allclose(
             qml.matrix(gen, wire_order=[0, 1]),
             qml.matrix(result, wire_order=[0, 1]),
         )
@@ -464,7 +464,7 @@ class TestArithmeticReturn:
             qml.s_prod(0.5, qml.PauliX(0) @ qml.PauliY(1)),
         )
         assert not isinstance(gen, qml.Hamiltonian)
-        assert np.allclose(
+        assert pnp.allclose(
             qml.matrix(gen, wire_order=[0, 1]),
             qml.matrix(result, wire_order=[0, 1]),
         )
@@ -476,7 +476,7 @@ class TestArithmeticReturn:
         expected = qml.pauli_decompose(HermitianOp.H, hide_identity=True, pauli=True).operation()
 
         assert not isinstance(gen, qml.Hamiltonian)
-        assert np.allclose(
+        assert pnp.allclose(
             qml.matrix(gen),
             qml.matrix(expected),
         )
@@ -490,7 +490,7 @@ class TestArithmeticReturn:
         ).operation()
 
         assert not isinstance(gen, qml.Hamiltonian)
-        assert np.allclose(
+        assert pnp.allclose(
             qml.matrix(gen),
             qml.matrix(expected),
         )

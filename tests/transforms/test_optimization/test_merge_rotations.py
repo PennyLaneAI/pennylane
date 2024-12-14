@@ -22,7 +22,7 @@ import pytest
 from utils import compare_operation_lists
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms.optimization import merge_rotations
 from pennylane.wires import Wires
 
@@ -61,7 +61,7 @@ class TestMergeRotations:
         # Check that all operations and parameter values are as expected
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
-            assert np.allclose(op_obtained.parameters, op_expected.parameters)
+            assert pnp.allclose(op_obtained.parameters, op_expected.parameters)
 
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
@@ -86,7 +86,7 @@ class TestMergeRotations:
 
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
-            assert np.allclose(op_obtained.parameters, op_expected.parameters)
+            assert pnp.allclose(op_obtained.parameters, op_expected.parameters)
 
     def test_two_qubits_rotation_merge_tolerance(self):
         """Test whether tolerance argument is respected for merging."""
@@ -133,7 +133,7 @@ class TestMergeRotations:
 
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
-            assert np.allclose(op_obtained.parameters, op_expected.parameters)
+            assert pnp.allclose(op_obtained.parameters, op_expected.parameters)
 
     @pytest.mark.parametrize(
         ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
@@ -161,7 +161,7 @@ class TestMergeRotations:
 
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
-            assert np.allclose(op_obtained.parameters, op_expected.parameters)
+            assert pnp.allclose(op_obtained.parameters, op_expected.parameters)
 
     def test_two_qubits_merge_gate_subset(self):
         """Test that specifying a subset of operations to include merges correctly."""
@@ -250,7 +250,7 @@ class TestMergeRotations:
         # Check that all operations and parameter values are as expected
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
-            assert np.allclose(op_obtained.parameters, op_expected.parameters)
+            assert pnp.allclose(op_obtained.parameters, op_expected.parameters)
 
     def test_controlled_rotation_no_merge(self):
         """Test that adjacent controlled rotations on the same wires in different order don't merge."""
@@ -326,7 +326,7 @@ class TestMergeRotationsInterfaces:
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
-        input = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
+        input = pnp.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
 
         # Check that the numerical output is the same
         assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
@@ -527,7 +527,7 @@ class TestTransformDispatch:
         assert len(transformed_qnode.transform_program) == 1
         res = transformed_qnode([0.1, 0.2, 0.3, 0.4])
         exp_res = qnode_circuit([0.1, 0.2, 0.3, 0.4])
-        assert np.allclose(res, exp_res)
+        assert pnp.allclose(res, exp_res)
 
 
 @pytest.mark.xfail

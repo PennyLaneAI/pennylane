@@ -18,7 +18,7 @@ Tests for the QROM template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def test_assert_valid_qrom():
@@ -86,7 +86,7 @@ class TestQROM:
             return qml.sample(wires=target_wires)
 
         for j in range(2 ** len(control_wires)):
-            assert np.allclose(circuit(j), [int(bit) for bit in bitstrings[j]])
+            assert pnp.allclose(circuit(j), [int(bit) for bit in bitstrings[j]])
 
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires"),
@@ -138,7 +138,7 @@ class TestQROM:
 
             return qml.probs(wires=work_wires)
 
-        assert np.isclose(circuit()[0], 1.0)
+        assert pnp.isclose(circuit()[0], 1.0)
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""

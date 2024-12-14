@@ -18,7 +18,7 @@ Tests for the TwoLocalSwapNetwork template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 # pylint: disable=protected-access
@@ -28,7 +28,7 @@ def test_flatten_unflatten():
     def acquaintances(index, *_, use_CNOT=True, **__):
         return qml.CNOT(index) if use_CNOT else qml.CZ(index)
 
-    weights = np.array([0.5, 0.6, 0.7])
+    weights = pnp.array([0.5, 0.6, 0.7])
     wires = qml.wires.Wires((0, 1, 2))
 
     op = qml.templates.TwoLocalSwapNetwork(
@@ -62,8 +62,8 @@ class TestDecomposition:
             (4, None, None, True, False),
             (5, lambda index, wires, param: qml.Identity(index), None, True, False),
             (5, lambda index, wires, param: qml.CNOT(index), None, False, False),
-            (6, lambda index, wires, param: qml.CRX(param, index), np.random.rand(15), True, False),
-            (6, lambda index, wires, param: qml.CRY(param, index), np.random.rand(15), True, True),
+            (6, lambda index, wires, param: qml.CRX(param, index), pnp.random.rand(15), True, False),
+            (6, lambda index, wires, param: qml.CRY(param, index), pnp.random.rand(15), True, True),
         ],
     )
     def test_ccl2_operations(self, wires, acquaintances, weights, fermionic, shift):
@@ -99,7 +99,7 @@ class TestDecomposition:
             for pair in pairs:
                 if ac_op and ac_op([0, 1], [0, 1], 0.0):
                     gate_order.append(ac_op(pair, pair, next(itrweights, 0.0)))
-                sw_op = qml.FermionicSWAP(np.pi, pair) if fermionic else qml.SWAP(pair)
+                sw_op = qml.FermionicSWAP(pnp.pi, pair) if fermionic else qml.SWAP(pair)
                 gate_order.append(sw_op)
 
         for op1, op2 in zip(queue, gate_order):
@@ -111,7 +111,7 @@ class TestDecomposition:
         def acquaintances(index, *_, **___):
             return qml.CNOT(index)
 
-        weights = np.random.random(size=10)
+        weights = pnp.random.random(size=10)
 
         dev = qml.device("default.qubit", wires=5)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k", "e", "y"])
@@ -130,7 +130,7 @@ class TestDecomposition:
             )
             return qml.state()
 
-        assert np.allclose(circuit(), circuit2(), atol=tol, rtol=0)
+        assert pnp.allclose(circuit(), circuit2(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         ("num_wires", "acquaintances", "weights", "fermionic", "shift", "exp_state"),
@@ -196,7 +196,7 @@ class TestDecomposition:
         wires = range(num_wires)
 
         shape = qml.templates.TwoLocalSwapNetwork.shape(num_wires)
-        weights = np.pi / 2 * qml.math.ones(shape) if weights else None
+        weights = pnp.pi / 2 * qml.math.ones(shape) if weights else None
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -237,7 +237,7 @@ class TestInputs:
             (
                 6,
                 qml.CNOT(wires=[0, 1]),
-                np.random.rand(18),
+                pnp.random.rand(18),
                 True,
                 False,
                 "Acquaintances must either be a callable or None",
@@ -245,7 +245,7 @@ class TestInputs:
             (
                 6,
                 lambda index, wires, param: qml.CRX(param, index),
-                np.random.rand(12),
+                pnp.random.rand(12),
                 True,
                 False,
                 "Weight tensor must be of length",
@@ -274,7 +274,7 @@ class TestInputs:
             qml.templates.TwoLocalSwapNetwork(
                 wires=range(4),
                 acquaintances=None,
-                weights=np.array([1]),
+                weights=pnp.array([1]),
                 fermionic=True,
                 shif=False,
             )
@@ -378,7 +378,7 @@ class TestInterfaces:
         grad_fn2 = qml.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert np.allclose(grads, grads2, atol=tol, rtol=0)
+        assert pnp.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, tol):
@@ -387,7 +387,7 @@ class TestInterfaces:
         import jax
         import jax.numpy as jnp
 
-        weights = jnp.array(np.random.random(size=6))
+        weights = jnp.array(pnp.random.random(size=6))
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -404,7 +404,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        assert pnp.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax_jit(self, tol):
@@ -413,7 +413,7 @@ class TestInterfaces:
         import jax
         import jax.numpy as jnp
 
-        weights = jnp.array(np.random.random(size=6))
+        weights = jnp.array(pnp.random.random(size=6))
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -438,7 +438,7 @@ class TestInterfaces:
 
         import tensorflow as tf
 
-        weights = tf.Variable(np.random.random(size=6))
+        weights = tf.Variable(pnp.random.random(size=6))
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -457,7 +457,7 @@ class TestInterfaces:
             res2 = circuit2(weights)
         grads2 = tape2.gradient(res2, [weights])
 
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        assert pnp.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):
@@ -465,7 +465,7 @@ class TestInterfaces:
 
         import torch
 
-        weights = torch.tensor(np.random.random(size=6), requires_grad=True)
+        weights = torch.tensor(pnp.random.random(size=6), requires_grad=True)
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -484,7 +484,7 @@ class TestInterfaces:
         res2.backward()
         grads2 = [weights.grad]
 
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        assert pnp.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
 # pylint: disable=too-few-public-methods

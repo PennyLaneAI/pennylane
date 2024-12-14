@@ -15,14 +15,14 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
-univariate = [(np.sin), (lambda x: np.exp(x / 10.0)), (lambda x: x**2)]
+univariate = [(pnp.sin), (lambda x: pnp.exp(x / 10.0)), (lambda x: x**2)]
 
 multivariate = [
-    (lambda x: np.sin(x[0]) + np.cos(x[1])),
-    (lambda x: np.exp(x[0] / 3) * np.tanh(x[1])),
-    (lambda x: np.sum([x_**2 for x_ in x])),
+    (lambda x: pnp.sin(x[0]) + pnp.cos(x[1])),
+    (lambda x: pnp.exp(x[0] / 3) * pnp.tanh(x[1])),
+    (lambda x: pnp.sum([x_**2 for x_ in x])),
 ]
 
 
@@ -37,7 +37,7 @@ class TestSPSAOptimizer:
         gamma = 0.3
         c = 0.1
         spsa_opt = qml.SPSAOptimizer(maxiter=10, c=c, gamma=gamma)
-        args = np.array([args], requires_grad=True)
+        args = pnp.array([args], requires_grad=True)
 
         alpha = 0.602
         A = 1.0
@@ -54,7 +54,7 @@ class TestSPSAOptimizer:
 
         res = spsa_opt.apply_grad(grad, args)
         expected = args - ak * grad
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("f", multivariate)
     def test_apply_grad_multivar(self, f):
@@ -68,11 +68,11 @@ class TestSPSAOptimizer:
         k = 1
         ck = c / k**gamma
         ak = a / (A + k) ** alpha
-        deltas = np.array(np.meshgrid([1, -1], [1, -1])).T.reshape(-1, 2)
+        deltas = pnp.array(pnp.meshgrid([1, -1], [1, -1])).T.reshape(-1, 2)
 
         spsa_opt = qml.SPSAOptimizer(A=A)
 
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = pnp.linspace(-10, 10, 16, endpoint=False)
 
         for jdx in range(len(x_vals[:-1])):
             args = x_vals[jdx : jdx + 2]
@@ -89,22 +89,22 @@ class TestSPSAOptimizer:
                 y_pm.append(yplus - yminus)
             # choose one delta
             d = 0
-            grad = np.array([y_pm[d] / (2 * ck * di) for di in deltas[d]])
-            tol = ak * max(np.abs(y_pm)) / ck
+            grad = pnp.array([y_pm[d] / (2 * ck * di) for di in deltas[d]])
+            tol = ak * max(pnp.abs(y_pm)) / ck
             args_res = spsa_opt.apply_grad(grad, args)
             expected = args - ak * grad
-            assert np.allclose(args_res, expected, atol=tol)
+            assert pnp.allclose(args_res, expected, atol=tol)
 
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f", univariate)
     def test_step_and_cost_supplied_univar_cost(self, args, f):
         """Test that returned cost is correct."""
         spsa_opt = qml.SPSAOptimizer(10)
-        args = np.array(args, requires_grad=True)
+        args = pnp.array(args, requires_grad=True)
 
         _, res = spsa_opt.step_and_cost(f, args)
         expected = f(args)
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
     def test_step_and_cost_supplied_cost(self):
         """Test that the correct cost is returned via the step_and_cost method
@@ -118,12 +118,12 @@ class TestSPSAOptimizer:
             qml.RY(variables[2], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        inputs = np.array([0.4, 0.2, 0.4], requires_grad=True)
+        inputs = pnp.array([0.4, 0.2, 0.4], requires_grad=True)
 
         expected = quant_fun(inputs)
         _, res = spsa_opt.step_and_cost(quant_fun, inputs)
 
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
     def test_step_and_cost_hamiltonian(self):
         """Test that the correct cost is returned via the step_and_cost method
@@ -135,12 +135,12 @@ class TestSPSAOptimizer:
             obs = [qml.PauliX(0) @ qml.PauliZ(0), qml.PauliZ(0) @ qml.Hadamard(0)]
             return qml.expval(qml.Hamiltonian(variables, obs))
 
-        inputs = np.array([0.2, -0.543], requires_grad=True)
+        inputs = pnp.array([0.2, -0.543], requires_grad=True)
 
         expected = quant_fun(inputs)
         _, res = spsa_opt.step_and_cost(quant_fun, inputs)
 
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
     def test_step_spsa(self):
         """Test that the correct param is returned via the step method."""
@@ -153,7 +153,7 @@ class TestSPSAOptimizer:
             qml.RY(params[2], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        args = np.array([0.4, 0.2, 0.8], requires_grad=True)
+        args = pnp.array([0.4, 0.2, 0.8], requires_grad=True)
 
         alpha = 0.602
         gamma = 0.101
@@ -163,7 +163,7 @@ class TestSPSAOptimizer:
         k = 1
         ck = c / k**gamma
         ak = a / (A + k) ** alpha
-        deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1])).T.reshape(-1, 3)
+        deltas = pnp.array(pnp.meshgrid([1, -1], [1, -1], [1, -1])).T.reshape(-1, 3)
 
         y_pm = []
         for delta in deltas:
@@ -178,20 +178,20 @@ class TestSPSAOptimizer:
             y_pm.append(yplus - yminus)
         # choose one delta
         d = 0
-        grad = np.array([y_pm[d] / (2 * ck * di) for di in deltas[d]])
-        tol = ak * max(np.abs(y_pm)) / ck
+        grad = pnp.array([y_pm[d] / (2 * ck * di) for di in deltas[d]])
+        tol = ak * max(pnp.abs(y_pm)) / ck
 
         expected = args - ak * grad
 
         res = spsa_opt.step(quant_fun, args)
 
-        assert np.allclose(res, expected, atol=tol)
+        assert pnp.allclose(res, expected, atol=tol)
 
     def test_step_and_cost_spsa_single_multid_input(self):
         """Test that the correct cost is returned via the step_and_cost method
         with a multidimensional input."""
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
-        multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
+        multid_array = pnp.array([[0.1, 0.2], [-0.1, -0.4]])
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def quant_fun_mdarr(var):
@@ -203,13 +203,13 @@ class TestSPSAOptimizer:
         _, res = spsa_opt.step_and_cost(quant_fun_mdarr, multid_array)
         expected = quant_fun_mdarr(multid_array)
 
-        assert np.all(res == expected)
+        assert pnp.all(res == expected)
 
     def test_step_spsa_single_multid_input(self):
         """Test that the correct param is returned via the step method
         with a multidimensional input."""
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
-        multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
+        multid_array = pnp.array([[0.1, 0.2], [-0.1, -0.4]])
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def quant_fun_mdarr(var):
@@ -228,7 +228,7 @@ class TestSPSAOptimizer:
         ck = c / k**gamma
         ak = a / (A + k) ** alpha
         # pylint:disable=too-many-function-args
-        deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1], [1, -1])).T.reshape(-1, 2, 2)
+        deltas = pnp.array(pnp.meshgrid([1, -1], [1, -1], [1, -1], [1, -1])).T.reshape(-1, 2, 2)
 
         args = (multid_array,)
         y_pm = []
@@ -239,19 +239,19 @@ class TestSPSAOptimizer:
                 multiplier = ck * delta
                 thetaplus[index] = arg + multiplier
                 thetaminus[index] = arg - multiplier
-            yplus = np.array([quant_fun_mdarr(p) for p in thetaplus])
-            yminus = np.array([quant_fun_mdarr(p) for p in thetaminus])
+            yplus = pnp.array([quant_fun_mdarr(p) for p in thetaplus])
+            yminus = pnp.array([quant_fun_mdarr(p) for p in thetaminus])
             y_pm.append(yplus - yminus)
         # choose one delta
         d = 0
-        grad = np.array([y_pm[d] / (2 * ck * deltas[d])])
-        tol = ak * max(np.abs(y_pm)) / ck
+        grad = pnp.array([y_pm[d] / (2 * ck * deltas[d])])
+        tol = ak * max(pnp.abs(y_pm)) / ck
 
         expected = multid_array - ak * grad
 
         res = spsa_opt.step(quant_fun_mdarr, multid_array)
 
-        assert np.allclose(res, expected, atol=tol)
+        assert pnp.allclose(res, expected, atol=tol)
 
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f", univariate)
@@ -259,7 +259,7 @@ class TestSPSAOptimizer:
         """Test that a gradient step can be applied correctly with a univariate
         function."""
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
-        args = np.array([args], requires_grad=True)
+        args = pnp.array([args], requires_grad=True)
 
         alpha = 0.602
         gamma = 0.101
@@ -279,7 +279,7 @@ class TestSPSAOptimizer:
 
         res = spsa_opt.step(f, args)
         expected = args - ak * grad
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f", univariate)
@@ -287,7 +287,7 @@ class TestSPSAOptimizer:
         """Test that a gradient step can be applied correctly with a univariate
         function."""
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
-        args = np.array([args], requires_grad=True)
+        args = pnp.array([args], requires_grad=True)
 
         alpha = 0.602
         gamma = 0.101
@@ -307,8 +307,8 @@ class TestSPSAOptimizer:
 
         res, rescost = spsa_opt.step_and_cost(f, args)
         expected = args - ak * grad
-        assert np.allclose(res, expected)
-        assert np.allclose(y, rescost)
+        assert pnp.allclose(res, expected)
+        assert pnp.allclose(y, rescost)
 
     def test_parameters_not_a_tensor_and_not_all_require_grad(self):
         """Test execution of list of parameters of different sizes
@@ -323,15 +323,15 @@ class TestSPSAOptimizer:
             return qml.expval(qml.PauliZ(0))
 
         inputs = [
-            np.array((0.2, 0.3), requires_grad=True),
-            np.array([0.4, 0.2, 0.4], requires_grad=False),
-            np.array(0.1, requires_grad=True),
+            pnp.array((0.2, 0.3), requires_grad=True),
+            pnp.array([0.4, 0.2, 0.4], requires_grad=False),
+            pnp.array(0.1, requires_grad=True),
         ]
 
         res, _ = spsa_opt.step_and_cost(quant_fun, *inputs)
         assert isinstance(res, list)
-        assert np.all(res[1] == inputs[1])
-        assert np.all(res[0] != inputs[0])
+        assert pnp.all(res[1] == inputs[1])
+        assert pnp.all(res[0] != inputs[0])
 
     def test_parameters_in_step(self):
         """Test execution of list of parameters of different sizes
@@ -346,15 +346,15 @@ class TestSPSAOptimizer:
             return qml.expval(qml.PauliZ(0))
 
         inputs = [
-            np.array((0.2, 0.3), requires_grad=True),
-            np.array([0.4, 0.2, 0.4], requires_grad=False),
-            np.array(0.1, requires_grad=True),
+            pnp.array((0.2, 0.3), requires_grad=True),
+            pnp.array([0.4, 0.2, 0.4], requires_grad=False),
+            pnp.array(0.1, requires_grad=True),
         ]
 
         res = spsa_opt.step(quant_fun, *inputs)
         assert isinstance(res, list)
-        assert np.all(res[1] == inputs[1])
-        assert np.all(res[0] != inputs[0])
+        assert pnp.all(res[1] == inputs[1])
+        assert pnp.all(res[0] != inputs[0])
 
     def test_parameter_not_an_array(self):
         """Test function when there is only one float parameter that doesn't
@@ -394,7 +394,7 @@ class TestSPSAOptimizer:
             return qml.probs(wires=[0, 1, 2, 3])
 
         opt = qml.SPSAOptimizer(maxiter=10)
-        params = np.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
+        params = pnp.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
 
         with pytest.raises(
             ValueError,
@@ -407,7 +407,7 @@ class TestSPSAOptimizer:
         """Test that if the objective function is not a
         scalar function, an error is raised."""
         spsa_opt = qml.SPSAOptimizer(10)
-        args = np.array([[0.1, 0.2], [-0.1, -0.4]])
+        args = pnp.array([[0.1, 0.2], [-0.1, -0.4]])
 
         with pytest.raises(
             ValueError,
@@ -433,7 +433,7 @@ class TestSPSAOptimizer:
             return qml.probs(wires=[0, 1, 2, 3])
 
         opt = qml.SPSAOptimizer(maxiter=10)
-        params = np.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
+        params = pnp.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
 
         with pytest.raises(
             ValueError,
@@ -467,7 +467,7 @@ class TestSPSAOptimizer:
                 qml.CNOT(wires=[3, 1])
             return qml.expval(H)
 
-        init_params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
+        init_params = pnp.random.normal(0, pnp.pi, (num_qubits, 3), requires_grad=True)
         params = init_params
 
         init_energy = cost_fun(init_params, num_qubits)
@@ -477,7 +477,7 @@ class TestSPSAOptimizer:
         for _ in range(max_iterations):
             params, energy = opt.step_and_cost(cost_fun, params, num_qubits=num_qubits)
 
-        assert np.all(params != init_params)
+        assert pnp.all(params != init_params)
         assert energy < init_energy
 
     @pytest.mark.slow
@@ -496,14 +496,14 @@ class TestSPSAOptimizer:
 
         opt = qml.SPSAOptimizer(maxiter=max_iterations, c=0.3)
 
-        init_params = np.random.normal(scale=0.1, size=(2,), requires_grad=True)
+        init_params = pnp.random.normal(scale=0.1, size=(2,), requires_grad=True)
         params = init_params
         init_circuit_res = circuit(params)
 
         for _ in range(max_iterations):
             params, circuit_res = opt.step_and_cost(circuit, params)
 
-        assert np.all(params != init_params)
+        assert pnp.all(params != init_params)
         assert circuit_res < init_circuit_res
 
     def test_not_A_nor_maxiter_provided(self):

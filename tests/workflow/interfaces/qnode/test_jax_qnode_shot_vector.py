@@ -17,7 +17,7 @@ import pytest
 from flaky import flaky
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qnode
 
 pytestmark = pytest.mark.jax
@@ -404,8 +404,8 @@ class TestReturnWithShotVectors:
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=True)
 
         jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
@@ -799,7 +799,7 @@ class TestReturnShotVectorIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        expected = pnp.array([[-pnp.sin(y) * pnp.sin(x), pnp.cos(y) * pnp.cos(x)]])
         all_res = jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert isinstance(all_res, tuple)
@@ -815,7 +815,7 @@ class TestReturnShotVectorIntegration:
             assert isinstance(res[1], jax.numpy.ndarray)
             assert res[1].shape == ()
             tol = TOLS[diff_method]
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+            assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_prob_expectation_values(
@@ -850,32 +850,32 @@ class TestReturnShotVectorIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0][0], -np.sin(x), atol=tol, rtol=0)
+            assert pnp.allclose(res[0][0], -pnp.sin(x), atol=tol, rtol=0)
             assert isinstance(res[0][0], jax.numpy.ndarray)
-            assert np.allclose(res[0][1], 0, atol=tol, rtol=0)
+            assert pnp.allclose(res[0][1], 0, atol=tol, rtol=0)
             assert isinstance(res[0][1], jax.numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(
+            assert pnp.allclose(
                 res[1][0],
                 [
-                    -(np.cos(y / 2) ** 2 * np.sin(x)) / 2,
-                    -(np.sin(x) * np.sin(y / 2) ** 2) / 2,
-                    (np.sin(x) * np.sin(y / 2) ** 2) / 2,
-                    (np.cos(y / 2) ** 2 * np.sin(x)) / 2,
+                    -(pnp.cos(y / 2) ** 2 * pnp.sin(x)) / 2,
+                    -(pnp.sin(x) * pnp.sin(y / 2) ** 2) / 2,
+                    (pnp.sin(x) * pnp.sin(y / 2) ** 2) / 2,
+                    (pnp.cos(y / 2) ** 2 * pnp.sin(x)) / 2,
                 ],
                 atol=tol,
                 rtol=0,
             )
             assert isinstance(res[1][0], jax.numpy.ndarray)
-            assert np.allclose(
+            assert pnp.allclose(
                 res[1][1],
                 [
-                    -(np.cos(x / 2) ** 2 * np.sin(y)) / 2,
-                    (np.cos(x / 2) ** 2 * np.sin(y)) / 2,
-                    (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
-                    -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
+                    -(pnp.cos(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    (pnp.cos(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    (pnp.sin(x / 2) ** 2 * pnp.sin(y)) / 2,
+                    -(pnp.sin(x / 2) ** 2 * pnp.sin(y)) / 2,
                 ],
                 atol=tol,
                 rtol=0,

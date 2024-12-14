@@ -20,7 +20,7 @@ import functools
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def test_simple_circuit(mocker):
@@ -37,9 +37,9 @@ def test_simple_circuit(mocker):
         return qml.probs(wires=[0, 2])
 
     batch_size = 5
-    data = np.random.random((batch_size, 8))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = pnp.random.random((batch_size, 8))
+    x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = pnp.ones((batch_size, 10, 3, 3), requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
@@ -61,9 +61,9 @@ def test_simple_circuit_one_batch(mocker):
         return qml.probs(wires=[0, 2])
 
     batch_size = 1
-    data = np.random.random((batch_size, 8))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = pnp.random.random((batch_size, 8))
+    x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = pnp.ones((batch_size, 10, 3, 3), requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
@@ -75,7 +75,7 @@ def test_simple_circuit_with_prep(mocker):
     """Test that batching works for a simple circuit with a state preparation"""
     dev = qml.device("default.qubit", wires=3)
 
-    init_state = np.array([0, 0, 0, 0, 1, 0, 0, 0], requires_grad=False)
+    init_state = pnp.array([0, 0, 0, 0, 1, 0, 0, 0], requires_grad=False)
 
     @qml.batch_params
     @qml.qnode(dev, interface="autograd")
@@ -88,9 +88,9 @@ def test_simple_circuit_with_prep(mocker):
         return qml.probs(wires=[0, 2])
 
     batch_size = 5
-    data = np.random.random((batch_size,))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = pnp.random.random((batch_size,))
+    x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = pnp.ones((batch_size, 10, 3, 3), requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
@@ -110,7 +110,7 @@ def test_basic_entangler_layers(mocker):
         return qml.probs(wires=[0, 1])
 
     batch_size = 5
-    weights = np.random.random((batch_size, 2, 2))
+    weights = pnp.random.random((batch_size, 2, 2))
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(weights)
@@ -130,7 +130,7 @@ def test_angle_embedding(mocker):
         return qml.probs(wires=[0, 2])
 
     batch_size = 5
-    data = np.random.random((batch_size, 3))
+    data = pnp.random.random((batch_size, 3))
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data)
@@ -152,9 +152,9 @@ def test_mottonenstate_preparation(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2**3))
-    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
-    weights = np.random.random((batch_size, 10, 3, 3))
+    data = pnp.random.random((batch_size, 2**3))
+    data /= pnp.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    weights = pnp.random.random((batch_size, 10, 3, 3))
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
@@ -171,7 +171,7 @@ def test_mottonenstate_preparation(mocker):
     indiv_res = []
     for state, weight in zip(data, weights):
         indiv_res.append(circuit2(state, weight))
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 def test_qubit_state_prep(mocker):
@@ -188,9 +188,9 @@ def test_qubit_state_prep(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2**3))
-    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
-    weights = np.random.random((batch_size, 10, 3, 3))
+    data = pnp.random.random((batch_size, 2**3))
+    data /= pnp.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    weights = pnp.random.random((batch_size, 10, 3, 3))
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
@@ -207,7 +207,7 @@ def test_qubit_state_prep(mocker):
     indiv_res = []
     for state, weight in zip(data, weights):
         indiv_res.append(circuit2(state, weight))
-    assert np.allclose(res, indiv_res)
+    assert pnp.allclose(res, indiv_res)
 
 
 def test_multi_returns():
@@ -224,9 +224,9 @@ def test_multi_returns():
         return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 2])
 
     batch_size = 6
-    data = np.random.random((batch_size, 8))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = pnp.random.random((batch_size, 8))
+    x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = pnp.ones((batch_size, 10, 3, 3), requires_grad=True)
 
     res = circuit(data, x, weights)
 
@@ -252,9 +252,9 @@ def test_shot_vector():
         return qml.probs(wires=[0, 2])
 
     batch_size = 6
-    data = np.random.random((batch_size, 3))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = pnp.random.random((batch_size, 3))
+    x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = pnp.ones((batch_size, 10, 3, 3), requires_grad=True)
 
     res = circuit(data, x, weights)
 
@@ -279,9 +279,9 @@ def test_multi_returns_shot_vector():
         return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 2])
 
     batch_size = 6
-    data = np.random.random((batch_size, 3))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = pnp.random.random((batch_size, 3))
+    x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = pnp.ones((batch_size, 10, 3, 3), requires_grad=True)
 
     res = circuit(data, x, weights)
 
@@ -311,14 +311,14 @@ class TestDiffSingle:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         def cost(x):
-            return np.sum(circuit(x))
+            return pnp.sum(circuit(x))
 
         batch_size = 3
-        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+        x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
 
         res = qml.grad(cost)(x)
-        expected = -np.sin(0.1) * np.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -pnp.sin(0.1) * pnp.sin(x)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
@@ -345,8 +345,8 @@ class TestDiffSingle:
         x = jnp.linspace(0.1, 0.5, batch_size)
 
         res = jax.grad(cost)(x)
-        expected = -np.sin(0.1) * np.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -pnp.sin(0.1) * pnp.sin(x)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
@@ -376,8 +376,8 @@ class TestDiffSingle:
         x = jnp.linspace(0.1, 0.5, batch_size)
 
         res = jax.grad(cost)(x)
-        expected = -np.sin(0.1) * np.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -pnp.sin(0.1) * pnp.sin(x)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
@@ -406,7 +406,7 @@ class TestDiffSingle:
         loss.backward()
 
         res = x.grad
-        expected = -np.sin(0.1) * torch.sin(x)
+        expected = -pnp.sin(0.1) * torch.sin(x)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -436,8 +436,8 @@ class TestDiffSingle:
             loss = cost(x)
 
         res = tape.gradient(loss, x)
-        expected = -np.sin(0.1) * tf.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -pnp.sin(0.1) * tf.sin(x)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["auto", "tf", "tf-autograph"])
@@ -466,8 +466,8 @@ class TestDiffSingle:
             loss = cost(x)
 
         res = tape.gradient(loss, x)
-        expected = -np.sin(0.1) * tf.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -pnp.sin(0.1) * tf.sin(x)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestDiffMulti:
@@ -491,17 +491,17 @@ class TestDiffMulti:
             return qml.math.concatenate([qml.math.expand_dims(res[0], 1), res[1]], axis=1)
 
         batch_size = 3
-        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+        x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
 
         res = cost(x)
         expected = qml.math.transpose(
             qml.math.stack(
                 [
-                    np.cos(x),
-                    np.cos(x / 2) ** 2,
-                    np.zeros_like(x),
-                    np.zeros_like(x),
-                    np.sin(x / 2) ** 2,
+                    pnp.cos(x),
+                    pnp.cos(x / 2) ** 2,
+                    pnp.zeros_like(x),
+                    pnp.zeros_like(x),
+                    pnp.sin(x / 2) ** 2,
                 ]
             )
         )
@@ -509,10 +509,10 @@ class TestDiffMulti:
 
         grad = qml.jacobian(cost)(x)
         expected = qml.math.stack(
-            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
-        ) * qml.math.expand_dims(np.eye(batch_size), 1)
+            [-pnp.sin(x), -pnp.sin(x) / 2, pnp.zeros_like(x), pnp.zeros_like(x), pnp.sin(x) / 2]
+        ) * qml.math.expand_dims(pnp.eye(batch_size), 1)
 
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
@@ -552,9 +552,9 @@ class TestDiffMulti:
 
         grad = jax.jacobian(circuit)(x)
         expected = (
-            -np.sin(x) * np.eye(batch_size),
-            qml.math.stack([-np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2])
-            * qml.math.expand_dims(np.eye(batch_size), 1),
+            -pnp.sin(x) * pnp.eye(batch_size),
+            qml.math.stack([-pnp.sin(x) / 2, pnp.zeros_like(x), pnp.zeros_like(x), pnp.sin(x) / 2])
+            * qml.math.expand_dims(pnp.eye(batch_size), 1),
         )
 
         assert isinstance(grad, tuple)
@@ -602,9 +602,9 @@ class TestDiffMulti:
 
         grad = jax.jacobian(circuit)(x)
         expected = (
-            -np.sin(x) * np.eye(batch_size),
-            qml.math.stack([-np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2])
-            * qml.math.expand_dims(np.eye(batch_size), 1),
+            -pnp.sin(x) * pnp.eye(batch_size),
+            qml.math.stack([-pnp.sin(x) / 2, pnp.zeros_like(x), pnp.zeros_like(x), pnp.sin(x) / 2])
+            * qml.math.expand_dims(pnp.eye(batch_size), 1),
         )
 
         assert isinstance(grad, tuple)
@@ -629,7 +629,7 @@ class TestDiffMulti:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         batch_size = 3
-        x = torch.tensor(np.linspace(0.1, 0.5, batch_size), requires_grad=True)
+        x = torch.tensor(pnp.linspace(0.1, 0.5, batch_size), requires_grad=True)
 
         res = circuit(x)
         expected = (
@@ -682,7 +682,7 @@ class TestDiffMulti:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         batch_size = 3
-        x = tf.Variable(np.linspace(0.1, 0.5, batch_size))
+        x = tf.Variable(pnp.linspace(0.1, 0.5, batch_size))
 
         with tf.GradientTape() as tape:
             res = circuit(x)
@@ -691,11 +691,11 @@ class TestDiffMulti:
         expected = qml.math.transpose(
             qml.math.stack(
                 [
-                    np.cos(x),
-                    np.cos(x / 2) ** 2,
-                    np.zeros_like(x),
-                    np.zeros_like(x),
-                    np.sin(x / 2) ** 2,
+                    pnp.cos(x),
+                    pnp.cos(x / 2) ** 2,
+                    pnp.zeros_like(x),
+                    pnp.zeros_like(x),
+                    pnp.sin(x / 2) ** 2,
                 ]
             )
         )
@@ -703,10 +703,10 @@ class TestDiffMulti:
 
         grad = tape.jacobian(res, x)
         expected = qml.math.stack(
-            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
-        ) * qml.math.expand_dims(np.eye(batch_size), 1)
+            [-pnp.sin(x), -pnp.sin(x) / 2, pnp.zeros_like(x), pnp.zeros_like(x), pnp.sin(x) / 2]
+        ) * qml.math.expand_dims(pnp.eye(batch_size), 1)
 
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
@@ -726,7 +726,7 @@ class TestDiffMulti:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         batch_size = 3
-        x = tf.Variable(np.linspace(0.1, 0.5, batch_size))
+        x = tf.Variable(pnp.linspace(0.1, 0.5, batch_size))
 
         with tf.GradientTape() as tape:
             res = circuit(x)
@@ -735,11 +735,11 @@ class TestDiffMulti:
         expected = qml.math.transpose(
             qml.math.stack(
                 [
-                    np.cos(x),
-                    np.cos(x / 2) ** 2,
-                    np.zeros_like(x),
-                    np.zeros_like(x),
-                    np.sin(x / 2) ** 2,
+                    pnp.cos(x),
+                    pnp.cos(x / 2) ** 2,
+                    pnp.zeros_like(x),
+                    pnp.zeros_like(x),
+                    pnp.sin(x / 2) ** 2,
                 ]
             )
         )
@@ -747,10 +747,10 @@ class TestDiffMulti:
 
         grad = tape.jacobian(res, x)
         expected = qml.math.stack(
-            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
-        ) * qml.math.expand_dims(np.eye(batch_size), 1)
+            [-pnp.sin(x), -pnp.sin(x) / 2, pnp.zeros_like(x), pnp.zeros_like(x), pnp.sin(x) / 2]
+        ) * qml.math.expand_dims(pnp.eye(batch_size), 1)
 
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
 
 def test_all_operations(mocker):
@@ -766,8 +766,8 @@ def test_all_operations(mocker):
         return qml.probs(wires=[0, 2])
 
     batch_size = 3
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=False)
+    x = pnp.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    weights = pnp.ones((batch_size, 10, 3, 3), requires_grad=False)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(x, weights)
@@ -788,8 +788,8 @@ def test_unbatched_parameter():
         qml.RX(y, wires=[0])
         return qml.expval(qml.PauliZ(0))
 
-    x = np.array([0.3, 0.4, 0.5])
-    y = np.array(0.2)
+    x = pnp.array([0.3, 0.4, 0.5])
+    y = pnp.array(0.2)
 
     with pytest.raises(ValueError, match="0.2 has incorrect batch dimension"):
         circuit(x, y)
@@ -808,8 +808,8 @@ def test_initial_unbatched_parameter():
         qml.RX(y, wires=[0])
         return qml.expval(qml.PauliZ(0))
 
-    x = np.array(0.2)
-    y = np.array([0.3, 0.4, 0.5])
+    x = pnp.array(0.2)
+    y = pnp.array([0.3, 0.4, 0.5])
 
     with pytest.raises(ValueError, match="Parameter 0.2 does not contain a batch"):
         circuit(x, y)
@@ -834,9 +834,9 @@ def test_unbatched_not_copied():
     """Test that operators containing unbatched parameters are not copied"""
 
     batch_size = 5
-    data = np.random.random((batch_size, 8))
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
-    x = np.array(0.4, requires_grad=False)
+    data = pnp.random.random((batch_size, 8))
+    weights = pnp.ones((batch_size, 10, 3, 3), requires_grad=True)
+    x = pnp.array(0.4, requires_grad=False)
 
     ops = [
         qml.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True),

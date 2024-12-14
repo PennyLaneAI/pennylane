@@ -20,7 +20,7 @@ import pytest
 from utils import check_matrix_equivalence, compare_operation_lists
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms.optimization import commute_controlled
 from pennylane.wires import Wires
 
@@ -54,7 +54,7 @@ class TestCommuteControlled:
 
         def qfunc():
             qml.PauliX(wires=2)
-            qml.ControlledQubitUnitary(np.array([[0, 1], [1, 0]]), control_wires=0, wires=2)
+            qml.ControlledQubitUnitary(pnp.array([[0, 1], [1, 0]]), control_wires=0, wires=2)
             qml.PauliX(wires=2)
 
         transformed_qfunc = commute_controlled(qfunc, direction=direction)
@@ -352,7 +352,7 @@ class TestCommuteControlledInterfaces:
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
-        input = np.array([0.1, 0.2], requires_grad=True)
+        input = pnp.array([0.1, 0.2], requires_grad=True)
 
         # Check that the numerical output is the same
         assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
@@ -542,4 +542,4 @@ class TestTransformDispatch:
         assert len(transformed_qnode.transform_program) == 1
         res = transformed_qnode()
         expected = qnode_circuit()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)

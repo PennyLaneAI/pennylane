@@ -18,7 +18,7 @@ Unit tests for the :mod:`pennylane` optimizers.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.optimize import (
     AdagradOptimizer,
     AdamOptimizer,
@@ -59,7 +59,7 @@ class TestOverOpts:
             def func(x, c=1.0):
                 return (x - c) ** 2
 
-        x = np.array(1.0, requires_grad=True)
+        x = pnp.array(1.0, requires_grad=True)
 
         wrapper = func_wrapper()
         spy = mocker.spy(wrapper, "func")
@@ -80,7 +80,7 @@ class TestOverOpts:
         assert kwargs2 == {"c": 2.0}
         assert kwargs3 == {"c": 3.0}
 
-        assert np.allclose(cost_three, wrapper.func(x, c=3.0), atol=tol)
+        assert pnp.allclose(cost_three, wrapper.func(x, c=3.0), atol=tol)
 
     def test_multi_args(self, mocker, opt, opt_name, tol):
         """Test passing multiple arguments to function"""
@@ -93,9 +93,9 @@ class TestOverOpts:
         wrapper = func_wrapper()
         spy = mocker.spy(wrapper, "func")
 
-        x = np.array([1.0])
-        y = np.array([2.0])
-        z = np.array([3.0])
+        x = pnp.array([1.0])
+        y = pnp.array([2.0])
+        z = pnp.array([3.0])
 
         (x_new, y_new, z_new), cost = opt.step_and_cost(wrapper.func, x, y, z)
         self.reset(opt)
@@ -111,7 +111,7 @@ class TestOverOpts:
         assert kwargs1 == {}
         assert kwargs2 == {}
 
-        assert np.allclose(cost, wrapper.func(x, y, z), atol=tol)
+        assert pnp.allclose(cost, wrapper.func(x, y, z), atol=tol)
 
     def test_nontrainable_data(self, opt):
         """Check non-trainable argument does not get updated"""
@@ -120,10 +120,10 @@ class TestOverOpts:
             assert qml.math.allclose(b, 1.0)
             return a * b * c * d
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(1.0, requires_grad=False)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(1.0, requires_grad=False)
         c = 1.0
-        d = np.array(0.2, requires_grad=True)
+        d = pnp.array(0.2, requires_grad=True)
 
         args1 = opt.step(func, a, b, c, d)
         args2 = opt.step(func, *args1)
@@ -141,10 +141,10 @@ class TestOverOpts:
         def func2(args):
             return args[0][0] * args[1][0] * args[2][0]
 
-        x = np.array([1.0], requires_grad=True)
-        y = np.array([2.0], requires_grad=True)
-        z = np.array([3.0], requires_grad=True)
-        args = np.array((x, y, z), requires_grad=True)
+        x = pnp.array([1.0], requires_grad=True)
+        y = pnp.array([2.0], requires_grad=True)
+        z = pnp.array([3.0], requires_grad=True)
+        args = pnp.array((x, y, z), requires_grad=True)
 
         x_seperate, y_seperate, z_seperate = opt.step(func1, x, y, z)
         self.reset(opt)
@@ -152,9 +152,9 @@ class TestOverOpts:
         args_new = opt.step(func2, args)
         self.reset(opt)
 
-        assert np.allclose(x_seperate, args_new[0], atol=tol)
-        assert np.allclose(y_seperate, args_new[1], atol=tol)
-        assert np.allclose(z_seperate, args_new[2], atol=tol)
+        assert pnp.allclose(x_seperate, args_new[0], atol=tol)
+        assert pnp.allclose(y_seperate, args_new[1], atol=tol)
+        assert pnp.allclose(z_seperate, args_new[2], atol=tol)
 
     def test_one_trainable_one_non_trainable(self, opt):
         """Tests that a cost function that takes one trainable and one
@@ -169,8 +169,8 @@ class TestOverOpts:
         def cost(x, target):
             return (circuit(x) - target) ** 2
 
-        ev = np.tensor(0.7781, requires_grad=False)
-        x = np.tensor(0.0, requires_grad=True)
+        ev = pnp.tensor(0.7781, requires_grad=False)
+        x = pnp.tensor(0.0, requires_grad=True)
 
         original_ev = ev
 
@@ -193,8 +193,8 @@ class TestOverOpts:
         def cost(target, x):  # Note: the order of the arguments has been swapped
             return (circuit(x) - target) ** 2
 
-        ev = np.tensor(0.7781, requires_grad=False)
-        x = np.tensor(0.0, requires_grad=True)
+        ev = pnp.tensor(0.7781, requires_grad=False)
+        x = pnp.tensor(0.0, requires_grad=True)
 
         original_ev = ev
 
@@ -217,9 +217,9 @@ class TestOverOpts:
         def cost(x, y, target):
             return (circuit(x, y) - target) ** 2
 
-        ev = np.tensor(0.7781, requires_grad=False)
-        x = np.tensor(0.0, requires_grad=True)
-        y = np.tensor(0.0, requires_grad=True)
+        ev = pnp.tensor(0.7781, requires_grad=False)
+        x = pnp.tensor(0.0, requires_grad=True)
+        y = pnp.tensor(0.0, requires_grad=True)
 
         original_ev = ev
 

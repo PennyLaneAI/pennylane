@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import StatePrep, math
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.qubit_mixed import create_initial_state
 from pennylane.operation import StatePrepBase
 
@@ -26,7 +26,7 @@ ml_interfaces = ["numpy", "autograd", "jax", "torch", "tensorflow"]
 
 def allzero_vec(num_wires, interface="numpy"):
     """Returns the state vector of the all-zero state."""
-    state = np.zeros(2**num_wires, dtype=complex)
+    state = pnp.zeros(2**num_wires, dtype=complex)
     state[0] = 1
     state = math.asarray(state, like=interface)
     return state
@@ -35,7 +35,7 @@ def allzero_vec(num_wires, interface="numpy"):
 def allzero_dm(num_wires, interface="numpy"):
     """Returns the density matrix of the all-zero state."""
     num_axes = 2 * num_wires
-    dm = np.zeros((2,) * num_axes, dtype=complex)
+    dm = pnp.zeros((2,) * num_axes, dtype=complex)
     dm[(0,) * num_axes] = 1
     dm = math.asarray(dm, like=interface)
     return dm

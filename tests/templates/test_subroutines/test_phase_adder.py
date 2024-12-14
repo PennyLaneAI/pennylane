@@ -18,7 +18,7 @@ Tests for the PhaseAdder template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.templates.subroutines.phase_adder import _add_k_fourier
 
 
@@ -39,8 +39,8 @@ def test_add_k_fourier():
     assert len(ops) == 2
     assert ops[0].name == "PhaseShift"
     assert ops[1].name == "PhaseShift"
-    assert np.isclose(ops[0].parameters[0], 2 * np.pi)
-    assert np.isclose(ops[1].parameters[0], np.pi)
+    assert pnp.isclose(ops[0].parameters[0], 2 * pnp.pi)
+    assert pnp.isclose(ops[1].parameters[0], pnp.pi)
 
 
 class TestPhaseAdder:
@@ -132,7 +132,7 @@ class TestPhaseAdder:
             mod = 2 ** len(x_wires)
 
         # pylint: disable=bad-reversed-sequence
-        assert np.allclose(
+        assert pnp.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % mod
         )
 

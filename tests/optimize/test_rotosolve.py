@@ -21,21 +21,21 @@ import pytest
 from scipy.optimize import shgo
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.optimize import RotosolveOptimizer
 from pennylane.optimize.qng import _flatten_np, _unflatten_np
 
 
 def expand_num_freq(num_freq, param):
-    if np.isscalar(num_freq):
+    if pnp.isscalar(num_freq):
         num_freq = [num_freq] * len(param)
     expanded = []
     for _num_freq, par in zip(num_freq, param):
-        if np.isscalar(_num_freq) and np.isscalar(par):
+        if pnp.isscalar(_num_freq) and pnp.isscalar(par):
             expanded.append(_num_freq)
-        elif np.isscalar(_num_freq):
-            expanded.append(np.ones_like(par) * _num_freq)
-        elif np.isscalar(par):
+        elif pnp.isscalar(_num_freq):
+            expanded.append(pnp.ones_like(par) * _num_freq)
+        elif pnp.isscalar(par):
             raise ValueError(f"{num_freq}\n{param}\n{_num_freq}\n{par}")
         elif len(_num_freq) == len(par):
             expanded.append(_num_freq)
@@ -47,11 +47,11 @@ def expand_num_freq(num_freq, param):
 def successive_params(par1, par2):
     """Return a list of parameter configurations, successively walking from
     par1 to par2 coordinate-wise."""
-    par1_flat = np.fromiter(_flatten_np(par1), dtype=float)
-    par2_flat = np.fromiter(_flatten_np(par2), dtype=float)
+    par1_flat = pnp.fromiter(_flatten_np(par1), dtype=float)
+    par2_flat = pnp.fromiter(_flatten_np(par2), dtype=float)
     walking_param = []
     for i in range(len(par1_flat) + 1):
-        walking_param.append(_unflatten_np(np.append(par2_flat[:i], par1_flat[i:]), par1))
+        walking_param.append(_unflatten_np(pnp.append(par2_flat[:i], par1_flat[i:]), par1))
     return walking_param
 
 
@@ -60,7 +60,7 @@ def test_error_missing_frequency_info():
 
     opt = RotosolveOptimizer()
     fun = lambda x: x
-    x = np.array(0.5, requires_grad=True)
+    x = pnp.array(0.5, requires_grad=True)
 
     with pytest.raises(ValueError, match="Neither the number of frequencies nor the"):
         opt.step(fun, x)
@@ -72,8 +72,8 @@ def test_no_error_missing_frequency_info_untrainable():
 
     opt = RotosolveOptimizer()
     fun = lambda x, y: x
-    x = np.array(0.5, requires_grad=True)
-    y = np.array(0.1, requires_grad=False)
+    x = pnp.array(0.5, requires_grad=True)
+    y = pnp.array(0.1, requires_grad=False)
     nums_frequency = {"x": {(): 1}}
 
     opt.step(fun, x, y, nums_frequency=nums_frequency)
@@ -88,7 +88,7 @@ def test_error_missing_frequency_info_single_par():
     def sum_named_arg(x):
         return qml.math.sum(x)
 
-    x = np.arange(4, requires_grad=True)
+    x = pnp.arange(4, requires_grad=True)
     nums_frequency = {"x": {(0,): 1, (1,): 1}}
     spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
 
@@ -102,40 +102,40 @@ def test_error_no_trainable_args():
 
     opt = RotosolveOptimizer()
     fun = lambda x, y, z: 1.0
-    x = np.arange(4, requires_grad=False)
+    x = pnp.arange(4, requires_grad=False)
 
     with pytest.raises(ValueError, match="Found no parameters to optimize."):
         opt.step(fun, x, nums_frequency=None, spectra=None)
 
 
 classical_functions = [
-    lambda x: np.sin(x + 0.124) * 2.5123,
-    lambda x: -np.cos(x[0] + 0.12) * 0.872 + np.sin(x[1] - 2.01) - np.cos(x[2] - 1.35) * 0.111,
-    lambda x, y: -np.cos(x + 0.12) * 0.872 + np.sin(y[0] - 2.01) - np.cos(y[1] - 1.35) * 0.111,
+    lambda x: pnp.sin(x + 0.124) * 2.5123,
+    lambda x: -pnp.cos(x[0] + 0.12) * 0.872 + pnp.sin(x[1] - 2.01) - pnp.cos(x[2] - 1.35) * 0.111,
+    lambda x, y: -pnp.cos(x + 0.12) * 0.872 + pnp.sin(y[0] - 2.01) - pnp.cos(y[1] - 1.35) * 0.111,
     lambda x, y: (
-        -np.cos(x + 0.12) * 0.872
-        + np.sin(2 * y[0] - 2.01)
-        + np.sin(y[0] - 2.01 / 2 - np.pi / 4) * 0.1
-        - np.cos(y[1] - 1.35 / 2) * 0.2
-        - np.cos(2 * y[1] - 1.35) * 0.111
+        -pnp.cos(x + 0.12) * 0.872
+        + pnp.sin(2 * y[0] - 2.01)
+        + pnp.sin(y[0] - 2.01 / 2 - pnp.pi / 4) * 0.1
+        - pnp.cos(y[1] - 1.35 / 2) * 0.2
+        - pnp.cos(2 * y[1] - 1.35) * 0.111
     ),
-    lambda x, y, z: -np.cos(x + 0.12) * 0.872 + np.sin(y - 2.01) - np.cos(z - 1.35) * 0.111,
+    lambda x, y, z: -pnp.cos(x + 0.12) * 0.872 + pnp.sin(y - 2.01) - pnp.cos(z - 1.35) * 0.111,
     lambda x, y, z: (
-        -np.cos(x + 0.06)
-        - np.cos(2 * x + 0.12) * 0.872
-        + np.sin(y - 2.01 / 3 - np.pi / 3)
-        + np.sin(3 * y - 2.01)
-        - np.cos(z - 1.35) * 0.111
+        -pnp.cos(x + 0.06)
+        - pnp.cos(2 * x + 0.12) * 0.872
+        + pnp.sin(y - 2.01 / 3 - pnp.pi / 3)
+        + pnp.sin(3 * y - 2.01)
+        - pnp.cos(z - 1.35) * 0.111
     ),
 ]
 
 classical_minima = [
-    (-np.pi / 2 - 0.124,),
-    ([-0.12, -np.pi / 2 + 2.01, 1.35],),
-    (-0.12, [-np.pi / 2 + 2.01, 1.35]),
-    (-0.12, [(-np.pi / 2 + 2.01) / 2, 1.35 / 2]),
-    (-0.12, -np.pi / 2 + 2.01, 1.35),
-    (-0.12 / 2, (-np.pi / 2 + 2.01) / 3, 1.35),
+    (-pnp.pi / 2 - 0.124,),
+    ([-0.12, -pnp.pi / 2 + 2.01, 1.35],),
+    (-0.12, [-pnp.pi / 2 + 2.01, 1.35]),
+    (-0.12, [(-pnp.pi / 2 + 2.01) / 2, 1.35 / 2]),
+    (-0.12, -pnp.pi / 2 + 2.01, 1.35),
+    (-0.12 / 2, (-pnp.pi / 2 + 2.01) / 3, 1.35),
 ]
 
 classical_params = [
@@ -207,7 +207,7 @@ class TestWithClassicalFunction:
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         # Make only the first argument trainable
-        param = (np.array(param[0], requires_grad=True),) + param[1:]
+        param = (pnp.array(param[0], requires_grad=True),) + param[1:]
         # Only one argument is marked as trainable -> Expect only the executions for that arg
         opt.step(_fun, *param, nums_frequency=nums_freq)
         exp_num_calls_single_trainable = sum(2 * num + 1 for num in nums_freq["x"].values())
@@ -215,7 +215,7 @@ class TestWithClassicalFunction:
         num_calls = 0
 
         # Parameters are now marked as trainable -> Expect full number of executions
-        param = tuple(np.array(p, requires_grad=True) for p in param)
+        param = tuple(pnp.array(p, requires_grad=True) for p in param)
         opt.step(_fun, *param, nums_frequency=nums_freq)
         assert num_calls == exp_num_calls
 
@@ -227,7 +227,7 @@ class TestWithClassicalFunction:
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         # Make only the first argument trainable
-        param = (np.array(param[0], requires_grad=True),) + param[1:]
+        param = (pnp.array(param[0], requires_grad=True),) + param[1:]
         # Only one argument is marked as trainable -> All other arguments have to stay fixed
         new_param_step = opt.step(
             fun,
@@ -238,10 +238,10 @@ class TestWithClassicalFunction:
         if len(param) == 1:
             new_param_step = (new_param_step,)
 
-        assert all(np.allclose(p, new_p) for p, new_p in zip(param[1:], new_param_step[1:]))
+        assert all(pnp.allclose(p, new_p) for p, new_p in zip(param[1:], new_param_step[1:]))
 
         # With trainable parameters, training should happen
-        param = tuple(np.array(p, requires_grad=True) for p in param)
+        param = tuple(pnp.array(p, requires_grad=True) for p in param)
         new_param_step = opt.step(
             fun,
             *param,
@@ -252,9 +252,9 @@ class TestWithClassicalFunction:
             new_param_step = (new_param_step,)
 
         assert len(x_min) == len(new_param_step)
-        assert np.allclose(
-            np.fromiter(_flatten_np(x_min), dtype=float),
-            np.fromiter(_flatten_np(new_param_step), dtype=float),
+        assert pnp.allclose(
+            pnp.fromiter(_flatten_np(x_min), dtype=float),
+            pnp.fromiter(_flatten_np(new_param_step), dtype=float),
             atol=1e-5,
         )
 
@@ -270,19 +270,19 @@ class TestWithClassicalFunction:
             new_param_step_and_cost = (new_param_step_and_cost,)
 
         assert len(x_min) == len(new_param_step_and_cost)
-        assert np.allclose(
-            np.fromiter(_flatten_np(new_param_step_and_cost), dtype=float),
-            np.fromiter(_flatten_np(new_param_step), dtype=float),
+        assert pnp.allclose(
+            pnp.fromiter(_flatten_np(new_param_step_and_cost), dtype=float),
+            pnp.fromiter(_flatten_np(new_param_step), dtype=float),
             atol=1e-5,
         )
-        assert np.isclose(old_cost, fun(*param))
+        assert pnp.isclose(old_cost, fun(*param))
 
     def test_full_output(
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
-        param = tuple(np.array(p, requires_grad=True) for p in param)
+        param = tuple(pnp.array(p, requires_grad=True) for p in param)
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         _, y_output_step = opt.step(
@@ -303,9 +303,9 @@ class TestWithClassicalFunction:
         expected_intermediate_x = successive_params(param, new_param)
         expected_y_output = [fun(*par) for par in expected_intermediate_x[1:]]
 
-        assert np.allclose(y_output_step, expected_y_output)
-        assert np.allclose(y_output_step_and_cost, expected_y_output)
-        assert np.isclose(old_cost, fun(*expected_intermediate_x[0]))
+        assert pnp.allclose(y_output_step, expected_y_output)
+        assert pnp.allclose(y_output_step_and_cost, expected_y_output)
+        assert pnp.isclose(old_cost, fun(*expected_intermediate_x[0]))
 
 
 @pytest.mark.parametrize(
@@ -314,7 +314,7 @@ class TestWithClassicalFunction:
 )
 def test_multiple_steps(fun, x_min, param, num_freq):
     """Tests that repeated steps execute as expected."""
-    param = tuple(np.array(p, requires_grad=True) for p in param)
+    param = tuple(pnp.array(p, requires_grad=True) for p in param)
     substep_optimizer = "brute"
     substep_kwargs = None
     opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
@@ -329,28 +329,28 @@ def test_multiple_steps(fun, x_min, param, num_freq):
         if len(x_min) == 1:
             param = (param,)
 
-    assert (np.isscalar(x_min) and np.isscalar(param)) or len(x_min) == len(param)
-    assert np.allclose(
-        np.fromiter(_flatten_np(x_min), dtype=float),
-        np.fromiter(_flatten_np(param), dtype=float),
+    assert (pnp.isscalar(x_min) and pnp.isscalar(param)) or len(x_min) == len(param)
+    assert pnp.allclose(
+        pnp.fromiter(_flatten_np(x_min), dtype=float),
+        pnp.fromiter(_flatten_np(param), dtype=float),
         atol=1e-5,
     )
 
 
 classical_functions_deact = [
-    lambda x, y: -np.cos(x + 0.12) * 0.872 + np.sin(y[0] - 2.01) - np.cos(y[1] - 1.35) * 0.111,
-    lambda x, y, z: -np.cos(x + 0.12) * 0.872 + np.sin(y - 2.01) - np.cos(z - 1.35) * 0.111,
+    lambda x, y: -pnp.cos(x + 0.12) * 0.872 + pnp.sin(y[0] - 2.01) - pnp.cos(y[1] - 1.35) * 0.111,
+    lambda x, y, z: -pnp.cos(x + 0.12) * 0.872 + pnp.sin(y - 2.01) - pnp.cos(z - 1.35) * 0.111,
 ]
 classical_minima_deact = [
     (-0.12, [0.8, 0.1]),
     (-0.12, 0.2, 1.35),
 ]
 classical_params_deact = [
-    (np.array(0.3, requires_grad=True), np.array([0.8, 0.1], requires_grad=False)),
+    (pnp.array(0.3, requires_grad=True), pnp.array([0.8, 0.1], requires_grad=False)),
     (
-        np.array(0.1, requires_grad=True),
-        np.array(0.2, requires_grad=False),
-        np.array(0.5, requires_grad=True),
+        pnp.array(0.1, requires_grad=True),
+        pnp.array(0.2, requires_grad=False),
+        pnp.array(0.5, requires_grad=True),
     ),
 ]
 classical_nums_frequency_deact = [
@@ -389,9 +389,9 @@ class TestDeactivatedTrainingWithClassicalFunctions:
             new_param_step = (new_param_step,)
 
         assert len(x_min) == len(new_param_step)
-        assert np.allclose(
-            np.fromiter(_flatten_np(x_min), dtype=float),
-            np.fromiter(_flatten_np(new_param_step), dtype=float),
+        assert pnp.allclose(
+            pnp.fromiter(_flatten_np(x_min), dtype=float),
+            pnp.fromiter(_flatten_np(new_param_step), dtype=float),
             atol=1e-5,
         )
 
@@ -406,12 +406,12 @@ class TestDeactivatedTrainingWithClassicalFunctions:
             new_param_step_and_cost = (new_param_step_and_cost,)
 
         assert len(x_min) == len(new_param_step_and_cost)
-        assert np.allclose(
-            np.fromiter(_flatten_np(new_param_step_and_cost), dtype=float),
-            np.fromiter(_flatten_np(new_param_step), dtype=float),
+        assert pnp.allclose(
+            pnp.fromiter(_flatten_np(new_param_step_and_cost), dtype=float),
+            pnp.fromiter(_flatten_np(new_param_step), dtype=float),
             atol=1e-5,
         )
-        assert np.isclose(old_cost, fun(*param))
+        assert pnp.isclose(old_cost, fun(*param))
 
 
 num_wires = 3
@@ -452,13 +452,13 @@ def _postprocessing_qnode(x, y, z):
 
 
 def postprocessing_qnode(x, y, z):
-    return np.sum(_postprocessing_qnode(x, y, z))
+    return pnp.sum(_postprocessing_qnode(x, y, z))
 
 
 qnodes = [scalar_qnode, array_qnode, postprocessing_qnode]
 qnode_params = [
     (0.2,),
-    (np.array([0.1, -0.3, 2.9]), 1.3, [0.2, 0.1]),
+    (pnp.array([0.1, -0.3, 2.9]), 1.3, [0.2, 0.1]),
     (1.2, -2.3, -0.2),
 ]
 qnode_nums_frequency = [
@@ -490,7 +490,7 @@ class TestWithQNodes:
         self, qnode, param, nums_frequency, spectra, substep_optimizer, substep_kwargs
     ):
         """Test executing a single step of the RotosolveOptimizer on a QNode."""
-        param = tuple(np.array(p, requires_grad=True) for p in param)
+        param = tuple(pnp.array(p, requires_grad=True) for p in param)
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         repack_param = len(param) == 1
@@ -503,7 +503,7 @@ class TestWithQNodes:
         if repack_param:
             new_param_step = (new_param_step,)
 
-        assert (np.isscalar(new_param_step) and np.isscalar(param)) or len(new_param_step) == len(
+        assert (pnp.isscalar(new_param_step) and pnp.isscalar(param)) or len(new_param_step) == len(
             param
         )
         # pylint:disable=unbalanced-tuple-unpacking
@@ -516,17 +516,17 @@ class TestWithQNodes:
         if repack_param:
             new_param_step_and_cost = (new_param_step_and_cost,)
 
-        assert np.allclose(
-            np.fromiter(_flatten_np(new_param_step_and_cost), dtype=float),
-            np.fromiter(_flatten_np(new_param_step), dtype=float),
+        assert pnp.allclose(
+            pnp.fromiter(_flatten_np(new_param_step_and_cost), dtype=float),
+            pnp.fromiter(_flatten_np(new_param_step), dtype=float),
         )
-        assert np.isclose(qnode(*param), old_cost)
+        assert pnp.isclose(qnode(*param), old_cost)
 
     def test_multiple_steps(
         self, qnode, param, nums_frequency, spectra, substep_optimizer, substep_kwargs
     ):
         """Test executing multiple steps of the RotosolveOptimizer on a QNode."""
-        param = tuple(np.array(p, requires_grad=True) for p in param)
+        param = tuple(pnp.array(p, requires_grad=True) for p in param)
         # For the following 1D substep_optimizer, the bounds need to be expanded for these QNodes
         if substep_optimizer in ["shgo", custom_optimizer]:
             substep_kwargs["bounds"] = ((-2.0, 2.0),)

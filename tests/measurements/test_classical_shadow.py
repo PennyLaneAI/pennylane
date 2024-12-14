@@ -20,7 +20,7 @@ import autograd.numpy
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 
@@ -79,7 +79,7 @@ def get_y_basis_circuit(wires, shots, interface="autograd"):
     def circuit():
         for wire in range(wires):
             qml.Hadamard(wire)
-            qml.RZ(np.pi / 2, wire)
+            qml.RZ(pnp.pi / 2, wire)
         return qml.classical_shadow(wires=range(wires))
 
     return circuit
@@ -108,66 +108,66 @@ class TestProcessState:
     def test_shape_and_dtype(self):
         """Test that the shape and dtype of the measurement is correct"""
         mp = qml.classical_shadow(wires=[0, 1])
-        res = mp.process_state_with_shots(np.ones((2, 2)) / 2, qml.wires.Wires([0, 1]), shots=100)
+        res = mp.process_state_with_shots(pnp.ones((2, 2)) / 2, qml.wires.Wires([0, 1]), shots=100)
 
         assert res.shape == (2, 100, 2)
-        assert res.dtype == np.int8
+        assert res.dtype == pnp.int8
 
         # test that the bits are either 0 and 1
-        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+        assert pnp.all(pnp.logical_or(res[0] == 0, res[0] == 1))
 
         # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
-        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+        assert pnp.all(pnp.logical_or(pnp.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
 
     def test_wire_order(self):
         """Test that the wire order is respected"""
-        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+        state = pnp.array([[1, 1], [0, 0]]) / pnp.sqrt(2)
 
         mp = qml.classical_shadow(wires=[0, 1])
         res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=1000)
 
         assert res.shape == (2, 1000, 2)
-        assert res.dtype == np.int8
+        assert res.dtype == pnp.int8
 
         # test that the first qubit samples are all 0s when the recipe is Z
-        assert np.all(res[0][res[1, ..., 0] == 2][:, 0] == 0)
+        assert pnp.all(res[0][res[1, ..., 0] == 2][:, 0] == 0)
 
         # test that the second qubit samples contain 1s when the recipe is Z
-        assert np.any(res[0][res[1, ..., 1] == 2][:, 1] == 1)
+        assert pnp.any(res[0][res[1, ..., 1] == 2][:, 1] == 1)
 
         res = mp.process_state_with_shots(state, qml.wires.Wires([1, 0]), shots=1000)
 
         assert res.shape == (2, 1000, 2)
-        assert res.dtype == np.int8
+        assert res.dtype == pnp.int8
 
         # now test that the first qubit samples contain 1s when the recipe is Z
-        assert np.any(res[0][res[1, ..., 0] == 2][:, 0] == 1)
+        assert pnp.any(res[0][res[1, ..., 0] == 2][:, 0] == 1)
 
         # now test that the second qubit samples are all 0s when the recipe is Z
-        assert np.all(res[0][res[1, ..., 1] == 2][:, 1] == 0)
+        assert pnp.all(res[0][res[1, ..., 1] == 2][:, 1] == 0)
 
     def test_subset_wires(self):
         """Test that the measurement is correct when only a subset of wires is measured"""
         mp = qml.classical_shadow(wires=[0, 1])
 
         # GHZ state
-        state = np.zeros((2, 2, 2))
-        state[np.array([0, 1]), np.array([0, 1]), np.array([0, 1])] = 1 / np.sqrt(2)
+        state = pnp.zeros((2, 2, 2))
+        state[pnp.array([0, 1]), pnp.array([0, 1]), pnp.array([0, 1])] = 1 / pnp.sqrt(2)
 
         res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
 
         assert res.shape == (2, 100, 2)
-        assert res.dtype == np.int8
+        assert res.dtype == pnp.int8
 
         # test that the bits are either 0 and 1
-        assert np.all(np.logical_or(res[0] == 0, res[0] == 1))
+        assert pnp.all(pnp.logical_or(res[0] == 0, res[0] == 1))
 
         # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
-        assert np.all(np.logical_or(np.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
+        assert pnp.all(pnp.logical_or(pnp.logical_or(res[1] == 0, res[1] == 1), res[1] == 2))
 
     def test_same_rng(self):
         """Test results when the rng is the same"""
-        state = np.ones((2, 2)) / 2
+        state = pnp.ones((2, 2)) / 2
 
         mp1 = qml.classical_shadow(wires=[0, 1], seed=123)
         mp2 = qml.classical_shadow(wires=[0, 1], seed=123)
@@ -176,44 +176,44 @@ class TestProcessState:
         res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100)
 
         # test recipes are the same but bits are different
-        assert np.all(res1[1] == res2[1])
-        assert np.any(res1[0] != res2[0])
+        assert pnp.all(res1[1] == res2[1])
+        assert pnp.any(res1[0] != res2[0])
 
         res1 = mp1.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100, rng=456)
         res2 = mp2.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=100, rng=456)
 
         # now test everything is the same
-        assert np.all(res1[1] == res2[1])
-        assert np.all(res1[0] == res2[0])
+        assert pnp.all(res1[1] == res2[1])
+        assert pnp.all(res1[0] == res2[0])
 
     def test_expval_shape_and_val(self):
         """Test that shadow expval measurements work as expected"""
         mp = qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)
         res = mp.process_state_with_shots(
-            np.ones((2, 2)) / 2, qml.wires.Wires([0, 1]), shots=1000, rng=100
+            pnp.ones((2, 2)) / 2, qml.wires.Wires([0, 1]), shots=1000, rng=100
         )
 
         assert res.shape == ()
-        assert np.allclose(res, 1.0, atol=0.05)
+        assert pnp.allclose(res, 1.0, atol=0.05)
 
     def test_expval_wire_order(self):
         """Test that shadow expval respects the wire order"""
-        state = np.array([[1, 1], [0, 0]]) / np.sqrt(2)
+        state = pnp.array([[1, 1], [0, 0]]) / pnp.sqrt(2)
 
         mp = qml.shadow_expval(qml.PauliZ(0), seed=200)
         res = mp.process_state_with_shots(state, qml.wires.Wires([0, 1]), shots=3000, rng=100)
 
         assert res.shape == ()
-        assert np.allclose(res, 1.0, atol=0.05)
+        assert pnp.allclose(res, 1.0, atol=0.05)
 
         res = mp.process_state_with_shots(state, qml.wires.Wires([1, 0]), shots=3000, rng=100)
 
         assert res.shape == ()
-        assert np.allclose(res, 0.0, atol=0.05)
+        assert pnp.allclose(res, 0.0, atol=0.05)
 
     def test_expval_same_rng(self):
         """Test expval results when the rng is the same"""
-        state = np.ones((2, 2)) / 2
+        state = pnp.ones((2, 2)) / 2
 
         mp1 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
         mp2 = qml.shadow_expval(qml.PauliZ(0) @ qml.PauliZ(1), seed=123)
@@ -299,7 +299,7 @@ class TestClassicalShadow:
         assert shadow.shape == (2, shots, wires)
 
         # test dtype is correct
-        expected_dtype = np.int8
+        expected_dtype = pnp.int8
         if interface == "tf":
             expected_dtype = tf.int8
         elif interface == "torch":
@@ -310,8 +310,8 @@ class TestClassicalShadow:
         bits, recipes = shadow  # pylint: disable=unpacking-non-sequence
 
         # test allowed values of bits and recipes
-        assert qml.math.all(np.logical_or(bits == 0, bits == 1))
-        assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
+        assert qml.math.all(pnp.logical_or(bits == 0, bits == 1))
+        assert qml.math.all(pnp.logical_or(recipes == 0, pnp.logical_or(recipes == 1, recipes == 2)))
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
@@ -329,20 +329,20 @@ class TestClassicalShadow:
         bits, recipes = circuit()
 
         # test that the recipes follow a rough uniform distribution
-        ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
-        assert np.allclose(ratios, 1 / 3, atol=1e-1)
+        ratios = pnp.unique(recipes, return_counts=True)[1] / (wires * shots)
+        assert pnp.allclose(ratios, 1 / 3, atol=1e-1)
 
         # test that the bit is 0 for all X measurements
         assert qml.math.allequal(bits[recipes == basis_recipe], 0)
 
         # test that the bits are uniformly distributed for all Y and Z measurements
         bits1 = bits[recipes == (basis_recipe + 1) % 3]
-        ratios1 = np.unique(bits1, return_counts=True)[1] / bits1.shape[0]
-        assert np.allclose(ratios1, 1 / 2, atol=1e-1)
+        ratios1 = pnp.unique(bits1, return_counts=True)[1] / bits1.shape[0]
+        assert pnp.allclose(ratios1, 1 / 2, atol=1e-1)
 
         bits2 = bits[recipes == (basis_recipe + 2) % 3]
-        ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
-        assert np.allclose(ratios2, 1 / 2, atol=1e-1)
+        ratios2 = pnp.unique(bits2, return_counts=True)[1] / bits2.shape[0]
+        assert pnp.allclose(ratios2, 1 / 2, atol=1e-1)
 
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_shots_none_error(self, wires, seed):
@@ -388,7 +388,7 @@ class TestClassicalShadow:
         result = circuit(params)
         sequential_result = [circuit(i) for i in params]
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, pnp.ndarray)
         assert qml.math.shape(result) == (len(params), 2, shots, wires)
         for seq_res, res in zip(sequential_result, result):
             assert qml.math.shape(seq_res) == qml.math.shape(res)
@@ -422,7 +422,7 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
 def qft_circuit(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
-    one_state = np.zeros(wires)
+    one_state = pnp.zeros(wires)
     one_state[-1] = 1
 
     @qml.qnode(dev, interface=interface)
@@ -528,7 +528,7 @@ class TestExpvalMeasurement:
         result = circuit(params)
         sequential_result = [circuit(i) for i in params]
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, pnp.ndarray)
         assert qml.math.shape(result)[0] == len(params)
         for seq_res, res in zip(sequential_result, result):
             assert qml.math.shape(seq_res) == qml.math.shape(res)
@@ -572,13 +572,13 @@ obs_qft = [
 expected_qft = [
     -1,
     0,
-    -1 / np.sqrt(2),
-    -1 / np.sqrt(2),
+    -1 / pnp.sqrt(2),
+    -1 / pnp.sqrt(2),
     0,
     0,
-    1 / np.sqrt(2),
-    1 / np.sqrt(2),
-    -1 / np.sqrt(2),
+    1 / pnp.sqrt(2),
+    1 / pnp.sqrt(2),
+    -1 / pnp.sqrt(2),
     0,
 ]
 
@@ -594,7 +594,7 @@ class TestExpvalForward:
         actual = circuit(obs, k=k)
 
         assert actual.shape == (len(obs_hadamard),)
-        assert actual.dtype == np.float64
+        assert actual.dtype == pnp.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     def test_max_entangled_expval(
@@ -606,7 +606,7 @@ class TestExpvalForward:
         actual = circuit(obs, k=k)
 
         assert actual.shape == (len(obs_max_entangled),)
-        assert actual.dtype == np.float64
+        assert actual.dtype == pnp.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
@@ -629,7 +629,7 @@ class TestExpvalForwardInterfaces:
         actual = circuit(obs, k=k)
 
         assert actual.shape == (len(obs_qft),)
-        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
+        assert actual.dtype == torch.float64 if interface == "torch" else pnp.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
 
@@ -680,7 +680,7 @@ class TestExpvalBackward:
             return autograd.numpy.hstack(exact_circuit(x, obs))
 
         # make rotations close to pi / 2 to ensure gradients are not too small
-        x = np.random.uniform(
+        x = pnp.random.uniform(
             0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
         )
         actual = qml.jacobian(shadow_circuit)(x, obs, k=1)
@@ -700,7 +700,7 @@ class TestExpvalBackward:
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = jnp.array(
-            np.random.uniform(
+            pnp.random.uniform(
                 0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
             )
         )
@@ -721,7 +721,7 @@ class TestExpvalBackward:
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = tf.Variable(
-            np.random.uniform(
+            pnp.random.uniform(
                 0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
             )
         )
@@ -749,7 +749,7 @@ class TestExpvalBackward:
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = torch.tensor(
-            np.random.uniform(
+            pnp.random.uniform(
                 0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
             ),
             requires_grad=True,
@@ -774,7 +774,7 @@ def get_basis_circuit(wires, shots, basis, interface="autograd", device="default
             if basis in ("x", "y"):
                 qml.Hadamard(wire)
             if basis == "y":
-                qml.RZ(np.pi / 2, wire)
+                qml.RZ(pnp.pi / 2, wire)
 
         return qml.classical_shadow(wires=range(wires))
 
@@ -805,10 +805,10 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
     )
 
     # test that the recipes follow a rough uniform distribution
-    ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
-    assert np.allclose(ratios, 1 / 3, atol=1e-1)
-    new_ratios = np.unique(new_recipes, return_counts=True)[1] / (wires * shots)
-    assert np.allclose(new_ratios, 1 / 3, atol=1e-1)
+    ratios = pnp.unique(recipes, return_counts=True)[1] / (wires * shots)
+    assert pnp.allclose(ratios, 1 / 3, atol=1e-1)
+    new_ratios = pnp.unique(new_recipes, return_counts=True)[1] / (wires * shots)
+    assert pnp.allclose(new_ratios, 1 / 3, atol=1e-1)
 
     # test that the bit is 0 for all X measurements
     assert qml.math.allequal(bits[recipes == basis_recipe], 0)
@@ -816,19 +816,19 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
 
     # test that the bits are uniformly distributed for all Y and Z measurements
     bits1 = bits[recipes == (basis_recipe + 1) % 3]
-    ratios1 = np.unique(bits1, return_counts=True)[1] / bits1.shape[0]
-    assert np.allclose(ratios1, 1 / 2, atol=1e-1)
+    ratios1 = pnp.unique(bits1, return_counts=True)[1] / bits1.shape[0]
+    assert pnp.allclose(ratios1, 1 / 2, atol=1e-1)
     new_bits1 = new_bits[new_recipes == (basis_recipe + 1) % 3]
-    new_ratios1 = np.unique(new_bits1, return_counts=True)[1] / new_bits1.shape[0]
-    assert np.allclose(new_ratios1, 1 / 2, atol=1e-1)
+    new_ratios1 = pnp.unique(new_bits1, return_counts=True)[1] / new_bits1.shape[0]
+    assert pnp.allclose(new_ratios1, 1 / 2, atol=1e-1)
 
     bits2 = bits[recipes == (basis_recipe + 2) % 3]
-    ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
-    assert np.allclose(ratios2, 1 / 2, atol=1e-1)
+    ratios2 = pnp.unique(bits2, return_counts=True)[1] / bits2.shape[0]
+    assert pnp.allclose(ratios2, 1 / 2, atol=1e-1)
 
     new_bits2 = new_bits[new_recipes == (basis_recipe + 2) % 3]
-    new_ratios2 = np.unique(new_bits2, return_counts=True)[1] / new_bits2.shape[0]
-    assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
+    new_ratios2 = pnp.unique(new_bits2, return_counts=True)[1] / new_bits2.shape[0]
+    assert pnp.allclose(new_ratios2, 1 / 2, atol=1e-1)
 
 
 def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
@@ -853,6 +853,6 @@ def test_hadamard_expval(k=1, obs=obs_hadamard, expected=expected_hadamard):
     new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device.target_device)
 
     assert actual.shape == (len(obs_hadamard),)
-    assert actual.dtype == np.float64
+    assert actual.dtype == pnp.float64
     assert qml.math.allclose(actual, expected, atol=1e-1)
     assert qml.math.allclose(new_actual, expected, atol=1e-1)

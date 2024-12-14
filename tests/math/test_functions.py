@@ -24,7 +24,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
 from pennylane import math as fn
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -62,7 +62,7 @@ class TestGetMultiTensorbox:
         """Test that a warning is raised if the sequence of tensors contains
         both tensorflow and autograd tensors."""
         x = tf.Variable([1.0, 2.0, 3.0])
-        y = np.array([0.5, 0.1])
+        y = pnp.array([0.5, 0.1])
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
             fn.get_interface(x, y)
@@ -71,7 +71,7 @@ class TestGetMultiTensorbox:
         """Test that a warning is raised if the sequence of tensors contains
         both torch and autograd tensors."""
         x = torch.tensor([1.0, 2.0, 3.0])
-        y = np.array([0.5, 0.1])
+        y = pnp.array([0.5, 0.1])
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
             fn.get_interface(x, y)
@@ -80,7 +80,7 @@ class TestGetMultiTensorbox:
         """Test that a warning is raised if the sequence of tensors contains
         both jax and autograd tensors."""
         x = jnp.array([1.0, 2.0, 3.0])
-        y = np.array([0.5, 0.1])
+        y = pnp.array([0.5, 0.1])
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
             fn.get_interface(x, y)
@@ -90,7 +90,7 @@ class TestGetMultiTensorbox:
         """Test that no warning is raised if the sequence of tensors contains
         SciPy sparse matrices and autograd tensors."""
         x = sci.sparse.eye(3)
-        y = np.array([0.5, 0.1])
+        y = pnp.array([0.5, 0.1])
 
         fn.get_interface(x, y)
 
@@ -112,7 +112,7 @@ class TestGetMultiTensorbox:
 
     def test_return_autograd_box(self):
         """Test that autograd is correctly identified as the dispatching library."""
-        x = np.array([1.0, 2.0, 3.0])
+        x = pnp.array([1.0, 2.0, 3.0])
         y = [0.5, 0.1]
 
         res = fn.get_interface(y, x)
@@ -139,14 +139,14 @@ class TestGetMultiTensorbox:
         assert fn.get_deep_interface([()]) == "numpy"
         assert fn.get_deep_interface(([1, 2], [3, 4])) == "numpy"
         assert fn.get_deep_interface([[jnp.array(1.1)]]) == "jax"
-        assert fn.get_deep_interface([[np.array(1.3, requires_grad=False)]]) == "autograd"
+        assert fn.get_deep_interface([[pnp.array(1.3, requires_grad=False)]]) == "autograd"
 
 
 test_abs_data = [
     (1, -2, 3 + 4j),
     [1, -2, 3 + 4j],
     onp.array([1, -2, 3 + 4j]),
-    np.array([1, -2, 3 + 4j]),
+    pnp.array([1, -2, 3 + 4j]),
     torch.tensor([1, -2, 3 + 4j], dtype=torch.complex128),
     tf.Variable([1, -2, 3 + 4j], dtype=tf.complex128),
     tf.constant([1, -2, 3 + 4j], dtype=tf.complex128),
@@ -165,7 +165,7 @@ test_data = [
     (1, 2, 3),
     [1, 2, 3],
     onp.array([1, 2, 3]),
-    np.array([1, 2, 3]),
+    pnp.array([1, 2, 3]),
     torch.tensor([1, 2, 3]),
     tf.Variable([1, 2, 3]),
     tf.constant([1, 2, 3]),
@@ -175,7 +175,7 @@ unequal_test_data = [
     (2, 2, 3),
     [1, 21, 3],
     onp.array([1, 2, 39]),
-    np.array([1, 2, 4]),
+    pnp.array([1, 2, 4]),
     torch.tensor([1, 20, 3]),
     tf.Variable([2, 21, 3]),
     tf.constant([2, 1, 3]),
@@ -205,7 +205,7 @@ test_all_vectors = [
 
 
 @pytest.mark.parametrize(
-    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
+    "array_fn", [tuple, list, onp.array, pnp.array, torch.tensor, tf.Variable, tf.constant]
 )
 @pytest.mark.parametrize("t1, expected", test_all_vectors)
 def test_all(array_fn, t1, expected):
@@ -223,7 +223,7 @@ test_any_vectors = [
 
 
 @pytest.mark.parametrize(
-    "array_fn", [tuple, list, onp.array, np.array, torch.tensor, tf.Variable, tf.constant]
+    "array_fn", [tuple, list, onp.array, pnp.array, torch.tensor, tf.Variable, tf.constant]
 )
 @pytest.mark.parametrize("t1, expected", test_any_vectors)
 def test_any(array_fn, t1, expected):
@@ -258,7 +258,7 @@ test_angle_data = [
     [1.0, 1.0j, 1 + 1j],
     [1.0, 1.0j, 1 + 1j],
     onp.array([1.0, 1.0j, 1 + 1j]),
-    np.array([1.0, 1.0j, 1 + 1j]),
+    pnp.array([1.0, 1.0j, 1 + 1j]),
     torch.tensor([1.0, 1.0j, 1 + 1j], dtype=torch.complex128),
     tf.Variable([1.0, 1.0j, 1 + 1j], dtype=tf.complex128),
     tf.constant([1.0, 1.0j, 1 + 1j], dtype=tf.complex128),
@@ -270,14 +270,14 @@ def test_angle(t):
     """Test that the angle function works for a variety
     of input"""
     res = fn.angle(t)
-    assert fn.allequal(res, [0, np.pi / 2, np.pi / 4])
+    assert fn.allequal(res, [0, pnp.pi / 2, pnp.pi / 4])
 
 
 test_arcsin_data = [
     (1, 0.2, -0.5),
     [1, 0.2, -0.5],
     onp.array([1, 0.2, -0.5]),
-    np.array([1, 0.2, -0.5]),
+    pnp.array([1, 0.2, -0.5]),
     torch.tensor([1, 0.2, -0.5], dtype=torch.float64),
     tf.Variable([1, 0.2, -0.5], dtype=tf.float64),
     tf.constant([1, 0.2, -0.5], dtype=tf.float64),
@@ -289,13 +289,13 @@ def test_arcsin(t):
     """Test that the arcsin function works for a variety
     of input"""
     res = fn.arcsin(t)
-    assert fn.allequal(res, np.arcsin([1, 0.2, -0.5]))
+    assert fn.allequal(res, pnp.arcsin([1, 0.2, -0.5]))
 
 
 test_conj_data = [
     [1.0, 1.0j, 1 + 1j],
     onp.array([1.0, 1.0j, 1 + 1j]),
-    np.array([1.0, 1.0j, 1 + 1j]),
+    pnp.array([1.0, 1.0j, 1 + 1j]),
     jnp.array([1.0, 1.0j, 1 + 1j]),
     torch.tensor([1.0, 1.0j, 1 + 1j], dtype=torch.complex128),
     tf.Variable([1.0, 1.0j, 1 + 1j], dtype=tf.complex128),
@@ -307,7 +307,7 @@ test_conj_data = [
 def test_conj(t):
     """Test the qml.math.conj function."""
     res = fn.conj(t)
-    assert fn.allequal(res, np.conj(t))
+    assert fn.allequal(res, pnp.conj(t))
 
 
 class TestCast:
@@ -379,14 +379,14 @@ cast_like_test_data = [
     (1, 2, 3),
     [1, 2, 3],
     onp.array([1, 2, 3], dtype=onp.int64),
-    np.array([1, 2, 3], dtype=np.int64),
+    pnp.array([1, 2, 3], dtype=pnp.int64),
     torch.tensor([1, 2, 3], dtype=torch.int64),
     tf.Variable([1, 2, 3], dtype=tf.int64),
     tf.constant([1, 2, 3], dtype=tf.int64),
     (1.0, 2.0, 3.0),
     [1.0, 2.0, 3.0],
     onp.array([1, 2, 3], dtype=onp.float64),
-    np.array([1, 2, 3], dtype=np.float64),
+    pnp.array([1, 2, 3], dtype=pnp.float64),
     torch.tensor([1, 2, 3], dtype=torch.float64),
     tf.Variable([1, 2, 3], dtype=tf.float64),
     tf.constant([1, 2, 3], dtype=tf.float64),
@@ -416,12 +416,12 @@ class TestConcatenate:
         """Test that concatenate, called without the axis arguments,
         concatenates across the 0th dimension"""
         t1 = [0.6, 0.1, 0.6]
-        t2 = np.array([0.1, 0.2, 0.3])
+        t2 = pnp.array([0.1, 0.2, 0.3])
         t3 = onp.array([5.0, 8.0, 101.0])
 
         res = fn.concatenate([t1, t2, t3])
-        assert isinstance(res, np.ndarray)
-        assert np.all(res == np.concatenate([t1, t2, t3]))
+        assert isinstance(res, pnp.ndarray)
+        assert pnp.all(res == pnp.concatenate([t1, t2, t3]))
 
     def test_concatenate_jax(self):
         """Test that concatenate, called without the axis arguments,
@@ -442,18 +442,18 @@ class TestConcatenate:
 
         res = fn.concatenate([t1, t2, t3])
         assert isinstance(res, tf.Tensor)
-        assert np.all(res.numpy() == np.concatenate([t1.numpy(), t2.numpy(), t3]))
+        assert pnp.all(res.numpy() == pnp.concatenate([t1.numpy(), t2.numpy(), t3]))
 
     def test_concatenate_torch(self):
         """Test that concatenate, called without the axis arguments,
         concatenates across the 0th dimension"""
-        t1 = onp.array([5.0, 8.0, 101.0], dtype=np.float64)
+        t1 = onp.array([5.0, 8.0, 101.0], dtype=pnp.float64)
         t2 = torch.tensor([0.6, 0.1, 0.6], dtype=torch.float64)
         t3 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
 
         res = fn.concatenate([t1, t2, t3])
         assert isinstance(res, torch.Tensor)
-        assert np.all(res.numpy() == np.concatenate([t1, t2.numpy(), t3.numpy()]))
+        assert pnp.all(res.numpy() == pnp.concatenate([t1, t2.numpy(), t3.numpy()]))
 
     @pytest.mark.parametrize(
         "t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]]), tf.constant([[1], [2]])]
@@ -468,7 +468,7 @@ class TestConcatenate:
         if hasattr(res, "numpy"):
             res = res.numpy()
 
-        assert fn.allclose(res, np.array([[1, 3], [2, 4]]))
+        assert fn.allclose(res, pnp.array([[1, 3], [2, 4]]))
         assert list(res.shape) == [2, 2]
 
     @pytest.mark.parametrize(
@@ -483,7 +483,7 @@ class TestConcatenate:
         if hasattr(res, "numpy"):
             res = res.numpy()
 
-        assert fn.allclose(res, np.array([1, 2, 5]))
+        assert fn.allclose(res, pnp.array([1, 2, 5]))
         assert list(res.shape) == [3]
 
 
@@ -503,9 +503,9 @@ class TestConvertLike:
             t2 = t2.numpy()
 
         assert fn.allequal(res, t1)
-        assert isinstance(res, np.ndarray if isinstance(t2, (list, tuple)) else t2.__class__)
+        assert isinstance(res, pnp.ndarray if isinstance(t2, (list, tuple)) else t2.__class__)
 
-    @pytest.mark.parametrize("t_like", [np.array([1]), tf.constant([1]), torch.tensor([1])])
+    @pytest.mark.parametrize("t_like", [pnp.array([1]), tf.constant([1]), torch.tensor([1])])
     def test_convert_scalar(self, t_like):
         """Test that a python scalar is converted to a scalar tensor"""
         res = fn.convert_like(5, t_like)
@@ -519,7 +519,7 @@ class TestDot:
 
     scalar_product_data = [
         [2, 6],
-        [np.array(2), np.array(6)],
+        [pnp.array(2), pnp.array(6)],
         [torch.tensor(2), onp.array(6)],
         [torch.tensor(2), torch.tensor(6)],
         [tf.Variable(2), onp.array(6)],
@@ -536,7 +536,7 @@ class TestDot:
 
     vector_product_data = [
         [[1, 2, 3], [1, 2, 3]],
-        [np.array([1, 2, 3]), np.array([1, 2, 3])],
+        [pnp.array([1, 2, 3]), pnp.array([1, 2, 3])],
         [torch.tensor([1, 2, 3]), onp.array([1, 2, 3])],
         [torch.tensor([1, 2, 3]), torch.tensor([1, 2, 3])],
         [tf.Variable([1, 2, 3]), onp.array([1, 2, 3])],
@@ -553,7 +553,7 @@ class TestDot:
 
     matrix_vector_product_data = [
         [[[1, 2], [3, 4]], [6, 7]],
-        [np.array([[1, 2], [3, 4]]), np.array([6, 7])],
+        [pnp.array([[1, 2], [3, 4]]), pnp.array([6, 7])],
         [torch.tensor([[1, 2], [3, 4]]), onp.array([6, 7])],
         [torch.tensor([[1, 2], [3, 4]]), torch.tensor([6, 7])],
         [tf.Variable([[1, 2], [3, 4]]), onp.array([6, 7])],
@@ -579,7 +579,7 @@ class TestDot:
     def test_matrix_matrix_product(self, t1, t2):
         """Test that the matrix-matrix dot product of two vectors results in a matrix"""
         res = fn.dot(t1, t1)
-        assert fn.allequal(res, np.array([[7, 10], [15, 22]]))
+        assert fn.allequal(res, pnp.array([[7, 10], [15, 22]]))
         res = fn.dot(t2, t2)
         assert fn.allequal(res, 85)
 
@@ -599,8 +599,8 @@ class TestDot:
 
     multidim_product_data = [
         [
-            np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-            np.array([[[1, 1], [3, 3]], [[3, 1], [3, 2]]]),
+            pnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+            pnp.array([[[1, 1], [3, 3]], [[3, 1], [3, 2]]]),
         ],
         [
             torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -633,7 +633,7 @@ class TestDot:
         """Test that the multi-dimensional dot product reduces across the last dimension of the first
         tensor, and the second-to-last dimension of the second tensor."""
         res = fn.dot(t1, t2)
-        expected = np.array(
+        expected = pnp.array(
             [
                 [[[7, 7], [9, 5]], [[15, 15], [21, 11]], [[2, 2], [0, 1]]],
                 [[[23, 23], [33, 17]], [[-3, -3], [-3, -2]], [[5, 5], [9, 4]]],
@@ -649,8 +649,8 @@ class TestTensordotTorch:
 
     v1 = torch.tensor([0.1, 0.5, -0.9, 1.0, -4.2, 0.1], dtype=torch.float64)
     v2 = torch.tensor([4.3, -1.2, 8.2, 0.6, -4.2, -11.0], dtype=torch.float64)
-    _arange = np.arange(0, 54).reshape((9, 6)).astype(np.float64)
-    _shuffled_arange = np.array(
+    _arange = pnp.arange(0, 54).reshape((9, 6)).astype(pnp.float64)
+    _shuffled_arange = pnp.array(
         [
             [42.0, 43.0, 44.0, 45.0, 46.0, 47.0],
             [6.0, 7.0, 8.0, 9.0, 10.0, 11.0],
@@ -662,15 +662,15 @@ class TestTensordotTorch:
             [18.0, 19.0, 20.0, 21.0, 22.0, 23.0],
             [36.0, 37.0, 38.0, 39.0, 40.0, 41.0],
         ],
-        dtype=np.float64,
+        dtype=pnp.float64,
     )
     M1 = torch.tensor(_arange)
     M2 = torch.tensor(_shuffled_arange)
-    T1 = np.arange(0, 3 * 6 * 9 * 2).reshape((3, 6, 9, 2)).astype(np.float64)
-    T1 = torch.tensor(np.array([T1[1], T1[0], T1[2]]), dtype=torch.float64)
+    T1 = pnp.arange(0, 3 * 6 * 9 * 2).reshape((3, 6, 9, 2)).astype(pnp.float64)
+    T1 = torch.tensor(pnp.array([T1[1], T1[0], T1[2]]), dtype=torch.float64)
 
     v1_dot_v2 = 9.59
-    v1_outer_v2 = np.array(
+    v1_outer_v2 = pnp.array(
         [
             [0.43, -0.12, 0.82, 0.06, -0.42, -1.1],
             [2.15, -0.6, 4.1, 0.3, -2.1, -5.5],
@@ -679,7 +679,7 @@ class TestTensordotTorch:
             [-18.06, 5.04, -34.44, -2.52, 17.64, 46.2],
             [0.43, -0.12, 0.82, 0.06, -0.42, -1.1],
         ],
-        dtype=np.float64,
+        dtype=pnp.float64,
     )
 
     M1_dot_v1 = torch.tensor(
@@ -871,11 +871,11 @@ class TestTensordotTorch:
 class TestTensordotDifferentiability:
     """Test the differentiability of qml.math.tensordot."""
 
-    v0 = np.array([0.1, 5.3, -0.9, 1.1])
-    v1 = np.array([0.5, -1.7, -2.9, 0.0])
-    v2 = np.array([-0.4, 9.1, 1.6])
+    v0 = pnp.array([0.1, 5.3, -0.9, 1.1])
+    v1 = pnp.array([0.5, -1.7, -2.9, 0.0])
+    v2 = pnp.array([-0.4, 9.1, 1.6])
     exp_shapes = ((len(v0), len(v2), len(v0)), (len(v0), len(v2), len(v2)))
-    exp_jacs = (np.zeros(exp_shapes[0]), np.zeros(exp_shapes[1]))
+    exp_jacs = (pnp.zeros(exp_shapes[0]), pnp.zeros(exp_shapes[1]))
     for i in range(len(v0)):
         exp_jacs[0][i, :, i] = v2
     for i in range(len(v2)):
@@ -883,9 +883,9 @@ class TestTensordotDifferentiability:
 
     def test_autograd(self):
         """Tests differentiability of tensordot with Autograd."""
-        v0 = np.array(self.v0, requires_grad=True)
-        v1 = np.array(self.v1, requires_grad=True)
-        v2 = np.array(self.v2, requires_grad=True)
+        v0 = pnp.array(self.v0, requires_grad=True)
+        v1 = pnp.array(self.v1, requires_grad=True)
+        v2 = pnp.array(self.v2, requires_grad=True)
 
         # Test inner product
         jac = qml.jacobian(partial(fn.tensordot, axes=[0, 0]), argnum=(0, 1))(v0, v1)
@@ -974,17 +974,17 @@ class TestExpandDims:
         if not shape:
             pytest.skip("Cannot expand the dimensions of a Python scalar!")
 
-        t1 = np.empty(shape).tolist()
+        t1 = pnp.empty(shape).tolist()
         t2 = fn.expand_dims(t1, axis=axis)
         assert t2.shape == new_shape
 
     def test_expand_dims_array(self, shape, axis, new_shape):
         """Test that expand_dimensions works correctly
         when given an array"""
-        t1 = np.empty(shape)
+        t1 = pnp.empty(shape)
         t2 = fn.expand_dims(t1, axis=axis)
         assert t2.shape == new_shape
-        assert isinstance(t2, np.ndarray)
+        assert isinstance(t2, pnp.ndarray)
 
     def test_expand_dims_torch(self, shape, axis, new_shape):
         """Test that the expand dimensions works correctly
@@ -1007,7 +1007,7 @@ interface_test_data = [
     [(1, 2, 3), "numpy"],
     [[1, 2, 3], "numpy"],
     [onp.array([1, 2, 3]), "numpy"],
-    [np.array([1, 2, 3]), "autograd"],
+    [pnp.array([1, 2, 3]), "autograd"],
     [torch.tensor([1, 2, 3]), "torch"],
     [tf.Variable([1, 2, 3]), "tensorflow"],
     [tf.constant([1, 2, 3]), "tensorflow"],
@@ -1046,7 +1046,7 @@ def test_numpy(t):
 def test_numpy_arraybox(t):
     """Test that the to_numpy method correctly converts the input
     ArrayBox into a NumPy array."""
-    val = np.array(5.0)
+    val = pnp.array(5.0)
     t = ArrayBox(val, None, None)
     res = fn.to_numpy(t)
     assert res == val
@@ -1087,7 +1087,7 @@ class TestOnesLike:
 
         assert res.shape == t.shape
         assert fn.get_interface(res) == fn.get_interface(t)
-        assert fn.allclose(res, np.ones(t.shape))
+        assert fn.allclose(res, pnp.ones(t.shape))
 
         # if tensorflow or pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
@@ -1100,21 +1100,21 @@ class TestOnesLike:
     def test_ones_like_explicit_dtype(self, t):
         """Test that the ones like function creates the correct
         shape and type tensor."""
-        res = fn.ones_like(t, dtype=np.float16)
+        res = fn.ones_like(t, dtype=pnp.float16)
 
         if isinstance(t, (list, tuple)):
             t = onp.asarray(t)
 
         assert res.shape == t.shape
         assert fn.get_interface(res) == fn.get_interface(t)
-        assert fn.allclose(res, np.ones(t.shape))
+        assert fn.allclose(res, pnp.ones(t.shape))
 
         # if tensorflow or pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
             t = t.numpy()
 
-        assert onp.asarray(res).dtype.type is np.float16
+        assert onp.asarray(res).dtype.type is pnp.float16
 
 
 class TestRequiresGrad:
@@ -1172,10 +1172,10 @@ class TestRequiresGrad:
 
     def test_autograd(self):
         """Autograd arrays will simply return their requires_grad attribute"""
-        t = np.array([1.0, 2.0], requires_grad=True)
+        t = pnp.array([1.0, 2.0], requires_grad=True)
         assert fn.requires_grad(t)
 
-        t = np.array([1.0, 2.0], requires_grad=False)
+        t = pnp.array([1.0, 2.0], requires_grad=False)
         assert not fn.requires_grad(t)
 
     def test_autograd_backwards(self):
@@ -1185,10 +1185,10 @@ class TestRequiresGrad:
         def cost_fn(t, s):
             nonlocal res
             res = [fn.requires_grad(t), fn.requires_grad(s)]
-            return np.sum(t * s)
+            return pnp.sum(t * s)
 
-        t = np.array([1.0, 2.0, 3.0])
-        s = np.array([-2.0, -3.0, -4.0])
+        t = pnp.array([1.0, 2.0, 3.0])
+        s = pnp.array([-2.0, -3.0, -4.0])
 
         qml.grad(cost_fn)(t, s)
         assert res == [True, True]
@@ -1273,10 +1273,10 @@ class TestInBackprop:
         def cost_fn(t, s):
             nonlocal res
             res = [fn.in_backprop(t), fn.in_backprop(s)]
-            return np.sum(t * s)
+            return pnp.sum(t * s)
 
-        t = np.array([1.0, 2.0, 3.0], requires_grad=True)
-        s = np.array([-2.0, -3.0, -4.0], requires_grad=True)
+        t = pnp.array([1.0, 2.0, 3.0], requires_grad=True)
+        s = pnp.array([-2.0, -3.0, -4.0], requires_grad=True)
 
         qml.grad(cost_fn)(t, s)
         assert res == [True, True]
@@ -1364,8 +1364,8 @@ shape_test_data = [
 @pytest.mark.parametrize(
     "interface,create_array",
     [
-        ("sequence", lambda shape: np.empty(shape).tolist()),
-        ("autograd", np.empty),
+        ("sequence", lambda shape: pnp.empty(shape).tolist()),
+        ("autograd", pnp.empty),
         ("torch", torch.empty),
         ("jax", jnp.ones),
         ("tf", tf.ones),
@@ -1396,8 +1396,8 @@ def test_shape_and_ndim_deep(interface):
         (onp.array(0.5), "float64"),
         (onp.array(1.0, dtype="float32"), "float32"),
         (ArrayBox(1, "a", "b"), "int64"),
-        (np.array(0.5), "float64"),
-        (np.array(0.5, dtype="complex64"), "complex64"),
+        (pnp.array(0.5), "float64"),
+        (pnp.array(0.5, dtype="complex64"), "complex64"),
         # skip jax as output is dependent on global configuration
         (tf.Variable(0.1, dtype="float32"), "float32"),
         (tf.Variable(0.1, dtype="float64"), "float64"),
@@ -1416,7 +1416,7 @@ def test_sqrt(t):
     """Test that the square root function works for a variety
     of input"""
     res = fn.sqrt(t)
-    assert fn.allclose(res, [1, np.sqrt(2), np.sqrt(3)])
+    assert fn.allclose(res, [1, pnp.sqrt(2), pnp.sqrt(3)])
 
 
 class TestStack:
@@ -1425,12 +1425,12 @@ class TestStack:
     def test_stack_array(self):
         """Test that stack, called without the axis arguments, stacks vertically"""
         t1 = [0.6, 0.1, 0.6]
-        t2 = np.array([0.1, 0.2, 0.3])
+        t2 = pnp.array([0.1, 0.2, 0.3])
         t3 = onp.array([5.0, 8.0, 101.0])
 
         res = fn.stack([t1, t2, t3])
-        assert isinstance(res, np.ndarray)
-        assert np.all(res == np.stack([t1, t2, t3]))
+        assert isinstance(res, pnp.ndarray)
+        assert pnp.all(res == pnp.stack([t1, t2, t3]))
 
     def test_stack_array_jax(self):
         """Test that stack, called without the axis arguments, stacks vertically"""
@@ -1439,7 +1439,7 @@ class TestStack:
         t3 = jnp.array([5.0, 8.0, 101.0])
 
         res = fn.stack([t1, t2, t3])
-        assert np.all(res == np.stack([t1, t2, t3]))
+        assert pnp.all(res == pnp.stack([t1, t2, t3]))
 
     def test_stack_tensorflow(self):
         """Test that stack, called without the axis arguments, stacks vertically"""
@@ -1449,17 +1449,17 @@ class TestStack:
 
         res = fn.stack([t1, t2, t3])
         assert isinstance(res, tf.Tensor)
-        assert np.all(res.numpy() == np.stack([t1.numpy(), t2.numpy(), t3]))
+        assert pnp.all(res.numpy() == pnp.stack([t1.numpy(), t2.numpy(), t3]))
 
     def test_stack_torch(self):
         """Test that stack, called without the axis arguments, stacks vertically"""
-        t1 = onp.array([5.0, 8.0, 101.0], dtype=np.float64)
+        t1 = onp.array([5.0, 8.0, 101.0], dtype=pnp.float64)
         t2 = torch.tensor([0.6, 0.1, 0.6], dtype=torch.float64)
         t3 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
 
         res = fn.stack([t1, t2, t3])
         assert isinstance(res, torch.Tensor)
-        assert np.all(res.numpy() == np.stack([t1, t2.numpy(), t3.numpy()]))
+        assert pnp.all(res.numpy() == pnp.stack([t1, t2.numpy(), t3.numpy()]))
 
     @pytest.mark.parametrize("t1", [onp.array([1, 2]), torch.tensor([1, 2]), tf.constant([1, 2])])
     def test_stack_axis(self, t1):
@@ -1472,7 +1472,7 @@ class TestStack:
         if hasattr(res, "numpy"):
             res = res.numpy()
 
-        assert fn.allclose(res, np.array([[1, 3], [2, 4]]))
+        assert fn.allclose(res, pnp.array([[1, 3], [2, 4]]))
         assert list(res.shape) == [2, 2]
 
 
@@ -1481,9 +1481,9 @@ class TestSum:
 
     def test_array(self):
         """Test that sum, called without the axis arguments, returns a scalar"""
-        t = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+        t = pnp.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
         res = fn.sum(t)
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, pnp.ndarray)
         assert fn.allclose(res, 2.1)
 
     def test_tensorflow(self):
@@ -1509,7 +1509,7 @@ class TestSum:
     @pytest.mark.parametrize(
         "t1",
         [
-            np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+            pnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -1524,13 +1524,13 @@ class TestSum:
         if hasattr(res, "numpy"):
             res = res.numpy()
 
-        assert fn.allclose(res, np.array([14, 6, 3]))
+        assert fn.allclose(res, pnp.array([14, 6, 3]))
         assert res.shape == (3,)
 
     @pytest.mark.parametrize(
         "t1",
         [
-            np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+            pnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
             jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -1545,7 +1545,7 @@ class TestSum:
         if hasattr(res, "numpy"):
             res = res.numpy()
 
-        assert fn.allclose(res, np.array([[[14], [6], [3]]]))
+        assert fn.allclose(res, pnp.array([[[14], [6], [3]]]))
         assert res.shape == (1, 3, 1)
 
 
@@ -1564,14 +1564,14 @@ def test_T(t):
         res = res.numpy()
         t = t.numpy()
 
-    assert np.all(res.T == t.T)
+    assert pnp.all(res.T == t.T)
 
 
 class TestTake:
     """Tests for the qml.take function"""
 
     take_data = [
-        np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+        pnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
         tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -1598,14 +1598,14 @@ class TestTake:
     def test_array_indexing_autograd(self):
         """Test that indexing with a sequence properly extracts
         the elements from the flattened tensor"""
-        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=np.float64)
+        t = pnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=pnp.float64)
         indices = [0, 2, 3, 6, -2]
 
         def cost_fn(t):
-            return np.sum(fn.take(t, indices))
+            return pnp.sum(fn.take(t, indices))
 
         grad = qml.grad(cost_fn)(t)
-        expected = np.array([[[1, 0], [1, 1], [0, 0]], [[1, 0], [0, 0], [1, 0]]])
+        expected = pnp.array([[[1, 0], [1, 1], [0, 0]], [[1, 0], [0, 0], [1, 0]]])
         assert fn.allclose(grad, expected)
 
     @pytest.mark.parametrize("t", take_data)
@@ -1622,7 +1622,7 @@ class TestTake:
         the elements from the specified tensor axis"""
         indices = [0, 1, -2]
         res = fn.take(t, indices, axis=2)
-        expected = np.array(
+        expected = pnp.array(
             [[[1, 2, 1], [3, 4, 3], [-1, 1, -1]], [[5, 6, 5], [0, -1, 0], [2, 1, 2]]]
         )
         assert fn.allclose(res, expected)
@@ -1631,9 +1631,9 @@ class TestTake:
     def test_multidimensional_indexing_along_axis(self, t):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
-        indices = np.array([[0, 0], [1, 0]])
+        indices = pnp.array([[0, 0], [1, 0]])
         res = fn.take(t, indices, axis=1)
-        expected = np.array(
+        expected = pnp.array(
             [[[[1, 2], [1, 2]], [[3, 4], [1, 2]]], [[[5, 6], [5, 6]], [[0, -1], [5, 6]]]]
         )
         assert fn.allclose(res, expected)
@@ -1641,31 +1641,31 @@ class TestTake:
     def test_multidimensional_indexing_along_axis_autograd(self):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
-        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=np.float64)
-        indices = np.array([[0, 0], [1, 0]])
+        t = pnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]], dtype=pnp.float64)
+        indices = pnp.array([[0, 0], [1, 0]])
 
         def cost_fn(t):
             return fn.sum(fn.take(t, indices, axis=1))
 
         res = cost_fn(t)
-        expected = np.sum(
-            np.array([[[[1, 2], [1, 2]], [[3, 4], [1, 2]]], [[[5, 6], [5, 6]], [[0, -1], [5, 6]]]])
+        expected = pnp.sum(
+            pnp.array([[[[1, 2], [1, 2]], [[3, 4], [1, 2]]], [[[5, 6], [5, 6]], [[0, -1], [5, 6]]]])
         )
         assert fn.allclose(res, expected)
 
         grad = qml.grad(cost_fn)(t)
-        expected = np.array([[[3, 3], [1, 1], [0, 0]], [[3, 3], [1, 1], [0, 0]]])
+        expected = pnp.array([[[3, 3], [1, 1], [0, 0]], [[3, 3], [1, 1], [0, 0]]])
         assert fn.allclose(grad, expected)
 
     @pytest.mark.torch
     def test_last_axis_support_torch(self):
         """Test that _torch_take correctly sets the last axis"""
         x = fn.arange(8, like="torch").reshape((2, 4))
-        assert np.array_equal(fn.take(x, indices=3, axis=-1), [3, 7])
+        assert pnp.array_equal(fn.take(x, indices=3, axis=-1), [3, 7])
 
 
 where_data = [
-    np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    pnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -1679,7 +1679,7 @@ def test_where(t):
     """Test that the qml.math.where function works as expected"""
     # With output values
     res = fn.where(t < 0, 100 * fn.ones_like(t), t)
-    expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
+    expected = pnp.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
     assert fn.allclose(res, expected)
 
     # Without output values
@@ -1693,7 +1693,7 @@ def test_where(t):
 
 
 squeeze_data = [
-    np.ones((1, 2, 3, 1, 5, 1)),
+    pnp.ones((1, 2, 3, 1, 5, 1)),
     torch.ones((1, 2, 3, 1, 5, 1)),
     tf.ones((1, 2, 3, 1, 5, 1)),
     jnp.ones((1, 2, 3, 1, 5, 1)),
@@ -1711,7 +1711,7 @@ def test_squeeze(t):
 class TestScatterElementAdd:
     """Tests for the scatter_element_add function"""
 
-    x = onp.ones((2, 3), dtype=np.float64)
+    x = onp.ones((2, 3), dtype=pnp.float64)
     y = onp.array(0.56)
     index = [1, 2]
     expected_val = onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]])
@@ -1722,14 +1722,14 @@ class TestScatterElementAdd:
 
     def test_array(self):
         """Test that a NumPy array is differentiable when using scatter addition"""
-        x = np.array(self.x, requires_grad=True)
-        y = np.array(self.y, requires_grad=True)
+        x = pnp.array(self.x, requires_grad=True)
+        y = pnp.array(self.y, requires_grad=True)
 
         def cost(*weights):
             return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
         res = cost(x, y)
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, pnp.ndarray)
         assert fn.allclose(res, self.expected_val)
 
         def grab_cost_entry(*weights):
@@ -1743,14 +1743,14 @@ class TestScatterElementAdd:
     def test_array_multi(self):
         """Test that a NumPy array and the addend are differentiable when using
         scatter addition (multi dispatch)."""
-        x = np.array(self.x, requires_grad=True)
-        y = np.array(self.y, requires_grad=True)
+        x = pnp.array(self.x, requires_grad=True)
+        y = pnp.array(self.y, requires_grad=True)
 
         def cost_multi(weight_0, weight_1):
             return fn.scatter_element_add(weight_0, self.index, weight_1**2)
 
         res = cost_multi(x, y)
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, pnp.ndarray)
         assert fn.allclose(res, self.expected_val)
 
         jac = qml.jacobian(cost_multi)(x, y)
@@ -1760,14 +1760,14 @@ class TestScatterElementAdd:
     def test_array_batch(self):
         """Test that a NumPy array and the addend are differentiable when using
         scatter addition (multi dispatch)."""
-        x = np.ones((2, 3), requires_grad=True)
-        y = np.array([0.56, 0.3], requires_grad=True)
+        x = pnp.ones((2, 3), requires_grad=True)
+        y = pnp.array([0.56, 0.3], requires_grad=True)
 
         def cost_multi(weight_0, weight_1):
             return fn.scatter_element_add(weight_0, [(0, 1), (1, 2)], weight_1**2)
 
         res = cost_multi(x, y)
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, pnp.ndarray)
         assert fn.allclose(res, onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.09]]))
 
         jac = qml.jacobian(cost_multi)(x, y)
@@ -1850,7 +1850,7 @@ class TestScatterElementAddMultiValue:
     """Tests for the scatter_element_add function when adding
     multiple values at multiple positions."""
 
-    x = onp.ones((2, 3), dtype=np.float64)
+    x = onp.ones((2, 3), dtype=pnp.float64)
     y = onp.array(0.56)
     indices = [[1, 0], [2, 1]]
     expected_val = onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.27636]])
@@ -1860,8 +1860,8 @@ class TestScatterElementAddMultiValue:
     def test_array(self):
         """Test that a NumPy array is differentiable when using scatter addition
         with multiple values."""
-        x = np.array(self.x, requires_grad=True)
-        y = np.array(self.y, requires_grad=True)
+        x = pnp.array(self.x, requires_grad=True)
+        y = pnp.array(self.y, requires_grad=True)
 
         def cost(*weights):
             return fn.scatter_element_add(
@@ -1869,7 +1869,7 @@ class TestScatterElementAddMultiValue:
             )
 
         res = cost(x, y)
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, pnp.ndarray)
         assert fn.allclose(res, self.expected_val)
 
         def add_cost_entries(*weights):
@@ -1960,7 +1960,7 @@ class TestDiag:
     @pytest.mark.parametrize(
         "a, interface",
         [
-            [np.array(0.5), "autograd"],
+            [pnp.array(0.5), "autograd"],
             [tf.Variable(0.5), "tensorflow"],
             [torch.tensor(0.5), "torch"],
         ],
@@ -1976,9 +1976,9 @@ class TestDiag:
     def test_array(self):
         """Test that a NumPy array is automatically converted into
         a diagonal tensor"""
-        t = np.array([0.1, 0.2, 0.3])
+        t = pnp.array([0.1, 0.2, 0.3])
         res = fn.diag(t)
-        assert isinstance(res, np.ndarray)
+        assert isinstance(res, pnp.ndarray)
         assert fn.allclose(res, onp.diag([0.1, 0.2, 0.3]))
 
         res = fn.diag(t, k=1)
@@ -2050,12 +2050,12 @@ class TestCovMatrix:
     def expected_cov(weights):
         """Analytic covariance matrix for ansatz and obs_list"""
         a, b, c = weights
-        return np.array(
+        return pnp.array(
             [
-                [np.sin(b) ** 2, -np.cos(a) * np.sin(b) ** 2 * np.sin(c)],
+                [pnp.sin(b) ** 2, -pnp.cos(a) * pnp.sin(b) ** 2 * pnp.sin(c)],
                 [
-                    -np.cos(a) * np.sin(b) ** 2 * np.sin(c),
-                    1 - np.cos(a) ** 2 * np.cos(b) ** 2 * np.sin(c) ** 2,
+                    -pnp.cos(a) * pnp.sin(b) ** 2 * pnp.sin(c),
+                    1 - pnp.cos(a) ** 2 * pnp.cos(b) ** 2 * pnp.sin(c) ** 2,
                 ],
             ]
         )
@@ -2064,11 +2064,11 @@ class TestCovMatrix:
     def expected_grad(weights):
         """Analytic covariance matrix gradient for ansatz and obs_list"""
         a, b, c = weights
-        return np.array(
+        return pnp.array(
             [
-                np.sin(a) * np.sin(b) ** 2 * np.sin(c),
-                -2 * np.cos(a) * np.cos(b) * np.sin(b) * np.sin(c),
-                -np.cos(a) * np.cos(c) * np.sin(b) ** 2,
+                pnp.sin(a) * pnp.sin(b) ** 2 * pnp.sin(c),
+                -2 * pnp.cos(a) * pnp.cos(b) * pnp.sin(b) * pnp.sin(c),
+                -pnp.cos(a) * pnp.cos(c) * pnp.sin(b) ** 2,
             ]
         )
 
@@ -2093,10 +2093,10 @@ class TestCovMatrix:
             probs = circuit(weights)
             return fn.cov_matrix(probs, obs_list, wires=dev.wires)
 
-        weights = np.array([0.1, 0.2, 0.3])
+        weights = pnp.array([0.1, 0.2, 0.3])
         res = cov(weights)
         expected = self.expected_cov(weights)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         def grab_cov_entry(weights):
             """Grab an entry of the cov output."""
@@ -2105,7 +2105,7 @@ class TestCovMatrix:
         grad_fn = qml.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_autograd(self, tol):
         """Test that the covariance matrix computes the correct
@@ -2127,10 +2127,10 @@ class TestCovMatrix:
             probs = circuit(weights)
             return fn.cov_matrix(probs, self.obs_list)
 
-        weights = np.array([0.1, 0.2, 0.3])
+        weights = pnp.array([0.1, 0.2, 0.3])
         res = cov(weights)
         expected = self.expected_cov(weights)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         def grab_cov_entry(weights):
             """Grab an entry of the cov output."""
@@ -2139,7 +2139,7 @@ class TestCovMatrix:
         grad_fn = qml.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_torch(self, tol):
         """Test that the covariance matrix computes the correct
@@ -2157,18 +2157,18 @@ class TestCovMatrix:
 
             return qml.probs(wires=[0, 1, 2])
 
-        weights = np.array([0.1, 0.2, 0.3])
+        weights = pnp.array([0.1, 0.2, 0.3])
         weights_t = torch.tensor(weights, requires_grad=True)
         probs = circuit(weights_t)
         res = fn.cov_matrix(probs, self.obs_list)
         expected = self.expected_cov(weights)
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        assert pnp.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
         loss = res[0, 1]
         loss.backward()
         res = weights_t.grad
         expected = self.expected_grad(weights)
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+        assert pnp.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
     def test_tf(self, tol):
         """Test that the covariance matrix computes the correct
@@ -2186,7 +2186,7 @@ class TestCovMatrix:
 
             return qml.probs(wires=[0, 1, 2])
 
-        weights = np.array([0.1, 0.2, 0.3])
+        weights = pnp.array([0.1, 0.2, 0.3])
         weights_t = tf.Variable(weights)
 
         with tf.GradientTape() as tape:
@@ -2195,11 +2195,11 @@ class TestCovMatrix:
             loss = cov[0, 1]
 
         expected = self.expected_cov(weights)
-        assert np.allclose(cov, expected, atol=tol, rtol=0)
+        assert pnp.allclose(cov, expected, atol=tol, rtol=0)
 
         grad = tape.gradient(loss, weights_t)
         expected = self.expected_grad(weights)
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.slow
     def test_jax(self, tol):
@@ -2240,7 +2240,7 @@ class TestCovMatrix:
 block_diag_data = [
     [onp.array([[1, 2], [3, 4]]), torch.tensor([[1, 2], [-1, -6]]), torch.tensor([[5]])],
     [onp.array([[1, 2], [3, 4]]), tf.Variable([[1, 2], [-1, -6]]), tf.constant([[5]])],
-    [np.array([[1, 2], [3, 4]]), np.array([[1, 2], [-1, -6]]), np.array([[5]])],
+    [pnp.array([[1, 2], [3, 4]]), pnp.array([[1, 2], [-1, -6]]), pnp.array([[5]])],
     [jnp.array([[1, 2], [3, 4]]), jnp.array([[1, 2], [-1, -6]]), jnp.array([[5]])],
 ]
 
@@ -2249,7 +2249,7 @@ block_diag_data = [
 def test_block_diag(tensors):
     """Tests for the block diagonal function"""
     res = fn.block_diag(tensors)
-    expected = np.array(
+    expected = pnp.array(
         [[1, 2, 0, 0, 0], [3, 4, 0, 0, 0], [0, 0, 1, 2, 0], [0, 0, -1, -6, 0], [0, 0, 0, 0, 5]]
     )
     assert fn.allclose(res, expected)
@@ -2280,12 +2280,12 @@ class TestBlockDiagDiffability:
         def f(x, y):
             return fn.block_diag(
                 [
-                    np.array([[fn.cos(x * y)]]),
-                    np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
+                    pnp.array([[fn.cos(x * y)]]),
+                    pnp.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
                 ]
             )
 
-        x, y = np.array([0.2, 1.5], requires_grad=True)
+        x, y = pnp.array([0.2, 1.5], requires_grad=True)
         res = qml.jacobian(f)(x, y)
         exp = self.expected(x, y)
         assert fn.allclose(res[0], exp[0])
@@ -2314,9 +2314,9 @@ class TestBlockDiagDiffability:
         with tf.GradientTape() as tape:
             out = fn.block_diag([x, y])
         res = tape.jacobian(out, (x, y))
-        exp_0 = np.zeros((3, 3, 1, 1))
+        exp_0 = pnp.zeros((3, 3, 1, 1))
         exp_0[0, 0, 0, 0] = 1.0
-        exp_1 = np.zeros((3, 3, 2, 2))
+        exp_1 = pnp.zeros((3, 3, 2, 2))
         exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
         assert fn.allclose(exp_0, res[0])
         assert fn.allclose(exp_1, res[1])
@@ -2329,9 +2329,9 @@ class TestBlockDiagDiffability:
             return fn.block_diag([x, y])
 
         res = torch.autograd.functional.jacobian(f, (x, y))
-        exp_0 = np.zeros((3, 3, 1, 1))
+        exp_0 = pnp.zeros((3, 3, 1, 1))
         exp_0[0, 0, 0, 0] = 1.0
-        exp_1 = np.zeros((3, 3, 2, 2))
+        exp_1 = pnp.zeros((3, 3, 2, 2))
         exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
         assert fn.allclose(exp_0, res[0])
         assert fn.allclose(exp_1, res[1])
@@ -2341,7 +2341,7 @@ gather_data = [
     torch.tensor([[1, 2, 3], [-1, -6, -3]]),
     tf.Variable([[1, 2, 3], [-1, -6, -3]]),
     jnp.array([[1, 2, 3], [-1, -6, -3]]),
-    np.array([[1, 2, 3], [-1, -6, -3]]),
+    pnp.array([[1, 2, 3], [-1, -6, -3]]),
 ]
 
 
@@ -2350,7 +2350,7 @@ def test_gather(tensor):
     """Tests for the gather function"""
     indices = [1, 0]
     res = fn.gather(tensor, indices)
-    expected = np.array([[-1, -6, -3], [1, 2, 3]])
+    expected = pnp.array([[-1, -6, -3], [1, 2, 3]])
     assert fn.allclose(res, expected)
 
 
@@ -2359,7 +2359,7 @@ class TestCoercion:
 
     def test_tensorflow_coercion(self):
         """Test tensorflow coercion"""
-        tensors = [tf.Variable([0.2]), np.array([1, 2, 3]), tf.constant(1 + 3j, dtype=tf.complex64)]
+        tensors = [tf.Variable([0.2]), pnp.array([1, 2, 3]), tf.constant(1 + 3j, dtype=tf.complex64)]
         res = qml.math.coerce(tensors, like="tensorflow")
         dtypes = [r.dtype for r in res]
         assert all(d is tf.complex64 for d in dtypes)
@@ -2368,7 +2368,7 @@ class TestCoercion:
         """Test Torch coercion"""
         tensors = [
             torch.tensor([0.2]),
-            np.array([1, 2, 3]),
+            pnp.array([1, 2, 3]),
             torch.tensor(1 + 3j, dtype=torch.complex64),
         ]
         res = qml.math.coerce(tensors, like="torch")
@@ -2384,7 +2384,7 @@ class TestCoercion:
 
         tensors = [
             torch.tensor([0.2], device="cpu"),
-            np.array([1, 2, 3]),
+            pnp.array([1, 2, 3]),
             torch.tensor(1 + 3j, dtype=torch.complex64, device="cuda"),
         ]
 
@@ -2406,8 +2406,8 @@ class TestUnwrap:
             tf.constant([0.5, 0.2]),
         ]
         res = qml.math.unwrap(values)
-        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(res, expected))
+        expected = [pnp.array([0.1, 0.2]), 0.1, pnp.array([0.5, 0.2])]
+        assert all(pnp.allclose(a, b) for a, b in zip(res, expected))
 
     def test_torch_unwrapping(self):
         """Test that a sequence of Torch values is properly unwrapped"""
@@ -2417,8 +2417,8 @@ class TestUnwrap:
             torch.tensor([0.5, 0.2]),
         ]
         res = qml.math.unwrap(values)
-        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(res, expected))
+        expected = [pnp.array([0.1, 0.2]), 0.1, pnp.array([0.5, 0.2])]
+        assert all(pnp.allclose(a, b) for a, b in zip(res, expected))
 
     def test_autograd_unwrapping_forward(self):
         """Test that a sequence of Autograd values is properly unwrapped
@@ -2429,14 +2429,14 @@ class TestUnwrap:
         def cost_fn(params):
             nonlocal unwrapped_params
             unwrapped_params = qml.math.unwrap(params)
-            return np.sum(np.sin(params[0] * params[2])) + params[1]
+            return pnp.sum(pnp.sin(params[0] * params[2])) + params[1]
 
-        values = [onp.array([0.1, 0.2]), np.tensor(0.1, dtype=np.float64), np.tensor([0.5, 0.2])]
+        values = [onp.array([0.1, 0.2]), pnp.tensor(0.1, dtype=pnp.float64), pnp.tensor([0.5, 0.2])]
         cost_fn(values)
 
-        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
-        assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
+        expected = [pnp.array([0.1, 0.2]), 0.1, pnp.array([0.5, 0.2])]
+        assert all(pnp.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        assert all(not isinstance(a, pnp.tensor) for a in unwrapped_params)
 
     def test_autograd_unwrapping_backward(self):
         """Test that a sequence of Autograd values is properly unwrapped
@@ -2447,17 +2447,17 @@ class TestUnwrap:
         def cost_fn(*params):
             nonlocal unwrapped_params
             unwrapped_params = qml.math.unwrap(params)
-            return np.sum(np.sin(params[0] * params[2])) + params[1]
+            return pnp.sum(pnp.sin(params[0] * params[2])) + params[1]
 
         values = [
             onp.array([0.1, 0.2]),
-            np.tensor(0.1, dtype=np.float64, requires_grad=True),
-            np.tensor([0.5, 0.2], requires_grad=True),
+            pnp.tensor(0.1, dtype=pnp.float64, requires_grad=True),
+            pnp.tensor([0.5, 0.2], requires_grad=True),
         ]
         _ = qml.grad(cost_fn, argnum=[1, 2])(*values)
 
-        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        expected = [pnp.array([0.1, 0.2]), 0.1, pnp.array([0.5, 0.2])]
+        assert all(pnp.allclose(a, b) for a, b in zip(unwrapped_params, expected))
         assert not any(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_autograd_unwrapping_backward_nested(self):
@@ -2469,13 +2469,13 @@ class TestUnwrap:
         def cost_fn(p, max_depth=None):
             nonlocal unwrapped_params
             unwrapped_params = qml.math.unwrap(p, max_depth)
-            return np.sum(np.sin(np.prod(p)))
+            return pnp.sum(pnp.sin(pnp.prod(p)))
 
-        values = np.tensor([0.1, 0.2, 0.3])
+        values = pnp.tensor([0.1, 0.2, 0.3])
         _ = qml.jacobian(qml.grad(cost_fn))(values)
 
-        expected = np.array([0.1, 0.2, 0.3])
-        assert np.allclose(unwrapped_params, expected)
+        expected = pnp.array([0.1, 0.2, 0.3])
+        assert pnp.allclose(unwrapped_params, expected)
         assert not isinstance(unwrapped_params, ArrayBox)
 
         # Specifying max_depth=1 will result in the second backward
@@ -2492,14 +2492,14 @@ class TestUnwrap:
         def cost_fn(params):
             nonlocal unwrapped_params
             unwrapped_params = qml.math.unwrap(params)
-            return np.sum(np.sin(params[0])) + params[2]
+            return pnp.sum(pnp.sin(params[0])) + params[2]
 
-        values = [jnp.array([0.1, 0.2]), onp.array(0.1, dtype=np.float64), jnp.array([0.5, 0.2])]
+        values = [jnp.array([0.1, 0.2]), onp.array(0.1, dtype=pnp.float64), jnp.array([0.5, 0.2])]
         cost_fn(values)
 
-        expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
-        assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
+        expected = [pnp.array([0.1, 0.2]), 0.1, pnp.array([0.5, 0.2])]
+        assert all(pnp.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        assert all(not isinstance(a, pnp.tensor) for a in unwrapped_params)
 
 
 class TestGetTrainable:
@@ -2550,9 +2550,9 @@ class TestGetTrainable:
         def cost_fn(params):
             nonlocal res
             res = qml.math.get_trainable_indices(params)
-            return np.sum(np.sin(params[0] * params[2])) + params[1]
+            return pnp.sum(pnp.sin(params[0] * params[2])) + params[1]
 
-        values = [[0.1, 0.2], np.tensor(0.1, requires_grad=True), np.tensor([0.5, 0.2])]
+        values = [[0.1, 0.2], pnp.tensor(0.1, requires_grad=True), pnp.tensor([0.5, 0.2])]
         cost_fn(values)
 
         assert res == {1, 2}
@@ -2565,12 +2565,12 @@ class TestGetTrainable:
         def cost_fn(*params):
             nonlocal res
             res = qml.math.get_trainable_indices(params)
-            return np.sum(np.sin(params[0] * params[2])) + params[1]
+            return pnp.sum(pnp.sin(params[0] * params[2])) + params[1]
 
         values = [
-            np.array([0.1, 0.2]),
-            np.tensor(0.1, requires_grad=True),
-            np.tensor([0.5, 0.2], requires_grad=False),
+            pnp.array([0.1, 0.2]),
+            pnp.tensor(0.1, requires_grad=True),
+            pnp.tensor([0.5, 0.2], requires_grad=False),
         ]
         _ = qml.grad(cost_fn)(*values)
 
@@ -2580,7 +2580,7 @@ class TestGetTrainable:
 test_sort_data = [
     ([1, 3, 4, 2], [1, 2, 3, 4]),
     (onp.array([1, 3, 4, 2]), onp.array([1, 2, 3, 4])),
-    (np.array([1, 3, 4, 2]), np.array([1, 2, 3, 4])),
+    (pnp.array([1, 3, 4, 2]), pnp.array([1, 2, 3, 4])),
     (jnp.array([1, 3, 4, 2]), jnp.array([1, 2, 3, 4])),
     (torch.tensor([1, 3, 4, 2]), torch.tensor([1, 2, 3, 4])),
     (tf.Variable([1, 3, 4, 2]), tf.Variable([1, 2, 3, 4])),
@@ -2610,11 +2610,11 @@ class TestExpm:
         """Computes expm via taylor expansion."""
         if self._compare_mat is None:
             mat = qml.RX.compute_matrix(0.3)
-            out = np.eye(2, dtype=complex)
+            out = pnp.eye(2, dtype=complex)
             coeff = 1
             for i in range(1, 8):
                 coeff *= i
-                out += np.linalg.matrix_power(mat, i) / coeff
+                out += pnp.linalg.matrix_power(mat, i) / coeff
 
             self._compare_mat = out
 
@@ -2664,13 +2664,13 @@ class TestFft:
     """Test qml.math.fft functions and their differentiability."""
 
     arg = {
-        "fft": onp.sin(onp.linspace(0, np.pi, 5)) - onp.cos(onp.linspace(0, np.pi, 5)) / 2,
-        "ifft": onp.linspace(0, np.pi, 5),
+        "fft": onp.sin(onp.linspace(0, pnp.pi, 5)) - onp.cos(onp.linspace(0, pnp.pi, 5)) / 2,
+        "ifft": onp.linspace(0, pnp.pi, 5),
         "fft2": onp.outer(
-            0.4 * onp.sin(onp.linspace(0, onp.pi, 3)), np.cos(onp.linspace(onp.pi, 0, 2)) / 2
+            0.4 * onp.sin(onp.linspace(0, onp.pi, 3)), pnp.cos(onp.linspace(onp.pi, 0, 2)) / 2
         ),
         "ifft2": onp.outer(
-            0.4 * onp.sin(onp.linspace(0, onp.pi, 3)), np.cos(onp.linspace(onp.pi, 0, 2)) / 2
+            0.4 * onp.sin(onp.linspace(0, onp.pi, 3)), pnp.cos(onp.linspace(onp.pi, 0, 2)) / 2
         ),
     }
 
@@ -2807,7 +2807,7 @@ class TestFft:
     def test_autograd(self, name):
         """Test that the functions are available in Autograd."""
         func = getattr(qml.math.fft, name)
-        arg = np.array(self.arg[name], requires_grad=True)
+        arg = pnp.array(self.arg[name], requires_grad=True)
         out = func(arg)
         assert qml.math.allclose(out, self.exp_fft[name])
         jac_real = qml.jacobian(self.fft_real)(arg, func=func)
@@ -2872,7 +2872,7 @@ class TestIfft2Tensorflow:
     def test_casting(self, dtype_in, exp_dtype_out):
         """Test that qml.math.fft.ifft2 casts real-valued inputs correctly to the
         corresponding complex values."""
-        x = onp.outer([0, np.pi / 2, np.pi], [0, np.pi])
+        x = onp.outer([0, pnp.pi / 2, pnp.pi], [0, pnp.pi])
         x = tf.Variable(x, dtype=dtype_in)
         out = qml.math.fft.ifft2(x)
         assert out.dtype == exp_dtype_out
@@ -2897,7 +2897,7 @@ class TestSetIndex:
         original array, with the value at the specified index updated"""
 
         array2 = qml.math.set_index(array, (1, 1), 3)
-        assert qml.math.allclose(array2, np.array([[0, 0], [0, 3]]))
+        assert qml.math.allclose(array2, pnp.array([[0, 0], [0, 3]]))
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert isinstance(array2, type(array))
 
@@ -2907,13 +2907,13 @@ class TestSetIndex:
         original array, with the value at the specified index updated"""
 
         array2 = qml.math.set_index(array, 3, 3)
-        assert qml.math.allclose(array2, np.array([[0, 0, 0, 3]]))
+        assert qml.math.allclose(array2, pnp.array([[0, 0, 0, 3]]))
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert isinstance(array2, type(array))
 
     @pytest.mark.parametrize(
         "array",
-        [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]])],
+        [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), pnp.array([[1, 2], [3, 4]])],
     )
     def test_set_index_with_val_tracer(self, array):
         """Test that for both jax and numpy arrays, if the val to set is a tracer,
@@ -2933,7 +2933,7 @@ class TestSetIndex:
 
     @pytest.mark.parametrize(
         "array",
-        [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]])],
+        [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), pnp.array([[1, 2], [3, 4]])],
     )
     def test_set_index_with_idx_tracer_2D_array(self, array):
         """Test that for both jax and numpy 2d arrays, if the idx to set is a tracer,
@@ -2952,7 +2952,7 @@ class TestSetIndex:
         assert isinstance(array2, jnp.ndarray)
 
     @pytest.mark.parametrize(
-        "array", [jnp.array([1, 2, 3, 4]), onp.array([1, 2, 3, 4]), np.array([1, 2, 3, 4])]
+        "array", [jnp.array([1, 2, 3, 4]), onp.array([1, 2, 3, 4]), pnp.array([1, 2, 3, 4])]
     )
     def test_set_index_with_idx_tracer_1D_array(self, array):
         """Test that for both jax and numpy 1d arrays, if the idx to set is a tracer,

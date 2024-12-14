@@ -20,7 +20,7 @@ import pytest
 from utils import check_matrix_equivalence, compare_operation_lists
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms.optimization import single_qubit_fusion
 from pennylane.wires import Wires
 
@@ -222,7 +222,7 @@ class TestSingleQubitFusionInterfaces:
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
-        input = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
+        input = pnp.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
 
         # Check that the numerical output is the same
         assert qml.math.allclose(original_qnode(input), transformed_qnode(input))

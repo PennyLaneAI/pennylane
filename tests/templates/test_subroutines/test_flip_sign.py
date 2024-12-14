@@ -17,7 +17,7 @@ Tests for the FlipSign template.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 def test_standarad_checks():
@@ -75,11 +75,11 @@ class TestFlipSign:
         statuses = []
         for ind, x in enumerate(circuit()):
             if ind == n_status:
-                statuses.append(bool(np.sign(x) == -1))
+                statuses.append(bool(pnp.sign(x) == -1))
             else:
-                statuses.append(bool(np.sign(x) == 1))
+                statuses.append(bool(pnp.sign(x) == 1))
 
-        assert np.all(np.array(statuses))
+        assert pnp.all(pnp.array(statuses))
 
     @pytest.mark.parametrize(
         ("n_status, n_wires"),

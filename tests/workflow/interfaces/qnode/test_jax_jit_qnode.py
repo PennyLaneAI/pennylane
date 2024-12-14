@@ -22,7 +22,7 @@ import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 
@@ -145,8 +145,8 @@ class TestQNode:
         # the tape has reported both arguments as trainable
         assert circuit.qtape.trainable_params == [0, 1]
 
-        expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = [-pnp.sin(a) + pnp.sin(a) * pnp.sin(b), -pnp.cos(a) * pnp.cos(b)]
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         # make the second QNode argument a constant
         grad_fn = jax.grad(circuit, argnums=0)
@@ -155,12 +155,12 @@ class TestQNode:
         # the tape has reported only the first argument as trainable
         assert circuit.qtape.trainable_params == [0]
 
-        expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = [-pnp.sin(a) + pnp.sin(a) * pnp.sin(b)]
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         # trainability also updates on evaluation
-        a = np.array(0.54, requires_grad=False)
-        b = np.array(0.8, requires_grad=True)
+        a = pnp.array(0.54, requires_grad=False)
+        b = pnp.array(0.8, requires_grad=True)
         circuit(a, b)
         assert circuit.qtape.trainable_params == [1]
 
@@ -221,7 +221,7 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0))
 
         res = jax.grad(circuit, argnums=1)(U, a)
-        assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
+        assert pnp.allclose(res, pnp.sin(a), atol=tol, rtol=0)
 
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [1]
@@ -237,7 +237,7 @@ class TestQNode:
 
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -267,23 +267,23 @@ class TestQNode:
             return qml.expval(qml.PauliX(0))
 
         res = jax.jit(circuit)(a, p)
-        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        expected = pnp.cos(a) * pnp.cos(p[1]) * pnp.sin(p[0]) + pnp.sin(a) * (
+            pnp.cos(p[2]) * pnp.sin(p[1]) + pnp.cos(p[0]) * pnp.cos(p[1]) * pnp.sin(p[2])
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         res = jax.jit(jax.grad(circuit, argnums=1))(a, p)
-        expected = np.array(
+        expected = pnp.array(
             [
-                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                - np.sin(p[1])
-                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                np.sin(a)
-                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+                pnp.cos(p[1]) * (pnp.cos(a) * pnp.cos(p[0]) - pnp.sin(a) * pnp.sin(p[0]) * pnp.sin(p[2])),
+                pnp.cos(p[1]) * pnp.cos(p[2]) * pnp.sin(a)
+                - pnp.sin(p[1])
+                * (pnp.cos(a) * pnp.sin(p[0]) + pnp.cos(p[0]) * pnp.sin(a) * pnp.sin(p[2])),
+                pnp.sin(a)
+                * (pnp.cos(p[0]) * pnp.cos(p[1]) * pnp.cos(p[2]) - pnp.sin(p[1]) * pnp.sin(p[2])),
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_options(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed
@@ -293,7 +293,7 @@ class TestQNode:
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
 
-        a = np.array([0.1, 0.2], requires_grad=True)
+        a = pnp.array([0.1, 0.2], requires_grad=True)
 
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -339,12 +339,12 @@ class TestVectorValuedQNode:
         gradient_kwargs = {}
 
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=True)
 
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -366,32 +366,32 @@ class TestVectorValuedQNode:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        expected = [np.cos(a), -np.cos(a) * np.sin(b)]
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        expected = [pnp.cos(a), -pnp.cos(a) * pnp.sin(b)]
+        assert pnp.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert pnp.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         res = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(a, b)
         assert circuit.qtape.trainable_params == [0, 1]
 
-        expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
+        expected = pnp.array([[-pnp.sin(a), 0], [pnp.sin(a) * pnp.sin(b), -pnp.cos(a) * pnp.cos(b)]])
         assert isinstance(res, tuple)
         assert len(res) == 2
 
         assert isinstance(res[0], tuple)
         assert isinstance(res[0][0], jax.numpy.ndarray)
         assert res[0][0].shape == ()
-        assert np.allclose(res[0][0], expected[0][0], atol=tol, rtol=0)
+        assert pnp.allclose(res[0][0], expected[0][0], atol=tol, rtol=0)
         assert isinstance(res[0][1], jax.numpy.ndarray)
         assert res[0][1].shape == ()
-        assert np.allclose(res[0][1], expected[0][1], atol=tol, rtol=0)
+        assert pnp.allclose(res[0][1], expected[0][1], atol=tol, rtol=0)
 
         assert isinstance(res[1], tuple)
         assert isinstance(res[1][0], jax.numpy.ndarray)
         assert res[1][0].shape == ()
-        assert np.allclose(res[1][0], expected[1][0], atol=tol, rtol=0)
+        assert pnp.allclose(res[1][0], expected[1][0], atol=tol, rtol=0)
         assert isinstance(res[1][1], jax.numpy.ndarray)
         assert res[1][1].shape == ()
-        assert np.allclose(res[1][1], expected[1][1], atol=tol, rtol=0)
+        assert pnp.allclose(res[1][1], expected[1][1], atol=tol, rtol=0)
 
     def test_jacobian_no_evaluate(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -407,7 +407,7 @@ class TestVectorValuedQNode:
         gradient_kwargs = {}
 
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -435,13 +435,13 @@ class TestVectorValuedQNode:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
+        expected = pnp.array([[-pnp.sin(a), 0], [pnp.sin(a) * pnp.sin(b), -pnp.cos(a) * pnp.cos(b)]])
 
         for _res, _exp in zip(res, expected):
             for r, e in zip(_res, _exp):
                 assert isinstance(r, jax.numpy.ndarray)
                 assert r.shape == ()
-                assert np.allclose(r, e, atol=tol, rtol=0)
+                assert pnp.allclose(r, e, atol=tol, rtol=0)
 
         # call the Jacobian with new parameters
         a = jax.numpy.array(0.6)
@@ -452,13 +452,13 @@ class TestVectorValuedQNode:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
+        expected = pnp.array([[-pnp.sin(a), 0], [pnp.sin(a) * pnp.sin(b), -pnp.cos(a) * pnp.cos(b)]])
 
         for _res, _exp in zip(res, expected):
             for r, e in zip(_res, _exp):
                 assert isinstance(r, jax.numpy.ndarray)
                 assert r.shape == ()
-                assert np.allclose(r, e, atol=tol, rtol=0)
+                assert pnp.allclose(r, e, atol=tol, rtol=0)
 
     def test_diff_single_probs(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -474,7 +474,7 @@ class TestVectorValuedQNode:
 
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -497,10 +497,10 @@ class TestVectorValuedQNode:
 
         res = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
 
-        expected = np.array(
+        expected = pnp.array(
             [
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                [-pnp.sin(x) * pnp.cos(y) / 2, -pnp.cos(x) * pnp.sin(y) / 2],
+                [pnp.cos(y) * pnp.sin(x) / 2, pnp.cos(x) * pnp.sin(y) / 2],
             ]
         )
 
@@ -513,8 +513,8 @@ class TestVectorValuedQNode:
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == (2,)
 
-        assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
+        assert pnp.allclose(res[0], expected.T[0], atol=tol, rtol=0)
+        assert pnp.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
     def test_diff_multi_probs(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -530,7 +530,7 @@ class TestVectorValuedQNode:
 
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -557,30 +557,30 @@ class TestVectorValuedQNode:
         assert len(res) == 2
 
         expected = [
-            [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
-            [(1 + np.cos(x) * np.cos(y)) / 2, 0, (1 - np.cos(x) * np.cos(y)) / 2, 0],
+            [pnp.cos(x / 2) ** 2, pnp.sin(x / 2) ** 2],
+            [(1 + pnp.cos(x) * pnp.cos(y)) / 2, 0, (1 - pnp.cos(x) * pnp.cos(y)) / 2, 0],
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
         assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert pnp.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert pnp.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
-        expected_0 = np.array(
+        expected_0 = pnp.array(
             [
-                [-np.sin(x) / 2, np.sin(x) / 2],
+                [-pnp.sin(x) / 2, pnp.sin(x) / 2],
                 [0, 0],
             ]
         )
 
-        expected_1 = np.array(
+        expected_1 = pnp.array(
             [
-                [-np.cos(y) * np.sin(x) / 2, 0, np.sin(x) * np.cos(y) / 2, 0],
-                [-np.cos(x) * np.sin(y) / 2, 0, np.cos(x) * np.sin(y) / 2, 0],
+                [-pnp.cos(y) * pnp.sin(x) / 2, 0, pnp.sin(x) * pnp.cos(y) / 2, 0],
+                [-pnp.cos(x) * pnp.sin(y) / 2, 0, pnp.cos(x) * pnp.sin(y) / 2, 0],
             ]
         )
 
@@ -590,20 +590,20 @@ class TestVectorValuedQNode:
         assert len(jac[0]) == 2
         assert isinstance(jac[0][0], jax.numpy.ndarray)
         assert jac[0][0].shape == (2,)
-        assert np.allclose(jac[0][0], expected_0[0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[0][0], expected_0[0], atol=tol, rtol=0)
         assert isinstance(jac[0][1], jax.numpy.ndarray)
         assert jac[0][1].shape == (2,)
-        assert np.allclose(jac[0][1], expected_0[1], atol=tol, rtol=0)
+        assert pnp.allclose(jac[0][1], expected_0[1], atol=tol, rtol=0)
 
         assert isinstance(jac[1], tuple)
         assert len(jac[1]) == 2
         assert isinstance(jac[1][0], jax.numpy.ndarray)
         assert jac[1][0].shape == (4,)
 
-        assert np.allclose(jac[1][0], expected_1[0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[1][0], expected_1[0], atol=tol, rtol=0)
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (4,)
-        assert np.allclose(jac[1][1], expected_1[1], atol=tol, rtol=0)
+        assert pnp.allclose(jac[1][1], expected_1[1], atol=tol, rtol=0)
 
     def test_diff_expval_probs(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -619,7 +619,7 @@ class TestVectorValuedQNode:
 
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -641,25 +641,25 @@ class TestVectorValuedQNode:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         res = jax.jit(circuit)(x, y)
-        expected = [np.cos(x), [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]]
+        expected = [pnp.cos(x), [(1 + pnp.cos(x) * pnp.cos(y)) / 2, (1 - pnp.cos(x) * pnp.cos(y)) / 2]]
 
         assert isinstance(res, tuple)
         assert len(res) == 2
 
         assert isinstance(res[0], jax.numpy.ndarray)
         assert res[0].shape == ()
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert pnp.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == (2,)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert pnp.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
         expected = [
-            [-np.sin(x), 0],
+            [-pnp.sin(x), 0],
             [
-                [-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
-                [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                [-pnp.sin(x) * pnp.cos(y) / 2, pnp.cos(y) * pnp.sin(x) / 2],
+                [-pnp.cos(x) * pnp.sin(y) / 2, pnp.cos(x) * pnp.sin(y) / 2],
             ],
         ]
 
@@ -670,19 +670,19 @@ class TestVectorValuedQNode:
         assert len(jac[0]) == 2
         assert isinstance(jac[0][0], jax.numpy.ndarray)
         assert jac[0][0].shape == ()
-        assert np.allclose(jac[0][0], expected[0][0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[0][0], expected[0][0], atol=tol, rtol=0)
         assert isinstance(jac[0][1], jax.numpy.ndarray)
         assert jac[0][1].shape == ()
-        assert np.allclose(jac[0][1], expected[0][1], atol=tol, rtol=0)
+        assert pnp.allclose(jac[0][1], expected[0][1], atol=tol, rtol=0)
 
         assert isinstance(jac[1], tuple)
         assert len(jac[1]) == 2
         assert isinstance(jac[1][0], jax.numpy.ndarray)
         assert jac[1][0].shape == (2,)
-        assert np.allclose(jac[1][0], expected[1][0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[1][0], expected[1][0], atol=tol, rtol=0)
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (2,)
-        assert np.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
+        assert pnp.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
 
     def test_diff_expval_probs_sub_argnums(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -698,7 +698,7 @@ class TestVectorValuedQNode:
 
         kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
@@ -721,10 +721,10 @@ class TestVectorValuedQNode:
         jac = jax.jit(jax.jacobian(circuit, argnums=[0]))(x, y)
 
         expected = [
-            [-np.sin(x), 0],
+            [-pnp.sin(x), 0],
             [
-                [-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
-                [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                [-pnp.sin(x) * pnp.cos(y) / 2, pnp.cos(y) * pnp.sin(x) / 2],
+                [-pnp.cos(x) * pnp.sin(y) / 2, pnp.cos(x) * pnp.sin(y) / 2],
             ],
         ]
         assert isinstance(jac, tuple)
@@ -734,13 +734,13 @@ class TestVectorValuedQNode:
         assert len(jac[0]) == 1
         assert isinstance(jac[0][0], jax.numpy.ndarray)
         assert jac[0][0].shape == ()
-        assert np.allclose(jac[0][0], expected[0][0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[0][0], expected[0][0], atol=tol, rtol=0)
 
         assert isinstance(jac[1], tuple)
         assert len(jac[1]) == 1
         assert isinstance(jac[1][0], jax.numpy.ndarray)
         assert jac[1][0].shape == (2,)
-        assert np.allclose(jac[1][0], expected[1][0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[1][0], expected[1][0], atol=tol, rtol=0)
 
     def test_diff_var_probs(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -758,7 +758,7 @@ class TestVectorValuedQNode:
         if diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
@@ -782,24 +782,24 @@ class TestVectorValuedQNode:
         res = jax.jit(circuit)(x, y)
 
         expected = [
-            np.sin(x) ** 2,
-            [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2],
+            pnp.sin(x) ** 2,
+            [(1 + pnp.cos(x) * pnp.cos(y)) / 2, (1 - pnp.cos(x) * pnp.cos(y)) / 2],
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
         assert res[0].shape == ()
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert pnp.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == (2,)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert pnp.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
         expected = [
-            [2 * np.cos(x) * np.sin(x), 0],
+            [2 * pnp.cos(x) * pnp.sin(x), 0],
             [
-                [-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
-                [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                [-pnp.sin(x) * pnp.cos(y) / 2, pnp.cos(y) * pnp.sin(x) / 2],
+                [-pnp.cos(x) * pnp.sin(y) / 2, pnp.cos(x) * pnp.sin(y) / 2],
             ],
         ]
 
@@ -810,19 +810,19 @@ class TestVectorValuedQNode:
         assert len(jac[0]) == 2
         assert isinstance(jac[0][0], jax.numpy.ndarray)
         assert jac[0][0].shape == ()
-        assert np.allclose(jac[0][0], expected[0][0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[0][0], expected[0][0], atol=tol, rtol=0)
         assert isinstance(jac[0][1], jax.numpy.ndarray)
         assert jac[0][1].shape == ()
-        assert np.allclose(jac[0][1], expected[0][1], atol=tol, rtol=0)
+        assert pnp.allclose(jac[0][1], expected[0][1], atol=tol, rtol=0)
 
         assert isinstance(jac[1], tuple)
         assert len(jac[1]) == 2
         assert isinstance(jac[1][0], jax.numpy.ndarray)
         assert jac[1][0].shape == (2,)
-        assert np.allclose(jac[1][0], expected[1][0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[1][0], expected[1][0], atol=tol, rtol=0)
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (2,)
-        assert np.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
+        assert pnp.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
@@ -878,8 +878,8 @@ class TestShotsIntegration:
         jit_cost_fn = jax.jit(cost_fn, static_argnames=["shots"])
         res = jax.grad(jit_cost_fn, argnums=[0, 1])(a, b, shots=30000)
 
-        expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert np.allclose(res, expected, atol=0.1, rtol=0)
+        expected = [pnp.sin(a) * pnp.sin(b), -pnp.cos(a) * pnp.cos(b)]
+        assert pnp.allclose(res, expected, atol=0.1, rtol=0)
 
     def test_update_diff_method(self, mocker, interface):
         """Test that temporarily setting the shots updates the diff method"""
@@ -920,12 +920,12 @@ class TestShotsIntegration:
             return qml.var(qml.PauliZ(0))
 
         res = circuit(0.5)
-        expected = 1 - np.cos(0.5) ** 2
+        expected = 1 - pnp.cos(0.5) ** 2
         assert qml.math.allclose(res[0], expected, atol=5e-2)
         assert qml.math.allclose(res[1], expected, rtol=5e-2)
 
         g = jax.jacobian(circuit)(0.5)
-        expected_g = 2 * np.cos(0.5) * np.sin(0.5)
+        expected_g = 2 * pnp.cos(0.5) * pnp.sin(0.5)
         assert qml.math.allclose(g[0], expected_g, rtol=5e-2)
         assert qml.math.allclose(g[1], expected_g, rtol=5e-2)
 
@@ -942,10 +942,10 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=0)
 
         res = circuit(0.5)
-        assert qml.math.allclose(res[0][0], np.cos(0.5), rtol=5e-2)
-        assert qml.math.allclose(res[1][0], np.cos(0.5), rtol=5e-2)
+        assert qml.math.allclose(res[0][0], pnp.cos(0.5), rtol=5e-2)
+        assert qml.math.allclose(res[1][0], pnp.cos(0.5), rtol=5e-2)
 
-        expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
+        expected_probs = pnp.array([pnp.cos(0.25) ** 2, pnp.sin(0.25) ** 2])
         assert qml.math.allclose(res[0][1], expected_probs, atol=1e-2)
         assert qml.math.allclose(res[1][1][0], expected_probs[0], rtol=5e-2)
         assert qml.math.allclose(res[1][1][1], expected_probs[1], atol=5e-3)
@@ -1074,8 +1074,8 @@ class TestQubitIntegration:
         w2 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
         weights = [
-            jax.numpy.array(np.random.random(w1)),
-            jax.numpy.array(np.random.random(w2)),
+            jax.numpy.array(pnp.random.random(w1)),
+            jax.numpy.array(pnp.random.random(w2)),
         ]
 
         grad_fn = jax.jit(jax.grad(cost))
@@ -1124,11 +1124,11 @@ class TestQubitIntegration:
         phi = jax.numpy.array(1.23)
         theta = jax.numpy.array(4.56)
 
-        assert np.allclose(jax.jit(circuit)(phi, theta), jax.jit(expected_circuit)(theta))
+        assert pnp.allclose(jax.jit(circuit)(phi, theta), jax.jit(expected_circuit)(theta))
 
         gradient = jax.jit(jax.grad(circuit, argnums=[0, 1]))(phi, theta)
         exp_theta_grad = jax.jit(jax.grad(expected_circuit))(theta)
-        assert np.allclose(gradient, [0.0, exp_theta_grad])
+        assert pnp.allclose(gradient, [0.0, exp_theta_grad])
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
@@ -1148,7 +1148,7 @@ class TestQubitIntegrationHigherOrder:
         if diff_method in {"adjoint", "device"}:
             pytest.skip("Adjoint does not support second derivatives.")
         elif diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
+            gradient_kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             gradient_kwargs["h"] = H_FOR_SPSA
             tol = TOL_FOR_SPSA
@@ -1176,20 +1176,20 @@ class TestQubitIntegrationHigherOrder:
 
         a, b = x
 
-        expected_res = np.cos(a) * np.cos(b)
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+        expected_res = pnp.cos(a) * pnp.cos(b)
+        assert pnp.allclose(res, expected_res, atol=tol, rtol=0)
 
-        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        expected_g = [-pnp.sin(a) * pnp.cos(b), -pnp.cos(a) * pnp.sin(b)]
+        assert pnp.allclose(g, expected_g, atol=tol, rtol=0)
 
         expected_g2 = [
-            -np.cos(a) * np.cos(b) + np.sin(a) * np.sin(b),
-            np.sin(a) * np.sin(b) - np.cos(a) * np.cos(b),
+            -pnp.cos(a) * pnp.cos(b) + pnp.sin(a) * pnp.sin(b),
+            pnp.sin(a) * pnp.sin(b) - pnp.cos(a) * pnp.cos(b),
         ]
         if diff_method == "finite-diff":
-            assert np.allclose(g2, expected_g2, atol=10e-2, rtol=0)
+            assert pnp.allclose(g2, expected_g2, atol=10e-2, rtol=0)
         else:
-            assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
+            assert pnp.allclose(g2, expected_g2, atol=tol, rtol=0)
 
     def test_hessian(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -1202,7 +1202,7 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
                 "num_directions": 40,
-                "sampler_rng": np.random.default_rng(seed),
+                "sampler_rng": pnp.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
 
@@ -1227,25 +1227,25 @@ class TestQubitIntegrationHigherOrder:
 
         a, b = x
 
-        expected_res = np.cos(a) * np.cos(b)
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+        expected_res = pnp.cos(a) * pnp.cos(b)
+        assert pnp.allclose(res, expected_res, atol=tol, rtol=0)
 
         grad_fn = jax.jit(jax.grad(circuit))
         g = grad_fn(x)
 
-        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        expected_g = [-pnp.sin(a) * pnp.cos(b), -pnp.cos(a) * pnp.sin(b)]
+        assert pnp.allclose(g, expected_g, atol=tol, rtol=0)
 
         hess = jax.jit(jax.jacobian(grad_fn))(x)
 
         expected_hess = [
-            [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
-            [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
+            [-pnp.cos(a) * pnp.cos(b), pnp.sin(a) * pnp.sin(b)],
+            [pnp.sin(a) * pnp.sin(b), -pnp.cos(a) * pnp.cos(b)],
         ]
         if diff_method == "finite-diff":
-            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+            assert pnp.allclose(hess, expected_hess, atol=10e-2, rtol=0)
         else:
-            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+            assert pnp.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -1258,7 +1258,7 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
                 "num_directions": 20,
-                "sampler_rng": np.random.default_rng(seed),
+                "sampler_rng": pnp.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
 
@@ -1281,34 +1281,34 @@ class TestQubitIntegrationHigherOrder:
 
         a, b = x
 
-        expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+        expected_res = [0.5 + 0.5 * pnp.cos(a) * pnp.cos(b), 0.5 - 0.5 * pnp.cos(a) * pnp.cos(b)]
+        assert pnp.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = jax.jit(jax.jacobian(circuit))
         g = jac_fn(x)
 
         expected_g = [
-            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+            [-0.5 * pnp.sin(a) * pnp.cos(b), -0.5 * pnp.cos(a) * pnp.sin(b)],
+            [0.5 * pnp.sin(a) * pnp.cos(b), 0.5 * pnp.cos(a) * pnp.sin(b)],
         ]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        assert pnp.allclose(g, expected_g, atol=tol, rtol=0)
 
         hess = jax.jit(jax.jacobian(jac_fn))(x)
 
         expected_hess = [
             [
-                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+                [-0.5 * pnp.cos(a) * pnp.cos(b), 0.5 * pnp.sin(a) * pnp.sin(b)],
+                [0.5 * pnp.sin(a) * pnp.sin(b), -0.5 * pnp.cos(a) * pnp.cos(b)],
             ],
             [
-                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+                [0.5 * pnp.cos(a) * pnp.cos(b), -0.5 * pnp.sin(a) * pnp.sin(b)],
+                [-0.5 * pnp.sin(a) * pnp.sin(b), 0.5 * pnp.cos(a) * pnp.cos(b)],
             ],
         ]
         if diff_method == "finite-diff":
-            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+            assert pnp.allclose(hess, expected_hess, atol=10e-2, rtol=0)
         else:
-            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+            assert pnp.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_postprocessing(
         self, dev_name, diff_method, interface, device_vjp, grad_on_execution, tol, seed
@@ -1321,7 +1321,7 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
                 "num_directions": 20,
-                "sampler_rng": np.random.default_rng(seed),
+                "sampler_rng": pnp.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
 
@@ -1347,34 +1347,34 @@ class TestQubitIntegrationHigherOrder:
 
         a, b = x
 
-        expected_res = x @ jax.numpy.array([np.cos(a) * np.cos(b), np.cos(a) * np.cos(b)])
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+        expected_res = x @ jax.numpy.array([pnp.cos(a) * pnp.cos(b), pnp.cos(a) * pnp.cos(b)])
+        assert pnp.allclose(res, expected_res, atol=tol, rtol=0)
 
         grad_fn = jax.jit(jax.grad(cost_fn))
         g = grad_fn(x)
 
         expected_g = [
-            np.cos(b) * (np.cos(a) - (a + b) * np.sin(a)),
-            np.cos(a) * (np.cos(b) - (a + b) * np.sin(b)),
+            pnp.cos(b) * (pnp.cos(a) - (a + b) * pnp.sin(a)),
+            pnp.cos(a) * (pnp.cos(b) - (a + b) * pnp.sin(b)),
         ]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        assert pnp.allclose(g, expected_g, atol=tol, rtol=0)
         hess = jax.jit(jax.jacobian(grad_fn))(x)
 
         expected_hess = [
             [
-                -(np.cos(b) * ((a + b) * np.cos(a) + 2 * np.sin(a))),
-                -(np.cos(b) * np.sin(a)) + (-np.cos(a) + (a + b) * np.sin(a)) * np.sin(b),
+                -(pnp.cos(b) * ((a + b) * pnp.cos(a) + 2 * pnp.sin(a))),
+                -(pnp.cos(b) * pnp.sin(a)) + (-pnp.cos(a) + (a + b) * pnp.sin(a)) * pnp.sin(b),
             ],
             [
-                -(np.cos(b) * np.sin(a)) + (-np.cos(a) + (a + b) * np.sin(a)) * np.sin(b),
-                -(np.cos(a) * ((a + b) * np.cos(b) + 2 * np.sin(b))),
+                -(pnp.cos(b) * pnp.sin(a)) + (-pnp.cos(a) + (a + b) * pnp.sin(a)) * pnp.sin(b),
+                -(pnp.cos(a) * ((a + b) * pnp.cos(b) + 2 * pnp.sin(b))),
             ],
         ]
 
         if diff_method == "finite-diff":
-            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+            assert pnp.allclose(hess, expected_hess, atol=10e-2, rtol=0)
         else:
-            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+            assert pnp.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_separate_args(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -1387,7 +1387,7 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
                 "num_directions": 20,
-                "sampler_rng": np.random.default_rng(seed),
+                "sampler_rng": pnp.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
 
@@ -1409,38 +1409,38 @@ class TestQubitIntegrationHigherOrder:
         b = jax.numpy.array(2.0)
         res = circuit(a, b)
 
-        expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+        expected_res = [0.5 + 0.5 * pnp.cos(a) * pnp.cos(b), 0.5 - 0.5 * pnp.cos(a) * pnp.cos(b)]
+        assert pnp.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))
         g = jac_fn(a, b)
 
-        expected_g = np.array(
+        expected_g = pnp.array(
             [
-                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+                [-0.5 * pnp.sin(a) * pnp.cos(b), -0.5 * pnp.cos(a) * pnp.sin(b)],
+                [0.5 * pnp.sin(a) * pnp.cos(b), 0.5 * pnp.cos(a) * pnp.sin(b)],
             ]
         )
-        assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
+        assert pnp.allclose(g, expected_g.T, atol=tol, rtol=0)
 
         hess = jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
 
-        expected_hess = np.array(
+        expected_hess = pnp.array(
             [
                 [
-                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
-                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+                    [-0.5 * pnp.cos(a) * pnp.cos(b), 0.5 * pnp.cos(a) * pnp.cos(b)],
+                    [0.5 * pnp.sin(a) * pnp.sin(b), -0.5 * pnp.sin(a) * pnp.sin(b)],
                 ],
                 [
-                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
-                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+                    [0.5 * pnp.sin(a) * pnp.sin(b), -0.5 * pnp.sin(a) * pnp.sin(b)],
+                    [-0.5 * pnp.cos(a) * pnp.cos(b), 0.5 * pnp.cos(a) * pnp.cos(b)],
                 ],
             ]
         )
         if diff_method == "finite-diff":
-            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+            assert pnp.allclose(hess, expected_hess, atol=10e-2, rtol=0)
         else:
-            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+            assert pnp.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_state(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -1470,7 +1470,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")
+            assert res.dtype is pnp.dtype("complex128")
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -1480,8 +1480,8 @@ class TestQubitIntegrationHigherOrder:
             pytest.skip("Test only supports backprop")
 
         res = jax.jit(jax.grad(cost_fn, argnums=[0, 1]))(x, y)
-        expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = pnp.array([-pnp.sin(x) * pnp.cos(y) / 2, -pnp.cos(x) * pnp.sin(y) / 2])
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
     def test_projector(
@@ -1496,7 +1496,7 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
-            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(seed)}
+            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": pnp.random.default_rng(seed)}
             tol = TOL_FOR_SPSA
         if dev_name == "reference.qubit":
             pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
@@ -1519,17 +1519,17 @@ class TestQubitIntegrationHigherOrder:
             return qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
 
         res = jax.jit(circuit)(x, y)
-        expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = 0.25 * pnp.sin(x / 2) ** 2 * (3 + pnp.cos(2 * y) + 2 * pnp.cos(x) * pnp.sin(y) ** 2)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         res = jax.jit(jax.grad(circuit, argnums=[0, 1]))(x, y)
-        expected = np.array(
+        expected = pnp.array(
             [
-                0.5 * np.sin(x) * (np.cos(x / 2) ** 2 + np.cos(2 * y) * np.sin(x / 2) ** 2),
-                -2 * np.cos(y) * np.sin(x / 2) ** 4 * np.sin(y),
+                0.5 * pnp.sin(x) * (pnp.cos(x / 2) ** 2 + pnp.cos(2 * y) * pnp.sin(x / 2) ** 2),
+                -2 * pnp.cos(y) * pnp.sin(x / 2) ** 4 * pnp.sin(y),
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
@@ -1610,7 +1610,7 @@ class TestTapeExpansion:
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
                 "num_directions": 20,
-                "sampler_rng": np.random.default_rng(seed),
+                "sampler_rng": pnp.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
 
@@ -1639,33 +1639,33 @@ class TestTapeExpansion:
 
         # test output
         res = circuit(d, w, c)
-        expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
-        assert np.allclose(res, expected, atol=tol)
+        expected = c[2] * pnp.cos(d[1] + w[1]) - c[1] * pnp.sin(d[0] + w[0]) * pnp.sin(d[1] + w[1])
+        assert pnp.allclose(res, expected, atol=tol)
         spy.assert_not_called()
 
         # test gradients
         grad = jax.grad(circuit, argnums=[1, 2])(d, w, c)
         expected_w = [
-            -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
-            -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
+            -c[1] * pnp.cos(d[0] + w[0]) * pnp.sin(d[1] + w[1]),
+            -c[1] * pnp.cos(d[1] + w[1]) * pnp.sin(d[0] + w[0]) - c[2] * pnp.sin(d[1] + w[1]),
         ]
-        expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
-        assert np.allclose(grad[0], expected_w, atol=tol)
-        assert np.allclose(grad[1], expected_c, atol=tol)
+        expected_c = [0, -pnp.sin(d[0] + w[0]) * pnp.sin(d[1] + w[1]), pnp.cos(d[1] + w[1])]
+        assert pnp.allclose(grad[0], expected_w, atol=tol)
+        assert pnp.allclose(grad[1], expected_c, atol=tol)
 
         # TODO: Add parameter shift when the bug with trainable params and hamiltonian_grad is solved.
         # test second-order derivatives
         if diff_method in "backprop" and max_diff == 2:
             grad2_c = jax.jacobian(jax.grad(circuit, argnums=[2]), argnums=[2])(d, w, c)
-            assert np.allclose(grad2_c, 0, atol=tol)
+            assert pnp.allclose(grad2_c, 0, atol=tol)
 
             grad2_w_c = jax.jacobian(jax.grad(circuit, argnums=[1]), argnums=[2])(d, w, c)
-            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+            expected = [0, -pnp.cos(d[0] + w[0]) * pnp.sin(d[1] + w[1]), 0], [
                 0,
-                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
-                -np.sin(d[1] + w[1]),
+                -pnp.cos(d[1] + w[1]) * pnp.sin(d[0] + w[0]),
+                -pnp.sin(d[1] + w[1]),
             ]
-            assert np.allclose(grad2_w_c, expected, atol=tol)
+            assert pnp.allclose(grad2_w_c, expected, atol=tol)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_finite_shots(
@@ -1711,18 +1711,18 @@ class TestTapeExpansion:
 
         # test output
         res = circuit(d, w, c, shots=50000)  # pylint:disable=unexpected-keyword-arg
-        expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
-        assert np.allclose(res, expected, atol=tol)
+        expected = c[2] * pnp.cos(d[1] + w[1]) - c[1] * pnp.sin(d[0] + w[0]) * pnp.sin(d[1] + w[1])
+        assert pnp.allclose(res, expected, atol=tol)
 
         # test gradients
         grad = jax.grad(circuit, argnums=[1, 2])(d, w, c, shots=50000)
         expected_w = [
-            -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
-            -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
+            -c[1] * pnp.cos(d[0] + w[0]) * pnp.sin(d[1] + w[1]),
+            -c[1] * pnp.cos(d[1] + w[1]) * pnp.sin(d[0] + w[0]) - c[2] * pnp.sin(d[1] + w[1]),
         ]
-        expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
-        assert np.allclose(grad[0], expected_w, atol=tol)
-        assert np.allclose(grad[1], expected_c, atol=tol)
+        expected_c = [0, -pnp.sin(d[0] + w[0]) * pnp.sin(d[1] + w[1]), pnp.cos(d[1] + w[1])]
+        assert pnp.allclose(grad[0], expected_w, atol=tol)
+        assert pnp.allclose(grad[1], expected_c, atol=tol)
 
     #     TODO: Fix hamiltonian grad for parameter shift and jax
     #     # test second-order derivatives
@@ -1754,7 +1754,7 @@ class TestTapeExpansion:
         interface = "jax-jit"
 
         n_configs = 5
-        pars_q = np.random.rand(n_configs, 2)
+        pars_q = pnp.random.rand(n_configs, 2)
 
         def minimal_circ(params):
             @qml.qnode(
@@ -1775,7 +1775,7 @@ class TestTapeExpansion:
 
         res1 = jax.jit(minimal_circ)(pars_q)
         res2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
-        assert np.allclose(res1, res2, tol)
+        assert pnp.allclose(res1, res2, tol)
 
     def test_vmap_compared_param_broadcasting_multi_output(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -1793,7 +1793,7 @@ class TestTapeExpansion:
         interface = "jax-jit"
 
         n_configs = 5
-        pars_q = np.random.rand(n_configs, 2)
+        pars_q = pnp.random.rand(n_configs, 2)
 
         def minimal_circ(params):
             @qml.qnode(
@@ -1814,8 +1814,8 @@ class TestTapeExpansion:
 
         res1, res2 = jax.jit(minimal_circ)(pars_q)
         vres1, vres2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
-        assert np.allclose(res1, vres1, tol)
-        assert np.allclose(res2, vres2, tol)
+        assert pnp.allclose(res1, vres1, tol)
+        assert pnp.allclose(res2, vres2, tol)
 
     def test_vmap_compared_param_broadcasting_probs(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -1835,7 +1835,7 @@ class TestTapeExpansion:
         interface = "jax-jit"
 
         n_configs = 5
-        pars_q = np.random.rand(n_configs, 2)
+        pars_q = pnp.random.rand(n_configs, 2)
 
         def minimal_circ(params):
             @qml.qnode(
@@ -1856,8 +1856,8 @@ class TestTapeExpansion:
 
         res1, res2 = jax.jit(minimal_circ)(pars_q)
         vres1, vres2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
-        assert np.allclose(res1, vres1, tol)
-        assert np.allclose(res2, vres2, tol)
+        assert pnp.allclose(res1, vres1, tol)
+        assert pnp.allclose(res2, vres2, tol)
 
 
 jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
@@ -1885,7 +1885,7 @@ class TestJIT:
         if device_vjp and jacobian == jax.jacfwd:
             pytest.skip("device vjps not compatible with forward diff.")
         elif diff_method == "spsa":
-            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(seed)}
+            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": pnp.random.default_rng(seed)}
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -1907,11 +1907,11 @@ class TestJIT:
 
         a, b = x
 
-        expected_res = np.cos(a) * np.cos(b)
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+        expected_res = pnp.cos(a) * pnp.cos(b)
+        assert pnp.allclose(res, expected_res, atol=tol, rtol=0)
 
-        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        expected_g = [-pnp.sin(a) * pnp.cos(b), -pnp.cos(a) * pnp.sin(b)]
+        assert pnp.allclose(g, expected_g, atol=tol, rtol=0)
 
     @pytest.mark.filterwarnings(
         "ignore:Requested adjoint differentiation to be computed with finite shots."
@@ -1936,7 +1936,7 @@ class TestJIT:
         if diff_method == "adjoint":
             pytest.skip("Computing the gradient for observables is not supported with adjoint.")
 
-        projector = np.array(qml.matrix(qml.PauliZ(0) @ qml.PauliZ(1)))
+        projector = pnp.array(qml.matrix(qml.PauliZ(0) @ qml.PauliZ(1)))
 
         @qml.qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2011,12 +2011,12 @@ class TestJIT:
             return qml.expval(qml.PauliZ(0))
 
         res = jax.jit(circuit)(a, b, 0.0)
-        expected_res = np.cos(a) * np.cos(b)
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+        expected_res = pnp.cos(a) * pnp.cos(b)
+        assert pnp.allclose(res, expected_res, atol=tol, rtol=0)
 
         g = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b, 0.0)
-        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        expected_g = [-pnp.sin(a) * pnp.cos(b), -pnp.cos(a) * pnp.sin(b)]
+        assert pnp.allclose(g, expected_g, atol=tol, rtol=0)
 
     def test_gradient_scalar_cost_vector_valued_qnode(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface, seed
@@ -2036,7 +2036,7 @@ class TestJIT:
             pytest.skip("device vjps are not compatible with forward differentiation.")
 
         elif diff_method == "spsa":
-            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(seed)}
+            gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": pnp.random.default_rng(seed)}
             tol = TOL_FOR_SPSA
 
         @qnode(
@@ -2060,22 +2060,22 @@ class TestJIT:
         x = jax.numpy.array(1.0)
         y = jax.numpy.array(2.0)
         expected_g = (
-            np.array([-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]),
-            np.array([-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+            pnp.array([-pnp.sin(x) * pnp.cos(y) / 2, pnp.cos(y) * pnp.sin(x) / 2]),
+            pnp.array([-pnp.cos(x) * pnp.sin(y) / 2, pnp.cos(x) * pnp.sin(y) / 2]),
         )
 
         idx = 0
         g0 = jax.jit(jacobian(cost, argnums=0))(x, y, idx)
         g1 = jax.jit(jacobian(cost, argnums=1))(x, y, idx)
-        assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
-        assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
+        assert pnp.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
+        assert pnp.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
         idx = 1
         g0 = jax.jit(jacobian(cost, argnums=0))(x, y, idx)
         g1 = jax.jit(jacobian(cost, argnums=1))(x, y, idx)
 
-        assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
-        assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
+        assert pnp.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
+        assert pnp.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
     # pylint: disable=unused-argument
     def test_matrix_parameter(
@@ -2108,11 +2108,11 @@ class TestJIT:
         p = jax.numpy.array(0.1)
         U = jax.numpy.array([[0, 1], [1, 0]])
         res = jax.jit(circ)(p, U)
-        assert np.allclose(res, -np.cos(p), atol=tol, rtol=0)
+        assert pnp.allclose(res, -pnp.cos(p), atol=tol, rtol=0)
 
         jac_fn = jax.jit(jacobian(circ, argnums=0))
         res = jac_fn(p, U)
-        assert np.allclose(res, np.sin(p), atol=tol, rtol=0)
+        assert pnp.allclose(res, pnp.sin(p), atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("shots", [None, 10000])
@@ -2634,8 +2634,8 @@ class TestReturn:
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=True)
 
         jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(a, b, shots=shots)
 
@@ -3046,11 +3046,11 @@ def test_jax_device_hessian_shots(hessian, diff_method):
     hess = jax.jit(hessian(circuit), static_argnames="shots")(x, shots=10000)
 
     expected_hess = [
-        [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
-        [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
+        [-pnp.cos(a) * pnp.cos(b), pnp.sin(a) * pnp.sin(b)],
+        [pnp.sin(a) * pnp.sin(b), -pnp.cos(a) * pnp.cos(b)],
     ]
     shots_tol = 0.1
-    assert np.allclose(hess, expected_hess, atol=shots_tol, rtol=0)
+    assert pnp.allclose(hess, expected_hess, atol=shots_tol, rtol=0)
 
 
 @pytest.mark.parametrize("jit_inside", [True, False])
@@ -3084,7 +3084,7 @@ class TestSubsetArgnums:
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transform have a different vjp shape convention.")
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         @qml.qnode(
@@ -3110,15 +3110,15 @@ class TestSubsetArgnums:
         else:
             jac = jax.jit(jacobian(circuit, argnums=argnums))(a, b)
 
-        expected = np.array([-np.sin(a), 0])
+        expected = pnp.array([-pnp.sin(a), 0])
 
         if argnums == 0:
-            assert np.allclose(jac, expected[0], atol=tol)
+            assert pnp.allclose(jac, expected[0], atol=tol)
         elif argnums == 1:
-            assert np.allclose(jac, expected[1], atol=tol)
+            assert pnp.allclose(jac, expected[1], atol=tol)
         else:
-            assert np.allclose(jac[0], expected[0], atol=tol)
-            assert np.allclose(jac[1], expected[1], atol=tol)
+            assert pnp.allclose(jac[0], expected[0], atol=tol)
+            assert pnp.allclose(jac[1], expected[1], atol=tol)
 
     def test_multi_measurements(
         self,
@@ -3146,7 +3146,7 @@ class TestSubsetArgnums:
 
         kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(seed)
+            kwargs["sampler_rng"] = pnp.random.default_rng(seed)
             tol = TOL_FOR_SPSA
 
         @qml.qnode(
@@ -3171,15 +3171,15 @@ class TestSubsetArgnums:
         else:
             jac = jax.jit(jacobian(circuit, argnums=argnums))(a, b)
 
-        expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
+        expected = pnp.array([[-pnp.sin(a), 0], [pnp.sin(a) * pnp.sin(b), -pnp.cos(a) * pnp.cos(b)]])
 
         if argnums == 0:
-            assert np.allclose(jac, expected.T[0], atol=tol)
+            assert pnp.allclose(jac, expected.T[0], atol=tol)
         elif argnums == 1:
-            assert np.allclose(jac, expected.T[1], atol=tol)
+            assert pnp.allclose(jac, expected.T[1], atol=tol)
         else:
-            assert np.allclose(jac[0], expected[0], atol=tol)
-            assert np.allclose(jac[1], expected[1], atol=tol)
+            assert pnp.allclose(jac[0], expected[0], atol=tol)
+            assert pnp.allclose(jac[1], expected[1], atol=tol)
 
 
 class TestSinglePrecision:
@@ -3206,7 +3206,7 @@ class TestSinglePrecision:
                 return qml.expval(qml.PauliZ(0))
 
             grad = jax.grad(circuit)(jax.numpy.array(0.1))
-            assert qml.math.allclose(grad, -np.sin(0.1))
+            assert qml.math.allclose(grad, -pnp.sin(0.1))
         finally:
             jax.config.update("jax_enable_x64", True)
         jax.config.update("jax_enable_x64", True)
@@ -3226,7 +3226,7 @@ class TestSinglePrecision:
                 return qml.state()
 
             j = jax.jacobian(circuit, holomorphic=True)(jax.numpy.array(0.1 + 0j))
-            assert qml.math.allclose(j, [-np.sin(0.05) / 2, -np.cos(0.05) / 2 * 1j], atol=tol)
+            assert qml.math.allclose(j, [-pnp.sin(0.05) / 2, -pnp.cos(0.05) / 2 * 1j], atol=tol)
 
         finally:
             jax.config.update("jax_enable_x64", True)

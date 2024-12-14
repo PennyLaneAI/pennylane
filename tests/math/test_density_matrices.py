@@ -19,7 +19,7 @@ import numpy as onp
 import pytest
 
 from pennylane import math as fn
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -77,7 +77,7 @@ state_vectors = [
     (state_00_10, (mat_0_1, mat_0, mat_00_10)),
     (state_01_11, (mat_0_1, mat_1, mat_01_11))]
 
-array_funcs = [lambda x: x, onp.array, np.array, jnp.array, torch.tensor, tf.Variable, tf.constant]
+array_funcs = [lambda x: x, onp.array, pnp.array, jnp.array, torch.tensor, tf.Variable, tf.constant]
 
 single_wires_list = [
     [0],
@@ -110,7 +110,7 @@ class TestDensityMatrixFromStateVectors:
         """Test the density matrix from state vectors for single wires."""
         state_vector = array_func(state_vector)
         density_matrix = fn.quantum.reduce_statevector(state_vector, indices=wires)
-        assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
+        assert pnp.allclose(density_matrix, expected_density_matrix[wires[0]])
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
@@ -124,7 +124,7 @@ class TestDensityMatrixFromStateVectors:
         expected = expected_density_matrix[2]
         if wires == [1, 0]:
             expected = permute_two_qubit_dm(expected)
-        assert np.allclose(density_matrix, expected)
+        assert pnp.allclose(density_matrix, expected)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
@@ -135,7 +135,7 @@ class TestDensityMatrixFromStateVectors:
         """Test the reduced_dm with state vectors for single wires."""
         state_vector = array_func(state_vector)
         density_matrix = fn.reduce_statevector(state_vector, indices=wires)
-        assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
+        assert pnp.allclose(density_matrix, expected_density_matrix[wires[0]])
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
@@ -149,7 +149,7 @@ class TestDensityMatrixFromStateVectors:
         expected = expected_density_matrix[2]
         if wires == [1, 0]:
             expected = permute_two_qubit_dm(expected)
-        assert np.allclose(density_matrix, expected)
+        assert pnp.allclose(density_matrix, expected)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
@@ -166,7 +166,7 @@ class TestDensityMatrixFromStateVectors:
         if wires == [1, 0]:
             expected = permute_two_qubit_dm(expected)
 
-        assert np.allclose(density_matrix, expected)
+        assert pnp.allclose(density_matrix, expected)
 
     def test_state_vector_wrong_shape(self):
         """Test that wrong shaped state vector raises an error with check_state=True"""
@@ -192,7 +192,7 @@ class TestDensityMatrixFromStateVectors:
         jitted_dens_matrix_func = jit(fn.quantum.reduce_statevector, static_argnums=[1, 2])
 
         density_matrix = jitted_dens_matrix_func(state_vector, indices=(0, 1), check_state=True)
-        assert np.allclose(density_matrix, [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        assert pnp.allclose(density_matrix, [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
 
     def test_wrong_shape_jax_jit(self):
         """Test jitting the density matrix from state vector with wrong shape."""
@@ -220,7 +220,7 @@ class TestDensityMatrixFromStateVectors:
             input_signature=(tf.TensorSpec(shape=(4,), dtype=tf.complex128),),
         )
         density_matrix = density_matrix(state_vector)
-        assert np.allclose(density_matrix, [[1, 0], [0, 0]])
+        assert pnp.allclose(density_matrix, [[1, 0], [0, 0]])
 
     @pytest.mark.parametrize("c_dtype", c_dtypes)
     @pytest.mark.parametrize("array_func", array_funcs)
@@ -250,10 +250,10 @@ density_matrices = [
     (onp.array(mat_01), (mat_0, mat_1)),
     (onp.array(mat_10), (mat_1, mat_0)),
     (onp.array(mat_11), (mat_1, mat_1)),
-    (np.array(mat_00), (mat_0, mat_0)),
-    (np.array(mat_01), (mat_0, mat_1)),
-    (np.array(mat_10), (mat_1, mat_0)),
-    (np.array(mat_11), (mat_1, mat_1)),
+    (pnp.array(mat_00), (mat_0, mat_0)),
+    (pnp.array(mat_01), (mat_0, mat_1)),
+    (pnp.array(mat_10), (mat_1, mat_0)),
+    (pnp.array(mat_11), (mat_1, mat_1)),
     (jnp.array(mat_00), (mat_0, mat_0)),
     (jnp.array(mat_01), (mat_0, mat_1)),
     (jnp.array(mat_10), (mat_1, mat_0)),
@@ -287,7 +287,7 @@ class TestDensityMatrixFromMatrix:
     ):
         """Test the reduced_dm with matrix for single wires."""
         density_matrix = fn.reduce_dm(density_matrix, indices=wires)
-        assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
+        assert pnp.allclose(density_matrix, expected_density_matrix[wires[0]])
 
     @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices))[0])
     @pytest.mark.parametrize("wires", multiple_wires_list)
@@ -297,7 +297,7 @@ class TestDensityMatrixFromMatrix:
         expected = density_matrix
         if wires == [1, 0]:
             expected = permute_two_qubit_dm(expected)
-        assert np.allclose(returned_density_matrix, expected)
+        assert pnp.allclose(returned_density_matrix, expected)
 
     @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices))[0])
     @pytest.mark.parametrize("wires", multiple_wires_list)
@@ -311,7 +311,7 @@ class TestDensityMatrixFromMatrix:
         if wires == [1, 0]:
             expected = permute_two_qubit_dm(expected)
 
-        assert np.allclose(returned_density_matrix, expected)
+        assert pnp.allclose(returned_density_matrix, expected)
 
     def test_matrix_wrong_shape(self):
         """Test that wrong shaped state vector raises an error with check_state=True"""
@@ -350,7 +350,7 @@ class TestDensityMatrixFromMatrix:
         jitted_dens_matrix_func = jit(fn.quantum.reduce_dm, static_argnums=[1, 2])
 
         density_matrix = jitted_dens_matrix_func(state_vector, indices=(0,), check_state=True)
-        assert np.allclose(density_matrix, [[1, 0], [0, 0]])
+        assert pnp.allclose(density_matrix, [[1, 0], [0, 0]])
 
     def test_wrong_shape_jax_jit(self):
         """Test jitting the density matrix from state vector with wrong shape."""
@@ -385,7 +385,7 @@ class TestDensityMatrixFromMatrix:
             input_signature=(tf.TensorSpec(shape=(4, 4), dtype=tf.complex128),),
         )
         density_matrix = density_matrix(d_mat)
-        assert np.allclose(density_matrix, [[1, 0], [0, 0]])
+        assert pnp.allclose(density_matrix, [[1, 0], [0, 0]])
 
     @pytest.mark.parametrize("c_dtype", c_dtypes)
     @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices))[0])
@@ -414,7 +414,7 @@ class TestDensityMatrixBroadcasting:
         expected_density_matrices = array_func([sv[1][wires[0]] for sv in state_vectors])
 
         _density_matrices = fn.reduce_statevector(state_vector, indices=wires)
-        assert np.allclose(_density_matrices, expected_density_matrices)
+        assert pnp.allclose(_density_matrices, expected_density_matrices)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("wires", multiple_wires_list)
@@ -430,7 +430,7 @@ class TestDensityMatrixBroadcasting:
             )
 
         _density_matrices = fn.reduce_statevector(state_vector, indices=wires)
-        assert np.allclose(_density_matrices, expected_density_matrices)
+        assert pnp.allclose(_density_matrices, expected_density_matrices)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -440,7 +440,7 @@ class TestDensityMatrixBroadcasting:
         expected_density_matrices = array_func([dm[1][wires[0]] for dm in density_matrices[:4]])
 
         density_matrix = fn.reduce_dm(density_matrix, indices=wires)
-        assert np.allclose(density_matrix, expected_density_matrices)
+        assert pnp.allclose(density_matrix, expected_density_matrices)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("wires", multiple_wires_list)
@@ -456,4 +456,4 @@ class TestDensityMatrixBroadcasting:
             )
 
         density_matrix = fn.reduce_dm(density_matrix, indices=wires)
-        assert np.allclose(density_matrix, expected_density_matrices)
+        assert pnp.allclose(density_matrix, expected_density_matrices)

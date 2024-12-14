@@ -21,7 +21,7 @@ from itertools import product
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.transforms.optimization.optimization_utils import find_next_gate, fuse_rot_angles
 
 sample_op_list = [
@@ -70,9 +70,9 @@ class TestRotGateFusion:
         ([0.05, 0.2, 0.0], [0.0, -0.6, 0.12]),
         ([0.05, -1.34, 4.12], [0.0, 0.2, 0.12]),
         ([0.05, -1.34, 4.12], [0.3, 0.0, 0.12]),
-        ([np.pi, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
-        ([0.9, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
-        ([0.9, np.pi / 2, np.pi / 2], [-np.pi / 2, -np.pi / 2, 0.0]),
+        ([pnp.pi, pnp.pi / 2, 0.0], [0.0, -pnp.pi / 2, 0.0]),
+        ([0.9, pnp.pi / 2, 0.0], [0.0, -pnp.pi / 2, 0.0]),
+        ([0.9, pnp.pi / 2, pnp.pi / 2], [-pnp.pi / 2, -pnp.pi / 2, 0.0]),
     ]
 
     def run_interface_test(self, angles_1, angles_2):
@@ -115,8 +115,8 @@ class TestRotGateFusion:
         applying the Rots sequentially when the input angles are batched
         with mixed batching shapes."""
 
-        reshaped_angles_1 = np.reshape(angles_1, (-1, 3) if np.ndim(angles_1) > 1 else (3,))
-        reshaped_angles_2 = np.reshape(angles_2, (-1, 3) if np.ndim(angles_2) > 1 else (3,))
+        reshaped_angles_1 = pnp.reshape(angles_1, (-1, 3) if pnp.ndim(angles_1) > 1 else (3,))
+        reshaped_angles_2 = pnp.reshape(angles_2, (-1, 3) if pnp.ndim(angles_2) > 1 else (3,))
         self.run_interface_test(reshaped_angles_1, reshaped_angles_2)
 
     @pytest.mark.autograd
@@ -167,9 +167,9 @@ class TestRotGateFusion:
         Do not change the test to non-broadcasted evaluation, as this will
         increase the runtime significantly."""
 
-        special_points = np.array([3 / 2, 1, 1 / 2, 0, -1 / 2, -1, -3 / 2]) * np.pi
-        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
-        angles_1, angles_2 = np.transpose(special_angles, (1, 0, 2))
+        special_points = pnp.array([3 / 2, 1, 1 / 2, 0, -1 / 2, -1, -3 / 2]) * pnp.pi
+        special_angles = pnp.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        angles_1, angles_2 = pnp.transpose(special_angles, (1, 0, 2))
         self.run_interface_test(angles_1, angles_2)
 
     # pylint: disable=too-many-arguments
@@ -234,9 +234,9 @@ class TestRotGateFusion:
         """
         import jax
 
-        special_points = np.array([3 / 2, 1, 1 / 2, 0, -1 / 2, -1, -3 / 2]) * np.pi
-        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
-        random_angles = np.random.random((1000, 2, 3))
+        special_points = pnp.array([3 / 2, 1, 1 / 2, 0, -1 / 2, -1, -3 / 2]) * pnp.pi
+        special_angles = pnp.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        random_angles = pnp.random.random((1000, 2, 3))
         # Need holomorphic derivatives and complex inputs because the output matrices are complex
         all_angles = jax.numpy.concatenate([special_angles, random_angles])
 
@@ -265,10 +265,10 @@ class TestRotGateFusion:
         import torch
 
         # Testing fewer points than with batching to limit test runtimes
-        special_points = np.array([1, 0, -1]) * np.pi
-        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
-        random_angles = np.random.random((10, 2, 3))
-        all_angles = np.concatenate([special_angles, random_angles])
+        special_points = pnp.array([1, 0, -1]) * pnp.pi
+        special_angles = pnp.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        random_angles = pnp.random.random((10, 2, 3))
+        all_angles = pnp.concatenate([special_angles, random_angles])
 
         # Need holomorphic derivatives and complex inputs because the output matrices are complex
         all_angles = torch.tensor(all_angles, requires_grad=True)
@@ -293,9 +293,9 @@ class TestRotGateFusion:
          - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
          - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
         """
-        special_points = np.array([1, 0, -1]) * np.pi
-        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
-        random_angles = np.random.random((100, 2, 3))
+        special_points = pnp.array([1, 0, -1]) * pnp.pi
+        special_angles = pnp.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        random_angles = pnp.random.random((100, 2, 3))
         # Need holomorphic derivatives and complex inputs because the output matrices are complex
         all_angles = qml.numpy.concatenate([special_angles, random_angles], requires_grad=True)
 
@@ -322,10 +322,10 @@ class TestRotGateFusion:
         import tensorflow as tf
 
         # Testing fewer points than with batching to limit test runtimes
-        special_points = np.array([0, 1]) * np.pi
-        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
-        random_angles = np.random.random((3, 2, 3))
-        all_angles = np.concatenate([special_angles, random_angles])
+        special_points = pnp.array([0, 1]) * pnp.pi
+        special_angles = pnp.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        random_angles = pnp.random.random((3, 2, 3))
+        all_angles = pnp.concatenate([special_angles, random_angles])
 
         def jacobian(fn):
 

@@ -18,7 +18,7 @@ Unit tests for functions needed for two-electron integral tensor factorization.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ from pennylane import numpy as np
         # core, one, two = qml.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         (
-            np.array(
+            pnp.array(
                 [
                     [
                         [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
@@ -46,7 +46,7 @@ from pennylane import numpy as np
             1.0e-5,
             1.0e-5,
             # factors computed with openfermion (rearranged)
-            np.array(
+            pnp.array(
                 [
                     [[1.06723441e-01, 6.58493593e-17], [6.58493593e-17, -1.04898533e-01]],
                     [[-1.11022302e-16, -4.25688222e-01], [-4.25688222e-01, -1.11022302e-16]],
@@ -55,7 +55,7 @@ from pennylane import numpy as np
             ),
         ),
         (
-            np.array(
+            pnp.array(
                 [
                     [
                         [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
@@ -69,7 +69,7 @@ from pennylane import numpy as np
             ),
             1.0e-1,
             1.0e-1,
-            np.array(
+            pnp.array(
                 [
                     [[-1.11022302e-16, -4.25688222e-01], [-4.25688222e-01, -1.11022302e-16]],
                     [[-8.14472857e-01, 1.40518540e-16], [1.40518540e-16, -8.28642144e-01]],
@@ -81,11 +81,11 @@ from pennylane import numpy as np
 def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
     r"""Test that factorize function returns the correct values."""
     factors, eigvals, eigvecs = qml.qchem.factorize(two_tensor, tol_f, tol_s)
-    eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
+    eigvals_ref, eigvecs_ref = pnp.linalg.eigh(factors_ref)
 
-    assert np.allclose(factors, factors_ref)
-    assert np.allclose(eigvals, np.einsum("ti,tj->tij", eigvals_ref, eigvals_ref))
-    assert np.allclose(eigvecs, eigvecs_ref)
+    assert pnp.allclose(factors, factors_ref)
+    assert pnp.allclose(eigvals, pnp.einsum("ti,tj->tij", eigvals_ref, eigvals_ref))
+    assert pnp.allclose(eigvecs, eigvecs_ref)
 
 
 @pytest.mark.parametrize(
@@ -97,7 +97,7 @@ def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
         # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         # core, one, two = qml.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
-        np.array(
+        pnp.array(
             [
                 [
                     [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
@@ -116,8 +116,8 @@ def test_factorize_reproduce(two_tensor):
     factors1, _, _ = qml.qchem.factorize(two_tensor, 1e-5, 1e-5, cholesky=False)
     factors2, _, _ = qml.qchem.factorize(two_tensor, 1e-5, 1e-5, cholesky=True)
 
-    assert qml.math.allclose(np.tensordot(factors1, factors1, axes=([0], [0])), two_tensor)
-    assert qml.math.allclose(np.tensordot(factors2, factors2, axes=([0], [0])), two_tensor)
+    assert qml.math.allclose(pnp.tensordot(factors1, factors1, axes=([0], [0])), two_tensor)
+    assert qml.math.allclose(pnp.tensordot(factors2, factors2, axes=([0], [0])), two_tensor)
 
 
 @pytest.mark.external
@@ -130,7 +130,7 @@ def test_factorize_reproduce(two_tensor):
         # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         # core, one, two = qml.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
-        np.array(
+        pnp.array(
             [
                 [
                     [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
@@ -158,7 +158,7 @@ def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
         optimizer=optax.adam(learning_rate=0.001),
     )
 
-    assert qml.math.allclose(np.einsum("tpqi,trsi->pqrs", factors, factors), two_tensor, atol=1e-3)
+    assert qml.math.allclose(pnp.einsum("tpqi,trsi->pqrs", factors, factors), two_tensor, atol=1e-3)
     assert qml.math.allclose(
         qml.math.einsum("tpk,tqk,tkl,trl,tsl->pqrs", leaves, leaves, cores, leaves, leaves),
         two_tensor,
@@ -176,7 +176,7 @@ def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
         # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         # core, one, two = qml.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
-        np.array(
+        pnp.array(
             [
                 [
                     [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
@@ -201,7 +201,7 @@ def test_regularization_error(two_tensor):
 @pytest.mark.parametrize(
     "two_tensor",
     [
-        np.array(
+        pnp.array(
             [
                 [6.74755872e-01, -2.85826918e-13, -2.85799162e-13, 6.63711349e-01],
                 [-2.85965696e-13, 1.81210478e-01, 1.81210478e-01, -2.63900013e-13],
@@ -221,7 +221,7 @@ def test_shape_error(two_tensor):
 @pytest.mark.parametrize(
     "two_tensor",
     [
-        np.array(
+        pnp.array(
             [
                 [
                     [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
@@ -253,8 +253,8 @@ def test_empty_error(two_tensor):
             # geometry = np.array([[0.0, 0.0, 0.0], [1.39839789, 0.0, 0.0]], requires_grad = False)
             # mol = qml.qchem.Molecule(symbols, geometry)
             # core, one_matrix, two_tensor = qml.qchem.electron_integrals(mol)()
-            np.array([[-1.25330978e00, -2.11164419e-13], [-2.10831352e-13, -4.75068865e-01]]),
-            np.array(  # two-electron integral tensor in physicist notation
+            pnp.array([[-1.25330978e00, -2.11164419e-13], [-2.10831352e-13, -4.75068865e-01]]),
+            pnp.array(  # two-electron integral tensor in physicist notation
                 [
                     [
                         [[6.74755925e-01, 2.43333131e-13], [2.43333131e-13, 1.81210462e-01]],
@@ -268,8 +268,8 @@ def test_empty_error(two_tensor):
             ),
             1.0e-5,
             [  # computed manually, multiplied by 2 to account for spin
-                np.array([0.84064649, -2.59579282, 0.84064649, 0.45724992, 0.45724992]),
-                np.array(
+                pnp.array([0.84064649, -2.59579282, 0.84064649, 0.45724992, 0.45724992]),
+                pnp.array(
                     [
                         -9.73801723e-05,
                         5.60006390e-03,
@@ -284,7 +284,7 @@ def test_empty_error(two_tensor):
                         2.75092558e-03,
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         0.04530262,
                         -0.04530262,
@@ -295,7 +295,7 @@ def test_empty_error(two_tensor):
                         0.04530262,
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         -0.68077716,
                         1.6874169,
@@ -356,7 +356,7 @@ def test_empty_error(two_tensor):
                 ],
             ],
             [  # computed manually
-                np.array(
+                pnp.array(
                     [
                         [-1.00000000e00, 0.00000000e00, -5.71767345e-13, -0.00000000e00],
                         [0.00000000e00, 1.00000000e00, 0.00000000e00, 5.71767345e-13],
@@ -364,7 +364,7 @@ def test_empty_error(two_tensor):
                         [0.00000000e00, 5.71767345e-13, -0.00000000e00, -1.00000000e00],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [-0.0, -0.0, 0.0, -1.0],
                         [-0.0, 0.0, -1.0, 0.0],
@@ -372,7 +372,7 @@ def test_empty_error(two_tensor):
                         [-1.0, -0.0, 0.0, 0.0],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [-0.70710678, 0.0, -0.0, -0.70710678],
                         [0.0, -0.70710678, -0.70710678, 0.0],
@@ -380,7 +380,7 @@ def test_empty_error(two_tensor):
                         [0.0, 0.70710678, -0.70710678, -0.0],
                     ]
                 ),
-                np.array(
+                pnp.array(
                     [
                         [-0.0, 1.0, 0.0, 0.0],
                         [1.0, 0.0, 0.0, -0.0],
@@ -399,7 +399,7 @@ def test_basis_rotation_output(
     coeffs, ops, eigvecs = qml.qchem.basis_rotation(one_matrix, two_tensor, tol_factor)
 
     for i, coeff in enumerate(coeffs):
-        assert np.allclose(np.sort(coeff), np.sort(coeffs_ref[i]))
+        assert pnp.allclose(pnp.sort(coeff), pnp.sort(coeffs_ref[i]))
 
     for j, op in enumerate(ops):
         ops_ref_str = [qml.pauli.pauli_word_to_string(t) for t in ops_ref[j]]
@@ -411,20 +411,20 @@ def test_basis_rotation_output(
         for vec in vecs.T:
             check = False
             for rf_vec in eigvecs_ref[i].T:
-                if np.allclose(rf_vec, vec) or np.allclose(-rf_vec, vec):
+                if pnp.allclose(rf_vec, vec) or pnp.allclose(-rf_vec, vec):
                     check = True
                     break
             checks.append(check)
-        assert np.all(checks)
+        assert pnp.all(checks)
 
 
 @pytest.mark.parametrize(
     ("core", "one_electron", "two_electron"),
     [
         (
-            np.array([0.71510405]),
-            np.array([[-1.25330961e00, 4.13891144e-13], [4.14002166e-13, -4.75069041e-01]]),
-            np.array(
+            pnp.array([0.71510405]),
+            pnp.array([[-1.25330961e00, 4.13891144e-13], [4.14002166e-13, -4.75069041e-01]]),
+            pnp.array(
                 [
                     [
                         [[6.74755872e-01, -4.78089790e-13], [-4.77978768e-13, 1.81210478e-01]],
@@ -449,19 +449,19 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
     *_, u_transform = qml.qchem.basis_rotation(one_electron, two_electron)
 
     a_cr = [  # fermionic creation operators
-        np.array(
+        pnp.array(
             [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]]
         ),
-        np.array(
+        pnp.array(
             [[0.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
         ),
     ]
 
     a_an = [  # fermionic annihilation operators
-        np.array(
+        pnp.array(
             [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
         ),
-        np.array(
+        pnp.array(
             [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 0.0]]
         ),
     ]
@@ -469,14 +469,14 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
     # compute matrix representation of the factorized Hamiltonian. Only the one-body part is
     # included to keep the test simple.
 
-    t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
+    t_matrix = one_electron - 0.5 * pnp.einsum("illj", two_electron)
 
     h1 = 0.0
     for i, ac in enumerate(a_cr):
         for j, aa in enumerate(a_an):
             h1 += t_matrix[i, j] * ac @ aa
 
-    h1 += np.identity(len(h1)) * core
+    h1 += pnp.identity(len(h1)) * core
 
     # compute matrix representation of the basis-rotated Hamiltonian. Only the one-body part is
     # included to keep the test simple.
@@ -497,21 +497,21 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
             aa_new += u_[i] * aa
         aa_rot.append(aa_new)
 
-    val, _ = np.linalg.eigh(t_matrix)
+    val, _ = pnp.linalg.eigh(t_matrix)
     h2 = 0.0
     for i, v in enumerate(val):
         h2 += v * ac_rot[i] @ aa_rot[i]
 
-    h2 += np.identity(len(h2)) * core
+    h2 += pnp.identity(len(h2)) * core
 
-    assert np.allclose(h1, h2)
+    assert pnp.allclose(h1, h2)
 
 
 @pytest.mark.parametrize(
     ("two_body_tensor", "spatial_basis", "one_body_correction", "chemist_two_body_coeffs"),
     [
         (
-            np.array(
+            pnp.array(
                 [
                     [
                         [[6.74755925e-01, 2.43333131e-13], [2.43333131e-13, 1.81210462e-01]],
@@ -524,13 +524,13 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
                 ]
             ),
             True,
-            np.array(
+            pnp.array(
                 [
                     [-4.27983194e-01, -2.33965625e-13],
                     [-2.33882358e-13, -4.39430980e-01],
                 ]
             ),
-            np.array(
+            pnp.array(
                 [
                     [
                         [[3.37377963e-01, 1.21666566e-13], [1.21666566e-13, 3.31855699e-01]],
@@ -544,7 +544,7 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
             ),
         ),
         (
-            np.array(
+            pnp.array(
                 [
                     [
                         [
@@ -653,7 +653,7 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
                 ]
             ),
             False,
-            np.array(
+            pnp.array(
                 [
                     [-4.27983194e-01, -0.00000000e00, -2.33965625e-13, -0.00000000e00],
                     [-0.00000000e00, -4.27983194e-01, -0.00000000e00, -2.33965625e-13],
@@ -661,7 +661,7 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
                     [-0.00000000e00, -2.33882358e-13, -0.00000000e00, -4.39430980e-01],
                 ]
             ),
-            np.array(
+            pnp.array(
                 [
                     [
                         [
@@ -781,13 +781,13 @@ def test_chemist_transform(
     one_body_corr, chemist_two_body = qml.qchem.factorization._chemist_transform(
         two_body_tensor=two_body_tensor, spatial_basis=spatial_basis
     )
-    assert np.allclose(one_body_corr, one_body_correction)
-    assert np.allclose(chemist_two_body, chemist_two_body_coeffs)
+    assert pnp.allclose(one_body_corr, one_body_correction)
+    assert pnp.allclose(chemist_two_body, chemist_two_body_coeffs)
 
     (chemist_one_body,) = qml.qchem.factorization._chemist_transform(
         one_body_tensor=one_body_correction, spatial_basis=spatial_basis
     )
-    assert np.allclose(chemist_one_body, one_body_correction)
+    assert pnp.allclose(chemist_one_body, one_body_correction)
 
     chemist_one_body, chemist_two_body = qml.qchem.factorization._chemist_transform(
         one_body_tensor=one_body_correction,
@@ -795,7 +795,7 @@ def test_chemist_transform(
         spatial_basis=spatial_basis,
     )
 
-    assert np.allclose(one_body_corr, one_body_correction)
+    assert pnp.allclose(one_body_corr, one_body_correction)
 
 
 @pytest.mark.parametrize(
@@ -815,9 +815,9 @@ def test_chemist_transform(
         # ...        break
         # -2.688647053431185
         (
-            np.array([0.14782753]),
-            np.array([[-1.55435269, 0.08134727], [0.08134727, -0.0890333]]),
-            np.array(
+            pnp.array([0.14782753]),
+            pnp.array([[-1.55435269, 0.08134727], [0.08134727, -0.0890333]]),
+            pnp.array(
                 [
                     [
                         [[0.02932015, -0.04067343], [-0.04067343, -0.02931994]],
@@ -843,6 +843,6 @@ def test_symmetry_shift(core_shifted, one_body_shifted, two_body_shifted):
     cone, ctwo = qml.qchem.factorization._chemist_transform(one, two, spatial_basis=True)
     score, sone, stwo = qml.qchem.symmetry_shift(core, cone, ctwo, n_elec=mol.n_electrons)
 
-    assert np.allclose(score, core_shifted)
-    assert np.allclose(sone, one_body_shifted)
-    assert np.allclose(stwo, two_body_shifted)
+    assert pnp.allclose(score, core_shifted)
+    assert pnp.allclose(sone, one_body_shifted)
+    assert pnp.allclose(stwo, two_body_shifted)

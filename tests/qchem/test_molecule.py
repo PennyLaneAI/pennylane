@@ -17,7 +17,7 @@ Unit tests for the molecule object.
 # pylint: disable=too-many-arguments
 import pytest
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 
 
@@ -27,7 +27,7 @@ class TestMolecule:
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
         [
-            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+            (["H", "F"], pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
         ],
     )
     def test_build_molecule(self, symbols, geometry):
@@ -41,7 +41,7 @@ class TestMolecule:
         import jax
 
         symbols = ["H", "F"]
-        geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+        geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
         alpha = jax.numpy.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
         with pytest.warns(UserWarning, match="The parameters"):
@@ -50,7 +50,7 @@ class TestMolecule:
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
         [
-            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+            (["H", "F"], pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
         ],
     )
     def test_basis_error(self, symbols, geometry):
@@ -61,7 +61,7 @@ class TestMolecule:
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
         [
-            (["H", "Ox"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+            (["H", "Ox"], pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
         ],
     )
     def test_symbol_error(self, symbols, geometry):
@@ -72,7 +72,7 @@ class TestMolecule:
     @pytest.mark.parametrize(
         ("symbols", "geometry", "charge", "mult", "basis_name"),
         [
-            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 0, 1, "sto-3g"),
+            (["H", "F"], pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 0, 1, "sto-3g"),
         ],
     )
     def test_default_inputs(self, symbols, geometry, charge, mult, basis_name):
@@ -80,7 +80,7 @@ class TestMolecule:
         mol = qchem.Molecule(symbols, geometry)
 
         assert mol.symbols == symbols
-        assert np.allclose(mol.coordinates, geometry)
+        assert pnp.allclose(mol.coordinates, geometry)
         assert mol.charge == charge
         assert mol.mult == mult
         assert mol.basis_name == basis_name
@@ -90,7 +90,7 @@ class TestMolecule:
         [
             (
                 ["H", "F"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 10,
                 6,
                 [1, 9],
@@ -110,7 +110,7 @@ class TestMolecule:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 [1, 1],
                 (
                     (
@@ -132,32 +132,32 @@ class TestMolecule:
         mol = qchem.Molecule(symbols, geometry)
 
         assert mol.n_basis == n_basis
-        assert np.allclose(mol.basis_data, basis_data)
+        assert pnp.allclose(mol.basis_data, basis_data)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "l", "alpha", "coeff", "r", "load_data"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 [(0, 0, 0), (0, 0, 0)],
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 False,
             ),
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 [(0, 0, 0), (0, 0, 0)],
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 True,
             ),
             (
                 ["H", "F"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 [(0, 0, 0), (0, 0, 0), (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)],
                 [
                     [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],
@@ -175,7 +175,7 @@ class TestMolecule:
                     [0.1559162750e00, 0.6076837186e00, 0.3919573931e00],
                     [0.1559162750e00, 0.6076837186e00, 0.3919573931e00],
                 ],
-                np.array(
+                pnp.array(
                     [
                         [0.0, 0.0, 0.0],
                         [0.0, 0.0, 1.0],
@@ -198,9 +198,9 @@ class TestMolecule:
 
         assert set(map(type, mol.basis_set)) == {qchem.BasisFunction}
         assert mol.l == l
-        assert np.allclose(mol.alpha, alpha)
-        assert np.allclose(mol.coeff, coeff)
-        assert np.allclose(mol.r, r)
+        assert pnp.allclose(mol.alpha, alpha)
+        assert pnp.allclose(mol.coeff, coeff)
+        assert pnp.allclose(mol.r, r)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "index", "position", "ref_value"),
@@ -208,15 +208,15 @@ class TestMolecule:
             (
                 # normalized primitive Gaussians centered at 0, G(0, 0, 0) = coeff * exp(alpha * 0)
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array(
                     [
                         [3.425250914, 3.425250914, 3.425250914],
                         [3.425250914, 3.425250914, 3.425250914],
                     ],
                     requires_grad=False,
                 ),
-                np.array(
+                pnp.array(
                     [[1.79444183, 1.79444183, 1.79444183], [1.79444183, 1.79444183, 1.79444183]],
                     requires_grad=False,
                 ),
@@ -227,15 +227,15 @@ class TestMolecule:
             (
                 # normalized primitive Gaussians centered at z=1, G(0, 0, 0) = coeff * exp(alpha *1)
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-                np.array(
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array(
                     [
                         [3.425250914, 3.425250914, 3.425250914],
                         [3.425250914, 3.425250914, 3.425250914],
                     ],
                     requires_grad=False,
                 ),
-                np.array(
+                pnp.array(
                     [[1.79444183, 1.79444183, 1.79444183], [1.79444183, 1.79444183, 1.79444183]],
                     requires_grad=False,
                 ),
@@ -253,14 +253,14 @@ class TestMolecule:
         ao = mol.atomic_orbital(index)
         ao_value = ao(x, y, z)
 
-        assert np.allclose(ao_value, ref_value)
+        assert pnp.allclose(ao_value, ref_value)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "index", "position", "ref_value"),
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
                 1,
                 (0.0, 0.0, 0.0),
                 0.01825128,
@@ -276,28 +276,28 @@ class TestMolecule:
         mo = mol.molecular_orbital(index)
         mo_value = mo(x, y, z)
 
-        assert np.allclose(mo_value, ref_value)
+        assert pnp.allclose(mo_value, ref_value)
 
     def test_repr(self):
         """Test that __repr__ for Molecule returns correct representation."""
 
         symbols, geometry = (
             ["H", "H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
         )
         mol = qchem.Molecule(symbols, geometry, 1)
         assert repr(mol) == "<Molecule = H3, Charge: 1, Basis: STO-3G, Orbitals: 3, Electrons: 2>"
 
         symbols, geometry = (
             ["H", "C", "O"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
+            pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
         )
         mol = qchem.Molecule(symbols, geometry, 1)
         assert (
             repr(mol) == "<Molecule = CHO, Charge: 1, Basis: STO-3G, Orbitals: 11, Electrons: 14>"
         )
 
-        symbols, geometry = (["C", "O"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]))
+        symbols, geometry = (["C", "O"], pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]))
         mol = qchem.Molecule(symbols, geometry, 0)
         assert repr(mol) == "<Molecule = CO, Charge: 0, Basis: STO-3G, Orbitals: 10, Electrons: 14>"
 
@@ -306,7 +306,7 @@ class TestMolecule:
         [  # data manually copied from https://www.basissetexchange.org/
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 "6-31+g",
                 (
                     (
@@ -359,7 +359,7 @@ class TestMolecule:
         r"""Test that an error is raised if a wrong/not-supported unit for coordinates is entered."""
 
         symbols = ["H", "H"]
-        geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+        geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
         with pytest.raises(ValueError, match="The provided unit 'degrees' is not supported."):
             qchem.Molecule(symbols, geometry, unit="degrees")

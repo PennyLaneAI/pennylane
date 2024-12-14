@@ -25,7 +25,7 @@ from gate_data import Roty as RY
 from gate_data import S, X, Y, Z
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.transforms import TransformError
 
@@ -40,10 +40,10 @@ one_qubit_no_parameter = [
 ]
 
 
-I_CNOT = np.kron(I, CNOT)
-S_H = np.kron(S, H)
-I_S_H = np.kron(I, S_H)
-X_S_H = np.kron(X, S_H)
+I_CNOT = pnp.kron(I, CNOT)
+S_H = pnp.kron(S, H)
+I_S_H = pnp.kron(I, S_H)
+X_S_H = pnp.kron(X, S_H)
 
 one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 
@@ -56,7 +56,7 @@ class TestSingleOperation:
         op = op_class(wires=0)
         res = qml.matrix(op)
         expected = op.matrix()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_gates_qfunc(self, op_class):
@@ -64,7 +64,7 @@ class TestSingleOperation:
         when provided as a qfunc"""
         res = qml.matrix(op_class, wire_order=[0])(wires=0)
         expected = op_class(wires=0).matrix()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_gates_qnode(self, op_class):
@@ -74,14 +74,14 @@ class TestSingleOperation:
         qnode = qml.QNode(lambda: op_class(wires=0) and qml.probs(wires=0), dev)
         res = qml.matrix(qnode)()
         expected = op_class(wires=0).matrix()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_matrix_expansion(self, op_class):
         """Verify that matrices are correctly expanded when a wire order is provided"""
         res = qml.matrix(op_class, wire_order=[1, 0, 2])(wires=0)
-        expected = np.kron(np.eye(2), np.kron(op_class(wires=0).matrix(), np.eye(2)))
-        assert np.allclose(res, expected)
+        expected = pnp.kron(pnp.eye(2), pnp.kron(op_class(wires=0).matrix(), pnp.eye(2)))
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_parametric_gates_instantiated(self, op_class):
@@ -90,7 +90,7 @@ class TestSingleOperation:
         op = op_class(0.54, wires=0)
         res = qml.matrix(op)
         expected = op.matrix()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_parametric_gates_qfunc(self, op_class):
@@ -98,7 +98,7 @@ class TestSingleOperation:
         when provided as a qfunc"""
         res = qml.matrix(op_class, wire_order=[0])(0.54, wires=0)
         expected = op_class(0.54, wires=0).matrix()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_parametric_gates_qnode(self, op_class):
@@ -108,20 +108,20 @@ class TestSingleOperation:
         qnode = qml.QNode(lambda x: op_class(x, wires=0) and qml.probs(wires=0), dev)
         res = qml.matrix(qnode)(0.54)
         expected = op_class(0.54, wires=0).matrix()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_adjoint(self, op_class):
         """Test that the adjoint is correctly taken into account"""
         res = qml.matrix(qml.adjoint(op_class), wire_order=[0])(0.54, wires=0)
         expected = op_class(-0.54, wires=0).matrix()
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     def test_ctrl(self):
         """Test that the ctrl is correctly taken into account"""
         res = qml.matrix(qml.ctrl(qml.PauliX, 0), wire_order=[0, 1])(wires=1)
         expected = CNOT
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
     @pytest.mark.parametrize("target_wire", [0, 2, 3, 4])
     def test_CNOT_permutations(self, target_wire):
@@ -129,17 +129,17 @@ class TestSingleOperation:
         res = qml.matrix(qml.CNOT, wire_order=[0, 1, 2, 3, 4])(wires=[1, target_wire])
 
         # compute the expected matrix
-        perm = np.swapaxes(
-            np.swapaxes(np.arange(2**5).reshape([2] * 5), 0, 1), 0, target_wire
+        perm = pnp.swapaxes(
+            pnp.swapaxes(pnp.arange(2**5).reshape([2] * 5), 0, 1), 0, target_wire
         ).flatten()
-        expected = np.kron(CNOT, np.eye(8))[:, perm][perm]
-        assert np.allclose(res, expected)
+        expected = pnp.kron(CNOT, pnp.eye(8))[:, perm][perm]
+        assert pnp.allclose(res, expected)
 
     def test_hamiltonian(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
         ham = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
         mat = qml.matrix(ham, wire_order=[1, 0, 2])
-        expected = reduce(np.kron, [Y, Z, I]) - 0.5 * np.kron(X, np.eye(4))
+        expected = reduce(pnp.kron, [Y, Z, I]) - 0.5 * pnp.kron(X, pnp.eye(4))
         assert qml.math.allclose(mat, expected)
 
     @pytest.mark.xfail(
@@ -153,7 +153,7 @@ class TestSingleOperation:
 
         x = 0.5
         mat = qml.matrix(ansatz, wire_order=[1, 0, 2])(x)
-        expected = reduce(np.kron, [Y, Z, I]) - x * np.kron(X, np.eye(4))
+        expected = reduce(pnp.kron, [Y, Z, I]) - x * pnp.kron(X, pnp.eye(4))
         assert qml.math.allclose(mat, expected)
 
     def test_qutrits(self):
@@ -167,7 +167,7 @@ class TestSingleOperation:
             return qml.state()
 
         mat = qml.matrix(circuit)()
-        expected = np.array(
+        expected = pnp.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -181,7 +181,7 @@ class TestSingleOperation:
             ]
         )
 
-        assert np.allclose(mat, expected)
+        assert pnp.allclose(mat, expected)
 
     def test_empty_decomposition(self):
         """Test the matrix of a single operation that has an empty list as decomposition."""
@@ -200,7 +200,7 @@ class TestSingleOperation:
             qml.matrix((lambda *_: qml.Barrier(1) and None), wire_order=[0, 1])(),  # qfunc
             qml.matrix(node)(),  # qnode
         ]
-        assert all(np.allclose(mat, np.eye(4)) for mat in mats)
+        assert all(pnp.allclose(mat, pnp.eye(4)) for mat in mats)
 
 
 class TestMultipleOperations:
@@ -217,12 +217,12 @@ class TestMultipleOperations:
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
         expected_matrix = I_CNOT @ X_S_H
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
         qs = qml.tape.QuantumScript(tape.operations)
         qs_matrix = qml.matrix(qs, wire_order)
 
-        assert np.allclose(qs_matrix, expected_matrix)
+        assert pnp.allclose(qs_matrix, expected_matrix)
 
     def test_multiple_operations_qfunc(self):
         """Check the total matrix for a qfunc containing multiple gates"""
@@ -236,7 +236,7 @@ class TestMultipleOperations:
 
         matrix = qml.matrix(testcircuit, wire_order)()
         expected_matrix = I_CNOT @ X_S_H
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_qnode(self):
         """Check the total matrix for a QNode containing multiple gates"""
@@ -252,7 +252,7 @@ class TestMultipleOperations:
 
         matrix = qml.matrix(testcircuit)()
         expected_matrix = I_CNOT @ (X_S_H.conj().T)
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
 
 class TestWithParameterBroadcasting:
@@ -261,7 +261,7 @@ class TestWithParameterBroadcasting:
         and a single broadcasted gate."""
         wire_order = ["a", "b", "c"]
 
-        angles = np.array([0.0, np.pi, 0.7])
+        angles = pnp.array([0.0, pnp.pi, 0.7])
         with qml.queuing.AnnotatedQueue() as q:
             qml.S(wires="b")
             qml.RX(angles, wires="a")
@@ -270,19 +270,19 @@ class TestWithParameterBroadcasting:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
-        expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
-        assert np.allclose(matrix, expected_matrix)
+        expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ pnp.kron(RX(0.7), S_H)]
+        assert pnp.allclose(matrix, expected_matrix)
 
         qs = qml.tape.QuantumScript(tape.operations)
         qs_matrix = qml.matrix(qs, wire_order)
-        assert np.allclose(qs_matrix, expected_matrix)
+        assert pnp.allclose(qs_matrix, expected_matrix)
 
     def test_multiple_operations_tape_leading_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
         and a leading single broadcasted gate."""
         wire_order = ["a", "b", "c"]
 
-        angles = np.array([0.0, np.pi, 0.7])
+        angles = pnp.array([0.0, pnp.pi, 0.7])
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(angles, wires="a")
             qml.S(wires="b")
@@ -291,16 +291,16 @@ class TestWithParameterBroadcasting:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
-        expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
-        assert np.allclose(matrix, expected_matrix)
+        expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ pnp.kron(RX(0.7), S_H)]
+        assert pnp.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_tape_multi_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
         and a multiple broadcasted gate."""
         wire_order = ["a", "b", "c"]
 
-        angles1 = np.array([0.0, np.pi, 0.0, np.pi])
-        angles2 = np.array([0.0, 0.0, np.pi, np.pi])
+        angles1 = pnp.array([0.0, pnp.pi, 0.0, pnp.pi])
+        angles2 = pnp.array([0.0, 0.0, pnp.pi, pnp.pi])
         with qml.queuing.AnnotatedQueue() as q:
             qml.S(wires="b")
             qml.RX(angles1, wires="a")
@@ -310,22 +310,22 @@ class TestWithParameterBroadcasting:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
-        I_I_X = np.kron(np.eye(4), X)
+        I_I_X = pnp.kron(pnp.eye(4), X)
         expected_matrix = [
             I_CNOT @ I_S_H,
             -1j * I_CNOT @ X_S_H,
             -1j * I_I_X @ I_CNOT @ I_S_H,
             -I_I_X @ I_CNOT @ X_S_H,
         ]
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_tape_bcasting_matches_Hilbert_dim(self):
         """Check the total matrix for a tape containing multiple gates
         and a multiple broadcasted gate."""
         wire_order = ["a", "b"]
 
-        angles1 = np.array([0.0, np.pi, 0.0, np.pi])
-        angles2 = np.array([0.0, 0.0, np.pi, np.pi])
+        angles1 = pnp.array([0.0, pnp.pi, 0.0, pnp.pi])
+        angles2 = pnp.array([0.0, 0.0, pnp.pi, pnp.pi])
         with qml.queuing.AnnotatedQueue() as q:
             qml.S(wires="b")
             qml.RX(angles1, wires="a")
@@ -335,16 +335,16 @@ class TestWithParameterBroadcasting:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
-        I_HS = np.kron(I, H @ S)
-        X_HS = np.kron(X, H @ S)
-        I_X = np.kron(I, X)
+        I_HS = pnp.kron(I, H @ S)
+        X_HS = pnp.kron(X, H @ S)
+        I_X = pnp.kron(I, X)
         expected_matrix = [
             CNOT @ I_HS,
             -1j * CNOT @ X_HS,
             -1j * I_X @ CNOT @ I_HS,
             -I_X @ CNOT @ X_HS,
         ]
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
 
 class TestCustomWireOrdering:
@@ -352,8 +352,8 @@ class TestCustomWireOrdering:
         """Test wire order of a tensor product"""
         ham = qml.PauliZ(0) @ qml.PauliX(1)
         res = qml.matrix(ham, wire_order=[0, 2, 1])
-        expected = np.kron(Z, np.kron(I, X))
-        assert np.allclose(res, expected)
+        expected = pnp.kron(Z, pnp.kron(I, X))
+        assert pnp.allclose(res, expected)
 
     def test_tape_wireorder(self):
         """Test changing the wire order when using a tape"""
@@ -365,12 +365,12 @@ class TestCustomWireOrdering:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order=tape.wires)
-        expected_matrix = np.kron(X, np.kron(Y, Z))
-        assert np.allclose(matrix, expected_matrix)
+        expected_matrix = pnp.kron(X, pnp.kron(Y, Z))
+        assert pnp.allclose(matrix, expected_matrix)
 
         matrix = qml.matrix(tape, wire_order=[1, 0, 2])
-        expected_matrix = np.kron(Y, np.kron(X, Z))
-        assert np.allclose(matrix, expected_matrix)
+        expected_matrix = pnp.kron(Y, pnp.kron(X, Z))
+        assert pnp.allclose(matrix, expected_matrix)
 
     def test_qfunc_wireorder(self):
         """Test changing the wire order when using a qfunc"""
@@ -381,12 +381,12 @@ class TestCustomWireOrdering:
             qml.PauliZ(wires=2)
 
         matrix = qml.matrix(testcircuit, wire_order=[0, 1, 2])()
-        expected_matrix = np.kron(X, np.kron(Y, Z))
-        assert np.allclose(matrix, expected_matrix)
+        expected_matrix = pnp.kron(X, pnp.kron(Y, Z))
+        assert pnp.allclose(matrix, expected_matrix)
 
         matrix = qml.matrix(testcircuit, wire_order=[1, 0, 2])()
-        expected_matrix = np.kron(Y, np.kron(X, Z))
-        assert np.allclose(matrix, expected_matrix)
+        expected_matrix = pnp.kron(Y, pnp.kron(X, Z))
+        assert pnp.allclose(matrix, expected_matrix)
 
     def test_qnode_wireorder(self):
         """Test changing the wire order when using a QNode"""
@@ -403,8 +403,8 @@ class TestCustomWireOrdering:
         x = 0.5
 
         # default wire ordering will come from the device
-        expected_matrix = np.kron(RY(x), np.kron(X, np.kron(Z, I)))
-        assert np.allclose(testcircuit1(x), expected_matrix)
+        expected_matrix = pnp.kron(RY(x), pnp.kron(X, pnp.kron(Z, I)))
+        assert pnp.allclose(testcircuit1(x), expected_matrix)
 
         @partial(qml.matrix, wire_order=[1, 0, 2])
         @qml.qnode(dev)
@@ -414,8 +414,8 @@ class TestCustomWireOrdering:
             qml.PauliZ(wires=2)
             return qml.expval(qml.PauliZ(0))
 
-        expected_matrix = np.kron(RY(x), np.kron(X, Z))
-        assert np.allclose(testcircuit2(x), expected_matrix)
+        expected_matrix = pnp.kron(RY(x), pnp.kron(X, Z))
+        assert pnp.allclose(testcircuit2(x), expected_matrix)
 
     @pytest.mark.parametrize("wire_order", [[0, 2, 1], [1, 0, 2], [2, 1, 0]])
     def test_pauli_word_wireorder(self, wire_order):
@@ -439,7 +439,7 @@ class TestCustomWireOrdering:
     def test_empty_tape_with_wire_order(self):
         """Test that an empty tape's matrix can be computed if wire_order is specified."""
         qs = qml.tape.QuantumScript()
-        assert np.allclose(qml.matrix(qs, wire_order=[0, 2]), np.eye(4))
+        assert pnp.allclose(qml.matrix(qs, wire_order=[0, 2]), pnp.eye(4))
 
 
 pw1 = PauliWord({0: "X", 1: "Z"})
@@ -485,7 +485,7 @@ class TestTemplates:
 
     def test_instantiated(self):
         """Test an instantiated template"""
-        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        weights = pnp.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
         res = qml.matrix(op)
 
@@ -494,7 +494,7 @@ class TestTemplates:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.matrix(tape, wire_order=tape.wires)
-        np.allclose(res, expected)
+        pnp.allclose(res, expected)
 
     def test_qfunc(self):
         """Test a template used within a qfunc"""
@@ -503,7 +503,7 @@ class TestTemplates:
             qml.StronglyEntanglingLayers(weights, wires=[0, 1])
             qml.RX(x, wires=0)
 
-        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        weights = pnp.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
         res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
 
@@ -515,7 +515,7 @@ class TestTemplates:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.matrix(tape, wire_order=[0, 1])
-        np.allclose(res, expected)
+        pnp.allclose(res, expected)
 
     def test_nested_instantiated(self):
         """Test an operation that must be decomposed twice"""
@@ -528,7 +528,7 @@ class TestTemplates:
             def compute_decomposition(weights, wires):
                 return [qml.StronglyEntanglingLayers(weights, wires=wires)]
 
-        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        weights = pnp.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         op = CustomOp(weights, wires=[0, 1])
         res = qml.matrix(op)
 
@@ -538,7 +538,7 @@ class TestTemplates:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.matrix(tape, wire_order=[0, 1])
-        np.allclose(res, expected)
+        pnp.allclose(res, expected)
 
     def test_nested_qfunc(self):
         """Test an operation that must be decomposed twice"""
@@ -555,7 +555,7 @@ class TestTemplates:
             CustomOp(weights, wires=[0, 1])
             qml.RX(x, wires=0)
 
-        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        weights = pnp.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
         res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
 
@@ -567,7 +567,7 @@ class TestTemplates:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.matrix(tape, wire_order=[0, 1])
-        np.allclose(res, expected)
+        pnp.allclose(res, expected)
 
 
 class TestValidation:
@@ -620,14 +620,14 @@ class TestInterfaces:
 
         # expected matrix
         theta_np = theta.numpy()
-        matrix1 = np.kron(
+        matrix1 = pnp.kron(
             qml.RZ(beta, wires=0).matrix(),
-            np.kron(qml.RZ(theta_np[0], wires=1).matrix(), I),
+            pnp.kron(qml.RZ(theta_np[0], wires=1).matrix(), I),
         )
-        matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix())
+        matrix2 = pnp.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
     @pytest.mark.torch
     def test_torch(self):
@@ -650,14 +650,14 @@ class TestInterfaces:
         matrix = circuit(theta)
 
         # expected matrix
-        matrix1 = np.kron(
+        matrix1 = pnp.kron(
             qml.RZ(theta[0], wires=0).matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
+            pnp.kron(qml.RZ(theta[1], wires=1).matrix(), I),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
+        matrix2 = pnp.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
     @pytest.mark.autograd
     def test_autograd(self):
@@ -670,18 +670,18 @@ class TestInterfaces:
             qml.CRY(theta[2], wires=[1, 2])
 
         # set input parameters
-        theta = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        theta = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
         matrix = circuit(theta)
 
         # expected matrix
-        matrix1 = np.kron(
+        matrix1 = pnp.kron(
             qml.RZ(theta[0], wires=0).matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
+            pnp.kron(qml.RZ(theta[1], wires=1).matrix(), I),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
+        matrix2 = pnp.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
     @pytest.mark.catalyst
     @pytest.mark.external
@@ -708,8 +708,8 @@ class TestInterfaces:
         # create a qjit-compiled QNode by passing in the plain QNode directly
         h = catalyst.qjit(f)
 
-        assert np.allclose(f(), g(), h())
-        assert np.allclose(qml.matrix(f)(), qml.matrix(g)(), qml.matrix(h)())
+        assert pnp.allclose(f(), g(), h())
+        assert pnp.allclose(qml.matrix(f)(), qml.matrix(g)(), qml.matrix(h)())
 
     @pytest.mark.jax
     def test_get_unitary_matrix_interface_jax(self):
@@ -729,19 +729,19 @@ class TestInterfaces:
         matrix = circuit(theta)
 
         # expected matrix
-        matrix1 = np.kron(
+        matrix1 = pnp.kron(
             qml.RZ(theta[0], wires=0).matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
+            pnp.kron(qml.RZ(theta[1], wires=1).matrix(), I),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
+        matrix2 = pnp.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
-        assert np.allclose(matrix, expected_matrix)
+        assert pnp.allclose(matrix, expected_matrix)
 
 
 class TestDifferentiation:
     @pytest.mark.jax
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+    @pytest.mark.parametrize("v", pnp.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
         import jax
 
@@ -761,11 +761,11 @@ class TestDifferentiation:
         matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
         assert isinstance(matrix, jax.numpy.ndarray)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
+        assert pnp.allclose(l, 2 * pnp.cos(v / 2))
+        assert pnp.allclose(dl, -pnp.sin(v / 2))
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+    @pytest.mark.parametrize("v", pnp.linspace(0.2, 1.6, 8))
     def test_torch(self, v):
         import torch
 
@@ -785,11 +785,11 @@ class TestDifferentiation:
         matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
         assert isinstance(matrix, torch.Tensor)
-        assert np.allclose(l.detach(), 2 * np.cos(v / 2))
-        assert np.allclose(dl.detach(), -np.sin(v / 2))
+        assert pnp.allclose(l.detach(), 2 * pnp.cos(v / 2))
+        assert pnp.allclose(dl.detach(), -pnp.sin(v / 2))
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+    @pytest.mark.parametrize("v", pnp.linspace(0.2, 1.6, 8))
     def test_tensorflow(self, v):
         import tensorflow as tf
 
@@ -809,10 +809,10 @@ class TestDifferentiation:
         matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
         assert isinstance(matrix, tf.Tensor)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
+        assert pnp.allclose(l, 2 * pnp.cos(v / 2))
+        assert pnp.allclose(dl, -pnp.sin(v / 2))
 
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
+    @pytest.mark.parametrize("v", pnp.linspace(0.2, 1.6, 8))
     def test_get_unitary_matrix_autograd_differentiable(self, v):
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -823,14 +823,14 @@ class TestDifferentiation:
             U = qml.matrix(circuit, wire_order=[0, 1])(theta)
             return qml.math.real(qml.math.trace(U))
 
-        x = np.array(v, requires_grad=True)
+        x = pnp.array(v, requires_grad=True)
         l = loss(x)
         dl = qml.grad(loss)(x)
         matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
         assert isinstance(matrix, qml.numpy.tensor)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
+        assert pnp.allclose(l, 2 * pnp.cos(v / 2))
+        assert pnp.allclose(dl, -pnp.sin(v / 2))
 
 
 class TestMeasurements:
@@ -846,7 +846,7 @@ class TestMeasurements:
     def test_all_measurement_matrices_are_identity(self, measurements, N):
         """Test that the matrix of a script with only observables is Identity."""
         qscript = qml.tape.QuantumScript(measurements=measurements)
-        assert np.array_equal(qml.matrix(qscript, wire_order=qscript.wires), np.eye(N))
+        assert pnp.array_equal(qml.matrix(qscript, wire_order=qscript.wires), pnp.eye(N))
 
 
 class TestWireOrderErrors:

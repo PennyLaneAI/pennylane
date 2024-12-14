@@ -17,9 +17,9 @@ Unit tests for functions needed for estimating the complexity of measuring expec
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
-coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
+coeffs = [pnp.array([-0.32707061, 0.7896887]), pnp.array([0.18121046])]
 error = 0.0016  # chemical accuracy
 shots = 419218  # computed manually
 variances = [0.73058343, 0.03283723]  # obtained with the upper bound var(pauli_word) = 1
@@ -51,5 +51,5 @@ def test_estimate_error(coefficients, err, shots_, var):
     e_novar = qml.resource.estimate_error(coefficients, shots=shots_)
     e_var = qml.resource.estimate_error(coefficients, variances=var, shots=shots_)
 
-    assert np.allclose(e_novar, err)
-    assert np.allclose(e_var, err)
+    assert pnp.allclose(e_novar, err)
+    assert pnp.allclose(e_var, err)

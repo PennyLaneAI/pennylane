@@ -17,17 +17,17 @@ Unit tests for the available qubit state preparation operations.
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.wires import WireError
 
-densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
+densitymat0 = pnp.array([[1.0, 0.0], [0.0, 0.0]])
 
 
 @pytest.mark.parametrize(
     "op",
     [
-        qml.BasisState(np.array([0, 1]), wires=[0, 1]),
-        qml.StatePrep(np.array([1.0, 0.0]), wires=0),
+        qml.BasisState(pnp.array([0, 1]), wires=[0, 1]),
+        qml.StatePrep(pnp.array([1.0, 0.0]), wires=0),
         qml.QubitDensityMatrix(densitymat0, wires=0),
     ],
 )
@@ -60,7 +60,7 @@ class TestDecomposition:
     def test_BasisState_decomposition(self):
         """Test the decomposition for BasisState"""
 
-        n = np.array([0, 1, 0])
+        n = pnp.array([0, 1, 0])
         wires = (0, 1, 2)
         ops1 = qml.BasisState.compute_decomposition(n, wires)
         ops2 = qml.BasisState(n, wires=wires).decomposition()
@@ -72,7 +72,7 @@ class TestDecomposition:
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
 
-        U = np.array([1, 0, 0, 0])
+        U = pnp.array([1, 0, 0, 0])
         wires = (0, 1)
 
         ops1 = qml.StatePrep.compute_decomposition(U, wires)
@@ -85,10 +85,10 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "state, pad_with, expected",
         [
-            (np.array([1, 0]), 0, np.array([1, 0, 0, 0])),
-            (np.array([1j, 1]) / np.sqrt(2), 0, np.array([1j, 1, 0, 0]) / np.sqrt(2)),
-            (np.array([1, 1]) / 2, 0.5, np.array([1, 1, 1, 1]) / 2),
-            (np.array([1, 1]) / 2, 0.5j, np.array([1, 1, 1j, 1j]) / 2),
+            (pnp.array([1, 0]), 0, pnp.array([1, 0, 0, 0])),
+            (pnp.array([1j, 1]) / pnp.sqrt(2), 0, pnp.array([1j, 1, 0, 0]) / pnp.sqrt(2)),
+            (pnp.array([1, 1]) / 2, 0.5, pnp.array([1, 1, 1, 1]) / 2),
+            (pnp.array([1, 1]) / 2, 0.5j, pnp.array([1, 1, 1j, 1j]) / 2),
         ],
     )
     def test_StatePrep_padding(self, state, pad_with, expected):
@@ -101,13 +101,13 @@ class TestDecomposition:
             qml.StatePrep(state, pad_with=pad_with, wires=wires)
             return qml.state()
 
-        assert np.allclose(circuit(), expected)
+        assert pnp.allclose(circuit(), expected)
 
     @pytest.mark.parametrize(
         "state",
         [
-            (np.array([1, 1, 1, 1])),
-            (np.array([1, 1j, 1j, 1])),
+            (pnp.array([1, 1, 1, 1])),
+            (pnp.array([1, 1j, 1j, 1])),
         ],
     )
     def test_StatePrep_normalize(self, state):
@@ -120,12 +120,12 @@ class TestDecomposition:
             qml.StatePrep(state, normalize=True, wires=wires)
             return qml.state()
 
-        assert np.allclose(circuit(), state / 2)
+        assert pnp.allclose(circuit(), state / 2)
 
     def test_StatePrep_broadcasting(self):
         """Test broadcasting for StatePrep."""
 
-        U = np.eye(4)[:3]
+        U = pnp.eye(4)[:3]
         wires = (0, 1)
 
         op = qml.StatePrep(U, wires=wires)
@@ -154,7 +154,7 @@ class TestStateVector:
         ket = qsv_op.state_vector(wire_order=wire_order)
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
-        assert np.allclose(np.zeros((2,) * num_wires), ket)
+        assert pnp.allclose(pnp.zeros((2,) * num_wires), ket)
 
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_positions",
@@ -176,24 +176,24 @@ class TestStateVector:
         assert ket[one_positions[0]] == 1 == ket[one_positions[1]]
         ket[one_positions[0]] = ket[one_positions[1]] = 0
         # everything else should be zero, as we assert below
-        assert np.allclose(np.zeros((2,) * (num_wires + 1)), ket)
+        assert pnp.allclose(pnp.zeros((2,) * (num_wires + 1)), ket)
 
     def test_StatePrep_reordering(self):
         """Tests that wires get re-ordered as expected."""
-        qsv_op = qml.StatePrep(np.array([1, -1, 1j, -1j]) / 2, wires=[0, 1])
+        qsv_op = qml.StatePrep(pnp.array([1, -1, 1j, -1j]) / 2, wires=[0, 1])
         ket = qsv_op.state_vector(wire_order=[2, 1, 3, 0])
-        expected = np.zeros((2, 2, 2, 2), dtype=np.complex128)
-        expected[0, :, 0, :] = np.array([[1, 1j], [-1, -1j]]) / 2
-        assert np.array_equal(ket, expected)
+        expected = pnp.zeros((2, 2, 2, 2), dtype=pnp.complex128)
+        expected[0, :, 0, :] = pnp.array([[1, 1j], [-1, -1j]]) / 2
+        assert pnp.array_equal(ket, expected)
 
     def test_StatePrep_reordering_broadcasted(self):
         """Tests that wires get re-ordered as expected with broadcasting."""
-        qsv_op = qml.StatePrep(np.array([[1, -1, 1j, -1j], [1, -1j, -1, 1j]]) / 2, wires=[0, 1])
+        qsv_op = qml.StatePrep(pnp.array([[1, -1, 1j, -1j], [1, -1j, -1, 1j]]) / 2, wires=[0, 1])
         ket = qsv_op.state_vector(wire_order=[2, 1, 3, 0])
-        expected = np.zeros((2,) * 5, dtype=np.complex128)
-        expected[0, 0, :, 0, :] = np.array([[1, 1j], [-1, -1j]]) / 2
-        expected[1, 0, :, 0, :] = np.array([[1, -1], [-1j, 1j]]) / 2
-        assert np.array_equal(ket, expected)
+        expected = pnp.zeros((2,) * 5, dtype=pnp.complex128)
+        expected[0, 0, :, 0, :] = pnp.array([[1, 1j], [-1, -1j]]) / 2
+        expected[1, 0, :, 0, :] = pnp.array([[1, -1], [-1j, 1j]]) / 2
+        assert pnp.array_equal(ket, expected)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
@@ -274,7 +274,7 @@ class TestStateVector:
 
         state = qml.numpy.array([1.0, 0.0])
         grad = qml.jacobian(circuit)(state)
-        assert np.array_equal(grad, [2.0, 0.0])
+        assert pnp.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.torch
     def test_StatePrep_backprop_torch(self):
@@ -292,7 +292,7 @@ class TestStateVector:
         res.backward()
         grad = state.grad
         assert qml.math.get_interface(grad) == "torch"
-        assert np.array_equal(grad, [2.0, 0.0])
+        assert pnp.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.jax
     def test_StatePrep_backprop_jax(self):
@@ -308,7 +308,7 @@ class TestStateVector:
         state = jax.numpy.array([1.0, 0.0])
         grad = jax.jacobian(circuit)(state)
         assert qml.math.get_interface(grad) == "jax"
-        assert np.array_equal(grad, [2.0, 0.0])
+        assert pnp.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.tf
     def test_StatePrep_backprop_tf(self):
@@ -327,7 +327,7 @@ class TestStateVector:
 
         grad = tape.jacobian(res, state)
         assert qml.math.get_interface(grad) == "tensorflow"
-        assert np.array_equal(grad, [2.0, 0.0])
+        assert pnp.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
@@ -348,15 +348,15 @@ class TestStateVector:
         assert qml.math.shape(ket) == (2,) * num_wires
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
-        assert np.allclose(np.zeros((2,) * num_wires), ket)
+        assert pnp.allclose(pnp.zeros((2,) * num_wires), ket)
 
     @pytest.mark.parametrize(
         "state",
         [
-            np.array([0, 0]),
-            np.array([1, 0]),
-            np.array([0, 1]),
-            np.array([1, 1]),
+            pnp.array([0, 0]),
+            pnp.array([1, 0]),
+            pnp.array([0, 1]),
+            pnp.array([1, 1]),
         ],
     )
     @pytest.mark.parametrize("device_wires", [3, 4, 5])
@@ -374,7 +374,7 @@ class TestStateVector:
 
         assert basis_state[one_index] == 1
         basis_state[one_index] = 0
-        assert not np.any(basis_state)
+        assert not pnp.any(basis_state)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])

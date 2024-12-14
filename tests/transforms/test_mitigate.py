@@ -21,7 +21,7 @@ import pytest
 from packaging import version
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.tape import QuantumScript
 from pennylane.transforms import (
     exponential_extrapolate,
@@ -57,7 +57,7 @@ def same_tape(tape1, tape2):
     assert all(o1.name == o2.name for o1, o2 in zip(tape1.operations, tape2.operations))
     assert all(o1.wires == o2.wires for o1, o2 in zip(tape1.operations, tape2.operations))
     assert all(
-        np.allclose(o1.parameters, o2.parameters)
+        pnp.allclose(o1.parameters, o2.parameters)
         for o1, o2 in zip(tape1.operations, tape2.operations)
     )
     assert len(tape1.measurements) == len(tape2.measurements)
@@ -109,7 +109,7 @@ class TestMitigateWithZNE:
 
         args = spy.call_args
         assert args[0][0] == scale_factors
-        assert np.allclose(args[0][1], random_results)
+        assert pnp.allclose(args[0][1], random_results)
 
         assert args[1] == extrapolate_kwargs
 
@@ -138,7 +138,7 @@ class TestMitigateWithZNE:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = [pnp.random.random(s) for s in shapes]
 
         @partial(
             qml.transforms.mitigate_with_zne,
@@ -172,7 +172,7 @@ class TestMitigateWithZNE:
         res_ideal = qml.math.stack(res_ideal)
 
         assert res_mitigated.shape == res_ideal.shape
-        assert not np.allclose(res_mitigated, res_ideal)
+        assert not pnp.allclose(res_mitigated, res_ideal)
 
     def test_reps_per_factor_not_1(self, mocker):
         """Tests if mitigation proceeds as expected when reps_per_factor is not 1 (default)"""
@@ -194,7 +194,7 @@ class TestMitigateWithZNE:
         args = spy_extrapolate.call_args
 
         assert args[0][0] == scale_factors
-        assert np.allclose(args[0][1], np.mean(np.reshape(random_results, (3, 2)), axis=1))
+        assert pnp.allclose(args[0][1], pnp.mean(pnp.reshape(random_results, (3, 2)), axis=1))
 
     def test_broadcasting(self, seed):
         """Tests that mitigate_with_zne supports batch arguments"""
@@ -214,7 +214,7 @@ class TestMitigateWithZNE:
         mitigated_qnode_expanded = qml.transforms.mitigate_with_zne(
             expanded_qnode, [1, 2, 3], fold_global, richardson_extrapolate
         )
-        rng = np.random.default_rng(seed=seed)
+        rng = pnp.random.default_rng(seed=seed)
         inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
         result_orig = mitigated_qnode_orig(inputs)
         result_expanded = mitigated_qnode_expanded(inputs)
@@ -306,7 +306,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = [pnp.random.random(s) for s in shapes]
 
         @partial(
             qml.transforms.mitigate_with_zne,
@@ -341,7 +341,7 @@ class TestMitiqIntegration:
         res_ideal = qml.math.stack(res_ideal)
 
         assert res_mitigated.shape == res_ideal.shape
-        assert not np.allclose(res_mitigated, res_ideal)
+        assert not pnp.allclose(res_mitigated, res_ideal)
 
     def test_single_return(self):
         """Tests if the expected shape is returned when mitigating a circuit with a single return"""
@@ -356,7 +356,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = [pnp.random.random(s) for s in shapes]
 
         @partial(
             qml.transforms.mitigate_with_zne,
@@ -379,7 +379,7 @@ class TestMitiqIntegration:
         res_ideal = ideal_circuit(w1, w2)
 
         assert res_mitigated.shape == res_ideal.shape
-        assert not np.allclose(res_mitigated, res_ideal)
+        assert not pnp.allclose(res_mitigated, res_ideal)
 
     def test_with_reps_per_factor(self):
         """Tests if the expected shape is returned when mitigating a circuit with a reps_per_factor
@@ -396,7 +396,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = [pnp.random.random(s) for s in shapes]
 
         @partial(
             qml.transforms.mitigate_with_zne,
@@ -420,7 +420,7 @@ class TestMitiqIntegration:
         res_ideal = ideal_circuit(w1, w2)
 
         assert res_mitigated.shape == res_ideal.shape
-        assert not np.allclose(res_mitigated, res_ideal)
+        assert not pnp.allclose(res_mitigated, res_ideal)
 
     def test_integration(self):
         """Test if the error of the mitigated result is less than the error of the unmitigated
@@ -436,7 +436,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = [pnp.random.random(s) for s in shapes]
 
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -472,10 +472,10 @@ class TestMitiqIntegration:
         noisy_val = qml.math.stack(noisy_val)
         mitigated_val = qml.math.stack(mitigated_val)
 
-        mitigated_err = np.abs(exact_val - mitigated_val)
-        noisy_err = np.abs(exact_val - noisy_val)
+        mitigated_err = pnp.abs(exact_val - mitigated_val)
+        noisy_err = pnp.abs(exact_val - noisy_val)
 
-        assert np.allclose(exact_val, [1, 1])
+        assert pnp.allclose(exact_val, [1, 1])
         assert all(mitigated_err < noisy_err)
 
     @pytest.mark.xfail(
@@ -494,7 +494,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
+        w1, w2 = [pnp.random.random(s, requires_grad=True) for s in shapes]
 
         @partial(
             qml.transforms.mitigate_with_zne,
@@ -510,7 +510,7 @@ class TestMitiqIntegration:
 
         g = qml.grad(mitigated_circuit)(w1, w2)
         for g_ in g:
-            assert not np.allclose(g_, 0)
+            assert not pnp.allclose(g_, 0)
 
 
 # qnodes for the diffable ZNE error mitigation
@@ -532,11 +532,11 @@ noise_gate = qml.PhaseDamping
 # Load devices
 dev_noisy = qml.transforms.insert(dev_ideal, noise_gate, 0.05)
 
-out_ideal = np.sqrt(2) / 2 + np.sqrt(2)
-grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
+out_ideal = pnp.sqrt(2) / 2 + pnp.sqrt(2)
+grad_ideal_0 = [-pnp.sqrt(2) / 2, -pnp.sqrt(2)]
 
-out_ideal_multi = np.array([np.sqrt(2) / 2, np.sqrt(3) / 2])
-grad_ideal_0_multi = np.array([[-np.sqrt(2) / 2, 0], [0, -0.5]])
+out_ideal_multi = pnp.array([pnp.sqrt(2) / 2, pnp.sqrt(3) / 2])
+grad_ideal_0_multi = pnp.array([[-pnp.sqrt(2) / 2, 0], [0, -0.5]])
 
 
 class TestDifferentiableZNE:
@@ -552,7 +552,7 @@ class TestDifferentiableZNE:
         n_wires = 3
         template = qml.SimplifiedTwoDesign
         weights_shape = template.shape(n_layers, n_wires)
-        w1, w2 = [np.arange(np.prod(s)).reshape(s) for s in weights_shape]
+        w1, w2 = [pnp.arange(pnp.prod(s)).reshape(s) for s in weights_shape]
 
         dev = qml.device("default.qubit", wires=range(n_wires))
 
@@ -567,12 +567,12 @@ class TestDifferentiableZNE:
         res = [
             fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in range(1, 5)
         ]
-        assert np.allclose(res, 1)
+        assert pnp.allclose(res, 1)
 
     def test_polyfit(self):
         """Testing the custom diffable _polyfit function"""
         # pylint: disable=protected-access
-        x = np.linspace(1, 4, 4)
+        x = pnp.linspace(1, 4, 4)
         y = 3.0 * x**2 + 2.0 * x + 1.0
         coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
         assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
@@ -581,8 +581,8 @@ class TestDifferentiableZNE:
     def test_exponential_extrapolation_accuracy(self, exp_params):
         """Testing the exponential extrapolation works as expected for known exponential models."""
         A, B, asymptote = exp_params
-        x = np.linspace(1, 4, 4)
-        y = A * np.exp(B * x) + asymptote
+        x = pnp.linspace(1, 4, 4)
+        y = A * pnp.exp(B * x) + asymptote
         zne_val = qml.transforms.exponential_extrapolate(x, y, asymptote=asymptote)
         assert qml.math.allclose(zne_val, A + asymptote, atol=1e-3)
 
@@ -590,9 +590,9 @@ class TestDifferentiableZNE:
     def test_exponential_extrapolation_autograd(self):
         """Test exponential extrapolation works with expvals stored as a numpy array."""
         scale_factors = [1, 3, 5]
-        noise_scaled_expvals = np.array([0.9, 0.8, 0.7])
+        noise_scaled_expvals = pnp.array([0.9, 0.8, 0.7])
         zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
-        assert isinstance(zne_val, np.ndarray)
+        assert isinstance(zne_val, pnp.ndarray)
         assert zne_val.ndim == 0
 
     @pytest.mark.tf
@@ -639,7 +639,7 @@ class TestDifferentiableZNE:
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
-        theta = np.array([np.pi / 4, np.pi / 4], requires_grad=True)
+        theta = pnp.array([pnp.pi / 4, pnp.pi / 4], requires_grad=True)
 
         res = mitigated_qnode(theta)
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
@@ -665,7 +665,7 @@ class TestDifferentiableZNE:
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = jnp.array(
-            [np.pi / 4, np.pi / 4],
+            [pnp.pi / 4, pnp.pi / 4],
         )
 
         res = mitigated_qnode(theta)
@@ -694,7 +694,7 @@ class TestDifferentiableZNE:
         )
 
         theta = jnp.array(
-            [np.pi / 4, np.pi / 4],
+            [pnp.pi / 4, pnp.pi / 4],
         )
 
         res = mitigated_qnode(theta)
@@ -719,14 +719,14 @@ class TestDifferentiableZNE:
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
-        theta = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
+        theta = torch.tensor([pnp.pi / 4, pnp.pi / 4], requires_grad=True)
 
         res = mitigated_qnode(theta)
 
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
         res.backward()
         grad = theta.grad
-        theta0 = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
+        theta0 = torch.tensor([pnp.pi / 4, pnp.pi / 4], requires_grad=True)
         res_ideal = qnode_ideal(theta0)
         res_ideal.backward()
         grad_ideal = theta0.grad
@@ -747,7 +747,7 @@ class TestDifferentiableZNE:
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
-        theta = tf.Variable([np.pi / 4, np.pi / 4])
+        theta = tf.Variable([pnp.pi / 4, pnp.pi / 4])
 
         with tf.GradientTape() as t:
             res = mitigated_qnode(theta)
@@ -774,7 +774,7 @@ class TestDifferentiableZNE:
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
-        theta = np.array([np.pi / 4, np.pi / 6], requires_grad=True)
+        theta = pnp.array([pnp.pi / 4, pnp.pi / 6], requires_grad=True)
 
         res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
@@ -801,7 +801,7 @@ class TestDifferentiableZNE:
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = jnp.array(
-            [np.pi / 4, np.pi / 6],
+            [pnp.pi / 4, pnp.pi / 6],
         )
 
         res = qml.math.stack(mitigated_qnode(theta))
@@ -831,7 +831,7 @@ class TestDifferentiableZNE:
         )
 
         theta = jnp.array(
-            [np.pi / 4, np.pi / 6],
+            [pnp.pi / 4, pnp.pi / 6],
         )
 
         res = qml.math.stack(mitigated_qnode(theta))
@@ -857,7 +857,7 @@ class TestDifferentiableZNE:
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
-        theta = torch.tensor([np.pi / 4, np.pi / 6], requires_grad=True)
+        theta = torch.tensor([pnp.pi / 4, pnp.pi / 6], requires_grad=True)
 
         res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
@@ -885,7 +885,7 @@ class TestDifferentiableZNE:
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
-        theta = tf.Variable([np.pi / 4, np.pi / 6])
+        theta = tf.Variable([pnp.pi / 4, pnp.pi / 6])
 
         with tf.GradientTape() as t:
             res = qml.math.stack(mitigated_qnode(theta))

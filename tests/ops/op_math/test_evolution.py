@@ -15,7 +15,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.ops.op_math import Evolution, Exp
 
 
@@ -52,7 +52,7 @@ class TestEvolution:
         op1 = Exp(base_op, 1j)
         op2 = Evolution(base_op, -1)
 
-        assert np.all(op1.matrix() == op2.matrix())
+        assert pnp.all(op1.matrix() == op2.matrix())
 
     def test_has_generator_true(self):
         """Test that has_generator returns True if the coefficient is purely imaginary."""
@@ -81,7 +81,7 @@ class TestEvolution:
     def test_data(self):
         """Test initializing and accessing the data property."""
 
-        param = np.array(1.234)
+        param = pnp.array(1.234)
 
         base = qml.PauliX(0)
         op = Evolution(base, param)
@@ -90,7 +90,7 @@ class TestEvolution:
         assert op.coeff == -1j * op.data[0]
         assert op.param == op.data[0]
 
-        new_param = np.array(2.345)
+        new_param = pnp.array(2.345)
         op.data = (new_param,)
 
         assert op.data == (new_param,)
@@ -156,7 +156,7 @@ class TestEvolution:
 
         dev = qml.device("default.qubit", wires=2)
         base = qml.PauliX(0)
-        x = np.array(1.234)
+        x = pnp.array(1.234)
 
         @qml.qnode(dev, diff_method=qml.gradients.param_shift)
         def circ_param_shift(x):
@@ -201,7 +201,7 @@ class TestEvolution:
 
     def test_generator_error_if_not_hermitian(self):
         """Tests that an error is raised if the generator is not hermitian."""
-        op = Evolution(qml.RX(np.pi / 3, 0), 1)
+        op = Evolution(qml.RX(pnp.pi / 3, 0), 1)
 
         with pytest.raises(
             qml.QuantumFunctionError, match="of operation Evolution is not hermitian"

@@ -19,7 +19,7 @@ from unittest import mock
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.gradients import param_shift_cv
 from pennylane.gradients.gradient_transform import choose_trainable_params
 from pennylane.gradients.parameter_shift_cv import (
@@ -213,19 +213,19 @@ class TestTransformObservable:
         monkeypatch.setattr(qml.QuadP, "ev_order", 2)
 
         with pytest.raises(ValueError, match="Mismatch between the polynomial order"):
-            _transform_observable(qml.QuadP(0), np.identity(3), device_wires=[0])
+            _transform_observable(qml.QuadP(0), pnp.identity(3), device_wires=[0])
 
     def test_higher_order_observable(self, monkeypatch):
         """An exception should be raised if the observable is higher than 2nd order."""
         monkeypatch.setattr(qml.QuadP, "ev_order", 3)
 
         with pytest.raises(NotImplementedError, match="order > 2 not implemented"):
-            _transform_observable(qml.QuadP(0), np.identity(3), device_wires=[0])
+            _transform_observable(qml.QuadP(0), pnp.identity(3), device_wires=[0])
 
     def test_first_order_transform(self, tol):
         """Test that a first order observable is transformed correctly"""
         # create a symmetric transformation
-        Z = np.arange(3**2).reshape(3, 3)
+        Z = pnp.arange(3**2).reshape(3, 3)
         Z = Z.T + Z
 
         obs = qml.QuadX(0)
@@ -233,16 +233,16 @@ class TestTransformObservable:
 
         # The Heisenberg representation of the X
         # operator is simply... X
-        expected = np.array([0, 1, 0]) @ Z
+        expected = pnp.array([0, 1, 0]) @ Z
 
         assert isinstance(res, qml.PolyXP)
         assert res.wires.labels == (0,)
-        assert np.allclose(res.data[0], expected, atol=tol, rtol=0)
+        assert pnp.allclose(res.data[0], expected, atol=tol, rtol=0)
 
     def test_second_order_transform(self, tol):
         """Test that a second order observable is transformed correctly"""
         # create a symmetric transformation
-        Z = np.arange(3**2).reshape(3, 3)
+        Z = pnp.arange(3**2).reshape(3, 3)
         Z = Z.T + Z
 
         obs = qml.NumberOperator(0)
@@ -250,12 +250,12 @@ class TestTransformObservable:
 
         # The Heisenberg representation of the number operator
         # is (X^2 + P^2) / (2*hbar) - 1/2
-        A = np.array([[-0.5, 0, 0], [0, 0.25, 0], [0, 0, 0.25]])
+        A = pnp.array([[-0.5, 0, 0], [0, 0.25, 0], [0, 0, 0.25]])
         expected = A @ Z + Z @ A
 
         assert isinstance(res, qml.PolyXP)
         assert res.wires.labels == (0,)
-        assert np.allclose(res.data[0], expected, atol=tol, rtol=0)
+        assert pnp.allclose(res.data[0], expected, atol=tol, rtol=0)
 
     def test_device_wire_expansion(self, tol):
         """Test that the transformation works correctly
@@ -266,7 +266,7 @@ class TestTransformObservable:
         wires = qml.wires.Wires([0, "a", 2])
         ndim = 1 + 2 * len(wires)
 
-        Z = np.arange(ndim**2).reshape(ndim, ndim)
+        Z = pnp.arange(ndim**2).reshape(ndim, ndim)
         Z = Z.T + Z
 
         obs = qml.NumberOperator(0)
@@ -275,12 +275,12 @@ class TestTransformObservable:
         # The Heisenberg representation of the number operator
         # is (X^2 + P^2) / (2*hbar) - 1/2. We use the ordering
         # I, X0, Xa, X2, P0, Pa, P2.
-        A = np.diag([-0.5, 0.25, 0.25, 0, 0, 0, 0])
+        A = pnp.diag([-0.5, 0.25, 0.25, 0, 0, 0, 0])
         expected = A @ Z + Z @ A
 
         assert isinstance(res, qml.PolyXP)
         assert res.wires == wires
-        assert np.allclose(res.data[0], expected, atol=tol, rtol=0)
+        assert pnp.allclose(res.data[0], expected, atol=tol, rtol=0)
 
 
 class TestParameterShiftLogic:
@@ -386,10 +386,10 @@ class TestParameterShiftLogic:
             qml.Rotation(params[0], wires=0)
             return qml.expval(qml.QuadX(1))
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.param_shift_cv(circuit, dev)(params)
-        assert np.allclose(result, np.zeros((2, 3)), atol=0, rtol=0)
+        assert pnp.allclose(result, pnp.zeros((2, 3)), atol=0, rtol=0)
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
@@ -435,7 +435,7 @@ class TestParameterShiftLogic:
             transformed_obs.parameters[0]`` the condition ``len(A.nonzero()[0])
             == 1 and A.ndim == 2 and A[0, 0] != 0`` is ``True``."""
             iden = qml.Identity(0)
-            iden.data = (np.array([[1, 0], [0, 0]]),)
+            iden.data = (pnp.array([[1, 0], [0, 0]]),)
             return iden
 
         monkeypatch.setattr(
@@ -522,7 +522,7 @@ class TestParameterShiftLogic:
         assert len(tapes) == 2
 
         res = fn(dev.batch_execute(tapes))
-        assert np.allclose(res, [0, 2])
+        assert pnp.allclose(res, [0, 2])
 
         tape.trainable_params = {0, 2}
         tapes, fn = qml.gradients.param_shift_cv(tape, dev, force_order2=True)
@@ -532,7 +532,7 @@ class TestParameterShiftLogic:
         assert len(tapes) == 0
 
         res = fn(dev.batch_execute(tapes))
-        assert np.allclose(res, [0, 2])
+        assert pnp.allclose(res, [0, 2])
 
     def test_all_independent(self):
         """Test the case where expectation values are independent of all parameters."""
@@ -549,7 +549,7 @@ class TestParameterShiftLogic:
         assert len(tapes) == 0
 
         grad = fn(dev.batch_execute(tapes))
-        assert np.allclose(grad, [0, 0])
+        assert pnp.allclose(grad, [0, 0])
 
 
 class TestExpectationQuantumGradients:
@@ -558,7 +558,7 @@ class TestExpectationQuantumGradients:
 
     @pytest.mark.parametrize(
         "gradient_recipes",
-        [None, ([[1 / np.sqrt(2), 1, np.pi / 4], [-1 / np.sqrt(2), 1, -np.pi / 4]],)],
+        [None, ([[1 / pnp.sqrt(2), 1, pnp.pi / 4], [-1 / pnp.sqrt(2), 1, -pnp.pi / 4]],)],
     )
     def test_rotation_gradient(self, gradient_recipes, mocker, tol):
         """Test the gradient of the rotation gate"""
@@ -585,9 +585,9 @@ class TestExpectationQuantumGradients:
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
-        expected = -hbar * alpha * np.sin(theta)
-        assert np.allclose(grad_A, expected, atol=tol, rtol=0)
-        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
+        expected = -hbar * alpha * pnp.sin(theta)
+        assert pnp.allclose(grad_A, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A2, expected, atol=tol, rtol=0)
 
     def test_beamsplitter_gradient(self, mocker, tol):
         """Test the gradient of the beamsplitter gate"""
@@ -614,9 +614,9 @@ class TestExpectationQuantumGradients:
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
-        expected = -hbar * alpha * np.sin(theta)
-        assert np.allclose(grad_A, expected, atol=tol, rtol=0)
-        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
+        expected = -hbar * alpha * pnp.sin(theta)
+        assert pnp.allclose(grad_A, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A2, expected, atol=tol, rtol=0)
 
     def test_displacement_gradient(self, mocker, tol):
         """Test the gradient of the displacement gate"""
@@ -642,9 +642,9 @@ class TestExpectationQuantumGradients:
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
-        expected = [hbar * np.cos(phi), -hbar * r * np.sin(phi)]
-        assert np.allclose(grad_A, expected, atol=tol, rtol=0)
-        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
+        expected = [hbar * pnp.cos(phi), -hbar * r * pnp.sin(phi)]
+        assert pnp.allclose(grad_A, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A2, expected, atol=tol, rtol=0)
 
     def test_squeezed_gradient(self, mocker, tol):
         """Test the gradient of the squeezed gate. We also
@@ -688,9 +688,9 @@ class TestExpectationQuantumGradients:
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
-        expected = -np.exp(-r) * hbar * alpha
-        assert np.allclose(grad_A, expected, atol=tol, rtol=0)
-        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
+        expected = -pnp.exp(-r) * hbar * alpha
+        assert pnp.allclose(grad_A, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A2, expected, atol=tol, rtol=0)
 
     def test_squeezed_number_state_gradient(self, mocker, tol):
         """Test the numerical gradient of the squeeze gate with
@@ -702,7 +702,7 @@ class TestExpectationQuantumGradients:
         with qml.queuing.AnnotatedQueue() as q:
             qml.Squeezing(r, 0.0, wires=[0])
             # the fock state projector is a 'non-Gaussian' observable
-            qml.expval(qml.FockStateProjector(np.array([2, 0]), wires=[0, 1]))
+            qml.expval(qml.FockStateProjector(pnp.array([2, 0]), wires=[0, 1]))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
@@ -717,8 +717,8 @@ class TestExpectationQuantumGradients:
         assert spy2.spy_return == {0: "F"}
 
         # (d/dr) |<2|S(r)>|^2 = 0.5 tanh(r)^3 (2 csch(r)^2 - 1) sech(r)
-        expected = 0.5 * np.tanh(r) ** 3 * (2 / (np.sinh(r) ** 2) - 1) / np.cosh(r)
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        expected = 0.5 * pnp.tanh(r) ** 3 * (2 / (pnp.sinh(r) ** 2) - 1) / pnp.cosh(r)
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_multiple_squeezing_gradient(self, mocker, tol):
         """Test that the gradient of a circuit with two squeeze
@@ -739,17 +739,17 @@ class TestExpectationQuantumGradients:
         spy2.assert_called()
 
         # check against the known analytic formula
-        expected = np.zeros([4])
-        expected[0] = np.cosh(2 * r1) * np.sinh(2 * r0) + np.cos(phi0 - phi1) * np.cosh(
+        expected = pnp.zeros([4])
+        expected[0] = pnp.cosh(2 * r1) * pnp.sinh(2 * r0) + pnp.cos(phi0 - phi1) * pnp.cosh(
             2 * r0
-        ) * np.sinh(2 * r1)
-        expected[1] = -0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
-        expected[2] = np.cos(phi0 - phi1) * np.cosh(2 * r1) * np.sinh(2 * r0) + np.cosh(
+        ) * pnp.sinh(2 * r1)
+        expected[1] = -0.5 * pnp.sin(phi0 - phi1) * pnp.sinh(2 * r0) * pnp.sinh(2 * r1)
+        expected[2] = pnp.cos(phi0 - phi1) * pnp.cosh(2 * r1) * pnp.sinh(2 * r0) + pnp.cosh(
             2 * r0
-        ) * np.sinh(2 * r1)
-        expected[3] = 0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
+        ) * pnp.sinh(2 * r1)
+        expected[3] = 0.5 * pnp.sin(phi0 - phi1) * pnp.sinh(2 * r0) * pnp.sinh(2 * r1)
 
-        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A2, expected, atol=tol, rtol=0)
 
     def test_multiple_second_order_observables(self):
         """Test that the gradient of a circuit with multiple
@@ -808,12 +808,12 @@ class TestExpectationQuantumGradients:
         for method in spy.spy_return.values():
             assert method == "A"
 
-        assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
         if obs.ev_order == 1:
             tapes, fn = param_shift_cv(tape, dev)
             grad_A = fn(dev.batch_execute(tapes))
-            assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+            assert pnp.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("t", [0, 1])
     def test_interferometer_unitary(self, mocker, t, tol):
@@ -856,7 +856,7 @@ class TestExpectationQuantumGradients:
             # >>> print(circuit.jacobian([r, phi], options={"force_order2":True}))
             # [[ 1.02620552 -0.88728552]]
 
-        U = np.array(
+        U = pnp.array(
             [
                 [0.51310276 + 0.81702166j, 0.13649626 + 0.22487759j],
                 [0.26300233 + 0.00556194j, -0.96414101 - 0.03508489j],
@@ -888,8 +888,8 @@ class TestExpectationQuantumGradients:
         assert spy.spy_return[0] == "A"
 
         # the different methods agree
-        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
-        assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A, grad_F, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
 
 class TestVarianceQuantumGradients:
@@ -912,8 +912,8 @@ class TestVarianceQuantumGradients:
         tape.trainable_params = {0, 2}
 
         res = qml.execute([tape], dev, None)
-        expected = np.exp(2 * r) * np.sin(phi) ** 2 + np.exp(-2 * r) * np.cos(phi) ** 2
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = pnp.exp(2 * r) * pnp.sin(phi) ** 2 + pnp.exp(-2 * r) * pnp.cos(phi) ** 2
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -922,16 +922,16 @@ class TestVarianceQuantumGradients:
         tapes, fn = param_shift_cv(tape, dev)
         grad_A = fn(dev.batch_execute(tapes))
 
-        expected = np.array(
+        expected = pnp.array(
             [
                 [
-                    2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                    2 * np.sinh(2 * r) * np.sin(2 * phi),
+                    2 * pnp.exp(2 * r) * pnp.sin(phi) ** 2 - 2 * pnp.exp(-2 * r) * pnp.cos(phi) ** 2,
+                    2 * pnp.sinh(2 * r) * pnp.sin(2 * phi),
                 ]
             ]
         )
-        assert np.allclose(grad_A, expected, atol=tol, rtol=0)
-        assert np.allclose(grad_F, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad_F, expected, atol=tol, rtol=0)
 
     def test_second_order_cv(self, tol):
         """Test variance of a second order CV expectation value"""
@@ -949,15 +949,15 @@ class TestVarianceQuantumGradients:
         tape.trainable_params = {0, 1}
 
         res = qml.execute([tape], dev, None)
-        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = n**2 + n + pnp.abs(a) ** 2 * (1 + 2 * n)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         tapes, fn = qml.gradients.finite_diff(tape)
         grad_F = fn(dev.batch_execute(tapes))
 
-        expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
-        assert np.allclose(grad_F, expected, atol=tol, rtol=0)
+        expected = pnp.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        assert pnp.allclose(grad_F, expected, atol=tol, rtol=0)
 
     def test_expval_and_variance(self):
         """Test that the gradient works for a combination of CV expectation
@@ -1065,8 +1065,8 @@ class TestVarianceQuantumGradients:
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
         grad_A2 = fn(dev.batch_execute(tapes))
 
-        assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
-        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
         if obs != qml.NumberOperator:
             assert all(m == "A" for m in spy.spy_return.values())
@@ -1087,13 +1087,13 @@ class TestVarianceQuantumGradients:
         tape.trainable_params = {0, 2}
         tapes, fn = param_shift_cv(tape, dev)
         grad = fn(dev.batch_execute(tapes))
-        expected = np.array(
+        expected = pnp.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                2 * np.sinh(2 * r) * np.sin(2 * phi),
+                2 * pnp.exp(2 * r) * pnp.sin(phi) ** 2 - 2 * pnp.exp(-2 * r) * pnp.cos(phi) ** 2,
+                2 * pnp.sinh(2 * r) * pnp.sin(2 * phi),
             ]
         )
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_displaced_thermal_mean_photon_variance(self, tol):
         """Test gradient of the photon variance of a displaced thermal state"""
@@ -1111,8 +1111,8 @@ class TestVarianceQuantumGradients:
         tape.trainable_params = {0, 1}
         tapes, fn = param_shift_cv(tape, dev)
         grad = fn(dev.batch_execute(tapes))
-        expected = np.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        expected = pnp.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
 
 class TestParamShiftInterfaces:
@@ -1133,16 +1133,16 @@ class TestParamShiftInterfaces:
             qml.Rotation(x[1], wires=0)
             return qml.var(qml.QuadX(wires=[0]))
 
-        params = np.array([r, phi], requires_grad=True)
+        params = pnp.array([r, phi], requires_grad=True)
 
         grad = qml.jacobian(cost_fn)(params)
-        expected = np.array(
+        expected = pnp.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                2 * np.sinh(2 * r) * np.sin(2 * phi),
+                2 * pnp.exp(2 * r) * pnp.sin(phi) ** 2 - 2 * pnp.exp(-2 * r) * pnp.cos(phi) ** 2,
+                2 * pnp.sinh(2 * r) * pnp.sin(2 * phi),
             ]
         )
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -1171,19 +1171,19 @@ class TestParamShiftInterfaces:
 
         r, phi = 1.0 * params
 
-        expected = np.array(
+        expected = pnp.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                2 * np.sinh(2 * r) * np.sin(2 * phi),
+                2 * pnp.exp(2 * r) * pnp.sin(phi) ** 2 - 2 * pnp.exp(-2 * r) * pnp.cos(phi) ** 2,
+                2 * pnp.sinh(2 * r) * pnp.sin(2 * phi),
             ]
         )
-        assert np.allclose(jac, expected, atol=tol, rtol=0)
+        assert pnp.allclose(jac, expected, atol=tol, rtol=0)
 
         grad = t.jacobian(res, params)
-        expected = np.array(
-            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
+        expected = pnp.array(
+            [4 * pnp.cosh(2 * r) * pnp.sin(2 * phi), 4 * pnp.cos(2 * phi) * pnp.sinh(2 * r)]
         )
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert pnp.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):
@@ -1208,23 +1208,23 @@ class TestParamShiftInterfaces:
 
         r, phi = params.detach().numpy()
 
-        expected = np.array(
+        expected = pnp.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                2 * np.sinh(2 * r) * np.sin(2 * phi),
+                2 * pnp.exp(2 * r) * pnp.sin(phi) ** 2 - 2 * pnp.exp(-2 * r) * pnp.cos(phi) ** 2,
+                2 * pnp.sinh(2 * r) * pnp.sin(2 * phi),
             ]
         )
-        assert np.allclose(jac[0].detach().numpy(), expected[0], atol=tol, rtol=0)
-        assert np.allclose(jac[1].detach().numpy(), expected[1], atol=tol, rtol=0)
+        assert pnp.allclose(jac[0].detach().numpy(), expected[0], atol=tol, rtol=0)
+        assert pnp.allclose(jac[1].detach().numpy(), expected[1], atol=tol, rtol=0)
 
         cost = jac[1]
         cost.backward()
         hess = params.grad
-        expected = np.array(
-            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
+        expected = pnp.array(
+            [4 * pnp.cosh(2 * r) * pnp.sin(2 * phi), 4 * pnp.cos(2 * phi) * pnp.sinh(2 * r)]
         )
 
-        assert np.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
+        assert pnp.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, tol):
@@ -1254,19 +1254,19 @@ class TestParamShiftInterfaces:
 
         r, phi = params
         res = cost_fn(params)
-        expected = np.array(
+        expected = pnp.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                2 * np.sinh(2 * r) * np.sin(2 * phi),
+                2 * pnp.exp(2 * r) * pnp.sin(phi) ** 2 - 2 * pnp.exp(-2 * r) * pnp.cos(phi) ** 2,
+                2 * pnp.sinh(2 * r) * pnp.sin(2 * phi),
             ]
         )
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
         res = jax.jacobian(cost_fn)(params)
 
-        expected = np.array(
-            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
+        expected = pnp.array(
+            [4 * pnp.cosh(2 * r) * pnp.sin(2 * phi), 4 * pnp.cos(2 * phi) * pnp.sinh(2 * r)]
         )
 
-        assert np.allclose(res[1], expected, atol=tol, rtol=0)
+        assert pnp.allclose(res[1], expected, atol=tol, rtol=0)

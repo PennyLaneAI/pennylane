@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import PauliX, PauliY, PauliZ
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane import qchem
 from pennylane.fermi import from_string
 
@@ -29,7 +29,7 @@ from pennylane.fermi import from_string
     [
         (
             ["H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
             ),
             1,
@@ -37,7 +37,7 @@ from pennylane.fermi import from_string
             None,
             [0.000, 0.000, 0.000],  # computed with PL-QChem dipole function
             # computed with PL-QChem dipole function using OpenFermion and PySCF
-            np.array(
+            pnp.array(
                 [
                     [
                         [0.95622463, -0.7827277, -0.53222294],
@@ -55,7 +55,7 @@ from pennylane.fermi import from_string
         ),
         (
             ["H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=True
             ),
             1,
@@ -64,7 +64,7 @@ from pennylane.fermi import from_string
             # computed manually from data obtained with PL-QChem dipole function
             [2 * 0.95622463, 2 * 0.55538736, 0.000],
             # computed manually from data obtained with PL-QChem dipole function
-            np.array(
+            pnp.array(
                 [
                     [
                         [1.42895581, -0.23469918],
@@ -87,8 +87,8 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
     constants, integrals = qchem.dipole_integrals(mol, core=core, active=active)(*args)
 
     for i in range(3):  # loop on x, y, z components
-        assert np.allclose(constants[i], core_ref[i])
-        assert np.allclose(integrals[i], int_ref[i])
+        assert pnp.allclose(constants[i], core_ref[i])
+        assert pnp.allclose(integrals[i], int_ref[i])
 
 
 @pytest.mark.parametrize(
@@ -96,7 +96,7 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
     [
         (
             ["H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
             ),
             1,
@@ -126,7 +126,7 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
         ),
         (
             ["H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
             ),
             1,
@@ -153,7 +153,7 @@ def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
     args = [p for p in [geometry] if p.requires_grad]
     f = qchem.fermionic_dipole(mol, core=core, active=active)(*args)[0]
 
-    assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
+    assert pnp.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert f[1] == f_ref[1]  # fermionic operators
 
 
@@ -162,13 +162,13 @@ def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
             0,
             None,
             None,
             # coefficients and operators of the dipole observable computed with
             # PL-QChem dipole function using OpenFermion and PySCF
-            np.array([0.5, 0.5, -0.5640321, -0.5640321, -0.5640321, -0.5640321, 0.5, 0.5]),
+            pnp.array([0.5, 0.5, -0.5640321, -0.5640321, -0.5640321, -0.5640321, 0.5, 0.5]),
             [
                 PauliZ(wires=[0]),
                 PauliZ(wires=[1]),
@@ -193,11 +193,11 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     d_coeff, d_ops = d.terms()
     dref_coeff, dref_ops = d_ref.terms()
 
-    assert np.allclose(sorted(d_coeff), sorted(dref_coeff))
-    assert qml.Hamiltonian(np.ones(len(d_coeff)), d_ops).compare(
-        qml.Hamiltonian(np.ones(len(dref_coeff)), dref_ops)
+    assert pnp.allclose(sorted(d_coeff), sorted(dref_coeff))
+    assert qml.Hamiltonian(pnp.ones(len(d_coeff)), d_ops).compare(
+        qml.Hamiltonian(pnp.ones(len(dref_coeff)), dref_ops)
     )
-    assert np.allclose(
+    assert pnp.allclose(
         qml.matrix(d, wire_order=[0, 1, 2, 3]),
         qml.matrix(d_ref, wire_order=[0, 1, 2, 3]),
     )
@@ -208,7 +208,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     [
         (
             ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
             None,
             None,
         ),
@@ -218,10 +218,10 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     r"""Test that the dipole moment is constructed properly with basis sets having different numbers
     of primitive Gaussian functions."""
     alpha = [
-        np.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
-        np.array([0.16127776], requires_grad=True),
-        np.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
-        np.array([0.16127776], requires_grad=True),
+        pnp.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
+        pnp.array([0.16127776], requires_grad=True),
+        pnp.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
+        pnp.array([0.16127776], requires_grad=True),
     ]
     mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha, basis_name="6-31g")
     args = [alpha]
@@ -234,7 +234,7 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     [
         (
             ["H", "H", "H"],
-            np.array(
+            pnp.array(
                 [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
             ),
             1,
@@ -262,15 +262,15 @@ def test_expvalD(symbols, geometry, charge, d_ref):
 
     for i in range(3):  # loop on x, y, z components
         d = dipole(mol, i)(*args)
-        assert np.allclose(d, d_ref[i])
+        assert pnp.allclose(d, d_ref[i])
 
 
 def test_gradient_expvalD():
     r"""Test that the gradient of expval(D) computed with ``qml.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [1.0, 1.7, 0.0], [2.0, 0.0, 0.0]], requires_grad=False)
-    alpha = np.array(
+    geometry = pnp.array([[0.0, 0.0, 0.0], [1.0, 1.7, 0.0], [2.0, 0.0, 0.0]], requires_grad=False)
+    alpha = pnp.array(
         [
             [3.42525091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
@@ -297,7 +297,7 @@ def test_gradient_expvalD():
 
     grad_qml = qml.grad(dipole(mol))(*args)
 
-    alpha_1 = np.array(
+    alpha_1 = pnp.array(
         [
             [3.42515091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
@@ -306,7 +306,7 @@ def test_gradient_expvalD():
         requires_grad=False,
     )  # alpha[0][0] -= 0.0001
 
-    alpha_2 = np.array(
+    alpha_2 = pnp.array(
         [
             [3.42535091, 0.62391373, 0.1688554],
             [3.42525091, 0.62391373, 0.1688554],
@@ -320,4 +320,4 @@ def test_gradient_expvalD():
 
     grad_finitediff = (d_2 - d_1) / 0.0002
 
-    assert np.allclose(grad_qml[0][0], grad_finitediff)
+    assert pnp.allclose(grad_qml[0][0], grad_finitediff)

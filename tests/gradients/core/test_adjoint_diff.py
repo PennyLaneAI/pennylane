@@ -18,7 +18,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 
 class TestAdjointJacobian:
@@ -61,7 +61,7 @@ class TestAdjointJacobian:
         with qml.queuing.AnnotatedQueue() as q:
             qml.expval(
                 qml.ops.LinearCombination(
-                    [np.array(-0.05), np.array(0.17)],
+                    [pnp.array(-0.05), pnp.array(0.17)],
                     [qml.PauliX(0), qml.PauliZ(0)],
                 )
             )
@@ -103,13 +103,13 @@ class TestAdjointJacobian:
             dev.adjoint_jacobian(tape)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", pnp.linspace(-2 * pnp.pi, 2 * pnp.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
     def test_pauli_rotation_gradient(self, G, theta, tol, dev):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2), wires=0)
             G(theta, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -122,19 +122,19 @@ class TestAdjointJacobian:
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(qml.execute(tapes, dev, None))
 
-        assert isinstance(calculated_val, np.ndarray)
+        assert isinstance(calculated_val, pnp.ndarray)
         assert calculated_val.shape == ()
-        assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
+        assert pnp.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", pnp.linspace(-2 * pnp.pi, 2 * pnp.pi, 7))
     def test_Rot_gradient(self, theta, tol, dev):
         """Tests that the device gradient of an arbitrary Euler-angle-parametrized gate is
         correct."""
-        params = np.array([theta, theta**3, np.sqrt(2) * theta])
+        params = pnp.array([theta, theta**3, pnp.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -149,8 +149,8 @@ class TestAdjointJacobian:
 
         assert isinstance(calculated_val, tuple)
         assert len(calculated_val) == 3
-        assert all(isinstance(val, np.ndarray) and val.shape == () for val in calculated_val)
-        assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
+        assert all(isinstance(val, pnp.ndarray) and val.shape == () for val in calculated_val)
+        assert pnp.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
     def test_ry_gradient(self, tol, dev):
         """Test that the gradient of the RY gate matches the exact analytic formula."""
@@ -165,15 +165,15 @@ class TestAdjointJacobian:
         tape.trainable_params = {0}
 
         # gradients
-        exact = np.cos(par)
+        exact = pnp.cos(par)
         tapes, fn = qml.gradients.finite_diff(tape)
         grad_F = fn(qml.execute(tapes, dev, None))
         grad_A = dev.adjoint_jacobian(tape)
 
         # different methods must agree
-        assert isinstance(grad_A, np.ndarray) and grad_A.shape == ()
-        assert np.allclose(grad_F, exact, atol=tol, rtol=0)
-        assert np.allclose(grad_A, exact, atol=tol, rtol=0)
+        assert isinstance(grad_A, pnp.ndarray) and grad_A.shape == ()
+        assert pnp.allclose(grad_F, exact, atol=tol, rtol=0)
+        assert pnp.allclose(grad_A, exact, atol=tol, rtol=0)
 
     def test_rx_gradient(self, tol, dev):
         """Test that the gradient of the RX gate matches the known formula."""
@@ -186,16 +186,16 @@ class TestAdjointJacobian:
         tape = qml.tape.QuantumScript.from_queue(q)
         # circuit jacobians
         dev_jacobian = dev.adjoint_jacobian(tape)
-        expected_jacobian = -np.sin(a)
+        expected_jacobian = -pnp.sin(a)
 
-        assert isinstance(dev_jacobian, np.ndarray)
+        assert isinstance(dev_jacobian, pnp.ndarray)
         assert dev_jacobian.shape == ()
-        assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
+        assert pnp.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
 
     def test_multiple_rx_gradient(self, tol):
         """Tests that the gradient of multiple RX gates in a circuit yields the correct result."""
         dev = DefaultQubitLegacy(wires=3)
-        params = np.array([np.pi, np.pi / 2, np.pi / 3])
+        params = pnp.array([pnp.pi, pnp.pi / 2, pnp.pi / 3])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(params[0], wires=0)
@@ -211,10 +211,10 @@ class TestAdjointJacobian:
         assert isinstance(dev_jacobian, tuple)
         assert len(dev_jacobian) == 3
         assert all(isinstance(jac, tuple) and len(jac) == 3 for jac in dev_jacobian)
-        assert all(all(isinstance(j, np.ndarray) for j in jac) for jac in dev_jacobian)
+        assert all(all(isinstance(j, pnp.ndarray) for j in jac) for jac in dev_jacobian)
 
-        expected_jacobian = -np.diag(np.sin(params))
-        assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
+        expected_jacobian = -pnp.diag(pnp.sin(params))
+        assert pnp.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
 
     ops = {qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.CRX, qml.CRY, qml.CRZ, qml.Rot}
 
@@ -253,12 +253,12 @@ class TestAdjointJacobian:
         assert len(grad_D) == 2
 
         if op.num_params == 1:
-            assert all(isinstance(g, np.ndarray) and g.shape == () for g in grad_D)
+            assert all(isinstance(g, pnp.ndarray) and g.shape == () for g in grad_D)
         else:
             assert all(isinstance(g, tuple) and len(g) == op.num_params for g in grad_D)
-            assert all(all(isinstance(_g, np.ndarray) for _g in g) for g in grad_D)
+            assert all(all(isinstance(_g, pnp.ndarray) for _g in g) for g in grad_D)
 
-        assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
+        assert pnp.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_gradient_gate_with_multiple_parameters(self, tol, dev):
@@ -281,11 +281,11 @@ class TestAdjointJacobian:
         # gradient has the correct shape and every element is nonzero
         assert isinstance(grad_D, tuple)
         assert len(grad_D) == 3
-        assert all(isinstance(g, np.ndarray) for g in grad_D)
+        assert all(isinstance(g, pnp.ndarray) for g in grad_D)
 
-        assert np.count_nonzero(grad_D) == 3
+        assert pnp.count_nonzero(grad_D) == 3
         # the different methods agree
-        assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
+        assert pnp.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
     def test_use_device_state(self, tol, dev):
         """Tests that when using the device state, the correct answer is still returned."""
@@ -306,7 +306,7 @@ class TestAdjointJacobian:
         qml.execute([tape], dev, None)
         dM2 = dev.adjoint_jacobian(tape, use_device_state=True)
 
-        assert np.allclose(dM1, dM2, atol=tol, rtol=0)
+        assert pnp.allclose(dM1, dM2, atol=tol, rtol=0)
 
     # pylint: disable=protected-access
     def test_provide_starting_state(self, tol, dev):
@@ -327,7 +327,7 @@ class TestAdjointJacobian:
         qml.execute([tape], dev, None)
         dM2 = dev.adjoint_jacobian(tape, starting_state=dev._pre_rotated_state)
 
-        assert np.allclose(dM1, dM2, atol=tol, rtol=0)
+        assert pnp.allclose(dM1, dM2, atol=tol, rtol=0)
 
     def test_gradient_of_tape_with_hermitian(self, tol):
         """Test that computing the gradient of a tape that obtains the
@@ -354,16 +354,16 @@ class TestAdjointJacobian:
         res = dev.adjoint_jacobian(tape)
 
         expected = [
-            np.cos(a) * np.sin(b) * np.sin(c),
-            np.cos(b) * np.sin(a) * np.sin(c),
-            np.cos(c) * np.sin(b) * np.sin(a),
+            pnp.cos(a) * pnp.sin(b) * pnp.sin(c),
+            pnp.cos(b) * pnp.sin(a) * pnp.sin(c),
+            pnp.cos(c) * pnp.sin(b) * pnp.sin(a),
         ]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert pnp.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multi_return(self, dev):
         """Test that the gradients of multiple observables are correct"""
 
-        x = np.array([0.6, 0.8, 1.0])
+        x = pnp.array([0.6, 0.8, 1.0])
 
         ops = [
             qml.Hadamard(wires=0),
@@ -400,7 +400,7 @@ class TestAdjointJacobian:
         assert len(grad_D) == len(observables)
         assert all(isinstance(g, tuple) for g in grad_D)
         assert all(len(g) == 3 for g in grad_D)
-        assert all(all(isinstance(_g, np.ndarray) for _g in g) for g in grad_D)
+        assert all(all(isinstance(_g, pnp.ndarray) for _g in g) for g in grad_D)
 
         # check the results against individually executed tapes
         for i, ob in enumerate(observables):
@@ -417,24 +417,24 @@ class TestAdjointJacobian:
 
             assert isinstance(expected, tuple)
             assert len(expected) == 3
-            assert all(isinstance(g, np.ndarray) for g in expected)
+            assert all(isinstance(g, pnp.ndarray) for g in expected)
 
-            assert np.allclose(grad_D[i], expected)
+            assert pnp.allclose(grad_D[i], expected)
 
     def test_with_nontrainable_parametrized(self):
         """Test that a parametrized `QubitUnitary` is accounted for correctly
         when it is not trainable."""
 
         dev = DefaultQubitLegacy(wires=1)
-        par = np.array(0.6)
+        par = pnp.array(0.6)
 
         def circuit(x):
             qml.RY(x, wires=0)
-            qml.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
+            qml.QubitUnitary(pnp.eye(2, requires_grad=False), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         circ = qml.QNode(circuit, dev, diff_method="adjoint")
         grad_adjoint = qml.jacobian(circ)(par)
         circ = qml.QNode(circuit, dev, diff_method="parameter-shift")
         grad_psr = qml.jacobian(circ)(par)
-        assert np.allclose(grad_adjoint, grad_psr)
+        assert pnp.allclose(grad_adjoint, grad_psr)

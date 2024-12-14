@@ -16,7 +16,7 @@ Unit tests for the ``MomentumOptimizer``.
 """
 import pytest
 
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.optimize import MomentumOptimizer
 
 
@@ -38,12 +38,12 @@ class TestMomentumOptimizer:
         """
         stepsize, gamma = 0.1, 0.5
         sgd_opt = MomentumOptimizer(stepsize, momentum=gamma)
-        grad, args = np.array(grad), np.array(args, requires_grad=True)
+        grad, args = pnp.array(grad), pnp.array(args, requires_grad=True)
 
         a1 = stepsize * grad
         expected = args - a1
         res = sgd_opt.apply_grad(grad, args)
-        assert np.allclose(res, expected)
+        assert pnp.allclose(res, expected)
 
         # Simulate a new step
         grad = grad + args
@@ -52,19 +52,19 @@ class TestMomentumOptimizer:
         a2 = gamma * a1 + stepsize * grad
         expected = args - a2
         res = sgd_opt.apply_grad(grad, args)
-        assert np.allclose(res, expected, atol=tol)
+        assert pnp.allclose(res, expected, atol=tol)
 
-    @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
+    @pytest.mark.parametrize("x_start", pnp.linspace(-10, 10, 16, endpoint=False))
     def test_momentum_optimizer_univar(self, x_start, tol):
         """Tests that momentum optimizer takes one and two steps correctly
         for univariate functions."""
         stepsize, gamma = 0.1, 0.5
         mom_opt = MomentumOptimizer(stepsize, momentum=gamma)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
+        univariate_funcs = [pnp.sin, lambda x: pnp.exp(x / 10.0), lambda x: x**2]
         grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
+            lambda x: (pnp.cos(x),),
+            lambda x: (pnp.exp(x / 10.0) / 10.0,),
             lambda x: (2 * x,),
         ]
 
@@ -73,12 +73,12 @@ class TestMomentumOptimizer:
 
             x_onestep = mom_opt.step(f, x_start)
             x_onestep_target = x_start - gradf(x_start)[0] * stepsize
-            assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+            assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = mom_opt.step(f, x_onestep)
             momentum_term = gamma * gradf(x_start)[0]
             x_twosteps_target = x_onestep - (gradf(x_onestep)[0] + momentum_term) * stepsize
-            assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+            assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
     def test_momentum_optimizer_multivar(self, tol):
         """Tests that momentum optimizer takes one and two steps correctly
@@ -87,24 +87,24 @@ class TestMomentumOptimizer:
         mom_opt = MomentumOptimizer(stepsize, momentum=gamma)
 
         multivariate_funcs = [
-            lambda x: np.sin(x[0]) + np.cos(x[1]),
-            lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_**2 for x_ in x]),
+            lambda x: pnp.sin(x[0]) + pnp.cos(x[1]),
+            lambda x: pnp.exp(x[0] / 3) * pnp.tanh(x[1]),
+            lambda x: pnp.sum([x_**2 for x_ in x]),
         ]
         grad_multi_funcs = [
-            lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
+            lambda x: (pnp.array([pnp.cos(x[0]), -pnp.sin(x[1])]),),
             lambda x: (
-                np.array(
+                pnp.array(
                     [
-                        np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+                        pnp.exp(x[0] / 3) / 3 * pnp.tanh(x[1]),
+                        pnp.exp(x[0] / 3) * (1 - pnp.tanh(x[1]) ** 2),
                     ]
                 ),
             ),
-            lambda x: (np.array([2 * x_ for x_ in x]),),
+            lambda x: (pnp.array([2 * x_ for x_ in x]),),
         ]
 
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = pnp.linspace(-10, 10, 16, endpoint=False)
 
         for gradf, f in zip(grad_multi_funcs, multivariate_funcs):
             for jdx in range(len(x_vals[:-1])):
@@ -113,9 +113,9 @@ class TestMomentumOptimizer:
                 x_vec = x_vals[jdx : jdx + 2]
                 x_onestep = mom_opt.step(f, x_vec)
                 x_onestep_target = x_vec - gradf(x_vec)[0] * stepsize
-                assert np.allclose(x_onestep, x_onestep_target, atol=tol)
+                assert pnp.allclose(x_onestep, x_onestep_target, atol=tol)
 
                 x_twosteps = mom_opt.step(f, x_onestep)
                 momentum_term = gamma * gradf(x_vec)[0]
                 x_twosteps_target = x_onestep - (gradf(x_onestep)[0] + momentum_term) * stepsize
-                assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
+                assert pnp.allclose(x_twosteps, x_twosteps_target, atol=tol)
