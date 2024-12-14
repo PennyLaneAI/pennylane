@@ -743,6 +743,8 @@ def apply_density_matrix(
     return state
 
 
+# pylint: disable=unused-argument
+@apply_operation.register
 def apply_parametrized_evolution_einsum(
     op: qml.pulse.ParametrizedEvolution,
     state,
