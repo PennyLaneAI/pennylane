@@ -303,7 +303,10 @@ class TestExpval:
 
         res = circuit()
         expected = pnp.array(
-            [pnp.sin(theta) * pnp.sin(phi) + pnp.cos(theta), pnp.cos(theta) * pnp.cos(phi) + pnp.sin(phi)]
+            [
+                pnp.sin(theta) * pnp.sin(phi) + pnp.cos(theta),
+                pnp.cos(theta) * pnp.cos(phi) + pnp.sin(phi),
+            ]
         ) / pnp.sqrt(2)
         assert pnp.allclose(res, expected, atol=tol(dev.shots))
 
@@ -490,7 +493,9 @@ class TestTensorExpval:
 
         res = circuit()
 
-        expected = -(pnp.cos(varphi) * pnp.sin(phi) + pnp.sin(varphi) * pnp.cos(theta)) / pnp.sqrt(2)
+        expected = -(pnp.cos(varphi) * pnp.sin(phi) + pnp.sin(varphi) * pnp.cos(theta)) / pnp.sqrt(
+            2
+        )
         assert pnp.allclose(res, expected, atol=tol(dev.shots))
 
     # pylint: disable=too-many-arguments
@@ -999,7 +1004,9 @@ class TestTensorSample:
         assert pnp.allclose(res**2, 1, atol=tol(False))
 
         mean = pnp.mean(res)
-        expected = -(pnp.cos(varphi) * pnp.sin(phi) + pnp.sin(varphi) * pnp.cos(theta)) / pnp.sqrt(2)
+        expected = -(pnp.cos(varphi) * pnp.sin(phi) + pnp.sin(varphi) * pnp.cos(theta)) / pnp.sqrt(
+            2
+        )
         assert pnp.allclose(mean, expected, atol=tol(False))
 
         var = pnp.var(res)
@@ -1371,7 +1378,8 @@ class TestVar:
 
         res = circuit(pnp.array([1, 0, 0, 1]) / pnp.sqrt(2))
         expected_mean = 0.5 * (
-            (pnp.cos(theta / 2) * pnp.cos(phi / 2)) ** 2 + (pnp.cos(theta / 2) * pnp.sin(phi / 2)) ** 2
+            (pnp.cos(theta / 2) * pnp.cos(phi / 2)) ** 2
+            + (pnp.cos(theta / 2) * pnp.sin(phi / 2)) ** 2
         )
         expected_var = expected_mean - expected_mean**2
         assert pnp.allclose(res, expected_var, atol=tol(dev.shots))
