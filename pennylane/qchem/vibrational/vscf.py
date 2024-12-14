@@ -18,7 +18,7 @@ import numpy as np
 # pylint: disable=too-many-arguments
 
 
-def _build_Fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
+def _build_fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
     r"""Builds the fock matrix for each vibrational mode.
 
     Args:
