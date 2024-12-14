@@ -139,7 +139,7 @@ def test_differentiability_jax(use_jit):
 
 @pytest.mark.torch
 def test_differentiability_torch():
-    """ "Test that the output of the ``combine_global_phases`` transform is differentiable with Torch"""
+    """Test that the output of the ``combine_global_phases`` transform is differentiable with Torch"""
     import torch
     from torch.autograd.functional import jacobian
 
