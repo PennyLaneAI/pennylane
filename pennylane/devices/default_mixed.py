@@ -64,6 +64,7 @@ observables = {
     "PauliZ",
     "Prod",
     "Projector",
+    "SparseHamiltonian",
     "SProd",
     "Sum",
 }
