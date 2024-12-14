@@ -293,31 +293,32 @@ def apply_operation(
     Args:
         op (Operator): The operation to apply to ``state``
         state (TensorLike): The starting state.
-        is_state_batched (bool): Boolean representing whether the state is batched or not
-        debugger (_Debugger): The debugger to use
+        is_state_batched (bool): Boolean representing whether the state is batched or not.
+        debugger (_Debugger): The debugger to use.
 
     Keyword Arguments:
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``.
+            This is the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
-        tape_shots (Shots): the shots object of the tape
+        tape_shots (Shots): The shots object of the tape.
 
     Returns:
-        ndarray: output state
+        ndarray: The output state.
 
     .. warning::
 
         ``apply_operation`` is an internal function, and thus subject to change without a deprecation cycle.
 
     .. warning::
+
         ``apply_operation`` applies no validation to its inputs.
 
         This function assumes that the wires of the operator correspond to indices
         of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-        The shape of state should be ``[2]*(num_wires * 2)`` (the original tensor form) or
-        ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where `2`` is
+        The shape of the state should be ``[2] * (num_wires * 2)`` (the original tensor form) or
+        ``[2**num_wires, 2**num_wires]`` (the expanded matrix form), where ``2`` is
         the dimension of the system.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
@@ -335,33 +336,27 @@ def apply_operation(
     >>> state[0][0] = 1
     >>> state
     array([[[[1., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]],
-
-
-       [[[0., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]]])
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]],
+           [[[0., 0.],
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]]])
     >>> apply_operation(qml.PauliX(0), state)
     array([[[[0., 0.],
-         [0., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]],
-
-
-       [[[0., 0.],
-         [1., 0.]],
-
-        [[0., 0.],
-         [0., 0.]]]])
+             [0., 0.]],
+            [[0., 0.],
+             [0., 0.]]],
+           [[[0., 0.],
+             [1., 0.]],
+            [[0., 0.],
+             [0., 0.]]]])
 
     """
+
     return _apply_operation_default(op, state, is_state_batched, debugger, **_)
+
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger, **_):
