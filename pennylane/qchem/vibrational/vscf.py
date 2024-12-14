@@ -166,7 +166,7 @@ def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
         max_iters (int): Maximum number of iterations for vscf to converge.
 
     Returns:
-        tuple : A tuple of the following:
+        tuple: A tuple of the following:
          - float: vscf energy
          - List[TensorLike[float]]: A list of rotation matrices for all vibrational modes.
 
