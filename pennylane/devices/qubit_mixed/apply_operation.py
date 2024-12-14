@@ -667,3 +667,74 @@ def apply_snapshot(
             debugger.snapshots[len(debugger.snapshots)] = snapshot
 
     return state
+
+
+@apply_operation.register
+def apply_density_matrix(
+    op: qml.QubitDensityMatrix, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
+    """
+    Applies a :class:`~.QubitDensityMatrix` operation by initializing or replacing
+    the quantum state with the provided density matrix.
+
+    Args:
+        op (qml.QubitDensityMatrix): The QubitDensityMatrix operation to apply.
+        state (array-like): The current quantum state (density matrix or batched density matrices).
+        is_state_batched (bool): Whether the state is batched (True) or not (False).
+        debugger: A debugger instance for diagnostics.
+        **execution_kwargs: Additional keyword arguments for execution.
+
+    Returns:
+        array-like: The updated quantum state.
+
+    Raises:
+        ValueError: If the input density matrix is invalid.
+    """
+    # Extract the density matrix from the operation
+    density_matrix = op.parameters[0]
+
+    # Get the number of wires for the operation
+    num_wires = len(op.wires)
+    expected_dim = 2**num_wires
+
+    # Validate the shape of the density matrix
+    if density_matrix.shape != (expected_dim, expected_dim):
+        raise ValueError(
+            f"Density matrix must have shape {(expected_dim, expected_dim)}, "
+            f"but got {density_matrix.shape}."
+        )
+
+    # Validate Hermiticity
+    if not math.allclose(density_matrix, math.conj(density_matrix.T)):
+        raise ValueError("Density matrix must be Hermitian.")
+
+    # Validate trace
+    if not math.isclose(math.trace(density_matrix), 1):
+        raise ValueError("Density matrix must have a trace of 1.")
+
+    # Replace the state for the wires involved in the operation
+    # Determine which axes to replace in the current state
+    num_state_wires = _get_num_wires(state, is_state_batched)
+
+    # Prepare the new state by embedding the density matrix
+    # If batched, expand the density matrix across the batch dimension
+    if is_state_batched:
+        batch_size = math.shape(state)[0]
+        density_matrix = math.broadcast_to(
+            density_matrix, (batch_size,) + density_matrix.shape
+        )
+
+    # Use slicing to replace the relevant part of the state
+    state_slices = [slice(None)] * math.ndim(state)  # Initialize full slicing tuple
+    for wire in op.wires:
+        # Update the slice for the wire (left side)
+        state_slices[wire] = slice(None)
+
+        # Update the slice for the corresponding right side (conjugate side)
+        state_slices[wire + num_state_wires] = slice(None)
+
+    # Apply the density matrix to the corresponding slice
+    state[tuple(state_slices)] = density_matrix
+
+    # Return the updated state
+    return state
