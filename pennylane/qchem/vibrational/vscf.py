@@ -35,9 +35,7 @@ def _build_fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
     fock_matrix = np.zeros((modals[mode], modals[mode]))
     for term in active_terms:
         ham_term = active_ham_terms[term]
-        h_val = ham_term[0]
-        modal_indices = [*ham_term[1]]
-        excitation_indices = [*ham_term[2]]
+    h_val, modal_indices, excitation_indices = ham_term[0], list(ham_term[1]), list(ham_term[2])
 
         modal_idx = modal_indices.index(mode)
         im = excitation_indices[modal_idx]
