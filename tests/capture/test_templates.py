@@ -1091,7 +1091,7 @@ class TestModifiedTemplates:
         def qfunc():
             qml.Superposition(**kwargs)
 
-        # Validate inputs
+        # Validate inputs 
         qfunc()
 
         # Actually test primitive bind
