@@ -19,7 +19,7 @@ from collections import OrderedDict
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as np
+import pennylane.numpy as pnp
 from pennylane.wires import Wires
 
 
@@ -247,7 +247,7 @@ class TestCommutationDAG:
             qml.RY(-y, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-        x = np.array([np.pi / 4, np.pi / 3, np.pi / 2], requires_grad=False)
+        x = pnp.array([pnp.pi / 4, pnp.pi / 3, pnp.pi / 2], requires_grad=False)
 
         get_dag = qml.transforms.commutation_dag(circuit)
         dag = get_dag(x[0], x[1], x[2])
@@ -306,7 +306,7 @@ class TestCommutationDAG:
             qml.RY(-y, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-        x = tf.Variable([np.pi / 4, np.pi / 3, np.pi / 2], dtype=tf.float64)
+        x = tf.Variable([pnp.pi / 4, pnp.pi / 3, pnp.pi / 2], dtype=tf.float64)
 
         get_dag = qml.transforms.commutation_dag(circuit)
         dag = get_dag(x[0], x[1], x[2])
@@ -365,7 +365,7 @@ class TestCommutationDAG:
             qml.RY(-y, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-        x = torch.tensor([np.pi / 4, np.pi / 3, np.pi / 2], requires_grad=False)
+        x = torch.tensor([pnp.pi / 4, pnp.pi / 3, pnp.pi / 2], requires_grad=False)
 
         get_dag = qml.transforms.commutation_dag(circuit)
         dag = get_dag(x[0], x[1], x[2])
@@ -425,7 +425,7 @@ class TestCommutationDAG:
             qml.RY(-y, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-        x = jnp.array([np.pi / 4, np.pi / 3, np.pi / 2], dtype=jnp.float64)
+        x = jnp.array([pnp.pi / 4, pnp.pi / 3, pnp.pi / 2], dtype=jnp.float64)
         get_dag = qml.transforms.commutation_dag(circuit)
         dag = get_dag(x[0], x[1], x[2])
 

@@ -18,7 +18,7 @@ Unittests for is_commuting
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as np
+import pennylane.numpy as pnp
 from pennylane.ops.functions.is_commuting import _check_mat_commutation, _get_target_name
 
 control_base_map_data = [
@@ -474,7 +474,7 @@ class TestCommutingFunction:
     def test_rot_x_simplified(self, wires, res):
         """Commutation between Rot(np.pi / 2, 0.1, -np.pi / 2) and PauliX."""
         commutation = qml.is_commuting(
-            qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
+            qml.Rot(pnp.pi / 2, 0.1, -pnp.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
         )
         assert commutation == res
 
@@ -516,7 +516,7 @@ class TestCommutingFunction:
     def test_rot_hadamard_simplified(self, wires, res):
         """Commutation between Rot(np.pi, np.pi / 2, 0) and Hadamard."""
         commutation = qml.is_commuting(
-            qml.Rot(np.pi, np.pi / 2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1])
+            qml.Rot(pnp.pi, pnp.pi / 2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1])
         )
         assert commutation == res
 
@@ -544,7 +544,7 @@ class TestCommutingFunction:
     def test_crot_x_simplified(self, wires, res):
         """Commutation between CRot(np.pi / 2, 0.1, -np.pi / 2) and PauliX."""
         commutation = qml.is_commuting(
-            qml.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
+            qml.CRot(pnp.pi / 2, 0.1, -pnp.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
         )
         assert commutation == res
 
@@ -585,7 +585,7 @@ class TestCommutingFunction:
     )
     def test_crot_hadamard_simplified(self, wires, res):
         """Commutation between CRot(np.pi, np.pi / 2, 0) and Hadamard."""
-        op1 = qml.CRot(np.pi, np.pi / 2, 0, wires=wires[0])
+        op1 = qml.CRot(pnp.pi, pnp.pi / 2, 0, wires=wires[0])
         op2 = qml.Hadamard(wires=wires[1])
         assert qml.is_commuting(op1, op2) == res
         assert qml.is_commuting(op2, op1) == res
@@ -614,7 +614,7 @@ class TestCommutingFunction:
     def test_u2_y_simplified(self, wires, res):
         """Commutation between U2(2*np.pi, -2*np.pi) and PauliY."""
         commutation = qml.is_commuting(
-            qml.U2(2 * np.pi, -2 * np.pi, wires=wires[0]), qml.PauliY(wires=wires[1])
+            qml.U2(2 * pnp.pi, -2 * pnp.pi, wires=wires[0]), qml.PauliY(wires=wires[1])
         )
         assert commutation == res
 
@@ -628,7 +628,7 @@ class TestCommutingFunction:
     def test_u2_x_simplified(self, wires, res):
         """Commutation between U2(np.pi/2, -np.pi/2) and PauliX."""
         commutation = qml.is_commuting(
-            qml.U2(np.pi / 2, -np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
+            qml.U2(pnp.pi / 2, -pnp.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
         )
         assert commutation == res
 
@@ -728,7 +728,7 @@ class TestCommutingFunction:
     def test_u3_simplified_x(self, wires, res):
         """Commutation between U3(0.1, -np.pi/2, np.pi/2) and PauliX."""
         commutation = qml.is_commuting(
-            qml.U3(0.1, -np.pi / 2, np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
+            qml.U3(0.1, -pnp.pi / 2, pnp.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
         )
         assert commutation == res
 
@@ -831,7 +831,7 @@ class TestCommutingFunction:
 
     def test_operation_1_not_supported(self):
         """Test that giving a non supported operation raises an error."""
-        rho = np.zeros((2**1, 2**1), dtype=np.complex128)
+        rho = pnp.zeros((2**1, 2**1), dtype=pnp.complex128)
         rho[0, 0] = 1
         with pytest.raises(
             qml.QuantumFunctionError, match="Operation QubitDensityMatrix not supported."

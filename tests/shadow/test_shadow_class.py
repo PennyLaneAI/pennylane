@@ -19,7 +19,7 @@ import numpy as onp
 import pytest
 
 import pennylane as qml
-import pennylane.numpy as np
+import pennylane.numpy as pnp
 from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
 
 wires = range(3)
@@ -53,8 +53,8 @@ class TestUnitTestClassicalShadows:
     def test_shape_mismatch_error(self):
         """Test than an error is raised when a ClassicalShadow object
         is created using bits and recipes with different shapes"""
-        bits = np.random.randint(0, 1, size=(3, 4))
-        recipes = np.random.randint(0, 2, size=(3, 5))
+        bits = pnp.random.randint(0, 1, size=(3, 4))
+        recipes = pnp.random.randint(0, 2, size=(3, 5))
 
         msg = "Bits and recipes but have the same shape"
         with pytest.raises(ValueError, match=msg):
@@ -63,8 +63,8 @@ class TestUnitTestClassicalShadows:
     def test_wire_mismatch_error(self):
         """Test that an error is raised when a ClassicalShadow object
         is created using a wire map with the incorrect size"""
-        bits = np.random.randint(0, 1, size=(3, 4))
-        recipes = np.random.randint(0, 2, size=(3, 4))
+        bits = pnp.random.randint(0, 1, size=(3, 4))
+        recipes = pnp.random.randint(0, 2, size=(3, 4))
         wire_map = [0, 1, 2]
 
         msg = "The 1st axis of bits must have the same size as wire_map"
@@ -120,13 +120,13 @@ class TestIntegrationShadows:
         shadow = ClassicalShadow(bits, recipes)
         global_snapshots = shadow.global_snapshots()
 
-        state = np.sum(global_snapshots, axis=0) / shadow.snapshots
-        bell_state = np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
+        state = pnp.sum(global_snapshots, axis=0) / shadow.snapshots
+        bell_state = pnp.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
         assert qml.math.allclose(state, bell_state, atol=1e-1)
 
         # reduced state should yield maximally mixed state
         local_snapshots = shadow.local_snapshots(wires=[0])
-        assert qml.math.allclose(np.mean(local_snapshots, axis=0)[0], 0.5 * np.eye(2), atol=1e-1)
+        assert qml.math.allclose(pnp.mean(local_snapshots, axis=0)[0], 0.5 * pnp.eye(2), atol=1e-1)
 
         # alternative computation
         bits, recipes = qnode(1)
@@ -134,9 +134,9 @@ class TestIntegrationShadows:
         global_snapshots = shadow.global_snapshots()
         local_snapshots = shadow.local_snapshots(wires=[0])
 
-        state = np.sum(global_snapshots, axis=0) / shadow.snapshots
-        assert qml.math.allclose(state, 0.5 * np.eye(2), atol=1e-1)
-        assert np.all(local_snapshots[:, 0] == global_snapshots)
+        state = pnp.sum(global_snapshots, axis=0) / shadow.snapshots
+        assert qml.math.allclose(state, 0.5 * pnp.eye(2), atol=1e-1)
+        assert pnp.all(local_snapshots[:, 0] == global_snapshots)
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -170,7 +170,7 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     """Quantum Fourier Transform circuit"""
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
-    one_state = np.zeros(wires)
+    one_state = pnp.zeros(wires)
     one_state[-1] = 1
 
     @qml.qnode(dev, interface=interface)
@@ -197,8 +197,8 @@ class TestStateReconstruction:
         state = shadow.global_snapshots()
         assert state.shape == (10000, 2**wires, 2**wires)
 
-        state = np.mean(state, axis=0)
-        expected = np.ones((2**wires, 2**wires)) / (2**wires)
+        state = pnp.mean(state, axis=0)
+        expected = pnp.ones((2**wires, 2**wires)) / (2**wires)
 
         assert qml.math.allclose(state, expected, atol=1e-1)
 
@@ -213,9 +213,9 @@ class TestStateReconstruction:
         state = shadow.global_snapshots()
         assert state.shape == (10000, 2**wires, 2**wires)
 
-        state = np.mean(state, axis=0)
-        expected = np.zeros((2**wires, 2**wires))
-        expected[np.array([0, 0, -1, -1]), np.array([0, -1, 0, -1])] = 0.5
+        state = pnp.mean(state, axis=0)
+        expected = pnp.zeros((2**wires, 2**wires))
+        expected[pnp.array([0, 0, -1, -1]), pnp.array([0, -1, 0, -1])] = 0.5
 
         assert qml.math.allclose(state, expected, atol=1e-1)
 
@@ -240,14 +240,14 @@ class TestStateReconstruction:
         shadow = ClassicalShadow(bits, recipes)
 
         # choose 1000 random indices
-        snapshots = np.random.choice(np.arange(10000, dtype=np.int64), size=1000, replace=False)
+        snapshots = pnp.random.choice(pnp.arange(10000, dtype=pnp.int64), size=1000, replace=False)
         state = shadow.global_snapshots(snapshots=snapshots)
         assert state.shape == (len(snapshots), 2**wires, 2**wires)
 
         # check the results against obtaining the full global snapshots
         expected = shadow.global_snapshots()
         for i, t in enumerate(snapshots):
-            assert np.allclose(expected[t], state[i])
+            assert pnp.allclose(expected[t], state[i])
 
     def test_large_state_warning(self, monkeypatch):
         """Test that a warning is raised when a very large state is reconstructed"""
@@ -278,9 +278,9 @@ class TestStateReconstructionInterfaces:
         state = shadow.global_snapshots()
         assert state.shape == (10000, 8, 8)
 
-        state = np.mean(state, axis=0)
-        expected = np.exp(np.arange(8) * 2j * np.pi / 8) / np.sqrt(8)
-        expected = np.outer(expected, np.conj(expected))
+        state = pnp.mean(state, axis=0)
+        expected = pnp.exp(pnp.arange(8) * 2j * pnp.pi / 8) / pnp.sqrt(8)
+        expected = pnp.outer(expected, pnp.conj(expected))
 
         assert qml.math.allclose(state, expected, atol=1e-1)
 
@@ -309,7 +309,7 @@ class TestExpvalEstimation:
 
         actual = shadow.expval(obs, k=10)
         assert actual.shape == (7,)
-        assert actual.dtype == np.float64
+        assert actual.dtype == pnp.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     def test_max_entangled_expval(self):
@@ -334,7 +334,7 @@ class TestExpvalEstimation:
 
         actual = shadow.expval(obs, k=10)
         assert actual.shape == (8,)
-        assert actual.dtype == np.float64
+        assert actual.dtype == pnp.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
@@ -385,19 +385,19 @@ class TestExpvalEstimationInterfaces:
         expected = [
             -1,
             0,
-            -1 / np.sqrt(2),
-            -1 / np.sqrt(2),
+            -1 / pnp.sqrt(2),
+            -1 / pnp.sqrt(2),
             0,
             0,
-            1 / np.sqrt(2),
-            1 / np.sqrt(2),
-            -1 / np.sqrt(2),
+            1 / pnp.sqrt(2),
+            1 / pnp.sqrt(2),
+            -1 / pnp.sqrt(2),
             0,
         ]
 
         actual = shadow.expval(obs, k=10)
         assert actual.shape == (10,)
-        assert actual.dtype == np.float64
+        assert actual.dtype == pnp.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
 
@@ -429,12 +429,12 @@ class TestMedianOfMeans:
     @pytest.mark.parametrize(
         "arr, num_batches, expected",
         [
-            (np.array([0.1]), 1, 0.1),
-            (np.array([0.1, 0.2]), 1, 0.15),
-            (np.array([0.1, 0.2]), 2, 0.15),
-            (np.array([0.2, 0.1, 0.4]), 1, 0.7 / 3),
-            (np.array([0.2, 0.1, 0.4]), 2, 0.275),
-            (np.array([0.2, 0.1, 0.4]), 3, 0.2),
+            (pnp.array([0.1]), 1, 0.1),
+            (pnp.array([0.1, 0.2]), 1, 0.15),
+            (pnp.array([0.1, 0.2]), 2, 0.15),
+            (pnp.array([0.2, 0.1, 0.4]), 1, 0.7 / 3),
+            (pnp.array([0.2, 0.1, 0.4]), 2, 0.275),
+            (pnp.array([0.2, 0.1, 0.4]), 3, 0.2),
         ],
     )
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
@@ -444,7 +444,7 @@ class TestMedianOfMeans:
 
         actual = median_of_means(arr, num_batches)
         assert actual.shape == ()
-        assert np.allclose(actual, expected)
+        assert pnp.allclose(actual, expected)
 
 
 @pytest.mark.all_interfaces
@@ -455,15 +455,15 @@ class TestPauliExpval:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_word_not_present(self, word, interface):
         """Test that the output is 0 if the Pauli word is not present in the recipes"""
-        bits = convert_to_interface(np.array([[0, 0, 0]]), interface)
-        recipes = convert_to_interface(np.array([[0, 0, 0]]), interface)
+        bits = convert_to_interface(pnp.array([[0, 0, 0]]), interface)
+        recipes = convert_to_interface(pnp.array([[0, 0, 0]]), interface)
 
-        actual = pauli_expval(bits, recipes, np.array([word]))
+        actual = pauli_expval(bits, recipes, pnp.array([word]))
         assert actual.shape == (1, 1)
         assert actual[0][0] == 0
 
-    single_bits = np.array([[1, 0, 1]])
-    single_recipes = np.array([[0, 1, 2]])
+    single_bits = pnp.array([[1, 0, 1]])
+    single_recipes = pnp.array([[0, 1, 2]])
 
     @pytest.mark.parametrize(
         "word, expected", [([0, 1, 2], 27), ([0, 1, -1], -9), ([-1, -1, 2], -3), ([-1, -1, -1], 1)]
@@ -474,12 +474,12 @@ class TestPauliExpval:
         bits = convert_to_interface(self.single_bits, interface)
         recipes = convert_to_interface(self.single_recipes, interface)
 
-        actual = pauli_expval(bits, recipes, np.array([word]))
+        actual = pauli_expval(bits, recipes, pnp.array([word]))
         assert actual.shape == (1, 1)
         assert actual[0][0] == expected
 
-    multi_bits = np.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
-    multi_recipes = np.array([[0, 1, 2], [0, 1, 2], [0, 1, 0]])
+    multi_bits = pnp.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
+    multi_recipes = pnp.array([[0, 1, 2], [0, 1, 2], [0, 1, 0]])
 
     @pytest.mark.parametrize(
         "word, expected",
@@ -497,6 +497,6 @@ class TestPauliExpval:
         bits = convert_to_interface(self.multi_bits, interface)
         recipes = convert_to_interface(self.multi_recipes, interface)
 
-        actual = pauli_expval(bits, recipes, np.array([word]))
+        actual = pauli_expval(bits, recipes, pnp.array([word]))
         assert actual.shape == (self.multi_bits.shape[0], 1)
         assert qml.math.allclose(actual[:, 0], expected)

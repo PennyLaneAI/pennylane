@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as npp
+from pennylane import numpy as pnp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
@@ -383,7 +383,7 @@ class TestEqual:
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
-        param_qml = npp.array(0.123)
+        param_qml = pnp.array(0.123)
         param_np = np.array(0.123)
 
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
@@ -437,7 +437,7 @@ class TestEqual:
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
-        param_qml = npp.array(0.123)
+        param_qml = pnp.array(0.123)
         param_np = np.array(0.123)
 
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
@@ -507,7 +507,7 @@ class TestEqual:
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
-        param_qml = npp.array(0.123)
+        param_qml = pnp.array(0.123)
         param_np = np.array(0.123)
 
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
@@ -577,7 +577,7 @@ class TestEqual:
         param_torch = torch.tensor([1, 2, 3])
         param_tf = tf.Variable([1, 2, 3])
         param_jax = jax.numpy.array([1, 2, 3])
-        param_qml = npp.array([1, 2, 3])
+        param_qml = pnp.array([1, 2, 3])
         param_np = np.array([1, 2, 3])
 
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
@@ -647,7 +647,7 @@ class TestEqual:
         param_torch = torch.tensor([1, 2])
         param_tf = tf.Variable([1, 2])
         param_jax = jax.numpy.array([1, 2])
-        param_qml = npp.array([1, 2])
+        param_qml = pnp.array([1, 2])
         param_np = np.array([1, 2])
 
         op1 = PARAMETRIZED_OPERATIONS_2P_1W[0]
@@ -685,7 +685,7 @@ class TestEqual:
         param_torch = torch.tensor(1)
         param_tf = tf.Variable(1)
         param_jax = jax.numpy.array(1)
-        param_qml = npp.array(1)
+        param_qml = pnp.array(1)
         param_np = np.array(1)
 
         op1 = PARAMETRIZED_OPERATIONS_1P_3W[0]
@@ -723,7 +723,7 @@ class TestEqual:
         param_torch = torch.tensor([1, 2, 3])
         param_tf = tf.Variable([1, 2, 3])
         param_jax = jax.numpy.array([1, 2, 3])
-        param_qml = npp.array([1, 2, 3])
+        param_qml = pnp.array([1, 2, 3])
         param_np = np.array([1, 2, 3])
 
         op1 = PARAMETRIZED_OPERATIONS_3P_2W[0]
@@ -761,7 +761,7 @@ class TestEqual:
         param_torch = torch.tensor(1)
         param_tf = tf.Variable(1)
         param_jax = jax.numpy.array(1)
-        param_qml = npp.array(1)
+        param_qml = pnp.array(1)
         param_np = np.array(1)
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[0]
@@ -799,7 +799,7 @@ class TestEqual:
         param_torch = torch.tensor([[1, 0], [0, 1]]) * 1j
         param_tf = tf.Variable([[1, 0], [0, 1]], dtype=tf.complex64) * 1j
         param_jax = jax.numpy.eye(2) * 1j
-        param_qml = npp.eye(2) * 1j
+        param_qml = pnp.eye(2) * 1j
         param_np = np.eye(2) * 1j
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[1]
@@ -837,7 +837,7 @@ class TestEqual:
         param_torch = torch.tensor([1.0, 1.0j])
         param_tf = tf.Variable([1.0 + 0j, 1.0j])
         param_jax = jax.numpy.array([1.0, 1.0j])
-        param_qml = npp.array([1.0, 1.0j])
+        param_qml = pnp.array([1.0, 1.0j])
         param_np = np.array([1.0, 1.0j])
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[2]
@@ -875,7 +875,7 @@ class TestEqual:
         param_torch = torch.tensor([[1, 0], [0, 1]]) * 1j
         param_tf = tf.Variable([[1, 0], [0, 1]], dtype=tf.complex64) * 1j
         param_jax = jax.numpy.eye(2) * 1j
-        param_qml = npp.eye(2) * 1j
+        param_qml = pnp.eye(2) * 1j
         param_np = np.eye(2) * 1j
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[3]
@@ -1684,15 +1684,15 @@ class TestSymbolicOpComparison:
     def test_adjoint_base_op_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the base operator of Adjoint class."""
         op1 = qml.adjoint(qml.RX(1.2, wires=0))
-        op2 = qml.adjoint(qml.RX(npp.array(1.2), wires=0))
+        op2 = qml.adjoint(qml.RX(pnp.array(1.2), wires=0))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_adjoint_base_op_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the base operator of Adjoint class."""
-        op1 = qml.adjoint(qml.RX(npp.array(1.2, requires_grad=False), wires=0))
-        op2 = qml.adjoint(qml.RX(npp.array(1.2, requires_grad=True), wires=0))
+        op1 = qml.adjoint(qml.RX(pnp.array(1.2, requires_grad=False), wires=0))
+        op2 = qml.adjoint(qml.RX(pnp.array(1.2, requires_grad=True), wires=0))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
@@ -1745,7 +1745,7 @@ class TestSymbolicOpComparison:
         """Test that equal compares the parameters within a provided interface of the base operator of Conditional class."""
         m = qml.measure(0)
         base1 = qml.RX(1.2, wires=0)
-        base2 = qml.RX(npp.array(1.2), wires=0)
+        base2 = qml.RX(pnp.array(1.2), wires=0)
         op1 = Conditional(m, base1)
         op2 = Conditional(m, base2)
 
@@ -1756,8 +1756,8 @@ class TestSymbolicOpComparison:
         """Test that equal compares the parameters within a provided trainability of the base operator of Conditional class."""
 
         m = qml.measure(0)
-        base1 = qml.RX(npp.array(1.2, requires_grad=False), wires=0)
-        base2 = qml.RX(npp.array(1.2, requires_grad=True), wires=0)
+        base1 = qml.RX(pnp.array(1.2, requires_grad=False), wires=0)
+        base2 = qml.RX(pnp.array(1.2, requires_grad=True), wires=0)
         op1 = Conditional(m, base1)
         op2 = Conditional(m, base2)
 
@@ -1795,7 +1795,7 @@ class TestSymbolicOpComparison:
     def test_pow_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the Pow class."""
         op1 = qml.pow(qml.RX(1.2, wires=0), 2)
-        op2 = qml.pow(qml.RX(1.2, wires=0), npp.array(2))
+        op2 = qml.pow(qml.RX(1.2, wires=0), pnp.array(2))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
@@ -1804,8 +1804,8 @@ class TestSymbolicOpComparison:
 
     def test_pow_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the Pow class."""
-        op1 = qml.pow(qml.RX(1.2, wires=0), npp.array(2, requires_grad=False))
-        op2 = qml.pow(qml.RX(1.2, wires=0), npp.array(2, requires_grad=True))
+        op1 = qml.pow(qml.RX(1.2, wires=0), pnp.array(2, requires_grad=False))
+        op2 = qml.pow(qml.RX(1.2, wires=0), pnp.array(2, requires_grad=True))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
@@ -1815,15 +1815,15 @@ class TestSymbolicOpComparison:
     def test_pow_base_op_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the base operator of Pow class."""
         op1 = qml.pow(qml.RX(1.2, wires=0), 2)
-        op2 = qml.pow(qml.RX(npp.array(1.2), wires=0), 2)
+        op2 = qml.pow(qml.RX(pnp.array(1.2), wires=0), 2)
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_pow_base_op_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the base operator of Pow class."""
-        op1 = qml.pow(qml.RX(npp.array(1.2, requires_grad=False), wires=0), 2)
-        op2 = qml.pow(qml.RX(npp.array(1.2, requires_grad=True), wires=0), 2)
+        op1 = qml.pow(qml.RX(pnp.array(1.2, requires_grad=False), wires=0), 2)
+        op2 = qml.pow(qml.RX(pnp.array(1.2, requires_grad=True), wires=0), 2)
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
@@ -1868,7 +1868,7 @@ class TestSymbolicOpComparison:
     def test_exp_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the Exp class."""
         op1 = qml.exp(qml.PauliX(0), 1.2)
-        op2 = qml.exp(qml.PauliX(0), npp.array(1.2))
+        op2 = qml.exp(qml.PauliX(0), pnp.array(1.2))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
@@ -1879,8 +1879,8 @@ class TestSymbolicOpComparison:
 
     def test_exp_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the Exp class."""
-        op1 = qml.exp(qml.PauliX(0), npp.array(1.2, requires_grad=False))
-        op2 = qml.exp(qml.PauliX(0), npp.array(1.2, requires_grad=True))
+        op1 = qml.exp(qml.PauliX(0), pnp.array(1.2, requires_grad=False))
+        op2 = qml.exp(qml.PauliX(0), pnp.array(1.2, requires_grad=True))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
@@ -1892,7 +1892,7 @@ class TestSymbolicOpComparison:
     def test_exp_base_op_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the base operator of Exp class."""
         op1 = qml.exp(qml.RX(0.5, wires=0), 1.2)
-        op2 = qml.exp(qml.RX(npp.array(0.5), wires=0), 1.2)
+        op2 = qml.exp(qml.RX(pnp.array(0.5), wires=0), 1.2)
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
@@ -1903,8 +1903,8 @@ class TestSymbolicOpComparison:
 
     def test_exp_base_op_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the base operator of Exp class."""
-        op1 = qml.exp(qml.RX(npp.array(0.5, requires_grad=False), wires=0), 1.2)
-        op2 = qml.exp(qml.RX(npp.array(0.5, requires_grad=True), wires=0), 1.2)
+        op1 = qml.exp(qml.RX(pnp.array(0.5, requires_grad=False), wires=0), 1.2)
+        op2 = qml.exp(qml.RX(pnp.array(0.5, requires_grad=True), wires=0), 1.2)
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
@@ -1960,7 +1960,7 @@ class TestSymbolicOpComparison:
     def test_s_prod_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the SProd class."""
         op1 = qml.s_prod(0.12, qml.PauliX(0))
-        op2 = qml.s_prod(npp.array(0.12), qml.PauliX(0))
+        op2 = qml.s_prod(pnp.array(0.12), qml.PauliX(0))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
@@ -1969,8 +1969,8 @@ class TestSymbolicOpComparison:
 
     def test_s_prod_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the SProd class."""
-        op1 = qml.s_prod(npp.array(0.12, requires_grad=False), qml.PauliX(0))
-        op2 = qml.s_prod(npp.array(0.12, requires_grad=True), qml.PauliX(0))
+        op1 = qml.s_prod(pnp.array(0.12, requires_grad=False), qml.PauliX(0))
+        op2 = qml.s_prod(pnp.array(0.12, requires_grad=True), qml.PauliX(0))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
@@ -1980,15 +1980,15 @@ class TestSymbolicOpComparison:
     def test_s_prod_base_op_comparison_with_interface(self):
         """Test that equal compares the parameters within a provided interface of the base operator of SProd class."""
         op1 = qml.s_prod(0.12, qml.RX(0.5, wires=0))
-        op2 = qml.s_prod(0.12, qml.RX(npp.array(0.5), wires=0))
+        op2 = qml.s_prod(0.12, qml.RX(pnp.array(0.5), wires=0))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_s_prod_base_op_comparison_with_trainability(self):
         """Test that equal compares the parameters within a provided trainability of the base operator of SProd class."""
-        op1 = qml.s_prod(0.12, qml.RX(npp.array(0.5, requires_grad=False), wires=0))
-        op2 = qml.s_prod(0.12, qml.RX(npp.array(0.5, requires_grad=True), wires=0))
+        op1 = qml.s_prod(0.12, qml.RX(pnp.array(0.5, requires_grad=False), wires=0))
+        op2 = qml.s_prod(0.12, qml.RX(pnp.array(0.5, requires_grad=True), wires=0))
 
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
@@ -2528,15 +2528,15 @@ class TestHilbertSchmidt:
 
     u_tape1 = qml.tape.QuantumScript([qml.RX(0.2, 0)])
     u_tape1_eps = qml.tape.QuantumScript([qml.RX(0.2 + 1e-7, 0)])
-    u_tape1_trainable = qml.tape.QuantumScript([qml.RX(npp.array(0.2, requires_grad=True), 0)])
-    u_tape1_untrainable = qml.tape.QuantumScript([qml.RX(npp.array(0.2, requires_grad=False), 0)])
+    u_tape1_trainable = qml.tape.QuantumScript([qml.RX(pnp.array(0.2, requires_grad=True), 0)])
+    u_tape1_untrainable = qml.tape.QuantumScript([qml.RX(pnp.array(0.2, requires_grad=False), 0)])
     u_tape2 = qml.tape.QuantumScript([qml.Hadamard(2)])
 
     v_params1 = [0.2, 0.3]
     v_params2 = [0.1, 0.5]
     v_params1_eps = [0.2 + 1e-7, 0.3]
-    v_params1_trainable = npp.array(v_params1, requires_grad=True)
-    v_params1_untrainable = npp.array(v_params1, requires_grad=False)
+    v_params1_trainable = pnp.array(v_params1, requires_grad=True)
+    v_params1_untrainable = pnp.array(v_params1, requires_grad=False)
 
     op1 = qml.HilbertSchmidt(v_params1, v_function=v_function1, v_wires=v_wires1, u_tape=u_tape1)
     op1_trainable = qml.HilbertSchmidt(
