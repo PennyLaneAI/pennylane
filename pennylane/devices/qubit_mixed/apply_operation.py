@@ -669,9 +669,14 @@ def apply_snapshot(
     return state
 
 
+# pylint: disable=unused-argument
 @apply_operation.register
 def apply_density_matrix(
-    op: qml.QubitDensityMatrix, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+    op: qml.QubitDensityMatrix,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **execution_kwargs,
 ):
     """
     Applies a :class:`~.QubitDensityMatrix` operation by initializing or replacing
@@ -720,9 +725,7 @@ def apply_density_matrix(
     # If batched, expand the density matrix across the batch dimension
     if is_state_batched:
         batch_size = math.shape(state)[0]
-        density_matrix = math.broadcast_to(
-            density_matrix, (batch_size,) + density_matrix.shape
-        )
+        density_matrix = math.broadcast_to(density_matrix, (batch_size,) + density_matrix.shape)
 
     # Use slicing to replace the relevant part of the state
     state_slices = [slice(None)] * math.ndim(state)  # Initialize full slicing tuple
