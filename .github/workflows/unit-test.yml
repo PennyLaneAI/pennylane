@@ -22,6 +22,11 @@ on:
         description: Name of the artifact file that will contain the coverage file for codevoc
         required: true
         type: string
+      uv_version:
+        description: The version of uv (docs.astral.sh/uv/) to use to install dependencies
+        required: false
+        type: string
+        default: 0.5.5
       job_runner_name:
         description: The name of the runner to use for the job
         required: false
@@ -77,6 +82,14 @@ on:
         required: false
         type: string
         default: ''
+      additional_os_packages:
+        description: Additional packages to install. Values will be passed to apt-get install {value}
+        required: false
+        type: string
+        default: ''	
+
+env:
+  UV_SYSTEM_PYTHON: 1
 
 jobs:
   test:
@@ -90,19 +103,40 @@ jobs:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
           repository: PennyLaneAI/pennylane
-
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ inputs.uv_version }}
+          enable-cache: true
+          cache-dependency-glob: 'requirements-*.txt'
+      
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '${{ inputs.python_version }}'
 
+      - name: Install additional os packages
+        if: inputs.additional_os_packages != ''
+        env:
+          ADDITIONAL_OS_PACKAGES: ${{ inputs.additional_os_packages }}
+        run: |
+          while IFS= read -r line; do
+            if [ ! -z "$line" ]; then
+                echo ''
+                echo "Now installing -> sudo apt-get install -y $line"
+                echo ''
+                
+                sudo apt-get install -y $line
+            fi
+          done <<< "$ADDITIONAL_OS_PACKAGES"
+
       - name: Upgrade PIP and install wheel
-        run: pip install --upgrade pip && pip install wheel --upgrade
+        run: uv pip install --upgrade pip wheel
       
       - name: Install PennyLane dependencies
         run: |
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
+          uv pip install -r requirements-ci.txt -r requirements-dev.txt --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
@@ -113,18 +147,18 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> pip install $line"
+                echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                pip install $line
+                uv pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
       - name: Install PennyLane
         shell: bash
         run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
+          uv build --wheel  
+          uv pip install dist/PennyLane*.whl
 
       - name: Install additional PIP packages (Post PennyLane Install)
         shell: bash
@@ -135,10 +169,10 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> pip install $line"
+                echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                pip install $line
+                uv pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 

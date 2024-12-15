@@ -49,7 +49,9 @@ class ResourceHadamard(qml.Hadamard, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        if z % 2 == 0:
+            return {}
+        return {cls.resource_rep(): 1}
 
 
 class ResourceS(qml.S, re.ResourceOperator):
@@ -83,7 +85,9 @@ class ResourceS(qml.S, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 4}
+        if (mod_4 := z % 4) == 0:
+            return {}
+        return {cls.resource_rep(): mod_4}
 
 
 class ResourceSWAP(qml.SWAP, re.ResourceOperator):
@@ -151,7 +155,9 @@ class ResourceSWAP(qml.SWAP, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        if z % 2 == 0:
+            return {}
+        return {cls.resource_rep(): 1}
 
 
 class ResourceT(qml.T, re.ResourceOperator):
@@ -183,7 +189,9 @@ class ResourceT(qml.T, re.ResourceOperator):
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
         """Resources obtained from the identity T^8 = I."""
-        return {cls.resource_rep(): z % 8}
+        if (mod_8 := z % 8) == 0:
+            return {}
+        return {cls.resource_rep(): mod_8}
 
 
 class ResourceX(qml.X, re.ResourceOperator):
@@ -226,7 +234,9 @@ class ResourceX(qml.X, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        if z % 2 == 0:
+            return {}
+        return {cls.resource_rep(): 1}
 
 
 class ResourceY(qml.Y, re.ResourceOperator):
@@ -265,7 +275,9 @@ class ResourceY(qml.Y, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        if z % 2 == 0:
+            return {}
+        return {cls.resource_rep(): 1}
 
 
 class ResourceZ(qml.Z, re.ResourceOperator):
@@ -305,4 +317,6 @@ class ResourceZ(qml.Z, re.ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
-        return {cls.resource_rep(): z % 2}
+        if z % 2 == 0:
+            return {}
+        return {cls.resource_rep(): 1}

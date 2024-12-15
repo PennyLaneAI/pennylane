@@ -25,23 +25,24 @@ from pennylane.ops.op_math.exp import Exp
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.sprod import SProd
 
-# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments
+# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments
 
 
 class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
-    """Resource class for Adjoint"""
+    """Resource class for the Adjoint symbolic operation."""
 
-    @staticmethod
-    def _resource_decomp(base_class, base_params, **kwargs) -> Dict[re.CompressedResourceOp, int]:
+    @classmethod
+    def _resource_decomp(
+        cls, base_class, base_params, **kwargs
+    ) -> Dict[re.CompressedResourceOp, int]:
         try:
             return base_class.adjoint_resource_decomp(**base_params)
         except re.ResourcesNotDefined:
             gate_types = defaultdict(int)
             decomp = base_class.resources(**base_params, **kwargs)
             for gate, count in decomp.items():
-                resources = gate.op_type.adjoint_resource_decomp(**gate.params)
-                _scale_dict(resources, count, in_place=True)
-                _combine_dict(gate_types, resources, in_place=True)
+                rep = cls.resource_rep(gate.op_type, gate.params)
+                gate_types[rep] = count
 
             return gate_types
 
@@ -63,7 +64,7 @@ class ResourceAdjoint(AdjointOperation, re.ResourceOperator):
 
 
 class ResourceControlled(ControlledOp, re.ResourceOperator):
-    """Resource class for Controlled"""
+    """Resource class for the Controlled symbolic operation."""
 
     @classmethod
     def _resource_decomp(
@@ -76,7 +77,7 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
         except re.ResourcesNotDefined:
             pass
 
-        gate_types = {}
+        gate_types = defaultdict(int)
 
         if num_ctrl_values == 0:
             decomp = base_class.resources(**base_params, **kwargs)
@@ -146,14 +147,25 @@ class ResourceControlled(ControlledOp, re.ResourceOperator):
 
 
 class ResourcePow(PowOperation, re.ResourceOperator):
-    """Resource class for Pow"""
+    """Resource class for the Pow symbolic operation."""
 
-    @staticmethod
+    @classmethod
     def _resource_decomp(
-        base_class, z, base_params, **kwargs
+        cls, base_class, z, base_params, **kwargs
     ) -> Dict[re.CompressedResourceOp, int]:
         try:
             return base_class.pow_resource_decomp(z, **base_params)
+        except re.ResourcesNotDefined:
+            pass
+
+        try:
+            gate_types = defaultdict(int)
+            decomp = base_class.resources(**base_params, **kwargs)
+            for gate, count in decomp.items():
+                rep = cls.resource_rep(gate.op_type, z, gate.params)
+                gate_types[rep] = count
+
+            return gate_types
         except re.ResourcesNotDefined:
             pass
 

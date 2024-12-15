@@ -55,11 +55,13 @@ from ._qubit_device import QubitDevice
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
-from typing import Optional
+from typing import Optional, Union
 
+from pennylane.devices.qubit_mixed import simulate
 from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.transforms.core import TransformProgram
 from pennylane.tape import QuantumScript
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .execution_config import ExecutionConfig
@@ -89,7 +91,6 @@ observables = {
     "Sum",
 }
 
-# !TODO: rename it back to operations after removal of the legacy class
 operations_mixed = {
     "Identity",
     "Snapshot",
@@ -182,8 +183,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
 def warn_readout_error_state(
     tape: qml.tape.QuantumTape,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
-    """If a measurement in the QNode is an analytic state or density_matrix, and a readout error
-    parameter is defined, warn that readout error will not be applied.
+    """If a measurement in the QNode is an analytic state or density_matrix, warn that readout error will not be applied.
 
     Args:
         tape (QuantumTape, .QNode, Callable): a quantum circuit.
@@ -204,6 +204,7 @@ ABC_ARRAY = np.array(list(ABC))
 tolerance = 1e-10
 
 
+# !TODO: when removing this class, rename operations_mixed back to operations
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
 
@@ -975,8 +976,18 @@ class DefaultMixedNewAPI(Device):
         self,
         circuits: QuantumScript,
         execution_config: Optional[ExecutionConfig] = None,
-    ) -> None:
-        raise NotImplementedError
+    ) -> Union[Result, ResultBatch]:
+        return tuple(
+            simulate(
+                c,
+                rng=self._rng,
+                prng_key=self._prng_key,
+                debugger=self._debugger,
+                interface=execution_config.interface,
+                readout_errors=self.readout_err,
+            )
+            for c in circuits
+        )
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
@@ -988,10 +999,8 @@ class DefaultMixedNewAPI(Device):
             ExecutionConfig: a preprocessed execution config.
         """
         updated_values = {}
-        for option in execution_config.device_options:
-            if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
 
+        # Add gradient related
         if execution_config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"
         updated_values["use_device_gradient"] = execution_config.gradient_method in {
@@ -999,7 +1008,15 @@ class DefaultMixedNewAPI(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
+        if not execution_config.gradient_method in {"best", "backprop", None}:
+            execution_config.interface = None
+
+        # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
+
+        for option in execution_config.device_options:
+            if option not in self._device_options:
+                raise qml.DeviceError(f"device option {option} not present on {self}")
 
         for option in self._device_options:
             if option not in updated_values["device_options"]:
@@ -1035,17 +1052,11 @@ class DefaultMixedNewAPI(Device):
         transform_program = TransformProgram()
 
         # Defer first since it addes wires to the device
-        transform_program.add_transform(qml.defer_measurements, device=self)
-
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
             name=self.name,
-        )
-        transform_program.add_transform(validate_measurements, name=self.name)
-        transform_program.add_transform(
-            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         # TODO: If the setup_execution_config method becomes circuit-dependent in the future,
@@ -1056,5 +1067,12 @@ class DefaultMixedNewAPI(Device):
 
         if self.readout_err is not None:
             transform_program.add_transform(warn_readout_error_state)
+
+        # Add the validate section
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(validate_measurements, name=self.name)
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
 
         return transform_program, config

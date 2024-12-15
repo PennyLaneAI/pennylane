@@ -97,12 +97,16 @@ class TestResourceAdjoint:
         """Test the resources of nested Adjoints."""
         assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
-    @pytest.mark.parametrize("op", adjoint_ops)
-    def test_tracking(self, op):
+    expected_resources = [
+        re.Resources(gate_types={"Adjoint(QFT)": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Adjoint(Adjoint(QFT))": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Adjoint(Pow(X, 5))": 1}, num_gates=1, num_wires=1),
+    ]
+
+    @pytest.mark.parametrize("op, expected", zip(adjoint_ops, expected_resources))
+    def test_tracking(self, op, expected):
         """Test that adjoints can be tracked."""
         tracking_name = op.tracking_name_from_op()
-
-        expected = re.Resources(gate_types={tracking_name: 1})
         gate_set = {tracking_name}
 
         assert re.get_resources(op, gate_set=gate_set) == expected
@@ -201,12 +205,19 @@ class TestResourceControlled:
         """Test the resources for nested Controlled operators."""
         assert re.get_resources(nested_op) == re.get_resources(expected_op)
 
-    @pytest.mark.parametrize("op", controlled_ops)
-    def test_tracking(self, op):
+    expected_resources = [
+        re.Resources(gate_types={"C(QFT,1,0,0)": 1}, num_gates=1, num_wires=3),
+        re.Resources(gate_types={"C(C(QFT,1,0,0),1,0,0)": 1}, num_gates=1, num_wires=4),
+        re.Resources(gate_types={"C(QFT,2,1,0)": 1}, num_gates=1, num_wires=4),
+        re.Resources(
+            gate_types={"C(Adjoint(QFT),2,1,1)": 1}, num_gates=1, num_wires=4
+        ),  # PL does not count work wires for controlled operators
+    ]
+
+    @pytest.mark.parametrize("op, expected", zip(controlled_ops, expected_resources))
+    def test_tracking(self, op, expected):
         """Test that adjoints can be tracked."""
         tracking_name = op.tracking_name_from_op()
-
-        expected = re.Resources(gate_types={tracking_name: 1})
         gate_set = {tracking_name}
 
         assert re.get_resources(op, gate_set=gate_set) == expected
@@ -253,12 +264,16 @@ class TestResourcePow:
         name = rep.op_type.tracking_name(**rep.params)
         assert name == expected
 
-    @pytest.mark.parametrize("op", pow_ops)
-    def test_tracking(self, op):
+    expected_resources = [
+        re.Resources(gate_types={"Pow(QFT, 2)": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Pow(Adjoint(QFT), 2)": 1}, num_gates=1, num_wires=2),
+        re.Resources(gate_types={"Pow(Pow(QFT, 2), 3)": 1}, num_gates=1, num_wires=2),
+    ]
+
+    @pytest.mark.parametrize("op, expected", zip(pow_ops, expected_resources))
+    def test_tracking(self, op, expected):
         """Test that adjoints can be tracked."""
         tracking_name = op.tracking_name_from_op()
-
-        expected = re.Resources(gate_types={tracking_name: 1})
         gate_set = {tracking_name}
 
         assert re.get_resources(op, gate_set=gate_set) == expected

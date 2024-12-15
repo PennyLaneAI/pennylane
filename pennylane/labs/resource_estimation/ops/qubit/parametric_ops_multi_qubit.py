@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for parametric multi qubit operations."""
+from typing import Dict
+
 import pennylane as qml
 import pennylane.labs.resource_estimation as re
 
@@ -22,15 +24,17 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     r"""Resource class for the MultiRZ gate.
 
     Resources:
-        The resources come from Section VIII of "The Bravyi-Kitaev transformation for quantum computation
-        of electronic structure" (https://arxiv.org/pdf/1208.5986). See Figure 3 of that section for
-        an illustration.
+        The resources come from Section VIII (figure 3) of `The Bravyi-Kitaev transformation for
+        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper.
+
+        Specifically, the resources are given by one :code:`RZ` gate and a cascade of :math:`2 * (n - 1)`
+        :code:`CNOT` gates where :math:`n` is the number of qubits the gate acts on.
     """
 
     @staticmethod
     def _resource_decomp(num_wires, **kwargs):
-        cnot = re.CompressedResourceOp(re.ResourceCNOT, {})
-        rz = re.CompressedResourceOp(re.ResourceRZ, {})
+        cnot = re.ResourceCNOT.resource_rep()
+        rz = re.ResourceRZ.resource_rep()
 
         gate_types = {}
         gate_types[cnot] = 2 * (num_wires - 1)
@@ -45,14 +49,60 @@ class ResourceMultiRZ(qml.MultiRZ, re.ResourceOperator):
     def resource_rep(cls, num_wires):
         return re.CompressedResourceOp(cls, {"num_wires": num_wires})
 
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        num_wires,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_values == 0:
+            cnot = re.ResourceCNOT.resource_rep()
+            ctrl_rz = re.ResourceControlled.resource_rep(
+                base_class=re.ResourceRZ,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+
+            gate_types = {}
+            gate_types[cnot] = 2 * (num_wires - 1)
+            gate_types[ctrl_rz] = 1
+
+            return gate_types
+
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
 
 class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     r"""Resource class for the PauliRot gate.
 
     Resources:
-        The resources come from Section VIII of "The Bravyi-Kitaev transformation for quantum computation
-        of electronic structure" (https://arxiv.org/pdf/1208.5986). See Figure 4 of that section for
-        an illustration.
+        The resources come from Section VIII (figures 3, 4) of `The Bravyi-Kitaev transformation for
+        quantum computation of electronic structure <https://arxiv.org/pdf/1208.5986>`_ paper, in
+        combination with the following identity:
+
+        .. math::
+
+            \begin{align}
+                \hat{X} &= \hat{H} \cdot \hat{Z} \cdot \hat{H}, \\
+                \hat{Y} &= \hat{S} \cdot \hat{H} \cdot \hat{Z} \cdot \hat{H} \cdot \hat{S}^{\dagger}.
+            \end{align}
+
+        Specifically, the resources are given by one :code:`RZ` gate and a cascade of :math:`2 * (n - 1)`
+        :code:`CNOT` gates where :math:`n` is the number of qubits the gate acts on. Additionally, for
+        each :code:`X` gate in the Pauli word we conjugate by a :code:`Hadamard` gate, and for each
+        :code:`Y` gate in the Pauli word we conjugate by :code:`Hadamard` and :code:`S` gates.
+
     """
 
     @staticmethod
@@ -64,22 +114,25 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
         active_wires = len(pauli_word.replace("I", ""))
 
         h = re.ResourceHadamard.resource_rep()
-        rx = re.ResourceRX.resource_rep()
+        s = re.ResourceS.resource_rep()
         rz = re.ResourceRZ.resource_rep()
+        s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
         cnot = re.ResourceCNOT.resource_rep()
 
         h_count = 0
-        rx_count = 0
+        s_count = 0
 
         for gate in pauli_word:
             if gate == "X":
                 h_count += 2
             if gate == "Y":
-                rx_count += 2
+                h_count += 2
+                s_count += 1
 
         gate_types = {}
         gate_types[h] = h_count
-        gate_types[rx] = rx_count
+        gate_types[s] = s_count
+        gate_types[s_dagg] = s_count
         gate_types[rz] = 1
         gate_types[cnot] = 2 * (active_wires - 1)
 
@@ -93,6 +146,66 @@ class ResourcePauliRot(qml.PauliRot, re.ResourceOperator):
     @classmethod
     def resource_rep(cls, pauli_word):
         return re.CompressedResourceOp(cls, {"pauli_word": pauli_word})
+
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+        pauli_word,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_values == 0:
+            if set(pauli_word) == {"I"}:
+                ctrl_gp = re.ResourceControlled.resource_rep(
+                    re.ResourceGlobalPhase,
+                    {},
+                    num_ctrl_wires,
+                    num_ctrl_values,
+                    num_work_wires,
+                )
+                return {ctrl_gp: 1}
+
+            active_wires = len(pauli_word.replace("I", ""))
+
+            h = re.ResourceHadamard.resource_rep()
+            s = re.ResourceS.resource_rep()
+            s_dagg = re.ResourceAdjoint.resource_rep(re.ResourceS, {})
+            cnot = re.ResourceCNOT.resource_rep()
+            ctrl_rz = re.ResourceControlled.resource_rep(
+                base_class=re.ResourceRZ,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+
+            h_count = 0
+            s_count = 0
+
+            for gate in pauli_word:
+                if gate == "X":
+                    h_count += 2
+                if gate == "Y":
+                    h_count += 2
+                    s_count += 1
+
+            gate_types = {}
+            gate_types[h] = h_count
+            gate_types[s] = s_count
+            gate_types[s_dagg] = s_count
+            gate_types[ctrl_rz] = 1
+            gate_types[cnot] = 2 * (active_wires - 1)
+
+            return gate_types
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
 
 class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
@@ -109,16 +222,16 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
                 -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
             \end{bmatrix}.
 
-        The circuit implementing this transformation is given by
+        The circuit implementing this transformation is given by:
 
         .. code-block:: bash
 
-            0: ─╭●──RX(0.10)─╭●─┤
+            0: ─╭●─────RX────╭●─┤
             1: ─╰X───────────╰X─┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         cnot = re.ResourceCNOT.resource_rep()
         rx = re.ResourceRX.resource_rep()
 
@@ -132,8 +245,39 @@ class ResourceIsingXX(qml.IsingXX, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, *args):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_values == 0:
+            cnot = re.ResourceCNOT.resource_rep()
+            ctrl_rx = re.ResourceControlled.resource_rep(
+                base_class=re.ResourceRX,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+
+            gate_types = {}
+            gate_types[cnot] = 2
+            gate_types[ctrl_rx] = 1
+
+            return gate_types
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
 
 class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
@@ -150,16 +294,16 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
                 i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
             \end{bmatrix}.
 
-        The circuit implementing this transoformation is given by
+        The circuit implementing this transformation is given by
 
         .. code-block:: bash
 
-            0: ─╭●──RY(0.10)─╭●─┤
+            0: ─╭●─────RY────╭●─┤
             1: ─╰Y───────────╰Y─┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         cy = re.ops.ResourceCY.resource_rep()
         ry = re.ops.ResourceRY.resource_rep()
 
@@ -173,8 +317,39 @@ class ResourceIsingYY(qml.IsingYY, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, *args):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_values == 0:
+            cy = re.ops.ResourceCY.resource_rep()
+            ctrl_ry = re.ResourceControlled.resource_rep(
+                base_class=re.ResourceRY,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+
+            gate_types = {}
+            gate_types[cy] = 2
+            gate_types[ctrl_ry] = 1
+
+            return gate_types
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
 
 class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
@@ -191,16 +366,16 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
                 0 & 0 & 0 & 1
             \end{bmatrix}.
 
-        The circuit implementing this gate is given by
+        The circuit implementing this transformation is given by
 
         .. code-block:: bash
 
-            0: ──H─╭●──RY(0.05)──╭●──H─┤
-            1: ────╰Y──RX(-0.05)─╰Y────┤
+            0: ──H─╭●─────RY────╭●──H─┤
+            1: ────╰Y─────RX────╰Y────┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         h = re.ResourceHadamard.resource_rep()
         cy = re.ResourceCY.resource_rep()
         ry = re.ResourceRY.resource_rep()
@@ -218,8 +393,49 @@ class ResourceIsingXY(qml.IsingXY, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, *args):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_values == 0:
+            h = re.ResourceHadamard.resource_rep()
+            cy = re.ResourceCY.resource_rep()
+            ctrl_rx = re.ResourceControlled.resource_rep(
+                base_class=re.ResourceRX,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+            ctrl_ry = re.ResourceControlled.resource_rep(
+                base_class=re.ResourceRY,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+
+            gate_types = {}
+            gate_types[h] = 2
+            gate_types[cy] = 2
+            gate_types[ctrl_ry] = 1
+            gate_types[ctrl_rx] = 1
+
+            return gate_types
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
 
 class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
@@ -236,16 +452,16 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
                 0 & 0 & 0 & e^{-i \phi / 2}
             \end{bmatrix}.
 
-        The circuit implmenting this transformation is given by
+        The circuit implmenting this transformation is given by:
 
         .. code-block:: bash
 
             0: ─╭●───────────╭●─┤
-            1: ─╰X──RZ(0.10)─╰X─┤
+            1: ─╰X─────RZ────╰X─┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         cnot = re.ResourceCNOT.resource_rep()
         rz = re.ResourceRZ.resource_rep()
 
@@ -259,8 +475,39 @@ class ResourceIsingZZ(qml.IsingZZ, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, *args):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_values == 0:
+            cnot = re.ResourceCNOT.resource_rep()
+            ctrl_rz = re.ResourceControlled.resource_rep(
+                base_class=re.ResourceRZ,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+
+            gate_types = {}
+            gate_types[cnot] = 2
+            gate_types[ctrl_rz] = 1
+
+            return gate_types
+        raise re.ResourcesNotDefined
+
+    @classmethod
+    def pow_resource_decomp(cls, z) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
 
 
 class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
@@ -274,16 +521,16 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
                 0 & 0 & 0 & 1
             \end{bmatrix}.
 
-        The circuit implementing this transformation is given by
+        The circuit implementing this transformation is given by:
 
         .. code-block:: bash
 
             0: ─╭SWAP─╭●───────────╭●─┤
-            1: ─╰SWAP─╰X──Rϕ(0.10)─╰X─┤
+            1: ─╰SWAP─╰X─────Rϕ────╰X─┤
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         swap = re.ResourceSWAP.resource_rep()
         cnot = re.ResourceCNOT.resource_rep()
         phase = re.ResourcePhaseShift.resource_rep()
@@ -299,5 +546,40 @@ class ResourcePSWAP(qml.PSWAP, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, *args):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
+
+    @classmethod
+    def adjoint_resource_decomp(cls) -> Dict[re.CompressedResourceOp, int]:
+        return {cls.resource_rep(): 1}
+
+    @staticmethod
+    def controlled_resource_decomp(
+        num_ctrl_wires,
+        num_ctrl_values,
+        num_work_wires,
+    ) -> Dict[re.CompressedResourceOp, int]:
+        if num_ctrl_values == 0:
+            cnot = re.ResourceCNOT.resource_rep()
+            ctrl_swap = re.ResourceControlled.resource_rep(
+                base_class=re.ResourceSWAP,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+            ctrl_ps = re.ResourceControlled.resource_rep(
+                base_class=re.ResourcePhaseShift,
+                base_params={},
+                num_ctrl_wires=num_ctrl_wires,
+                num_ctrl_values=num_ctrl_values,
+                num_work_wires=num_work_wires,
+            )
+
+            gate_types = {}
+            gate_types[ctrl_swap] = 1
+            gate_types[cnot] = 2
+            gate_types[ctrl_ps] = 1
+            return gate_types
+
+        raise re.ResourcesNotDefined

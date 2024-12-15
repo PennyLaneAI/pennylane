@@ -32,7 +32,7 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         t_dag = re.ResourceAdjoint.resource_rep(re.ResourceT, {})
         h = re.ResourceHadamard.resource_rep()
         s = re.ResourceS.resource_rep()
@@ -58,7 +58,7 @@ class ResourceSingleExcitation(qml.SingleExcitation, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -79,8 +79,8 @@ class ResourceSingleExcitationMinus(qml.SingleExcitationMinus, re.ResourceOperat
 
         .. code-block:: bash
 
-            0: ──X─╭Rϕ(-0.05)──X─╭●─────────╭●─╭RY(0.10)─╭●─┤
-            1: ──X─╰●──────────X─╰Rϕ(-0.05)─╰X─╰●────────╰X─┤
+            0: ──X─╭Rϕ────X─╭●────╭●─╭RY───╭●─┤
+            1: ──X─╰●─────X─╰Rϕ───╰X─╰●────╰X─┤
     """
 
     @staticmethod
@@ -123,8 +123,8 @@ class ResourceSingleExcitationPlus(qml.SingleExcitationPlus, re.ResourceOperator
 
         .. code-block:: bash
 
-            0: ──X─╭Rϕ(0.05)──X─╭●────────╭●─╭RY(0.10)─╭●─┤
-            1: ──X─╰●─────────X─╰Rϕ(0.05)─╰X─╰●────────╰X─┤
+            0: ──X─╭Rϕ──X─╭●───╭●─╭RY──╭●─┤
+            1: ──X─╰●───X─╰Rϕ──╰X─╰●───╰X─┤
     """
 
     @staticmethod
@@ -168,10 +168,10 @@ class ResourceDoubleExcitation(qml.DoubleExcitation, re.ResourceOperator):
 
         .. code-block:: bash
 
-            0: ────╭●──H─╭●──RY(-0.01)─╭●──RY(-0.01)─────────────────╭X──RY(0.01)────────╭●──RY(0.01)──╭●─╭X──H──╭●────┤
-            1: ────│─────╰X──RY(0.01)──│─────────────╭X──RY(0.01)─╭X─│───RY(-0.01)─╭X────│───RY(-0.01)─╰X─│──────│─────┤
-            2: ─╭●─╰X─╭●───────────────│─────────────│────────────╰●─╰●────────────│─────│────────────────╰●─────╰X─╭●─┤
-            3: ─╰X──H─╰X───────────────╰X──H─────────╰●────────────────────────────╰●──H─╰X──H──────────────────────╰X─┤
+            0: ────╭●──H─╭●──RY───╭●──RY─────────────╭X──RY──────────╭●──RY───╭●─╭X──H──╭●────┤
+            1: ────│─────╰X──RY───│───────╭X──RY──╭X─│───RY────╭X────│───RY───╰X─│──────│─────┤
+            2: ─╭●─╰X─╭●──────────│───────│───────╰●─╰●────────│─────│───────────╰●─────╰X─╭●─┤
+            3: ─╰X──H─╰X──────────╰X──H───╰●───────────────────╰●──H─╰X──H─────────────────╰X─┤
     """
 
     @staticmethod
@@ -210,7 +210,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
         ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
@@ -228,7 +228,7 @@ class ResourceDoubleExcitationMinus(qml.DoubleExcitationMinus, re.ResourceOperat
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -246,7 +246,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
     """
 
     @staticmethod
-    def _resource_decomp(*args, **kwargs):
+    def _resource_decomp(**kwargs):
         phase = re.ResourceGlobalPhase.resource_rep()
         double = re.ResourceDoubleExcitation.resource_rep()
         ctrl_z = re.ResourceControlled.resource_rep(re.ResourceZ, {}, 3, 1, 0)
@@ -264,7 +264,7 @@ class ResourceDoubleExcitationPlus(qml.DoubleExcitationPlus, re.ResourceOperator
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -294,7 +294,7 @@ class ResourceOrbitalRotation(qml.OrbitalRotation, re.ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, **kwargs):
+    def resource_rep(cls):
         return re.CompressedResourceOp(cls, {})
 
 
@@ -315,8 +315,8 @@ class ResourceFermionicSWAP(qml.FermionicSWAP, re.ResourceOperator):
 
         .. code-block:: bash
 
-            0: ──H─╭MultiRZ(0.05)──H──RX(1.57)─╭MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╭Exp(0.00+0.05j I)─┤
-            1: ──H─╰MultiRZ(0.05)──H──RX(1.57)─╰MultiRZ(0.05)──RX(-1.57)──RZ(0.05)─╰Exp(0.00+0.05j I)─┤
+            0: ──H─╭MultiRZ──H──RX─╭MultiRZ──RX──RZ─╭Exp(I)─┤
+            1: ──H─╰MultiRZ──H──RX─╰MultiRZ──RX──RZ─╰Exp(I)─┤
     """
 
     @staticmethod

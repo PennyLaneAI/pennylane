@@ -102,7 +102,7 @@ class TestValidation:
         test_interface = "something"
         expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+        with pytest.raises(ValueError, match=expected_error):
             QNode(dummyfunc, dev, interface="something")
 
     def test_changing_invalid_interface(self):
@@ -119,7 +119,7 @@ class TestValidation:
 
         expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
-        with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+        with pytest.raises(ValueError, match=expected_error):
             circuit.interface = test_interface
 
     def test_invalid_device(self):
@@ -204,29 +204,6 @@ class TestValidation:
         assert gradient_fn is qml.gradients.param_shift
         assert not gradient_kwargs
         assert "DefaultQubitLegacy device" in repr(execution_device)
-
-    # pylint: disable=protected-access
-    @pytest.mark.xfail(reason="No longer possible thanks to the new Legacy Facade")
-    def test_best_method_is_finite_diff(self, monkeypatch):
-        """Test that the method for determining the best diff method
-        for a given device and interface returns finite differences"""
-
-        def capabilities(cls):
-            capabilities = cls._capabilities
-            capabilities.update(model="None")
-            return capabilities
-
-        # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(DefaultQubitLegacy, "capabilities", capabilities)
-
-        dev = DefaultQubitLegacy(wires=1)
-        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
-        ):
-            res = QNode.get_best_method(dev, "another_interface")
-        assert res == (qml.gradients.finite_diff, {}, dev)
 
     # pylint: disable=protected-access
     def test_best_method_str_is_device(self, monkeypatch):
