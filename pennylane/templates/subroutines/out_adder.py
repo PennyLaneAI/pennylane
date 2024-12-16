@@ -151,7 +151,7 @@ class OutAdder(Operation):
         x_wires = qml.wires.Wires(x_wires)
         y_wires = qml.wires.Wires(y_wires)
         output_wires = qml.wires.Wires(output_wires)
-        work_wires = qml.wires.Wires(()) if work_wires is None else qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
 
         num_work_wires = len(work_wires)
 
