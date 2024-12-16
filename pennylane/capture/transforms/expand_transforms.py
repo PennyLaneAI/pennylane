@@ -14,7 +14,7 @@
 """
 Helper function for expanding transforms with program capture
 """
-from functools import partial, wraps
+from functools import wraps
 from typing import Callable
 from pennylane.capture.base_interpreter import PlxprInterpreter
 from pennylane.capture.flatfn import FlatFn
@@ -31,14 +31,6 @@ def expand_plxpr_transforms(f: Callable) -> Callable:
 
     @wraps(f)
     def wrapper(*args, **kwargs):
-        # f_partial = partial(f, **kwargs)
-        # flat_f = FlatFn(f_partial)
-        # jaxpr = make_jaxpr(flat_f)(*args)
-        # assert flat_f.out_tree is not None, "Should be set when constructing the jaxpr"
-
-        # interpreter = ExpandTransformsInterpreter()
-        # res = interpreter.eval(jaxpr.jaxpr, jaxpr.consts, *args)
-        # return tree_unflatten(flat_f.out_tree, res)
         transformed_f = ExpandTransformsInterpreter()(f)
         return transformed_f(*args, **kwargs)
 

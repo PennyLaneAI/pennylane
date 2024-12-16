@@ -23,7 +23,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
-from pennylane.capture.transforms import MapWiresInterpreter
+from pennylane.ops.functions.map_wires import MapWiresInterpreter
 
 
 # pylint: disable=protected-access, expression-not-assigned

@@ -37,12 +37,20 @@ def register_primitive_for_expansion(primitive, plxpr_transform):
         if plxpr_transform is None:
             raise NotImplementedError
 
+        import jax
+
         inner_args = invals[args_slice]
         inner_consts = invals[consts_slice]
         targs = invals[targs_slice]
 
-        new_jaxpr = plxpr_transform(inner_jaxpr, inner_consts, targs, tkwargs, *inner_args)
-        return copy.copy(self).eval(new_jaxpr.jaxpr, inner_consts, *inner_args)
+        def wrapper(*args):
+            return copy.copy(self).eval(inner_jaxpr, inner_consts, *args)
+
+        unravelled_jaxpr = jax.make_jaxpr(wrapper)(*inner_args)
+        final_jaxpr = plxpr_transform(
+            unravelled_jaxpr.jaxpr, unravelled_jaxpr.consts, targs, tkwargs, *inner_args
+        )
+        return jax.core.eval_jaxpr(final_jaxpr.jaxpr, final_jaxpr.consts, *inner_args)
 
 
 class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
@@ -200,6 +208,11 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         return self._classical_cotransform
 
     @property
+    def plxpr_transform(self):
+        """Function for transforming plxpr."""
+        return self._plxpr_transform
+
+    @property
     def is_informative(self):
         """``True`` if the transform is informative."""
         return self._is_informative
@@ -269,24 +282,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             )
         )
         return qnode
-
-    def plxpr_transform(self, primitive, tracers, params, targs, tkwargs, state):
-        """Function for processing primitives to transform PLxPR.
-
-        Args:
-            primitive (jax.core.Primitive): Primitive to transform
-            tracers (Sequence[jax.core.Tracer]): Input tracers to the primitive
-            params (dict): Dictionary containing keyword arguments/metadata for the primitive
-            targs (Sequence[Any]): Arguments for the transform
-            tkwargs (dict): Keyword arguments for the transform
-            state (dict): Dictionary containing auxiliary information about the environment/state
-                needed to apply the transform
-
-        Returns:
-            Any: The results of the transformed primitive
-        """
-        # Implemented this way rather than using a property so that the correct docstring is used
-        return self._plxpr_transform(primitive, tracers, params, targs, tkwargs, state)
 
     def _capture_callable_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""

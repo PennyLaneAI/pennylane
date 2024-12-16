@@ -28,7 +28,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.capture.transforms import DecomposeInterpreter
+from pennylane.transforms.decompose import DecomposeInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
 
