@@ -122,8 +122,7 @@ class Multiplier(Operation):
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
-        work_wires = work_wires or ()
-        work_wires = qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
         if len(work_wires) == 0:
             raise ValueError("Work wires must be specified for Multiplier")
 
@@ -148,9 +147,9 @@ class Multiplier(Operation):
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
-        self.hyperparameters["x_wires"] = qml.wires.Wires(x_wires)
-        all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
+        self.hyperparameters["work_wires"] = work_wires
+        self.hyperparameters["x_wires"] = x_wires
+        all_wires = x_wires + work_wires
         super().__init__(wires=all_wires, id=id)
 
     @property

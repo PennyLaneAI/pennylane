@@ -273,8 +273,7 @@ class OutPoly(Operation):
 
         registers_wires = [*input_registers, output_wires]
 
-        work_wires = work_wires or ()
-        work_wires = qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
         num_work_wires = len(work_wires)
         if mod is None:
             mod = 2 ** len(registers_wires[-1])
@@ -302,7 +301,7 @@ class OutPoly(Operation):
 
         self.hyperparameters["polynomial_function"] = polynomial_function
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+        self.hyperparameters["work_wires"] = work_wires
 
         wires_vars = [len(w) for w in registers_wires[:-1]]
 
