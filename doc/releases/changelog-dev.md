@@ -201,6 +201,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Improvements 🛠</h3>
 
+* Remove redundant commutator computations from `qml.lie_closure`.
+  [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
+
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
   arguments and `interface="auto"`.
   [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
