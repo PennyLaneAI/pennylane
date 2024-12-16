@@ -66,6 +66,7 @@ class TestControlledQubitUnitary:
         assert op.base.wires == Wires(wires)
         assert op.control_wires == Wires(control_wires)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
         "control_wires_1, wires_1, control_wires_2, wires_2",
