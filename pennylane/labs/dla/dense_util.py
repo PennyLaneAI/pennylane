@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-# pylint: disable=possibly-used-before-assignment, too-many-return-statements
+# pylint: disable=too-many-return-statements, missing-function-docstring, possibly-used-before-assignment
 from functools import reduce
 from itertools import combinations, combinations_with_replacement
 from typing import Iterable, List, Optional, Union
@@ -163,7 +163,8 @@ def _idx_to_pw(idx, n):
 
 
 def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
-    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+    r"""Decomposes a Hermitian matrix or a batch of matrices into a linear combination
+    of Pauli operators.
 
     Args:
         H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
@@ -235,7 +236,7 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
 
 
 def check_commutation(ops1, ops2, vspace):
-    r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`
+    r"""Helper function to check :math:`[\text{ops1}, \text{ops2}] \subseteq \text{vspace}`.
 
     .. warning:: This function is expensive to compute
 
@@ -277,7 +278,7 @@ def check_commutation(ops1, ops2, vspace):
 
 
 def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
-    r"""Helper function to check if all operators in a set of operators commute
+    r"""Helper function to check if all operators in ``ops`` commute.
 
     .. warning:: This function is expensive to compute
 
@@ -326,7 +327,7 @@ def check_all_commuting(ops: List[Union[PauliSentence, np.ndarray, Operator]]):
 
 
 def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
-    r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}`
+    r"""Helper function to check the validity of a Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus \mathfrak{m}.`
 
     Check whether of not the following properties are fulfilled.
 
@@ -586,7 +587,7 @@ def trace_inner_product(
 
 
 def change_basis_ad_rep(adj: np.ndarray, basis_change: np.ndarray):
-    r"""Apply the basis change between bases of operators to the adjoint representation.
+    r"""Apply a ``basis_change`` between bases of operators to the adjoint representation ``adj``.
 
     Assume the adjoint repesentation is given in terms of a basis :math:`\{b_j\}`,
     :math:`\text{ad_\mu}_{\alpha \beta} \propto \text{tr}\left(b_\mu \cdot [b_\alpha, b_\beta] \right)`.
