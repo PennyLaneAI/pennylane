@@ -64,6 +64,11 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
+  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
+  decompositions that include `qml.GlobalPhase` gates, etc.
+  [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
+
 * Added support to build a vibrational Hamiltonian in Taylor form.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
@@ -526,6 +531,7 @@ Diksha Dhawan,
 Lasse Dierich,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
+Simone Gasperini,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
