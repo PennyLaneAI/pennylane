@@ -497,7 +497,7 @@ class TestExpvalMeasurement:
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+            return qml.shadow_expval(qml.PauliZ(0), seed=seed), qml.expval(qml.PauliZ(0))
 
         res = circuit()
         assert isinstance(res, tuple)

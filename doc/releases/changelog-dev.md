@@ -64,6 +64,9 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added support to build a vibrational Hamiltonian in Taylor form.
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
 
@@ -183,8 +186,9 @@
   visualizations, allowing global and per-wire customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
-* Added Pauli String representations for the gates X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP.
+* Added Pauli String representations for the gates X, Y, Z, S, T, SX, SWAP, ISWAP, ECR, SISWAP. Fixed a shape error in the matrix conversion of `PauliSentence`s with list or array input.
   [(#6562)](https://github.com/PennyLaneAI/pennylane/pull/6562)
+  [(#6587)](https://github.com/PennyLaneAI/pennylane/pull/6587)
   
 * `QNode` and `qml.execute` now forbid certain keyword arguments from being passed positionally.
   [(#6610)](https://github.com/PennyLaneAI/pennylane/pull/6610)
@@ -204,6 +208,21 @@
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
+  [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
+
+* Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
+  when program capture is enabled. This class decomposes pennylane operators following the same API as
+  `qml.transforms.decompose`.
+  [(#6691)](https://github.com/PennyLaneAI/pennylane/pull/6691)
+
+* Implemented a `MapWiresInterpreter` class that can be used as a quantum transform to map
+  operator and measurement wires with capture enabled.
+  [(#6697)](https://github.com/PennyLaneAI/pennylane/pull/6697)
+
+* A `qml.tape.plxpr_to_tape` function can now convert plxpr to a tape.
+  [(#6343)](https://github.com/PennyLaneAI/pennylane/pull/6343)
 
 * Execution with capture enabled now follows a new execution pipeline and natively passes the
   captured jaxpr to the device. Since it no longer falls back to the old pipeline, execution
@@ -241,7 +260,10 @@
 
 <h4>Other Improvements</h4>
 
-* Standardize supported interfaces to an internal Enum object. 
+* Add developer focused `run` function to `qml.workflow` module.
+  [(#6657)](https://github.com/PennyLaneAI/pennylane/pull/6657)
+
+* Standardize supported interfaces to an internal `Enum` object. 
   [(#6643)](https://github.com/PennyLaneAI/pennylane/pull/6643)
 
 * Moved all interface handling logic to `interface_utils.py` in the `qml.math` module.
@@ -281,6 +303,9 @@
 * Fix the string representation of `Resources` instances to match the attribute names.
   [(#6581)](https://github.com/PennyLaneAI/pennylane/pull/6581)
 
+* Improved documentation for the `dynamic_one_shot` transform, and a warning is raised when a user-applied `dynamic_one_shot` transform is ignored in favour of the existing transform in a device's preprocessing transform program.
+  [(#6701)](https://github.com/PennyLaneAI/pennylane/pull/6701)
+
 <h3>Labs 🧪</h3>
 
 * Added base class `Resources`, `CompressedResourceOp`, `ResourceOperator` for advanced resource estimation.
@@ -302,6 +327,9 @@
 * Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
+
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Breaking changes 💔</h3>
 
@@ -405,6 +433,10 @@ same information.
 
 <h3>Documentation 📝</h3>
 
+* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to include a 
+  note that says that they are not compatible with qjit or jit.  
+  [(#6702)](https://github.com/PennyLaneAI/pennylane/pull/6702)
+
 * Updated the documentation of `TrotterProduct` to include the impact of the operands in the
   Hamiltonian on the strucutre of the created circuit. Included an illustrative example on this.
   [(#6629)](https://github.com/PennyLaneAI/pennylane/pull/6629)
@@ -415,7 +447,16 @@ same information.
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
+* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+  [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
+
+* Updated the documentation of `QSVT` to include examples for different block encodings.
+  [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
+
 <h3>Bug fixes 🐛</h3>
+
+* The `Wires` object throws a `TypeError` if `wires=None`. 
+  [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
 
 * The `qml.Hermitian` class no longer checks that the provided matrix is hermitian.
   The reason for this removal is to allow for faster execution and avoid incompatibilities with `jax.jit`.
@@ -442,7 +483,6 @@ same information.
 * Fixed `Identity.__repr__` to return correct wires list.
   [(#6506)](https://github.com/PennyLaneAI/pennylane/pull/6506)
 
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -459,6 +499,7 @@ Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+Alan Martin,
 William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
