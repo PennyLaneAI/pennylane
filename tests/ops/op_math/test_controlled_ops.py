@@ -54,6 +54,7 @@ class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
 
     def test_wires_is_none(self):
+        """Test that an error is raised if the user provides no target wires for an iterable base operator"""
         base_op = [[0, 1], [1, 0]]
 
         with pytest.raises(TypeError, match="Must specify a set of wires"):
