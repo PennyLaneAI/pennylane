@@ -20,7 +20,7 @@ import sys
 from concurrent import futures
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterable, Mapping, Optional, Union
+from typing import Iterable, Mapping, Optional, Union, Any
 
 from requests import get, head
 
@@ -33,7 +33,6 @@ from .graphql import (
     _get_parameter_tree,
     list_data_names,
     list_attributes,
-    ParameterTreeNode,
 )
 from .foldermap import FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params, provide_defaults
@@ -469,7 +468,7 @@ def _interactive_request_attributes(attribute_options):
 
 
 def _interactive_request_parameters(
-    parameter_names: list[str], parameter_tree: ParameterTreeNode
+    parameter_names: list[str], parameter_tree: dict[str, Any]
 ):
     """Prompts the user to select parameters for datasets one at a time."""
     selection: dict[str, str] = {}
