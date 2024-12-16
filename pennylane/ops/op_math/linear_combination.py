@@ -227,8 +227,8 @@ class LinearCombination(Sum):
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
                 Defaults to ``'qwc'``.
             method (str): The graph colouring heuristic to use in solving minimum clique cover for
-                grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-                First). Defaults to ``'lf'``.
+                grouping, which can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation),
+            or ``'gis'`` (Greedy Independent Set). Defaults to ``'lf'``.
 
         **Example**
 
