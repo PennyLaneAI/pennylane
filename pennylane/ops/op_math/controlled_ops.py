@@ -120,7 +120,7 @@ class ControlledQubitUnitary(ControlledOp):
             data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
         )
 
-    # pylint: disable=arguments-differ, too-many-arguments, unused-argument
+    # pylint: disable=arguments-differ, too-many-arguments, unused-argument, too-many-positional-arguments
     @classmethod
     def _primitive_bind_call(
         cls,
@@ -131,10 +131,10 @@ class ControlledQubitUnitary(ControlledOp):
         unitary_check=False,
         work_wires: WiresLike = (),
     ):
-        wires = Wires(()) if wires is None else Wires(wires)
-        work_wires = Wires(()) if work_wires is None else Wires(work_wires)
+        wires = Wires(() if wires is None else wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        if getattr(base, "wires", False) and len(wires) != 0:
+        if hasattr(base, "wires", False) and len(wires) != 0:
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
@@ -159,7 +159,7 @@ class ControlledQubitUnitary(ControlledOp):
         work_wires = () if work_wires is None else Wires(work_wires)
         control_wires = Wires(control_wires)
 
-        if getattr(base, "wires", False) and len(wires) != 0:
+        if hasattr(base, "wires", False) and len(wires) != 0:
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
