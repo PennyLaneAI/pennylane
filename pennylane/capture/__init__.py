@@ -177,7 +177,7 @@ AbstractOperator: type
 AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
-expand_plxpr_transforms: Callable[[Callable], Callable]
+expand_plxpr_transforms: Callable[[Callable], Callable]  # pylint: disable=redefined-outer-name
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name
