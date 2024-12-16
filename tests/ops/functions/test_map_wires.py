@@ -201,7 +201,6 @@ class TestMapWiresCallables:
         assert m_qnode.tape.observables[0].wires == Wires(wire_map[0])
         assert m_qnode.tape.observables[1].wires == Wires(wire_map[1])
 
-
     @pytest.mark.jax
     def test_jitting_simplified_qfunc(self):
         """Test that we can jit qnodes that have a mapped quantum function."""
