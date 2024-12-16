@@ -64,6 +64,9 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added support to build a vibrational Hamiltonian in Taylor form.
+  [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
+
 * Added `unary_mapping()` function to map `BoseWord` and `BoseSentence` to qubit operators, using unary mapping.
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
 
@@ -229,6 +232,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
+  [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
+
 * Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
   when program capture is enabled. This class decomposes pennylane operators following the same API as
   `qml.transforms.decompose`.
@@ -345,6 +351,9 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
@@ -447,6 +456,10 @@ same information.
 
 <h3>Documentation 📝</h3>
 
+* The docstrings for `qml.qchem.Molecule` and `qml.qchem.molecular_hamiltonian` have been updated to include a 
+  note that says that they are not compatible with qjit or jit.  
+  [(#6702)](https://github.com/PennyLaneAI/pennylane/pull/6702)
+
 * Updated the documentation of `TrotterProduct` to include the impact of the operands in the
   Hamiltonian on the strucutre of the created circuit. Included an illustrative example on this.
   [(#6629)](https://github.com/PennyLaneAI/pennylane/pull/6629)
@@ -456,6 +469,12 @@ same information.
 
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
+
+* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+  [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
+
+* Updated the documentation of `QSVT` to include examples for different block encodings.
+  [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -504,6 +523,7 @@ Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+Alan Martin,
 William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
