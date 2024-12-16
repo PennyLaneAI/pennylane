@@ -578,70 +578,95 @@ Implementation of the QSP (Quantum Signal Processing) algorithm proposed in http
 
 import scipy
 
-def cheby_pol(degree, x):
+def jit_if_available(func):
+    """
+    decorator that jax.jit the qsp_iterative optimization functions if jax is available
+    the static arguments to the jit function are meant to be contained in kwargs
+    """
+    try:
+        from functools import partial
+        from functools import wraps
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        return jax.jit(func)
+    except ImportError:
+        return func
+
+
+
+@jit_if_available
+def cheby_pol(x, degree):
     """cos(degree*arcos(x))"""
-    if np.abs(x) > 1:
-        raise ValueError()
+    # if np.abs(x) > 1:
+    #     raise ValueError()
     return qml.math.cos(degree * qml.math.arccos(x))
 
+@jit_if_available
 def poly_func(
-    coeffs, degree, parity, x):
+    coeffs, degree, parity, x
+    ):
     """\sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(karccos(x))"""
-    if parity == 0:
-        assert degree == 2 * len(coeffs) - 2
-        return qml.math.sum(
-            qml.math.array([coeffs[i] * cheby_pol(2 * i, x) for i in range(len(coeffs))])
-        )
-    if parity == 1:
-        assert degree == 2 * len(coeffs) - 1
-        return qml.math.sum(
-            qml.math.array([coeffs[i] * cheby_pol(2 * i + 1, x) for i in range(len(coeffs))])
-        )
-    assert degree == 2 * len(coeffs) - 2 + parity
-    return qml.math.sum(
-        qml.math.array([coeffs[i] * cheby_pol(2 * i + parity, x) for i in range(len(coeffs))])
+    ind = qml.math.arange(len(coeffs))
+    return sum(
+        [coeffs[i] * cheby_pol(x, degree=2 * i + parity) for i in ind]
     )
 
+@jit_if_available
 def z_rotation(phi):
-    return qml.math.array([[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]])
+    try:
+        import jax
+        interface='jax'
+    except ModuleNotFoundError:
+        interface=None
+    return qml.math.array([[qml.math.exp(1j * phi), 0.0], [0.0, qml.math.exp(-1j * phi)]], like=interface)
 
+@jit_if_available
 def W_of_x(x):
     """W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
+    try:
+        import jax
+        interface='jax'
+    except ModuleNotFoundError:
+        interface=None
     return qml.math.array(
         [
-            [cheby_pol(1, x), 1j * qml.math.sqrt(1 - cheby_pol(1, x) ** 2)],
-            [1j * qml.math.sqrt(1 - cheby_pol(1, x) ** 2), cheby_pol(1, x)],
-        ]
+            [cheby_pol(x=x, degree=1.), 1j * qml.math.sqrt(1 - cheby_pol(x=x, degree=1.) ** 2)],
+            [1j * qml.math.sqrt(1 - cheby_pol(x=x, degree=1.) ** 2), cheby_pol(x=x, degree=1.)],
+        ], like=interface
     )
 
+@jit_if_available
 def qsp_iterate(phi, x):
     """defined in Theorem (1) of https://arxiv.org/pdf/2002.11649"""
-    return W_of_x(x) @ z_rotation(phi)
+    return qml.math.dot(W_of_x(x=x), z_rotation(phi=phi))
 
-from functools import reduce
 
+@jit_if_available
 def qsp_iterates(phis, x):
     """Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)"""
     mtx = qml.math.eye(2)
     for phi in phis[::-1][:-1]:
-        mtx = qml.math.dot(qsp_iterate(phi, x), mtx)
-    mtx = z_rotation(phis[0]) @ mtx
+        mtx = qml.math.dot(qsp_iterate(x=x, phi=phi), mtx)
+    mtx = qml.math.dot(z_rotation(phi=phis[0]), mtx)
 
     return mtx
 
+import math
+
 def grid_pts(degree):
     """x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) Grid over which the polynomials are evaluated and the optimization is carried defined in page 8"""
-    d = int(qml.math.ceil((degree + 1) / 2))
-    return qml.math.array([qml.math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)])
+    d = (degree + 1)// 2 + (degree+1) % 2
+    return qml.math.array([qml.math.cos((2 * j - 1) * math.pi / (4 * d)) for j in range(1, d + 1)])
 
-def qsp_optimization(degree, coeffs_target_func, opt_method="Newton-CG"):
+def qsp_optimization(degree, coeffs_target_func, optimizer=scipy.optimize.minimize, opt_method="Newton-CG"):
     """Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing the distance between the target and qsp polynomail over the grid"""
     parity = degree % 2
 
     grid_points = grid_pts(degree)
     initial_guess = [qml.numpy.pi / 4] + [0.0] * (degree - 1) + [qml.numpy.pi / 4]
     initial_guess = qml.math.array(initial_guess)
-    targets = [poly_func(coeffs_target_func, degree, parity, x) for x in grid_points]
+    targets = [poly_func(coeffs=coeffs_target_func, x=x, degree=degree, parity=parity) for x in grid_points]
 
     def obj_function(phi):
         # Equation (23)
@@ -649,18 +674,22 @@ def qsp_optimization(degree, coeffs_target_func, opt_method="Newton-CG"):
 
         for i,x in enumerate(grid_points):
             obj_func += (
-                qml.math.real(qsp_iterates(phi, x)[0, 0])
+                qml.math.real(qsp_iterates(phis=phi, x=x)[0, 0])
                 - targets[i]
             ) ** 2
 
         return 1 / len(grid_points) * obj_func
-
     opt_kwargs = {}
+    try:
+        from jax import jacobian, hessian
+    except:
+        from autograd import jacobian, hessian
+
     opt_kwargs["jac"] = jacobian(obj_function)
     if opt_method == "Newton-CG":
         opt_kwargs["hess"] = hessian(obj_function)
 
-    results = scipy.optimize.minimize(
+    results = optimizer(
         fun=obj_function,
         x0=initial_guess,
         method=opt_method,
