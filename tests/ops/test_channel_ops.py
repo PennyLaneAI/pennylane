@@ -434,7 +434,7 @@ class TestPhaseFlip:
         assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
     # !TODO: figure out why specifically PhaseFlip(0) not working
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7)[1:])
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_phaseflip(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
