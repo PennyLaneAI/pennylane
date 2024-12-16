@@ -525,8 +525,9 @@ class Sum(CompositeOp):
         _, ops = self.terms()
 
         with qml.QueuingManager.stop_recording():
-            op_groups = qml.pauli.group_observables(ops, grouping_type=grouping_type, method=method)
-        self._grouping_indices = tuple(tuple(ops.index(o) for o in group) for group in op_groups)
+            self._grouping_indices = qml.pauli.compute_partition_indices(
+                ops, grouping_type=grouping_type, method=method
+            )
 
     @property
     def coeffs(self):

@@ -79,7 +79,7 @@ def append_time_evolution(
         with QueuingManager.stop_recording():
             new_operations.append(qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n))
 
-    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
