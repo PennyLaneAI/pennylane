@@ -14,7 +14,7 @@
 
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports, too-many-public-methods
 
 from unittest import mock
 
@@ -352,6 +352,21 @@ class TestForLoops:
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
+
+    def test_iterating_over_wires(self):
+        """Test that a wires obejct is a valid iteration target for a for loop,
+        and can be converted to jaxpr and evaluated without issue"""
+
+        def f():
+            total = 0
+            for w in qml.wires.Wires([0, 1, 2]):
+                total += w
+
+            return total
+
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
 
     @pytest.mark.xfail(
         reason="relies on unimplemented fallback behaviour (implemented in catalyst)"

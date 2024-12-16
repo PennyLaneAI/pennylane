@@ -219,6 +219,16 @@ class Wires(Sequence):
         """
         return np.array(self._labels)
 
+    def __jax_array__(self):
+        """Defines a JAX numpy array representation of the Wires object.
+
+        Returns:
+            JAX ndarray: array representing Wires object
+        """
+        if jax_available:
+            return jax.numpy.array(self._labels)
+        raise ModuleNotFoundError("JAX not found")  # pragma: no cover
+
     @property
     def labels(self):
         """Get a tuple of the labels of this Wires object."""
