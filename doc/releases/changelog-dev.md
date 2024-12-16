@@ -64,6 +64,11 @@
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
 
+* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
+  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
+  decompositions that include `qml.GlobalPhase` gates, etc.
+  [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
+
 * Added support to build a vibrational Hamiltonian in Taylor form.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
@@ -201,6 +206,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Improvements 🛠</h3>
 
+* Remove redundant commutator computations from `qml.lie_closure`.
+  [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
+
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
   arguments and `interface="auto"`.
   [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
@@ -231,7 +239,14 @@ such as `shots`, `rng` and `prng_key`.
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
 
+* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
+  JAX array elements.
+  [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
+
 <h4>Capturing and representing hybrid programs</h4>
+
+* The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
+  [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
 
 * Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
   when program capture is enabled. This class decomposes pennylane operators following the same API as
@@ -349,6 +364,9 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
@@ -465,6 +483,9 @@ same information.
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
+* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+  [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
+
 * Updated the documentation of `QSVT` to include examples for different block encodings.
   [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
 
@@ -511,9 +532,11 @@ Diksha Dhawan,
 Lasse Dierich,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
+Simone Gasperini,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+Alan Martin,
 William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
