@@ -134,7 +134,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        if getattr(base, "wires", False) and len(wires) != 0:
+        if hasattr(base, "wires", False) and len(wires) != 0:
             warnings.warn(
                 "base operator already has wires; values specified through wires kwarg will be ignored."
             )
