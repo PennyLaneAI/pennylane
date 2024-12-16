@@ -232,6 +232,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* The `qml.iterative_qpe` function can now be compactly captured into jaxpr.
+  [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
+
 * Functions and plxpr can now be natively transformed using the new `qml.capture.transforms.DecomposeInterpreter`
   when program capture is enabled. This class decomposes pennylane operators following the same API as
   `qml.transforms.decompose`.
@@ -464,6 +467,12 @@ same information.
 * Add a warning message to Gradients and training documentation about ComplexWarnings.
   [(#6543)](https://github.com/PennyLaneAI/pennylane/pull/6543)
 
+* Added `opengraph.png` asset and configured `opengraph` metadata image. Overrode the documentation landing page `meta-description`.
+  [(#6696)](https://github.com/PennyLaneAI/pennylane/pull/6696)
+
+* Updated the documentation of `QSVT` to include examples for different block encodings.
+  [(#6673)](https://github.com/PennyLaneAI/pennylane/pull/6673)
+
 <h3>Bug fixes 🐛</h3>
 
 * The `Wires` object throws a `TypeError` if `wires=None`. 
@@ -510,6 +519,7 @@ Pietropaolo Frisoni,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
+Alan Martin,
 William Maxwell,
 Andrija Paurevic,
 Justin Pickering,
