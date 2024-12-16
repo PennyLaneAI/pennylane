@@ -15,12 +15,11 @@
 This module contains the qml.map_wires function.
 """
 from collections.abc import Callable
-from functools import partial
+from functools import lru_cache, partial
 from typing import Union, overload
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.capture.base_interpreter import PlxprInterpreter
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
@@ -29,70 +28,85 @@ from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
 
 
-class MapWiresInterpreter(PlxprInterpreter):
-    """Interpreter that maps wires of operations and measurements.
+@lru_cache
+def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
+    try:
+        # pylint: disable=import-outside-toplevel
+        from jax import make_jaxpr
 
-    **Examples:**
+        from pennylane.capture.base_interpreter import PlxprInterpreter
+    except ImportError:
+        return None, None
 
-    .. code-block:: python
+    # pylint: disable=redefined-outer-name
 
-        import jax
-        from pennylane.capture.transforms import MapWiresInterpreter
+    class MapWiresInterpreter(PlxprInterpreter):
+        """Interpreter that maps wires of operations and measurements.
 
-        @MapWiresInterpreter(wire_map={0: 1})
-        def circuit():
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
+        **Examples:**
 
-    >>> qml.capture.enable()
-    >>> jaxpr = jax.make_jaxpr(circuit)()
-    >>> jaxpr
-    { lambda ; . let
-        _:AbstractOperator() = Hadamard[n_wires=1] 1
-        a:AbstractOperator() = PauliZ[n_wires=1] 1
-        b:AbstractMeasurement(n_wires=None) = expval_obs a
-      in (b,) }
+        .. code-block:: python
 
-    """
+            import jax
+            from pennylane.capture.transforms import MapWiresInterpreter
 
-    def __init__(self, wire_map: dict) -> None:
-        """Initialize the interpreter."""
-        self.wire_map = wire_map
-        self._check_wire_map()
-        super().__init__()
+            @MapWiresInterpreter(wire_map={0: 1})
+            def circuit():
+                qml.Hadamard(wires=0)
+                return qml.expval(qml.PauliZ(0))
 
-    def _check_wire_map(self) -> None:
-        """Check that the wire map is valid and does not contain dynamic values."""
-        if not all(isinstance(k, int) and k >= 0 for k in self.wire_map.keys()):
-            raise ValueError("Wire map keys must be constant positive integers.")
-        if not all(isinstance(v, int) and v >= 0 for v in self.wire_map.values()):
-            raise ValueError("Wire map values must be constant positive integers.")
+        >>> qml.capture.enable()
+        >>> jaxpr = jax.make_jaxpr(circuit)()
+        >>> jaxpr
+        { lambda ; . let
+            _:AbstractOperator() = Hadamard[n_wires=1] 1
+            a:AbstractOperator() = PauliZ[n_wires=1] 1
+            b:AbstractMeasurement(n_wires=None) = expval_obs a
+        in (b,) }
 
-    def interpret_operation(self, op: "qml.operation.Operation"):
-        """Interpret an operation."""
-        qml.capture.disable()
-        op = op.map_wires(self.wire_map)
-        qml.capture.enable()
-        return super().interpret_operation(op)
+        """
 
-    def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
-        """Interpret a measurement operation."""
-        qml.capture.disable()
-        measurement = measurement.map_wires(self.wire_map)
-        qml.capture.enable()
-        return super().interpret_measurement(measurement)
+        def __init__(self, wire_map: dict) -> None:
+            """Initialize the interpreter."""
+            self.wire_map = wire_map
+            self._check_wire_map()
+            super().__init__()
+
+        def _check_wire_map(self) -> None:
+            """Check that the wire map is valid and does not contain dynamic values."""
+            if not all(isinstance(k, int) and k >= 0 for k in self.wire_map.keys()):
+                raise ValueError("Wire map keys must be constant positive integers.")
+            if not all(isinstance(v, int) and v >= 0 for v in self.wire_map.values()):
+                raise ValueError("Wire map values must be constant positive integers.")
+
+        def interpret_operation(self, op: "qml.operation.Operation"):
+            """Interpret an operation."""
+            qml.capture.disable()
+            op = op.map_wires(self.wire_map)
+            qml.capture.enable()
+            return super().interpret_operation(op)
+
+        def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+            """Interpret a measurement operation."""
+            qml.capture.disable()
+            measurement = measurement.map_wires(self.wire_map)
+            qml.capture.enable()
+            return super().interpret_measurement(measurement)
+
+    def map_wires_jaxpr_to_jaxpr(jaxpr, consts, targs, tkwargs, *args):
+        """Function for mapping wires in plxpr"""
+        wire_map = targs[0] if len(targs) > 0 else tkwargs.pop("wire_map")
+        interpreter = MapWiresInterpreter(wire_map)
+
+        def wrapper(*inner_args):
+            return interpreter.eval(jaxpr, consts, *inner_args)
+
+        return make_jaxpr(wrapper)(*args)
+
+    return MapWiresInterpreter, map_wires_jaxpr_to_jaxpr
 
 
-def map_wires_jaxpr_to_jaxpr(jaxpr, consts, targs, tkwargs, *args):
-    from jax import make_jaxpr
-
-    wire_map = targs[0] if len(targs) > 0 else tkwargs.pop("wire_map")
-    interpreter = MapWiresInterpreter(wire_map)
-
-    def wrapper(*inner_args):
-        return interpreter.eval(jaxpr, consts, *inner_args)
-
-    return make_jaxpr(wrapper)(*args)
+MapWiresInterpreter, map_wires_jaxpr_to_jaxpr = _get_plxpr_map_wires()
 
 
 @overload

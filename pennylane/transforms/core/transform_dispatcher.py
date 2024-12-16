@@ -14,12 +14,12 @@
 """
 This module contains the transform dispatcher and the transform container.
 """
-import copy
 import functools
 import os
 import types
 import warnings
 from collections.abc import Sequence
+from copy import copy
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
@@ -30,21 +30,26 @@ class TransformError(Exception):
 
 
 def register_primitive_for_expansion(primitive, plxpr_transform):
+    """Register a transform such that it can be expanded when applied to a function with
+    program capture enabled."""
+    # pylint: disable=import-outside-toplevel
+    import jax
+
     from pennylane.capture.transforms import ExpandTransformsInterpreter
 
     @ExpandTransformsInterpreter.register_primitive(primitive)
-    def _(self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs):
+    def _(
+        self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
+    ):  # pylint: disable=too-many-arguments,missing-docstring
         if plxpr_transform is None:
             raise NotImplementedError
-
-        import jax
 
         inner_args = invals[args_slice]
         inner_consts = invals[consts_slice]
         targs = invals[targs_slice]
 
         def wrapper(*args):
-            return copy.copy(self).eval(inner_jaxpr, inner_consts, *args)
+            return copy(self).eval(inner_jaxpr, inner_consts, *args)
 
         unravelled_jaxpr = jax.make_jaxpr(wrapper)(*inner_args)
         final_jaxpr = plxpr_transform(
@@ -188,10 +193,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     def __repr__(self):
         return f"<transform: {self._transform.__name__}>"
 
-    def register_plxpr_transform(self, plxpr_transform):
-        self._plxpr_transform = plxpr_transform
-        register_primitive_for_expansion(self._primitive, self._plxpr_transform)
-
     @property
     def transform(self):
         """The quantum transform."""
@@ -259,7 +260,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         with the transform applied.
         """
 
-        qnode = copy.copy(qnode)
+        qnode = copy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(

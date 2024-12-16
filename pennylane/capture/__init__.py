@@ -157,6 +157,8 @@ If needed, developers can also override the implementation method of the primiti
     def _(*args, **kwargs):
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
+from typing import Callable
+
 from .switches import disable, enable, enabled
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .capture_operators import create_operator_primitive
@@ -175,6 +177,7 @@ AbstractOperator: type
 AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
 PlxprInterpreter: type  # pylint: disable=redefined-outer-name
+expand_plxpr_transforms: Callable[[Callable], Callable]
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name
@@ -199,6 +202,11 @@ def __getattr__(key):
 
         return PlxprInterpreter
 
+    if key == "expand_plxpr_transforms":
+        from .transforms.expand_transforms import expand_plxpr_transforms
+
+        return expand_plxpr_transforms
+
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
 
@@ -212,6 +220,7 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
+    "expand_plxpr_transforms",
     "AbstractOperator",
     "AbstractMeasurement",
     "qnode_prim",

@@ -16,18 +16,32 @@ Helper function for expanding transforms with program capture
 """
 from functools import wraps
 from typing import Callable
+
 from pennylane.capture.base_interpreter import PlxprInterpreter
-from pennylane.capture.flatfn import FlatFn
 
 
 class ExpandTransformsInterpreter(PlxprInterpreter):
-    pass
+    """Interpreter for expanding transform primitives that are applied to plxpr.
+
+    This interpreter does not do anything special by itself. Instead, it is used
+    by the PennyLane transforms to expand transform primitives in plxpr by
+    applying the respective transform to the inner plxpr. When a transform is created
+    using :func:`~pennylane.transform`, a custom primitive interpretation rule for
+    that transform is automatically registered for ``ExpandTransformsInterpreter``.
+    """
 
 
 def expand_plxpr_transforms(f: Callable) -> Callable:
-    # pylint: disable=import-outside-toplevel
-    from jax import make_jaxpr
-    from jax.tree_util import tree_unflatten
+    """Function for expanding plxpr transforms.
+
+    This function wraps the input callable. The returned function
+
+    Args:
+        f (Callable): The callable for which we want to expand transforms.
+
+    Returns:
+        Callable: Callable with expanded transforms
+    """
 
     @wraps(f)
     def wrapper(*args, **kwargs):
