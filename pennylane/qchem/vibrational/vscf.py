@@ -23,61 +23,61 @@ def _build_fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
 
     Args:
         mode (int): index of the active mode for which the Fock matrix is being calculated
-        active_ham_terms (dict): A dictionary containing the active Hamiltonian terms.
-        active_terms (list): A list containing the active Hamiltonian terms for the given mode.
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
-        h_mat (Array[Array[float]]): the Hamiltonian matrix
+        active_ham_terms (dict): dictionary containing the active Hamiltonian terms
+        active_terms (list): list containing the active Hamiltonian terms for the given mode
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
+        h_mat (array[array[float]]): the Hamiltonian matrix
         mode_rot (TensorLike[float]): rotation matrix for the given vibrational mode
+
     Returns:
-        Array[Array[float]]: fock matrix for the given mode
+        array[array[float]]: fock matrix for the given mode
     """
 
     fock_matrix = np.zeros((modals[mode], modals[mode]))
     for term in active_terms:
         ham_term = active_ham_terms[term]
-    h_val, modal_indices, excitation_indices = ham_term[0], list(ham_term[1]), list(ham_term[2])
+        h_val, modal_indices, excitation_indices = ham_term[0], list(ham_term[1]), list(ham_term[2])
 
         modal_idx = modal_indices.index(mode)
-        im = excitation_indices[modal_idx]
-        jm = excitation_indices[modal_idx + len(modal_indices)]
-        if im < modals[mode] and jm < modals[mode]:
+        i = excitation_indices[modal_idx]
+        j = excitation_indices[modal_idx + len(modal_indices)]
+        if i < modals[mode] and j < modals[mode]:
             h_val = h_val * np.prod(
                 [h_mat[term, modal] for modal in modal_indices if modal != mode]
             )
-            fock_matrix[im, jm] += h_val
+            fock_matrix[i, j] += h_val
 
     fock_matrix = mode_rot.T @ fock_matrix @ mode_rot
     return fock_matrix
 
 
-def _update_h(h_mat, mode, active_ham_terms, mode_rot, ts_act, modals):
+def _update_h(h_mat, mode, active_ham_terms, mode_rot, active_terms, modals):
     r"""Updates value of Hamiltonian matrix for a mode after other modes have been rotated.
 
     Args:
-        h_mat (Array[Array[float]]): the hamiltonian matrix
-        mode (int): index of the active mode for which the h matrix is being updated.
-        active_ham_terms (dict): A dictionary containing the active Hamiltonian terms.
+        h_mat (array[array[float]]): the Hamiltonian matrix
+        mode (int): index of the active mode for which the Hamiltonian matrix is being updated
+        active_ham_terms (dict): dictionary containing the active Hamiltonian terms
         mode_rot (array[array[float]]): rotation matrix for a given mode
-        active_terms (list):  A list containing active Hamiltonian terms for the given mode.
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
+        active_terms (list): list containing active Hamiltonian terms for the given mode
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
 
     Returns:
-        Array[Array[float]]: the updated hamiltonian matrix
+        array[array[float]]: the updated Hamiltonian matrix
 
     """
     u_coeffs = mode_rot[:, 0]
 
-    for t in ts_act:
+    for t in active_terms:
         ham_term = active_ham_terms[t]
-        modal_indices = ham_term[1]
-        excitation_indices = ham_term[2]
+        modal_indices, excitation_indices = ham_term[1], ham_term[2]
 
         modal_idx = modal_indices.index(mode)
-        im = excitation_indices[modal_idx]
-        jm = excitation_indices[modal_idx + len(modal_indices)]
+        i = excitation_indices[modal_idx]
+        j = excitation_indices[modal_idx + len(modal_indices)]
 
-        if im < modals[mode] and jm < modals[mode]:
-            h_mat[t, mode] = u_coeffs[im] * u_coeffs[jm]
+        if i < modals[mode] and j < modals[mode]:
+            h_mat[t, mode] = u_coeffs[i] * u_coeffs[j]
 
     return h_mat
 
@@ -88,15 +88,15 @@ def _find_active_terms(h_integrals, modals, cutoff):
     The equation suggests that if mode m is not contained in a Hamiltonian term, it evaluates to zero.
 
     Args:
-        h_integrals (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
-        cutoff (float): threshold value for including matrix elements into operator.
+        h_integrals (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
+        cutoff (float): threshold value for including matrix elements into operator
 
     Returns:
         tuple: A tuple containing the following:
-         - dict: A dictionary containing the active Hamiltonian terms.
-         - dict: A dictionary containing the active Hamiltonian terms for all vibrational modes.
-         - int: total number of active terms in the Hamiltonian
+            - dict: dictionary containing the active Hamiltonian terms
+            - dict: dictionary containing the active Hamiltonian terms for all vibrational modes
+            - int: total number of active terms in the Hamiltonian
 
     """
     active_ham_terms = {}
@@ -114,9 +114,9 @@ def _find_active_terms(h_integrals, modals, cutoff):
                 excitation_indices = idx[n + 1 :]
                 exc_in_modals = True
                 for m_idx, m in enumerate(modal_indices):
-                    im = excitation_indices[m_idx]
-                    jm = excitation_indices[m_idx + len(modal_indices)]
-                    if im >= modals[m] or jm >= modals[m]:
+                    i = excitation_indices[m_idx]
+                    j = excitation_indices[m_idx + len(modal_indices)]
+                    if i >= modals[m] or j >= modals[m]:
                         exc_in_modals = False
                         break
                 if exc_in_modals:
@@ -134,11 +134,11 @@ def _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots):
     r"""Calculates vibrational energy.
 
     Args:
-        h_mat (Array[Array[float]]): the Hamiltonian matrix
-        active_ham_terms (dict): A dictionary containing the active Hamiltonian terms
-        active_mode_terms (dict): A list containing the active Hamiltonian terms for all vibrational modes.
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
-        mode_rots (List[TensorLike[float]]): A list of rotation matrices for each vibrational mode.
+        h_mat (array[array[float]]): the Hamiltonian matrix
+        active_ham_terms (dict): dictionary containing the active Hamiltonian terms
+        active_mode_terms (dict): list containing the active Hamiltonian terms for all vibrational modes
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
+        mode_rots (List[TensorLike[float]]): list of rotation matrices for each vibrational mode
 
     Returns:
         float: vibrational energy
@@ -147,7 +147,7 @@ def _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots):
     nmodes = h_mat.shape[1]
     e0s = np.zeros(nmodes)
     for mode in range(nmodes):
-        fock_mat = _build_Fock(
+        fock_mat = _build_fock(
             mode, active_ham_terms, active_mode_terms[mode], modals, h_mat, mode_rots[mode]
         )
         e0s[mode] = fock_mat[0, 0]
@@ -159,16 +159,16 @@ def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
     r"""Performs the VSCF calculation.
 
     Args:
-        h_integrals (list(TensorLike[float])): a list containing Hamiltonian integral matrices
-        modals (list(int)): A list containing the maximum number of modals to consider for each mode.
+        h_integrals (list(TensorLike[float])): list containing Hamiltonian integral matrices
+        modals (list(int)): list containing the maximum number of modals to consider for each mode
         cutoff (float): threshold value for including matrix elements into operator.
         tol (float): convergence tolerance for vscf calculation
-        max_iters (int): Maximum number of iterations for vscf to converge.
+        max_iters (int): maximum number of iterations for vscf to converge
 
     Returns:
         tuple: A tuple of the following:
-         - float: vscf energy
-         - List[TensorLike[float]]: A list of rotation matrices for all vibrational modes.
+            - float: vscf energy
+            - list[TensorLike[float]]: list of rotation matrices for all vibrational modes
 
     """
 
@@ -187,15 +187,12 @@ def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
     e0 = _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots)
 
     enew = e0 + 2 * tol
-    curr_iter = 0
-    while curr_iter <= max_iters and np.abs(enew - e0) > tol:
+    for curr_iter in range(max_iters):
         if curr_iter != 0:
             e0 = enew
 
-        curr_iter += 1
-
         for mode in range(nmodes):
-            fock = _build_Fock(
+            fock = _build_fock(
                 mode, active_ham_terms, active_mode_terms[mode], modals, h_mat, mode_rots[mode]
             )
             _, eigvec = np.linalg.eigh(fock)
@@ -206,8 +203,11 @@ def _vscf(h_integrals, modals, cutoff, tol=1e-8, max_iters=10000):
             fock = np.transpose(eigvec) @ fock @ eigvec
 
         enew = _fock_energy(h_mat, active_ham_terms, active_mode_terms, modals, mode_rots)
-    e0 = enew
-    return e0, mode_rots
+
+        if np.abs(enew - e0) <= tol:
+            break
+
+    return enew, mode_rots
 
 
 def _rotate_one_body(h1, nmodes, mode_rots, modals):
@@ -217,10 +217,10 @@ def _rotate_one_body(h1, nmodes, mode_rots, modals):
         h1 (TensorLike[float]): one-body integrals
         nmodes (int): number of vibrational modes
         mode_rots (list[TensorLike[float]]): list of rotation matrices for all vibrational modes
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
 
     Returns:
-        TensorLike[float]: rotated one-body integrals.
+        TensorLike[float]: rotated one-body integrals
 
     """
     imax = np.max(modals)
@@ -240,10 +240,10 @@ def _rotate_two_body(h2, nmodes, mode_rots, modals):
         h2 (TensorLike[float]): two-body integrals
         nmodes (int): number of vibrational modes
         mode_rots (list[TensorLike[float]]): list of rotation matrices for all vibrational modes
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
 
     Returns:
-        TensorLike[float]: rotated two-body integrals.
+        TensorLike[float]: rotated two-body integrals
 
     """
     imax = np.max(modals)
@@ -271,10 +271,10 @@ def _rotate_three_body(h3, nmodes, mode_rots, modals):
         h3 (TensorLike[float]): three-body integrals
         nmodes (int): number of vibrational modes
         mode_rots (list[TensorLike[float]]): list of rotation matrices for all vibrational modes
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
 
     Returns:
-        TensorLike[float]: rotated three-body integrals.
+        TensorLike[float]: rotated three-body integrals
 
     """
     imax = np.max(modals)
@@ -311,9 +311,9 @@ def _rotate_dipole(d_integrals, mode_rots, modals):
     r"""Generates VSCF rotated dipole.
 
     Args:
-        d_integrals (list[TensorLike[float]]): A list of n-mode expansion of dipole integrals.
+        d_integrals (list[TensorLike[float]]): list of n-mode expansion of dipole integrals
         mode_rots (list[TensorLike[float]]): list of rotation matrices for all vibrational modes
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
 
     Returns:
         tuple(TensorLike[float]): a tuple of rotated dipole integrals
@@ -354,12 +354,12 @@ def _rotate_hamiltonian(h_integrals, mode_rots, modals):
     r"""Generates VSCF rotated Hamiltonian.
 
     Args:
-        h_integrals (list[TensorLike[float]]): A list of n-mode expansion of Hamiltonian integrals.
+        h_integrals (list[TensorLike[float]]): list of n-mode expansion of Hamiltonian integrals
         mode_rots (list[TensorLike[float]]): list of rotation matrices for all vibrational modes
-        modals (list[int]): A list containing the maximum number of modals to consider for each mode.
+        modals (list[int]): list containing the maximum number of modals to consider for each mode
 
     Returns:
-        tuple(TensorLike[float]): a tuple of rotated Hamiltonian integrals
+        tuple(TensorLike[float]): tuple of rotated Hamiltonian integrals
 
     """
 
@@ -389,9 +389,9 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
     `J. Chem. Theory Comput. 2010, 6, 235–248 <https://pubs.acs.org/doi/10.1021/ct9004454>`_.
 
     Args:
-        h_integrals (list[TensorLike[float]]): list of Hamiltonian integrals for up to 3 coupled vibrational modes.
+        h_integrals (list[TensorLike[float]]): List of Hamiltonian integrals for up to 3 coupled vibrational modes.
             Look at the Usage Details for more information.
-        d_integrals (list[TensorLike[float]]): list of dipole integrals for up to 3 coupled vibrational modes.
+        d_integrals (list[TensorLike[float]]): List of dipole integrals for up to 3 coupled vibrational modes.
             Look at the Usage Details for more information.
         modals (list[int]): list containing the maximum number of modals to consider for each vibrational mode.
             Default value is the maximum number of modals.
@@ -401,8 +401,9 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
 
     Returns:
         tuple: a tuple containing:
-         - List[TensorLike[float]]: List of Hamiltonian integrals in VSCF basis for up to 3 coupled vibrational modes.
-         - List[TensorLike[float]]: List of dipole integrals in VSCF basis for up to 3 coupled vibrational modes. Returns ``None`` if d_integrals are not provided.
+            - List[TensorLike[float]]: List of Hamiltonian integrals in VSCF basis for up to 3 coupled vibrational modes.
+            - List[TensorLike[float]]: List of dipole integrals in VSCF basis for up to 3 coupled vibrational modes.
+              Returns ``None`` if d_integrals are not provided.
 
     **Example**
 

@@ -26,7 +26,7 @@ from pennylane.qchem.vibrational import vscf
 
 h5py = pytest.importorskip("h5py")
 
-cform_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S.hdf5"
+cform_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S_cform_ham.hdf5"
 # Data was generated for H2S molecule with geometry (in Angstrom)
 # [['H', [0.0,-1.0,-1.0]], ['H', [0.0,1.0,-1.0]], ['S', [0.0,0.0,0.0]]],
 # basis=6-31g, quad_order=9 and nbos=4 for localized modes.
