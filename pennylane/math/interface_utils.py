@@ -209,7 +209,7 @@ def get_deep_interface(value):
     return _get_interface_of_single_tensor(itr)
 
 
-def get_canonical_interface_name(user_input: Union[str, Interface]) -> Interface:
+def get_canonical_interface_name(user_input: Union[str, Interface, None]) -> Interface:
     """Helper function to get the canonical interface name.
 
     Args:

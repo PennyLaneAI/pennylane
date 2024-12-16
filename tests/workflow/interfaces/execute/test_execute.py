@@ -70,3 +70,11 @@ def test_gradient_fn_deprecation():
             qml.execute((tape,), dev, gradient_fn="adjoint")
 
     assert dev.tracker.totals["execute_and_derivative_batches"] == 1  # uses adjoint diff
+
+
+def test_execution_with_empty_batch():
+    """Test that qml.execute can be used with an empty batch."""
+
+    dev = qml.device("default.qubit")
+    res = qml.execute((), dev)
+    assert res == ()
