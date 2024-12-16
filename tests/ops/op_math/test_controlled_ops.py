@@ -53,6 +53,7 @@ X_broadcasted = np.array([X] * 3)
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
         "control_wires, wires",
