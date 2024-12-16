@@ -53,6 +53,22 @@ X_broadcasted = np.array([X] * 3)
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
 
+    def test_wires_is_none(self):
+        base_op = [[0, 1], [1, 0]]
+
+        with pytest.raises(TypeError, match="Must specify a set of wires"):
+            qml.ControlledQubitUnitary(base_op, control_wires=1, wires=None)
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_wires_specified_twice_with_capture(self):
+        base = qml.QubitUnitary(X, wires=0)
+        with pytest.warns(
+            UserWarning,
+            match="base operator already has wires; values specified through wires kwarg will be ignored.",
+        ):
+            qml.ControlledQubitUnitary(base, control_wires=[1, 2], wires=3)
+
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
