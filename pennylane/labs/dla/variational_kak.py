@@ -58,7 +58,8 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     the resulting circuit has the canonical ascending order. In particular a PennyLane quantum function that describes the circuit given
     the optimal parameters ``theta_opt`` and the basis ``k`` containing the operators, is given by the following.
 
-    .. code-block::
+    .. code-block:: python
+
         def Kc(theta_opt: Iterable[float], k: Iterable[Operator]):
             assert len(theta_opt) == len(k)
             for theta_j, k_j in zip(theta_opt, k):
