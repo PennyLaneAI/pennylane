@@ -117,7 +117,7 @@ class QROM(Operation):
         control_wires = qml.wires.Wires(control_wires)
         target_wires = qml.wires.Wires(target_wires)
 
-        work_wires = qml.wires.Wires(()) if work_wires is None else qml.wires.Wires(work_wires)
+        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
 
         self.hyperparameters["bitstrings"] = tuple(bitstrings)
         self.hyperparameters["control_wires"] = control_wires
