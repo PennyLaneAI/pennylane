@@ -62,6 +62,7 @@ class TestControlledQubitUnitary:
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_wires_specified_twice_with_capture(self):
+        """Test that a UserWarning is raised for providing redundant wires with capture enabled"""
         base = qml.QubitUnitary(X, wires=0)
         with pytest.warns(
             UserWarning,
@@ -76,32 +77,32 @@ class TestControlledQubitUnitary:
         [(0, 1), ([0, 1], [2])],
     )
     def test_consistency_with_capture(self, control_wires, wires):
+        """Test that the operator wires are as expected with capture enabled"""
         base_op = [[0, 1], [1, 0]]
 
-        op = qml.ControlledQubitUnitary(base_op, control_wires=control_wires, wires=wires)
+        op_kwarg = qml.ControlledQubitUnitary(base_op, control_wires=control_wires, wires=wires)
+        assert op_kwarg.base.wires == Wires(wires)
+        assert op_kwarg.control_wires == Wires(control_wires)
+        op = qml.ControlledQubitUnitary(base_op, control_wires, wires)
         assert op.base.wires == Wires(wires)
         assert op.control_wires == Wires(control_wires)
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    @pytest.mark.parametrize(
-        "control_wires_1, wires_1, control_wires_2, wires_2",
-        [
-            ([0, 1], [2], [0, 1, 2], ()),  # Pair of configurations to compare
-        ],
-    )
-    def test_pairwise_consistency_with_capture(
-        self, control_wires_1, wires_1, control_wires_2, wires_2
-    ):
+    def test_pairwise_consistency_with_capture(self):
+        """Test that both combinations of control and target wires lead to the same operator"""
         base_op = [[0, 1], [1, 0]]
 
+        control_wires_1, wires_1 = [0, 1], [2]
         op_1 = qml.ControlledQubitUnitary(base_op, control_wires=control_wires_1, wires=wires_1)
-        op_2 = qml.ControlledQubitUnitary(base_op, control_wires=control_wires_2, wires=wires_2)
 
         assert op_1.base.wires == Wires(2)
-        assert op_2.base.wires == Wires(2)
-
         assert op_1.control_wires == Wires([0, 1])
+
+        control_wires_2, wires_2 = [0, 1, 2], ()
+        op_2 = qml.ControlledQubitUnitary(base_op, control_wires=control_wires_2, wires=wires_2)
+
+        assert op_2.base.wires == Wires(2)
         assert op_2.control_wires == Wires([0, 1])
 
     def test_initialization_from_matrix_and_operator(self):
