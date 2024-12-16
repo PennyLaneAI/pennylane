@@ -491,6 +491,9 @@ same information.
 
 <h3>Bug fixes 🐛</h3>
 
+* The `qml.ControlledQubitUnitary` class no longer has inconsistent wire behaviour with capture enabled.
+  [(#6719)](https://github.com/PennyLaneAI/pennylane/pull/6719)
+
 * The `Wires` object throws a `TypeError` if `wires=None`. 
   [(#6713)](https://github.com/PennyLaneAI/pennylane/pull/6713)
 
