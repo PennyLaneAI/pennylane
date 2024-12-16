@@ -46,7 +46,8 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, wires=Wires([]), only_visual=False, id=None):
+    def __init__(self, wires: WiresLike = (), only_visual=False, id=None):
+        wires = Wires(wires)
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
         super().__init__(wires=wires, id=id)
@@ -120,7 +121,8 @@ class WireCut(Operation):
     grad_method = None
 
     def __init__(self, *params, wires: WiresLike = None, id=None):
-        if wires == []:
+        wires = Wires([]) if wires is None else Wires(wires)
+        if len(wires) == 0:
             raise ValueError(
                 f"{self.__class__.__name__}: wrong number of wires. "
                 f"At least one wire has to be given."

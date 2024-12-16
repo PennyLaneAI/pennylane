@@ -20,7 +20,7 @@ import warnings
 
 from pennylane import math as np
 from pennylane.operation import AnyWires, Channel
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 
 class AmplitudeDamping(Channel):
@@ -59,7 +59,8 @@ class AmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, id=None):
+    def __init__(self, gamma, wires: WiresLike, id=None):
+        wires = Wires(wires)
         super().__init__(gamma, wires=wires, id=id)
 
     @staticmethod
@@ -565,6 +566,7 @@ class PauliError(Channel):
     """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(self, operators, p, wires: WiresLike, id=None):
+        wires = Wires(wires)
         super().__init__(operators, p, wires=wires, id=id)
 
         # check if the specified operators are legal
@@ -715,6 +717,7 @@ class QubitChannel(Channel):
     grad_method = None
 
     def __init__(self, K_list, wires: WiresLike, id=None):
+        wires = Wires(wires)
         super().__init__(*K_list, wires=wires, id=id)
 
         # check all Kraus matrices are square matrices
@@ -746,6 +749,7 @@ class QubitChannel(Channel):
     # pylint: disable=arguments-differ, unused-argument
     @classmethod
     def _primitive_bind_call(cls, K_list, wires: WiresLike, id=None):
+        wires = Wires(wires)
         return super()._primitive_bind_call(*K_list, wires=wires)
 
     @staticmethod

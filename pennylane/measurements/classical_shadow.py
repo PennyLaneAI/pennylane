@@ -89,7 +89,7 @@ def shadow_expval(H, k=1, seed=None):
     return ShadowExpvalMP(H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed=None):
+def classical_shadow(wires: WiresLike, seed=None):
     """
     The classical shadow measurement protocol.
 
@@ -228,6 +228,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
     def __init__(self, wires: WiresLike, seed: Optional[int] = None, id: Optional[str] = None):
         self.seed = seed
+        wires = Wires(wires)
         super().__init__(wires=wires, id=id)
 
     def _flatten(self):
