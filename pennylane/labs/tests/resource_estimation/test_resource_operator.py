@@ -124,5 +124,5 @@ def test_resource_rep_from_op():
         def tracking_name(foo, bar):
             return f"DummyClass({foo}, {bar})"
 
-    op = DummyClass()
+    op = DummyClass(wires=[1, 2, 3])
     assert op.resource_rep_from_op() == op.__class__.resource_rep(**op.resource_params())
