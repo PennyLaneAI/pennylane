@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Helper Functionality to compute the khk decomposition variationally, as outlined in https://arxiv.org/abs/2104.00728"""
+"""Helper Functionality to compute the kak decomposition variationally, as outlined in https://arxiv.org/abs/2104.00728"""
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 import warnings
 from datetime import datetime
@@ -54,8 +54,8 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     .. math:: K_c = \prod_{j=|\mathfrak{k}|}^{1} e^{-i \theta_j k_j}
 
     for the ordered basis of :math:`\mathfrak{k}` given by the first :math:`|\mathfrak{k}|` elements of ``g``.
-    Note that we define :math:`K_c` mathematically with the descending order of basis elements :math:`k_j in \mathfrak{k}` such that
-    the resulting circuit has the canonical ascending order. In particular a PennyLane quantum function that describes the circuit given
+    Note that we define :math:`K_c` mathematically with the descending order of basis elements :math:`k_j \in \mathfrak{k}` such that
+    the resulting circuit has the canonical ascending order. In particular, a PennyLane quantum function that describes the circuit given
     the optimal parameters ``theta_opt`` and the basis ``k`` containing the operators, is given by the following.
 
     .. code-block::
@@ -73,7 +73,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
-    .. seealso:: `Theory demo on KAK theorem <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__, `demo on KAK decomposition in practise <https://pennylane.ai/qml/demos/tutorial_fdhs>`__,
+    .. seealso:: `Theory demo on KAK theorem <https://pennylane.ai/qml/demos/tutorial_kak_theorem>`__, `demo on KAK decomposition in practice <https://pennylane.ai/qml/demos/tutorial_fdhs>`__,
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
@@ -83,14 +83,17 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         adj (np.ndarray): Adjoint representation of dimension ``(dim_g, dim_g, dim_g)``,
             with the implicit ordering ``(k, mtilde, a)``.
         verbose (bool): Plot the optimization
-        opt_kwargs (dict): Keyword arguments for the optimization like initial starting values for :math:`\theta` of dimension ``(dim_k,)``.
+        opt_kwargs (dict): Keyword arguments for the optimization like initial starting values
+            for :math:`\theta` of dimension ``(dim_k,)``, given as ``theta0``.
             Also includes ``n_epochs``, ``lr``, ``b1``, ``b2``, ``verbose``, ``interrupt_tol``, see :func:`~run_opt`
-
+        pick_min (bool): Whether to pick the parameter set with lowest cost function value during the optimization
+            as optimal parameters. Otherwise picks the last parameter set.
     Returns:
         Tuple(np.ndarray, np.ndarray): ``(adjvec_a, theta_opt)``: The adjoint vector representation
         ``adjvec_a`` of dimension ``(dim_mtilde + dim_a,)``, with respect to the basis of
-        :math:`\mathfrak{m} = \tilde{\mathfrak{m}} + \mathfrak{h}` of the CSA element
-        :math:`a \in \mathfrak{a}` s.t. :math:`H = K a K^\dagger`.
+        :math:`\mathfrak{m} = \tilde{\mathfrak{m}} + \mathfrak{a}` of the CSA element
+        :math:`a \in \mathfrak{a}` s.t. :math:`H = K a K^\dagger`. For a successful optimization, the entries
+        corresponding to :math:`\tilde{\mathfrak{m}}` should be close to zero.
         The second return value, ``theta_opt``, are the optimal coefficients :math:`\theta` of the
         decomposition :math:`K = \prod_{j=|\mathfrak{k}|}^{1} e^{-i \theta_j k_j}` for the basis :math:`k_j \in \mathfrak{k}`.
 
@@ -195,7 +198,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         # confirm reconstruction was successful to some given numerical tolerance
         assert np.allclose(H_m, H_reconstructed, atol=1e-6)
 
-    Instead of performing these checks by hand, we can use the helper function :func:`~validat_kak`.
+    Instead of performing these checks by hand, we can use the helper function :func:`~validate_kak`.
 
     >>> assert validate_kak(H, g, k, (adjvec_a, theta_opt), n, 1e-6)
 
@@ -214,7 +217,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     dim_k, dim_mtilde, dim_h = dims
     dim_m = dim_mtilde + dim_h
 
-    adj_cropped = adj[-dim_m:, :dim_k, -dim_m:]  # [:, -dim_m:][:, :, -dim_m:]
+    adj_cropped = adj[-dim_m:, :dim_k, -dim_m:]
 
     ## creating the gamma vector expanded on the whole m
     gammas = [np.pi**i for i in range(dim_h)]
@@ -318,9 +321,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     success = np.allclose(H_m, H_reconstructed, atol=error_tol)
 
     if not success:
-        error = np.sqrt(
-            np.trace((H_m - H_reconstructed) @ (H_m - H_reconstructed).conj().T)
-        )  # Frobenius norm
+        error = np.linalg.norm(H_m - H_reconstructed, ord="fro")
 
         warnings.warn(
             "The reconstructed H is not numerical identical to the original H.\n"

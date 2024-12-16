@@ -35,7 +35,7 @@ from pennylane.labs.dla import (
 @pytest.mark.parametrize("dense", [False, True])
 @pytest.mark.parametrize("n", [2, 3, 4])
 def test_kak_Ising(n, dense):
-    """Basic test for khk decomposition on Ising model"""
+    """Basic test for kak decomposition on Ising model"""
     gens = [X(i) @ X(i + 1) for i in range(n - 1)]
     gens += [Z(i) for i in range(n)]
     H = qml.sum(*gens)
@@ -62,24 +62,22 @@ def test_kak_Ising(n, dense):
     g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
-    khk_res = variational_kak_adj(H, g, dims, adj, verbose=False)
+    kak_res = variational_kak_adj(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
-    assert khk_res[0].shape == (len(mtilde) + len(h),)
-    assert khk_res[0].dtype == np.float64
-    assert khk_res[1].shape == (len(k),)
-    assert khk_res[1].dtype == np.float64
-    assert validate_kak(H, g, k, khk_res, n, 1e-6)
+    assert kak_res[0].shape == (len(mtilde) + len(h),)
+    assert kak_res[0].dtype == np.float64
+    assert kak_res[1].shape == (len(k),)
+    assert kak_res[1].dtype == np.float64
+    assert validate_kak(H, g, k, kak_res, n, 1e-6)
 
 
 @pytest.mark.parametrize("n", [3, 4])
 @pytest.mark.parametrize("dense", [False, True])
 def test_kak_Heisenberg(n, dense):
-    """Basic test for khk decomposition on Heisenberg model"""
+    """Basic test for kak decomposition on Heisenberg model"""
     gens = [X(i) @ X(i + 1) for i in range(n - 1)]
     gens += [Y(i) @ Y(i + 1) for i in range(n - 1)]
     gens += [Z(i) @ Z(i + 1) for i in range(n - 1)]
-    H = qml.sum(*gens)
-
     H = qml.sum(*gens)
 
     if not dense:
@@ -104,19 +102,19 @@ def test_kak_Heisenberg(n, dense):
     g, k, mtilde, h, adj = cartan_subalgebra(g, k, m, adj, tol=1e-10, start_idx=0)
 
     dims = (len(k), len(mtilde), len(h))
-    khk_res = variational_kak_adj(H, g, dims, adj, verbose=False)
+    kak_res = variational_kak_adj(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
-    assert khk_res[0].shape == (len(mtilde) + len(h),)
-    assert khk_res[0].dtype == np.float64
-    assert khk_res[1].shape == (len(k),)
-    assert khk_res[1].dtype == np.float64
-    assert validate_kak(H, g, k, khk_res, n, 1e-6)
+    assert kak_res[0].shape == (len(mtilde) + len(h),)
+    assert kak_res[0].dtype == np.float64
+    assert kak_res[1].shape == (len(k),)
+    assert kak_res[1].dtype == np.float64
+    assert validate_kak(H, g, k, kak_res, n, 1e-6)
 
 
 @pytest.mark.parametrize("dense", [False, True])
 @pytest.mark.parametrize("is_orthogonal", [True, False])
 def test_kak_Heisenberg_summed(is_orthogonal, dense):
-    """Basic test for khk decomposition on summed Heisenberg model"""
+    """Basic test for kak decomposition on summed Heisenberg model"""
     n = 4
     gens = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(n - 1)]
     H = qml.sum(*gens)
@@ -148,10 +146,10 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
     )
 
     dims = (len(k), len(mtilde), len(h))
-    khk_res = variational_kak_adj(H, g, dims, adj, verbose=False)
+    kak_res = variational_kak_adj(H, g, dims, adj, verbose=False)
     # Both the adjvec of the CSA element and the optimized parameters should be real
-    assert khk_res[0].shape == (len(mtilde) + len(h),)
-    assert khk_res[0].dtype == np.float64
-    assert khk_res[1].shape == (len(k),)
-    assert khk_res[1].dtype == np.float64
-    assert validate_kak(H, g, k, khk_res, n, 1e-6)
+    assert kak_res[0].shape == (len(mtilde) + len(h),)
+    assert kak_res[0].dtype == np.float64
+    assert kak_res[1].shape == (len(k),)
+    assert kak_res[1].dtype == np.float64
+    assert validate_kak(H, g, k, kak_res, n, 1e-6)
