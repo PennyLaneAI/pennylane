@@ -671,7 +671,7 @@ class TestRootFindingSolver:
 
             Q_val = np.polyval(Q, z)
             Q_magnitude_squared = np.abs(Q_val) ** 2
-
+            
             assert np.isclose(P_magnitude_squared + Q_magnitude_squared, 1, atol=1e-7)
 
     
@@ -704,7 +704,7 @@ class TestRootFindingSolver:
             np.sum(
                 np.array(
                     [
-                        2 * np.sqrt(cost_func) * abs(cheby_pol(2 * i, x_point))
+                        2 * np.sqrt(cost_func) * abs(cheby_pol(degree=2 * i, x=x_point))
                         for i in range(len(target_polynomial_coeffs))
                     ]
                 )
@@ -713,7 +713,7 @@ class TestRootFindingSolver:
             else np.sum(
                 np.array(
                     [
-                        2 * np.sqrt(cost_func) * abs(cheby_pol(2 * i + 1, x_point))
+                        2 * np.sqrt(cost_func) * abs(cheby_pol(degree=2 * i + 1, x=x_point))
                         for i in range(len(target_polynomial_coeffs))
                     ]
                 )
@@ -722,7 +722,7 @@ class TestRootFindingSolver:
 
         assert np.isclose(
             np.real(qsp_iterates(phis, x_point)[0, 0]),
-            poly_func(target_polynomial_coeffs, degree, parity, x_point),
+            poly_func(coeffs=target_polynomial_coeffs, degree=degree, parity=parity, x=x_point),
             atol=tolerance,
         )
 
