@@ -405,9 +405,10 @@ class TestTranspile:
 
         assert batch[0][-1] == qml.density_matrix(wires=(0, 2, 1))
 
-        original_results = dev.execute(tape)
-        transformed_results = fn(dev.batch_execute(batch))
-        assert qml.math.allclose(original_results, transformed_results)
+        pre, post = dev.preprocess_transforms()((tape,))
+        original_results = post(dev.execute(pre))
+        transformed_results = fn(dev.execute(batch))
+        assert qml.math.allclose(original_results[0][5][5], transformed_results[6][6]) # original tape has 02 interaction, which is not allowed by (01)(12). Transpile should swap 1 and 2 to do this, which end up moving 101 to 110
 
     def test_transpile_probs_sample_filled_in_wires(self):
         """Test that if probs or sample are requested broadcasted over all wires, transpile fills in the device wires."""
