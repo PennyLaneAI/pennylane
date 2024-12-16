@@ -59,10 +59,16 @@
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+  [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
 
 * New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
     [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
+
+* Added a new `qml.transforms.combine_global_phases` transform to combine all `qml.GlobalPhase` gates in a circuit into a single one applied at the end.
+  This can be useful for circuits that include a lot of `qml.GlobalPhase` gates, which can be introduced directly during circuit creation,
+  decompositions that include `qml.GlobalPhase` gates, etc.
+  [(#6686)](https://github.com/PennyLaneAI/pennylane/pull/6686)
 
 * Added support to build a vibrational Hamiltonian in Taylor form.
   [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
@@ -201,6 +207,9 @@ such as `shots`, `rng` and `prng_key`.
 
 <h3>Improvements 🛠</h3>
 
+* Remove redundant commutator computations from `qml.lie_closure`.
+  [(#6724)](https://github.com/PennyLaneAI/pennylane/pull/6724)
+
 * Raises a comprehensive error when using `qml.fourier.qnode_spectrum` with standard numpy
   arguments and `interface="auto"`.
   [(#6622)](https://github.com/PennyLaneAI/pennylane/pull/6622)
@@ -221,6 +230,7 @@ such as `shots`, `rng` and `prng_key`.
 
 * Added JAX support for the differentiable Hartree-Fock workflow.
   [(#6096)](https://github.com/PennyLaneAI/pennylane/pull/6096)
+  [(#6707)](https://github.com/PennyLaneAI/pennylane/pull/6707)
 
 * Added functions and dunder methods to add and multiply Resources objects in series and in parallel.
   [(#6567)](https://github.com/PennyLaneAI/pennylane/pull/6567)
@@ -229,6 +239,10 @@ such as `shots`, `rng` and `prng_key`.
   they are left undiagonalized, with the expectation that observable validation will catch any undiagonalized
   observables that are also unsupported by the device.
   [(#6653)](https://github.com/PennyLaneAI/pennylane/pull/6653)
+
+* A `qml.wires.Wires` object can now be converted to a JAX array, if all wire labels are supported as 
+  JAX array elements.
+  [(#6699)](https://github.com/PennyLaneAI/pennylane/pull/6699)
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -350,6 +364,9 @@ such as `shots`, `rng` and `prng_key`.
 * Added abstract `ResourceOperator` subclasses for Adjoint, Controlled, and Pow
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
+
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
 
 <h3>Breaking changes 💔</h3>
 
@@ -520,6 +537,7 @@ Diksha Dhawan,
 Lasse Dierich,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
+Simone Gasperini,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
