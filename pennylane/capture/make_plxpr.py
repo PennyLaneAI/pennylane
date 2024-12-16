@@ -98,6 +98,11 @@ def make_plxpr(
         module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
         ).
 
+        .. note::
+
+            There are some limitations and sharp bits regarding AutoGraph; to better understand
+            supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
+
         On its own, capture of standard Python control flow is not supported:
 
         .. code-block:: python

@@ -59,6 +59,7 @@
   [(#6413)](https://github.com/PennyLaneAI/pennylane/pull/6413)
   [(#6426)](https://github.com/PennyLaneAI/pennylane/pull/6426)
   [(#6645)](https://github.com/PennyLaneAI/pennylane/pull/6645)
+  [(#6685)](https://github.com/PennyLaneAI/pennylane/pull/6685)
 
 * New `qml.GQSP` template has been added to perform Generalized Quantum Signal Processing (GQSP).
     The functionality `qml.poly_to_angles` has been also extended to support GQSP.
