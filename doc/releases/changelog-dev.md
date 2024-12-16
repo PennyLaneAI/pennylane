@@ -354,6 +354,9 @@ such as `shots`, `rng` and `prng_key`.
   symbolic operation classes.
   [(#6592)](https://github.com/PennyLaneAI/pennylane/pull/6592)
 
+* Added support to build a vibrational Hamiltonian in the Christiansen form.
+  [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.fourier.qnode_spectrum` no longer automatically converts pure numpy parameters to the
