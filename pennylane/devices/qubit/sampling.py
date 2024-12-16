@@ -79,8 +79,8 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
             mp_other_obs_indices.append([i])
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
-        _, group_indices = qml.pauli.group_observables(
-            [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
+        group_indices = qml.pauli.compute_partition_indices(
+            observables=[mp.obs for mp in i_to_pauli_mp.values()]
         )
         mp_pauli_groups = []
         for indices in group_indices:
@@ -92,7 +92,7 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
     mp_no_obs_indices = [mp_no_obs_indices] if mp_no_obs else []
     mp_no_obs = [mp_no_obs] if mp_no_obs else []
     all_mp_groups = mp_pauli_groups + mp_no_obs + mp_other_obs
-    all_indices = group_indices + mp_no_obs_indices + mp_other_obs_indices
+    all_indices = list(group_indices) + mp_no_obs_indices + mp_other_obs_indices
 
     return all_mp_groups, all_indices
 

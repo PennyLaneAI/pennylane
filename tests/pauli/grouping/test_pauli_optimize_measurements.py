@@ -72,7 +72,7 @@ class TestOptimizeMeasurements:
         """Generic test cases without coefficients."""
 
         diagonalized_groupings = optimize_measurements(
-            observables, grouping="qwc", colouring_method="lf"
+            observables, grouping="qwc", colouring_method="rlf"
         )[1]
 
         # assert the correct number of partitions:
@@ -97,7 +97,7 @@ class TestOptimizeMeasurements:
         grouped_coeffs_sol = [[4.21], [1.43, 0.97]]
 
         grouped_coeffs = optimize_measurements(
-            observables, coefficients, grouping="qwc", colouring_method="lf"
+            observables, coefficients, grouping="qwc", colouring_method="rlf"
         )[2]
 
         assert len(grouped_coeffs) == len(grouped_coeffs_sol)
