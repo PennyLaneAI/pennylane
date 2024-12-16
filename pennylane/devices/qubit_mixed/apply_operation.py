@@ -752,4 +752,6 @@ def apply_parametrized_evolution_einsum(
     debugger=None,
     **_,
 ):
+    """Apply ParametrizedEvolution."""
+
     return _apply_operation_default(op, state, is_state_batched, debugger)
