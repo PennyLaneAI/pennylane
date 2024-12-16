@@ -121,7 +121,7 @@ def run_autograph(fn):
 
     AutoGraph can be used in PennyLane's capture workflow to convert Pythonic control flow to PennyLane
     native control flow. This requires the ``diastatic-malt`` package, a standalone fork of the AutoGraph
-    module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
+    module in TensorFlow (`official documentation <https://github.com/PennyLaneAI/diastatic-malt/blob/main/g3doc/reference/index.md>`_
     ).
 
     Args:
@@ -138,7 +138,7 @@ def run_autograph(fn):
     .. note::
 
         There are some limitations and sharp bits regarding AutoGraph; to better understand
-        supported behaviour and limitations, see https://docs.pennylane.ai/en/stable/development/autograph.html
+        supported behaviour and limitations, see :doc:`/development/autograph`.
 
     .. warning::
 

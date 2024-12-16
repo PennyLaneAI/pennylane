@@ -16,6 +16,7 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
+import warnings
 
 import numpy as np
 from numpy.polynomial import Polynomial, chebyshev
@@ -28,9 +29,14 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
-def qsvt(A, angles, wires, convention=None):
+def qsvt_legacy(A, angles, wires, convention=None):
     r"""Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
+
+    .. warning::
+
+        The ``qsvt_legacy`` function has been deprecated.
+        Instead, use :func:`~pennylane.qsvt`. The new functionality takes an input polynomial instead of angles.
 
     .. note ::
 
@@ -104,7 +110,7 @@ def qsvt(A, angles, wires, convention=None):
     >>> angles = np.array([0.1, 0.2, 0.3])
     >>> @qml.qnode(dev)
     ... def example_circuit(A):
-    ...     qml.qsvt(A, angles, wires=[0, 1])
+    ...     qml.qsvt_legacy(A, angles, wires=[0, 1])
     ...     return qml.expval(qml.Z(0))
 
     The resulting circuit implements QSVT.
@@ -115,11 +121,18 @@ def qsvt(A, angles, wires, convention=None):
 
     To see the implementation details, we can expand the circuit:
 
-    >>> q_script = qml.tape.QuantumScript(ops=[qml.qsvt(A, angles, wires=[0, 1])])
+    >>> q_script = qml.tape.QuantumScript(ops=[qml.qsvt_legacy(A, angles, wires=[0, 1])])
     >>> print(q_script.expand().draw(decimals=2))
     0: ─╭∏_ϕ(0.30)─╭BlockEncode(M0)─╭∏_ϕ(0.20)─╭BlockEncode(M0)†─╭∏_ϕ(0.10)─┤
     1: ─╰∏_ϕ(0.30)─╰BlockEncode(M0)─╰∏_ϕ(0.20)─╰BlockEncode(M0)†─╰∏_ϕ(0.10)─┤
     """
+
+    warnings.warn(
+        "`qml.qsvt_legacy` is deprecated and will be removed in version 0.41. "
+        "Instead, please use `qml.qsvt` functionality.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
         A = qml.math.reshape(A, [1, 1])
 
@@ -150,6 +163,242 @@ def qsvt(A, angles, wires, convention=None):
     return QSVT(UA, projectors)
 
 
+# pylint: disable=too-many-branches
+def qsvt(A, poly, encoding_wires=None, block_encoding=None, **kwargs):
+    r"""
+    Implements the Quantum Singular Value Transformation (QSVT) for a matrix or Hamiltonian ``A``,
+    using a polynomial defined by ``poly`` and a block encoding specified by ``block_encoding``.
+
+    .. math::
+
+        \begin{pmatrix}
+        A & * \\
+        * & * \\
+        \end{pmatrix}
+        \xrightarrow{QSVT}
+        \begin{pmatrix}
+        \text{poly}(A) + i \dots & * \\
+        * & * \\
+        \end{pmatrix}
+
+    The polynomial transformation is encoded as the real part of the top left term after applying the operator.
+
+    This function calculates the required phase angles from the polynomial using :func:`~.poly_to_angles`.
+
+    .. note::
+
+        The function ``poly_to_angles``, used within ``qsvt``, is not JIT-compatible, which
+        prevents ``poly`` from being traceable in ``qsvt``. However, ``A`` is traceable
+        and can be optimized by JIT within this function.
+
+    Args:
+
+        A (Union[tensor_like, Operator]): The matrix on which the QSVT will be applied.
+            This can be an array or an object that has a Pauli representation. See :func:`~.pauli_decompose`.
+
+        poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
+
+        encoding_wires (Sequence[int]): The qubit wires used for the block encoding. See Usage Details below for
+            more information on ``encoding_wires`` depending on the block encoding used.
+
+        block_encoding (str): Specifies the type of block encoding to use. Options include:
+
+            - ``"prepselprep"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.PrepSelPrep`.
+              Default encoding for Hamiltonians.
+            - ``"qubitization"``: Embeds the Hamiltonian ``A`` using :class:`~pennylane.Qubitization`.
+            - ``"embedding"``: Embeds the matrix ``A`` using :class:`~pennylane.BlockEncode`.
+              Template not hardware compatible. Default encoding for matrices.
+            - ``"fable"``: Embeds the matrix ``A`` using :class:`~pennylane.FABLE`. Template hardware compatible.
+
+
+    Returns:
+        (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
+        specified encoding and projector phases.
+
+    Example:
+
+    .. code-block:: python
+
+        # P(x) = -x + 0.5 x^3 + 0.5 x^5
+        poly = np.array([0, -1, 0, 0.5, 0, 0.5])
+
+        hamiltonian = qml.dot([0.3, 0.7], [qml.Z(1), qml.X(1) @ qml.Z(2)])
+
+        dev = qml.device("default.qubit")
+
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep")
+            return qml.state()
+
+
+        matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
+
+    .. code-block:: pycon
+
+        >>> print(matrix[:4, :4].real)
+        [[-0.1625  0.     -0.3793  0.    ]
+         [ 0.     -0.1625  0.      0.3793]
+         [-0.3793  0.      0.1625  0.    ]
+         [ 0.      0.3793  0.      0.1625]]
+
+
+    .. details::
+        :title: Usage Details
+
+        If the input ``A`` is a Hamiltonian, the valid ``block_encoding`` values are
+        ``"prepselprep"`` and ``"qubitization"``. In this case, ``encoding_wires`` refers to the
+        ``control`` parameter in the templates :class:`~pennylane.PrepSelPrep` and :class:`~pennylane.Qubitization`,
+        respectively. These wires represent the auxiliary qubits necessary for the block encoding of
+        the Hamiltonian. The number of ``encoding_wires`` required must be :math:`\lceil \log_2(m) \rceil`,
+        where :math:`m` is the number of terms in the Hamiltonian.
+
+        .. code-block:: python
+
+            # P(x) = -1 + 0.2 x^2 + 0.5 x^4
+            poly = np.array([-1, 0, 0.2, 0, 0.5])
+
+            hamiltonian = qml.dot([0.3, 0.4, 0.3], [qml.Z(2), qml.X(2) @ qml.Z(3), qml.X(2)])
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.qsvt(hamiltonian, poly, encoding_wires=[0, 1], block_encoding="prepselprep")
+                return qml.state()
+
+
+            matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3])()
+
+        .. code-block:: pycon
+
+            >>> print(np.round(matrix[:4, :4], 4).real)
+            [[-0.7158  0.      0.      0.    ]
+             [ 0.     -0.975   0.      0.    ]
+             [ 0.      0.     -0.7158  0.    ]
+             [ 0.     -0.      0.     -0.975 ]]
+
+
+        Alternatively, if the input ``A`` is a matrix, the valid values for ``block_encoding`` are
+        ``"embedding"`` and ``"fable"``. In this case, the ``encoding_wires`` parameter corresponds to
+        the ``wires`` attribute in the templates :class:`~pennylane.BlockEncode` and :class:`~pennylane.FABLE`,
+        respectively. Note that for QSVT to work, the input matrix must be Hermitian.
+
+        .. code-block:: python
+
+            # P(x) = -1 + 0.2 x^2 + 0.5 x^4
+            poly = np.array([-0.1, 0, 0.2, 0, 0.5])
+
+            A = np.array([[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]])
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.qsvt(A, poly, encoding_wires=[0, 1, 2, 3, 4], block_encoding="fable")
+                return qml.state()
+
+            matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3, 4])()
+
+        .. code-block:: pycon
+
+            >>> print(np.round(matrix[:4, :4], 4).real)
+            [[-0.0954  0.     -0.0056 -0.0054]
+             [ 0.     -0.0912 -0.     -0.    ]
+             [-0.0056  0.     -0.0788  0.0164]
+             [-0.0054 -0.      0.0164 -0.0842]]
+
+        Note that for the FABLE block encoding to function correctly, it must comply with the following:
+
+        .. math::
+
+                d \|A\|^2 \leq 1,
+
+        where :math:`d` is the maximum dimension of :math:`A` and :math:`\|A\|` is the 2-norm of :math:`A`.
+        In the previous example this is satisfied since :math:`d = 4` and :math:`\|A\|^2 = 0.2`:
+
+        .. code-block:: pycon
+
+            >>> print(4* np.linalg.norm(A, ord='fro')**2)
+            0.8000000000000004
+
+
+    """
+
+    if encoding_wires is None or block_encoding is None or "wires" in kwargs.keys():
+        warnings.warn(
+            "You may be trying to use the old `qsvt` functionality (now `qml.qsvt_legacy`).\n"
+            "Make sure you pass a polynomial instead of angles.\n"
+            "Set a value for `block_encoding` to silence this warning.\n",
+            qml.PennyLaneDeprecationWarning,
+        )
+
+    projectors = []
+
+    # If the input A is a Hamiltonian
+    if hasattr(A, "pauli_rep"):
+
+        if block_encoding not in ["prepselprep", "qubitization", None]:
+            raise ValueError(
+                "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a Hamiltonian or has a Pauli decomposition, block_encoding should take the value 'prepselprep' or 'qubitization'. Otherwise, please provide the matrix of the Hamiltonian as input. For more details, see the 'qml.matrix' function."
+            )
+
+        if any(wire in qml.wires.Wires(encoding_wires) for wire in A.wires):
+            raise ValueError(
+                f"Control wires in '{block_encoding}' should be different from the hamiltonian wires"
+            )
+
+        encoding = (
+            qml.Qubitization(A, control=encoding_wires)
+            if block_encoding == "qubitization"
+            else qml.PrepSelPrep(A, control=encoding_wires)
+        )
+
+        angles = qml.poly_to_angles(poly, "QSVT")
+
+        projectors = [
+            qml.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
+            for angle in angles
+        ]
+
+    else:
+
+        if block_encoding not in ["embedding", "fable", None]:
+            raise ValueError(
+                "block_encoding = {block_encoding} not supported for A of type {type(A)}. When A is a matrix block_encoding should take the value 'embedding' or 'fable'. Otherwise, please provide an input with a Pauli decomposition. For more details, see the 'qml.pauli_decompose' function."
+            )
+
+        A = qml.math.atleast_2d(A)
+        max_dimension = 1 if len(qml.math.array(A).shape) == 0 else max(A.shape)
+
+        if block_encoding == "fable":
+            if qml.math.linalg.norm(max_dimension * qml.math.ravel(A), np.inf) > 1:
+                raise ValueError(
+                    "The subnormalization factor should be lower than 1. Ensure that the product of the maximum dimension of A and its square norm is less than 1."
+                )
+
+            # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
+
+            fable_norm = int(np.ceil(np.log2(max_dimension)))
+            encoding = qml.FABLE(2**fable_norm * A, wires=encoding_wires)
+            angles = qml.poly_to_angles(poly, "QSVT")
+
+            projectors = [qml.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
+
+        else:
+            c, r = qml.math.shape(A)
+
+            angles = qml.poly_to_angles(poly, "QSVT")
+            for idx, phi in enumerate(angles):
+                dim = c if idx % 2 else r
+                projectors.append(qml.PCPhase(phi, dim=dim, wires=encoding_wires))
+
+            encoding = qml.BlockEncode(A, wires=encoding_wires)
+
+    return QSVT(encoding, projectors)
+
+
 class QSVT(Operation):
     r"""QSVT(UA,projectors)
     Implements the
@@ -159,7 +408,8 @@ class QSVT(Operation):
 
         This template allows users to define hardware-compatible block encoding and
         projector-controlled phase shift circuits. For a QSVT implementation that is
-        tailored for simulators see :func:`~.qsvt` .
+        tailored to work directly with an input matrix and a transformation polynomial
+        see :func:`~.qsvt`.
 
     Given an :class:`~.Operator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
     projector-controlled phase shift operations :math:`\vec{\Pi}_\phi`, this template applies a
@@ -211,31 +461,6 @@ class QSVT(Operation):
 
     To implement QSVT in a circuit, we can use the following method:
 
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> A = np.array([[0.1]])
-    >>> block_encode = qml.BlockEncode(A, wires=[0, 1])
-    >>> shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
-    >>> @qml.qnode(dev)
-    >>> def example_circuit():
-    ...    qml.QSVT(block_encode, shifts)
-    ...    return qml.expval(qml.Z(0))
-
-    The resulting circuit implements QSVT.
-
-    >>> print(qml.draw(example_circuit)())
-    0: ─╭QSVT─┤  <Z>
-    1: ─╰QSVT─┤
-
-    To see the implementation details, we can expand the circuit:
-
-    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encode, shifts)])
-    >>> print(q_script.expand().draw(decimals=2))
-    0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(1.10)─╭BlockEncode(M0)†─╭∏_ϕ(2.10)─┤
-    1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(1.10)─╰BlockEncode(M0)†─╰∏_ϕ(2.10)─┤
-
-    When working with this class directly, we can make use of any PennyLane operation
-    to represent our block-encoding and our phase-shifts.
-
     >>> dev = qml.device("default.qubit", wires=[0])
     >>> block_encoding = qml.Hadamard(wires=0)  # note H is a block encoding of 1/sqrt(2)
     >>> phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]  # -2*theta to match convention
@@ -246,9 +471,9 @@ class QSVT(Operation):
     ...     return qml.expval(qml.Z(0))
     >>>
     >>> example_circuit()
-    tensor(0.54030231, requires_grad=True)
+    0.5403023058681395
 
-    Once again, we can visualize the circuit as follows:
+    We can visualize the circuit as follows:
 
     >>> print(qml.draw(example_circuit)())
     0: ──QSVT─┤  <Z>
@@ -258,6 +483,91 @@ class QSVT(Operation):
     >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
     >>> print(q_script.expand().draw(decimals=2))
     0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+
+    See the Usage Details section for more examples on implementing QSVT with different block
+    encoding methods.
+
+    .. details::
+        :title: Usage Details
+
+        The QSVT operation can be used with different block encoding methods, depending on the
+        initial operator for which the singular value transformation is applied and the desired
+        backend device. Examples are provided below.
+
+        If we want to transform the singular values of a matrix,
+        the matrix can be block-encoded with either the :class:`~.BlockEncode` or :class:`~.FABLE`
+        operations. Note that :class:`~.BlockEncode` is more efficient on simulator devices but
+        it cannot be used with hardware backends because it currently has no gate decomposition.
+        The :class:`~.FABLE` operation is less efficient on simulator devices but is hardware
+        compatible.
+
+        The following example applies the polynomial :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to an
+        arbitrary hermitian matrix using :class:`~.BlockEncode` for block encoding.
+
+        .. code-block::
+
+            poly = [0, -1, 0, 0.5, 0, 0.5]
+            angles = qml.poly_to_angles(poly, "QSVT")
+            input_matrix = np.array([[0.2, 0.1], [0.1, -0.1]])
+
+            wires = [0, 1]
+            block_encode = qml.BlockEncode(input_matrix, wires=wires)
+            projectors = [
+                qml.PCPhase(angles[i], dim=len(input_matrix), wires=wires)
+                for i in range(len(angles))
+            ]
+
+            dev = qml.device("default.qubit")
+            @qml.qnode(dev)
+            def circuit():
+                qml.QSVT(block_encode, projectors)
+                return qml.state()
+
+        .. code-block:: pycon
+
+            >>> circuit()
+            array([-0.194205  +0.66654551j, -0.097905  +0.35831418j,
+                    0.3319832 -0.51047262j, -0.09551437+0.01043668j])
+
+        If we want to transform the singular values of a linear
+        combination of unitaries, e.g., a Hamiltonian, it can be block-encoded with operations
+        such as :class:`~.PrepSelPrep` or :class:`~.Qubitization`. Note that both of these operations
+        have a gate decomposition and can be implemented on hardware. The following example applies the polynomial
+        :math:`p(x) = -x + 0.5x^3 + 0.5x^5` to the Hamiltonian :math:`H = 0.1X_3 - 0.7X_3Z_4 - 0.2Z_3Y_4`,
+        block-encoded with :class:`~.PrepSelPrep`.
+
+        .. code-block::
+
+            poly = np.array([0, -1, 0, 0.5, 0, 0.5])
+            H = 0.1 * qml.X(2) - 0.7 * qml.X(2) @ qml.Z(3) - 0.2 * qml.Z(2)
+
+            control_wires = [0, 1]
+            block_encode = qml.PrepSelPrep(H, control=control_wires)
+            angles = qml.poly_to_angles(poly, "QSVT")
+
+            projectors = [
+                qml.PCPhase(angles[i], dim=2 ** len(H.wires), wires=control_wires + H.wires)
+                for i in range(len(angles))
+            ]
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.QSVT(block_encode, projectors)
+                return qml.state()
+
+        .. code-block:: pycon
+
+            >>> circuit()
+            array([ 1.44000000e-01+1.01511390e-01j,  0.00000000e+00+0.00000000e+00j,
+                    4.32000000e-01+3.04534169e-01j,  0.00000000e+00+0.00000000e+00j,
+                    1.92998954e-17+5.00377363e-17j,  0.00000000e+00+0.00000000e+00j,
+                    5.59003542e-01+9.65699229e-02j,  0.00000000e+00+0.00000000e+00j,
+                    4.22566958e-01+7.30000000e-02j,  0.00000000e+00+0.00000000e+00j,
+                   -3.16925218e-01-5.47500000e-02j,  0.00000000e+00+0.00000000e+00j,
+                   -2.98448441e-17-3.10878188e-17j,  0.00000000e+00+0.00000000e+00j,
+                   -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
     """
 
     num_wires = AnyWires
@@ -548,6 +858,7 @@ def _compute_qsp_angle(poly_coeffs):
     P = np.concatenate(
         [np.zeros(len(poly_coeffs) // 2), chebyshev.poly2cheb(poly_coeffs)[parity::2]]
     ) * (1 - 1e-12)
+
     complementary = _complementary_poly(P)
 
     polynomial_matrix = np.array([P, complementary])
@@ -569,6 +880,70 @@ def _compute_qsp_angle(poly_coeffs):
             )
 
     return rotation_angles
+
+
+def _gqsp_u3_gate(theta, phi, lambd):
+    r"""
+    Computes the U3 gate matrix for Generalized Quantum Signal Processing (GQSP) as described
+    in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_]
+    """
+
+    exp_phi = qml.math.exp(1j * phi)
+    exp_lambda = qml.math.exp(1j * lambd)
+    exp_lambda_phi = qml.math.exp(1j * (lambd + phi))
+
+    matrix = np.array(
+        [
+            [exp_lambda_phi * qml.math.cos(theta), exp_phi * qml.math.sin(theta)],
+            [exp_lambda * qml.math.sin(theta), -qml.math.cos(theta)],
+        ],
+        dtype=complex,
+    )
+
+    return matrix
+
+
+def _compute_gqsp_angles(poly_coeffs):
+    r"""
+    Computes the Generalized Quantum Signal Processing (GQSP) angles given the coefficients of a polynomial P.
+
+    The method for computing the GQSP angles is based on the algorithm described in [`arXiv:2406.04246 <https://arxiv.org/abs/2406.04246>`_].
+    The complementary polynomial is calculated using root-finding methods.
+
+    Args:
+        poly_coeffs (tensor-like): Coefficients of the input polynomial P.
+
+    Returns:
+        (tensor-like): QSP angles corresponding to the input polynomial P. The shape is (3, P-degree)
+    """
+
+    complementary = _complementary_poly(poly_coeffs)
+
+    # Algorithm 1 in [arXiv:2308.01501]
+    input_data = qml.math.array([poly_coeffs, complementary])
+    num_elements = input_data.shape[1]
+
+    angles_theta, angles_phi, angles_lambda = qml.math.zeros([3, num_elements])
+
+    for idx in range(num_elements - 1, -1, -1):
+
+        component_a, component_b = input_data[:, idx]
+        angles_theta[idx] = qml.math.arctan2(np.abs(component_b), qml.math.abs(component_a))
+        angles_phi[idx] = (
+            0
+            if qml.math.isclose(qml.math.abs(component_b), 0, atol=1e-10)
+            else qml.math.angle(component_a * qml.math.conj(component_b))
+        )
+
+        if idx == 0:
+            angles_lambda[0] = qml.math.angle(component_b)
+        else:
+            updated_matrix = (
+                _gqsp_u3_gate(angles_theta[idx], angles_phi[idx], 0).conj().T @ input_data
+            )
+            input_data = qml.math.array([updated_matrix[0][1 : idx + 1], updated_matrix[1][0:idx]])
+
+    return angles_theta, angles_phi, angles_lambda
 
 
 def transform_angles(angles, routine1, routine2):
@@ -766,4 +1141,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding"):
         if angle_solver == "root-finding":
             return _compute_qsp_angle(poly)
         raise AssertionError("Invalid angle solver method. Valid value is 'root-finding'")
+
+    if routine == "GQSP":
+        return _compute_gqsp_angles(poly)
     raise AssertionError("Invalid routine. Valid values are 'QSP' and 'QSVT'")

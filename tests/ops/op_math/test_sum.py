@@ -939,15 +939,7 @@ class TestSimplify:
         sum_op = qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
         final_op = Sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
         simplified_op = sum_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, Sum)
-        for s1, s2 in zip(final_op.operands, simplified_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_grouping(self):
         """Test that the simplify method groups equal terms."""
@@ -965,15 +957,7 @@ class TestSimplify:
             qml.s_prod(2, qml.PauliZ(1)),
         )
         simplified_op = sum_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, Sum)
-        for s1, s2 in zip(final_op.operands, simplified_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_grouping_delete_terms(self):
         """Test that the simplify method deletes all terms with coefficient equal to 0."""
@@ -988,22 +972,14 @@ class TestSimplify:
         )
         simplified_op = sum_op.simplify()
         final_op = qml.s_prod(0, qml.Identity(0))
-        assert isinstance(simplified_op, qml.ops.SProd)
-        assert simplified_op.name == final_op.name
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_grouping_with_tolerance(self):
         """Test the simplify method with a specific tolerance."""
         sum_op = qml.sum(-0.9 * qml.RX(1, 0), qml.RX(1, 0))
         final_op = qml.s_prod(0, qml.Identity(0))
         simplified_op = sum_op.simplify(cutoff=0.1)
-        assert isinstance(simplified_op, qml.ops.SProd)
-        assert simplified_op.name == final_op.name
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
@@ -1036,12 +1012,7 @@ class TestSimplify:
         )
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
-
-        assert isinstance(simplified_op, type(result))
-        assert result.wires.toset() == simplified_op.wires.toset()
-        assert result.arithmetic_depth == simplified_op.arithmetic_depth
-        assert qnp.isclose(result.data[0], simplified_op.data[0])
-        assert result.data[1:] == simplified_op.data[1:]
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.torch
     def test_simplify_pauli_rep_torch(self):
@@ -1206,12 +1177,7 @@ class TestWrapperFunc:
 
         sum_func_op = qml.sum(*summands, id=op_id)
         sum_class_op = Sum(*summands, id=op_id)
-
-        assert sum_class_op.operands == sum_func_op.operands
-        assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
-        assert sum_class_op.id == sum_func_op.id
-        assert sum_class_op.wires == sum_func_op.wires
-        assert sum_class_op.parameters == sum_func_op.parameters
+        qml.assert_equal(sum_func_op, sum_class_op)
 
     def test_lazy_mode(self):
         """Test that by default, the operator is simply wrapped in `Sum`, even if a simplification exists."""
@@ -1360,15 +1326,7 @@ class TestArithmetic:
         sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
         final_op = Sum(qml.adjoint(qml.RX(1.23, wires=0)), qml.adjoint(qml.Identity(wires=1)))
         adj_op = sum_op.adjoint()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(adj_op, Sum)
-        for s1, s2 in zip(final_op.operands, adj_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        qml.assert_equal(adj_op, final_op)
 
 
 class TestGrouping:

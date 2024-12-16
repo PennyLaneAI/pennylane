@@ -1,3 +1,5 @@
+:orphan:
+
 Guide for AutoGraph for plxpr capture
 =====================================
 
@@ -10,9 +12,9 @@ representation.
 PennyLane provides various high-level functions, such as :func:`~.cond`,
 :func:`~.for_loop`, and :func:`~.while_loop`, that work with native PennyLane
 quantum operations. However, it can sometimes take a bit of work to rewrite
-existing Python code using these specific control flow functions. An experimental
-feature of PennyLane capture, AutoGraph, instead allows Pennylane capture to work
-with **native Python control flow**, such as if statements and for loops.
+existing Python code using these specific control flow functions. AutoGraph is an experimental
+feature of PennyLane capture that allows Pennylane capture to work
+with **native Python control flow**, such as ``if`` statements and ``for`` loops.
 
 Here, we'll aim to provide an overview of AutoGraph, as well as various
 restrictions and constraints you may discover.
@@ -49,10 +51,8 @@ restrictions and constraints you may discover.
 Using AutoGraph
 ---------------
 
-The AutoGraph feature in PennyLane is supported by the ``diastatic-malt`` package, a standalone
-fork of the AutoGraph module in TensorFlow (
-`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
-).
+The AutoGraph feature in PennyLane is supported by the ``diastatic-malt`` `package <https://github.com/PennyLaneAI/diastatic-malt>`_, a standalone
+fork of the AutoGraph module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_).
 
 The :func:`~pennylane.capture.make_plxpr` function uses AutoGraph by default. Consider a function using
 Python control flow:
@@ -64,7 +64,7 @@ Python control flow:
     @qml.qnode(dev)
     def cost(weights, data):
 
-        for w in dev.wires.labels:
+        for w in dev.wires:
             qml.X(w)
 
         for x in weights:
@@ -80,8 +80,8 @@ Python control flow:
 
         return qml.expval(qml.PauliZ(0) + qml.PauliZ(3))
 
-While this function cannot be captured directly, it can be converted to native PennyLane syntax
-using AutoGraph and captured. This is the default behaviour of :func:`~.autograph.make_plxpr`.
+While this function cannot be captured directly because there is control flow that depends on the function's inputs' values—the inputs are treated as JAX tracers at capture time, which don't have concrete values—it can be captured by converting to native PennyLane syntax
+via AutoGraph. This is the default behaviour of :func:`~.autograph.make_plxpr`.
 
 >>> weights = jnp.linspace(-1, 1, 20).reshape([5, 4])
 >>> data = jnp.ones([4])
@@ -208,34 +208,32 @@ dictionaries, or more generally any (compile-time) PyTree metadata.
 Different branches must assign the same type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Different branches of an if statement must always assign variables with the same type across branches,
+Different branches of an ``if`` statement must always assign variables with the same type across branches,
 if those variables are used in the outer scope (external variables). The type must be the same in the sense
 that the *structure* of the variable should not change across branches, and the dtypes must match.
 
-In particular, this requires that if an external variable is assigned an array in one
-branch, other branches must also assign arrays of the same shape. Consider this function, which has the
-same return shape regardless of branch, but differs in the shape of `y` in difference logic branches:
+Consider this function, which differs in the type of the elements in ``y`` in different logic branches:
 
 >>> def f(x):
 ...     if x > 1:
-...         y = jnp.array([0.1, 0.2])
+...         y = jnp.array([1.0, 2.0, 3.0])
 ...     else:
-...         y = jnp.array([0.4, 0.5, -0.1])
+...         y = jnp.array([4, 5, 6])
 ...     return jnp.sum(y)
 >>> make_plxpr(f)(0.5)
-ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(float64[3]) vs ShapedArray(float64[2])s
+ValueError: Mismatch in output abstract values in false branch #0 at position 0: ShapedArray(int64[3]) vs ShapedArray(float64[3])
 
-Instead, all possible outcomes for `y` at the end of the if/else block need to have the same shape:
+Instead, all possible outcomes for ``y`` at the end of the if/else block need to have the same shape, type, etc:
 
 >>> def f(x):
 ...     if x > 1:
-...         y = jnp.array([0.1, 0.2, 0.3])
+...         y = jnp.array([1.0, 2.0, 3.0])
 ...     else:
-...         y = jnp.array([0.4, 0.5, -0.1])
+...         y = jnp.array([4.0, 5.0, 6.0])
 ...     return jnp.sum(y)
 >>> plxpr = make_plxpr(f)(0.5)
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
-[Array(0.8, dtype=float64)]
+[Array(15., dtype=float64)]
 
 More generally, this also applies to common container classes such as
 ``dict``, ``list``, and ``tuple``. If one branch assigns an external variable,
@@ -273,10 +271,10 @@ Array(-1, dtype=int64)
 Compatible type assignments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Within an if statement, variable assignments must include JAX compatible
+Within an ``if`` statement, variable assignments must include JAX compatible
 types (Booleans, Python numeric types, JAX arrays, and PennyLane quantum
 operators). Non-compatible types (such as strings) used
-after the if statement will result in an error:
+after the ``if`` statement will result in an error:
 
 >>> def f(x):
 ...     if x > 5:
@@ -299,12 +297,12 @@ Most ``for`` loop constructs will be properly captured and compiled by AutoGraph
 
     @qml.qnode(dev)
     def f():
-        for x in [0, 1, 2]:
+        for x in jnp.array([0, 1, 2]):
             qml.RY(x * jnp.pi / 4, wires=0)
         return qml.expval(qml.PauliZ(0))
 
 >>> plxpr = make_plxpr(f)()
->>> eval_jaxpr(plxpr.jaxpr, jaxpr.consts)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
 [Array(-0.70710678, dtype=float64)]
 
 This includes automatic unpacking and enumeration through JAX arrays:
@@ -335,9 +333,9 @@ runtime):
 Indexing within a loop
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Indexing arrays within a for loop will generally work, but care must be taken.
+Indexing arrays within a ``for`` loop will generally work, but care must be taken.
 
-For example, using a for loop with static bounds to index a JAX array is straightforward:
+For example, using a ``for`` loop with static bounds to index a JAX array is straightforward:
 
 >>> dev = qml.device("default.qubit", wires=3)
 ... @qml.qnode(dev)
@@ -350,7 +348,7 @@ For example, using a for loop with static bounds to index a JAX array is straigh
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights)
 [Array(0.99500417, dtype=float64)]
 
-However, indexing within a for loop with AutoGraph will require that the object indexed is
+However, indexing within a ``for`` loop with AutoGraph will require that the object indexed is
 a JAX array or dynamic runtime variable.
 
 If the array you are indexing within the for loop is not a JAX array
@@ -365,8 +363,7 @@ or dynamic variable, an error will be raised:
 >>> plxpr = make_plxpr(f)()
 AutoGraphError: Tracing of an AutoGraph converted for loop failed with an exception:
   TracerIntegerConversionError:    The __index__() method was called on traced array with shape int64[]
-    The error occurred while tracing the function functional_for at /Users/lillian.frederiksen/pennylane/pennylane/capture/autograph/ag_primitives.py:176 for jit. This concrete value was not available in Python because it depends on the value of the argument i.
-    See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerIntegerConversionError
+    The error occurred while tracing the function functional_for [...]
 
 To allow AutoGraph conversion to work in this case, simply convert the list to
 a JAX array:
@@ -398,7 +395,7 @@ Array([0, 1], dtype=int64)
 Dynamic indexing
 ~~~~~~~~~~~~~~~~
 
-Indexing into arrays where the for loop has **dynamic bounds** (that is, where
+Indexing into arrays where the ``for`` loop has **dynamic bounds** (that is, where
 the size of the loop is set by a dynamic runtime variable) will also work, as long
 as the object indexed is a JAX array:
 
@@ -417,19 +414,19 @@ Array(-0.70710678, dtype=float64)
 However AutoGraph conversion will fail if the object being indexed by the
 loop with dynamic bounds is **not** a JAX array, because you cannot index
 standard Python objects with dynamic variables. Ensure that all objects that
-are indexed within dynamic for loops are JAX arrays.
+are indexed within dynamic ``for`` loops are JAX arrays.
 
 Break and continue
 ~~~~~~~~~~~~~~~~~~
 
-Within a for loop, control flow statements ``break`` and ``continue``
+Within a ``for`` loop, control flow statements ``break`` and ``continue``
 are not currently supported.
 
 
 Updating and assigning variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For loops that update variables can also be converted with AutoGraph:
+``for`` loops that update variables can also be converted with AutoGraph:
 
 >>> def f(x):
 ...     for y in [0, 4, 5]:
@@ -473,17 +470,82 @@ AutoGraph:
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.1)
 [Array(9., dtype=float64, weak_type=True)]
 
+
+Indexing within a loop
+~~~~~~~~~~~~~~~~~~~~~~
+
+Indexing arrays within a ``while`` loop will generally work, but care must be taken.
+
+For example, using a ``while`` loop variable to index a JAX array is straightforward:
+
+>>> dev = qml.device("default.qubit", wires=3)
+... @qml.qnode(dev)
+... def f(x):
+...     i = 0
+...     while i < 3:
+...         qml.RX(x[i], wires=i)
+...         i += 1
+...     return qml.expval(qml.PauliZ(0))
+>>> weights = jnp.array([0.1, 0.2, 0.3])
+>>> plxpr = make_plxpr(f)(weights)
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, weights)
+[Array(0.99500417, dtype=float64)]
+
+However, indexing within a ``while`` loop with AutoGraph will require that the object indexed is
+a JAX array:
+
+>>> @qml.qnode(dev)
+... def f():
+...     x = [0.1, 0.2, 0.3]
+...     i = 0
+...     while i < 3:
+...         qml.RX(x[i], wires=i)
+...         i += 1
+...     return qml.expval(qml.PauliZ(0))
+>>> plxpr = make_plxpr(f)()
+TracerIntegerConversionError: The __index__() method was called on traced array with shape int64[].
+The error occurred while tracing the function functional_while at [...]
+
+To allow AutoGraph conversion to work in this case, simply convert the list to a JAX array:
+
+>>> @qml.qnode(dev)
+... def f():
+...     x = jnp.array([0.1, 0.2, 0.3])
+...     i = 0
+...     while i < 3:
+...         qml.RX(x[i], wires=i)
+...         i += 1
+...     return qml.expval(qml.PauliZ(0))
+>>> plxpr = make_plxpr(f)()
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
+[Array(0.99500417, dtype=float64)]
+
+If the object you are indexing **cannot** be converted to a JAX array, it is not possible for AutoGraph to capture this for loop.
+
+If you are updating elements of the array, this must be done using the JAX ``.at`` and ``.set`` syntax.
+
+>>> def f():
+...     my_list = jnp.empty(2, dtype=int)
+...     i = 0
+...     while i < 2:
+...         my_list = my_list.at[i].set(i)  # not my_list[i] = i
+...         i += 1
+...     return my_list
+>>> plxpr = make_plxpr(f)()
+>>> eval_jaxpr(plxpr.jaxpr, plxpr.consts)
+Array([0, 1], dtype=int64)
+
 Break and continue
 ~~~~~~~~~~~~~~~~~~
 
-Within a while loop, control flow statements ``break`` and ``continue``
-are not currently supported. Usage will result in an error:
+Within a ``while`` loop, control flow statements ``break`` and ``continue``
+are not currently supported.
 
 
 Updating and assigning variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As with for loops, while loops that update variables can also be converted with AutoGraph:
+As with ``for`` loops, ``while`` loops that update variables can also be converted with AutoGraph:
 
 >>> def f(x):
 ...     while x < 5:
@@ -497,7 +559,7 @@ However, like with conditionals, a similar restriction applies: variables
 which are updated across iterations of the loop must have a JAX compilable
 type (Booleans, Python numeric types, and JAX arrays).
 
-You can also utilize temporary variables within a while loop:
+You can also utilize temporary variables within a ``while`` loop:
 
 >>> def f(x):
 ...     while x < 5:
@@ -508,10 +570,10 @@ You can also utilize temporary variables within a while loop:
 >>> eval_jaxpr(plxpr.jaxpr, plxpr.consts, 4.4)
 [Array(8.4, dtype=float64, weak_type=True)]
 
-Temporary variables used inside a loop --- and that are **not** passed to a
-function within the loop --- do not have any type restrictions.
+Temporary variables used inside a loop—and that are **not** passed to a
+function within the loop—do not have any type restrictions.
 
-A caveat regarding updating variables in a while loop is that it is not possible to
+A caveat regarding updating variables in a ``while`` loop is that it is not possible to
 update variables inside the loop test statement. For example, while the following
 works in standard Python:
 
@@ -524,7 +586,7 @@ works in standard Python:
 >>> fn(10)
 10
 
-any updates to the variables inside the while test function (in this case ``(i := y)``)
+any updates to the variables inside the ``while`` test function (in this case ``(i := y)``)
 will be ignored by AutoGraph:
 
 >>> plxpr = make_plxpr(fn)(0)
@@ -580,7 +642,7 @@ program:
     ] 0 b 1 a
   in (c,) }
 
-Here, we can see the ``cond`` operation inside the for loop, and
+Here, we can see the ``cond`` operation inside the ``for`` loop, and
 the two branches of the ``if`` statement represented by the ``jaxpr_branches``
 list.
 
@@ -599,14 +661,11 @@ def ag__f(n):
         do_return = False
         retval_ = ag__.UndefinedReturnValue()
         x = -ag__.converted_call(ag__.ld(jnp).log, (ag__.ld(n),), None, fscope)
-
         def get_state():
             return (x,)
-
         def set_state(vars_):
             nonlocal x
             x, = vars_
-
         def loop_body(itr):
             nonlocal x
             k = itr
@@ -620,6 +679,7 @@ def ag__f(n):
             do_return = False
             raise
         return fscope.ret(retval_, do_return)
+
 
 .. warning::
 
@@ -661,13 +721,13 @@ def ag__f(n):
 Native Python control flow without AutoGraph
 --------------------------------------------
 
-It's important to note that native Python control flow --- in cases where the
-control flow parameters are static --- will continue to work with
+It's important to note that native Python control flow—in cases where the
+control flow parameters are static—will continue to work with
 PennyLane **without** AutoGraph. However, if AutoGraph is not enabled, such
 control flow will be evaluated at compile time, and not preserved in the
 compiled program.
 
-Let's consider an example where a for loop is evaluated at compile time:
+Let's consider an example where a ``for`` loop is evaluated at compile time:
 
 >>> def f(x):
 ...     for i in range(2):
@@ -685,11 +745,11 @@ Let's consider an example where a for loop is evaluated at compile time:
     d:f64[] = integer_pow[y=2] c
   in (d,) }
 
-Here, the for loop is evaluated at compile time, rather than runtime. Notice the multiple tracers that
-have been printed out during program capture --- one for each loop --- as well as the unrolling of the
+Here, the loop is evaluated at compile time, rather than runtime. Notice the multiple tracers that
+have been printed out during program capture—one for each loop—as well as the unrolling of the
 loop in the resulting plxpr.
 
-With AutoGraph, we instead get a single print of the tracers, and compile with a for loop that can be
+With AutoGraph, we instead get a single print of the tracers, and compile with a ``for`` loop that can be
 evaluated at runtime:
 
 >>> plxpr = make_plxpr(f, autograph=True)(0.0)
@@ -731,7 +791,7 @@ To update array values when using JAX, the `JAX syntax for array assignment
 [Array([0.2, 0.4, 0.6], dtype=float64)]
 
 Similarly, to update array values with an operation when using JAX, the JAX syntax for array
-update (which uses the array `at` and the `add`, `multiply`, etc. methods) must be used:
+update (which uses the array ``at`` and the ``add``, ``multiply``, etc. methods) must be used:
 
 >>> def f(x):
 ...     first_dim = x.shape[0]
