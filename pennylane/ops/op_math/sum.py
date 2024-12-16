@@ -101,7 +101,7 @@ def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
         ``method`` can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
-            Defaults to ``'lf'``. To see more details about how these affect grouping, see
+        Defaults to ``'lf'``. To see more details about how these affect grouping, see
         :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.compute_partition_indices`.
     """
     if lazy:
