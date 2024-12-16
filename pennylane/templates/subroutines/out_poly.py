@@ -301,7 +301,7 @@ class OutPoly(Operation):
 
         self.hyperparameters["polynomial_function"] = polynomial_function
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
+        self.hyperparameters["work_wires"] = work_wires
 
         wires_vars = [len(w) for w in registers_wires[:-1]]
 
